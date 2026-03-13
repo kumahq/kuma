@@ -36,7 +36,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res, err := client.Do(upstreamReq)
+	res, err := client.Do(upstreamReq) // #nosec G704 -- upstream URL built from pod IP and validated port, scheme constrained in getScheme
 	if err != nil {
 		logger.V(1).Info("unable to request upstream server", "error", err)
 		writeProbeResult(writer, Unhealthy)

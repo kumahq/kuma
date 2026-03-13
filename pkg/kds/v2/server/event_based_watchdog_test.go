@@ -105,9 +105,9 @@ var _ = Describe("Event Based Watchdog", func() {
 		changedResTypes := <-reconciler.changedResTypes
 		Expect(changedResTypes).To(Equal(watchdog.ProvidedTypes))
 		Eventually(func(g Gomega) {
-			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonResync)
+			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonResync, "zone_name", "1")
 			g.Expect(metric).ToNot(BeNil())
-			g.Expect(*metric.Summary.SampleCount).To(BeEquivalentTo(1))
+			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(1))
 		}, "10s", "50ms").Should(Succeed())
 	})
 
@@ -130,9 +130,9 @@ var _ = Describe("Event Based Watchdog", func() {
 		Expect(changedResTypes).To(HaveKey(mesh.TrafficPermissionType))
 		Expect(changedResTypes).To(HaveKey(mesh.TrafficLogType))
 		Eventually(func(g Gomega) {
-			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonEvent)
+			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonEvent, "zone_name", "1")
 			g.Expect(metric).ToNot(BeNil())
-			g.Expect(*metric.Summary.SampleCount).To(BeEquivalentTo(1))
+			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(1))
 		}, "10s", "50ms").Should(Succeed())
 	})
 
@@ -145,9 +145,9 @@ var _ = Describe("Event Based Watchdog", func() {
 		changedResTypes := <-reconciler.changedResTypes
 		Expect(changedResTypes).To(Equal(watchdog.ProvidedTypes))
 		Eventually(func(g Gomega) {
-			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonResync)
+			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonResync, "zone_name", "1")
 			g.Expect(metric).ToNot(BeNil())
-			g.Expect(*metric.Summary.SampleCount).To(BeEquivalentTo(2))
+			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(2))
 		}, "10s", "50ms").Should(Succeed())
 	})
 }, Ordered)

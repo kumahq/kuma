@@ -5,6 +5,7 @@ import (
 	"math"
 	net_url "net/url"
 	"strconv"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/shopspring/decimal"
@@ -169,6 +170,12 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 		if otelBackend == nil {
 			verr.AddViolationAt(otelPath, validators.MustBeDefined)
 			break
+		}
+
+		if otelBackend.Endpoint == "" {
+			verr.AddViolationAt(otelPath.Field("endpoint"), validators.MustNotBeEmpty)
+		} else if strings.ContainsAny(otelBackend.Endpoint, "/?#") {
+			verr.AddViolationAt(otelPath.Field("endpoint"), "must be in host:port format, not a URL")
 		}
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))

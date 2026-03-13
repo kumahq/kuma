@@ -122,11 +122,11 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 	for _, group := range crossZoneGroups {
 		switch group.Type {
 		case api.Only:
-			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, strings.Join(util_maps.SortedKeys(group.Zones), ",")))
+			fmt.Fprintf(&builder, "%d:%s", group.Priority, strings.Join(util_maps.SortedKeys(group.Zones), ","))
 		case api.Any:
-			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, group.Type))
+			fmt.Fprintf(&builder, "%d:%s", group.Priority, group.Type)
 		case api.AnyExcept:
-			builder.WriteString(fmt.Sprintf("%d:%s:%s", group.Priority, group.Type, strings.Join(util_maps.SortedKeys(group.Zones), ",")))
+			fmt.Fprintf(&builder, "%d:%s:%s", group.Priority, group.Type, strings.Join(util_maps.SortedKeys(group.Zones), ","))
 		default:
 			continue
 		}

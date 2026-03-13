@@ -138,7 +138,7 @@ func (s *noIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_a
 	return nil, nil
 }
 
-func (s *noIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+func (s *noIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
 }
 
@@ -161,6 +161,6 @@ func (s *staticIdentityProvider) CreateIdentity(_ context.Context, mid *meshiden
 	}, nil
 }
 
-func (s *staticIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+func (s *staticIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
 }

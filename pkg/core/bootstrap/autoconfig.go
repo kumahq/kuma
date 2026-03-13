@@ -182,7 +182,7 @@ func tryReadKeyPair(dir workDir) (string, string, error) {
 		}
 	}()
 
-	certPEM, err := os.ReadFile(crtFile.Name())
+	certPEM, err := os.ReadFile(crtFile.Name()) // #nosec G703 -- path from dir.Open, not user input
 	if err != nil {
 		return "", "", err
 	}
@@ -198,7 +198,7 @@ func tryReadKeyPair(dir workDir) (string, string, error) {
 			autoconfigureLog.Error(err, "failed to close TLS key file")
 		}
 	}()
-	keyPEM, err := os.ReadFile(keyFile.Name())
+	keyPEM, err := os.ReadFile(keyFile.Name()) // #nosec G703 -- path from dir.Open, not user input
 	if err != nil {
 		return "", "", err
 	}
@@ -218,7 +218,7 @@ func saveKeyPair(pair tls.KeyPair, dir workDir) (string, string, error) {
 			autoconfigureLog.Error(err, "failed to close TLS cert file")
 		}
 	}()
-	if err := os.WriteFile(crtFile.Name(), pair.CertPEM, os.ModeTemporary); err != nil {
+	if err := os.WriteFile(crtFile.Name(), pair.CertPEM, os.ModeTemporary); err != nil { // #nosec G703 -- path from dir.Open, not user input
 		return "", "", errors.Wrapf(err, "failed to save TLS cert into a file %q", crtFile.Name())
 	}
 
@@ -231,7 +231,7 @@ func saveKeyPair(pair tls.KeyPair, dir workDir) (string, string, error) {
 			autoconfigureLog.Error(err, "failed to close TLS key file")
 		}
 	}()
-	if err := os.WriteFile(keyFile.Name(), pair.KeyPEM, os.ModeTemporary); err != nil {
+	if err := os.WriteFile(keyFile.Name(), pair.KeyPEM, os.ModeTemporary); err != nil { // #nosec G703 -- path from dir.Open, not user input
 		return "", "", errors.Wrapf(err, "failed to save TLS key into a file %q", keyFile.Name())
 	}
 

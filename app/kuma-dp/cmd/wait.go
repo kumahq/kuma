@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -55,12 +56,19 @@ func newWaitCmd() *cobra.Command {
 	return cmd
 }
 
-func checkIfEnvoyReady(client *http.Client, url string) error {
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+func checkIfEnvoyReady(client *http.Client, rawURL string) error {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL %q: %w", rawURL, err)
+	}
+	if host := parsed.Hostname(); host != "localhost" && host != "127.0.0.1" && host != "::1" {
+		return fmt.Errorf("URL host must be a loopback address, got %q", host)
+	}
+	req, err := http.NewRequest(http.MethodGet, rawURL, http.NoBody)
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- URL validated to loopback above
 	if err != nil {
 		return err
 	}

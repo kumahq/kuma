@@ -177,30 +177,39 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 			Message: "Provider successfully initialized",
 		})
 	}
-	if mid.Spec.Provider.Type == meshidentity_api.BundledType &&
-		pointer.DerefOr(mid.Spec.Provider.Bundled.MeshTrustCreation, meshidentity_api.MeshTrustCreationEnabled) == meshidentity_api.MeshTrustCreationEnabled {
-		if err := i.createOrUpdateMeshTrust(ctx, mid); err != nil {
-			conditions = append(conditions, common_api.Condition{
-				Type:    meshidentity_api.MeshTrustConditionType,
-				Status:  kube_meta.ConditionFalse,
-				Reason:  "MeshTrustCreationError",
-				Message: err.Error(),
-			})
-			return conditions
-		} else {
-			conditions = append(conditions, common_api.Condition{
-				Type:    meshidentity_api.MeshTrustConditionType,
-				Status:  kube_meta.ConditionTrue,
-				Reason:  "MeshTrustCreated",
-				Message: "MeshTrust has been successfully created",
-			})
-		}
+	ca, err := provider.GetMeshTrustCA(ctx, mid)
+	if err != nil {
+		conditions = append(conditions, common_api.Condition{
+			Type:    meshidentity_api.MeshTrustConditionType,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  "MeshTrustCreationError",
+			Message: err.Error(),
+		})
+		return conditions
 	}
+	if ca == nil {
+		return conditions
+	}
+	if err := i.createOrUpdateMeshTrust(ctx, mid, ca); err != nil {
+		conditions = append(conditions, common_api.Condition{
+			Type:    meshidentity_api.MeshTrustConditionType,
+			Status:  kube_meta.ConditionFalse,
+			Reason:  "MeshTrustCreationError",
+			Message: err.Error(),
+		})
+		return conditions
+	}
+	conditions = append(conditions, common_api.Condition{
+		Type:    meshidentity_api.MeshTrustConditionType,
+		Status:  kube_meta.ConditionTrue,
+		Reason:  "MeshTrustCreated",
+		Message: "MeshTrust has been successfully created",
+	})
 
 	return conditions
 }
 
-func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
+func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, ca []byte) error {
 	meshTrust := meshtrust_api.NewMeshTrustResource()
 	meshName := identity.Meta.GetMesh()
 	resourceName := identity.Meta.GetName()
@@ -217,10 +226,6 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 		} else {
 			return err
 		}
-	}
-	ca, err := i.loadCA(ctx, identity)
-	if err != nil {
-		return err
 	}
 
 	origin := kri.From(identity).String()
@@ -284,14 +289,6 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 		},
 	}
 	return i.resManager.Create(ctx, meshTrust, store.CreateByKey(resourceName, meshName))
-}
-
-func (i *IdentityProviderReconciler) loadCA(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) ([]byte, error) {
-	provider, found := i.providers[string(identity.Spec.Provider.Type)]
-	if !found {
-		return nil, fmt.Errorf("provider: %s not found", identity.Spec.Provider.Type)
-	}
-	return provider.GetRootCA(ctx, identity)
 }
 
 func (i *IdentityProviderReconciler) NeedLeaderElection() bool {

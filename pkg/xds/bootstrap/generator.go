@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -40,6 +41,7 @@ func NewDefaultBootstrapGenerator(
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
+	inboundTagsDisabled bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -59,6 +61,7 @@ func NewDefaultBootstrapGenerator(
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
 		deltaXdsEnabled:         deltaXdsEnabled,
+		inboundTagsDisabled:     inboundTagsDisabled,
 	}, nil
 }
 
@@ -73,6 +76,7 @@ type bootstrapGenerator struct {
 	hdsEnabled              bool
 	defaultAdminPort        uint32
 	deltaXdsEnabled         bool
+	inboundTagsDisabled     bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -171,7 +175,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			}
 			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
 		}
-		params.Service = dataplane.Spec.GetIdentifyingService()
+		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
 		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
@@ -378,8 +382,9 @@ func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, err
 		origin = "request .CaCert"
 	case b.xdsCertFile != "":
 		var err error
-		cert, err = os.ReadFile(b.xdsCertFile)
-		origin = "file " + b.xdsCertFile
+		xdsCertFile := filepath.Clean(b.xdsCertFile)
+		cert, err = os.ReadFile(xdsCertFile)
+		origin = "file " + xdsCertFile
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed getting cert from %s", origin)
 		}

@@ -26,6 +26,7 @@ func (e *DefaultsComponent) Start(stop <-chan struct{}) error {
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	ctx, cancelFn := context.WithCancel(ctx)
+	defer cancelFn()
 	go func() {
 		<-stop
 		cancelFn()

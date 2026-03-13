@@ -73,7 +73,7 @@ type (
 		FallbackToSystemCa       bool
 		CaCert                   []byte
 		ClientCert               []byte
-		ClientKey                []byte
+		ClientKey                []byte // #nosec G117 -- TLS config field, not hardcoded key
 		AllowRenegotiation       bool
 		SkipHostnameVerification bool
 		ServerName               string
@@ -416,7 +416,7 @@ func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s:%s", e.Locality.Zone, e.Locality.SubZone)
+	return fmt.Sprintf("%s:%s:%d", e.Locality.Zone, e.Locality.SubZone, e.Locality.Priority)
 }
 
 func (e Endpoint) HasLocality() bool {

@@ -62,8 +62,8 @@ func (s *spireIdentityProvider) Initialize(ctx context.Context, identity *meshid
 	return nil
 }
 
-// All certificates configuration is handled by the Spire
-func (s *spireIdentityProvider) GetRootCA(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+// GetMeshTrustCA returns nil as Spire manages its own CA externally.
+func (s *spireIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
 }
 

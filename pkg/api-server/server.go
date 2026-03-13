@@ -368,6 +368,7 @@ func addResourcesEndpoints(
 	kriEndpoints := kriEndpoint{
 		k8sMapper:       k8sMapper,
 		resManager:      resManager,
+		resourceAccess:  resourceAccess,
 		cpMode:          cfg.Mode,
 		environment:     cfg.Environment,
 		cpZone:          cfg.Multizone.Zone.Name,

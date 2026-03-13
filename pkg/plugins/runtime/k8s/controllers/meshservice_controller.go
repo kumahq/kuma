@@ -58,10 +58,10 @@ const (
 type MeshServiceReconciler struct {
 	kube_client.Client
 	kube_event.EventRecorder
-	Log                      logr.Logger
-	Scheme                   *kube_runtime.Scheme
-	ResourceConverter        k8s_common.Converter
-	SkipInboundTagGeneration bool
+	Log                 logr.Logger
+	Scheme              *kube_runtime.Scheme
+	ResourceConverter   k8s_common.Converter
+	InboundTagsDisabled bool
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -363,7 +363,7 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 		}
 	}
 	ms.Labels[metadata.HeadlessService] = "false"
-	if r.SkipInboundTagGeneration {
+	if r.InboundTagsDisabled {
 		matchLabels := maps.Clone(svc.Spec.Selector)
 		if matchLabels == nil {
 			matchLabels = map[string]string{}

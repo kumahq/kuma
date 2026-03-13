@@ -179,6 +179,7 @@ rules:
       - meshmultizoneservices
       - meshservices
       - meshtrusts
+      - meshzoneaddresses
       - workloads
     verbs:
       - get
@@ -219,6 +220,7 @@ metadata:
 rules:
   - apiGroups:
       - ""
+      - events.k8s.io
     resources:
       - events
     verbs:
@@ -366,6 +368,7 @@ rules:
       - patch
   - apiGroups:
       - ""
+      - events.k8s.io
     resources:
       - events
     verbs:
@@ -489,7 +492,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 0e6b5846332099ef1afc5971afd01f3a48826f9b772dcf8bdd121ff32ca43e2b
+        checksum/tls-secrets: d7511d7c378d92e59e451979f93e2b63891056bd234687d55b3f10356075a241
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -722,6 +725,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - meshzoneaddresses
           - workloads
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -786,6 +790,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - meshzoneaddresses
           - workloads
   
       
@@ -932,6 +937,7 @@ webhooks:
           - meshmultizoneservices
           - meshservices
           - meshtrusts
+          - meshzoneaddresses
           - workloads
     
       

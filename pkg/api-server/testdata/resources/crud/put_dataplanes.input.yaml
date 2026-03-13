@@ -15,7 +15,7 @@
 #/meshes/default/dataplanes/dp-5 400 method=PUT
 # Name is a number
 #/meshes/default/dataplanes/dp-5 400 method=PUT
-# Empty tags (SkipInboundTagGeneration)
+# Empty tags (InboundTagsDisabled)
 #/meshes/default/dataplanes/dp-6 201 method=PUT
 type: Mesh
 name: default

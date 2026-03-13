@@ -30,7 +30,7 @@ type collector struct {
 	rm                 manager.ResourceManager
 	cleanupAge         time.Duration
 	newTicker          func() *time.Ticker
-	metric             prometheus.Summary
+	metric             prometheus.Histogram
 	resourcesToCleanup map[InsightType]ResourceType
 	log                logr.Logger
 }
@@ -43,10 +43,9 @@ func NewCollector(
 	metricsName string,
 	resourcesToCleanup map[InsightType]ResourceType,
 ) (component.Component, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       fmt.Sprintf("component_%s_gc", metricsName),
-		Help:       "Summary of Dataplane GC component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: fmt.Sprintf("component_%s_gc", metricsName),
+		Help: "Summary of Dataplane GC component interval",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

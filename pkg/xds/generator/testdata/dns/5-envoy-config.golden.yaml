@@ -47,3 +47,4 @@ resources:
                     value: 639772d25f9c22e338f3c54ebe8be0faeae7e30c57f1acbf2d8ba5eb191007fb
           statPrefix: system_dynamicconfig
     name: system_dynamicconfig
+    statPrefix: system_dynamicconfig

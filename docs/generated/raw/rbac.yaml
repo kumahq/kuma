@@ -123,6 +123,7 @@ rules:
       - meshmultizoneservices
       - meshservices
       - meshtrusts
+      - meshzoneaddresses
       - workloads
     verbs:
       - get
@@ -157,6 +158,7 @@ metadata:
 rules:
   - apiGroups:
       - ""
+      - events.k8s.io
     resources:
       - events
     verbs:
@@ -286,6 +288,7 @@ rules:
       - patch
   - apiGroups:
       - ""
+      - events.k8s.io
     resources:
       - events
     verbs:

@@ -38,10 +38,11 @@ type Generator struct {
 	logger              logr.Logger
 	generateInterval    time.Duration
 	deletionGracePeriod time.Duration
-	metric              prometheus.Summary
+	metric              prometheus.Histogram
 	resManager          manager.ResourceManager
 	meshCache           *mesh_cache.Cache
 	zone                string
+	inboundTagsDisabled bool
 }
 
 var _ component.Component = &Generator{}
@@ -54,11 +55,11 @@ func New(
 	resManager manager.ResourceManager,
 	meshCache *mesh_cache.Cache,
 	zone string,
+	inboundTagsDisabled bool,
 ) (*Generator, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_meshservice_generator",
-		Help:       "Summary of MeshService generation duration",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_meshservice_generator",
+		Help: "Summary of MeshService generation duration",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
@@ -71,6 +72,7 @@ func New(
 		resManager:          resManager,
 		meshCache:           meshCache,
 		zone:                zone,
+		inboundTagsDisabled: inboundTagsDisabled,
 	}, nil
 }
 
@@ -78,6 +80,9 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+		if g.inboundTagsDisabled && len(inbound.GetTags()) == 0 {
+			continue
+		}
 		serviceTagValue := inbound.GetTags()[mesh_proto.ServiceTag]
 		allErrs := apimachineryvalidation.NameIsDNS1035Label(serviceTagValue, false)
 		if len(allErrs) != 0 {

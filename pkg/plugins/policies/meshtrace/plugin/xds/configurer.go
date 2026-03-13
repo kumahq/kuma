@@ -3,6 +3,7 @@ package xds
 import (
 	net_url "net/url"
 	"strings"
+	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -11,6 +12,7 @@ import (
 	tracingv3 "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -33,6 +35,9 @@ type Configurer struct {
 	Destination           string
 	IsGateway             bool
 	UnifiedResourceNaming bool
+	Mesh                  string
+	Zone                  string
+	WorkloadKRI           string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -83,6 +88,26 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 
 		if c.Conf.Tags != nil {
 			hcm.Tracing.CustomTags = mapTags(pointer.Deref(c.Conf.Tags))
+		}
+
+		for _, entry := range []struct{ key, val string }{
+			{"kuma.mesh", c.Mesh},
+			{"kuma.zone", c.Zone},
+			{"kuma.workload", c.WorkloadKRI},
+		} {
+			if entry.val == "" {
+				continue
+			}
+			found := false
+			for _, t := range hcm.Tracing.CustomTags {
+				if t.Tag == entry.key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				hcm.Tracing.CustomTags = append(hcm.Tracing.CustomTags, mapLiteralTag(entry.key, entry.val))
+			}
 		}
 
 		if backend.Zipkin != nil {
@@ -169,13 +194,39 @@ func (c *Configurer) opentelemetryConfig(clusterName string) (*envoy_trace.Traci
 	if err != nil {
 		return nil, err
 	}
-	tracingConfig := &envoy_trace.Tracing_Http{
+	return &envoy_trace.Tracing_Http{
 		Name: "envoy.tracers.opentelemetry",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: otelConfigAny,
 		},
+	}, nil
+}
+
+// OpenTelemetryHTTPConfig builds the Envoy OTel tracer config for an HTTP/HTTPS endpoint.
+// Used when resolving a MeshTelemetryBackend with HTTP protocol.
+func OpenTelemetryHTTPConfig(clusterName, serviceName, uri string) (*envoy_trace.Tracing_Http, error) {
+	otelConfig := envoy_trace.OpenTelemetryConfig{
+		ServiceName: serviceName,
+		HttpService: &envoy_core.HttpService{
+			HttpUri: &envoy_core.HttpUri{
+				Uri: uri,
+				HttpUpstreamType: &envoy_core.HttpUri_Cluster{
+					Cluster: clusterName,
+				},
+				Timeout: durationpb.New(10 * time.Second),
+			},
+		},
 	}
-	return tracingConfig, nil
+	otelConfigAny, err := proto.MarshalAnyDeterministic(&otelConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &envoy_trace.Tracing_Http{
+		Name: "envoy.tracers.opentelemetry",
+		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
+			TypedConfig: otelConfigAny,
+		},
+	}, nil
 }
 
 func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {

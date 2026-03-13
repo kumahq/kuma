@@ -1305,6 +1305,15 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 						matchesByHash[meshhttproute_api.HashMatches(r.Matches)] = r.Matches
 					}
 				}
+				for _, resourceRule := range res.ToRules.ResourceRules {
+					for _, conf := range resourceRule.Conf {
+						if pd, ok := conf.(meshhttproute_api.PolicyDefault); ok {
+							for _, r := range pd.Rules {
+								matchesByHash[meshhttproute_api.HashMatches(r.Matches)] = r.Matches
+							}
+						}
+					}
+				}
 			}
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
@@ -1314,7 +1323,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			}
 
 			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
-			if len(res.ToRules.Rules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
+			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
 			toRules := []api_common.Rule{}

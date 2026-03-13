@@ -1,17 +1,17 @@
 package api_server
 
 import (
-	"context"
-
 	"github.com/emicklei/go-restful/v3"
 
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v2/pkg/core/user"
 	"github.com/kumahq/kuma/v2/pkg/kds/hash"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 )
@@ -19,6 +19,7 @@ import (
 type kriEndpoint struct {
 	k8sMapper       k8s.ResourceMapperFunc
 	resManager      manager.ResourceManager
+	resourceAccess  access.ResourceAccess
 	cpMode          config_core.CpMode
 	environment     config_core.EnvironmentType
 	cpZone          string
@@ -42,7 +43,25 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 
-		resource, err := k.findByKri(request.Request.Context(), identifier)
+		descriptor, err := getDescriptor(identifier.ResourceType)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+			return
+		}
+
+		name := k.getCoreName(identifier)
+		if err := k.resourceAccess.ValidateGet(
+			request.Request.Context(),
+			core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
+			*descriptor,
+			user.FromCtx(request.Request.Context()),
+		); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			return
+		}
+
+		resource := descriptor.NewObject()
+		err = k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh))
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 			return
@@ -59,22 +78,6 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 	}
-}
-
-func (k *kriEndpoint) findByKri(ctx context.Context, identifier kri.Identifier) (core_model.Resource, error) {
-	descriptor, err := getDescriptor(identifier.ResourceType)
-	if err != nil {
-		return nil, err
-	}
-	resource := descriptor.NewObject()
-	name := k.getCoreName(identifier)
-	meshName := identifier.Mesh
-
-	if err := k.resManager.Get(ctx, resource, store.GetByKey(name, meshName)); err != nil {
-		return nil, err
-	}
-
-	return resource, nil
 }
 
 func (k *kriEndpoint) getCoreName(kri kri.Identifier) string {

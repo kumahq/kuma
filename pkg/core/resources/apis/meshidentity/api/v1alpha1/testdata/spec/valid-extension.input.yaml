@@ -1,0 +1,4 @@
+provider:
+  type: Extension
+  extension:
+    name: my-custom-provider

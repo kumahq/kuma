@@ -24,7 +24,7 @@ type heartbeatComponent struct {
 	interval    time.Duration
 
 	leader *Instance
-	metric prometheus.Summary
+	metric prometheus.Histogram
 }
 
 var _ component.Component = &heartbeatComponent{}
@@ -38,10 +38,9 @@ func NewHeartbeatComponent(
 	newClientFn GetClientFn,
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
-	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_heartbeat",
-		Help:       "Summary of Inter CP Heartbeat component interval",
-		Objectives: core_metrics.DefaultObjectives,
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "component_heartbeat",
+		Help: "Summary of Inter CP Heartbeat component interval",
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

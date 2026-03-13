@@ -41,7 +41,7 @@ type PostgresStoreConfig struct {
 	// User of the Postgres DB
 	User string `json:"user" envconfig:"kuma_store_postgres_user"`
 	// Password of the Postgres DB
-	Password string `json:"password" envconfig:"kuma_store_postgres_password"`
+	Password string `json:"password" envconfig:"kuma_store_postgres_password"` // #nosec G117 -- config field read from env, not hardcoded
 	// Database name of the Postgres DB
 	DbName string `json:"dbName" envconfig:"kuma_store_postgres_db_name"`
 	// Driver to use, one of: pgx, postgres

@@ -1,0 +1,8 @@
+provider:
+  type: Extension
+  extension:
+    name: my-custom-provider
+    config:
+      key: value
+      nested:
+        setting: true

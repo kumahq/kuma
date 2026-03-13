@@ -23,6 +23,8 @@ const (
 	CMD_KUMA_DESTINATION_SERVICE         = "%KUMA_DESTINATION_SERVICE%"
 	CMD_KUMA_MESH                        = "%KUMA_MESH%"
 	CMD_KUMA_TRAFFIC_DIRECTION           = "%KUMA_TRAFFIC_DIRECTION%"
+	CMD_KUMA_ZONE                        = "%KUMA_ZONE%"
+	CMD_KUMA_WORKLOAD                    = "%KUMA_WORKLOAD%"
 )
 
 type AccessLogConfigurer struct {
@@ -39,6 +41,8 @@ type KumaValues struct {
 	SourceIP           string
 	DestinationService string
 	Mesh               string
+	Zone               string
+	WorkloadKRI        string
 	TrafficDirection   envoy.TrafficDirection
 }
 
@@ -49,6 +53,8 @@ func InterpolateKumaValues(format string, values KumaValues) string {
 	format = strings.ReplaceAll(format, CMD_KUMA_DESTINATION_SERVICE, values.DestinationService)
 	format = strings.ReplaceAll(format, CMD_KUMA_MESH, values.Mesh)
 	format = strings.ReplaceAll(format, CMD_KUMA_TRAFFIC_DIRECTION, string(values.TrafficDirection))
+	format = strings.ReplaceAll(format, CMD_KUMA_ZONE, values.Zone)
+	format = strings.ReplaceAll(format, CMD_KUMA_WORKLOAD, values.WorkloadKRI)
 	return format
 }
 

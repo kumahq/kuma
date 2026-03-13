@@ -1244,7 +1244,7 @@ func (c *K8sCluster) DeleteMesh(mesh string) error {
 		func() (string, error) {
 			return "", k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
 		})
-	Logf("mesh: " + mesh + " deleted in: " + time.Since(now).String())
+	Logf("%s", "mesh: "+mesh+" deleted in: "+time.Since(now).String())
 	return err
 }
 

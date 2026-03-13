@@ -149,7 +149,7 @@ func gatewayListenerInfoFromProxy(
 		log.V(1).Info("no matching gateway for dataplane",
 			"name", proxy.Dataplane.Meta.GetName(),
 			"mesh", proxy.Dataplane.Meta.GetMesh(),
-			"service", proxy.Dataplane.Spec.GetIdentifyingService(),
+			"service", proxy.Dataplane.IdentifyingName(false),
 		)
 
 		return nil
