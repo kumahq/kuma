@@ -157,6 +157,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
 				}
+				// MkdirTemp creates 0700 dirs owned by the running user.
+				// Other processes (health probes, admin curl) need to
+				// traverse the dir to reach Unix sockets inside.
+				// 0711 = owner rwx, group/other execute-only (traverse).
+				if err := os.Chmod(tmpDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to chmod temporary directory")
+					return err
+				}
 
 				if cfg.DataplaneRuntime.WorkDir == "" {
 					cfg.DataplaneRuntime.WorkDir = tmpDir
