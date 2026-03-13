@@ -43,6 +43,9 @@ func SetupAndGetState() []byte {
 	if framework.Config.KumaExperimentalSidecarContainers {
 		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
 	}
+	if framework.Config.KumaAdminUnixSocket {
+		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET", "true"))
+	}
 
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))

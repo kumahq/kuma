@@ -92,7 +92,7 @@ spec:
 				var cfg conf.Injector
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), 9901, systemNamespace)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -887,7 +887,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -993,7 +993,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh

@@ -311,6 +311,10 @@ env:
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
   value: "true"
 {{- end }}
+{{- if .Values.experimental.adminUnixSocket }}
+- name: KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET
+  value: "true"
+{{- end }}
 {{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"

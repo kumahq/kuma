@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
@@ -81,7 +82,7 @@ spec:
 
 			// wait cluster 'test-server' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
@@ -164,7 +165,7 @@ spec:
 
 			// wait cluster 'test-server' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
@@ -244,7 +245,7 @@ spec:
 
 			// wait cluster 'test-server' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
@@ -338,7 +339,7 @@ spec:
 
 			// wait cluster 'test-server-mtls' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server-mtls\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
@@ -412,7 +413,7 @@ spec:
 
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::healthy"))
@@ -425,7 +426,7 @@ spec:
 
 			// wait cluster 'test-server' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
@@ -438,10 +439,13 @@ spec:
 
 			// wait cluster 'test-server' to be marked as healthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(stdout).ToNot(ContainSubstring("health_flags::healthy"))
+				g.Expect(err).ToNot(HaveOccurred())
+				// filter to test-server lines only; passthrough clusters are always healthy
+				filtered := filterLines(stdout, "test-server")
+				g.Expect(filtered).To(ContainSubstring("health_flags::healthy"))
+				g.Expect(filtered).ToNot(ContainSubstring("health_flags::/failed_active_hc"))
 			}, "30s", "500ms").Should(Succeed())
 		})
 	}, Ordered)
@@ -539,10 +543,12 @@ spec:
 
 			// wait for both split clusters to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", `"curl --silent localhost:9901/clusters | grep -c 'test-server-.*health_flags::/failed_active_hc'"`}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.TrimSpace(stdout)).To(Equal("2"))
+				filtered := filterLines(stdout, "test-server")
+				count := strings.Count(filtered, "health_flags::/failed_active_hc")
+				g.Expect(count).To(Equal(2))
 			}, "30s", "500ms").Should(Succeed())
 
 			// check that test-server is unhealthy
@@ -555,4 +561,15 @@ spec:
 			}).Should(Succeed())
 		})
 	}, Ordered)
+}
+
+func filterLines(s, substr string) string {
+	GinkgoHelper()
+	var out []string
+	for _, line := range strings.Split(s, "\n") {
+		if strings.Contains(line, substr) {
+			out = append(out, line)
+		}
+	}
+	return strings.Join(out, "\n")
 }
