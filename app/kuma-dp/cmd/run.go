@@ -157,12 +157,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
 				}
-				// Allow other users (e.g. root via SSH in tests) to
-				// traverse into the dir and access Unix sockets inside.
-				if err := os.Chmod(tmpDir, 0o755); err != nil {
-					runLog.Error(err, "unable to set permissions on temporary directory")
-					return err
-				}
 
 				if cfg.DataplaneRuntime.WorkDir == "" {
 					cfg.DataplaneRuntime.WorkDir = tmpDir
