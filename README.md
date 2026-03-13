@@ -33,7 +33,7 @@ Users that require enterprise-level support for Kuma can explore the [enterprise
 
 ## Get Started 
 
-- [Installation](https://kuma.io/docs/2.13.x/quickstart/kubernetes-demo/)
+- [Installation](https://kuma.io/docs/latest/quickstart/kubernetes-demo/)
 - [Documentation](https://kuma.io/docs)
 
 ## Get Involved
