@@ -31,10 +31,6 @@ Originally created and donated by Kong, Kuma is today CNCF (Cloud Native Computi
 
 Users that require enterprise-level support for Kuma can explore the [enterprise offerings](https://kuma.io/enterprise/) available.
 
-Built by Envoy contributors at Kong 🦍.
-
-[![][kuma-gui]][kuma-url]
-
 ## Get Started 
 
 - [Installation](https://kuma.io/docs/2.13.x/quickstart/kubernetes-demo/)
@@ -128,5 +124,4 @@ confidence.
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
-[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v3.jpg
 [kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits-v2.png
