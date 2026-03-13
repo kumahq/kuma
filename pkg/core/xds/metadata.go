@@ -226,8 +226,12 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		metadata.ProxyType = mesh_proto.ProxyType(field.GetStringValue())
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
-	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
-	metadata.AdminSocketPath = xdsMetadata.Fields[FieldDataplaneAdminSocketPath].GetStringValue()
+	if field := xdsMetadata.Fields[FieldDataplaneAdminAddress]; field != nil {
+		metadata.AdminAddress = field.GetStringValue()
+	}
+	if field := xdsMetadata.Fields[FieldDataplaneAdminSocketPath]; field != nil {
+		metadata.AdminSocketPath = field.GetStringValue()
+	}
 	metadata.ReadinessPort = uint32Metadata(xdsMetadata, FieldDataplaneReadinessPort)
 	metadata.AppProbeProxyEnabled = boolMetadata(xdsMetadata, FieldDataplaneAppProbeProxyEnabled)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)

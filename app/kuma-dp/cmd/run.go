@@ -352,7 +352,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				readinessAddr = "127.0.0.1"
+				readinessAddr = kumaSidecarConfiguration.Networking.Address
 			}
 			readinessReporter := readiness.NewReporter(
 				cfg.Dataplane.ReadinessUnixSocketDisabled,
