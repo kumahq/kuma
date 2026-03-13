@@ -3,6 +3,8 @@ package meshmultizoneservice
 import (
 	"fmt"
 
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -20,26 +22,17 @@ func Connectivity() {
 	namespace := "mzmsconnectivity"
 	clientNamespace := "mzmsconnectivity-client"
 	meshName := "mzmsconnectivity"
-
+	mesh := builders.MeshMultiZoneService().
+		WithName("test-server").
+		WithLabels(map[string]string{"test-name": meshName}).
+		WithServiceLabelSelector(map[string]string{"kuma.io/display-name": "test-server"}).
+		AddIntPortWithName(80, core_meta.ProtocolHTTP, "80").
+		WithMesh(meshName).Build()
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(YamlUniversal(`
-type: MeshMultiZoneService
-name: test-server
-mesh: mzmsconnectivity
-labels:
-  test-name: mzmsconnectivity
-spec:
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/display-name: test-server
-  ports:
-  - port: 80
-    appProtocol: http
-`)).
+			Install(ResourceUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -30,18 +31,7 @@ networking:
 }
 
 func mtlsAndEgressMeshUniversal(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-routing:
-  zoneEgress: true
-`, name)
-	return YamlUniversal(mesh)
+	return ResourceUniversal(builders.Mesh().WithName(name).WithBuiltinMTLSBackend("ca-1").WithRoutingZoneEgress(true).Build())
 }
 
 func MeshTrafficPermission() {
