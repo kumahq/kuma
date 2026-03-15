@@ -185,7 +185,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 		proxy.WorkloadIdentity = d.workloadIdentity
 	}
 	networking := proxy.Dataplane.Spec.Networking
-	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address, networking.AdvertisedAddress)
+	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address)
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
@@ -259,7 +259,7 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context) (SyncResult, error)
 		return SyncResult{}, errors.Wrap(err, "could not build ingress proxy")
 	}
 	networking := proxy.ZoneIngressProxy.ZoneIngressResource.Spec.GetNetworking()
-	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.GetAddress(), networking.GetAdvertisedAddress())
+	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.GetAddress())
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
@@ -319,7 +319,7 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context) (SyncResult, error) 
 		return SyncResult{}, errors.Wrap(err, "could not build egress proxy")
 	}
 	networking := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking
-	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address, "")
+	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address)
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
@@ -336,7 +336,7 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context) (SyncResult, error) 
 	return result, nil
 }
 
-func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string, advertisedAddress string) (core_xds.ServerSideMTLSCerts, error) {
+func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string) (core_xds.ServerSideMTLSCerts, error) {
 	if d.envoyAdminMTLS == nil || d.dpAddress != address {
 		ca, err := envoy_admin_tls.LoadCA(ctx, d.ResManager)
 		if err != nil {
@@ -347,9 +347,6 @@ func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address strin
 			return core_xds.ServerSideMTLSCerts{}, err
 		}
 		ips := []string{address}
-		if advertisedAddress != "" && advertisedAddress != address {
-			ips = append(ips, advertisedAddress)
-		}
 		serverPair, err := envoy_admin_tls.GenerateServerCert(ca, ips...)
 		if err != nil {
 			return core_xds.ServerSideMTLSCerts{}, errors.Wrap(err, "could not generate server certificate")
