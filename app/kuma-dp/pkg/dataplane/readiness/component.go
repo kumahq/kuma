@@ -3,6 +3,7 @@ package readiness
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -108,24 +109,61 @@ func (r *Reporter) Terminating() {
 }
 
 func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request) {
-	state := stateReady
-	stateHTTPStatus := http.StatusOK
 	if r.isTerminating.Load() {
-		state = stateTerminating
-		stateHTTPStatus = http.StatusServiceUnavailable
+		r.writeState(writer, req, stateTerminating, http.StatusServiceUnavailable)
+		return
 	}
 
+	// When admin is on UDS, proxy /ready to Envoy admin so that
+	// the pod is only marked ready after Envoy receives its config.
+	if r.adminSocketPath != "" {
+		r.proxyAdminReady(writer, req)
+		return
+	}
+
+	r.writeState(writer, req, stateReady, http.StatusOK)
+}
+
+func (r *Reporter) writeState(writer http.ResponseWriter, req *http.Request, state string, status int) {
 	stateBytes := []byte(state)
 	writer.Header().Set("content-type", "text/plain")
 	writer.Header().Set("content-length", fmt.Sprintf("%d", len(stateBytes)))
 	writer.Header().Set("cache-control", "no-cache, max-age=0")
 	writer.Header().Set("x-powered-by", "kuma-dp")
-	writer.WriteHeader(stateHTTPStatus)
+	writer.WriteHeader(status)
 	_, err := writer.Write(stateBytes)
 	logger.V(1).Info("responding readiness state", "state", state, "client", req.RemoteAddr)
 	if err != nil {
 		logger.Info("[WARNING] could not write response", "err", err)
 	}
+}
+
+func (r *Reporter) proxyAdminReady(writer http.ResponseWriter, req *http.Request) {
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", r.adminSocketPath)
+			},
+		},
+	}
+
+	resp, err := client.Get("http://localhost/ready")
+	if err != nil {
+		logger.V(1).Info("envoy admin not ready", "err", err)
+		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	for k, vals := range resp.Header {
+		for _, v := range vals {
+			writer.Header().Add(k, v)
+		}
+	}
+	writer.WriteHeader(resp.StatusCode)
+	writer.Write(body)
 }
 
 func (r *Reporter) adminProxy() http.Handler {

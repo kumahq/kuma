@@ -1531,9 +1531,11 @@ func (c *K8sCluster) ZoneName() string {
 func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.Tunnel, error) {
 	args = args.WithDefaults(portforward.EnvoyAdminDefaultSpec)
 
-	// When admin UDS is enabled, the readiness reporter reverse-proxies
-	// admin endpoints on its TCP port so we can port-forward to it.
-	if Config.KumaAdminUnixSocket {
+	// When admin UDS is enabled for sidecar proxies, the readiness
+	// reporter reverse-proxies admin on its TCP port. Zone proxies
+	// (egress/ingress) keep TCP admin so no override needed.
+	isZoneProxy := args.AppName == Config.ZoneEgressApp || args.AppName == Config.ZoneIngressApp
+	if Config.KumaAdminUnixSocket && !isZoneProxy {
 		args.RemotePort = 9902
 	}
 
