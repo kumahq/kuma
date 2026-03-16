@@ -183,10 +183,10 @@ func readURL(file string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "error with GET http request")
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("error while retrieving URL")
 	}
-	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "error while reading provided file")
