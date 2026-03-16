@@ -8,6 +8,6 @@ const (
 
 	// KumaZoneProxyTypeLabel is a Service label that drives zone proxy
 	// listener generation on the Dataplane of a matching pod.
-	// Allowed values: KumaZoneProxyTypeIngress, KumaZoneProxyTypeEgress.
+	// Allowed values: ingress or egress.
 	KumaZoneProxyTypeLabel = "k8s.kuma.io/zone-proxy-type"
 )

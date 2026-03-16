@@ -65,6 +65,7 @@ func ListenersForService(pod *kube_core.Pod, svc *kube_core.Service) ([]*mesh_pr
 			}
 		}
 
+		// also we're checking whether kuma-sidecar container is ready
 		if cs := util_k8s.FindContainerOrInitContainerStatus(
 			util_k8s.KumaSidecarContainerName,
 			pod.Status.ContainerStatuses,
