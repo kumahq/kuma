@@ -125,7 +125,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 	streams.activeStreams[streamID] = true
 
 	if streams.watchdogCancel == nil { // watchdog was not started yet
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is invoked when dataplane stream closes
 		streams.watchdogCancel = cancel
 		// kick off watchdog for that Dataplane
 		watchdog := t.newWatchdog(req.Node)
