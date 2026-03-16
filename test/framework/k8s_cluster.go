@@ -1539,6 +1539,20 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		return tnl, nil
 	}
 
+	// When admin UDS is enabled, port-forward won't work because Envoy
+	// admin is on a Unix socket, not TCP. Use kubectl exec + curl instead.
+	if Config.KumaAdminUnixSocket {
+		podName, err := PodNameOfApp(c, args.AppName, args.Namespace)
+		if err != nil {
+			return nil, errors.Wrapf(err, "resolving pod for admin exec tunnel: app %q in namespace %q", args.AppName, args.Namespace)
+		}
+
+		tnl := tunnel.NewK8sExecEnvoyAdminTunnel(c.t, c.kubeconfig, args.Namespace, podName, "kuma-sidecar")
+		c.adminTunnels[args] = tnl
+
+		return tnl, nil
+	}
+
 	fwd, err := c.PortForwardApp(args)
 	if err != nil {
 		return nil, errors.Wrapf(
