@@ -360,7 +360,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				readinessAddr = kumaSidecarConfiguration.Networking.Address
+				// When admin is on UDS, bind readiness reporter to all
+				// interfaces so both K8s probes (podIP) and PostStart
+				// lifecycle hooks (localhost) can reach it.
+				readinessAddr = "0.0.0.0"
 			}
 			readinessReporter := readiness.NewReporter(
 				cfg.Dataplane.ReadinessUnixSocketDisabled,
