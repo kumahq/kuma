@@ -423,6 +423,17 @@ var _ = Describe("Dataplane", func() {
                   port: 10003
                   name: zi-b`,
 		),
+		Entry("dataplane with listener without name", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              listeners:
+                - type: ZoneIngress
+                  address: 192.168.0.1
+                  port: 10001`,
+		),
 	)
 
 	type testCase struct {
