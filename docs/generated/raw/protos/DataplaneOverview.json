@@ -79,6 +79,13 @@
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyAdmin",
                     "additionalProperties": true,
                     "description": "Admin describes configuration related to Envoy Admin API. Due to security, all the Envoy Admin endpoints are exposed only on localhost. Additionally, Envoy will expose `/ready` endpoint on `networking.address` for health checking systems to be able to check the state of Envoy. The rest of the endpoints exposed on `networking.address` are always protected by mTLS and only meant to be consumed internally by the control plane."
+                },
+                "listeners": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Listener"
+                    },
+                    "type": "array",
+                    "description": "Listeners describes zone proxy listeners embedded in this Dataplane. Listeners may coexist with inbounds and gateways."
                 }
             },
             "additionalProperties": true,
@@ -237,6 +244,62 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Tcp"
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Listener": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "Unspecified",
+                        0,
+                        "ZoneIngress",
+                        1,
+                        "ZoneEgress",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Type"
+                },
+                "address": {
+                    "type": "string",
+                    "description": "Address on which the listener will be exposed."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which the listener will be exposed."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name uniquely identifies this listener within the Dataplane and is used to reference it via sectionName in policies. Optional: if unset, the port value is used as the name (as a string)."
+                },
+                "state": {
+                    "enum": [
+                        "Ready",
+                        0,
+                        "NotReady",
+                        1
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "State"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Listener",
+            "description": "Listener describes a zone proxy listener (ZoneIngress or ZoneEgress) embedded in a regular Dataplane."
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.Outbound": {
             "properties": {
