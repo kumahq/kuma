@@ -256,10 +256,10 @@ default:
           name: my-otel
 `),
 		ErrorCase(
-			"openTelemetry backendRef empty name",
+			"openTelemetry backendRef neither name nor labels",
 			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef.name",
-				Message: "must not be empty",
+				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef",
+				Message: "exactly one of name or labels must be set",
 			},
 			`
 type: MeshMetric
@@ -274,7 +274,6 @@ default:
       openTelemetry:
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: ""
 `),
 		ErrorCase(
 			"undefined openTelemetry backend when type is OpenTelemetry",

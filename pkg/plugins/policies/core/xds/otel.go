@@ -11,7 +11,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
@@ -76,10 +78,20 @@ func ResolveOtelBackend(
 }
 
 func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_context.Resources) *ResolvedOtelBackend {
-	name := ref.Name
-	backend := resolveBackendResourceByName(resources, name)
+	var backend *motb_api.MeshOpenTelemetryBackendResource
+	var refName string
+
+	switch {
+	case ref.Name != "":
+		refName = ref.Name
+		backend = resolveBackendResourceByName(resources, ref.Name)
+	case len(ref.Labels) > 0:
+		refName = ref.Labels[mesh_proto.DisplayName]
+		backend = resolveBackendResourceByLabels(resources, ref.Labels)
+	}
+
 	if backend == nil {
-		otelLog.Info("MeshOpenTelemetryBackend not found, skipping backend", "name", name)
+		otelLog.Info("MeshOpenTelemetryBackend not found, skipping backend", "name", refName, "labels", ref.Labels)
 		return nil
 	}
 
@@ -105,35 +117,38 @@ func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_con
 		EnvPolicy: spec.Env,
 		UseHTTPS:  shouldUseHTTPS(spec.Protocol, port),
 		Path:      basePath,
-		Name:      name,
+		Name:      core_model.GetDisplayName(backend.GetMeta()),
 	}
 }
 
+// resolveBackendResourceByName looks up by metadata.name exactly.
 func resolveBackendResourceByName(resources xds_context.Resources, name string) *motb_api.MeshOpenTelemetryBackendResource {
-	var direct *motb_api.MeshOpenTelemetryBackendResource
-	var byDisplayName []*motb_api.MeshOpenTelemetryBackendResource
-
 	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
 		if backend.GetMeta().GetName() == name {
-			direct = backend
+			return backend
 		}
-		if backend.GetMeta().GetLabels()[mesh_proto.DisplayName] == name {
-			byDisplayName = append(byDisplayName, backend)
+	}
+	return nil
+}
+
+// resolveBackendResourceByLabels matches all labels and picks the oldest on collision.
+// Same strategy as DestinationIndex.resolveResourceIdentifier.
+func resolveBackendResourceByLabels(resources xds_context.Resources, labels map[string]string) *motb_api.MeshOpenTelemetryBackendResource {
+	selector := subsetutils.NewSubset(labels)
+	var matches []*motb_api.MeshOpenTelemetryBackendResource
+	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
+		resLabels := subsetutils.NewSubset(backend.GetMeta().GetLabels())
+		if selector.IsSubset(resLabels) {
+			matches = append(matches, backend)
 		}
 	}
 
-	if direct != nil {
-		return direct
-	}
-
-	if len(byDisplayName) == 0 {
+	if len(matches) == 0 {
 		return nil
 	}
 
-	// Multiple display-name matches: pick the oldest by creation time.
-	// Same strategy as DestinationIndex.resolveResourceIdentifier.
-	oldest := byDisplayName[0]
-	for _, b := range byDisplayName[1:] {
+	oldest := matches[0]
+	for _, b := range matches[1:] {
 		if b.GetMeta().GetCreationTime().Before(oldest.GetMeta().GetCreationTime()) {
 			oldest = b
 		}

@@ -471,7 +471,7 @@ violations:
   - field: spec.default.backends[0].openTelemetry
     message: endpoint and backendRef are mutually exclusive`,
 			}),
-			Entry("openTelemetry backendRef empty name", testCase{
+			Entry("openTelemetry backendRef neither name nor labels", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -482,12 +482,11 @@ default:
       openTelemetry:
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: ""
 `,
 				expected: `
 violations:
-  - field: spec.default.backends[0].openTelemetry.backendRef.name
-    message: must not be empty`,
+  - field: spec.default.backends[0].openTelemetry.backendRef
+    message: exactly one of name or labels must be set`,
 			}),
 			Entry("gateway listener tags not allowed", testCase{
 				inputYaml: `

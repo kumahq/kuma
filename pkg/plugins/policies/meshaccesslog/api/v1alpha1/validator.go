@@ -220,8 +220,11 @@ func validateOtelBackendRef(endpoint string, backendRef *common_api.BackendResou
 			verr.AddViolationAt(validators.RootedAt("backendRef").Field("kind"),
 				validators.MustBeOneOf(string(backendRef.Kind), string(common_api.BackendResourceMeshOpenTelemetryBackend)))
 		}
-		if backendRef.Name == "" {
-			verr.AddViolationAt(validators.RootedAt("backendRef").Field("name"), validators.MustNotBeEmpty)
+		if backendRef.Name == "" && len(backendRef.Labels) == 0 {
+			verr.AddViolationAt(validators.RootedAt("backendRef"), "exactly one of name or labels must be set")
+		}
+		if backendRef.Name != "" && len(backendRef.Labels) > 0 {
+			verr.AddViolationAt(validators.RootedAt("backendRef"), "name and labels are mutually exclusive")
 		}
 	} else if strings.ContainsAny(endpoint, "/?#") {
 		verr.AddViolationAt(validators.RootedAt("endpoint"), "must be in host:port format, not a URL")

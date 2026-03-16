@@ -194,7 +194,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 			Expect(result.UseHTTPS).To(BeFalse())
 		})
 
-		It("should pick oldest for multiple displayName matches", func() {
+		It("should resolve by labels and pick oldest on collision", func() {
 			now := time.Now()
 
 			backendA := motb_api.NewMeshOpenTelemetryBackendResource()
@@ -222,7 +222,9 @@ var _ = Describe("ResolveOtelBackend", func() {
 			result := policies_xds.ResolveOtelBackend(
 				&common_api.BackendResourceRef{
 					Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-					Name: "collector",
+					Labels: map[string]string{
+						mesh_proto.DisplayName: "collector",
+					},
 				},
 				"",
 				dummyParser,

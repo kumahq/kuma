@@ -156,15 +156,20 @@ const (
 	BackendResourceMeshOpenTelemetryBackend BackendResourceKind = "MeshOpenTelemetryBackend"
 )
 
-// BackendResourceRef is a reference to a backend resource by name within
-// the same mesh. Used by observability policies to point at a
-// MeshOpenTelemetryBackend.
+// BackendResourceRef is a reference to a backend resource within the same
+// mesh. Used by observability policies to point at a
+// MeshOpenTelemetryBackend. Use Name for same-cluster references, Labels
+// for cross-zone references where KDS hashes the resource name.
 type BackendResourceRef struct {
 	// Kind of the backend resource.
 	Kind BackendResourceKind `json:"kind"`
-	// Name of the referenced resource.
-	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name"`
+	// Name of the referenced resource (metadata.name). Use for same-cluster
+	// references. Mutually exclusive with Labels.
+	Name string `json:"name,omitempty"`
+	// Labels to match the referenced resource. Use for cross-zone references
+	// where KDS adds a hash suffix to metadata.name. Mutually exclusive with
+	// Name. When multiple resources match, the oldest by creation time wins.
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 // BackendRef defines where to forward traffic.
