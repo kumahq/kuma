@@ -156,6 +156,14 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		}
 	}
 
+	if _, ok := svc.GetLabels()[metadata.KumaZoneProxyTypeLabel]; ok {
+		log.V(1).Info("service is for zone proxy listener. Ignoring.")
+		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		return kube_ctrl.Result{}, nil
+	}
+
 	// Check if Service backs gateway Pods (delegated gateways have annotation on Pod, not Service)
 	isGateway, err := r.isServiceForGateway(ctx, log, svc)
 	if err != nil {
