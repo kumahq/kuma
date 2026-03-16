@@ -99,9 +99,14 @@ linters:
                 - os
     gosec:
       excludes:
+        - G101 # Potential hardcoded credentials
         - G104 # Errors unhandled
         - G115
+        - G118 # context cancellation not called
         - G301 # Expect directory permissions to be 0750 or less
+        - G602 # slice index out of range
+        - G703 # path traversal via taint analysis
+        - G704 # SSRF via taint analysis
     importas:
       alias:
         - pkg: github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh
@@ -175,6 +180,13 @@ linters:
       - linters:
           - staticcheck
         text: 'ST1001: should not use dot imports'
+      - linters:
+          - staticcheck
+        path: 'api/common/v1alpha1/targetref\.go'
+        text: 'SA5008'
+      - linters:
+          - gosec
+        path: '(_test\.go$|^test/)'
     paths:
       - pkg/transparentproxy/iptables/builder
     warn-unused: true

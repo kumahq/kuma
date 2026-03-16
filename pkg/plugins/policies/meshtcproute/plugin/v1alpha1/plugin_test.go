@@ -1075,7 +1075,6 @@ var _ = Describe("MeshTCPRoute", func() {
 	)
 })
 
-//nolint:gosec
 const secret = `
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAqEhj+XS8qgm3raPrP554uXDiPv0np2lCx1wJF4KiwFGJMAV8
