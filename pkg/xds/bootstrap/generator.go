@@ -143,14 +143,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 	}
 
-	if b.adminUnixSocket {
-		if request.Workdir != "" {
-			params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
-		} else {
-			log.Info("admin UDS feature enabled but workdir is empty, falling back to TCP admin")
-		}
-	}
-
 	meshResource := core_mesh.NewMeshResource()
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:
@@ -188,6 +180,13 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
+		if b.adminUnixSocket {
+			if request.Workdir != "" {
+				params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
+			} else {
+				log.Info("admin UDS feature enabled but workdir is empty, falling back to TCP admin")
+			}
+		}
 
 		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
 		if err != nil {
