@@ -40,7 +40,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 			// given
 			dp := &mesh.DataplaneResource{
 				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{Address: "example.com", AdvertisedAddress: "advertise.example.com"},
+					Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"},
 				},
 			}
 
@@ -50,10 +50,9 @@ var _ = Describe("Resolve Dataplane address", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resolvedDp.Spec.Networking.Address).To(Equal("192.168.0.1"))
-			Expect(resolvedDp.Spec.Networking.AdvertisedAddress).To(Equal("192.0.2.1"))
+
 			// and original DP is not modified
 			Expect(dp.Spec.Networking.Address).To(Equal("example.com"))
-			Expect(dp.Spec.Networking.AdvertisedAddress).To(Equal("advertise.example.com"))
 		})
 	})
 })

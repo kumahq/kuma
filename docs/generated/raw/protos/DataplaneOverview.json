@@ -47,10 +47,6 @@
                     "type": "string",
                     "description": "IP on which the data plane proxy is accessible to the control plane and other data plane proxies in the same network. This can also be a hostname, in which case the control plane will periodically resolve it."
                 },
-                "advertisedAddress": {
-                    "type": "string",
-                    "description": "In some situations, a data plane proxy resides in a private network (e.g. Docker) and is not reachable via `address` to other data plane proxies. `advertisedAddress` is configured with a routable address for such data plane proxy so that other proxies in the mesh can connect to it over `advertisedAddress` and not via address. Envoy still binds to the `address`, not `advertisedAddress`."
-                },
                 "gateway": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Gateway",
                     "additionalProperties": true,

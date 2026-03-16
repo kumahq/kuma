@@ -283,7 +283,7 @@ func fillDataplaneOutbounds(
 			inboundTags := maps.Clone(inbound.GetTags())
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
-			inboundAddress := inboundInterface.DataplaneAdvertisedIP
+			inboundAddress := inboundInterface.DataplaneIP
 			inboundPort := inboundInterface.DataplanePort
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
@@ -329,7 +329,7 @@ func fillLocalMeshServices(
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-						Target:   inboundInterface.DataplaneAdvertisedIP,
+						Target:   inboundInterface.DataplaneIP,
 						Port:     inboundInterface.DataplanePort,
 						Tags:     inboundTags,
 						Weight:   1,

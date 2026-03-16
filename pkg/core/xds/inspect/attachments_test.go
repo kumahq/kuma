@@ -17,12 +17,11 @@ import (
 
 func inbound(ip string, dpPort, workloadPort uint32) mesh_proto.InboundInterface {
 	return mesh_proto.InboundInterface{
-		DataplaneAdvertisedIP: ip,
-		DataplaneIP:           ip,
-		DataplanePort:         dpPort,
-		WorkloadIP:            ip,
-		WorkloadPort:          workloadPort,
-		InboundName:           strconv.Itoa(int(dpPort)),
+		DataplaneIP:   ip,
+		DataplanePort: dpPort,
+		WorkloadIP:    ip,
+		WorkloadPort:  workloadPort,
+		InboundName:   strconv.Itoa(int(dpPort)),
 	}
 }
 

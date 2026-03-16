@@ -349,12 +349,11 @@ var _ = Describe("MeshRateLimit", func() {
 			},
 			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{
 				mesh_proto.InboundInterface{
-					DataplaneAdvertisedIP: "127.0.0.1",
-					DataplaneIP:           "127.0.0.1",
-					DataplanePort:         17777,
-					WorkloadIP:            "127.0.0.1",
-					WorkloadPort:          17777,
-					InboundName:           "17777",
+					DataplaneIP:   "127.0.0.1",
+					DataplanePort: 17777,
+					WorkloadIP:    "127.0.0.1",
+					WorkloadPort:  17777,
+					InboundName:   "17777",
 				}: []*core_mesh.RateLimitResource{
 					{
 						Spec: &mesh_proto.RateLimit{

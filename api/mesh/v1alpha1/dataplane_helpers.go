@@ -173,12 +173,11 @@ func (t ProxyType) IsValid() error {
 }
 
 type InboundInterface struct {
-	DataplaneAdvertisedIP string
-	DataplaneIP           string
-	DataplanePort         uint32
-	WorkloadIP            string
-	WorkloadPort          uint32
-	InboundName           string
+	DataplaneIP   string
+	DataplanePort uint32
+	WorkloadIP    string
+	WorkloadPort  uint32
+	InboundName   string
 }
 
 // We need to implement TextMarshaler because InboundInterface is used
@@ -316,11 +315,6 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.DataplaneIP = inbound.Address
 	} else {
 		iface.DataplaneIP = n.Address
-	}
-	if n.AdvertisedAddress != "" {
-		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
-	} else {
-		iface.DataplaneAdvertisedIP = iface.DataplaneIP
 	}
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
