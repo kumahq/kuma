@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ClustersResponse",
+    "definitions": {
+        "ClustersResponse": {
+            "properties": {
+                "request_id": {
+                    "type": "string",
+                    "description": "RequestID is a UUID that was set by the Global CP."
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error that was captured by the Zone CP when executing kuma-dp clusters request."
+                },
+                "clusters": {
+                    "type": "string",
+                    "description": "The clusters content that is a successful result of kuma-dp clusters execution.",
+                    "format": "binary",
+                    "binaryEncoding": "base64"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Clusters Response",
+            "description": "ClustersResponse is a response containing result of kuma-dp clusters execution on Zone CP."
+        }
+    }
+}

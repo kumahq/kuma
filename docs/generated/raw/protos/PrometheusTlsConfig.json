@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/PrometheusTlsConfig",
+    "definitions": {
+        "PrometheusTlsConfig": {
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "activeMTLSBackend",
+                        0,
+                        "providedTLS",
+                        1,
+                        "disabled",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Tls Config",
+            "description": "PrometheusEnvoyConfig defines Tls configuration for Prometheus listener."
+        }
+    }
+}

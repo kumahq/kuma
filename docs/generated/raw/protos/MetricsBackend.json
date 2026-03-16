@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/MetricsBackend",
+    "definitions": {
+        "MetricsBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.metrics.enabledBackend"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'prometheus')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics Backend",
+            "description": "MetricsBackend defines metric backends"
+        }
+    }
+}

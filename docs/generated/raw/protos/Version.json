@@ -1,0 +1,79 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Version",
+    "definitions": {
+        "Version": {
+            "properties": {
+                "kumaDp": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.KumaDpVersion",
+                    "additionalProperties": true,
+                    "description": "Version of Kuma Dataplane"
+                },
+                "envoy": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyVersion",
+                    "additionalProperties": true,
+                    "description": "Version of Envoy"
+                },
+                "dependencies": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Versions of other dependencies, i.e. CoreDNS"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Version",
+            "description": "Version defines version of Kuma Dataplane and Envoy"
+        },
+        "kuma.mesh.v1alpha1.EnvoyVersion": {
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "Version number of Envoy"
+                },
+                "build": {
+                    "type": "string",
+                    "description": "Full build tag of Envoy version"
+                },
+                "kumaDpCompatible": {
+                    "type": "boolean",
+                    "description": "True iff Envoy version is compatible with Kuma DP version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Version",
+            "description": "EnvoyVersion describes details of Envoy version"
+        },
+        "kuma.mesh.v1alpha1.KumaDpVersion": {
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "Version number of Kuma Dataplane"
+                },
+                "gitTag": {
+                    "type": "string",
+                    "description": "Git tag of Kuma Dataplane version"
+                },
+                "gitCommit": {
+                    "type": "string",
+                    "description": "Git commit of Kuma Dataplane version"
+                },
+                "buildDate": {
+                    "type": "string",
+                    "description": "Build date of Kuma Dataplane version"
+                },
+                "kumaCpCompatible": {
+                    "type": "boolean",
+                    "description": "True iff Kuma DP version is compatible with Kuma CP version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Kuma Dp Version",
+            "description": "KumaDpVersion describes details of Kuma Dataplane version"
+        }
+    }
+}

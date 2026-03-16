@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/EnvoyAdmin",
+    "definitions": {
+        "EnvoyAdmin": {
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which Envoy Admin API server will be listening"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Admin"
+        }
+    }
+}

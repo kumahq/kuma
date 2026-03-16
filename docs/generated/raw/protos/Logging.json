@@ -1,0 +1,49 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Logging",
+    "definitions": {
+        "Logging": {
+            "properties": {
+                "defaultBackend": {
+                    "type": "string",
+                    "description": "Name of the default backend"
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.LoggingBackend"
+                    },
+                    "type": "array",
+                    "description": "List of available logging backends"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Logging"
+        },
+        "kuma.mesh.v1alpha1.LoggingBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.logging.defaultBackend or in TrafficLogging"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'tcp' and 'file')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Logging Backend",
+            "description": "LoggingBackend defines logging backend available to mesh. Backends can be used in TrafficLog rules."
+        }
+    }
+}

@@ -1,0 +1,124 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/PrometheusMetricsBackendConfig",
+    "definitions": {
+        "PrometheusMetricsBackendConfig": {
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which a dataplane should expose HTTP endpoint with Prometheus metrics."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Path on which a dataplane should expose HTTP endpoint with Prometheus metrics."
+                },
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags associated with an application this dataplane is deployed next to, e.g. service=web, version=1.0. `service` tag is mandatory."
+                },
+                "skipMTLS": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If true then endpoints for scraping metrics won't require mTLS even if mTLS is enabled in Mesh. If nil, then it is treated as false."
+                },
+                "aggregate": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.PrometheusAggregateMetricsConfig"
+                    },
+                    "type": "array",
+                    "description": "Map with the configuration of applications which metrics are going to be scrapped by kuma-dp."
+                },
+                "envoy": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.PrometheusEnvoyConfig",
+                    "additionalProperties": true,
+                    "description": "Configuration of Envoy's metrics."
+                },
+                "tls": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.PrometheusTlsConfig",
+                    "additionalProperties": true,
+                    "description": "Configuration of TLS for prometheus listener."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Metrics Backend Config",
+            "description": "PrometheusMetricsBackendConfig defines configuration of Prometheus backend"
+        },
+        "kuma.mesh.v1alpha1.PrometheusAggregateMetricsConfig": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name which identify given configuration."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which a service expose HTTP endpoint with Prometheus metrics."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Path on which a service expose HTTP endpoint with Prometheus metrics."
+                },
+                "enabled": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If false then the application won't be scrapped. If nil, then it is treated as true and kuma-dp scrapes metrics from the service."
+                },
+                "address": {
+                    "type": "string",
+                    "description": "Address on which a service expose HTTP endpoint with Prometheus metrics."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Aggregate Metrics Config",
+            "description": "PrometheusAggregateMetricsConfig defines endpoints that should be scrapped by kuma-dp for prometheus metrics. Any configuration change require sidecar restart."
+        },
+        "kuma.mesh.v1alpha1.PrometheusEnvoyConfig": {
+            "properties": {
+                "filterRegex": {
+                    "type": "string",
+                    "description": "FilterRegex value that is going to be passed to Envoy for filtering Envoy metrics."
+                },
+                "usedOnly": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If true then return metrics that Envoy has updated (counters incremented at least once, gauges changed at least once, and histograms added to at least once). If nil, then it is treated as false."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Envoy Config",
+            "description": "PrometheusEnvoyConfig defines filters that should be passed to Envoy for filtering."
+        },
+        "kuma.mesh.v1alpha1.PrometheusTlsConfig": {
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "activeMTLSBackend",
+                        0,
+                        "providedTLS",
+                        1,
+                        "disabled",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Tls Config",
+            "description": "PrometheusEnvoyConfig defines Tls configuration for Prometheus listener."
+        }
+    }
+}

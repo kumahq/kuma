@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/FileLoggingBackendConfig",
+    "definitions": {
+        "FileLoggingBackendConfig": {
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Path to a file that logs will be written to"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "File Logging Backend Config",
+            "description": "FileLoggingBackendConfig defines configuration for file based access logs"
+        }
+    }
+}

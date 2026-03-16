@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/TcpLoggingBackendConfig",
+    "definitions": {
+        "TcpLoggingBackendConfig": {
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "Address to TCP service that will receive logs"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tcp Logging Backend Config",
+            "description": "TcpLoggingBackendConfig defines configuration for TCP based access logs"
+        }
+    }
+}

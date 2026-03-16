@@ -1,0 +1,98 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/CertificateAuthorityBackend",
+    "definitions": {
+        "CertificateAuthorityBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend. Has to be one of the loaded plugins (Kuma ships with builtin and provided)"
+                },
+                "dpCert": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert",
+                    "additionalProperties": true,
+                    "description": "Dataplane certificate settings"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                },
+                "mode": {
+                    "enum": [
+                        "STRICT",
+                        0,
+                        "PERMISSIVE",
+                        1
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                },
+                "rootChain": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Certificate Authority Backend",
+            "description": "CertificateAuthorityBackend defines Certificate Authority backend"
+        },
+        "kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert": {
+            "properties": {
+                "rotation": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation",
+                    "additionalProperties": true,
+                    "description": "Rotation settings"
+                },
+                "requestTimeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Timeout on request to CA for DP certificate generation and retrieval",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dp Cert",
+            "description": "DpCert defines settings for certificates generated for Dataplanes"
+        },
+        "kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation": {
+            "properties": {
+                "expiration": {
+                    "type": "string",
+                    "description": "Time after which generated certificate for Dataplane will expire"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rotation",
+            "description": "Rotation defines rotation settings for Dataplane certificate"
+        },
+        "kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain": {
+            "properties": {
+                "requestTimeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Timeout on request for to CA for root certificate chain. If not specified, defaults to 10s.",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Root Chain",
+            "description": "RootChain defines settings related to CA root certificate chain."
+        }
+    }
+}

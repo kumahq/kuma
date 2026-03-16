@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/DatadogTracingBackendConfig",
+    "definitions": {
+        "DatadogTracingBackendConfig": {
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "Address of datadog collector."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port of datadog collector"
+                },
+                "splitService": {
+                    "type": "boolean",
+                    "description": "Determines if datadog service name should be split based on traffic direction and destination. For example, with `splitService: true` and a `backend` service that communicates with a couple of databases, you would get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and `backend_OUTBOUND_db2` in Datadog. Default: false"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Datadog Tracing Backend Config"
+        }
+    }
+}

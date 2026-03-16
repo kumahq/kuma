@@ -1,0 +1,35 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/PrometheusAggregateMetricsConfig",
+    "definitions": {
+        "PrometheusAggregateMetricsConfig": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name which identify given configuration."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which a service expose HTTP endpoint with Prometheus metrics."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Path on which a service expose HTTP endpoint with Prometheus metrics."
+                },
+                "enabled": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If false then the application won't be scrapped. If nil, then it is treated as true and kuma-dp scrapes metrics from the service."
+                },
+                "address": {
+                    "type": "string",
+                    "description": "Address on which a service expose HTTP endpoint with Prometheus metrics."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Aggregate Metrics Config",
+            "description": "PrometheusAggregateMetricsConfig defines endpoints that should be scrapped by kuma-dp for prometheus metrics. Any configuration change require sidecar restart."
+        }
+    }
+}

@@ -1,0 +1,43 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/TrafficPermission",
+    "definitions": {
+        "TrafficPermission": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that are sources of traffic."
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that are destinations of traffic."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Traffic Permission",
+            "description": "TrafficPermission defines permission for traffic between dataplanes."
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        }
+    }
+}

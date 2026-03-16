@@ -1,0 +1,126 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/FaultInjection",
+    "definitions": {
+        "FaultInjection": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that are sources of traffic."
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that are destinations of traffic."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.FaultInjection.Conf",
+                    "additionalProperties": true,
+                    "description": "Configuration of FaultInjection"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Fault Injection",
+            "description": "FaultInjection defines the configuration of faults between dataplanes."
+        },
+        "kuma.mesh.v1alpha1.FaultInjection.Conf": {
+            "properties": {
+                "delay": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.FaultInjection.Conf.Delay",
+                    "additionalProperties": true,
+                    "description": "Delay if specified then response from the destination will be delivered with a delay"
+                },
+                "abort": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.FaultInjection.Conf.Abort",
+                    "additionalProperties": true,
+                    "description": "Abort if specified makes source side to receive specified httpStatus code"
+                },
+                "response_bandwidth": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.FaultInjection.Conf.ResponseBandwidth",
+                    "additionalProperties": true,
+                    "description": "ResponseBandwidth if specified limits the speed of sending response body"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf",
+            "description": "Conf defines several types of faults, at least one fault should be specified"
+        },
+        "kuma.mesh.v1alpha1.FaultInjection.Conf.Abort": {
+            "properties": {
+                "percentage": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Percentage of requests on which abort will be injected, has to be in [0.0 - 100.0] range"
+                },
+                "httpStatus": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "HTTP status code which will be returned to source side"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Abort",
+            "description": "Abort defines a configuration of not delivering requests to destination service and replacing the responses from destination dataplane by predefined status code"
+        },
+        "kuma.mesh.v1alpha1.FaultInjection.Conf.Delay": {
+            "properties": {
+                "percentage": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Percentage of requests on which delay will be injected, has to be in [0.0 - 100.0] range"
+                },
+                "value": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "The duration during which the response will be delayed",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Delay",
+            "description": "Delay defines configuration of delaying a response from a destination"
+        },
+        "kuma.mesh.v1alpha1.FaultInjection.Conf.ResponseBandwidth": {
+            "properties": {
+                "percentage": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Percentage of requests on which response bandwidth limit will be injected, has to be in [0.0 - 100.0] range"
+                },
+                "limit": {
+                    "additionalProperties": true,
+                    "type": "string",
+                    "description": "Limit is represented by value measure in gbps, mbps, kbps or bps, e.g. 10kbps"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Response Bandwidth",
+            "description": "ResponseBandwidth defines a configuration to limit the speed of responding to the requests"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        }
+    }
+}

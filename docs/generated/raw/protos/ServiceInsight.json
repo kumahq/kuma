@@ -1,0 +1,106 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ServiceInsight",
+    "definitions": {
+        "ServiceInsight": {
+            "properties": {
+                "services": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.ServiceInsight.Service",
+                        "additionalProperties": true
+                    },
+                    "type": "object"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Service Insight"
+        },
+        "kuma.mesh.v1alpha1.ServiceInsight.Service": {
+            "properties": {
+                "status": {
+                    "enum": [
+                        "none",
+                        0,
+                        "offline",
+                        1,
+                        "partially_degraded",
+                        2,
+                        "online",
+                        3,
+                        "not_available",
+                        4
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Status"
+                },
+                "dataplanes": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ServiceInsight.Service.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "issuedBackends": {
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "type": "object"
+                },
+                "serviceType": {
+                    "enum": [
+                        "internal",
+                        0,
+                        "external",
+                        1,
+                        "gateway_delegated",
+                        2,
+                        "gateway_builtin",
+                        3
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Type"
+                },
+                "addressPort": {
+                    "type": "string"
+                },
+                "zones": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Service"
+        },
+        "kuma.mesh.v1alpha1.ServiceInsight.Service.DataplaneStat": {
+            "properties": {
+                "total": {
+                    "type": "integer"
+                },
+                "online": {
+                    "type": "integer"
+                },
+                "offline": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dataplane Stat"
+        }
+    }
+}

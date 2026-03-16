@@ -1,0 +1,390 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/TrafficRoute",
+    "definitions": {
+        "TrafficRoute": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match data plane proxies that are sources of traffic."
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that are destinations of traffic. Notice the difference between sources and destinations. While the source of traffic is always a data plane proxy within a mesh, the destination is a service that could be either within or outside of a mesh."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Conf",
+                    "additionalProperties": true,
+                    "description": "Configuration for the route."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Traffic Route",
+            "description": "TrafficRoute defines routing rules for the traffic in the mesh."
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Conf": {
+            "properties": {
+                "split": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Split"
+                    },
+                    "type": "array",
+                    "description": "List of destinations with weights assigned to them. When used, \"destination\" is not allowed."
+                },
+                "load_balancer": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer",
+                    "additionalProperties": true,
+                    "description": "Load balancer configuration for given \"split\" or \"destination\""
+                },
+                "destination": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "One destination that the traffic will be redirected to. When used, \"split\" is not allowed."
+                },
+                "http": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http"
+                    },
+                    "type": "array",
+                    "description": "Configuration of HTTP traffic. Traffic is matched one by one with the order defined in the list. If the request does not match any criteria then \"split\" or \"destination\" outside of \"http\" section is executed."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf",
+            "description": "Conf defines the destination configuration."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http": {
+            "properties": {
+                "match": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Match",
+                    "additionalProperties": true,
+                    "description": "If request matches against defined criteria then \"split\" or \"destination\" is executed."
+                },
+                "modify": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify",
+                    "additionalProperties": true,
+                    "description": "Modifications to the traffic matched by the match section."
+                },
+                "split": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Split"
+                    },
+                    "type": "array",
+                    "description": "List of destinations with weights assigned to them. When used, \"destination\" is not allowed."
+                },
+                "destination": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "One destination that the traffic will be redirected to. When used, \"split\" is not allowed."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Http",
+            "description": "Http defines configuration for HTTP traffic."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Match": {
+            "properties": {
+                "method": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Match.StringMatcher",
+                    "additionalProperties": true,
+                    "description": "Method matches method of HTTP request."
+                },
+                "path": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Match.StringMatcher",
+                    "additionalProperties": true,
+                    "description": "Path matches HTTP path."
+                },
+                "headers": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Match.StringMatcher",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Headers match HTTP request headers."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Match",
+            "description": "Match defines a series of matching criteria to apply modification and reroute the traffic."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Match.StringMatcher": {
+            "properties": {
+                "prefix": {
+                    "type": "string",
+                    "description": "Prefix matches the string against defined prefix."
+                },
+                "exact": {
+                    "type": "string",
+                    "description": "Exact checks that strings are equal to each other."
+                },
+                "regex": {
+                    "type": "string",
+                    "description": "Regex checks the string using RE2 syntax. https://github.com/google/re2/wiki/Syntax"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "String Matcher",
+            "description": "StringMatcher matches the string value."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Modify": {
+            "properties": {
+                "path": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Path",
+                    "additionalProperties": true,
+                    "description": "Path modifications."
+                },
+                "host": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Host",
+                    "additionalProperties": true,
+                    "description": "Host modifications."
+                },
+                "requestHeaders": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers",
+                    "additionalProperties": true,
+                    "description": "Request headers modifications."
+                },
+                "responseHeaders": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers",
+                    "additionalProperties": true,
+                    "description": "Response headers modifications."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Modify",
+            "description": "Modify defines modifications of matched HTTP messages."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers": {
+            "properties": {
+                "add": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers.Add"
+                    },
+                    "type": "array",
+                    "description": "List of add header operations."
+                },
+                "remove": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers.Remove"
+                    },
+                    "type": "array",
+                    "description": "List of remove header operations."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Headers",
+            "description": "Headers defines modification of HTTP headers."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers.Add": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the header."
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Value of the header."
+                },
+                "append": {
+                    "type": "boolean",
+                    "description": "If true, it appends the value if there is already a value. Otherwise, value of existing header will be replaced."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Add",
+            "description": "Add defines operation of adding new HTTP header."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers.Remove": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the header to remove."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Remove",
+            "description": "Remove defines operation of removing an HTTP header."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Host": {
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "description": "Value replaces the host header with given value."
+                },
+                "fromPath": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.RegexReplace",
+                    "additionalProperties": true,
+                    "description": "FromPath replaces the host header from path using regex."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Host",
+            "description": "Host defines modification of the HTTP Host header"
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Path": {
+            "properties": {
+                "rewritePrefix": {
+                    "type": "string",
+                    "description": "RewritePrefix rewrites previously matched prefix in match section."
+                },
+                "regex": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.RegexReplace",
+                    "additionalProperties": true,
+                    "description": "Regex rewrites prefix using regex with substitution."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Path",
+            "description": "Path defines modification of path of the HTTP request."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.RegexReplace": {
+            "properties": {
+                "pattern": {
+                    "type": "string",
+                    "description": "Pattern of the regex using RE2 syntax. https://github.com/google/re2/wiki/Syntax"
+                },
+                "substitution": {
+                    "type": "string",
+                    "description": "Substitution using regex groups. E.g. use \\\\1 as a first matched group."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Regex Replace",
+            "description": "RegexReplace defines a way to match string using regex and build a new one using substitution section."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer": {
+            "properties": {
+                "round_robin": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.RoundRobin",
+                    "additionalProperties": true
+                },
+                "least_request": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.LeastRequest",
+                    "additionalProperties": true
+                },
+                "ring_hash": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.RingHash",
+                    "additionalProperties": true
+                },
+                "random": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.Random",
+                    "additionalProperties": true
+                },
+                "maglev": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.Maglev",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Load Balancer",
+            "description": "LoadBalancer defines the load balancing policy and configuration."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.LeastRequest": {
+            "properties": {
+                "choice_count": {
+                    "type": "integer",
+                    "description": "The number of random healthy hosts from which the host with the fewest active requests will be chosen. Defaults to 2 so that we perform two-choice selection if the field is not set."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Least Request",
+            "description": "LeastRequest uses different algorithms depending on whether hosts have the same or different weights."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.Maglev": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Maglev",
+            "description": "Maglev implements consistent hashing to upstream hosts."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.Random": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Random",
+            "description": "Random selects a random available host."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.RingHash": {
+            "properties": {
+                "hash_function": {
+                    "type": "string",
+                    "description": "The hash function used to hash hosts onto the ketama ring. The value defaults to 'XX_HASH'."
+                },
+                "min_ring_size": {
+                    "type": "string",
+                    "description": "Minimum hash ring size."
+                },
+                "max_ring_size": {
+                    "type": "string",
+                    "description": "Maximum hash ring size."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Ring Hash",
+            "description": "RingHash implements consistent hashing to upstream hosts."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.LoadBalancer.RoundRobin": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Round Robin",
+            "description": "RoundRobin is a simple policy in which each available upstream host is selected in round robin order."
+        },
+        "kuma.mesh.v1alpha1.TrafficRoute.Split": {
+            "properties": {
+                "weight": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Weight assigned to that destination. Weights are not percentages. For example two destinations with weights the same weight \"1\" will receive both same amount of the traffic. 0 means that the destination will be ignored."
+                },
+                "destination": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Selector to match individual endpoints that comprise that destination. Notice that an endpoint can be either inside or outside the mesh. In the former case an endpoint corresponds to a data plane proxy, in the latter case an endpoint is an External Service."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Split",
+            "description": "Split defines a destination with a weight assigned to it."
+        }
+    }
+}

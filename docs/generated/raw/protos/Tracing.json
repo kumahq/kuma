@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Tracing",
+    "definitions": {
+        "Tracing": {
+            "properties": {
+                "defaultBackend": {
+                    "type": "string",
+                    "description": "Name of the default backend"
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TracingBackend"
+                    },
+                    "type": "array",
+                    "description": "List of available tracing backends"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tracing",
+            "description": "Tracing defines tracing configuration of the mesh."
+        },
+        "kuma.mesh.v1alpha1.TracingBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.tracing.defaultBackend or in TrafficTrace"
+                },
+                "sampling": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Percentage of traces that will be sent to the backend (range 0.0 - 100.0). Empty value defaults to 100.0%"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'zipkin')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tracing Backend",
+            "description": "TracingBackend defines tracing backend available to mesh. Backends can be used in TrafficTrace rules."
+        }
+    }
+}

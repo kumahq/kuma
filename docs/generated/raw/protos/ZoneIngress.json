@@ -1,0 +1,95 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ZoneIngress",
+    "definitions": {
+        "ZoneIngress": {
+            "properties": {
+                "zone": {
+                    "type": "string",
+                    "description": "Zone field contains Zone name where ingress is serving, field will be automatically set by Global Kuma CP"
+                },
+                "networking": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ZoneIngress.Networking",
+                    "additionalProperties": true,
+                    "description": "Networking defines the address and port of the Ingress to listen on. Additionally publicly advertised address and port could be specified."
+                },
+                "availableServices": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.ZoneIngress.AvailableService"
+                    },
+                    "type": "array",
+                    "description": "AvailableService contains tags that represent unique subset of endpoints"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Zone Ingress",
+            "description": "ZoneIngress allows us to configure dataplane in the Ingress mode. In this mode, dataplane has only inbound interfaces. Every inbound interface matches with services that reside in that cluster."
+        },
+        "kuma.mesh.v1alpha1.EnvoyAdmin": {
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which Envoy Admin API server will be listening"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Admin"
+        },
+        "kuma.mesh.v1alpha1.ZoneIngress.AvailableService": {
+            "properties": {
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "tags of the service"
+                },
+                "instances": {
+                    "type": "integer",
+                    "description": "number of instances available for given tags"
+                },
+                "mesh": {
+                    "type": "string",
+                    "description": "mesh of the instances available for given tags"
+                },
+                "externalService": {
+                    "type": "boolean",
+                    "description": "instance of external service available from the zone"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Available Service"
+        },
+        "kuma.mesh.v1alpha1.ZoneIngress.Networking": {
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "Address on which inbound listener will be exposed"
+                },
+                "advertisedAddress": {
+                    "type": "string",
+                    "description": "AdvertisedAddress defines IP or DNS name on which ZoneIngress is accessible to other Kuma clusters."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port of the inbound interface that will forward requests to the service."
+                },
+                "advertisedPort": {
+                    "type": "integer",
+                    "description": "AdvertisedPort defines port on which ZoneIngress is accessible to other Kuma clusters."
+                },
+                "admin": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyAdmin",
+                    "additionalProperties": true,
+                    "description": "Admin contains configuration related to Envoy Admin API"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Networking"
+        }
+    }
+}
