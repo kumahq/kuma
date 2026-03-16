@@ -21,21 +21,21 @@
   "links": [
     {
       "title": "Workload Health",
-      "url": "/d/kuma-service-health/kuma-service-health?orgId=1&var-datasource=${datasource}&var-namespace=${namespace}&var-workload=${workload}",
+      "url": "/d/kuma-service-health/kuma-service-health?var-datasource=${datasource}&var-namespace=${namespace}&var-workload=${workload}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "RED overview for this workload"
     },
     {
       "title": "Mesh Drilldown",
-      "url": "/d/kuma-mesh/kuma-mesh-drilldown?orgId=1&var-datasource=${datasource}",
+      "url": "/d/kuma-mesh/kuma-mesh-drilldown?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Fleet-wide mesh overview"
     },
     {
       "title": "Control Plane",
-      "url": "/d/kuma-cp-v2/kuma-control-plane?orgId=1",
+      "url": "/d/kuma-cp-v2/kuma-control-plane?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "CP health and performance"
@@ -110,17 +110,17 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "Total",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_http1_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_http1_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "HTTP/1.1",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_http2_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_http2_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "HTTP/2",
           "refId": "C"
         }
@@ -245,7 +245,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_xx{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (envoy_response_code_class)",
+          "expr": "sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (envoy_response_code_class)",
           "legendFormat": "{{envoy_response_code_class}}xx",
           "refId": "A"
         }
@@ -309,17 +309,17 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(envoy_http_downstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(envoy_http_downstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "C"
         }
@@ -395,7 +395,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}}",
           "refId": "A"
         }
@@ -505,7 +505,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name, envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name, envoy_response_code_class)",
           "legendFormat": "{{envoy_cluster_name}} {{envoy_response_code_class}}xx",
           "refId": "A"
         }
@@ -569,12 +569,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} p99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(envoy_cluster_upstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.50, sum(rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} p50",
           "refId": "B"
         }
@@ -666,12 +666,12 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_rbac_denied{kuma_workload=\"$workload\"}[5m]))",
+          "expr": "sum(rate(envoy_rbac_denied{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
           "legendFormat": "Denied/s",
           "refId": "A"
         },
         {
-          "expr": "sum(envoy_rbac_denied{kuma_workload=\"$workload\"})",
+          "expr": "sum(envoy_rbac_denied{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
           "legendFormat": "Denied Total",
           "refId": "B"
         }
@@ -735,12 +735,12 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_ssl_handshake{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_ssl_handshake{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Outbound",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_listener_ssl_handshake{kuma_workload=\"$workload\"}[5m]))",
+          "expr": "sum(rate(envoy_listener_ssl_handshake{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
           "legendFormat": "Inbound",
           "refId": "B"
         }
@@ -805,7 +805,7 @@
       },
       "targets": [
         {
-          "expr": "min(envoy_server_days_until_first_cert_expiring{kuma_workload=\"$workload\"})",
+          "expr": "min(envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
           "legendFormat": "Server Cert",
           "refId": "A"
         }
@@ -914,17 +914,17 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_retry{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_retry{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Retries",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_retry_success{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_retry_success{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Success",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_retry_overflow{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Overflow",
           "refId": "C"
         }
@@ -1004,17 +1004,17 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_cx_connect_timeout{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_cx_connect_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Connect Timeout",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_timeout{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Request Timeout",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_max_duration_reached{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_max_duration_reached{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Max Duration",
           "refId": "C"
         }
@@ -1078,17 +1078,17 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_rx_reset{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_rx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} RX Reset",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_tx_reset{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_tx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} TX Reset",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_cancelled{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_cancelled{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Cancelled",
           "refId": "C"
         }
@@ -1196,17 +1196,17 @@
       },
       "targets": [
         {
-          "expr": "sum(envoy_cluster_membership_healthy{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_membership_healthy{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Healthy",
           "refId": "A"
         },
         {
-          "expr": "sum(envoy_cluster_membership_total{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Total",
           "refId": "B"
         },
         {
-          "expr": "sum(envoy_cluster_membership_degraded{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_membership_degraded{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Degraded",
           "refId": "C"
         }
@@ -1295,17 +1295,17 @@
       },
       "targets": [
         {
-          "expr": "max(envoy_cluster_circuit_breakers_default_rq_open{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "max(envoy_cluster_circuit_breakers_default_rq_open{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} RQ",
           "refId": "A"
         },
         {
-          "expr": "max(envoy_cluster_circuit_breakers_default_rq_pending_open{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "max(envoy_cluster_circuit_breakers_default_rq_pending_open{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Pending",
           "refId": "B"
         },
         {
-          "expr": "max(envoy_cluster_circuit_breakers_default_cx_open{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "max(envoy_cluster_circuit_breakers_default_cx_open{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} CX",
           "refId": "C"
         }
@@ -1369,22 +1369,22 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_cx_overflow{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} CX Overflow",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_pending_overflow{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Pending Overflow",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(envoy_http_no_route{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_no_route{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "No Route",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(envoy_cluster_lb_healthy_panic{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_lb_healthy_panic{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} LB Panic",
           "refId": "D"
         }
@@ -1459,12 +1459,12 @@
       },
       "targets": [
         {
-          "expr": "sum(envoy_http_downstream_cx_active{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"})",
+          "expr": "sum(envoy_http_downstream_cx_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"})",
           "legendFormat": "Inbound",
           "refId": "A"
         },
         {
-          "expr": "sum(envoy_cluster_upstream_cx_active{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_upstream_cx_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}}",
           "refId": "B"
         }
@@ -1559,22 +1559,22 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_cx_destroy_remote{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_cluster_upstream_cx_destroy_remote{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
           "legendFormat": "Upstream Remote Close",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_cx_destroy{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) - sum(rate(envoy_cluster_upstream_cx_destroy_remote{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_cluster_upstream_cx_destroy{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) - sum(rate(envoy_cluster_upstream_cx_destroy_remote{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
           "legendFormat": "Upstream Local Close",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(envoy_http_downstream_cx_destroy_remote{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_cx_destroy_remote{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "Inbound Remote Close",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(envoy_http_downstream_cx_destroy_local{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_cx_destroy_local{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "Inbound Local Close",
           "refId": "D"
         }
@@ -1638,12 +1638,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_cx_connect_ms_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} Connect p99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_cx_length_ms_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} Lifetime p99",
           "refId": "B"
         }
@@ -1719,22 +1719,22 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_cx_rx_bytes_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "Inbound RX",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_http_downstream_cx_tx_bytes_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "Inbound TX",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
           "legendFormat": "Outbound RX",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m]))",
           "legendFormat": "Outbound TX",
           "refId": "D"
         }
@@ -1798,17 +1798,17 @@
       },
       "targets": [
         {
-          "expr": "sum(envoy_cluster_upstream_rq_pending_active{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_upstream_rq_pending_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Pending",
           "refId": "A"
         },
         {
-          "expr": "sum(envoy_cluster_upstream_rq_active{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_upstream_rq_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Active",
           "refId": "B"
         },
         {
-          "expr": "sum(envoy_http_downstream_rq_active{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"})",
+          "expr": "sum(envoy_http_downstream_rq_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"})",
           "legendFormat": "Inbound Active",
           "refId": "C"
         }
@@ -1871,12 +1871,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_per_cx_bucket{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_per_cx_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} p99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(envoy_cluster_upstream_rq_per_cx_bucket{kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.50, sum(rate(envoy_cluster_upstream_rq_per_cx_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name!~\"localhost_.*|kuma_.*|self_.*|system_.*\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} p50",
           "refId": "B"
         }
@@ -1946,7 +1946,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "envoy_server_memory_allocated{k8s_kuma_io_namespace=\"$namespace\",kuma_workload=\"$workload\"}",
+          "expr": "envoy_server_memory_allocated{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1967,9 +1967,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red", "value": null},
-              {"color": "orange", "value": 3600},
-              {"color": "green", "value": 86400}
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 3600
+              },
+              {
+                "color": "green",
+                "value": 86400
+              }
             ]
           }
         },
@@ -1984,7 +1993,9 @@
       "id": 209,
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1998,7 +2009,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "envoy_server_uptime{k8s_kuma_io_namespace=\"$namespace\",kuma_workload=\"$workload\"}",
+          "expr": "envoy_server_uptime{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -2054,7 +2065,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(envoy_control_plane_ds_handshake_bucket{k8s_kuma_io_namespace=\"$namespace\",kuma_workload=\"$workload\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(envoy_control_plane_ds_handshake_bucket{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m])))",
           "legendFormat": "p99",
           "refId": "A"
         }

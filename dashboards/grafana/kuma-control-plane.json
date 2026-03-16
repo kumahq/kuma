@@ -65,21 +65,21 @@
   "links": [
     {
       "title": "Mesh Drilldown",
-      "url": "/d/kuma-mesh/kuma-mesh-drilldown?orgId=1",
+      "url": "/d/kuma-mesh/kuma-mesh-drilldown?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Fleet-wide mesh overview"
     },
     {
       "title": "Workload Health",
-      "url": "/d/kuma-service-health/kuma-service-health?orgId=1",
+      "url": "/d/kuma-service-health/kuma-service-health?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Per-workload RED overview"
     },
     {
       "title": "Workload Debug",
-      "url": "/d/kuma-service-debug/kuma-service-debug?orgId=1",
+      "url": "/d/kuma-service-debug/kuma-service-debug?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Deep-dive workload debug"
@@ -304,7 +304,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total number of Dataplane resources — should closely match active xDS streams",
+      "description": "Total number of Dataplane resources \u2014 should closely match active xDS streams",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1734,7 +1734,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Rate of mTLS certificate generation per mesh",
+      "description": "Ratio of CA cache hits vs misses. High hit rate means fewer expensive cert operations.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1785,7 +1785,6 @@
         }
       },
       "title": "CA Cache Hit Rate",
-      "description": "Ratio of CA cache hits vs misses. High hit rate means fewer expensive cert operations.",
       "targets": [
         {
           "datasource": {
@@ -1853,7 +1852,9 @@
       "id": 42,
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1904,9 +1905,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 2 },
-              { "color": "green", "value": 12 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 2
+              },
+              {
+                "color": "green",
+                "value": 12
+              }
             ]
           }
         },
