@@ -28,6 +28,7 @@ node = "24"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.6.0"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.20.1"
 "go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20260311125736-37c380b7405b"
+"go:github.com/grafana/dashboard-linter" = "v0.0.0-20250428211052-5e22d6dc65a1"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
 #     .github/workflows/_build_publish.yaml
