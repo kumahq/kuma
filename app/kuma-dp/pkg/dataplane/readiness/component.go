@@ -117,7 +117,7 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	// When admin is on UDS, proxy /ready to Envoy admin so that
 	// the pod is only marked ready after Envoy receives its config.
 	if r.adminSocketPath != "" {
-		r.proxyAdminReady(writer, req)
+		r.proxyAdminReady(writer)
 		return
 	}
 
@@ -138,7 +138,7 @@ func (r *Reporter) writeState(writer http.ResponseWriter, req *http.Request, sta
 	}
 }
 
-func (r *Reporter) proxyAdminReady(writer http.ResponseWriter, req *http.Request) {
+func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
 	client := &http.Client{
 		Timeout: 3 * time.Second,
 		Transport: &http.Transport{
@@ -163,7 +163,9 @@ func (r *Reporter) proxyAdminReady(writer http.ResponseWriter, req *http.Request
 		}
 	}
 	writer.WriteHeader(resp.StatusCode)
-	writer.Write(body)
+	if _, err := writer.Write(body); err != nil {
+		logger.Info("[WARNING] could not write response", "err", err)
+	}
 }
 
 func (r *Reporter) adminProxy() http.Handler {
