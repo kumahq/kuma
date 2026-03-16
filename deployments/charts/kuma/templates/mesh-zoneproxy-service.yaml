@@ -10,7 +10,9 @@ kind: Service
 metadata:
   name: {{ include "kuma.mesh.zoneproxy.serviceName" (dict "root" $ "meshName" $meshName "role" $role "nameOverride" (and $cfg.service $cfg.service.name)) }}
   namespace: {{ $.Release.Namespace }}
-  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+  labels:
+    {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+    k8s.kuma.io/zone-proxy-type: {{ $role }}
   {{- if and $cfg.service $cfg.service.annotations }}
   annotations:
     {{- range $key, $value := $cfg.service.annotations }}
@@ -36,7 +38,9 @@ kind: Service
 metadata:
   name: {{ include "kuma.mesh.zoneproxy.serviceName" (dict "root" $ "meshName" $meshName "role" $role "nameOverride" (and $cfg.service $cfg.service.name)) }}
   namespace: {{ $.Release.Namespace }}
-  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+  labels:
+    {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+    k8s.kuma.io/zone-proxy-type: {{ $role }}
   {{- if and $cfg.service $cfg.service.annotations }}
   annotations:
     {{- range $key, $value := $cfg.service.annotations }}
