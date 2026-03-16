@@ -746,6 +746,7 @@ spec:
           ports:
             - containerPort: 10002
             - containerPort: 9901
+            - containerPort: 9902
           livenessProbe:
             httpGet:
               path: "/ready"
