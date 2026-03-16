@@ -17,10 +17,10 @@ clusterHealthChecks:
 - clusterName: localhost:80
   healthChecks:
   - healthyThreshold: 4
-    interval: 10s
+    interval: 1s
     noTrafficInterval: 2s
     tcpHealthCheck: {}
-    timeout: 3s
+    timeout: 15s
     unhealthyThreshold: 5
   localityEndpoints:
   - endpoints:

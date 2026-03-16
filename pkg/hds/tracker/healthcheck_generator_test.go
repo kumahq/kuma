@@ -177,7 +177,7 @@ networking:
 				},
 			},
 		}),
-		Entry("should use per-probe interval and timeout overrides", testCase{
+		Entry("should fallback timeout to default when only interval set", testCase{
 			goldenFile: "hds.5.golden.yaml",
 			dataplane: `
 networking:
@@ -188,9 +188,33 @@ networking:
       servicePort: 80
       serviceProbe:
         interval: 10s
+        tcp: {}
+      tags:
+        kuma.io/service: backend
+`,
+			hdsConfig: &dp_server.HdsConfig{
+				Interval: config_types.Duration{Duration: 8 * time.Second},
+				Enabled:  true,
+				CheckDefaults: &dp_server.HdsCheck{
+					Interval:           config_types.Duration{Duration: 1 * time.Second},
+					NoTrafficInterval:  config_types.Duration{Duration: 2 * time.Second},
+					Timeout:            config_types.Duration{Duration: 3 * time.Second},
+					HealthyThreshold:   4,
+					UnhealthyThreshold: 5,
+				},
+			},
+		}),
+		Entry("should fallback interval to default when only timeout set", testCase{
+			goldenFile: "hds.6.golden.yaml",
+			dataplane: `
+networking:
+  address: 10.20.0.1
+  inbound:
+    - port: 9000
+      serviceAddress: 192.168.0.1
+      servicePort: 80
+      serviceProbe:
         timeout: 15s
-        healthyThreshold: 7
-        unhealthyThreshold: 9
         tcp: {}
       tags:
         kuma.io/service: backend
