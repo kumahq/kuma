@@ -981,6 +981,7 @@ type Dataplane_Networking_Listener struct {
 	Port uint32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	// Name uniquely identifies this listener within the Dataplane and is
 	// used to reference it via sectionName in policies.
+	// Optional: if unset, the port value is used as the name (as a string).
 	Name string `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
 	// State describes the current health state of the listener.
 	// The control plane sets this based on the readiness of the underlying

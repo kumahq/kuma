@@ -228,6 +228,7 @@ components:
                         description: |-
                           Name uniquely identifies this listener within the Dataplane and is
                           used to reference it via sectionName in policies.
+                          Optional: if unset, the port value is used as the name (as a string).
                         type: string
                       port:
                         description: Port on which the listener will be exposed.
