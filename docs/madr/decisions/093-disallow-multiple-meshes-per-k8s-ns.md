@@ -1,6 +1,6 @@
 # Disallow Multiple Meshes per Kubernetes Namespace
 
-* Status: accepted
+* Status: superseded by [MADR 099](099-allow-multiple-meshes-per-k8s-ns.md)
 
 Technical Story: https://github.com/kumahq/kuma/issues/15049
 

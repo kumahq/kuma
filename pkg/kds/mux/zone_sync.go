@@ -42,17 +42,16 @@ type KDSSyncServiceServer struct {
 	extensions context.Context
 	eventBus   events.EventBus
 	mesh_proto.UnimplementedKDSSyncServiceServer
-	context                  context.Context
-	resManager               core_manager.ResourceManager
-	upsertCfg                config_store.UpsertConfig
-	instanceID               string
-	createZoneOnFirstConnect bool
-	deltaServer              delta.Server
-	typesSentByZone          []core_model.ResourceType
-	resourceSyncer           kds_sync_store_v2.ResourceSyncer
-	k8sStore                 bool
-	systemNamespace          string
-	responseBackoff          time.Duration
+	context         context.Context
+	resManager      core_manager.ResourceManager
+	upsertCfg       config_store.UpsertConfig
+	instanceID      string
+	deltaServer     delta.Server
+	typesSentByZone []core_model.ResourceType
+	resourceSyncer  kds_sync_store_v2.ResourceSyncer
+	k8sStore        bool
+	systemNamespace string
+	responseBackoff time.Duration
 }
 
 func NewKDSSyncServiceServer(
@@ -61,41 +60,51 @@ func NewKDSSyncServiceServer(
 	resourceSyncer kds_sync_store_v2.ResourceSyncer,
 ) *KDSSyncServiceServer {
 	return &KDSSyncServiceServer{
-		context:                  rt.AppContext(),
-		filters:                  rt.KDSContext().GlobalServerFiltersV2,
-		extensions:               rt.Extensions(),
-		eventBus:                 rt.EventBus(),
-		resManager:               rt.ResourceManager(),
-		upsertCfg:                rt.Config().Store.Upsert,
-		instanceID:               rt.GetInstanceId(),
-		deltaServer:              deltaServer,
-		createZoneOnFirstConnect: rt.KDSContext().CreateZoneOnFirstConnect,
-		typesSentByZone:          rt.KDSContext().TypesSentByZone,
-		resourceSyncer:           resourceSyncer,
-		k8sStore:                 rt.Config().Store.Type == config_store.KubernetesStore,
-		systemNamespace:          rt.Config().Store.Kubernetes.SystemNamespace,
-		responseBackoff:          rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
+		context:         rt.AppContext(),
+		filters:         rt.KDSContext().GlobalServerFiltersV2,
+		extensions:      rt.Extensions(),
+		eventBus:        rt.EventBus(),
+		resManager:      rt.ResourceManager(),
+		upsertCfg:       rt.Config().Store.Upsert,
+		instanceID:      rt.GetInstanceId(),
+		deltaServer:     deltaServer,
+		typesSentByZone: rt.KDSContext().TypesSentByZone,
+		resourceSyncer:  resourceSyncer,
+		k8sStore:        rt.Config().Store.Type == config_store.KubernetesStore,
+		systemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		responseBackoff: rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 	}
 }
 
 var _ mesh_proto.KDSSyncServiceServer = &KDSSyncServiceServer{}
 
-func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager, createZoneOnConnect bool) error {
+func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager) error {
 	ctx = user.Ctx(ctx, user.ControlPlane)
-	if err := resManager.Get(ctx, system.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh)); err != nil {
-		if !core_store.IsNotFound(err) || !createZoneOnConnect {
-			return err
-		}
-		log.Info("creating Zone", "name", name)
-		zone := &system.ZoneResource{
-			Spec: &system_proto.Zone{
-				Enabled: util_proto.Bool(true),
-			},
-		}
-		if err := resManager.Create(ctx, zone, core_store.CreateByKey(name, core_model.NoMesh)); err != nil {
-			return err
-		}
+
+	err := resManager.Get(ctx, system.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh))
+	if err != nil && !core_store.IsNotFound(err) {
+		return err
 	}
+	if err == nil {
+		// zone already exists, nothing to do
+		return nil
+	}
+
+	zone := &system.ZoneResource{
+		Spec: &system_proto.Zone{
+			Enabled: util_proto.Bool(true),
+		},
+	}
+	err = resManager.Create(ctx, zone, core_store.CreateByKey(name, core_model.NoMesh))
+	if err != nil && core_store.IsAlreadyExists(err) {
+		// zone already created by another concurrent stream, nothing to do
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	log.Info("zone successfully created", "zone", name)
 	return nil
 }
 
@@ -119,7 +128,7 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 	processingErrorsCh := make(chan error, 1)
 	go func() {
 		logger.Info("Global To Zone new session created")
-		if err := createZoneIfAbsent(stream.Context(), logger, zone, g.resManager, g.createZoneOnFirstConnect); err != nil {
+		if err := createZoneIfAbsent(stream.Context(), logger, zone, g.resManager); err != nil {
 			if errors.Is(err, context.Canceled) {
 				processingErrorsCh <- nil
 				return
@@ -186,6 +195,14 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error, 1)
 	go func() {
+		if err := createZoneIfAbsent(stream.Context(), logger, zone, g.resManager); err != nil {
+			if errors.Is(err, context.Canceled) {
+				processingErrorsCh <- nil
+				return
+			}
+			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
+			return
+		}
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
 		sink := kds_client_v2.NewKDSSyncClient(
 			logger,

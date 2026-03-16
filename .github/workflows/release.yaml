@@ -29,7 +29,7 @@ env:
   EDITION: kuma
   MIN_VERSION: "2.2.0"
   # renovate: datasource=go depName=ci-tools/release-tool packageName=github.com/kumahq/ci-tools versioning=semver
-  RELEASE_TOOL_VERSION: "v1.4.4"
+  RELEASE_TOOL_VERSION: "v1.4.5"
 permissions:
   contents: read
 jobs:
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: "master"
-      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3.6.1
+      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: install-kuma-ci-tools
@@ -49,7 +49,7 @@ jobs:
           go install github.com/kumahq/ci-tools/cmd/release-tool@${{ env.RELEASE_TOOL_VERSION }}
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

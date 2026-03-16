@@ -86,7 +86,7 @@ func (b *bundledIdentityProvider) Validate(ctx context.Context, identity *meshid
 		if identity.Spec.Provider.Bundled.Autogenerate != nil && pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
 			return errors.Errorf("self-signed certificates are not allowed")
 		}
-		ca, err := b.GetRootCA(ctx, identity)
+		ca, err := b.getRootCA(ctx, identity)
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (b *bundledIdentityProvider) Initialize(ctx context.Context, identity *mesh
 	return nil
 }
 
-func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+func (b *bundledIdentityProvider) getRootCA(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	bundled := identity.Spec.Provider.Bundled
 	var err error
 	var cert []byte
@@ -162,6 +162,13 @@ func (b *bundledIdentityProvider) GetRootCA(ctx context.Context, identity *meshi
 		cert = ca.Spec.Data.GetValue()
 	}
 	return cert, err
+}
+
+func (b *bundledIdentityProvider) GetMeshTrustCA(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+	if pointer.DerefOr(identity.Spec.Provider.Bundled.MeshTrustCreation, meshidentity_api.MeshTrustCreationEnabled) == meshidentity_api.MeshTrustCreationDisabled {
+		return nil, nil
+	}
+	return b.getRootCA(ctx, identity)
 }
 
 // Instead of loading the CA pair on each dataplane workload identity generation,

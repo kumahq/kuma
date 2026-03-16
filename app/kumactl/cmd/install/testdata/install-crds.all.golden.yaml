@@ -2431,6 +2431,15 @@ spec:
                       maximum: 65535
                       minimum: 1
                       type: integer
+                    priority:
+                      description: |-
+                        Priority maps to Envoy's priority levels to enable endpoint failover.
+                        Lower values have higher priority (0 is the default/primary).
+                        When the primary endpoints become unhealthy, traffic fails over to the next priority level.
+                      format: int32
+                      maximum: 128
+                      minimum: 0
+                      type: integer
                   required:
                   - address
                   - port
@@ -5195,6 +5204,18 @@ spec:
                         - Disabled
                         type: string
                     type: object
+                  extension:
+                    description: Extension indicates that custom provider is used.
+                    properties:
+                      config:
+                        description: Config is a freeform configuration for the extension.
+                        x-kubernetes-preserve-unknown-fields: true
+                      name:
+                        description: Name is the name of the extension provider.
+                        type: string
+                    required:
+                    - name
+                    type: object
                   spire:
                     description: Spire indicates that SPIRE is used for certificate
                       delivery.
@@ -5214,6 +5235,7 @@ spec:
                     enum:
                     - Bundled
                     - Spire
+                    - Extension
                     type: string
                 required:
                 - type
@@ -10405,6 +10427,70 @@ spec:
                     description: Resource identifier
                     type: string
                 type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: meshzoneaddresses.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshZoneAddress
+    listKind: MeshZoneAddressList
+    plural: meshzoneaddresses
+    shortNames:
+    - mza
+    singular: meshzoneaddress
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: MeshZoneAddress holds the public address and port for a mesh-scoped
+          zone ingress proxy.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshZoneAddress resource.
+            properties:
+              address:
+                description: Address is the publicly reachable address of the zone
+                  ingress.
+                minLength: 1
+                type: string
+              port:
+                description: Port is the publicly reachable port of the zone ingress.
+                format: int32
+                maximum: 65535
+                minimum: 1
+                type: integer
+            required:
+            - address
+            - port
             type: object
         type: object
     served: true

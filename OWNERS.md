@@ -8,23 +8,19 @@ Please see [GOVERNANCE.md](GOVERNANCE.md) for governance guidelines and responsi
 
 # Steering Committee
 
-Renews 2025/07/01:
+Renews 2028/02/25:
 
-- Jakub Dyszkiewicz @jakubdyszkiewicz (jakub.dyszkiewicz@gmail.com)
-- Michael Beaumont @michaelbeaumont (mjboamail@gmail.com)
+- Bart Smykla @bartsmykla (bartek@smykla.com)
 - Charly Molter @lahabana (charly@molter.io)
+- Marcin Skalski @Automaat (skalskimarcin33@gmail.com)
 
 # Maintainers
 
-kumahq org group: https://github.com/orgs/kumahq/teams/kuma-maintainers 
+kumahq org group: https://github.com/orgs/kumahq/teams/kuma-maintainers
 
-- Bart Smykla @bartsmykla (bartek@smykla.com)
 - Ilya Lobkov @lobkovilya (ilya.lobkov@konghq.com)
 - Krzysztof Slonka @slonka (krzysztof.slonka@konghq.com)
-- Marcin Skalski @Automaat (marcin.skalski@konghq.com)
 - Lukasz Dziedziak @lukidzi (lukidzi@gmail.com)
-- Icarus Wu @Icarus9913 (icarus.wu@konghq.com)
-- Jay Jijie Chen @jijiechen (jijie.chen@outlook.com)
 
 # Reviewers
 
@@ -32,7 +28,11 @@ kumahq org group: https://github.com/orgs/kumahq/teams/kuma-maintainers
 # Emeritus Maintainers
 
 - Austin Cawley-Edwards @austince
+- Icarus Wu @Icarus9913 (icarus.wu@konghq.com)
 - James Peach @jpeach
+- Jay Jijie Chen @jijiechen (jijie.chen@outlook.com)
+- Jakub Dyszkiewicz @jakubdyszkiewicz (jakub.dyszkiewicz@gmail.com)
+- Michael Beaumont @michaelbeaumont (mjboamail@gmail.com)
 - Nikolay Nikolaev @nickolaev
 - Paul Parkanzky @parkanzky
 - Marco Palladino @subnetmarco
