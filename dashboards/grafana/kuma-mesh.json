@@ -21,21 +21,21 @@
   "links": [
     {
       "title": "Workload Health",
-      "url": "/d/kuma-service-health/kuma-service-health?orgId=1&var-datasource=${datasource}",
+      "url": "/d/kuma-service-health/kuma-service-health?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Per-workload RED overview"
     },
     {
       "title": "Workload Debug",
-      "url": "/d/kuma-service-debug/kuma-service-debug?orgId=1&var-datasource=${datasource}",
+      "url": "/d/kuma-service-debug/kuma-service-debug?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Deep-dive workload debug"
     },
     {
       "title": "Control Plane",
-      "url": "/d/kuma-cp-v2/kuma-control-plane?orgId=1",
+      "url": "/d/kuma-cp-v2/kuma-control-plane?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "CP health and performance"
@@ -347,7 +347,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / clamp_min(sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])), 1)",
           "legendFormat": "",
           "refId": "A"
         }
@@ -1760,7 +1760,7 @@
                 "value": [
                   {
                     "title": "Open Workload Health",
-                    "url": "/d/kuma-service-health/kuma-service-health?orgId=1&var-datasource=${datasource}&var-workload=${__data.fields.kuma_workload}"
+                    "url": "/d/kuma-service-health/kuma-service-health?var-datasource=${datasource}&var-mesh=${__data.fields.mesh}&var-zone=${__data.fields.kuma_io_zone}&var-workload=${__data.fields.kuma_workload}"
                   }
                 ]
               }
@@ -1824,7 +1824,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / clamp_min(sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])), 1)",
           "format": "table",
           "instant": true,
           "refId": "B"

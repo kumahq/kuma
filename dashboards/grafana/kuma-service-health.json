@@ -21,21 +21,21 @@
   "links": [
     {
       "title": "Workload Debug",
-      "url": "/d/kuma-service-debug/kuma-service-debug?orgId=1&var-datasource=${datasource}&var-namespace=${namespace}&var-workload=${workload}",
+      "url": "/d/kuma-service-debug/kuma-service-debug?var-datasource=${datasource}&var-namespace=${namespace}&var-workload=${workload}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Deep-dive debug for this workload"
     },
     {
       "title": "Mesh Drilldown",
-      "url": "/d/kuma-mesh/kuma-mesh-drilldown?orgId=1&var-datasource=${datasource}",
+      "url": "/d/kuma-mesh/kuma-mesh-drilldown?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "Fleet-wide mesh overview"
     },
     {
       "title": "Control Plane",
-      "url": "/d/kuma-cp-v2/kuma-control-plane?orgId=1",
+      "url": "/d/kuma-cp-v2/kuma-control-plane?var-datasource=${datasource}",
       "type": "link",
       "icon": "dashboard",
       "tooltip": "CP health and performance"
@@ -102,7 +102,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -177,7 +177,7 @@
       },
       "targets": [
         {
-          "expr": "100 * sum(rate(envoy_http_downstream_rq_xx{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / sum(rate(envoy_http_downstream_rq_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "100 * sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / clamp_min(sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])), 1)",
           "legendFormat": "",
           "refId": "A"
         }
@@ -241,7 +241,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -296,7 +296,7 @@
       },
       "targets": [
         {
-          "expr": "count(envoy_server_live{kuma_workload=\"$workload\"})",
+          "expr": "count(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
           "legendFormat": "",
           "refId": "A"
         }
@@ -382,7 +382,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_total{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "Total",
           "refId": "A"
         }
@@ -517,7 +517,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_xx{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (envoy_response_code_class)",
+          "expr": "sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (envoy_response_code_class)",
           "legendFormat": "{{envoy_response_code_class}}xx",
           "refId": "A"
         }
@@ -591,12 +591,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(envoy_http_downstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "B"
         }
@@ -682,7 +682,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}}",
           "refId": "A"
         }
@@ -817,7 +817,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name, envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name, envoy_response_code_class)",
           "legendFormat": "{{envoy_cluster_name}} {{envoy_response_code_class}}xx",
           "refId": "A"
         }
@@ -891,7 +891,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_time_bucket{kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} p99",
           "refId": "A"
         }
@@ -961,7 +961,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum(rate(envoy_rbac_denied{k8s_kuma_io_namespace=\"$namespace\",kuma_workload=\"$workload\"}[5m]))",
+          "expr": "sum(rate(envoy_rbac_denied{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
           "legendFormat": "denied",
           "refId": "A"
         }
@@ -1017,7 +1017,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_ssl_handshake{k8s_kuma_io_namespace=\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}[5m]))",
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_ssl_handshake{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}[5m]))",
           "legendFormat": "{{envoy_cluster_name}}",
           "refId": "A"
         }
@@ -1074,7 +1074,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (pod) (rate(envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds{k8s_kuma_io_namespace=\"$namespace\",kuma_workload=\"$workload\"}[5m]))",
+          "expr": "sum by (pod) (rate(envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1157,7 +1157,7 @@
       },
       "targets": [
         {
-          "expr": "min(envoy_control_plane_connected_state{kuma_workload=\"$workload\"})",
+          "expr": "min(envoy_control_plane_connected_state{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
           "legendFormat": "",
           "refId": "A"
         }
@@ -1222,7 +1222,7 @@
       },
       "targets": [
         {
-          "expr": "min(envoy_server_days_until_first_cert_expiring{kuma_workload=\"$workload\"})",
+          "expr": "min(envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
           "legendFormat": "",
           "refId": "A"
         }
@@ -1326,12 +1326,12 @@
       },
       "targets": [
         {
-          "expr": "sum(envoy_cluster_membership_healthy{kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_membership_healthy{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Healthy",
           "refId": "A"
         },
         {
-          "expr": "sum(envoy_cluster_membership_total{kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name)",
+          "expr": "sum(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}} Total",
           "refId": "B"
         }
@@ -1465,7 +1465,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(envoy_cluster_membership_total{kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
+        "definition": "label_values(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Destination",
@@ -1474,7 +1474,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(envoy_cluster_membership_total{kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
+          "query": "label_values(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
