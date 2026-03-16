@@ -1,6 +1,8 @@
 package xds_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -192,11 +194,14 @@ var _ = Describe("ResolveOtelBackend", func() {
 			Expect(result.UseHTTPS).To(BeFalse())
 		})
 
-		It("should return nil for ambiguous displayName match", func() {
+		It("should pick oldest for multiple displayName matches", func() {
+			now := time.Now()
+
 			backendA := motb_api.NewMeshOpenTelemetryBackendResource()
 			backendA.SetMeta(&test_model.ResourceMeta{
-				Name: "collector-a.kuma-system",
-				Mesh: "default",
+				Name:         "collector-a.kuma-system",
+				Mesh:         "default",
+				CreationTime: now.Add(-2 * time.Hour),
 				Labels: map[string]string{
 					mesh_proto.DisplayName: "collector",
 				},
@@ -205,8 +210,9 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 			backendB := motb_api.NewMeshOpenTelemetryBackendResource()
 			backendB.SetMeta(&test_model.ResourceMeta{
-				Name: "collector-b.kuma-system",
-				Mesh: "default",
+				Name:         "collector-b.kuma-system",
+				Mesh:         "default",
+				CreationTime: now.Add(-1 * time.Hour),
 				Labels: map[string]string{
 					mesh_proto.DisplayName: "collector",
 				},
@@ -223,7 +229,8 @@ var _ = Describe("ResolveOtelBackend", func() {
 				dummyNamer,
 				makeResources(backendA, backendB),
 			)
-			Expect(result).To(BeNil())
+			Expect(result).ToNot(BeNil())
+			Expect(result.Endpoint.Target).To(Equal("collector-a"))
 		})
 	})
 })

@@ -77,13 +77,9 @@ func ResolveOtelBackend(
 
 func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_context.Resources) *ResolvedOtelBackend {
 	name := ref.Name
-	backend, ambiguous := resolveBackendResourceByName(resources, name)
+	backend := resolveBackendResourceByName(resources, name)
 	if backend == nil {
-		if ambiguous {
-			otelLog.Info("MeshOpenTelemetryBackend reference is ambiguous, skipping backend", "name", name)
-		} else {
-			otelLog.Info("MeshOpenTelemetryBackend not found, skipping backend", "name", name)
-		}
+		otelLog.Info("MeshOpenTelemetryBackend not found, skipping backend", "name", name)
 		return nil
 	}
 
@@ -113,7 +109,7 @@ func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_con
 	}
 }
 
-func resolveBackendResourceByName(resources xds_context.Resources, name string) (*motb_api.MeshOpenTelemetryBackendResource, bool) {
+func resolveBackendResourceByName(resources xds_context.Resources, name string) *motb_api.MeshOpenTelemetryBackendResource {
 	var direct *motb_api.MeshOpenTelemetryBackendResource
 	var byDisplayName []*motb_api.MeshOpenTelemetryBackendResource
 
@@ -127,17 +123,22 @@ func resolveBackendResourceByName(resources xds_context.Resources, name string) 
 	}
 
 	if direct != nil {
-		return direct, false
+		return direct
 	}
 
-	switch len(byDisplayName) {
-	case 0:
-		return nil, false
-	case 1:
-		return byDisplayName[0], false
-	default:
-		return nil, true
+	if len(byDisplayName) == 0 {
+		return nil
 	}
+
+	// Multiple display-name matches: pick the oldest by creation time.
+	// Same strategy as DestinationIndex.resolveResourceIdentifier.
+	oldest := byDisplayName[0]
+	for _, b := range byDisplayName[1:] {
+		if b.GetMeta().GetCreationTime().Before(oldest.GetMeta().GetCreationTime()) {
+			oldest = b
+		}
+	}
+	return oldest
 }
 
 func shouldUseHTTPS(protocol motb_api.Protocol, port uint32) bool {
