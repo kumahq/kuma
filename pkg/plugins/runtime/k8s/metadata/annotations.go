@@ -147,6 +147,10 @@ const (
 
 	// KumaSpireSupport allows injecting Spire-related volumes into a single Pod.
 	KumaSpireSupport = "k8s.kuma.io/spire-support"
+
+	// KumaZoneProxyTypeLabel identifies the role of a zone proxy Service.
+	// Valid values are ingress and egress.
+	KumaZoneProxyTypeLabel = "k8s.kuma.io/zone-proxy-type"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
