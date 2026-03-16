@@ -84,6 +84,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addMeshServiceReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
+	if err := addMeshZoneAddressReconciler(mgr, rt); err != nil {
+		return err
+	}
 	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
 	}
@@ -161,6 +164,20 @@ func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, co
 		EventRecorder:       mgr.GetEventRecorder("k8s.kuma.io/mesh-service-generator"),
 		ResourceConverter:   converter,
 		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addMeshZoneAddressReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
+	reconciler := &k8s_controllers.MeshZoneAddressReconciler{
+		Client:        mgr.GetClient(),
+		Log:           core.Log.WithName("controllers").WithName("MeshZoneAddress"),
+		Scheme:        mgr.GetScheme(),
+		EventRecorder: mgr.GetEventRecorder("k8s.kuma.io/mesh-zone-address-generator"),
+		ZoneName:      rt.Config().Multizone.Zone.Name,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
