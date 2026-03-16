@@ -164,7 +164,7 @@ None of the current policy OTel backend structs have a `backendRef` field. Today
 
 Each struct needs a new optional `backendRef` field. The inline `endpoint` remains supported but is deprecated starting in 2.14 and will be removed in 3.0. Validation enforces mutual exclusivity: either `endpoint` or `backendRef`, not both. When inline `endpoint` is used, the implementation should also emit a deprecation warning so operators see the migration path before 3.0.
 
-Use `common_api.BackendResourceRef`, not `TargetRef`. This is a typed resource reference (`kind` + `name`), not policy matching. `backendRef.name` is the regular mesh-scoped resource name, not a display alias, and KDS syncs the MeshOpenTelemetryBackend resource itself to zones so zone CPs resolve the same name locally after sync.
+Use `common_api.BackendResourceRef`, not `TargetRef`. This is a typed resource reference (`kind` + `name`), not policy matching. `backendRef.name` is the operator-facing resource name (what the operator typed when creating the resource). KDS syncs MeshOpenTelemetryBackend to zones, but the synced resource name gets a hash suffix (same as all mesh-scoped resources without `SkipKDSHash`). The `kuma.io/display-name` label preserves the original name through sync, so the CP resolves `backendRef.name` by matching against `kuma.io/display-name`, falling back to direct name match for locally-created resources. This follows the same pattern as `GetDisplayName()` used throughout the codebase for KDS-synced resources.
 
 ```go
 // In each policy's OTel backend struct
@@ -181,7 +181,7 @@ type OpenTelemetryBackend struct {
 
 1. CP loads all MeshOpenTelemetryBackend resources into MeshContext (same as MeshService, MeshExternalService).
 2. During policy plugin's `Apply()`:
-   - If `backendRef` is set: look up the resource by name from `ctx.Mesh.Resources.MeshLocalResources`.
+   - If `backendRef` is set: resolve by matching `backendRef.name` against the `kuma.io/display-name` label of all MeshOpenTelemetryBackend resources in `ctx.Mesh.Resources`. A direct name match (locally-created resource) takes priority over a display-name match (KDS-synced resource). If multiple resources share the same display name, the oldest by creation time wins - same strategy as `DestinationIndex.resolveResourceIdentifier` uses for MeshService. This means a zone-local resource with the same name as a Global-synced one will take priority because the direct name match short-circuits. Operators who want the Global resource to apply uniformly should avoid creating zone-local resources with the same name.
    - If `spec.endpoint.address` is set: use it.
    - If `spec.endpoint.address` is omitted: leave the address empty in the `/otel` plan and let `kuma-dp` resolve the node-local default address at runtime.
    - If `spec.endpoint.port` is omitted: default it to `4317`.
@@ -371,6 +371,8 @@ Backends can also be created directly on a zone CP instead of the Global CP. KDS
 
 This MADR does not introduce a new zone-local resource model. It relies on the existing KDS visibility rules for mesh-scoped resources. When zones need different collectors, use distinct backend names plus zone-targeted policies rather than relying on implicit zone-local lookup or same-name overrides.
 
+Name collision across zones: if Global has a backend named `my-collector` and a zone also has a locally-created backend named `my-collector`, the zone CP sees both - the local one under its original name and the synced one under a hashed name with `kuma.io/display-name: my-collector`. Resolution prefers the direct name match (local resource), so the local backend silently wins. This matches how other KDS-synced resources behave but can be surprising. Operators should use distinct names to avoid this. A future enhancement could surface a status warning when a local resource shadows a synced one.
+
 When zones need different collector addresses (separate cloud regions, different infrastructure), use zone-specific backend names:
 
 ```yaml
@@ -534,7 +536,7 @@ Accept the endpoint duplication. Each policy manages its own OTel backend config
 ### Option A
 
 - Dangling references: If a MeshOpenTelemetryBackend is deleted while policies reference it, policies lose their backend config. Unlike routing where a dropped backend is one of many weighted destinations, a dropped telemetry backend means the signal is entirely lost. The CP logs at Info level when a referenced backend is not found during xDS generation. The referencing policies' status conditions surface the unresolved backendRef so operators can detect missing backends (user story 5) rather than silently losing telemetry. The MeshOpenTelemetryBackend's `HasStatus: true` lets the CP track references while the resource exists. An empty backend is still a valid resolved backend because the defaults are intentional. No cross-reference validation webhooks - Kuma's existing pattern is to not block deletion of referenced resources.
-- Resource sync: MeshOpenTelemetryBackend syncs via KDS. If sync is delayed, newly created policies in a zone may not find their backend. Same behavior as MeshExternalService references today.
+- Resource sync: MeshOpenTelemetryBackend syncs via KDS. If sync is delayed, newly created policies in a zone may not find their backend. Same behavior as MeshExternalService references today. KDS applies a hash suffix to the resource name during sync (`HashSuffixMapper`), so the synced name differs from the original. The `kuma.io/display-name` label preserves the original name, and the resolution logic matches against it. This is the standard mechanism for all KDS-synced mesh-scoped resources.
 
 ### Option B
 
