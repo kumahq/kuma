@@ -1946,7 +1946,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "envoy_server_memory_allocated{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}",
+          "expr": "envoy_server_memory_allocated{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -2009,7 +2009,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "envoy_server_uptime{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}",
+          "expr": "envoy_server_uptime{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -2065,7 +2065,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(envoy_control_plane_ds_handshake_bucket{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(envoy_control_plane_ds_handshake_bucket{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m])))",
           "legendFormat": "p99",
           "refId": "A"
         }
@@ -2152,7 +2152,8 @@
         },
         "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, k8s_kuma_io_namespace)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
+        "allValue": ".*",
         "label": "Namespace",
         "multi": false,
         "name": "namespace",
@@ -2174,7 +2175,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=\"$namespace\"}, kuma_workload)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=~\"$namespace\"}, kuma_workload)",
         "hide": 0,
         "includeAll": false,
         "label": "Workload",
@@ -2183,7 +2184,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=\"$namespace\"}, kuma_workload)",
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=~\"$namespace\"}, kuma_workload)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,

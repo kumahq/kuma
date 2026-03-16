@@ -961,7 +961,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum(rate(envoy_rbac_denied{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
+          "expr": "sum(rate(envoy_rbac_denied{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
           "legendFormat": "denied",
           "refId": "A"
         }
@@ -1017,7 +1017,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_ssl_handshake{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}[5m]))",
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_ssl_handshake{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}[5m]))",
           "legendFormat": "{{envoy_cluster_name}}",
           "refId": "A"
         }
@@ -1074,7 +1074,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (pod) (rate(envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds{k8s_kuma_io_namespace=\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
+          "expr": "sum by (pod) (rate(envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1419,7 +1419,8 @@
         },
         "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, k8s_kuma_io_namespace)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
+        "allValue": ".*",
         "label": "Namespace",
         "multi": false,
         "name": "namespace",
@@ -1441,7 +1442,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=\"$namespace\"}, kuma_workload)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=~\"$namespace\"}, kuma_workload)",
         "hide": 0,
         "includeAll": false,
         "label": "Workload",
@@ -1450,7 +1451,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=\"$namespace\"}, kuma_workload)",
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=~\"$namespace\"}, kuma_workload)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
