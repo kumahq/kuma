@@ -371,6 +371,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort)
+			if adminSocketPath != "" {
+				readinessReporter.SetAdminSocketPath(adminSocketPath)
+			}
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

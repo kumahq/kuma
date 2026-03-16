@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"sync/atomic"
 	"time"
 
@@ -22,12 +23,16 @@ const (
 	stateTerminating = "TERMINATING"
 )
 
-// Reporter reports the health status of this Kuma Dataplane Proxy
+// Reporter reports the health status of this Kuma Dataplane Proxy.
+// When adminSocketPath is set, it also reverse-proxies Envoy admin
+// endpoints so that external tools can reach admin over TCP even when
+// Envoy admin listens on a Unix domain socket.
 type Reporter struct {
 	unixSocketDisabled bool
 	socketDir          string
 	localListenAddr    string
 	localListenPort    uint32
+	adminSocketPath    string
 	isTerminating      atomic.Bool
 }
 
@@ -40,6 +45,10 @@ func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, 
 		localListenPort:    localListenPort,
 		localListenAddr:    localIPAddr,
 	}
+}
+
+func (r *Reporter) SetAdminSocketPath(path string) {
+	r.adminSocketPath = path
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
@@ -69,6 +78,9 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
+	if r.adminSocketPath != "" {
+		mux.Handle("/", r.adminProxy())
+	}
 	server := &http.Server{
 		ReadHeaderTimeout: time.Second,
 		Handler:           mux,
@@ -113,6 +125,25 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	logger.V(1).Info("responding readiness state", "state", state, "client", req.RemoteAddr)
 	if err != nil {
 		logger.Info("[WARNING] could not write response", "err", err)
+	}
+}
+
+func (r *Reporter) adminProxy() http.Handler {
+	return &httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.URL.Scheme = "http"
+			req.URL.Host = "localhost"
+		},
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "unix", r.adminSocketPath)
+			},
+		},
+		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
+			logger.Error(err, "admin proxy error")
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		},
+		ErrorLog: adapter.ToStd(logger),
 	}
 }
 
