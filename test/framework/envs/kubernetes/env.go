@@ -55,10 +55,14 @@ func SetupAndGetState() []byte {
 		KumaCp: Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd(),
 		MADS:   Cluster.GetKuma().(*framework.K8sControlPlane).MadsPortFwd(),
 	}
+	egressAdminPort := 9901
+	if framework.Config.KumaAdminUnixSocket {
+		egressAdminPort = 9902
+	}
 	state.ZoneEgress = Cluster.GetPortForward(portforward.Spec{
 		AppName:    framework.Config.ZoneEgressApp,
 		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9901,
+		RemotePort: egressAdminPort,
 	})
 
 	bytes, err := json.Marshal(state)
@@ -92,10 +96,14 @@ func RestoreState(bytes []byte) {
 	)
 	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
 	Cluster.SetCP(cp)
+	egressAdminPort := 9901
+	if framework.Config.KumaAdminUnixSocket {
+		egressAdminPort = 9902
+	}
 	Cluster.AddPortForward(state.ZoneEgress, portforward.Spec{
 		AppName:    framework.Config.ZoneEgressApp,
 		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9901,
+		RemotePort: egressAdminPort,
 	})
 }
 
