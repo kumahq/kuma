@@ -35,8 +35,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: ${{ runner.debug == '1' }}
+          INPUT_PR: ${{ inputs.PR }}
         run: |
           [[ "${GH_DEBUG}" == "true" ]] && set -x
+
+          if [[ ! "$INPUT_PR" =~ ^[0-9]+$ ]]; then
+            echo "PR input must be a numeric pull request number"
+            exit 1
+          fi
 
           function get_change_log() {
             awk '
@@ -60,8 +66,8 @@ jobs:
             ' <<< "$1"
           }
           
-          PR_INFO_JSON=$(gh pr view ${{ inputs.PR }} --json 'number,title,mergedAt,state,mergeCommit,baseRefName' || echo '{}')
-          PR_INFO_BODY=$(gh pr view ${{ inputs.PR }} --json 'body' -q '.body' || echo '')
+          PR_INFO_JSON=$(gh pr view "$INPUT_PR" --json 'number,title,mergedAt,state,mergeCommit,baseRefName' || echo '{}')
+          PR_INFO_BODY=$(gh pr view "$INPUT_PR" --json 'body' -q '.body' || echo '')
           
           TITLE=$(echo -n "$PR_INFO_JSON" | jq -r '.title //empty')
           CHANGE_LOG=$(get_change_log "$PR_INFO_BODY")
@@ -79,9 +85,12 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - name: ensure-pr-merged
+        env:
+          PR_NUMBER: ${{ inputs.PR }}
+          PR_STATE: ${{ steps.get-pr-info.outputs.pr_state }}
         run: |
-          if [[ "${{ steps.get-pr-info.outputs.pr_state }}" != "MERGED" ]]; then
-            echo "PR #${{ inputs.PR }} is not merged, current state: '$PR_STATE'"
+          if [[ "$PR_STATE" != "MERGED" ]]; then
+            echo "PR #$PR_NUMBER is not merged, current state: '$PR_STATE'"
             exit 1
           fi
   active-branches:
@@ -104,13 +113,13 @@ jobs:
       TARGET_BRANCH: ${{ matrix.branch }}
       USE_APP_TOKEN: ${{ secrets.APP_ID != '' }}
     steps:
-      - uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
+      - uses: marocchino/sticky-pull-request-comment@70d2764d1a7d5d9560b100cbea0077fc8f633987 # v3.0.2
         with:
           append: true
           message: backporting to ${{ matrix.branch }} with [action](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         if: ${{ env.USE_APP_TOKEN == 'true' }}
         with:
           app-id: ${{ secrets.APP_ID }}

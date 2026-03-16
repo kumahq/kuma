@@ -1,0 +1,30 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mhttpr_mesh-1__kuma-system_mhr-1_
+  labels:
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: mhr-1
+    kuma.io/mesh: mesh-1
+    kuma.io/origin: global
+    kuma.io/policy-role: system
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mhr-1-xc2xb42x66f9v8vc
+  spec:
+    targetRef:
+      kind: Dataplane
+      labels:
+        app: kong-gateway
+    to:
+    - rules:
+      - default: {}
+        matches:
+        - path:
+            type: PathPrefix
+            value: /
+      targetRef:
+        kind: MeshService
+        name: backend
+  type: MeshHTTPRoute
+next: null
+total: 0

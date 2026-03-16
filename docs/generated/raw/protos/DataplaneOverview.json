@@ -85,7 +85,7 @@
                         "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Listener"
                     },
                     "type": "array",
-                    "description": "Listeners describes zone proxy listeners embedded in this Dataplane. When listeners are present and no inbound or gateway is defined (zone-proxy-only mode), the data plane proxy acts exclusively as a zone ingress, egress, or both instead of a regular sidecar."
+                    "description": "Listeners describes zone proxy listeners embedded in this Dataplane. Listeners may coexist with inbounds and gateways."
                 }
             },
             "additionalProperties": true,
@@ -249,10 +249,12 @@
             "properties": {
                 "type": {
                     "enum": [
-                        "ZoneIngress",
+                        "Unspecified",
                         0,
+                        "ZoneIngress",
+                        1,
                         "ZoneEgress",
-                        1
+                        2
                     ],
                     "oneOf": [
                         {
@@ -274,7 +276,7 @@
                 },
                 "name": {
                     "type": "string",
-                    "description": "Name uniquely identifies this listener within the Dataplane and is used to reference it via sectionName in policies."
+                    "description": "Name uniquely identifies this listener within the Dataplane and is used to reference it via sectionName in policies. Optional: if unset, the port value is used as the name (as a string)."
                 },
                 "state": {
                     "enum": [

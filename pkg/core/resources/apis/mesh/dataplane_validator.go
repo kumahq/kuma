@@ -311,15 +311,11 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 	for i, l := range networking.GetListeners() {
 		indexPath := path.Index(i)
 
-		if l.GetAddress() == "" {
-			result.AddViolationAt(indexPath.Field("address"), "address can't be empty")
+		if l.GetType() == mesh_proto.Dataplane_Networking_Listener_Unspecified {
+			result.AddViolationAt(indexPath.Field("type"), "type must be ZoneIngress or ZoneEgress")
 		}
-		if l.GetPort() == 0 {
-			result.AddViolationAt(indexPath.Field("port"), "port must be greater than 0")
-		}
-		if l.GetName() == "" {
-			result.AddViolationAt(indexPath.Field("name"), "name can't be empty")
-		}
+		result.Add(validateAddress(indexPath, l.GetAddress()))
+		result.Add(ValidatePort(indexPath.Field("port"), l.GetPort()))
 
 		// name uniqueness across inbounds and listeners
 		if l.GetName() != "" {
@@ -329,10 +325,12 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 			nameSet[l.GetName()] = struct{}{}
 		}
 
-		// address:port must not have mixed types
+		// address:port must not be shared between listeners
 		key := fmt.Sprintf("%s:%d", l.GetAddress(), l.GetPort())
 		if existingType, exists := addrPortType[key]; exists {
-			if existingType != l.GetType() {
+			if existingType == l.GetType() {
+				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s is already used by another listener", key))
+			} else {
 				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s is used by listeners of different types", key))
 			}
 		} else {

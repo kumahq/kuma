@@ -3899,6 +3899,128 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrustList'
+  /meshes/{mesh}/meshzoneaddresses/{name}:
+    get:
+      operationId: getMeshZoneAddress
+      summary: Returns MeshZoneAddress entity
+      tags:
+        - MeshZoneAddress
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshZoneAddress
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshZoneAddressItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshZoneAddress
+      summary: Creates or Updates MeshZoneAddress entity
+      tags:
+        - MeshZoneAddress
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshZoneAddress
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshZoneAddressItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshZoneAddressCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/MeshZoneAddressCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshZoneAddress
+      summary: Deletes MeshZoneAddress entity
+      tags:
+        - MeshZoneAddress
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshZoneAddress
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshZoneAddressDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshzoneaddresses:
+    get:
+      operationId: getMeshZoneAddressList
+      summary: Returns a list of MeshZoneAddress in the mesh.
+      tags:
+        - MeshZoneAddress
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshZoneAddressList'
   /meshes/{mesh}/workloads/{name}:
     get:
       operationId: getWorkload
@@ -5517,12 +5639,7 @@ components:
                 Listeners describes zone proxy listeners embedded in this
                 Dataplane.
 
-                When listeners are present and no inbound or gateway is defined
-
-                (zone-proxy-only mode), the data plane proxy acts exclusively as
-                a
-
-                zone ingress, egress, or both instead of a regular sidecar.
+                Listeners may coexist with inbounds and gateways.
               items:
                 description: >-
                   Listener describes a zone proxy listener (ZoneIngress or
@@ -5537,6 +5654,9 @@ components:
                       Dataplane and is
 
                       used to reference it via sectionName in policies.
+
+                      Optional: if unset, the port value is used as the name (as
+                      a string).
                     type: string
                   port:
                     description: Port on which the listener will be exposed.
@@ -16982,13 +17102,7 @@ components:
                     Listeners describes zone proxy listeners embedded in this
                     Dataplane.
 
-                    When listeners are present and no inbound or gateway is
-                    defined
-
-                    (zone-proxy-only mode), the data plane proxy acts
-                    exclusively as a
-
-                    zone ingress, egress, or both instead of a regular sidecar.
+                    Listeners may coexist with inbounds and gateways.
                   items:
                     description: >-
                       Listener describes a zone proxy listener (ZoneIngress or
@@ -17003,6 +17117,9 @@ components:
                           Dataplane and is
 
                           used to reference it via sectionName in policies.
+
+                          Optional: if unset, the port value is used as the name
+                          (as a string).
                         type: string
                       port:
                         description: Port on which the listener will be exposed.
@@ -18918,6 +19035,72 @@ components:
               type: object
           type: object
           readOnly: true
+    MeshZoneAddressItem:
+      type: object
+      description: >-
+        MeshZoneAddress holds the public address and port for a mesh-scoped zone
+        ingress proxy.
+      required:
+        - type
+        - name
+        - spec
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshZoneAddress
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          type: string
+          readOnly: true
+          example: kri_mza_default_zone-east_kuma-demo_myresource1_
+        name:
+          description: Name of the Kuma resource
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: The labels to help identity resources
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshZoneAddress resource.
+          properties:
+            address:
+              description: Address is the publicly reachable address of the zone ingress.
+              minLength: 1
+              type: string
+            port:
+              description: Port is the publicly reachable port of the zone ingress.
+              format: int32
+              maximum: 65535
+              minimum: 1
+              type: integer
+          required:
+            - address
+            - port
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     WorkloadItem:
       type: object
       description: >-
@@ -20445,6 +20628,53 @@ components:
                 items:
                   type: string
     MeshTrustDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+    MeshZoneAddressItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshZoneAddressItem'
+    MeshZoneAddressList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshZoneAddressItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshZoneAddressCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    MeshZoneAddressDeleteSuccessResponse:
       description: Successful response
       content:
         application/json:

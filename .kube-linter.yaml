@@ -1,6 +1,7 @@
 checks:
   addAllBuiltIn: true
   exclude:
+    - "sorted-keys" # disabled to unblock kube-linter upgrade
     - "unset-cpu-requirements"
     # Look at https://github.com/kumahq/kuma/issues/8908 to reenable all these
     - dnsconfig-options

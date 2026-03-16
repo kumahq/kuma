@@ -16,7 +16,8 @@ else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
 endif
 
-CI_KUBERNETES_VERSION ?= v1.27.16@sha256:3fd82731af34efe19cd54ea5c25e882985bafa2c9baefe14f8deab1737d9fabe
+# renovate[docker]: depName=kindest/node
+CI_KUBERNETES_VERSION ?= v1.31.14@sha256:6f86cf509dbb42767b6e79debc3f2c32e4ee01386f0489b3b2be24b0a55aac2b
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system

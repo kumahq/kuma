@@ -333,12 +333,16 @@ message Dataplane {
     // embedded in a regular Dataplane.
     message Listener {
       enum Type {
+        // Unspecified is the default protobuf zero value. A Listener must
+        // explicitly set either ZoneIngress or ZoneEgress; resources without
+        // an explicit type will have this value omitted in JSON output.
+        Unspecified = 0;
         // ZoneIngress configures this listener to act as a zone ingress,
         // accepting cross-zone traffic destined for services in this zone.
-        ZoneIngress = 0;
+        ZoneIngress = 1;
         // ZoneEgress configures this listener to act as a zone egress,
         // forwarding outbound traffic to external services.
-        ZoneEgress = 1;
+        ZoneEgress = 2;
       }
 
       enum State {
@@ -356,10 +360,11 @@ message Dataplane {
       string address = 2;
 
       // Port on which the listener will be exposed.
-      uint32 port = 3 [(validate.rules).uint32 = {lte: 65535}];
+      uint32 port = 3;
 
       // Name uniquely identifies this listener within the Dataplane and is
       // used to reference it via sectionName in policies.
+      // Optional: if unset, the port value is used as the name (as a string).
       string name = 4;
 
       // State describes the current health state of the listener.
@@ -369,9 +374,7 @@ message Dataplane {
     }
 
     // Listeners describes zone proxy listeners embedded in this Dataplane.
-    // When listeners are present and no inbound or gateway is defined
-    // (zone-proxy-only mode), the data plane proxy acts exclusively as a
-    // zone ingress, egress, or both instead of a regular sidecar.
+    // Listeners may coexist with inbounds and gateways.
     repeated Listener listeners = 9;
   }
 
