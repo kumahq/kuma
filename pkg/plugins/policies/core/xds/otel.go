@@ -121,10 +121,11 @@ func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_con
 	}
 }
 
-// resolveBackendResourceByName looks up by metadata.name exactly.
+// resolveBackendResourceByName looks up by display name (the user-facing name
+// without the namespace suffix that Kubernetes adds internally).
 func resolveBackendResourceByName(resources xds_context.Resources, name string) *motb_api.MeshOpenTelemetryBackendResource {
 	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
-		if backend.GetMeta().GetName() == name {
+		if core_model.GetDisplayName(backend.GetMeta()) == name {
 			return backend
 		}
 	}
