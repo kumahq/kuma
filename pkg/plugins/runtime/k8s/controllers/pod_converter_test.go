@@ -378,6 +378,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "38.services-for-pod.yaml",
 			dataplane:      "38.dataplane.yaml",
 		}),
+		Entry("39. Zone-proxy-only Pod with both ZoneIngress and ZoneEgress listeners", testCase{
+			pod:            "39.pod.yaml",
+			servicesForPod: "39.services-for-pod.yaml",
+			dataplane:      "39.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",

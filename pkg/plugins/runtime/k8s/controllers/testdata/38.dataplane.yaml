@@ -13,5 +13,6 @@ spec:
       name: zi-main
       port: 10001
       state: NotReady
+      type: ZoneIngress
     transparentProxying:
       reachableBackends: {}
