@@ -55,15 +55,15 @@ func SetupAndGetState() []byte {
 		KumaCp: Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd(),
 		MADS:   Cluster.GetKuma().(*framework.K8sControlPlane).MadsPortFwd(),
 	}
-	// When admin UDS is enabled, there is no TCP port to port-forward;
-	// each parallel process creates its own exec-based tunnel on demand.
-	if !framework.Config.KumaAdminUnixSocket {
-		state.ZoneEgress = Cluster.GetPortForward(portforward.Spec{
-			AppName:    framework.Config.ZoneEgressApp,
-			Namespace:  framework.Config.KumaNamespace,
-			RemotePort: 9901,
-		})
+	egressAdminPort := 9901
+	if framework.Config.KumaAdminUnixSocket {
+		egressAdminPort = 9902
 	}
+	state.ZoneEgress = Cluster.GetPortForward(portforward.Spec{
+		AppName:    framework.Config.ZoneEgressApp,
+		Namespace:  framework.Config.KumaNamespace,
+		RemotePort: egressAdminPort,
+	})
 
 	bytes, err := json.Marshal(state)
 	Expect(err).ToNot(HaveOccurred())
@@ -96,13 +96,15 @@ func RestoreState(bytes []byte) {
 	)
 	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
 	Cluster.SetCP(cp)
-	if !framework.Config.KumaAdminUnixSocket {
-		Cluster.AddPortForward(state.ZoneEgress, portforward.Spec{
-			AppName:    framework.Config.ZoneEgressApp,
-			Namespace:  framework.Config.KumaNamespace,
-			RemotePort: 9901,
-		})
+	egressAdminPort := 9901
+	if framework.Config.KumaAdminUnixSocket {
+		egressAdminPort = 9902
 	}
+	Cluster.AddPortForward(state.ZoneEgress, portforward.Spec{
+		AppName:    framework.Config.ZoneEgressApp,
+		Namespace:  framework.Config.KumaNamespace,
+		RemotePort: egressAdminPort,
+	})
 }
 
 func SynchronizedAfterSuite() {
