@@ -13,11 +13,16 @@ func (r *MeshOpenTelemetryBackendResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 
-	if r.Spec.Endpoint != nil {
-		verr.AddErrorAt(path.Field("endpoint"), validateEndpoint(*r.Spec.Endpoint, r.Spec.Protocol))
+	protocol := ProtocolGRPC
+	if r.Spec.Protocol != nil {
+		protocol = *r.Spec.Protocol
 	}
 
-	verr.AddErrorAt(path, validateProtocol(r.Spec.Protocol))
+	if r.Spec.Endpoint != nil {
+		verr.AddErrorAt(path.Field("endpoint"), validateEndpoint(*r.Spec.Endpoint, protocol))
+	}
+
+	verr.AddErrorAt(path, validateProtocol(protocol))
 	verr.AddErrorAt(path.Field("env"), validateEnvPolicy(r.Spec.Env))
 
 	return verr.OrNil()

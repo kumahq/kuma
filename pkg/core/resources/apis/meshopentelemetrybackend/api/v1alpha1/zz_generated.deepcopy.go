@@ -66,6 +66,11 @@ func (in *MeshOpenTelemetryBackend) DeepCopyInto(out *MeshOpenTelemetryBackend) 
 		*out = new(Endpoint)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Protocol != nil {
+		in, out := &in.Protocol, &out.Protocol
+		*out = new(Protocol)
+		**out = **in
+	}
 	if in.Env != nil {
 		in, out := &in.Env, &out.Env
 		*out = new(EnvPolicy)

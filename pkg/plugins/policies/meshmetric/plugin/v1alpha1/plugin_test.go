@@ -437,7 +437,7 @@ var _ = Describe("MeshMetric", func() {
 				Address: pointer.To("collector.mesh"),
 				Port:    pointer.To(int32(4317)),
 			}
-			motb.Spec.Protocol = motb_api.ProtocolGRPC
+			motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 			return motb
 		}
 

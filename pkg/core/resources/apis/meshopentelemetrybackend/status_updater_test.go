@@ -59,7 +59,7 @@ var _ = Describe("StatusUpdater", func() {
 				Address: pointer.To("otel-collector.observability"),
 				Port:    pointer.To(int32(4317)),
 			},
-			Protocol: motb_api.ProtocolGRPC,
+			Protocol: pointer.To(motb_api.ProtocolGRPC),
 		}
 		Expect(resManager.Create(context.Background(), motb, store.CreateByKey(name, model.DefaultMesh))).To(Succeed())
 	}

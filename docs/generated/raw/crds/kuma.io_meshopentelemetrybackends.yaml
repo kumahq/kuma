@@ -100,16 +100,12 @@ spec:
                     type: string
                 type: object
               protocol:
-                allOf:
-                - enum:
-                  - grpc
-                  - http
-                - enum:
-                  - grpc
-                  - http
-                default: grpc
-                description: Protocol selects gRPC or HTTP transport for the collector
-                  connection.
+                description: |-
+                  Protocol selects gRPC or HTTP transport for the collector connection.
+                  Defaults to grpc when omitted.
+                enum:
+                - grpc
+                - http
                 type: string
             type: object
           status:

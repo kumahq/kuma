@@ -105,7 +105,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 		It("should default to port 4317 and empty address when endpoint is nil", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
 			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
-			backend.Spec.Protocol = motb_api.ProtocolGRPC
+			backend.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 
 			result := policies_xds.ResolveOtelBackend(
 				backendRef, "", dummyParser, dummyNamer, makeResources(backend),
@@ -119,7 +119,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
 			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector.example")}
-			backend.Spec.Protocol = motb_api.ProtocolGRPC
+			backend.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 
 			result := policies_xds.ResolveOtelBackend(
 				backendRef, "", dummyParser, dummyNamer, makeResources(backend),
@@ -133,7 +133,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
 			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Port: pointer.To(int32(4318))}
-			backend.Spec.Protocol = motb_api.ProtocolGRPC
+			backend.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 
 			result := policies_xds.ResolveOtelBackend(
 				backendRef, "", dummyParser, dummyNamer, makeResources(backend),
@@ -158,7 +158,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
 			backend.SetMeta(&test_model.ResourceMeta{Name: "https-collector", Mesh: "default"})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector.example"), Port: pointer.To(int32(443))}
-			backend.Spec.Protocol = motb_api.ProtocolHTTP
+			backend.Spec.Protocol = pointer.To(motb_api.ProtocolHTTP)
 
 			result := policies_xds.ResolveOtelBackend(
 				&common_api.BackendResourceRef{
@@ -178,7 +178,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
 			backend.SetMeta(&test_model.ResourceMeta{Name: "http-collector", Mesh: "default"})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Address: pointer.To("collector.example"), Port: pointer.To(int32(4318))}
-			backend.Spec.Protocol = motb_api.ProtocolHTTP
+			backend.Spec.Protocol = pointer.To(motb_api.ProtocolHTTP)
 
 			result := policies_xds.ResolveOtelBackend(
 				&common_api.BackendResourceRef{

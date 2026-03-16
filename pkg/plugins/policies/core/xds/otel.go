@@ -108,14 +108,18 @@ func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_con
 		}
 		basePath = spec.Endpoint.Path
 	}
+	protocol := motb_api.ProtocolGRPC
+	if spec.Protocol != nil {
+		protocol = *spec.Protocol
+	}
 	return &ResolvedOtelBackend{
 		Endpoint: &core_xds.Endpoint{
 			Target: addr,
 			Port:   port,
 		},
-		Protocol:  spec.Protocol,
+		Protocol:  protocol,
 		EnvPolicy: spec.Env,
-		UseHTTPS:  shouldUseHTTPS(spec.Protocol, port),
+		UseHTTPS:  shouldUseHTTPS(protocol, port),
 		Path:      basePath,
 		Name:      core_model.GetDisplayName(backend.GetMeta()),
 	}

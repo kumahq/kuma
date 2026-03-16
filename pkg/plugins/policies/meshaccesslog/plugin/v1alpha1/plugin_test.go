@@ -896,7 +896,7 @@ var _ = Describe("MeshAccessLog", func() {
 			Address: pointer.To("collector.mesh"),
 			Port:    pointer.To(int32(4317)),
 		}
-		motb.Spec.Protocol = motb_api.ProtocolGRPC
+		motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 
 		meshResources := xds_context.NewResources()
 		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{

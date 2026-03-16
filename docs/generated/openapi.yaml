@@ -6591,13 +6591,29 @@ components:
                                       enum:
                                         - MeshOpenTelemetryBackend
                                       type: string
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      description: >-
+                                        Labels to match the referenced resource.
+                                        Use for cross-zone references
+
+                                        where KDS adds a hash suffix to
+                                        metadata.name. Mutually exclusive with
+
+                                        Name. When multiple resources match, the
+                                        oldest by creation time wins.
+                                      type: object
                                     name:
-                                      description: Name of the referenced resource.
-                                      minLength: 1
+                                      description: >-
+                                        Name of the referenced resource
+                                        (metadata.name). Use for same-cluster
+
+                                        references. Mutually exclusive with
+                                        Labels.
                                       type: string
                                   required:
                                     - kind
-                                    - name
                                   type: object
                                 body:
                                   description: >-
@@ -6881,13 +6897,29 @@ components:
                                       enum:
                                         - MeshOpenTelemetryBackend
                                       type: string
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      description: >-
+                                        Labels to match the referenced resource.
+                                        Use for cross-zone references
+
+                                        where KDS adds a hash suffix to
+                                        metadata.name. Mutually exclusive with
+
+                                        Name. When multiple resources match, the
+                                        oldest by creation time wins.
+                                      type: object
                                     name:
-                                      description: Name of the referenced resource.
-                                      minLength: 1
+                                      description: >-
+                                        Name of the referenced resource
+                                        (metadata.name). Use for same-cluster
+
+                                        references. Mutually exclusive with
+                                        Labels.
                                       type: string
                                   required:
                                     - kind
-                                    - name
                                   type: object
                                 body:
                                   description: >-
@@ -7170,13 +7202,29 @@ components:
                                       enum:
                                         - MeshOpenTelemetryBackend
                                       type: string
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      description: >-
+                                        Labels to match the referenced resource.
+                                        Use for cross-zone references
+
+                                        where KDS adds a hash suffix to
+                                        metadata.name. Mutually exclusive with
+
+                                        Name. When multiple resources match, the
+                                        oldest by creation time wins.
+                                      type: object
                                     name:
-                                      description: Name of the referenced resource.
-                                      minLength: 1
+                                      description: >-
+                                        Name of the referenced resource
+                                        (metadata.name). Use for same-cluster
+
+                                        references. Mutually exclusive with
+                                        Labels.
                                       type: string
                                   required:
                                     - kind
-                                    - name
                                   type: object
                                 body:
                                   description: >-
@@ -12293,13 +12341,28 @@ components:
                                 enum:
                                   - MeshOpenTelemetryBackend
                                 type: string
+                              labels:
+                                additionalProperties:
+                                  type: string
+                                description: >-
+                                  Labels to match the referenced resource. Use
+                                  for cross-zone references
+
+                                  where KDS adds a hash suffix to metadata.name.
+                                  Mutually exclusive with
+
+                                  Name. When multiple resources match, the
+                                  oldest by creation time wins.
+                                type: object
                               name:
-                                description: Name of the referenced resource.
-                                minLength: 1
+                                description: >-
+                                  Name of the referenced resource
+                                  (metadata.name). Use for same-cluster
+
+                                  references. Mutually exclusive with Labels.
                                 type: string
                             required:
                               - kind
-                              - name
                             type: object
                           endpoint:
                             default: ''
@@ -16321,13 +16384,28 @@ components:
                                 enum:
                                   - MeshOpenTelemetryBackend
                                 type: string
+                              labels:
+                                additionalProperties:
+                                  type: string
+                                description: >-
+                                  Labels to match the referenced resource. Use
+                                  for cross-zone references
+
+                                  where KDS adds a hash suffix to metadata.name.
+                                  Mutually exclusive with
+
+                                  Name. When multiple resources match, the
+                                  oldest by creation time wins.
+                                type: object
                               name:
-                                description: Name of the referenced resource.
-                                minLength: 1
+                                description: >-
+                                  Name of the referenced resource
+                                  (metadata.name). Use for same-cluster
+
+                                  references. Mutually exclusive with Labels.
                                 type: string
                             required:
                               - kind
-                              - name
                             type: object
                           endpoint:
                             default: ''
@@ -19158,14 +19236,14 @@ components:
                   type: string
               type: object
             protocol:
-              allOf:
-                - enum:
-                    - grpc
-                    - http
-              default: grpc
               description: >-
                 Protocol selects gRPC or HTTP transport for the collector
                 connection.
+
+                Defaults to grpc when omitted.
+              enum:
+                - grpc
+                - http
               type: string
           type: object
         creationTime:

@@ -21,10 +21,9 @@ type MeshOpenTelemetryBackend struct {
 	// +kubebuilder:validation:Optional
 	Endpoint *Endpoint `json:"endpoint,omitempty"`
 	// Protocol selects gRPC or HTTP transport for the collector connection.
+	// Defaults to grpc when omitted.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=grpc
-	// +kubebuilder:validation:Enum=grpc;http
-	Protocol Protocol `json:"protocol"`
+	Protocol *Protocol `json:"protocol,omitempty"`
 	// Env controls whether standard OTEL exporter env vars participate in the
 	// final exporter config for this backend.
 	// +kubebuilder:validation:Optional
