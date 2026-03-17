@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"slices"
 	"strings"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -161,13 +162,7 @@ func RetryConfig(retry *core_mesh.RetryResource, protocol core_meta.Protocol) *e
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {
 	policyRetrySplit := strings.Split(policyRetryOn, ",")
-	seenRetriable := false
-	for _, r := range policyRetrySplit {
-		if r == HttpRetryOnRetriableStatusCodes {
-			seenRetriable = true
-			break
-		}
-	}
+	seenRetriable := slices.Contains(policyRetrySplit, HttpRetryOnRetriableStatusCodes)
 	if !seenRetriable {
 		policyRetrySplit = append(policyRetrySplit, HttpRetryOnRetriableStatusCodes)
 	}
