@@ -299,11 +299,12 @@ func ValidateOtelBackendRefOrEndpoint(endpoint string, backendRef *common_api.Ba
 		verr.AddViolation("", MustHaveExactlyOneOf("openTelemetry", "endpoint", "backendRef"))
 		return verr
 	}
-	if backendRef != nil {
+	switch {
+	case backendRef != nil:
 		verr.AddErrorAt(RootedAt("backendRef"), ValidateBackendResourceRef(backendRef))
-	} else if strings.ContainsAny(endpoint, "/?#") {
+	case strings.ContainsAny(endpoint, "/?#"):
 		verr.AddViolationAt(RootedAt("endpoint"), "must be in host:port format, not a URL")
-	} else {
+	default:
 		for _, v := range extraEndpointValidators {
 			verr.Add(v(endpoint))
 		}
