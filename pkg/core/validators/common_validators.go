@@ -3,7 +3,9 @@ package validators
 import (
 	"fmt"
 	"math"
+	"net"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -261,6 +263,49 @@ func ValidateLength(path PathBuilder, maxLength int, v string) ValidationError {
 	}
 
 	return err
+}
+
+// ValidateBackendResourceRef checks that a BackendResourceRef has a valid kind
+// and exactly one of name or labels set.
+func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationError {
+	var verr ValidationError
+	if ref == nil {
+		return verr
+	}
+	if ref.Kind != common_api.BackendResourceMeshOpenTelemetryBackend {
+		verr.AddErrorAt(RootedAt("kind"),
+			MakeFieldMustBeOneOfErr("kind", string(common_api.BackendResourceMeshOpenTelemetryBackend)))
+	}
+	if ref.Name == "" && len(ref.Labels) == 0 {
+		verr.AddViolation("", MustHaveExactlyOneOf("backendRef", "name", "labels"))
+	}
+	if ref.Name != "" && len(ref.Labels) > 0 {
+		verr.AddViolation("", MustHaveOnlyOne("backendRef", "name", "labels"))
+	}
+	return verr
+}
+
+// ValidateOtelBackendRefOrEndpoint validates that exactly one of endpoint or
+// backendRef is set. If backendRef is set, delegates to ValidateBackendResourceRef.
+// If endpoint is set, validates it as host:port (rejects URL characters).
+func ValidateOtelBackendRefOrEndpoint(endpoint string, backendRef *common_api.BackendResourceRef) ValidationError {
+	var verr ValidationError
+	if endpoint != "" && backendRef != nil {
+		verr.AddViolation("", MustHaveOnlyOne("openTelemetry", "endpoint", "backendRef"))
+		return verr
+	}
+	if endpoint == "" && backendRef == nil {
+		verr.AddViolation("", MustHaveExactlyOneOf("openTelemetry", "endpoint", "backendRef"))
+		return verr
+	}
+	if backendRef != nil {
+		verr.AddErrorAt(RootedAt("backendRef"), ValidateBackendResourceRef(backendRef))
+	} else if strings.ContainsAny(endpoint, "/?#") {
+		verr.AddViolationAt(RootedAt("endpoint"), "must be in host:port format, not a URL")
+	} else if _, _, err := net.SplitHostPort(endpoint); err != nil {
+		verr.AddViolationAt(RootedAt("endpoint"), "must be in host:port format")
+	}
+	return verr
 }
 
 func ValidateBackendRef(b common_api.BackendRef) ValidationError {

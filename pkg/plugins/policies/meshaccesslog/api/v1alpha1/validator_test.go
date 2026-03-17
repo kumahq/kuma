@@ -91,6 +91,37 @@ to:
           file:
             path: '/tmp/logs.txt'
 `),
+			Entry("openTelemetry with backendRef", `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              name: my-otel
+`),
+			Entry("openTelemetry with backendRef using labels", `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                app: otel-collector
+`),
 		)
 
 		type testCase struct {
@@ -439,6 +470,67 @@ violations:
   message: must be defined
 - field: spec.from[0].default.backends[1].tcp.format.json
   message: must be defined`,
+			}),
+			Entry("openTelemetry neither endpoint nor backendRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: ""
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry
+    message: "openTelemetry must have exactly one defined: endpoint, backendRef"`,
+			}),
+			Entry("openTelemetry both endpoint and backendRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              name: my-otel
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry
+    message: "openTelemetry must have only one type defined: endpoint, backendRef"`,
+			}),
+			Entry("openTelemetry backendRef neither name nor labels", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.backendRef
+    message: "backendRef must have exactly one defined: name, labels"`,
 			}),
 			Entry("MeshGateway and invalid to kind", testCase{
 				inputYaml: `

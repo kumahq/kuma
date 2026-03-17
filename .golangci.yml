@@ -181,6 +181,9 @@ linters:
         text: 'SA1019: .* is deprecated: use common.WithPolicyAttributes instead'
       - linters:
           - staticcheck
+        text: 'SA1019: .*.Endpoint is deprecated: use BackendRef instead'
+      - linters:
+          - staticcheck
         text: 'ST1001: should not use dot imports'
       - linters:
           - staticcheck

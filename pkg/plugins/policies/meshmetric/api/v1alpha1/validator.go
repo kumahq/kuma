@@ -3,9 +3,6 @@ package v1alpha1
 import (
 	"fmt"
 	"regexp"
-	"strings"
-
-	"github.com/asaskevich/govalidator"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -146,13 +143,10 @@ func validateBackend(backends *[]Backend) validators.ValidationError {
 			if backend.OpenTelemetry == nil {
 				verr.AddViolationAt(path.Field("openTelemetry"), validators.MustBeDefined)
 			} else {
-				endpoint := backend.OpenTelemetry.Endpoint
-				if !govalidator.IsURL(endpoint) {
-					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must be a valid url")
-				}
-				if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
-					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must not use schema")
-				}
+				verr.AddErrorAt(path.Field("openTelemetry"), validators.ValidateOtelBackendRefOrEndpoint(
+					backend.OpenTelemetry.Endpoint,
+					backend.OpenTelemetry.BackendRef,
+				))
 			}
 		default:
 			verr.AddViolationAt(path, "unrecognized type")

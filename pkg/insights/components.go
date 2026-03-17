@@ -4,6 +4,7 @@ import (
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/status"
 	workload_status "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/status"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
@@ -69,6 +70,26 @@ func Setup(rt runtime.Runtime) error {
 		if err := rt.Add(component.NewResilientComponent(
 			logger,
 			workloadUpdater,
+			rt.Config().General.ResilientComponentBaseBackoff.Duration,
+			rt.Config().General.ResilientComponentMaxBackoff.Duration),
+		); err != nil {
+			return err
+		}
+
+		logger = core.Log.WithName("meshopentelemetrybackend").WithName("status-updater")
+		motbUpdater, err := meshopentelemetrybackend.NewStatusUpdater(
+			logger,
+			rt.ReadOnlyResourceManager(),
+			rt.ResourceManager(),
+			rt.Config().CoreResources.Status.MeshOpenTelemetryBackendInterval.Duration,
+			rt.Metrics(),
+		)
+		if err != nil {
+			return err
+		}
+		if err := rt.Add(component.NewResilientComponent(
+			logger,
+			motbUpdater,
 			rt.Config().General.ResilientComponentBaseBackoff.Duration,
 			rt.Config().General.ResilientComponentMaxBackoff.Duration),
 		); err != nil {

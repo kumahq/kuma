@@ -121,6 +121,7 @@ rules:
       - meshexternalservices
       - meshidentities
       - meshmultizoneservices
+      - meshopentelemetrybackends
       - meshservices
       - meshtrusts
       - meshzoneaddresses
