@@ -40,7 +40,7 @@ func newInspectZonesCmd(pctx *cmd.RootContext) *cobra.Command {
 func zoneOverviewTable(now time.Time) printers.Table {
 	return printers.Table{
 		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "ZONE-CP VERSION", "BACKEND"},
-		RowForItem: func(i int, container interface{}) ([]string, error) {
+		RowForItem: func(i int, container any) ([]string, error) {
 			zoneOverviews := container.(*system.ZoneOverviewResourceList)
 			if len(zoneOverviews.Items) <= i {
 				return nil, nil
