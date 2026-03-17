@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func UsageOptions(desc string, options ...interface{}) string {
+func UsageOptions(desc string, options ...any) string {
 	values := make([]string, 0, len(options))
 	for _, option := range options {
 		values = append(values, fmt.Sprintf("%v", option))

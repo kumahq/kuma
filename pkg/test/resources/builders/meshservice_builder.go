@@ -113,7 +113,7 @@ func (m *MeshServiceBuilder) AddIntPortWithName(port, target int32, protocol cor
 }
 
 func (m *MeshServiceBuilder) AddServiceTagIdentity(identity string) *MeshServiceBuilder {
-	m.res.Spec.Identities = pointer.To(append(pointer.Deref(m.res.Spec.Identities), v1alpha1.MeshServiceIdentity{
+	m.res.Spec.Identities = new(append(pointer.Deref(m.res.Spec.Identities), v1alpha1.MeshServiceIdentity{
 		Type:  v1alpha1.MeshServiceIdentityServiceTagType,
 		Value: identity,
 	}))

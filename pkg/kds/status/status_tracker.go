@@ -230,7 +230,7 @@ func (c *statusTracker) OnStreamDeltaRequest(streamID int64, req *envoy_sd.Delta
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (c *statusTracker) onStreamResponse(streamID int64, req DiscoveryRequestInfo, resp interface{}) {
+func (c *statusTracker) onStreamResponse(streamID int64, req DiscoveryRequestInfo, resp any) {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 

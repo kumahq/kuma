@@ -353,7 +353,7 @@ func makeHttpRouteEntry(
 			}
 
 			if r.Hostname != nil {
-				rewrite.ReplaceHostname = pointer.To(string(*r.Hostname))
+				rewrite.ReplaceHostname = new(string(*r.Hostname))
 			}
 
 			if pointer.Deref(r.HostToBackendHostname) {

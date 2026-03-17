@@ -45,7 +45,7 @@ func NewValidator(
 var _ Validator = &jwtTokenValidator{}
 
 func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken Token, claims Claims) error {
-	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (any, error) {
 		var keyID KeyID
 		kid, exists := token.Header[KeyIDHeader]
 		if !exists {

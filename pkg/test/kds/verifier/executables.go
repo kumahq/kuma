@@ -113,7 +113,7 @@ func DiscoveryResponse(rs model.ResourceList, nonce, version string) Executable 
 			return err
 		}
 		resources := make([]*anypb.Any, 0, len(envoyRes))
-		for i := 0; i < len(envoyRes); i++ {
+		for i := range envoyRes {
 			pbaby, err := proto.MarshalAnyDeterministic(envoyRes[i])
 			if err != nil {
 				return err

@@ -21,7 +21,6 @@ import (
 	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v2/pkg/test/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	"github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
 )
@@ -240,8 +239,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 			eventBus.Send(events.WorkloadIdentityChangedEvent{
 				ResourceKey:    key,
 				Operation:      events.Create,
-				GenerationTime: pointer.To(now),
-				ExpirationTime: pointer.To(now.Add(24 * time.Hour)),
+				GenerationTime: new(now),
+				ExpirationTime: new(now.Add(24 * time.Hour)),
 				Origin:         identifier,
 			})
 			// then

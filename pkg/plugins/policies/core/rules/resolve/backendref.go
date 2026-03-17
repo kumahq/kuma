@@ -25,7 +25,7 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 	case br.Kind == common_api.MeshExternalService:
 	case br.Kind == common_api.MeshMultiZoneService:
 	default:
-		return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
+		return ResolvedBackendRef{Ref: new(LegacyBackendRef(br))}, true
 	}
 
 	rr := &RealResourceBackendRef{

@@ -17,7 +17,7 @@ var _ = Describe("MarshalAnyDeterministic", func() {
 			"cloud":   "aws",
 		}
 		metadata := envoy_metadata.EndpointMetadata(tags)
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			any1, _ := util_proto.MarshalAnyDeterministic(metadata)
 			any2, _ := util_proto.MarshalAnyDeterministic(metadata)
 			Expect(any1).To(matchers.MatchProto(any2))

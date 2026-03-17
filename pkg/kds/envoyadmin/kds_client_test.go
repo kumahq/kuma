@@ -320,7 +320,7 @@ func (m *mockStream) Send(request *mesh_proto.XDSConfigRequest) error {
 	return nil
 }
 
-func (m *mockStream) SendMsg(request interface{}) error {
+func (m *mockStream) SendMsg(request any) error {
 	m.receivedRequests <- request.(*mesh_proto.XDSConfigRequest)
 	return nil
 }

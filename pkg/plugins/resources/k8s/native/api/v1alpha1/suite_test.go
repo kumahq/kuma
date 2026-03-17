@@ -72,10 +72,10 @@ var _ = AfterSuite(func() {
 var _ = Describe("RawMessage", func() {
 	It("should deep copy", func() {
 		r1 := model.RawMessage(
-			map[string]interface{}{
+			map[string]any{
 				"int": int64(2),
 				"str": "one",
-				"map": map[string]interface{}{
+				"map": map[string]any{
 					"true":  true,
 					"false": false,
 				},

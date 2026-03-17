@@ -168,7 +168,7 @@ func parseExcludePortsForIPs(exclusionRules []string, ipv6 bool) ([]Exclusion, e
 // multiple comma-separated values or ranges (e.g., "80,1000-2000").
 func validateUintValueOrRange(valueOrRange string) error {
 	for _, element := range parseCommaSeparatedStrings(valueOrRange) {
-		for _, port := range strings.Split(element, "-") {
+		for port := range strings.SplitSeq(element, "-") {
 			if _, err := parseUint16(port); err != nil {
 				return errors.Wrapf(err, "validation failed for value or range '%s'", valueOrRange)
 			}
