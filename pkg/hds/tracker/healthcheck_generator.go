@@ -86,7 +86,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		}
 
 		var interval *durationpb.Duration
-		if serviceProbe.Timeout == nil {
+		if serviceProbe.Interval == nil {
 			interval = util_proto.Duration(g.config.CheckDefaults.Interval.Duration)
 		} else {
 			interval = serviceProbe.Interval
