@@ -343,7 +343,7 @@ var _ = Describe("MeshRetry", func() {
 										},
 									},
 								},
-								HostSelectionMaxAttempts: pointer.To(int64(99)),
+								HostSelectionMaxAttempts: new(int64(99)),
 							},
 						},
 					},
@@ -365,13 +365,13 @@ var _ = Describe("MeshRetry", func() {
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType): {
 						Resource: testMeshHTTPRouteMeta(),
-						Conf: []interface{}{
+						Conf: []any{
 							testFirstHTTPRetryConf(),
 						},
 					},
 					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType): {
 						Resource: testMeshServiceMeta(),
-						Conf: []interface{}{
+						Conf: []any{
 							testSecondHTTPRetryConf(),
 						},
 					},
@@ -390,7 +390,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							testFirstHTTPRetryConf(),
 						},
 					},
@@ -409,7 +409,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							testFirstHTTPRetryConf(),
 						},
 					},
@@ -590,7 +590,7 @@ var _ = Describe("MeshRetry", func() {
 													},
 												},
 											},
-											HostSelectionMaxAttempts: pointer.To(int64(2)),
+											HostSelectionMaxAttempts: new(int64(2)),
 										},
 									},
 								},
@@ -712,7 +712,7 @@ var _ = Describe("MeshRetry", func() {
 													},
 												},
 											},
-											HostSelectionMaxAttempts: pointer.To(int64(2)),
+											HostSelectionMaxAttempts: new(int64(2)),
 										},
 									},
 								},
@@ -741,7 +741,7 @@ var _ = Describe("MeshRetry", func() {
 												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
+														Weight:    new(uint(100)),
 													}},
 												},
 											},
@@ -756,7 +756,7 @@ var _ = Describe("MeshRetry", func() {
 												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
+														Weight:    new(uint(100)),
 													}},
 												},
 											},
@@ -905,7 +905,7 @@ func testFirstHTTPRetryConf() api.Conf {
 					},
 				},
 			},
-			HostSelectionMaxAttempts: pointer.To(int64(2)),
+			HostSelectionMaxAttempts: new(int64(2)),
 		},
 	}
 }
@@ -960,7 +960,7 @@ func testSecondHTTPRetryConf() api.Conf {
 					},
 				},
 			},
-			HostSelectionMaxAttempts: pointer.To(int64(99)),
+			HostSelectionMaxAttempts: new(int64(99)),
 		},
 	}
 }

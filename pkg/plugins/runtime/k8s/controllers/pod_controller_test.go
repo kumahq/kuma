@@ -26,7 +26,6 @@ import (
 	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -155,7 +154,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
-							AppProtocol: pointer.To("http"),
+							AppProtocol: new("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -185,7 +184,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
-							AppProtocol: pointer.To("http"),
+							AppProtocol: new("http"),
 						},
 					},
 					Selector: map[string]string{
@@ -409,7 +408,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
-							AppProtocol: pointer.To("http"),
+							AppProtocol: new("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -458,7 +457,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 9090,
 							},
-							AppProtocol: pointer.To("http"),
+							AppProtocol: new("http"),
 						},
 					},
 				},
@@ -496,7 +495,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 9090,
 							},
-							AppProtocol: pointer.To("http"),
+							AppProtocol: new("http"),
 						},
 					},
 				},
@@ -836,8 +835,8 @@ var _ = Describe("PodReconciler", func() {
 				OwnerReferences: []kube_meta.OwnerReference{
 					{
 						APIVersion:         "v1",
-						BlockOwnerDeletion: pointer.To(true),
-						Controller:         pointer.To(true),
+						BlockOwnerDeletion: new(true),
+						Controller:         new(true),
 						Kind:               "Pod",
 						Name:               "pod-with-custom-admin-port",
 						UID:                "pod-with-custom-admin-port-demo",
@@ -920,8 +919,8 @@ var _ = Describe("PodReconciler", func() {
 				OwnerReferences: []kube_meta.OwnerReference{
 					{
 						APIVersion:         "v1",
-						BlockOwnerDeletion: pointer.To(true),
-						Controller:         pointer.To(true),
+						BlockOwnerDeletion: new(true),
+						Controller:         new(true),
 						Kind:               "Pod",
 						Name:               "pod-with-custom-admin-port",
 						UID:                "pod-with-custom-admin-port-demo",
@@ -996,7 +995,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-1",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: pointer.To(true),
+					Controller: new(true),
 					Kind:       "Pod",
 					Name:       "dp-1",
 				}},
@@ -1013,7 +1012,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-2",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: pointer.To(true),
+					Controller: new(true),
 					Kind:       "Pod",
 					Name:       "dp-2",
 				}},
@@ -1030,7 +1029,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-3",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: pointer.To(true),
+					Controller: new(true),
 					Kind:       "Pod",
 					Name:       "dp-3",
 				}},

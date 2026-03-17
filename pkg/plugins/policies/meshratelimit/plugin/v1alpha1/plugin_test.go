@@ -138,7 +138,7 @@ var _ = Describe("MeshRateLimit", func() {
 								HTTP: &api.LocalHTTP{
 									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 									OnRateLimit: &api.OnRateLimit{
-										Status: pointer.To(uint32(444)),
+										Status: new(uint32(444)),
 										Headers: &api.HeaderModifier{
 											Add: &[]api.HeaderKeyValue{
 												{
@@ -184,7 +184,7 @@ var _ = Describe("MeshRateLimit", func() {
 									HTTP: &api.LocalHTTP{
 										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 										OnRateLimit: &api.OnRateLimit{
-											Status: pointer.To(uint32(444)),
+											Status: new(uint32(444)),
 											Headers: &api.HeaderModifier{
 												Add: &[]api.HeaderKeyValue{
 													{
@@ -280,7 +280,7 @@ var _ = Describe("MeshRateLimit", func() {
 										Interval: *test.ParseDuration("10s"),
 									},
 									OnRateLimit: &api.OnRateLimit{
-										Status: pointer.To(uint32(444)),
+										Status: new(uint32(444)),
 										Headers: &api.HeaderModifier{
 											Add: &[]api.HeaderKeyValue{
 												{
@@ -318,7 +318,7 @@ var _ = Describe("MeshRateLimit", func() {
 											Interval: *test.ParseDuration("10s"),
 										},
 										OnRateLimit: &api.OnRateLimit{
-											Status: pointer.To(uint32(444)),
+											Status: new(uint32(444)),
 											Headers: &api.HeaderModifier{
 												Add: &[]api.HeaderKeyValue{
 													{
@@ -393,7 +393,7 @@ var _ = Describe("MeshRateLimit", func() {
 						Conf: api.Conf{
 							Local: &api.Local{
 								TCP: &api.LocalTCP{
-									Disabled:       pointer.To(true),
+									Disabled:       new(true),
 									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 								},
 							},
@@ -406,7 +406,7 @@ var _ = Describe("MeshRateLimit", func() {
 							Default: api.Conf{
 								Local: &api.Local{
 									TCP: &api.LocalTCP{
-										Disabled:       pointer.To(true),
+										Disabled:       new(true),
 										ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 									},
 								},
@@ -448,7 +448,7 @@ var _ = Describe("MeshRateLimit", func() {
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
-									Disabled:    pointer.To(true),
+									Disabled:    new(true),
 									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 								},
 							},
@@ -461,7 +461,7 @@ var _ = Describe("MeshRateLimit", func() {
 							Default: api.Conf{
 								Local: &api.Local{
 									HTTP: &api.LocalHTTP{
-										Disabled:    pointer.To(true),
+										Disabled:    new(true),
 										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 									},
 								},
@@ -882,7 +882,7 @@ var _ = Describe("MeshRateLimit", func() {
 													Interval: v1.Duration{Duration: 10 * time.Second},
 												},
 												OnRateLimit: &api.OnRateLimit{
-													Status: pointer.To(uint32(444)),
+													Status: new(uint32(444)),
 													Headers: &api.HeaderModifier{
 														Add: &[]api.HeaderKeyValue{
 															{
@@ -927,7 +927,7 @@ var _ = Describe("MeshRateLimit", func() {
 											Default: meshhttproute_api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
 													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
+													Weight:    new(uint(100)),
 												}},
 											},
 										},
@@ -942,7 +942,7 @@ var _ = Describe("MeshRateLimit", func() {
 											Default: meshhttproute_api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
 													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
+													Weight:    new(uint(100)),
 												}},
 											},
 										},
@@ -972,7 +972,7 @@ var _ = Describe("MeshRateLimit", func() {
 												Interval: v1.Duration{Duration: 10 * time.Second},
 											},
 											OnRateLimit: &api.OnRateLimit{
-												Status: pointer.To(uint32(444)),
+												Status: new(uint32(444)),
 												Headers: &api.HeaderModifier{
 													Add: &[]api.HeaderKeyValue{
 														{
