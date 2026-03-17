@@ -6,6 +6,7 @@ import (
 	std_errors "errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -471,9 +472,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + Config.XDSApiVersion
 	}
 
-	for opt, value := range c.opts.ctlOpts {
-		argsMap[opt] = value
-	}
+	maps.Copy(argsMap, c.opts.ctlOpts)
 
 	for k, v := range argsMap {
 		args = append(args, k, v)
@@ -529,9 +528,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["controlPlane.replicas"] = strconv.Itoa(c.opts.cpReplicas)
 	}
 
-	for opt, value := range c.opts.helmOpts {
-		values[opt] = value
-	}
+	maps.Copy(values, c.opts.helmOpts)
 
 	if Config.XDSApiVersion != "" {
 		values["controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_API_VERSION"] = Config.XDSApiVersion
@@ -712,11 +709,9 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 
 	for i := range appsToInstall {
 		idx := i
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			appsToInstall[idx].Outcome = c.WaitApp(appsToInstall[idx].Name, appsToInstall[idx].Namespace, appsToInstall[idx].Replicas)
-		}()
+		})
 	}
 
 	wg.Wait() // Because of the wait group we have a memory barrier which allows us to read Outcome in a thread safe manner.
@@ -1062,7 +1057,7 @@ func (c *K8sCluster) deleteCRDs() error {
 		return err
 	}
 	deleteCmd := []string{"delete"}
-	for _, l := range strings.Split(out, "\n") {
+	for l := range strings.SplitSeq(out, "\n") {
 		if strings.Contains(l, "kuma.io") {
 			deleteCmd = append(deleteCmd, l)
 		}
@@ -1396,7 +1391,7 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		return errors.Errorf("%s pods: %d. expected %d", name, len(pods), replicas)
 	}
 
-	for i := 0; i < replicas; i++ {
+	for i := range replicas {
 		podError := k8s.WaitUntilPodAvailableE(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,

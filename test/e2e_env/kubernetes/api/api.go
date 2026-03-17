@@ -16,7 +16,7 @@ func Api() {
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string][]interface{}{}
+		res := map[string][]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(len(res["policies"])).To(BeNumerically(">", 2))
 	})
@@ -26,7 +26,7 @@ func Api() {
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string]interface{}{}
+		res := map[string]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(res["version"]).ToNot(BeEmpty())
 	})
@@ -36,7 +36,7 @@ func Api() {
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string]interface{}{}
+		res := map[string]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(res).To(HaveKey("kind"))
 		Expect(res["kind"]).To(Equal("Mesh"))
@@ -49,7 +49,7 @@ func Api() {
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string]interface{}{}
+		res := map[string]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(res).To(HaveKey("type"))
 		Expect(res["type"]).To(Equal("Mesh"))
@@ -76,7 +76,7 @@ func Api() {
 				g.Expect(err).ToNot(HaveOccurred())
 				defer r.Body.Close()
 
-				res := map[string]interface{}{}
+				res := map[string]any{}
 				g.Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 				g.Expect(res).To(HaveKey("kind"))
 				g.Expect(res["kind"]).To(Equal("Secret"))

@@ -16,7 +16,7 @@ var _ = Describe("GenerateRandomPorts", func() {
 		// #nosec G404 -- this is just a test
 		r := rand.New(rand.NewSource(GinkgoRandomSeed()))
 
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			r := r.Intn(30) + 5
 			ports := socket.GenerateRandomPorts(uint(r))
 

@@ -48,7 +48,7 @@ func E2EAfterSuite(fn func()) bool {
 	return ginkgo.AfterSuite(doIfNoSkipCleanup(fn))
 }
 
-func E2ESynchronizedBeforeSuite(process1Body interface{}, allProcessBody interface{}, args ...interface{}) bool {
+func E2ESynchronizedBeforeSuite(process1Body any, allProcessBody any, args ...any) bool {
 	ginkgo.AfterEach(func() {
 		if ginkgo.CurrentSpecReport().Failed() {
 			suiteFailed = true
@@ -69,7 +69,7 @@ func E2EBeforeSuite(fn func()) bool {
 	})
 }
 
-func E2EDeferCleanup(args ...interface{}) {
+func E2EDeferCleanup(args ...any) {
 	callback := reflect.ValueOf(args[0])
 	if callback.Kind() != reflect.Func || callback.Type().NumOut() > 1 {
 		ginkgo.Fail(fmt.Sprintf(
@@ -78,7 +78,7 @@ func E2EDeferCleanup(args ...interface{}) {
 		))
 	}
 
-	fn := func(args []interface{}) error {
+	fn := func(args []any) error {
 		if ShouldSkipCleanup() {
 			return nil
 		}

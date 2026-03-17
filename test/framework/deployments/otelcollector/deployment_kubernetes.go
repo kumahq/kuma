@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	"github.com/kumahq/kuma/v2/test/framework"
 )
 
@@ -153,7 +152,7 @@ func (k *K8SDeployment) deployment() *appsv1.Deployment {
 		},
 		ObjectMeta: meta(k.namespace, k.Name(), map[string]string{"app": k.Name()}),
 		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.To(int32(1)),
+			Replicas: new(int32(1)),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": k.Name(),
@@ -166,7 +165,7 @@ func (k *K8SDeployment) deployment() *appsv1.Deployment {
 				},
 			},
 			MinReadySeconds:         int32(5),
-			ProgressDeadlineSeconds: pointer.To(int32(120)),
+			ProgressDeadlineSeconds: new(int32(120)),
 			Template:                k.podSpec(),
 		},
 	}
@@ -238,7 +237,7 @@ func (k *K8SDeployment) podSpec() corev1.PodTemplateSpec {
 					VolumeSource: corev1.VolumeSource{
 						ConfigMap: &corev1.ConfigMapVolumeSource{
 							LocalObjectReference: corev1.LocalObjectReference{Name: "otel-collector-conf"},
-							DefaultMode:          pointer.To(int32(0o555)),
+							DefaultMode:          new(int32(0o555)),
 							Items: []corev1.KeyToPath{{
 								Key:  "config",
 								Path: "otel-collector-config.yaml",

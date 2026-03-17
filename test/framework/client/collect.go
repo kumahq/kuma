@@ -494,7 +494,7 @@ func CollectResponsesAndFailures(
 	container, destination string,
 	fn ...CollectResponsesOptsFn,
 ) ([]FailureResponse, error) {
-	res, err := callConcurrently(destination, func() (interface{}, error) {
+	res, err := callConcurrently(destination, func() (any, error) {
 		return CollectFailure(cluster, container, destination, fn...)
 	}, fn...)
 	if err != nil {
@@ -528,7 +528,7 @@ func IndexByResponseCode(responses []FailureResponse) map[int]int {
 }
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
-	res, err := callConcurrently(destination, func() (interface{}, error) {
+	res, err := callConcurrently(destination, func() (any, error) {
 		return CollectEchoResponse(cluster, source, destination, fn...)
 	}, fn...)
 	if err != nil {
@@ -543,13 +543,13 @@ func CollectResponses(cluster framework.Cluster, source, destination string, fn 
 
 type result struct {
 	idx uint
-	res interface{}
+	res any
 	err error
 }
 
-func callConcurrently(destination string, call func() (interface{}, error), fn ...CollectResponsesOptsFn) ([]interface{}, error) {
+func callConcurrently(destination string, call func() (any, error), fn ...CollectResponsesOptsFn) ([]any, error) {
 	opts := CollectOptions(destination, fn...)
-	var responses []interface{}
+	var responses []any
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

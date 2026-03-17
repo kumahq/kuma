@@ -167,14 +167,15 @@ func (s *Networking) PortForward(destAddr string, stopChan <-chan struct{}) (net
 
 // CopyFiles copies a set of files to the local host
 func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) error {
-	mkdirCmds := "sh -c '"
+	var mkdirCmds strings.Builder
+	mkdirCmds.WriteString("sh -c '")
 	for _, destPath := range files {
 		dir := filepath.Dir(destPath)
-		mkdirCmds += fmt.Sprintf("mkdir -p %s ;", dir)
+		mkdirCmds.WriteString(fmt.Sprintf("mkdir -p %s ;", dir))
 	}
-	mkdirCmds += "'"
+	mkdirCmds.WriteString("'")
 
-	_, stdErr, err := s.RunCommand(mkdirCmds)
+	_, stdErr, err := s.RunCommand(mkdirCmds.String())
 	if err != nil {
 		return fmt.Errorf("unable to prepare directors to copy the files: %w", err)
 	}
