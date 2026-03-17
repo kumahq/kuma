@@ -44,7 +44,7 @@ func main() {
 			Pkg:       pkg.Types,
 			Files:     pkg.Syntax,
 			TypesInfo: pkg.TypesInfo,
-			ResultOf:  map[*analysis.Analyzer]interface{}{},
+			ResultOf:  map[*analysis.Analyzer]any{},
 			Report:    func(diag analysis.Diagnostic) { fmt.Println(diag) },
 		}
 

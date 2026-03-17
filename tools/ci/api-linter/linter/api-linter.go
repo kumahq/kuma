@@ -7,6 +7,7 @@ import (
 	"go/types"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -307,13 +308,7 @@ func hasOmitEmptyTag(field *ast.Field) bool {
 
 	// Check if "omitempty" is in the tag
 	tagParts := strings.Split(jsonTag, ",")
-	for _, part := range tagParts {
-		if part == "omitempty" {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(tagParts, "omitempty")
 }
 
 // Extracts the struct name from the filename
