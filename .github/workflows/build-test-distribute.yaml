@@ -72,7 +72,7 @@ jobs:
           GOGC: "80" # run GC more aggressively
         with:
           args: --fix=false --verbose
-          version: v2.4.0 # TODO: automate this version update via Renovate
+          version: v2.11.3 # TODO: automate this version update via Renovate
       - run: |
           make clean
       - run: |
