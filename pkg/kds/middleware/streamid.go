@@ -23,7 +23,7 @@ func (s *streamIDStream) Context() context.Context {
 }
 
 func StreamIDUnaryInterceptor(streamCounter *int64) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		return handler(WithStreamID(ctx, atomic.AddInt64(streamCounter, 1)), req)
 	}
 }

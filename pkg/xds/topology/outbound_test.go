@@ -2,6 +2,7 @@ package topology_test
 
 import (
 	"context"
+	"maps"
 
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -308,9 +309,7 @@ var _ = Describe("TrafficRoute", func() {
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
 				)
-				for k, v := range esEndpoints {
-					endpoints[k] = v
-				}
+				maps.Copy(endpoints, esEndpoints)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},

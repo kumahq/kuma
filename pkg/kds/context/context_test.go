@@ -3,6 +3,7 @@ package context_test
 import (
 	stdcontext "context"
 	"fmt"
+	"maps"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -491,9 +492,7 @@ var _ = Describe("Context", func() {
 				},
 			}
 
-			for k, v := range given.extraLabels {
-				meta.GetLabels()[k] = v
-			}
+			maps.Copy(meta.GetLabels(), given.extraLabels)
 
 			r.SetMeta(meta)
 			return r

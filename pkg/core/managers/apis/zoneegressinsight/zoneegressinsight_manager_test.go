@@ -29,7 +29,7 @@ var _ = Describe("ZoneEgressInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		input := mesh.NewZoneEgressInsightResource()
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
 			})
@@ -62,7 +62,7 @@ var _ = Describe("ZoneEgressInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		input := mesh.NewZoneEgressInsightResource()
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
 			})

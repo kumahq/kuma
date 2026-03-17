@@ -28,7 +28,7 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		input := core_mesh.NewDataplaneInsightResource()
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
 			})
@@ -61,7 +61,7 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		input := core_mesh.NewDataplaneInsightResource()
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
 			})

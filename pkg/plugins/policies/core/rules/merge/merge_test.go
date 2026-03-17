@@ -35,7 +35,7 @@ var _ = Describe("Confs", func() {
 	DescribeTable("merge confs",
 		func(given testCase) {
 			// given
-			var policies []interface{}
+			var policies []any
 			for _, policy := range given.policies {
 				policies = append(policies, policy)
 			}
@@ -45,7 +45,7 @@ var _ = Describe("Confs", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(merged).To(Equal([]interface{}{given.expected}))
+			Expect(merged).To(Equal([]any{given.expected}))
 		},
 		Entry("should replace slices by default but append slices that start with append", testCase{
 			policies: []policy{
@@ -259,7 +259,7 @@ var _ = Describe("Confs", func() {
 	f := false
 	DescribeTable("mergeValuesByKey",
 		func(given mergeValuesByKeyCase) {
-			var givens []interface{}
+			var givens []any
 			for _, p := range given.policies {
 				givens = append(givens, p)
 			}

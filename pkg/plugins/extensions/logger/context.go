@@ -10,7 +10,7 @@ type spanLogValuesProcessorKey struct{}
 
 // SpanLogValuesProcessor should be a function which process received
 // trace.Span. Returned []]interface{} will be later added as logger values.
-type SpanLogValuesProcessor func(trace.Span) []interface{}
+type SpanLogValuesProcessor func(trace.Span) []any
 
 // NewSpanLogValuesProcessorContext will enrich the provided context with
 // the provided spanLogValuesProcessor. It may be useful for any application

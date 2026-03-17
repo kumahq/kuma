@@ -139,7 +139,7 @@ func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) 
 		return nil, &verr
 	}
 
-	isnil := func(a interface{}) bool {
+	isnil := func(a any) bool {
 		return a == nil || reflect.ValueOf(a).IsNil()
 	}
 	switch mode {

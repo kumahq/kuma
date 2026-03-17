@@ -9,7 +9,7 @@ import (
 
 type Request interface {
 	NodeId() string
-	Node() interface{}
+	Node() any
 	Metadata() *structpb.Struct
 	GetResponseNonce() string
 	GetTypeUrl() string

@@ -83,7 +83,7 @@ var _ = Describe("PickTCPPort()", func() {
 			var highestPort uint32
 			Expect(n).To(BeNumerically(">", 0))
 		attempts:
-			for a := 0; a < 65535; a++ {
+			for range 65535 {
 				// first port in a range
 				freePort, err := test.FindFreePort(loopback)
 				Expect(err).ToNot(HaveOccurred())
