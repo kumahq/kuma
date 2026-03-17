@@ -141,21 +141,13 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			svcLabels := map[string]string{}
 
 			if obj != nil {
-				for k, v := range obj.GetAnnotations() {
-					svcAnnotations[k] = v
-				}
-				for k, v := range obj.GetLabels() {
-					svcLabels[k] = v
-				}
+				maps.Copy(svcAnnotations, obj.GetAnnotations())
+				maps.Copy(svcLabels, obj.GetLabels())
 			}
 
-			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Annotations {
-				svcAnnotations[k] = v
-			}
+			maps.Copy(svcAnnotations, gatewayInstance.Spec.ServiceTemplate.Metadata.Annotations)
 
-			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Labels {
-				svcLabels[k] = v
-			}
+			maps.Copy(svcLabels, gatewayInstance.Spec.ServiceTemplate.Metadata.Labels)
 
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -312,22 +304,16 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 
 			if obj != nil {
-				for k, v := range obj.(*kube_apps.Deployment).Spec.Template.GetAnnotations() {
-					podAnnotations[k] = v
-				}
+				maps.Copy(podAnnotations, obj.(*kube_apps.Deployment).Spec.Template.GetAnnotations())
 			}
 
-			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Annotations {
-				podAnnotations[k] = v
-			}
+			maps.Copy(podAnnotations, gatewayInstance.Spec.PodTemplate.Metadata.Annotations)
 
 			podLabels := k8sSelector(gatewayInstance.Name)
 			podLabels[metadata.KumaSidecarInjectionAnnotation] = metadata.AnnotationDisabled
 			podLabels[metadata.KumaMeshLabel] = mesh
 
-			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Labels {
-				podLabels[k] = v
-			}
+			maps.Copy(podLabels, gatewayInstance.Spec.PodTemplate.Metadata.Labels)
 
 			deployment.Spec.Replicas = &gatewayInstance.Spec.Replicas
 			deployment.Spec.Selector = &kube_meta.LabelSelector{
@@ -458,7 +444,7 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 	gatewayInstanceGVK := kube_schema.GroupVersionKind{
 		Group:   mesh_k8s.GroupVersion.Group,
 		Version: mesh_k8s.GroupVersion.Version,
-		Kind:    reflect.TypeOf(mesh_k8s.MeshGatewayInstance{}).Name(),
+		Kind:    reflect.TypeFor[mesh_k8s.MeshGatewayInstance]().Name(),
 	}
 
 	if err := ctrls_util.IndexControllerOf(mgr, gatewayInstanceGVK, &kube_core.Service{}); err != nil {

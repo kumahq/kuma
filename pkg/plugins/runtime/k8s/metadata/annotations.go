@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -273,7 +274,7 @@ func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool
 }
 
 func (a Annotations) GetBooleanWithDefault(def bool, supportEnabled bool, keys ...string) (bool, bool, error) {
-	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
+	v, exists, err := a.getWithDefault(def, func(key, value string) (any, error) {
 		switch value {
 		case AnnotationTrue, AnnotationYes:
 			return true, nil
@@ -302,7 +303,7 @@ func (a Annotations) GetUint32(keys ...string) (uint32, bool, error) {
 }
 
 func (a Annotations) GetUint32WithDefault(def uint32, keys ...string) (uint32, bool, error) {
-	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+	v, exists, err := a.getWithDefault(def, func(key string, value string) (any, error) {
 		u, err := strconv.ParseUint(value, 10, 32)
 		if err != nil {
 			return 0, errors.Errorf("failed to parse annotation %q: %s", key, err.Error())
@@ -320,14 +321,14 @@ func (a Annotations) GetString(keys ...string) (string, bool) {
 }
 
 func (a Annotations) GetStringWithDefault(def string, keys ...string) (string, bool) {
-	v, exists, _ := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+	v, exists, _ := a.getWithDefault(def, func(key string, value string) (any, error) {
 		return value, nil
 	}, keys...)
 	return v.(string), exists
 }
 
 func (a Annotations) GetDurationWithDefault(def time.Duration, keys ...string) (time.Duration, bool, error) {
-	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+	v, exists, err := a.getWithDefault(def, func(key string, value string) (any, error) {
 		return time.ParseDuration(value)
 	}, keys...)
 	if err != nil {
@@ -343,7 +344,7 @@ func (a Annotations) GetList(keys ...string) ([]string, bool) {
 func (a Annotations) GetListWithDefault(def []string, keys ...string) ([]string, bool) {
 	defCopy := []string{}
 	defCopy = append(defCopy, def...)
-	v, exists, _ := a.getWithDefault(defCopy, func(key string, value string) (interface{}, error) {
+	v, exists, _ := a.getWithDefault(defCopy, func(key string, value string) (any, error) {
 		r := strings.Split(value, ",")
 		var res []string
 		for _, v := range r {
@@ -363,14 +364,12 @@ func (a Annotations) GetMap(keys ...string) (map[string]string, bool, error) {
 
 func (a Annotations) GetMapWithDefault(def map[string]string, keys ...string) (map[string]string, bool, error) {
 	defCopy := make(map[string]string, len(def))
-	for k, v := range def {
-		defCopy[k] = v
-	}
-	v, exists, err := a.getWithDefault(defCopy, func(key string, value string) (interface{}, error) {
+	maps.Copy(defCopy, def)
+	v, exists, err := a.getWithDefault(defCopy, func(key string, value string) (any, error) {
 		result := map[string]string{}
 
-		pairs := strings.Split(value, ";")
-		for _, pair := range pairs {
+		pairs := strings.SplitSeq(value, ";")
+		for pair := range pairs {
 			kvSplit := strings.Split(pair, "=")
 			if len(kvSplit) != 2 {
 				return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
@@ -385,7 +384,7 @@ func (a Annotations) GetMapWithDefault(def map[string]string, keys ...string) (m
 	return v.(map[string]string), exists, nil
 }
 
-func (a Annotations) getWithDefault(def interface{}, fn func(string, string) (interface{}, error), keys ...string) (interface{}, bool, error) {
+func (a Annotations) getWithDefault(def any, fn func(string, string) (any, error), keys ...string) (any, bool, error) {
 	res := def
 	exists := false
 	for _, k := range keys {
