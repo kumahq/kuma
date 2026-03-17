@@ -1,28 +1,27 @@
 package template
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/hoisie/mustache"
 )
 
-type contextMap map[string]interface{}
+type contextMap map[string]any
 
 func (cm contextMap) merge(other contextMap) {
-	for k, v := range other {
-		cm[k] = v
-	}
+	maps.Copy(cm, other)
 }
 
 func newContextMap(key, value string) contextMap {
 	if !strings.Contains(key, ".") {
-		return map[string]interface{}{
+		return map[string]any{
 			key: value,
 		}
 	}
 
 	parts := strings.SplitAfterN(key, ".", 2)
-	return map[string]interface{}{
+	return map[string]any{
 		parts[0][:len(parts[0])-1]: newContextMap(parts[1], value),
 	}
 }

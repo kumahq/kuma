@@ -155,7 +155,7 @@ func (p PolicyItemWithMeta) GetEntry() outbound.ToEntry {
 // Deprecated: use inbound.Rule or outbound.ResourceRule instead
 type Rule struct {
 	Subset subsetutils.Subset
-	Conf   interface{}
+	Conf   any
 	Origin []core_model.ResourceMeta
 
 	// OriginByMatches is an auxiliary structure for MeshHTTPRoute rules. It's a mapping between the rule (identified
@@ -360,7 +360,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 }
 
 type artificialPolicyItem struct {
-	conf      interface{}
+	conf      any
 	targetRef common_api.TargetRef
 }
 
@@ -368,7 +368,7 @@ func (a *artificialPolicyItem) GetTargetRef() common_api.TargetRef {
 	return a.targetRef
 }
 
-func (a *artificialPolicyItem) GetDefault() interface{} {
+func (a *artificialPolicyItem) GetDefault() any {
 	return a.conf
 }
 
@@ -542,9 +542,9 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 
 func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
 	rules := []*Rule{}
-	confs := []interface{}{}
+	confs := []any{}
 	var relevant []PolicyItemWithMeta
-	for i := 0; i < len(items); i++ {
+	for i := range items {
 		item := items[i]
 		itemSubset, err := asSubset(item.GetTargetRef())
 		if err != nil {

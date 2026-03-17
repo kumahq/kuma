@@ -24,7 +24,7 @@ func MatchGoldenXML(goldenFilePath ...string) types.GomegaMatcher {
 }
 
 func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
-	return MatchGolden(func(expected interface{}) types.GomegaMatcher {
+	return MatchGolden(func(expected any) types.GomegaMatcher {
 		if expectedBytes, ok := expected.([]byte); ok {
 			expected = string(expectedBytes)
 		}
@@ -32,7 +32,7 @@ func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
 	}, goldenFilePath...)
 }
 
-type MatcherFn = func(expected interface{}) types.GomegaMatcher
+type MatcherFn = func(expected any) types.GomegaMatcher
 
 // MatchGolden matches Golden file overriding it with actual content if UPDATE_GOLDEN_FILES is set to true
 func MatchGolden(matcherFn MatcherFn, goldenFilePath ...string) types.GomegaMatcher {
@@ -50,7 +50,7 @@ type GoldenMatcher struct {
 
 var _ types.GomegaMatcher = &GoldenMatcher{}
 
-func (g *GoldenMatcher) Match(actual interface{}) (bool, error) {
+func (g *GoldenMatcher) Match(actual any) (bool, error) {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return false, err
@@ -85,7 +85,7 @@ func (g *GoldenMatcher) Match(actual interface{}) (bool, error) {
 	return g.Matcher.Match(actualContent)
 }
 
-func (g *GoldenMatcher) FailureMessage(actual interface{}) string {
+func (g *GoldenMatcher) FailureMessage(actual any) string {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()
@@ -96,7 +96,7 @@ func (g *GoldenMatcher) FailureMessage(actual interface{}) string {
 	return golden.RerunMsg(g.GoldenFilePath) + "\n\n" + g.Matcher.FailureMessage(actualContent)
 }
 
-func (g *GoldenMatcher) NegatedFailureMessage(actual interface{}) string {
+func (g *GoldenMatcher) NegatedFailureMessage(actual any) string {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()
@@ -104,7 +104,7 @@ func (g *GoldenMatcher) NegatedFailureMessage(actual interface{}) string {
 	return g.Matcher.NegatedFailureMessage(actualContent)
 }
 
-func (g *GoldenMatcher) actualString(actual interface{}) (string, error) {
+func (g *GoldenMatcher) actualString(actual any) (string, error) {
 	switch actual := actual.(type) {
 	case nil:
 		return "", nil
