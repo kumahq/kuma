@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 func ExecuteStoreTests(
@@ -127,7 +126,7 @@ func ExecuteStoreTests(
 						Ports: []meshservice_api.Port{
 							{
 								Port:        80,
-								TargetPort:  pointer.To(intstr.FromInt(80)),
+								TargetPort:  new(intstr.FromInt(80)),
 								AppProtocol: "http",
 							},
 						},
@@ -200,7 +199,7 @@ func ExecuteStoreTests(
 				// and meta is updated (version and modification time)
 				Expect(resource.Meta.GetVersion()).ToNot(Equal(versionBeforeUpdate))
 				Expect(resource.Meta.GetLabels()).To(And(HaveKeyWithValue("foo", "barbar"), HaveKeyWithValue("newlabel", "newvalue")))
-				if reflect.TypeOf(createStore()) != reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
+				if reflect.TypeOf(createStore()) != reflect.TypeFor[*resources_k8s.KubernetesStore]() {
 					Expect(resource.Meta.GetModificationTime().Round(time.Millisecond).Nanosecond() / 1e6).To(Equal(modificationTime.Round(time.Millisecond).Nanosecond() / 1e6))
 				}
 
@@ -217,7 +216,7 @@ func ExecuteStoreTests(
 
 				// and modification time is updated
 				// on K8S modification time is always the creation time, because there is no data for modification time
-				if reflect.TypeOf(createStore()) == reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
+				if reflect.TypeOf(createStore()) == reflect.TypeFor[*resources_k8s.KubernetesStore]() {
 					Expect(res.Meta.GetModificationTime()).To(Equal(res.Meta.GetCreationTime()))
 				} else {
 					Expect(res.Meta.GetModificationTime()).ToNot(Equal(res.Meta.GetCreationTime()))
@@ -273,7 +272,7 @@ func ExecuteStoreTests(
 						Ports: []meshservice_api.Port{
 							{
 								Port:        80,
-								TargetPort:  pointer.To(intstr.FromInt(80)),
+								TargetPort:  new(intstr.FromInt(80)),
 								AppProtocol: "http",
 							},
 						},
@@ -573,7 +572,7 @@ func ExecuteStoreTests(
 					resourceNames := map[string]bool{}
 
 					// setup create resources
-					for i := 0; i < numOfResources; i++ {
+					for i := range numOfResources {
 						createResource(fmt.Sprintf("res-%d.demo", i))
 					}
 
@@ -604,7 +603,7 @@ func ExecuteStoreTests(
 
 					// and all elements were retrieved
 					Expect(resourceNames).To(HaveLen(numOfResources))
-					for i := 0; i < numOfResources; i++ {
+					for i := range numOfResources {
 						Expect(resourceNames).To(HaveKey(fmt.Sprintf("res-%d.demo", i)))
 					}
 				})

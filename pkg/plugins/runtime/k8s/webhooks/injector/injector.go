@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"strconv"
 	"strings"
@@ -175,7 +176,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			VolumeSource: kube_core.VolumeSource{
 				CSI: &kube_core.CSIVolumeSource{
 					Driver:   "csi.spiffe.io",
-					ReadOnly: pointer.To(true),
+					ReadOnly: new(true),
 				},
 			},
 		})
@@ -222,9 +223,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
-		for key, value := range annotations {
-			pod.Annotations[key] = value
-		}
+		maps.Copy(pod.Annotations, annotations)
 
 		if pod.Labels == nil {
 			pod.Labels = map[string]string{}
@@ -252,9 +251,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
-		for key, value := range annotations {
-			pod.Annotations[key] = value
-		}
+		maps.Copy(pod.Annotations, annotations)
 
 		if pod.Labels == nil {
 			pod.Labels = map[string]string{}
@@ -526,8 +523,8 @@ func (i *KumaInjector) NewSidecarContainer(
 	}
 
 	container.Name = k8s_util.KumaSidecarContainerName
-	container.SecurityContext.ReadOnlyRootFilesystem = pointer.To(true)
-	container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
+	container.SecurityContext.ReadOnlyRootFilesystem = new(true)
+	container.SecurityContext.AllowPrivilegeEscalation = new(false)
 
 	return container, nil
 }
@@ -629,7 +626,7 @@ func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]st
 					"ALL",
 				},
 			},
-			ReadOnlyRootFilesystem: pointer.To(true),
+			ReadOnlyRootFilesystem: new(true),
 		},
 		Resources: kube_core.ResourceRequirements{
 			Limits: kube_core.ResourceList{
@@ -648,7 +645,7 @@ func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]st
 		bidirectional := kube_core.MountPropagationBidirectional
 
 		container.SecurityContext.Capabilities = &kube_core.Capabilities{}
-		container.SecurityContext.Privileged = pointer.To(true)
+		container.SecurityContext.Privileged = new(true)
 
 		container.Env = []kube_core.EnvVar{
 			{
@@ -719,8 +716,8 @@ func (i *KumaInjector) NewValidationContainer(pod *kube_core.Pod) kube_core.Cont
 					"ALL",
 				},
 			},
-			ReadOnlyRootFilesystem:   pointer.To(true),
-			AllowPrivilegeEscalation: pointer.To(false),
+			ReadOnlyRootFilesystem:   new(true),
+			AllowPrivilegeEscalation: new(false),
 		},
 		Resources: kube_core.ResourceRequirements{
 			Limits: kube_core.ResourceList{

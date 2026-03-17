@@ -2,6 +2,7 @@ package topology_test
 
 import (
 	"context"
+	"maps"
 
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -308,9 +309,7 @@ var _ = Describe("TrafficRoute", func() {
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
 				)
-				for k, v := range esEndpoints {
-					endpoints[k] = v
-				}
+				maps.Copy(endpoints, esEndpoints)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -1329,7 +1328,7 @@ var _ = Describe("TrafficRoute", func() {
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
 									Mode:       meshexternalservice_api.TLSVerificationSecured,
-									ServerName: pointer.To("example.com"),
+									ServerName: new("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
 											Type:  meshexternalservice_api.SANMatchPrefix,
@@ -1341,13 +1340,13 @@ var _ = Describe("TrafficRoute", func() {
 										},
 									},
 									CaCert: &common_api.DataSource{
-										InlineString: pointer.To("ca"),
+										InlineString: new("ca"),
 									},
 									ClientCert: &common_api.DataSource{
-										InlineString: pointer.To("cert"),
+										InlineString: new("cert"),
 									},
 									ClientKey: &common_api.DataSource{
-										InlineString: pointer.To("key"),
+										InlineString: new("key"),
 									},
 								},
 							},
@@ -1377,7 +1376,7 @@ var _ = Describe("TrafficRoute", func() {
 								Enabled: true,
 								Verification: &meshexternalservice_api.Verification{
 									Mode:       meshexternalservice_api.TLSVerificationSkipSAN,
-									ServerName: pointer.To("example.com"),
+									ServerName: new("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
 											Type:  meshexternalservice_api.SANMatchPrefix,
@@ -1498,7 +1497,7 @@ var _ = Describe("TrafficRoute", func() {
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
 									Mode:       meshexternalservice_api.TLSVerificationSecured,
-									ServerName: pointer.To("example.com"),
+									ServerName: new("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
 											Type:  meshexternalservice_api.SANMatchPrefix,
@@ -1510,13 +1509,13 @@ var _ = Describe("TrafficRoute", func() {
 										},
 									},
 									CaCert: &common_api.DataSource{
-										InlineString: pointer.To("ca"),
+										InlineString: new("ca"),
 									},
 									ClientCert: &common_api.DataSource{
-										InlineString: pointer.To("cert"),
+										InlineString: new("cert"),
 									},
 									ClientKey: &common_api.DataSource{
-										InlineString: pointer.To("key"),
+										InlineString: new("key"),
 									},
 								},
 							},
@@ -1767,10 +1766,10 @@ var _ = Describe("TrafficRoute", func() {
 									Verification: &meshexternalservice_api.Verification{
 										Mode: meshexternalservice_api.TLSVerificationSecured,
 										ClientKey: &common_api.DataSource{
-											Secret: pointer.To("not-existing"),
+											Secret: new("not-existing"),
 										},
 										ClientCert: &common_api.DataSource{
-											Secret: pointer.To("not-existing"),
+											Secret: new("not-existing"),
 										},
 									},
 								},
@@ -1818,12 +1817,12 @@ var _ = Describe("TrafficRoute", func() {
 									{
 										Address:  "primary.example.com",
 										Port:     443,
-										Priority: pointer.To(uint32(0)),
+										Priority: new(uint32(0)),
 									},
 									{
 										Address:  "secondary.example.com",
 										Port:     443,
-										Priority: pointer.To(uint32(1)),
+										Priority: new(uint32(1)),
 									},
 									{
 										Address: "fallback.example.com",

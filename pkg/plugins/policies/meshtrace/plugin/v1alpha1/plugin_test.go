@@ -32,7 +32,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -188,14 +187,14 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app", Literal: new("backend")},
 								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: new("none")}},
 							},
 							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
+								Overall: new(intstr.FromInt(10)),
+								Client:  new(intstr.FromInt(20)),
+								Random:  new(intstr.FromInt(50)),
 							},
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
@@ -236,14 +235,14 @@ var _ = Describe("MeshTrace", func() {
 						},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app", Literal: new("backend")},
 								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: new("none")}},
 							},
 							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
+								Overall: new(intstr.FromInt(10)),
+								Client:  new(intstr.FromInt(20)),
+								Random:  new(intstr.FromInt(50)),
 							},
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
@@ -275,14 +274,14 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app", Literal: new("backend")},
 								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: new("none")}},
 							},
 							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
+								Overall: new(intstr.FromInt(10)),
+								Client:  new(intstr.FromInt(20)),
+								Random:  new(intstr.FromInt(50)),
 							},
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
@@ -314,14 +313,14 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app", Literal: new("backend")},
 								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: new("none")}},
 							},
 							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
+								Overall: new(intstr.FromInt(10)),
+								Client:  new(intstr.FromInt(20)),
+								Random:  new(intstr.FromInt(50)),
 							},
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OpenTelemetryBackend{
@@ -376,7 +375,7 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Sampling: &api.Sampling{
-								Random: pointer.To(intstr.FromInt(50)),
+								Random: new(intstr.FromInt(50)),
 							},
 							Backends: &[]api.Backend{{
 								Datadog: &api.DatadogBackend{
@@ -469,7 +468,7 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
-								{Name: "kuma.mesh", Literal: pointer.To("user-mesh")},
+								{Name: "kuma.mesh", Literal: new("user-mesh")},
 							},
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{

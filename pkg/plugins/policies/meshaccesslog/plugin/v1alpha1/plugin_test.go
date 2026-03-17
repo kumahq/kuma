@@ -40,7 +40,6 @@ import (
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
@@ -192,7 +191,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -241,7 +240,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -252,7 +251,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					routeKRI("route-2"): {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -263,7 +262,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					routeKRI("route-3"): {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -312,7 +311,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -323,7 +322,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					routeKRI("route-2"): {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{},
 							},
@@ -344,7 +343,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshExternalServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -391,7 +390,7 @@ var _ = Describe("MeshAccessLog", func() {
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
-										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										Plain: new("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
 									},
 								},
 							}},
@@ -414,7 +413,7 @@ var _ = Describe("MeshAccessLog", func() {
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
-										Json: pointer.To([]api.JsonValue{
+										Json: new([]api.JsonValue{
 											{Key: "protocol", Value: "%PROTOCOL%"},
 											{Key: "duration", Value: "%DURATION%"},
 										}),
@@ -626,7 +625,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
-										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										Plain: new("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
 									},
 								},
 							}},
@@ -649,7 +648,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
-										Json: pointer.To([]api.JsonValue{
+										Json: new([]api.JsonValue{
 											{Key: "protocol", Value: "%PROTOCOL%"},
 											{Key: "duration", Value: "%DURATION%"},
 										}),
@@ -811,7 +810,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									OpenTelemetry: &api.OtelBackend{
@@ -855,13 +854,13 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
 										Path: "/tmp/log",
 										Format: &api.Format{
-											Plain: pointer.To("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
+											Plain: new("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
 										},
 									},
 								}},

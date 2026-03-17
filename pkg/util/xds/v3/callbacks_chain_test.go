@@ -19,7 +19,7 @@ var _ = Describe("CallbacksChain", func() {
 	type methodCall struct {
 		obj    string
 		method string
-		args   []interface{}
+		args   []any
 	}
 	var calls []methodCall
 
@@ -27,34 +27,34 @@ var _ = Describe("CallbacksChain", func() {
 		calls = make([]methodCall, 0)
 		first = CallbacksFuncs{
 			OnStreamOpenFunc: func(ctx context.Context, streamID int64, typ string) error {
-				calls = append(calls, methodCall{"1st", "OnStreamOpen()", []interface{}{ctx, streamID, typ}})
+				calls = append(calls, methodCall{"1st", "OnStreamOpen()", []any{ctx, streamID, typ}})
 				return fmt.Errorf("1st: OnStreamOpen()")
 			},
 			OnStreamClosedFunc: func(streamID int64, n *envoy_core.Node) {
-				calls = append(calls, methodCall{"1st", "OnStreamClosed()", []interface{}{streamID, n}})
+				calls = append(calls, methodCall{"1st", "OnStreamClosed()", []any{streamID, n}})
 			},
 			OnStreamRequestFunc: func(streamID int64, req *envoy_sd.DiscoveryRequest) error {
-				calls = append(calls, methodCall{"1st", "OnStreamRequest()", []interface{}{streamID, req}})
+				calls = append(calls, methodCall{"1st", "OnStreamRequest()", []any{streamID, req}})
 				return fmt.Errorf("1st: OnStreamRequest()")
 			},
 			OnStreamResponseFunc: func(ctx context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
-				calls = append(calls, methodCall{"1st", "OnStreamResponse()", []interface{}{ctx, streamID, req, resp}})
+				calls = append(calls, methodCall{"1st", "OnStreamResponse()", []any{ctx, streamID, req, resp}})
 			},
 		}
 		second = CallbacksFuncs{
 			OnStreamOpenFunc: func(ctx context.Context, streamID int64, typ string) error {
-				calls = append(calls, methodCall{"2nd", "OnStreamOpen()", []interface{}{ctx, streamID, typ}})
+				calls = append(calls, methodCall{"2nd", "OnStreamOpen()", []any{ctx, streamID, typ}})
 				return fmt.Errorf("2nd: OnStreamOpen()")
 			},
 			OnStreamClosedFunc: func(streamID int64, n *envoy_core.Node) {
-				calls = append(calls, methodCall{"2nd", "OnStreamClosed()", []interface{}{streamID, n}})
+				calls = append(calls, methodCall{"2nd", "OnStreamClosed()", []any{streamID, n}})
 			},
 			OnStreamRequestFunc: func(streamID int64, req *envoy_sd.DiscoveryRequest) error {
-				calls = append(calls, methodCall{"2nd", "OnStreamRequest()", []interface{}{streamID, req}})
+				calls = append(calls, methodCall{"2nd", "OnStreamRequest()", []any{streamID, req}})
 				return fmt.Errorf("2nd: OnStreamRequest()")
 			},
 			OnStreamResponseFunc: func(ctx context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
-				calls = append(calls, methodCall{"2nd", "OnStreamResponse()", []interface{}{ctx, streamID, req, resp}})
+				calls = append(calls, methodCall{"2nd", "OnStreamResponse()", []any{ctx, streamID, req, resp}})
 			},
 		}
 	})
@@ -73,7 +73,7 @@ var _ = Describe("CallbacksChain", func() {
 
 			// then
 			Expect(calls).To(Equal([]methodCall{
-				{"1st", "OnStreamOpen()", []interface{}{ctx, streamID, typ}},
+				{"1st", "OnStreamOpen()", []any{ctx, streamID, typ}},
 			}))
 			// and
 			Expect(err).To(MatchError("1st: OnStreamOpen()"))
@@ -92,8 +92,8 @@ var _ = Describe("CallbacksChain", func() {
 
 			// then
 			Expect(calls).To(Equal([]methodCall{
-				{"2nd", "OnStreamClosed()", []interface{}{streamID, n}},
-				{"1st", "OnStreamClosed()", []interface{}{streamID, n}},
+				{"2nd", "OnStreamClosed()", []any{streamID, n}},
+				{"1st", "OnStreamClosed()", []any{streamID, n}},
 			}))
 		})
 	})
@@ -111,7 +111,7 @@ var _ = Describe("CallbacksChain", func() {
 
 			// then
 			Expect(calls).To(Equal([]methodCall{
-				{"1st", "OnStreamRequest()", []interface{}{streamID, req}},
+				{"1st", "OnStreamRequest()", []any{streamID, req}},
 			}))
 			// and
 			Expect(err).To(MatchError("1st: OnStreamRequest()"))
@@ -131,8 +131,8 @@ var _ = Describe("CallbacksChain", func() {
 
 			// then
 			Expect(calls).To(Equal([]methodCall{
-				{"2nd", "OnStreamResponse()", []interface{}{ctx, streamID, req, resp}},
-				{"1st", "OnStreamResponse()", []interface{}{ctx, streamID, req, resp}},
+				{"2nd", "OnStreamResponse()", []any{ctx, streamID, req, resp}},
+				{"1st", "OnStreamResponse()", []any{ctx, streamID, req, resp}},
 			}))
 		})
 	})

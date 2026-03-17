@@ -40,7 +40,6 @@ import (
 	test_xds "github.com/kumahq/kuma/v2/pkg/test/xds"
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -65,11 +64,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 	genConnectionLimits := func() *api.ConnectionLimits {
 		return &api.ConnectionLimits{
-			MaxConnectionPools: pointer.To(uint32(1111)),
-			MaxConnections:     pointer.To(uint32(2222)),
-			MaxPendingRequests: pointer.To(uint32(3333)),
-			MaxRequests:        pointer.To(uint32(4444)),
-			MaxRetries:         pointer.To(uint32(5555)),
+			MaxConnectionPools: new(uint32(1111)),
+			MaxConnections:     new(uint32(2222)),
+			MaxPendingRequests: new(uint32(3333)),
+			MaxRequests:        new(uint32(4444)),
+			MaxRetries:         new(uint32(5555)),
 		}
 	}
 
@@ -78,30 +77,30 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			Disabled:                    &disabled,
 			Interval:                    test.ParseDuration("10s"),
 			BaseEjectionTime:            test.ParseDuration("8s"),
-			MaxEjectionPercent:          pointer.To(uint32(88)),
-			SplitExternalAndLocalErrors: pointer.To(true),
+			MaxEjectionPercent:          new(uint32(88)),
+			SplitExternalAndLocalErrors: new(true),
 			Detectors: &api.Detectors{
 				TotalFailures: &api.DetectorTotalFailures{
-					Consecutive: pointer.To(uint32(12)),
+					Consecutive: new(uint32(12)),
 				},
 				GatewayFailures: &api.DetectorGatewayFailures{
-					Consecutive: pointer.To(uint32(91)),
+					Consecutive: new(uint32(91)),
 				},
 				LocalOriginFailures: &api.DetectorLocalOriginFailures{
-					Consecutive: pointer.To(uint32(3)),
+					Consecutive: new(uint32(3)),
 				},
 				SuccessRate: &api.DetectorSuccessRateFailures{
-					MinimumHosts:            pointer.To(uint32(33)),
-					RequestVolume:           pointer.To(uint32(99)),
-					StandardDeviationFactor: pointer.To(intstr.FromString("1.9")),
+					MinimumHosts:            new(uint32(33)),
+					RequestVolume:           new(uint32(99)),
+					StandardDeviationFactor: new(intstr.FromString("1.9")),
 				},
 				FailurePercentage: &api.DetectorFailurePercentageFailures{
-					MinimumHosts:  pointer.To(uint32(32)),
-					RequestVolume: pointer.To(uint32(182)),
-					Threshold:     pointer.To(uint32(80)),
+					MinimumHosts:  new(uint32(32)),
+					RequestVolume: new(uint32(182)),
+					Threshold:     new(uint32(80)),
 				},
 			},
-			HealthyPanicThreshold: pointer.To(intstr.FromString("30.2")),
+			HealthyPanicThreshold: new(intstr.FromString("30.2")),
 		}
 	}
 
@@ -457,7 +456,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(false),
@@ -561,7 +560,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Selector: meshservice_api.Selector{},
 						Ports: []meshservice_api.Port{{
 							Port:        80,
-							TargetPort:  pointer.To(intstr.FromInt(8084)),
+							TargetPort:  new(intstr.FromInt(8084)),
 							AppProtocol: core_meta.ProtocolHTTP,
 						}},
 						Identities: &[]meshservice_api.MeshServiceIdentity{
@@ -598,8 +597,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 										Default: meshhttproute_api.RuleConf{
 											BackendRefs: &[]common_api.BackendRef{{
 												TargetRef: builders.TargetRefService("backend"),
-												Port:      pointer.To(uint32(80)),
-												Weight:    pointer.To(uint(100)),
+												Port:      new(uint32(80)),
+												Weight:    new(uint(100)),
 											}},
 										},
 									}},
@@ -615,7 +614,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
-									Conf: []interface{}{
+									Conf: []any{
 										api.Conf{
 											ConnectionLimits: genConnectionLimits(),
 										},

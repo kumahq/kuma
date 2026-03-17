@@ -256,7 +256,7 @@ var _ = Describe("Compute", func() {
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "mesh-1",
 				Name:         "backend",
-			}: {Conf: []interface{}{"conf-1"}},
+			}: {Conf: []any{"conf-1"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
 
@@ -273,7 +273,7 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal([]interface{}{"conf-1"}))
+		Expect(rule.Conf).To(Equal([]any{"conf-1"}))
 	})
 
 	It("should return Mesh rule if MeshService is not found", func() {
@@ -283,11 +283,11 @@ var _ = Describe("Compute", func() {
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "mesh-1",
 				Name:         "backend",
-			}: {Conf: []interface{}{"conf-1"}},
+			}: {Conf: []any{"conf-1"}},
 			kri.Identifier{
 				ResourceType: mesh.MeshType,
 				Name:         "mesh-1",
-			}: {Conf: []interface{}{"conf-2"}},
+			}: {Conf: []any{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -310,7 +310,7 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal([]interface{}{"conf-2"}))
+		Expect(rule.Conf).To(Equal([]any{"conf-2"}))
 	})
 
 	It("should return Mesh rule if MeshMultiZoneService is not found", func() {
@@ -320,11 +320,11 @@ var _ = Describe("Compute", func() {
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "mesh-1",
 				Name:         "backend",
-			}: {Conf: []interface{}{"conf-1"}},
+			}: {Conf: []any{"conf-1"}},
 			kri.Identifier{
 				ResourceType: mesh.MeshType,
 				Name:         "mesh-1",
-			}: {Conf: []interface{}{"conf-2"}},
+			}: {Conf: []any{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -347,7 +347,7 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal([]interface{}{"conf-2"}))
+		Expect(rule.Conf).To(Equal([]any{"conf-2"}))
 	})
 
 	It("should return MeshService with section", func() {
@@ -357,13 +357,13 @@ var _ = Describe("Compute", func() {
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "mesh-1",
 				Name:         "backend",
-			}: {Conf: []interface{}{"conf-1"}},
+			}: {Conf: []any{"conf-1"}},
 			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "mesh-1",
 				Name:         "backend",
 				SectionName:  "http-port",
-			}: {Conf: []interface{}{"conf-2"}},
+			}: {Conf: []any{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -386,7 +386,7 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal([]interface{}{"conf-2"}))
+		Expect(rule.Conf).To(Equal([]any{"conf-2"}))
 	})
 
 	It("should return MeshService rule if MeshService with section is not found", func() {
@@ -396,13 +396,13 @@ var _ = Describe("Compute", func() {
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "mesh-1",
 				Name:         "backend",
-			}: {Conf: []interface{}{"conf-1"}},
+			}: {Conf: []any{"conf-1"}},
 			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "mesh-1",
 				Name:         "backend",
 				SectionName:  "http-port",
-			}: {Conf: []interface{}{"conf-2"}},
+			}: {Conf: []any{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -425,7 +425,7 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal([]interface{}{"conf-1"}))
+		Expect(rule.Conf).To(Equal([]any{"conf-1"}))
 	})
 
 	It("should return nil if resource and parent resource are not found", func() {
