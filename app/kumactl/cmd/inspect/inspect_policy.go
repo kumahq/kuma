@@ -81,10 +81,10 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 			format := output.Format(pctx.InspectContext.Args.OutputFormat)
 			return printers.GenericPrint(format, res, printers.Table{
 				Headers: []string{"Type", "Mesh", "Name"},
-				FooterFn: func(container interface{}) string {
+				FooterFn: func(container any) string {
 					return fmt.Sprintf("Total: %d", container.(types.InspectDataplanesForPolicyResponse).Total)
 				},
-				RowForItem: func(i int, container interface{}) ([]string, error) {
+				RowForItem: func(i int, container any) ([]string, error) {
 					items := container.(types.InspectDataplanesForPolicyResponse).Items
 					if i >= len(items) {
 						return nil, nil
