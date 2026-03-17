@@ -18,6 +18,7 @@ import (
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
+	prom_client "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/otlptranslator"
@@ -176,7 +177,9 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		return err
 	}
 	sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
-	s.prometheusHandler = promhttp.Handler()
+	s.prometheusHandler = promhttp.HandlerFor(prom_client.DefaultGatherer, promhttp.HandlerOpts{
+		ErrorHandling: promhttp.ContinueOnError,
+	})
 
 	errCh := make(chan error)
 	go func() {
