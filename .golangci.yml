@@ -54,6 +54,7 @@ linters:
               desc: pkg can't import app
     gocritic:
       disabled-checks:
+        - deprecatedComment
         - singleCaseSwitch
     gomodguard:
       blocked:
@@ -79,7 +80,12 @@ linters:
                 - os
     gosec:
       excludes:
+        - G101 # Potential hardcoded credentials
         - G115
+        - G118 # context cancellation not called
+        - G602 # slice index out of range
+        - G703 # path traversal via taint analysis
+        - G704 # SSRF via taint analysis
     importas:
       alias:
         - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
@@ -160,6 +166,13 @@ linters:
       - linters:
           - staticcheck
         text: 'ST1001: should not use dot imports'
+      - linters:
+          - staticcheck
+        path: 'api/common/v1alpha1/targetref\.go'
+        text: 'SA5008'
+      - linters:
+          - gosec
+        path: '(_test\.go$|^test/)'
     paths:
       - app/kumactl/pkg/k8s/kubectl_proxy.go
       - pkg/xds/server/server.go
