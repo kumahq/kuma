@@ -35,7 +35,7 @@ KUBEBUILDER_ASSETS_VERSION=1.32
 GO:=$(shell $(MISE) which go)
 export GO_VERSION:=$(shell $(GO) mod edit -json | jq -r .Go)
 # renovate: datasource=github-releases depName=golangci/golangci-lint versioning=semver-coerced
-export GOLANGCI_LINT_VERSION=v2.4.0
+export GOLANGCI_LINT_VERSION=v2.11.3
 GOOS := $(shell $(GO) env GOOS)
 GOARCH := $(shell $(GO) env GOARCH)
 
