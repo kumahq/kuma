@@ -64,7 +64,7 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 
 	if hcType != HCNone {
 		defaultHealthCheck := buildHealthCheck(activeChecks)
-		var healthChecker interface{}
+		var healthChecker any
 
 		switch hcType {
 		case HCProtocolTCP:
@@ -125,7 +125,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 		})
 	}
 	for _, header := range pointer.Deref(pointer.Deref(headers).Add) {
-		for _, val := range strings.Split(string(header.Value), ",") {
+		for val := range strings.SplitSeq(string(header.Value), ",") {
 			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{
 					Key:   string(header.Name),
@@ -136,7 +136,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 		}
 	}
 	for _, header := range pointer.Deref(pointer.Deref(headers).Set) {
-		for _, val := range strings.Split(string(header.Value), ",") {
+		for val := range strings.SplitSeq(string(header.Value), ",") {
 			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{
 					Key:   string(header.Name),
@@ -325,7 +325,7 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
 	return hc
 }
 
-func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interface{}) *envoy_core.HealthCheck {
+func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker any) *envoy_core.HealthCheck {
 	switch hc := healthChecker.(type) {
 	case *envoy_core.HealthCheck_HttpHealthCheck_:
 		healthCheck.HealthChecker = hc

@@ -66,11 +66,11 @@ func Duration(d time.Duration) *durationpb.Duration {
 	return durationpb.New(d)
 }
 
-func Struct(in map[string]interface{}) (*structpb.Struct, error) {
+func Struct(in map[string]any) (*structpb.Struct, error) {
 	return structpb.NewStruct(in)
 }
 
-func MustStruct(in map[string]interface{}) *structpb.Struct {
+func MustStruct(in map[string]any) *structpb.Struct {
 	r, err := Struct(in)
 	if err != nil {
 		panic(err.Error())
@@ -78,11 +78,11 @@ func MustStruct(in map[string]interface{}) *structpb.Struct {
 	return r
 }
 
-func NewValueForStruct(in interface{}) (*structpb.Value, error) {
+func NewValueForStruct(in any) (*structpb.Value, error) {
 	return structpb.NewValue(in)
 }
 
-func MustNewValueForStruct(in interface{}) *structpb.Value {
+func MustNewValueForStruct(in any) *structpb.Value {
 	r, err := NewValueForStruct(in)
 	if err != nil {
 		panic(err.Error())

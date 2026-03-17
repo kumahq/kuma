@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"strconv"
@@ -184,9 +185,7 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	for k, count := range policyCounts {
-		b.mutable[k] = count
-	}
+	maps.Copy(b.mutable, policyCounts)
 	return nil
 }
 
@@ -230,9 +229,7 @@ func (b *reportsBuffer) Append(info map[string]string) {
 	b.Lock()
 	defer b.Unlock()
 
-	for key, value := range info {
-		b.mutable[key] = value
-	}
+	maps.Copy(b.mutable, info)
 }
 
 func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {

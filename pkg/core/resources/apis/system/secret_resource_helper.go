@@ -9,30 +9,30 @@ type secretResource struct {
 	Spec string
 }
 
-func (l *SecretResourceList) MarshalLog() interface{} {
-	list := make([]interface{}, 0, len(l.Items))
+func (l *SecretResourceList) MarshalLog() any {
+	list := make([]any, 0, len(l.Items))
 	for _, res := range l.Items {
 		list = append(list, res.MarshalLog())
 	}
 	return list
 }
 
-func (sr *SecretResource) MarshalLog() interface{} {
+func (sr *SecretResource) MarshalLog() any {
 	return secretResource{
 		Meta: sr.Meta,
 		Spec: "***",
 	}
 }
 
-func (l *GlobalSecretResourceList) MarshalLog() interface{} {
-	list := make([]interface{}, 0, len(l.Items))
+func (l *GlobalSecretResourceList) MarshalLog() any {
+	list := make([]any, 0, len(l.Items))
 	for _, res := range l.Items {
 		list = append(list, res.MarshalLog())
 	}
 	return list
 }
 
-func (gs *GlobalSecretResource) MarshalLog() interface{} {
+func (gs *GlobalSecretResource) MarshalLog() any {
 	return secretResource{
 		Meta: gs.Meta,
 		Spec: "***",

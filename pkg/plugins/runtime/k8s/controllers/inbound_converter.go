@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 
@@ -254,9 +255,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}
-	for key, value := range nodeLabels {
-		tags[key] = value
-	}
+	maps.Copy(tags, nodeLabels)
 	// For provided gateway we should ignore the protocol tag
 	protocol := ProtocolTagFor(svc, svcPort)
 	if enabled, _, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); enabled && protocol != string(core_meta.ProtocolTCP) {
@@ -317,9 +316,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod, name string, nodeLabels 
 	}
 	tags[mesh_proto.ProtocolTag] = string(core_meta.ProtocolTCP)
 	tags[mesh_proto.InstanceTag] = pod.Name
-	for key, value := range nodeLabels {
-		tags[key] = value
-	}
+	maps.Copy(tags, nodeLabels)
 
 	return tags
 }
