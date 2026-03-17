@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	"math"
+	"slices"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -39,20 +39,11 @@ func validateEndpoint(endpoint Endpoint, protocol Protocol) validators.Validatio
 		}
 	}
 
-	verr.Add(validatePort(endpoint.Port))
+	if endpoint.Port != nil {
+		verr.Add(validators.ValidatePort(validators.RootedAt("port"), uint32(*endpoint.Port)))
+	}
 	verr.Add(validatePath(endpoint.Path, protocol))
 
-	return verr
-}
-
-func validatePort(port *int32) validators.ValidationError {
-	var verr validators.ValidationError
-	if port == nil {
-		return verr
-	}
-	if *port == 0 || *port > math.MaxUint16 {
-		verr.AddViolationAt(validators.RootedAt("port"), "port must be a valid (1-65535)")
-	}
 	return verr
 }
 
@@ -74,13 +65,20 @@ func validatePath(path *string, protocol Protocol) validators.ValidationError {
 	return verr
 }
 
+var allProtocols = []string{string(ProtocolGRPC), string(ProtocolHTTP)}
+
 func validateProtocol(protocol Protocol) validators.ValidationError {
 	var verr validators.ValidationError
-	if protocol != "" && protocol != ProtocolGRPC && protocol != ProtocolHTTP {
-		verr.AddViolationAt(validators.RootedAt("protocol"), "must be one of: grpc, http")
+	if protocol != "" && !slices.Contains(allProtocols, string(protocol)) {
+		verr.AddErrorAt(validators.RootedAt("protocol"), validators.MakeFieldMustBeOneOfErr("protocol", allProtocols...))
 	}
 	return verr
 }
+
+var (
+	allEnvModes       = []string{string(EnvModeDisabled), string(EnvModeOptional), string(EnvModeRequired)}
+	allEnvPrecedences = []string{string(EnvPrecedenceExplicitFirst), string(EnvPrecedenceEnvFirst)}
+)
 
 func validateEnvPolicy(policy *EnvPolicy) validators.ValidationError {
 	var verr validators.ValidationError
@@ -88,17 +86,12 @@ func validateEnvPolicy(policy *EnvPolicy) validators.ValidationError {
 		return verr
 	}
 
-	if policy.Mode != "" &&
-		policy.Mode != EnvModeDisabled &&
-		policy.Mode != EnvModeOptional &&
-		policy.Mode != EnvModeRequired {
-		verr.AddViolationAt(validators.RootedAt("mode"), "must be one of: Disabled, Optional, Required")
+	if policy.Mode != "" && !slices.Contains(allEnvModes, string(policy.Mode)) {
+		verr.AddErrorAt(validators.RootedAt("mode"), validators.MakeFieldMustBeOneOfErr("mode", allEnvModes...))
 	}
 
-	if policy.Precedence != "" &&
-		policy.Precedence != EnvPrecedenceExplicitFirst &&
-		policy.Precedence != EnvPrecedenceEnvFirst {
-		verr.AddViolationAt(validators.RootedAt("precedence"), "must be one of: ExplicitFirst, EnvFirst")
+	if policy.Precedence != "" && !slices.Contains(allEnvPrecedences, string(policy.Precedence)) {
+		verr.AddErrorAt(validators.RootedAt("precedence"), validators.MakeFieldMustBeOneOfErr("precedence", allEnvPrecedences...))
 	}
 
 	return verr
