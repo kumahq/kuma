@@ -177,6 +177,7 @@ rules:
       - meshexternalservices
       - meshidentities
       - meshmultizoneservices
+      - meshopentelemetrybackends
       - meshservices
       - meshtrusts
       - meshzoneaddresses
@@ -492,7 +493,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: d7511d7c378d92e59e451979f93e2b63891056bd234687d55b3f10356075a241
+        checksum/tls-secrets: 601ae1dc55740f06e14c937840a243cc7dfb3261c3fe5262fccdc8742ed3685f
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -723,6 +724,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - meshzoneaddresses
@@ -788,6 +790,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - meshzoneaddresses
@@ -935,6 +938,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - meshzoneaddresses
