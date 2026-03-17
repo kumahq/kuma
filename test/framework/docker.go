@@ -292,7 +292,7 @@ func portForward(networking *universal.Networking, remoteAddress string) (*VmPor
 	addr, err := networking.PortForward(remoteAddress, stopChan)
 	if err != nil {
 		return nil, fmt.Errorf("could not establish ssh port forwarding to remote host %q: %w",
-			networking.RemoteHost, err)
+			networking.RemoteHost.Address, err)
 	}
 
 	pf := &VmPortForward{
