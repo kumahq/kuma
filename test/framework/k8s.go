@@ -97,7 +97,7 @@ func UpdateKubeObject(
 		}
 
 		decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
-		into := map[string]interface{}{}
+		into := map[string]any{}
 
 		if err := decoder.Decode(&into); err != nil {
 			return "", err

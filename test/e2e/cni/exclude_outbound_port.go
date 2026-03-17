@@ -13,7 +13,6 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
 )
@@ -86,7 +85,7 @@ func ExcludeOutboundPort() {
 					},
 				},
 				SecurityContext: &corev1.SecurityContext{
-					RunAsUser: pointer.To(int64(1234)),
+					RunAsUser: new(int64(1234)),
 				},
 			}),
 		))).To(Succeed())

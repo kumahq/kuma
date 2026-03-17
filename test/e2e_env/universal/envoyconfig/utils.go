@@ -13,7 +13,6 @@ import (
 	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
@@ -47,7 +46,7 @@ func getConfig(mesh, dpp string) string {
 	response := types.GetDataplaneXDSConfigResponse{}
 	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
 	Expect(response.Diff).ToNot(BeNil())
-	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
+	response.Diff = new(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
 		return item.Op == api_common.Test
 	}))
 	// Redact value for maxDirectResponseBodySizeBytes in diff items

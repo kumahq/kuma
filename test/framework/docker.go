@@ -64,7 +64,7 @@ func (*LocalDockerBackend) GetPublishedDockerPorts(
 		// Sometimes the port may not be available immediately, and it can take some time.
 		// Since we didn't retry, tests were failing with and an error
 		// `missing port in address` on OSX.
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			out, err = shell.RunCommandAndGetStdOutE(t, cmd)
 			if err != nil {
 				time.Sleep(time.Millisecond * 500)
@@ -277,7 +277,7 @@ func (u *RemoteDockerBackend) GetPublishedDockerPorts(
 }
 
 func (u *RemoteDockerBackend) RunCommandAndGetStdOutE(t testing.TestingT, cmdName string, args []string, log *logger.Logger) (string, error) {
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		if strings.Contains(args[i], " ") {
 			args[i] = fmt.Sprintf("%q", args[i])
 		}

@@ -81,7 +81,7 @@ func DumpState(cluster Cluster, mesh string, namespaces ...string) {
 	}
 	if errs != nil {
 		Logf("[WARNING]: some debug commands failed %v", errs)
-		report.AddFileToReportEntry("debug-errors.txt", []byte(fmt.Sprintf("%s", errs)))
+		report.AddFileToReportEntry("debug-errors.txt", fmt.Appendf(nil, "%s", errs))
 	}
 }
 

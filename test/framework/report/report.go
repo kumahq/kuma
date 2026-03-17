@@ -24,7 +24,7 @@ func stagingDir() string {
 
 // AddFileToReportEntry adds a file to the report. The file will be copied to the report directory.
 // It's an alternative to ginkgo.AddReportEntry so that not all logs are kept in memory.
-func AddFileToReportEntry(name string, content interface{}) {
+func AddFileToReportEntry(name string, content any) {
 	base := stagingDir()
 	if err := os.MkdirAll(base, 0o755); err != nil {
 		logf("[WARNING]: Error creating staging directory %s: %v", base, err)
@@ -128,7 +128,7 @@ func DumpReport(report ginkgo.Report) {
 	logf("saved report to %q", basePath)
 }
 
-func logf(c string, args ...interface{}) {
+func logf(c string, args ...any) {
 	ginkgo.GinkgoWriter.Printf(c, args...)
 	ginkgo.GinkgoWriter.Println("")
 }

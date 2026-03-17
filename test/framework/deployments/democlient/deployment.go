@@ -70,7 +70,7 @@ func WithService(service bool) DeploymentOptsFn {
 	}
 }
 
-type TestServer interface{}
+type TestServer any
 
 type Deployment interface {
 	framework.Deployment

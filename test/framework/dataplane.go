@@ -10,7 +10,7 @@ func IsDataplaneOnline(cluster Cluster, mesh, name string) (bool, bool, error) {
 	if err != nil {
 		return false, false, err
 	}
-	for _, line := range strings.Split(out, "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		if strings.Contains(line, name) {
 			return strings.Contains(line, "Online"), true, nil
 		}

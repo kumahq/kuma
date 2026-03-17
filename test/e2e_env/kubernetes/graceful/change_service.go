@@ -12,7 +12,6 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/channels"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
@@ -55,7 +54,7 @@ func ChangeService() {
 						Name:        "main",
 						Port:        int32(80),
 						TargetPort:  intstr.FromString("main"),
-						AppProtocol: pointer.To("htt"),
+						AppProtocol: new("htt"),
 					},
 				},
 				Selector: selector,

@@ -11,7 +11,6 @@ import (
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
@@ -165,7 +164,7 @@ redirect:
 						},
 					},
 					SecurityContext: &kube_core.SecurityContext{
-						RunAsUser: pointer.To(int64(1234)),
+						RunAsUser: new(int64(1234)),
 					},
 				}),
 			)).
