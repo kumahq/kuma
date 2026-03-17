@@ -1,0 +1,3 @@
+violations:
+- field: spec.protocol
+  message: 'must be one of: grpc, http'
