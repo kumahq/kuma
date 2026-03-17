@@ -5,7 +5,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
-//nolint:gosec
 const SampleSigningKeyValue = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEA2hVWqy1JzpbMEIrTr2UTdEsCMrTaUhAqZlhNLJrS8kc0mbPK
 Z7nT1JErJGUI4/NRHSQQZND3biPEcVktu0P5Ui6Ieum8HH7ENoRaSwLgaV451LOG
