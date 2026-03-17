@@ -93,12 +93,12 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		port := meshservice_api.Port{
 			Name:        &inbound.Name,
 			Port:        int32(inbound.Port),
-			TargetPort:  pointer.To(intstr.FromInt32(int32(inbound.Port))),
+			TargetPort:  new(intstr.FromInt32(int32(inbound.Port))),
 			AppProtocol: core_meta.ProtocolTCP,
 		}
 
 		if name := pointer.Deref(port.Name); name == "" {
-			port.Name = pointer.To(fmt.Sprintf("%d", port.Port))
+			port.Name = new(fmt.Sprintf("%d", port.Port))
 		}
 
 		if proto := inbound.GetProtocolFallback(); proto != "" {

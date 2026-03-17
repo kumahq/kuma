@@ -55,10 +55,10 @@ func (k *serverStream) Context() context.Context {
 	return k.stream.Context()
 }
 
-func (k *serverStream) SendMsg(m interface{}) error {
+func (k *serverStream) SendMsg(m any) error {
 	panic("not implemented")
 }
 
-func (k *serverStream) RecvMsg(m interface{}) error {
+func (k *serverStream) RecvMsg(m any) error {
 	panic("not implemented")
 }

@@ -57,7 +57,7 @@ var _ = Describe("Collector", func() {
 			ticks := make(chan time.Time)
 			defer close(ticks)
 			// given 5 dataplanes now
-			for i := 0; i < 5; i++ {
+			for i := range 5 {
 				createDpAndDpInsight(fmt.Sprintf("dp-%d", i), "default", now)
 			}
 			// given 5 dataplanes after an hour
@@ -162,7 +162,7 @@ var _ = Describe("Collector", func() {
 			ticks := make(chan time.Time)
 			defer close(ticks)
 			// given 8 zone egresses now
-			for i := 0; i < 8; i++ {
+			for i := range 8 {
 				createZoneEgressAndInsight(fmt.Sprintf("ze-%d", i), now)
 			}
 			// given 2 zone egresses after an hour
@@ -170,7 +170,7 @@ var _ = Describe("Collector", func() {
 				createZoneEgressAndInsight(fmt.Sprintf("ze-%d", i), now.Add(time.Hour))
 			}
 			// given 5 zone ingresses now
-			for i := 0; i < 5; i++ {
+			for i := range 5 {
 				createZoneIngressAndInsight(fmt.Sprintf("zi-%d", i), now)
 			}
 			// given 5 zone ingresses after an hour

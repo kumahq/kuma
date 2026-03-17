@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
@@ -65,7 +64,7 @@ var _ = Describe("MeshProxyPatch", func() {
 								{
 									Cluster: &api.ClusterMod{
 										Operation: api.ModOpAdd,
-										Value: pointer.To(`
+										Value: new(`
 name: new-cluster
 connectTimeout: 5s
 `),
@@ -75,9 +74,9 @@ connectTimeout: 5s
 									Cluster: &api.ClusterMod{
 										Operation: api.ModOpPatch,
 										Match: &api.ClusterMatch{
-											Name: pointer.To("echo-http"),
+											Name: new("echo-http"),
 										},
-										Value: pointer.To(`
+										Value: new(`
 connectTimeout: 100s
 `),
 									},

@@ -9,7 +9,6 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 type MeshMultiZoneServiceBuilder struct {
@@ -76,7 +75,7 @@ func (m *MeshMultiZoneServiceBuilder) AddIntPortWithName(port int32, protocol co
 	m.res.Spec.Ports = append(m.res.Spec.Ports, meshmzservice_api.Port{
 		Port:        port,
 		AppProtocol: protocol,
-		Name:        pointer.To(name),
+		Name:        new(name),
 	})
 	return m
 }

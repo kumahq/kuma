@@ -10,7 +10,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
@@ -36,7 +35,7 @@ var _ = Describe("Json Patch merge", func() {
 		patches := []common_api.JsonPatchBlock{
 			{
 				Op:    "replace",
-				Path:  pointer.To("/accessLog/0/typedConfig/commonConfig/logName"),
+				Path:  new("/accessLog/0/typedConfig/commonConfig/logName"),
 				Value: []byte(`"y"`),
 			},
 		}
@@ -61,7 +60,7 @@ var _ = Describe("Json Patch merge", func() {
 		patches := []common_api.JsonPatchBlock{
 			{
 				Op:    "replace",
-				Path:  pointer.To("/access_log/0/typed_config/common_config/log_name"),
+				Path:  new("/access_log/0/typed_config/common_config/log_name"),
 				Value: []byte(`"y"`),
 			},
 		}

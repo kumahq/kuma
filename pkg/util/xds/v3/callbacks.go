@@ -154,7 +154,7 @@ func (d *discoveryRequest) NodeId() string {
 	return d.GetNode().GetId()
 }
 
-func (d *discoveryRequest) Node() interface{} {
+func (d *discoveryRequest) Node() any {
 	return d.GetNode()
 }
 
@@ -196,7 +196,7 @@ func (d *deltaDiscoveryRequest) NodeId() string {
 	return d.GetNode().GetId()
 }
 
-func (d *deltaDiscoveryRequest) Node() interface{} {
+func (d *deltaDiscoveryRequest) Node() any {
 	return d.GetNode()
 }
 

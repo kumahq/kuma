@@ -133,7 +133,7 @@ func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedire
 	); exists {
 		var addresses []string
 
-		for _, address := range strings.Split(value, ",") {
+		for address := range strings.SplitSeq(value, ",") {
 			if trimmed := strings.TrimSpace(address); trimmed != "" {
 				addresses = append(addresses, trimmed)
 			}
@@ -147,7 +147,7 @@ func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedire
 	); exists {
 		var addresses []string
 
-		for _, address := range strings.Split(value, ",") {
+		for address := range strings.SplitSeq(value, ",") {
 			if trimmed := strings.TrimSpace(address); trimmed != "" {
 				addresses = append(addresses, trimmed)
 			}
