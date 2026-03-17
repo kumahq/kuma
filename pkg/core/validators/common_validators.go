@@ -3,7 +3,6 @@ package validators
 import (
 	"fmt"
 	"math"
-	"net"
 	"regexp"
 	"strings"
 	"time"
@@ -287,8 +286,10 @@ func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationEr
 
 // ValidateOtelBackendRefOrEndpoint validates that exactly one of endpoint or
 // backendRef is set. If backendRef is set, delegates to ValidateBackendResourceRef.
-// If endpoint is set, validates it as host:port (rejects URL characters).
-func ValidateOtelBackendRefOrEndpoint(endpoint string, backendRef *common_api.BackendResourceRef) ValidationError {
+// If endpoint is set, rejects URL characters and runs optional extra validators.
+// Extra validators allow policies to enforce stricter endpoint rules for
+// backward compatibility (e.g. MeshMetric requires host:port).
+func ValidateOtelBackendRefOrEndpoint(endpoint string, backendRef *common_api.BackendResourceRef, extraEndpointValidators ...func(string) ValidationError) ValidationError {
 	var verr ValidationError
 	if endpoint != "" && backendRef != nil {
 		verr.AddViolation("", MustHaveOnlyOne("openTelemetry", "endpoint", "backendRef"))
@@ -302,8 +303,10 @@ func ValidateOtelBackendRefOrEndpoint(endpoint string, backendRef *common_api.Ba
 		verr.AddErrorAt(RootedAt("backendRef"), ValidateBackendResourceRef(backendRef))
 	} else if strings.ContainsAny(endpoint, "/?#") {
 		verr.AddViolationAt(RootedAt("endpoint"), "must be in host:port format, not a URL")
-	} else if _, _, err := net.SplitHostPort(endpoint); err != nil {
-		verr.AddViolationAt(RootedAt("endpoint"), "must be in host:port format")
+	} else {
+		for _, v := range extraEndpointValidators {
+			verr.Add(v(endpoint))
+		}
 	}
 	return verr
 }
