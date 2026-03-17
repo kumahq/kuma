@@ -7,15 +7,15 @@ import (
 )
 
 type StatItem struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
+	Name  string `json:"name"`
+	Value any    `json:"value"`
 }
 
 type Stats struct {
 	Stats []StatItem `json:"stats"`
 }
 
-func BeEqual(expected interface{}) types.GomegaMatcher {
+func BeEqual(expected any) types.GomegaMatcher {
 	return &statMatcher{
 		predicate: func(item StatItem) bool {
 			return item.Value == expected
@@ -30,7 +30,7 @@ func BeEqualZero() types.GomegaMatcher {
 	return BeEqual(float64(0))
 }
 
-func BeGreaterThan(other interface{}) types.GomegaMatcher {
+func BeGreaterThan(other any) types.GomegaMatcher {
 	var expected float64
 	if si, ok := other.(StatItem); ok {
 		expected = si.Value.(float64)
@@ -56,7 +56,7 @@ type statMatcher struct {
 	msg       func() string
 }
 
-func (m *statMatcher) Match(actual interface{}) (bool, error) {
+func (m *statMatcher) Match(actual any) (bool, error) {
 	stats, ok := actual.(*Stats)
 	if !ok {
 		return false, fmt.Errorf("BeEqual matcher expects a Stats")
@@ -73,13 +73,13 @@ func (m *statMatcher) Match(actual interface{}) (bool, error) {
 	return m.predicate(stats.Stats[0]), nil
 }
 
-func (m *statMatcher) FailureMessage(actual interface{}) string {
+func (m *statMatcher) FailureMessage(actual any) string {
 	actualStats := actual.(*Stats)
 	actualStat := actualStats.Stats[0]
 	return fmt.Sprintf(": %v %s to be: %s", actualStat.Name, actualStat.Value, m.msg())
 }
 
-func (m *statMatcher) NegatedFailureMessage(actual interface{}) string {
+func (m *statMatcher) NegatedFailureMessage(actual any) string {
 	actualStats := actual.(*Stats)
 	actualStat := actualStats.Stats[0]
 	return fmt.Sprintf(": %v %s not to be: %s", actualStat.Name, actualStat.Value, m.msg())

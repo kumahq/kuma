@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"maps"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -209,9 +210,7 @@ func WithPostgres(envVars map[string]string) KumaDeploymentOption {
 			o.env = map[string]string{}
 		}
 
-		for key, value := range envVars {
-			o.env[key] = value
-		}
+		maps.Copy(o.env, envVars)
 	})
 }
 
@@ -288,9 +287,7 @@ func WithEnv(name, value string) KumaDeploymentOption {
 
 func WithEnvs(entries map[string]string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		for k, v := range entries {
-			o.env[k] = v
-		}
+		maps.Copy(o.env, entries)
 	})
 }
 
@@ -363,9 +360,7 @@ func WithCtlOpts(opts map[string]string) KumaDeploymentOption {
 		if o.ctlOpts == nil {
 			o.ctlOpts = map[string]string{}
 		}
-		for name, value := range opts {
-			o.ctlOpts[name] = value
-		}
+		maps.Copy(o.ctlOpts, opts)
 	})
 }
 
@@ -617,9 +612,7 @@ func WithAppDockerRunOptions(options []string) AppDeploymentOption {
 func WithLabels(labels map[string]string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.labels = make(map[string]string)
-		for k, v := range labels {
-			o.labels[k] = v
-		}
+		maps.Copy(o.labels, labels)
 	})
 }
 
