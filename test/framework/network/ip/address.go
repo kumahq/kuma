@@ -115,7 +115,7 @@ var reservedIPv6 = []*net.IPNet{
 func genRandomIP(size int, reserved []*net.IPNet) net.IP {
 	ipBytes := make([]byte, size)
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		ipBytes[i] = byte(r.Intn(256))
 	}
 

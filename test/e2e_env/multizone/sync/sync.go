@@ -381,7 +381,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 		It("should sync policy with a long name and store it as display name", func() {
 			// given
 			name := ""
-			for i := 0; i < 253; i++ {
+			for range 253 {
 				name += "x"
 			}
 
