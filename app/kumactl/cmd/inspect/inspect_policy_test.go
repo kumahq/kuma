@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -56,13 +57,7 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			rawResponse, err := os.ReadFile(path.Join("testdata", given.serverResponseFile))
 			Expect(err).ToNot(HaveOccurred())
 
-			newApi := false
-			for _, arg := range given.cmdArgs {
-				if arg == "--new-api" {
-					newApi = true
-					break
-				}
-			}
+			newApi := slices.Contains(given.cmdArgs, "--new-api")
 			var client *testPolicyInspectClient
 			if newApi {
 				entryList := api_types.InspectDataplanesForPolicyResponse{}

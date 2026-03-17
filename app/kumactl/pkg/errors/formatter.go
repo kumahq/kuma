@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -29,15 +30,16 @@ func formatApiServerError(apiErr *types.Error) error {
 	if apiErr.Detail == "" {
 		apiErr.Detail = apiErr.Details
 	}
-	msg := fmt.Sprintf("%s (%s)", apiErr.Title, apiErr.Detail)
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("%s (%s)", apiErr.Title, apiErr.Detail))
 	if apiErr.Causes != nil && apiErr.InvalidParameters == nil {
 		for _, cause := range apiErr.Causes {
-			msg += fmt.Sprintf("\n* %s: %s", cause.Field, cause.Message)
+			msg.WriteString(fmt.Sprintf("\n* %s: %s", cause.Field, cause.Message))
 		}
 	} else {
 		for _, cause := range apiErr.InvalidParameters {
-			msg += fmt.Sprintf("\n* %s: %s", cause.Field, cause.Reason)
+			msg.WriteString(fmt.Sprintf("\n* %s: %s", cause.Field, cause.Reason))
 		}
 	}
-	return errors.New(msg)
+	return errors.New(msg.String())
 }

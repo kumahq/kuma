@@ -3,6 +3,7 @@ package install
 import (
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"strings"
@@ -58,7 +59,7 @@ func getVersionSet(client discovery.ServerResourcesInterface) (chartcommon.Versi
 		return chartcommon.DefaultVersionSet, nil
 	}
 
-	versionMap := make(map[string]interface{})
+	versionMap := make(map[string]any)
 	versions := []string{}
 
 	// Extract the groups
@@ -154,7 +155,7 @@ This command requires that the KUBECONFIG environment is set`,
 
 			// User specified a values files via -f/--values
 			for _, filePath := range args.ValueFiles {
-				currentMap := map[string]interface{}{}
+				currentMap := map[string]any{}
 
 				var bytes []byte
 				if strings.TrimSpace(filePath) == "-" {
@@ -309,15 +310,13 @@ This command requires that the KUBECONFIG environment is set`,
 	return cmd
 }
 
-func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{})
-	for k, v := range a {
-		out[k] = v
-	}
+func mergeMaps(a, b map[string]any) map[string]any {
+	out := make(map[string]any)
+	maps.Copy(out, a)
 	for k, v := range b {
-		if v, ok := v.(map[string]interface{}); ok {
+		if v, ok := v.(map[string]any); ok {
 			if bv, ok := out[k]; ok {
-				if bv, ok := bv.(map[string]interface{}); ok {
+				if bv, ok := bv.(map[string]any); ok {
 					out[k] = mergeMaps(bv, v)
 					continue
 				}

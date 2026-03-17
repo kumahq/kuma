@@ -17,7 +17,6 @@ import (
 	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
 	tproxy_validate "github.com/kumahq/kuma/v2/pkg/transparentproxy/validate"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 const defaultLogName = "transparentproxy.validator"
@@ -49,7 +48,7 @@ The result will be shown as text in stdout as well as the exit code.
 					return errors.New("transparent proxy is supported only on Linux systems")
 				}
 
-				tpCfg = pointer.To(tproxy_dp.DefaultDataplaneConfig())
+				tpCfg = new(tproxy_dp.DefaultDataplaneConfig())
 				if err := config.NewLoader(tpCfg).WithValidation().Load(cmd.InOrStdin(), tpCfgValues...); err != nil {
 					return errors.Wrap(err, "failed to load transparent proxy configuration from provided input")
 				}

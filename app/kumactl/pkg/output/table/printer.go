@@ -11,11 +11,11 @@ type Printer interface {
 
 type Table struct {
 	Headers    []string
-	FooterFn   func(container interface{}) string
-	RowForItem func(i int, container interface{}) ([]string, error)
+	FooterFn   func(container any) string
+	RowForItem func(i int, container any) ([]string, error)
 }
 
-func (p *Table) Print(data interface{}, out io.Writer) error {
+func (p *Table) Print(data any, out io.Writer) error {
 	var allErr error
 	table := NewWriter(out)
 	defer table.Flush()
