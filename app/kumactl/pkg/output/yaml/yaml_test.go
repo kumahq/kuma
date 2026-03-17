@@ -28,7 +28,7 @@ var _ = Describe("printer", func() {
 	})
 
 	type testCase struct {
-		obj        interface{}
+		obj        any
 		goldenFile string
 	}
 

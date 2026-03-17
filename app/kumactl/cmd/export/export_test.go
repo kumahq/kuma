@@ -215,12 +215,12 @@ type fileBasedKubernetesResourcesClient struct{}
 
 var _ client.KubernetesResourcesClient = &fileBasedKubernetesResourcesClient{}
 
-func (f fileBasedKubernetesResourcesClient) Get(_ context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]interface{}, error) {
+func (f fileBasedKubernetesResourcesClient) Get(_ context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]any, error) {
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", fmt.Sprintf("kube-input.%s.%s.json", descriptor.Name, name)))
 	if err != nil {
 		return nil, err
 	}
-	res := map[string]interface{}{}
+	res := map[string]any{}
 	if err := json.Unmarshal(inputBytes, &res); err != nil {
 		return nil, err
 	}

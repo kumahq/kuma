@@ -80,7 +80,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					return errors.New("transparent proxy is supported only on Linux systems")
 				}
 
-				tpCfg = pointer.To(tproxy_dp.DefaultDataplaneConfig())
+				tpCfg = new(tproxy_dp.DefaultDataplaneConfig())
 				tpCfgLoader := config.NewLoader(tpCfg).WithValidation()
 
 				if err := tpCfgLoader.Load(cmd.InOrStdin(), tpCfgValues...); err != nil {

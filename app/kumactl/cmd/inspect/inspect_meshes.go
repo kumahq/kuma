@@ -49,7 +49,7 @@ var meshInsightTable = printers.Table{
 		"PROXY TEMPLATES",
 		"RATE LIMITS",
 	},
-	RowForItem: func(i int, container interface{}) ([]string, error) {
+	RowForItem: func(i int, container any) ([]string, error) {
 		meshInsights := container.(*mesh.MeshInsightResourceList)
 		if len(meshInsights.Items) <= i {
 			return nil, nil

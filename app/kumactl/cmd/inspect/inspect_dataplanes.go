@@ -75,7 +75,7 @@ func dataplaneOverviewsTable(now time.Time) printers.Table {
 			"DEPENDENCIES VERSIONS",
 			"NOTES",
 		},
-		RowForItem: func(i int, container interface{}) ([]string, error) {
+		RowForItem: func(i int, container any) ([]string, error) {
 			dataplaneOverviews := container.(*core_mesh.DataplaneOverviewResourceList)
 			if len(dataplaneOverviews.Items) <= i {
 				return nil, nil
