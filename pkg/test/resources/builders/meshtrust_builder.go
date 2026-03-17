@@ -2,6 +2,7 @@ package builders
 
 import (
 	"context"
+	"maps"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -95,9 +96,7 @@ func (mtr *MeshTrustBuilder) WithLabels(labels map[string]string) *MeshTrustBuil
 	if mtr.res.Meta.(*test_model.ResourceMeta).Labels == nil {
 		mtr.res.Meta.(*test_model.ResourceMeta).Labels = map[string]string{}
 	}
-	for key, val := range labels {
-		mtr.res.Meta.(*test_model.ResourceMeta).Labels[key] = val
-	}
+	maps.Copy(mtr.res.Meta.(*test_model.ResourceMeta).Labels, labels)
 	return mtr
 }
 

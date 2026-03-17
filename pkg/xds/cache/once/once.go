@@ -4,11 +4,11 @@ import "sync"
 
 type once struct {
 	syncOnce sync.Once
-	Value    interface{}
+	Value    any
 	Err      error
 }
 
-func (o *once) Do(f func() (interface{}, error)) {
+func (o *once) Do(f func() (any, error)) {
 	o.syncOnce.Do(func() {
 		o.Value, o.Err = f()
 	})

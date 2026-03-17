@@ -365,13 +365,13 @@ var _ = Describe("MeshRetry", func() {
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType): {
 						Resource: testMeshHTTPRouteMeta(),
-						Conf: []interface{}{
+						Conf: []any{
 							testFirstHTTPRetryConf(),
 						},
 					},
 					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType): {
 						Resource: testMeshServiceMeta(),
-						Conf: []interface{}{
+						Conf: []any{
 							testSecondHTTPRetryConf(),
 						},
 					},
@@ -390,7 +390,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							testFirstHTTPRetryConf(),
 						},
 					},
@@ -409,7 +409,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							testFirstHTTPRetryConf(),
 						},
 					},

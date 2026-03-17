@@ -84,12 +84,12 @@ func ToStruct(message proto.Message) (*structpb.Struct, error) {
 	return str, nil
 }
 
-func ToMap(message proto.Message) (map[string]interface{}, error) {
+func ToMap(message proto.Message) (map[string]any, error) {
 	configBytes, err := ToJSON(message)
 	if err != nil {
 		return nil, err
 	}
-	value := map[string]interface{}{}
+	value := map[string]any{}
 	err = json.Unmarshal(configBytes, &value)
 	if err != nil {
 		return value, err
