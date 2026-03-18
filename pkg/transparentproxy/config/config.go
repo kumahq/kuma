@@ -103,7 +103,7 @@ func (p *Ports) append(s string) error {
 		return nil
 	}
 
-	for _, port := range strings.Split(s, ",") {
+	for port := range strings.SplitSeq(s, ",") {
 		trimmedPort := strings.TrimSpace(port)
 		if trimmedPort == "" {
 			continue
@@ -121,14 +121,14 @@ func (p *Ports) append(s string) error {
 }
 
 func (p *Ports) UnmarshalJSON(bs []byte) error {
-	var jsonValue interface{}
+	var jsonValue any
 
 	if err := json.Unmarshal(bs, &jsonValue); err != nil {
 		return err
 	}
 
 	switch typedValue := jsonValue.(type) {
-	case []interface{}:
+	case []any:
 		var values []string
 		for _, item := range typedValue {
 			switch i := item.(type) {

@@ -3,6 +3,7 @@ package xds
 import (
 	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -409,13 +410,7 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {
 	policyRetrySplit := strings.Split(policyRetryOn, ",")
-	seenRetriable := false
-	for _, r := range policyRetrySplit {
-		if r == HttpRetryOnRetriableStatusCodes {
-			seenRetriable = true
-			break
-		}
-	}
+	seenRetriable := slices.Contains(policyRetrySplit, HttpRetryOnRetriableStatusCodes)
 	if !seenRetriable {
 		policyRetrySplit = append(policyRetrySplit, HttpRetryOnRetriableStatusCodes)
 	}

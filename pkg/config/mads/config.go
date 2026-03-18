@@ -1,6 +1,7 @@
 package mads
 
 import (
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -91,10 +92,5 @@ func (c *MonitoringAssignmentServerConfig) Validate() error {
 
 // VersionIsEnabled checks whether a MADS version has been enabled and should be served.
 func (c *MonitoringAssignmentServerConfig) VersionIsEnabled(apiVersion mads.ApiVersion) bool {
-	for _, version := range c.ApiVersions {
-		if apiVersion == version {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.ApiVersions, apiVersion)
 }

@@ -199,11 +199,14 @@ type Proxy struct {
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
 	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
-	RuntimeExtensions map[string]interface{}
+	RuntimeExtensions map[string]any
 	// Zone the zone the proxy is in
 	Zone string
 	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config
 	InternalAddresses []InternalAddress
+	// OtelPipeBackends accumulates unified OTel backends across policy plugins.
+	// Populated during xDS generation, consumed by the generator to write /otel dynconf.
+	OtelPipeBackends *OtelPipeBackends
 }
 
 func (p *Proxy) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
@@ -387,10 +390,8 @@ func InternalAddressesFromCIDRs(cidrs []string) []InternalAddress {
 }
 
 func (s TagSelectorSet) Add(n mesh_proto.TagSelector) TagSelectorSet {
-	for _, old := range s {
-		if n.Equal(old) {
-			return s
-		}
+	if slices.ContainsFunc(s, n.Equal) {
+		return s
 	}
 	return append(s, n)
 }

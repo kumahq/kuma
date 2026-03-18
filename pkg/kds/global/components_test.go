@@ -57,7 +57,7 @@ var _ = Describe("Global Sync", func() {
 	}
 
 	VerifyResourcesWereSynchronizedToGlobal := func() {
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
 			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
@@ -72,13 +72,13 @@ var _ = Describe("Global Sync", func() {
 	}
 
 	VerifyResourcesWereSynchronizedIndependentlyForEachZone := func() {
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
 			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			dp := dataplaneFunc("kuma-cluster-2", fmt.Sprintf("service-2-%d", i))
 			err := zoneStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-2-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
@@ -162,7 +162,7 @@ var _ = Describe("Global Sync", func() {
 			serverStreams := []*grpc.MockDeltaServerStream{}
 			wg := &sync.WaitGroup{}
 			zoneStores = []store.ResourceStore{}
-			for i := 0; i < numOfZones; i++ {
+			for i := range numOfZones {
 				zoneStore := memory.NewStore()
 				srv, err := kds_setup.NewKdsServerBuilder(zoneStore).AsZone(fmt.Sprintf(zoneName, i)).Delta()
 				Expect(err).ToNot(HaveOccurred())
@@ -196,7 +196,7 @@ var _ = Describe("Global Sync", func() {
 			kds_setup.StartDeltaClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system"))
 
 			// Create Zone resources for each Kuma CP Zone
-			for i := 0; i < numOfZones; i++ {
+			for i := range numOfZones {
 				zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: util_proto.Bool(true)}}
 				err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
 				Expect(err).ToNot(HaveOccurred())

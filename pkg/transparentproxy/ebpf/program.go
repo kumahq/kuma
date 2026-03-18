@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path"
@@ -249,9 +250,7 @@ func Flags(flags map[string]string) FlagGenerator {
 			f["--verbose"] = ""
 		}
 
-		for k, v := range flags {
-			f[k] = v
-		}
+		maps.Copy(f, flags)
 
 		return mapFlagsToSlice(f), nil
 	}

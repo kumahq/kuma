@@ -30,9 +30,6 @@ func ReadinessReporterSocketName(workdir string) string {
 }
 
 func socketName(s string) string {
-	trimLen := len(s)
-	if trimLen > 98 {
-		trimLen = 98
-	}
+	trimLen := min(len(s), 98)
 	return s[:trimLen] + ".sock"
 }

@@ -1,0 +1,26 @@
+metadata:
+  namespace: demo
+  name: zone-proxy-dual
+  labels:
+    app: zone-proxy-dual
+spec:
+  containers:
+    - name: zone-ingress
+      ports:
+        - containerPort: 10001
+    - name: zone-egress
+      ports:
+        - containerPort: 10002
+    - name: kuma-sidecar
+status:
+  podIP: 192.168.0.1
+  containerStatuses:
+    - name: zone-ingress
+      ready: true
+      started: true
+    - name: zone-egress
+      ready: true
+      started: true
+    - name: kuma-sidecar
+      ready: true
+      started: true

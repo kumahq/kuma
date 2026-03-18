@@ -2,6 +2,7 @@ package mesh_test
 
 import (
 	"context"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -243,11 +244,11 @@ var _ = Describe("Mesh Manager", func() {
 		})
 
 		It("should not create mesh with name longer than 64 chars", func() {
-			name := ""
-			for i := 0; i < 64; i++ {
-				name += "x"
+			var name strings.Builder
+			for range 64 {
+				name.WriteString("x")
 			}
-			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(name, model.NoMesh))
+			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(name.String(), model.NoMesh))
 
 			// then
 			Expect(err).To(MatchError("name: cannot be longer than 63 characters"))

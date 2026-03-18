@@ -1,0 +1,3 @@
+violations:
+- field: spec.endpoint.path
+  message: must not contain query or fragment

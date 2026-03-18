@@ -1033,6 +1033,7 @@ plugins:
     meshexternalservices: true
     meshidentities: true
     meshmultizoneservices: true
+    meshopentelemetrybackends: true
     meshservices: true
     meshtrusts: true
     meshzoneaddresses: true

@@ -2,6 +2,7 @@ package builders
 
 import (
 	"context"
+	"maps"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -228,9 +229,7 @@ func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
 }
 
 func (d *DataplaneBuilder) AddBuiltInGatewayTags(tags map[string]string) *DataplaneBuilder {
-	for k, v := range tags {
-		d.res.Spec.Networking.Gateway.Tags[k] = v
-	}
+	maps.Copy(d.res.Spec.Networking.Gateway.Tags, tags)
 	return d
 }
 
@@ -274,9 +273,7 @@ func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 }
 
 func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
-	for k, v := range tags {
-		b.res.Tags[k] = v
-	}
+	maps.Copy(b.res.Tags, tags)
 	return b
 }
 
@@ -312,9 +309,7 @@ func (b *OutboundBuilder) WithPort(port uint32) *OutboundBuilder {
 }
 
 func (b *OutboundBuilder) WithTags(tags map[string]string) *OutboundBuilder {
-	for k, v := range tags {
-		b.res.Tags[k] = v
-	}
+	maps.Copy(b.res.Tags, tags)
 	return b
 }
 

@@ -121,10 +121,8 @@ func GetCommonProtocol[T ~string, U ~string](a T, b U) Protocol {
 	}
 
 	for _, pA := range stackA {
-		for _, pB := range stackB {
-			if pA == pB {
-				return pA
-			}
+		if slices.Contains(stackB, pA) {
+			return pA
 		}
 	}
 

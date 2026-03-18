@@ -25,7 +25,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 )
 
-type ProxyConfig map[string]interface{}
+type ProxyConfig map[string]any
 
 type ProxyConfigInspector struct {
 	zone                   string
@@ -83,7 +83,7 @@ func (p *ProxyConfigInspector) mesh() string {
 }
 
 func Diff(before, after ProxyConfig) ([]api_common.JsonPatchItem, error) {
-	snapshotToNode := func(s map[string]interface{}) (jd.JsonNode, error) {
+	snapshotToNode := func(s map[string]any) (jd.JsonNode, error) {
 		bytes, err := json.Marshal(s)
 		if err != nil {
 			return nil, err
@@ -116,7 +116,7 @@ func Diff(before, after ProxyConfig) ([]api_common.JsonPatchItem, error) {
 
 func marshalSnapshot(s *cache.Snapshot) (ProxyConfig, error) {
 	resourcesByType := ProxyConfig{}
-	for rt := 0; rt < int(types.UnknownType); rt++ {
+	for rt := range int(types.UnknownType) {
 		items := s.Resources[rt].Items
 		if len(items) == 0 {
 			continue
