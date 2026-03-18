@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 461
+            maxDirectResponseBodySizeBytes: 279
             virtualHosts:
             - domains:
               - '*'
@@ -31,11 +31,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: c0a4b76c5bf234d270bd9f11b9836ba9b0dad01a1679f2f700cf03f1ab8b0b42
+                      exact: 19e86f628426cb7f67907ee63265e10a56feafcc943b0732e62a7b87fe9cfa6a
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"10s"}}],"extraLabels":{"dataplane":"dp-1","kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":null,"extraLabels":{"dataplane":"dp-1","kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -43,7 +43,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: c0a4b76c5bf234d270bd9f11b9836ba9b0dad01a1679f2f700cf03f1ab8b0b42
+                    value: 19e86f628426cb7f67907ee63265e10a56feafcc943b0732e62a7b87fe9cfa6a
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
 - name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317

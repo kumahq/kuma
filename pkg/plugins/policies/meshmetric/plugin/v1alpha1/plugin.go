@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
-	"strconv"
 	"strings"
-	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -23,6 +20,7 @@ import (
 	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/mads"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
@@ -47,11 +45,8 @@ const (
 	PrometheusListenerName       = "_kuma:metrics:prometheus"
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
-	OpenTelemetryGrpcPort        = 4317
 	WorkloadAttributeKey         = "kuma.workload"
 )
-
-var DefaultRefreshInterval = k8s.Duration{Duration: time.Minute}
 
 type plugin struct{}
 
@@ -87,16 +82,23 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	err = configureOpenTelemetry(rs, proxy, openTelemetryBackends, unifiedNaming)
-	if err != nil {
+	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
+		addOtelToAccumulator(proxy, openTelemetryBackends, ctx)
+	}
+	// configureOpenTelemetry creates Envoy-side OTel resources (listener + cluster).
+	// In pipe mode only inline backends need this; addOtelToAccumulator already
+	// skips them so we filter here to avoid duplicating Envoy resources for
+	// backendRef backends that go through the unified pipe.
+	envoyBackends := filterOtelBackendsForEnvoy(proxy, openTelemetryBackends)
+	if err := configureOpenTelemetry(rs, proxy, envoyBackends, unifiedNaming, ctx.Mesh.Resources); err != nil {
 		return err
 	}
 	inboundTagsDisabled := false
 	if ctx.ControlPlane != nil {
 		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
 	}
-	err = configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, openTelemetryBackends, inboundTagsDisabled)
-	if err != nil {
+
+	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, inboundTagsDisabled); err != nil {
 		return err
 	}
 
@@ -161,9 +163,9 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
-func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, unifiedNaming bool) error {
+func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
 	for _, openTelemetryBackend := range openTelemetryBackends {
-		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, unifiedNaming)
+		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, unifiedNaming, resources)
 		if err != nil {
 			return err
 		}
@@ -171,13 +173,25 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, unifiedNaming bool) error {
+func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
 	if openTelemetryBackend == nil {
 		return nil
 	}
+
+	resolved := policies_xds.ResolveOtelBackend(
+		openTelemetryBackend.BackendRef,
+		openTelemetryBackend.Endpoint,
+		policies_xds.ParseOtelEndpoint,
+		backendNameFrom,
+		resources,
+	)
+	if resolved == nil {
+		return nil
+	}
+
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
-	endpoint := endpointForOpenTelemetry(openTelemetryBackend.Endpoint)
-	backendName := backendNameFrom(openTelemetryBackend.Endpoint)
+	endpoint := policies_xds.EndpointForDirectOtelExport(resolved, proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP))
+	backendName := resolved.Name
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
@@ -213,8 +227,8 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 	return nil
 }
 
-func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend, inboundTagsDisabled bool) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources.MeshLocalResources, prometheusBackends, openTelemetryBackend, inboundTagsDisabled)
+func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, conf api.Conf, prometheusBackends []*api.PrometheusBackend, inboundTagsDisabled bool) error {
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources, prometheusBackends, inboundTagsDisabled)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -240,9 +254,8 @@ func createDynamicConfig(
 	conf api.Conf,
 	proxy *core_xds.Proxy,
 	mesh *core_mesh.MeshResource,
-	resources xds_context.ResourceMap,
+	resources xds_context.Resources,
 	prometheusBackends []*api.PrometheusBackend,
-	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
 ) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
@@ -261,20 +274,9 @@ func createDynamicConfig(
 			Type: string(api.PrometheusBackendType),
 		})
 	}
-	for _, backend := range openTelemetryBackends {
-		backendName := backendNameFrom(backend.Endpoint)
-		backends = append(backends, dpapi.Backend{
-			Type: string(api.OpenTelemetryBackendType),
-			Name: &backendName,
-			OpenTelemetry: &dpapi.OpenTelemetryBackend{
-				Endpoint:        core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
-				RefreshInterval: pointer.DerefOr(backend.RefreshInterval, DefaultRefreshInterval),
-			},
-		})
-	}
 
 	var gateways []*core_mesh.MeshGatewayResource
-	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
+	if rawList := resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
 		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
 	}
 
@@ -310,19 +312,6 @@ func createDynamicConfig(
 	}
 }
 
-func endpointForOpenTelemetry(endpoint string) *core_xds.Endpoint {
-	target := strings.Split(endpoint, ":")
-	port := uint32(OpenTelemetryGrpcPort) // default gRPC port
-	if len(target) > 1 {
-		val, _ := strconv.ParseInt(target[1], 10, 32)
-		port = uint32(val)
-	}
-	return &core_xds.Endpoint{
-		Target: target[0],
-		Port:   port,
-	}
-}
-
 func filterOpenTelemetryBackends(backends *[]api.Backend) []*api.OpenTelemetryBackend {
 	var openTelemetryBackends []*api.OpenTelemetryBackend
 	for _, backend := range pointer.Deref(backends) {
@@ -341,6 +330,60 @@ func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend 
 		}
 	}
 	return prometheusBackends
+}
+
+// filterOtelBackendsForEnvoy returns backends that need Envoy-side OTel resources.
+// In pipe mode, backendRef backends go through the unified pipe so only inline
+// backends need Envoy config. Without pipe mode, all backends need it.
+func filterOtelBackendsForEnvoy(proxy *core_xds.Proxy, backends []*api.OpenTelemetryBackend) []*api.OpenTelemetryBackend {
+	if !proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) || proxy.OtelPipeBackends == nil {
+		return backends
+	}
+
+	var inline []*api.OpenTelemetryBackend
+	for _, b := range backends {
+		if b != nil && b.BackendRef == nil {
+			inline = append(inline, b)
+		}
+	}
+
+	return inline
+}
+
+func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, ctx xds_context.Context) {
+	for _, backend := range openTelemetryBackends {
+		if backend == nil || backend.BackendRef == nil {
+			continue
+		}
+
+		resolved := policies_xds.ResolveOtelBackend(
+			backend.BackendRef,
+			backend.Endpoint,
+			policies_xds.ParseOtelEndpoint,
+			backendNameFrom,
+			ctx.Mesh.Resources,
+		)
+		if resolved == nil {
+			continue
+		}
+
+		refreshInterval := ""
+		if backend.RefreshInterval != nil {
+			refreshInterval = backend.RefreshInterval.Duration.String()
+		}
+
+		base := policies_xds.BuildResolvedPipeBackend(proxy.Metadata.WorkDir, resolved)
+		options := policies_xds.AddResolvedBackendOptions{
+			RefreshInterval: refreshInterval,
+		}
+		plan := policies_xds.BuildSignalRuntimePlan(
+			proxy.Metadata.GetOtelEnvInventory(),
+			base.EnvPolicy,
+			core_xds.OtelSignalMetrics,
+			options,
+		)
+		proxy.OtelPipeBackends.AddSignal(resolved.Name, base, core_xds.OtelSignalMetrics, plan)
+	}
 }
 
 func backendNameFrom(endpoint string) string {
