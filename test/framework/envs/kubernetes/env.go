@@ -44,7 +44,7 @@ func SetupAndGetState() []byte {
 		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
 	}
 	if framework.Config.KumaAdminUnixSocket {
-		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET", "true"))
+		kumaOptions = append(kumaOptions, framework.WithHelmOpt("experimental.adminUnixSocket", "true"))
 	}
 
 	Eventually(func() error {
