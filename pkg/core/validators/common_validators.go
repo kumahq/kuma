@@ -289,17 +289,20 @@ func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationEr
 // If endpoint is set, rejects URL characters and runs optional extra validators.
 // Extra validators allow policies to enforce stricter endpoint rules for
 // backward compatibility (e.g. MeshMetric requires host:port).
-func ValidateOtelBackendRefOrEndpoint(endpoint string, backendRef *common_api.BackendResourceRef, extraEndpointValidators ...func(string) ValidationError) ValidationError {
+func ValidateOtelBackendRefOrEndpoint(
+	endpoint string,
+	backendRef *common_api.BackendResourceRef,
+	extraEndpointValidators ...func(string) ValidationError,
+) ValidationError {
 	var verr ValidationError
-	if endpoint != "" && backendRef != nil {
+
+	switch {
+	case endpoint != "" && backendRef != nil:
 		verr.AddViolation("", MustHaveOnlyOne("openTelemetry", "endpoint", "backendRef"))
 		return verr
-	}
-	if endpoint == "" && backendRef == nil {
+	case endpoint == "" && backendRef == nil:
 		verr.AddViolation("", MustHaveExactlyOneOf("openTelemetry", "endpoint", "backendRef"))
 		return verr
-	}
-	switch {
 	case backendRef != nil:
 		verr.AddErrorAt(RootedAt("backendRef"), ValidateBackendResourceRef(backendRef))
 	case strings.ContainsAny(endpoint, "/?#"):
@@ -309,6 +312,7 @@ func ValidateOtelBackendRefOrEndpoint(endpoint string, backendRef *common_api.Ba
 			verr.Add(v(endpoint))
 		}
 	}
+
 	return verr
 }
 
