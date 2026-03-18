@@ -83,9 +83,9 @@ func (kt KDSFlagType) Has(flag KDSFlagType) bool {
 	return kt&flag == flag
 }
 
-type ResourceSpec interface{}
+type ResourceSpec any
 
-type ResourceStatus interface{}
+type ResourceStatus any
 
 type Resource interface {
 	GetMeta() ResourceMeta
@@ -119,7 +119,7 @@ func HashMeta(r Resource) []byte {
 }
 
 func Deprecations(resource Resource) []string {
-	if v, ok := interface{}(resource).(interface{ Deprecations() []string }); ok {
+	if v, ok := any(resource).(interface{ Deprecations() []string }); ok {
 		return v.Deprecations()
 	}
 	return nil
@@ -829,7 +829,7 @@ func (p *Pagination) SetNextOffset(nextOffset string) {
 	p.NextOffset = nextOffset
 }
 
-func ErrorInvalidItemType(expected, actual interface{}) error {
+func ErrorInvalidItemType(expected, actual any) error {
 	return fmt.Errorf("invalid argument type: expected=%q got=%q", reflect.TypeOf(expected), reflect.TypeOf(actual))
 }
 
@@ -840,7 +840,7 @@ type ResourceWithAddress interface {
 
 type PolicyItem interface {
 	GetTargetRef() common_api.TargetRef
-	GetDefault() interface{}
+	GetDefault() any
 }
 
 type TransformDefaultAfterMerge interface {
