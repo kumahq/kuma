@@ -40,10 +40,7 @@ func DeploymentVersionCompatible(kumaVersionStr, componentVersionStr string) boo
 		return true
 	}
 
-	minMinor := int64(kumaVersion.Minor()) - 2
-	if minMinor < 0 {
-		minMinor = 0
-	}
+	minMinor := max(int64(kumaVersion.Minor())-2, 0)
 
 	maxMinor := kumaVersion.Minor() + 2
 

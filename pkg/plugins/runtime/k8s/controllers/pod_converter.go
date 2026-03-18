@@ -457,9 +457,7 @@ func mergeLabels(existingLabels map[string]string, podLabels map[string]string) 
 	if existingLabels != nil {
 		mergedLabels = maps.Clone(existingLabels)
 	}
-	for k, v := range podLabels {
-		mergedLabels[k] = v
-	}
+	maps.Copy(mergedLabels, podLabels)
 	return mergedLabels
 }
 

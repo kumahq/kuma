@@ -140,7 +140,7 @@ func ParseDuration(durationStr string) (time.Duration, error) {
 	return dur, nil
 }
 
-func (ml *MeshResourceList) MarshalLog() interface{} {
+func (ml *MeshResourceList) MarshalLog() any {
 	maskedList := make([]*MeshResource, 0, len(ml.Items))
 	for _, mesh := range ml.Items {
 		maskedList = append(maskedList, mesh.MarshalLog().(*MeshResource))
@@ -151,7 +151,7 @@ func (ml *MeshResourceList) MarshalLog() interface{} {
 	}
 }
 
-func (m *MeshResource) MarshalLog() interface{} {
+func (m *MeshResource) MarshalLog() any {
 	spec := proto.Clone(m.Spec).(*mesh_proto.Mesh)
 	if spec == nil {
 		return m

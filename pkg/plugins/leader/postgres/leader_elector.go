@@ -112,7 +112,7 @@ func (p *postgresLeaderElector) IsLeader() bool {
 
 type KumaPqLockLogger struct{}
 
-func (k *KumaPqLockLogger) Error(msg string, args ...interface{}) {
+func (k *KumaPqLockLogger) Error(msg string, args ...any) {
 	if len(args) > 0 {
 		err, ok := args[0].(error)
 		if ok {
@@ -125,6 +125,6 @@ func (k *KumaPqLockLogger) Error(msg string, args ...interface{}) {
 	}
 }
 
-func (k *KumaPqLockLogger) Debug(msg string, args ...interface{}) {
+func (k *KumaPqLockLogger) Debug(msg string, args ...any) {
 	log.V(1).Info(fmt.Sprintf(msg, args...))
 }

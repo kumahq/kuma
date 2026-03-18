@@ -45,7 +45,7 @@ func (e *BadRequest) Error() string {
 }
 
 func (e *BadRequest) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
+	return reflect.TypeFor[*BadRequest]() == reflect.TypeOf(err)
 }
 
 func NewNotFoundError(msg string) error {
@@ -64,5 +64,5 @@ func (e *NotFound) Error() string {
 }
 
 func (e *NotFound) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
+	return reflect.TypeFor[*NotFound]() == reflect.TypeOf(err)
 }

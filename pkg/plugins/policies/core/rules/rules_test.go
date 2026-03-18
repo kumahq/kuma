@@ -426,7 +426,7 @@ var _ = Describe("Rules", func() {
 	})
 
 	Describe("BuildRules", func() {
-		buildRulesTestTemplate := func(inputFile string, fn func(policies []core_model.Resource) (interface{}, error)) {
+		buildRulesTestTemplate := func(inputFile string, fn func(policies []core_model.Resource) (any, error)) {
 			// given
 			policies := file.ReadInputFile(inputFile)
 			// when
@@ -452,7 +452,7 @@ var _ = Describe("Rules", func() {
 
 		DescribeTable("should build a rule-based view for the policy with a from list",
 			func(inputFile string) {
-				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
+				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (any, error) {
 					// given
 					listener := core_rules.InboundListener{
 						Address: "127.0.0.1",
@@ -470,7 +470,7 @@ var _ = Describe("Rules", func() {
 
 		DescribeTable("should build a rule-based view for the policy with a to list",
 			func(inputFile string) {
-				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
+				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (any, error) {
 					var actualPolicies core_model.ResourceList
 					var httpRoutes []*v1alpha1.MeshHTTPRouteResource
 					for _, policy := range policies {
@@ -496,7 +496,7 @@ var _ = Describe("Rules", func() {
 
 		DescribeTable("should build a rule-based view for list of single item policies",
 			func(inputFile string) {
-				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
+				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (any, error) {
 					return core_rules.BuildSingleItemRules(policies)
 				})
 			},

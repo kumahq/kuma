@@ -17,9 +17,9 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
-type Plugin interface{}
+type Plugin any
 
-type PluginConfig interface{}
+type PluginConfig any
 
 type PluginContext = core_runtime.BuilderContext
 
