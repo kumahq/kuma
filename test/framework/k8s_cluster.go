@@ -496,6 +496,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
 	}
 
+	for k, v := range c.opts.helmOpts {
+		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, k, v))
+	}
+
 	if c.opts.yamlConfig != "" {
 		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, "controlPlane.config", c.opts.yamlConfig))
 	}
