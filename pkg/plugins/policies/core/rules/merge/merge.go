@@ -20,7 +20,7 @@ const appendSlicesPrefix = "Append"
 // Confs returns list of confs that may be apply to separate sets of refs.
 // In the usual case it has a single element but for MeshHTTPRoute it is keyed
 // by hostname.
-func Confs(confs []interface{}) ([]interface{}, error) {
+func Confs(confs []any) ([]any, error) {
 	if len(confs) == 0 {
 		return nil, nil
 	}
@@ -31,7 +31,7 @@ func Confs(confs []interface{}) ([]interface{}, error) {
 		return nil, err
 	}
 
-	var interfaces []interface{}
+	var interfaces []any
 
 	// Merge each tagged sets of confs
 	for _, taggedConfs := range taggedConfsList {
@@ -45,7 +45,7 @@ func Confs(confs []interface{}) ([]interface{}, error) {
 		valueResult := reflect.ValueOf(result)
 		// clear appendable slices, so we won't duplicate values of the last conf
 		clearAppendSlices(valueResult)
-		for i := 0; i < len(confs); i++ {
+		for i := range confs {
 			appendSlices(valueResult, confs[i])
 		}
 
@@ -60,9 +60,9 @@ func Confs(confs []interface{}) ([]interface{}, error) {
 }
 
 // mergeJSONPatches merges a list of confs to a single conf using the algorithm described in https://www.rfc-editor.org/rfc/rfc7396
-func mergeJSONPatches(confs []reflect.Value) (interface{}, error) {
+func mergeJSONPatches(confs []reflect.Value) (any, error) {
 	resultBytes := []byte{}
-	for i := 0; i < len(confs); i++ {
+	for i := range confs {
 		conf := confs[i].Interface()
 		confBytes, err := json.Marshal(conf)
 		if err != nil {
@@ -96,9 +96,9 @@ type acc struct {
 	// the list
 	Skip bool
 	// The value of the `mergeKey`
-	Key interface{}
+	Key any
 	// The `Default` value
-	Defaults []interface{}
+	Defaults []any
 }
 
 const (
@@ -150,7 +150,7 @@ type GroupedConfs struct {
 // Note that if there is no `mergeValues` field, given values are returned in a
 // single element list.
 // See merge_test.go for an example.
-func handleMergeValues(confs []interface{}) ([]GroupedConfs, error) {
+func handleMergeValues(confs []any) ([]GroupedConfs, error) {
 	confType := reflect.TypeOf(confs[0])
 
 	// We construct a map of strings to confs
@@ -233,7 +233,7 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 		value := vals.Index(i)
 
 		mergeKeyValue := value.FieldByName(key.Name).Interface()
-		valueDef := []interface{}{value.FieldByName(defaultFieldName).Interface()}
+		valueDef := []any{value.FieldByName(defaultFieldName).Interface()}
 
 		// We can't have a map keyed by matches so we use a slice and call
 		// search through it calling `DeepEqual`. We define the order of matches
@@ -282,8 +282,8 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 
 func findMergeKeyField(typ reflect.Type) (reflect.StructField, bool) {
 	var key *reflect.StructField
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
+	for field := range typ.Fields() {
+		field := field
 		if strings.Contains(field.Tag.Get(policyMergeTag), mergeKey) {
 			key = &field
 			break
@@ -298,7 +298,7 @@ func findMergeKeyField(typ reflect.Type) (reflect.StructField, bool) {
 	return *key, true
 }
 
-func newConf(t reflect.Type) (interface{}, error) {
+func newConf(t reflect.Type) (any, error) {
 	if t.Kind() == reflect.Pointer {
 		return nil, errors.New("conf is expected to have a non-pointer type")
 	}
@@ -387,8 +387,8 @@ func mustUnwrapStruct(val reflect.Value) reflect.Value {
 	return resVal
 }
 
-func Entries[B common.BaseEntry, T common.Entry[B]](items []T) ([]interface{}, error) {
-	var confs []interface{}
+func Entries[B common.BaseEntry, T common.Entry[B]](items []T) ([]any, error) {
+	var confs []any
 	for _, item := range items {
 		confs = append(confs, item.GetEntry().GetDefault())
 	}
