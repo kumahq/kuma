@@ -843,11 +843,14 @@ coreResources:
     meshIdentityInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_IDENTITY_INTERVAL
     # How often we compute status of Workload
     workloadInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_WORKLOAD_INTERVAL
+    # How often we compute status of MeshOpenTelemetryBackend
+    meshOpenTelemetryBackendInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_OPEN_TELEMETRY_BACKEND_INTERVAL
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
     - hostnamegenerators
     - meshexternalservices
     - meshidentities
     - meshmultizoneservices
+    - meshopentelemetrybackends
     - meshservices
     - meshtrusts
     - meshzoneaddresses

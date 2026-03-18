@@ -2,10 +2,8 @@ package v1alpha1
 
 import (
 	"fmt"
+	"net"
 	"regexp"
-	"strings"
-
-	"github.com/asaskevich/govalidator"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -146,18 +144,29 @@ func validateBackend(backends *[]Backend) validators.ValidationError {
 			if backend.OpenTelemetry == nil {
 				verr.AddViolationAt(path.Field("openTelemetry"), validators.MustBeDefined)
 			} else {
-				endpoint := backend.OpenTelemetry.Endpoint
-				if !govalidator.IsURL(endpoint) {
-					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must be a valid url")
-				}
-				if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
-					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must not use schema")
-				}
+				// validateOtelEndpointHostPort maintains backward compatibility:
+				// MeshMetric required host:port before backendRef was introduced.
+				verr.AddErrorAt(path.Field("openTelemetry"), validators.ValidateOtelBackendRefOrEndpoint(
+					backend.OpenTelemetry.Endpoint,
+					backend.OpenTelemetry.BackendRef,
+					validateOtelEndpointHostPort,
+				))
 			}
 		default:
 			verr.AddViolationAt(path, "unrecognized type")
 		}
 	}
 
+	return verr
+}
+
+// validateOtelEndpointHostPort enforces host:port format for MeshMetric
+// endpoints. MeshMetric required a URL-like endpoint before backendRef was
+// introduced, so we keep the port requirement for backward compatibility.
+func validateOtelEndpointHostPort(endpoint string) validators.ValidationError {
+	var verr validators.ValidationError
+	if _, _, err := net.SplitHostPort(endpoint); err != nil {
+		verr.AddViolationAt(validators.RootedAt("endpoint"), "must be in host:port format")
+	}
 	return verr
 }

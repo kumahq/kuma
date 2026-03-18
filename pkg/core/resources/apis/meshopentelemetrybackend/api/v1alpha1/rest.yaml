@@ -1,0 +1,316 @@
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+paths:
+  /meshes/{mesh}/meshopentelemetrybackends/{name}:
+    get:
+      operationId: getMeshOpenTelemetryBackend
+      summary: Returns MeshOpenTelemetryBackend entity
+      tags: ["MeshOpenTelemetryBackend"]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshOpenTelemetryBackend
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshOpenTelemetryBackendItem"
+        '404':
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+    put:
+      operationId: putMeshOpenTelemetryBackend
+      summary: Creates or Updates MeshOpenTelemetryBackend entity
+      tags: ["MeshOpenTelemetryBackend"]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshOpenTelemetryBackend
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshOpenTelemetryBackendItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshOpenTelemetryBackend
+      summary: Deletes MeshOpenTelemetryBackend entity
+      tags: ["MeshOpenTelemetryBackend"]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshOpenTelemetryBackend
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshOpenTelemetryBackendDeleteSuccessResponse'
+        '404':
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+  /meshes/{mesh}/meshopentelemetrybackends:
+    get:
+      operationId: getMeshOpenTelemetryBackendList
+      summary: Returns a list of MeshOpenTelemetryBackend in the mesh.
+      tags: ["MeshOpenTelemetryBackend"]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshOpenTelemetryBackendList"
+components:
+  schemas:
+    MeshOpenTelemetryBackendItem:
+      type: object
+      description: "MeshOpenTelemetryBackend defines a shared OTel collector endpoint for observability policies.\nAn empty spec is valid and represents the node-local default flow\n(kuma-dp resolves the address at runtime using HOST_IP or 127.0.0.1)."
+      required: [type, name, spec]
+      properties:
+        type:
+          description: 'the type of the resource'
+          type: string
+          enum:
+            - MeshOpenTelemetryBackend
+        mesh:
+          description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+          type: string
+          default: default
+        kri:
+          description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
+          type: string
+          readOnly: true
+          example: 'kri_motb_default_zone-east_kuma-system_myresource1_'
+        name:
+          description: 'Name of the Kuma resource'
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: 'The labels to help identity resources'
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshOpenTelemetryBackend resource.
+          properties:
+            endpoint:
+              description: |-
+                Endpoint optionally defines the OTel collector address and port.
+                When omitted, the CP defaults port to 4317 and leaves address empty;
+                kuma-dp resolves the address at runtime using HOST_IP or 127.0.0.1.
+              properties:
+                address:
+                  description: |-
+                    Address of the OTel collector (hostname or IP).
+                    When omitted, kuma-dp resolves it at runtime using HOST_IP or 127.0.0.1.
+                  type: string
+                path:
+                  description: |-
+                    Path is an optional base path prefix for HTTP endpoints.
+                    The CP appends signal-specific suffixes (/v1/traces, /v1/metrics, /v1/logs).
+                    Non-empty value is rejected by validation when protocol is grpc.
+                  type: string
+                port:
+                  description: Port of the OTel collector. Defaults to 4317 when omitted.
+                  format: int32
+                  type: integer
+              type: object
+            env:
+              description: |-
+                Env controls whether standard OTEL exporter env vars participate in the
+                final exporter config for this backend.
+              properties:
+                allowSignalOverrides:
+                  description: |-
+                    AllowSignalOverrides controls whether signal-specific OTEL env vars such
+                    as `OTEL_EXPORTER_OTLP_TRACES_*` may diverge from the shared config.
+                  type: boolean
+                mode:
+                  default: Optional
+                  description: Mode controls whether OTEL env vars are ignored, allowed, or required.
+                  enum:
+                    - Disabled
+                    - Optional
+                    - Required
+                  type: string
+                precedence:
+                  default: EnvFirst
+                  description: |-
+                    Precedence controls whether explicit backend fields or env vars win when
+                    both are present for the same field.
+                  enum:
+                    - ExplicitFirst
+                    - EnvFirst
+                  type: string
+              type: object
+            protocol:
+              description: |-
+                Protocol selects gRPC or HTTP transport for the collector connection.
+                Defaults to grpc when omitted.
+              enum:
+                - grpc
+                - http
+              type: string
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was created'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was updated'
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        status:
+          description: Status is the current status of the Kuma MeshOpenTelemetryBackend resource.
+          properties:
+            conditions:
+              items:
+                properties:
+                  message:
+                    description: |-
+                      message is a human readable message indicating details about the transition.
+                      This may be an empty string.
+                    maxLength: 32768
+                    type: string
+                  reason:
+                    description: |-
+                      reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                      Producers of specific condition types may define expected values and meanings for this field,
+                      and whether the values are considered a guaranteed API.
+                      The value should be a CamelCase string.
+                      This field may not be empty.
+                    maxLength: 1024
+                    minLength: 1
+                    pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                    type: string
+                  status:
+                    description: status of the condition, one of True, False, Unknown.
+                    enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                    type: string
+                  type:
+                    description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                    maxLength: 316
+                    pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                    type: string
+                required:
+                  - message
+                  - reason
+                  - status
+                  - type
+                type: object
+              type: array
+          type: object
+          readOnly: true
+  responses:
+    MeshOpenTelemetryBackendItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshOpenTelemetryBackendItem'
+    MeshOpenTelemetryBackendList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshOpenTelemetryBackendItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    MeshOpenTelemetryBackendDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object

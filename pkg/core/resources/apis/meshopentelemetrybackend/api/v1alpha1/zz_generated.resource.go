@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
+//go:embed rest.yaml
 var rawOpenAPISpec []byte
 
 func init() {

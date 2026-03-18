@@ -9,6 +9,7 @@ import (
 
 // MeshAccessLog configures access logging for traffic between services in the mesh. It allows you to capture and export request/response logs to various backends (file, TCP, or OpenTelemetry) for monitoring, debugging, and auditing purposes.
 // +kuma:policy:is_from_as_rules=true
+// +kuma:policy:has_status=true
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -90,9 +91,15 @@ type OtelBackend struct {
 	// +kubebuilder:example={kvlistValue: {values: {{key: "mesh", value: {stringValue: "%KUMA_MESH%"}}}}}
 	Body *apiextensionsv1.JSON `json:"body,omitempty"`
 	// Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+	//
+	// Deprecated: use BackendRef instead.
 	// +kubebuilder:example="otel-collector:4317"
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=""
 	Endpoint string `json:"endpoint"`
+	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 }
 
 // FileBackend defines configuration for file based access logs
@@ -128,4 +135,8 @@ type Format struct {
 type JsonValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+}
+
+type MeshAccessLogStatus struct {
+	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
