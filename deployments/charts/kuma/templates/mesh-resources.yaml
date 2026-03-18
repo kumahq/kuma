@@ -8,9 +8,8 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: {{ $meshName }}
-{{- if $meshEntry.skipCreatingInitialPolicies }}
-spec:
-  skipCreatingInitialPolicies: {{ toJson $meshEntry.skipCreatingInitialPolicies }}
+{{- if $meshEntry.spec }}
+spec: {{ toYaml $meshEntry.spec | nindent 2 }}
 {{- end }}
 {{- end }}
 

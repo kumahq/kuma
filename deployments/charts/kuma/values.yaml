@@ -765,11 +765,12 @@ meshes:
   - name: mesh-1
     # -- Create a Mesh resource for this entry. Ignored when controlPlane.kdsGlobalAddress is set.
     createMesh: true
-    # -- Skip creating initial policies for this mesh. Maps directly to Mesh.spec.skipCreatingInitialPolicies.
-    # The control plane creates default policies (MeshTimeout, MeshCircuitBreaker, MeshRetry) automatically.
-    # Use this to skip all policies ["*"] or specific ones ["MeshTimeout", "MeshRetry"].
-    # Ignored when controlPlane.kdsGlobalAddress is set.
-    skipCreatingInitialPolicies: ["*"]
+    # -- Mesh spec. Maps directly to Mesh.spec. Ignored when controlPlane.kdsGlobalAddress is set.
+    spec:
+      skipCreatingInitialPolicies:
+        - MeshTimeout
+      meshServices:
+        mode: Exclusive
 
     ingress:
       # -- Deploy a zone ingress for this mesh.
@@ -782,7 +783,7 @@ meshes:
       # -- Override the auto-generated Service name (max 63 chars).
       # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
       service:
-        name: ""
+        name: my-ingress
       # -- Resource requests and limits for the pod (pod-level resources).
       # Applied to all containers in the pod (pause + injected kuma-sidecar).
       resources: {}
@@ -811,7 +812,7 @@ meshes:
       # -- Override the auto-generated Service name (max 63 chars).
       # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
       service:
-        name: ""
+        name: "my-egress"
       # -- Resource requests and limits for the pod (pod-level resources).
       # Applied to all containers in the pod (pause + injected kuma-sidecar).
       resources: {}
