@@ -32,6 +32,15 @@ type APIVersion string
 // StreamID represents a stream opened by XDS
 type StreamID = int64
 
+// ZoneEgress holds the resolved bind address, port and workload-identity SAN
+// of a zone egress proxy. SAN is the SPIFFE ID when WorkloadIdentity is
+// enabled: empty for legacy mTLS deployments.
+type ZoneEgress struct {
+	Address string
+	Port    uint32
+	SAN     string
+}
+
 type ProxyId struct {
 	mesh string
 	name string
@@ -198,6 +207,8 @@ type Proxy struct {
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
+	// DataplaneZoneListeners is non-nil when the Dataplane has embedded zone proxy listeners.
+	DataplaneZoneListeners *DataplaneZoneListeners
 	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
 	RuntimeExtensions map[string]interface{}
 	// Zone the zone the proxy is in
@@ -319,7 +330,7 @@ type ZoneEgressProxy struct {
 	MeshResourcesList  []*MeshResources
 }
 
-type MeshIngressResources struct {
+type MeshProxyResources struct {
 	Mesh        *core_mesh.MeshResource
 	EndpointMap EndpointMap
 	Resources   map[core_model.ResourceType]core_model.ResourceList
@@ -327,7 +338,26 @@ type MeshIngressResources struct {
 
 type ZoneIngressProxy struct {
 	ZoneIngressResource *core_mesh.ZoneIngressResource
-	MeshResourceList    []*MeshIngressResources
+	MeshResourceList    []*MeshProxyResources
+}
+
+// DataplaneZoneListeners holds xDS context for zone proxy listeners
+// embedded in a regular Dataplane resource.
+type DataplaneZoneListeners struct {
+	IngressListeners []*DataplaneIngressListener
+	EgressListeners  []*DataplaneEgressListener
+}
+
+// DataplaneIngressListener holds xDS context for a single embedded ZoneIngress listener.
+type DataplaneIngressListener struct {
+	Listener      *mesh_proto.Dataplane_Networking_Listener
+	MeshResources *MeshProxyResources
+}
+
+// DataplaneEgressListener holds xDS context for a single embedded ZoneEgress listener.
+type DataplaneEgressListener struct {
+	Listener      *mesh_proto.Dataplane_Networking_Listener
+	MeshResources *MeshProxyResources
 }
 
 type Routing struct {

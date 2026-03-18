@@ -214,7 +214,7 @@ var _ = Describe("TrafficRoute", func() {
 			externalServices := &core_mesh.ExternalServiceResourceList{}
 
 			// when
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled())
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, externalServices.Items, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -297,6 +297,7 @@ var _ = Describe("TrafficRoute", func() {
 			meshMultiZoneService []*meshmzservice_api.MeshMultiZoneServiceResource
 			zoneIngresses        []*core_mesh.ZoneIngressResource
 			zoneEgresses         []*core_mesh.ZoneEgressResource
+			zoneEgressAddresses  []core_xds.ZoneEgress
 			externalServices     []*core_mesh.ExternalServiceResource
 			mesh                 *core_mesh.MeshResource
 			expected             core_xds.EndpointMap
@@ -304,7 +305,14 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader, given.mesh.MTLSEnabled())
+				egressAddresses := given.zoneEgressAddresses
+				if egressAddresses == nil {
+					for _, ze := range given.zoneEgresses {
+						n := ze.Spec.GetNetworking()
+						egressAddresses = append(egressAddresses, core_xds.ZoneEgress{Address: n.GetAddress(), Port: n.GetPort()})
+					}
+				}
+				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, given.externalServices, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
 				)
@@ -1599,6 +1607,102 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Weight:   1,
 							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
+						},
+					},
+				},
+			}),
+			Entry("uses MeshExternalService with dataplane zone egress listener (no legacy ZoneEgressResource)", testCase{
+				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "ext-svc",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
+								Protocol: core_meta.ProtocolTCP,
+							},
+							Endpoints: &[]meshexternalservice_api.Endpoint{
+								{Address: "external.com", Port: 443},
+							},
+						},
+					},
+				},
+				zoneEgressAddresses: []core_xds.ZoneEgress{
+					{Address: "10.42.0.11", Port: 10002},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"default_ext-svc___extsvc_10000": []core_xds.Endpoint{
+						{
+							Target: "10.42.0.11",
+							Port:   10002,
+							Tags:   nil,
+							Weight: 1,
+							ExternalService: &core_xds.ExternalService{
+								Protocol: core_meta.ProtocolTCP,
+								OwnerResource: kri.Identifier{
+									ResourceType: meshexternalservice_api.MeshExternalServiceType,
+									Mesh:         "default",
+									Name:         "ext-svc",
+								},
+							},
+						},
+					},
+				},
+			}),
+			Entry("prefers dataplane zone egress listener address over legacy ZoneEgressResource", testCase{
+				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "ext-svc",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
+								Protocol: core_meta.ProtocolTCP,
+							},
+							Endpoints: &[]meshexternalservice_api.Endpoint{
+								{Address: "external.com", Port: 443},
+							},
+						},
+					},
+				},
+				zoneEgresses: []*core_mesh.ZoneEgressResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: "default", Name: "legacy-ze"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "1.1.1.1",
+								Port:    10002,
+							},
+						},
+					},
+				},
+				// zoneEgressAddresses is explicitly set to simulate resolver picking Dataplane listener over legacy
+				zoneEgressAddresses: []core_xds.ZoneEgress{
+					{Address: "10.42.0.11", Port: 10002},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"default_ext-svc___extsvc_10000": []core_xds.Endpoint{
+						{
+							Target: "10.42.0.11",
+							Port:   10002,
+							Tags:   nil,
+							Weight: 1,
+							ExternalService: &core_xds.ExternalService{
+								Protocol: core_meta.ProtocolTCP,
+								OwnerResource: kri.Identifier{
+									ResourceType: meshexternalservice_api.MeshExternalServiceType,
+									Mesh:         "default",
+									Name:         "ext-svc",
+								},
+							},
 						},
 					},
 				},

@@ -94,6 +94,11 @@ type MeshContext struct {
 	DataSourceLoader            datasource.Loader
 	ReachableServicesGraph      ReachableServicesGraph
 	CAsByTrustDomain            map[string][]PEMBytes
+	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
+	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
+	// port and, when WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must
+	// verify when opening an mTLS connection to that egress.
+	ZoneEgresses []xds.ZoneEgress
 }
 
 type ServiceInformation struct {
@@ -173,6 +178,17 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
 	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+}
+
+// ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.
+func (mc *MeshContext) ZoneEgressSANs() []string {
+	var sans []string
+	for _, ze := range mc.ZoneEgresses {
+		if ze.SAN != "" {
+			sans = append(sans, ze.SAN)
+		}
+	}
+	return sans
 }
 
 // AggregatedMeshContexts is an aggregate of all MeshContext across all meshes

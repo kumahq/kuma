@@ -37,6 +37,11 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 		allInboundsOnline = true
 	}
 
+	if t.Spec.Dataplane.GetNetworking().HasZoneProxyListeners() {
+		allInboundsOffline = false
+		allInboundsOnline = true
+	}
+
 	if !proxyOnline || allInboundsOffline {
 		return Offline, errs
 	}

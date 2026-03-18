@@ -677,3 +677,37 @@ func (r TagSelectorRank) CompareTo(other TagSelectorRank) int {
 	}
 	return thisTotal - otherTotal
 }
+
+// HasZoneProxyListeners returns true when the Networking contains at least one
+// embedded zone proxy listener (ZoneIngress or ZoneEgress type).
+func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
+	return n != nil && len(n.GetListeners()) > 0
+}
+
+// IsZoneProxyOnly returns true when the Dataplane has zone proxy listeners but
+// no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
+func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
+	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
+}
+
+// GetReadyZoneIngressListeners returns all listeners of type ZoneIngress in Ready state.
+func (n *Dataplane_Networking) GetReadyZoneIngressListeners() []*Dataplane_Networking_Listener {
+	var result []*Dataplane_Networking_Listener
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneIngress && l.State == Dataplane_Networking_Listener_Ready {
+			result = append(result, l)
+		}
+	}
+	return result
+}
+
+// GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.
+func (n *Dataplane_Networking) GetReadyZoneEgressListeners() []*Dataplane_Networking_Listener {
+	var result []*Dataplane_Networking_Listener
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneEgress && l.State == Dataplane_Networking_Listener_Ready {
+			result = append(result, l)
+		}
+	}
+	return result
+}
