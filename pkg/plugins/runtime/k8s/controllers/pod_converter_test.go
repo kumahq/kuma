@@ -54,6 +54,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
 		inboundTagsDisabled bool
+		expectedErr         string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -150,6 +151,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
 
 			// then
+			if given.expectedErr != "" {
+				Expect(err).To(MatchError(ContainSubstring(given.expectedErr)))
+				return
+			}
 			Expect(err).ToNot(HaveOccurred())
 
 			actual, err := yaml.Marshal(existingDataplane)
@@ -362,6 +367,46 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:                 "35.pod.yaml",
 			dataplane:           "35.dataplane.yaml",
 			inboundTagsDisabled: true,
+		}),
+		Entry("36. Zone-proxy-only Pod with ZoneIngress listener", testCase{
+			pod:            "36.pod.yaml",
+			servicesForPod: "36.services-for-pod.yaml",
+			dataplane:      "36.dataplane.yaml",
+		}),
+		Entry("37. Pod with regular inbound and ZoneEgress listener", testCase{
+			pod:            "37.pod.yaml",
+			servicesForPod: "37.services-for-pod.yaml",
+			dataplane:      "37.dataplane.yaml",
+		}),
+		Entry("38. Zone-proxy-only Pod with ZoneIngress listener, sidecar not ready", testCase{
+			pod:            "38.pod.yaml",
+			servicesForPod: "38.services-for-pod.yaml",
+			dataplane:      "38.dataplane.yaml",
+		}),
+		Entry("39. Zone-proxy-only Pod with both ZoneIngress and ZoneEgress listeners", testCase{
+			pod:            "39.pod.yaml",
+			servicesForPod: "39.services-for-pod.yaml",
+			dataplane:      "39.dataplane.yaml",
+		}),
+		Entry("40. Zone-proxy-only Pod where service port differs from container port", testCase{
+			pod:            "40.pod.yaml",
+			servicesForPod: "40.services-for-pod.yaml",
+			dataplane:      "40.dataplane.yaml",
+		}),
+		Entry("41. Zone-proxy-only Pod with unnamed service port - listener name derived from service", testCase{
+			pod:            "41.pod.yaml",
+			servicesForPod: "41.services-for-pod.yaml",
+			dataplane:      "41.dataplane.yaml",
+		}),
+		Entry("42. Zone-proxy-only Pod with two ingress services on the same port", testCase{
+			pod:            "42.pod.yaml",
+			servicesForPod: "42.services-for-pod.yaml",
+			dataplane:      "42.dataplane.yaml",
+		}),
+		Entry("43. Zone-proxy-only Pod with ingress and egress services on the same port", testCase{
+			pod:            "43.pod.yaml",
+			servicesForPod: "43.services-for-pod.yaml",
+			expectedErr:    "conflicting listener types on port 10001",
 		}),
 	)
 

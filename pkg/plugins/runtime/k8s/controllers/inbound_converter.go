@@ -18,6 +18,29 @@ import (
 	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
+// podReady returns false when any of the following is true:
+//   - the given container (if non-nil) is not ready
+//   - the kuma-sidecar container is not ready
+//   - the pod has a DeletionTimestamp (terminating)
+func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
+	if container != nil {
+		if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+			return false
+		}
+	}
+	if cs := util_k8s.FindContainerOrInitContainerStatus(
+		util_k8s.KumaSidecarContainerName,
+		pod.Status.ContainerStatuses,
+		pod.Status.InitContainerStatuses,
+	); cs != nil && !cs.Ready {
+		return false
+	}
+	if pod.DeletionTimestamp != nil {
+		return false
+	}
+	return true
+}
+
 type InboundConverter struct {
 	NameExtractor       NameExtractor
 	NodeGetter          kube_client.Reader
@@ -55,27 +78,7 @@ func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, s
 			Ready: true,
 		}
 
-		// if container is not equal nil then port is explicitly defined as containerPort so we're able
-		// to figure out which container implements which service. Since we know container we can check its status
-		// and map it to the Dataplane health
-		if container != nil {
-			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
-				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
-				health.Ready = false
-			}
-		}
-
-		// also we're checking whether kuma-sidecar container is ready
-		if cs := util_k8s.FindContainerOrInitContainerStatus(
-			util_k8s.KumaSidecarContainerName,
-			pod.Status.ContainerStatuses,
-			pod.Status.InitContainerStatuses,
-		); cs != nil && !cs.Ready {
-			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
-			health.Ready = false
-		}
-
-		if pod.DeletionTimestamp != nil { // pod is in Termination state
+		if !podReady(pod, container) {
 			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 			health.Ready = false
 		}

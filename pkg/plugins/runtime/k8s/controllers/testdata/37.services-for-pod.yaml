@@ -1,0 +1,26 @@
+---
+metadata:
+  namespace: demo
+  name: backend
+spec:
+  selector:
+    app: mixed-proxy
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+metadata:
+  namespace: demo
+  name: zone-egress
+  labels:
+    k8s.kuma.io/zone-proxy-type: egress
+spec:
+  selector:
+    app: mixed-proxy
+  ports:
+    - name: ze-main
+      protocol: TCP
+      port: 10002
+      targetPort: 10002
