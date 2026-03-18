@@ -112,7 +112,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 									Name:    "zone-ingress-port",
 								},
 								MeshResources: &core_xds.MeshProxyResources{
-									Mesh: builders.Mesh().WithName("default").Build(),
+									Mesh: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
 									EndpointMap: core_xds.EndpointMap{
 										legacySvcName: []core_xds.Endpoint{
 											{

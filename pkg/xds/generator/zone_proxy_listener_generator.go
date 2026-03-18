@@ -6,6 +6,7 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
@@ -24,6 +25,8 @@ import (
 	system_names "github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
 )
+
+var zoneProxyLog = core.Log.WithName("xds").WithName("zone-proxy-listener-generator")
 
 // ZoneProxyListenerGenerator generates Envoy listeners for zone proxy listeners
 // embedded in a regular Dataplane resource (DataplaneZoneListeners).
@@ -45,6 +48,13 @@ func (g ZoneProxyListenerGenerator) Generate(
 	rs := core_xds.NewResourceSet()
 
 	for _, il := range proxy.DataplaneZoneListeners.IngressListeners {
+		if il.MeshResources.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+			zoneProxyLog.Info("skipping zone ingress listener: MeshServices must be in Exclusive mode",
+				"mesh", il.MeshResources.Mesh.GetMeta().GetName(),
+				"listener", il.Listener.Name,
+			)
+			continue
+		}
 		generated, err := g.generateIngressListener(proxy, xdsCtx, il)
 		if err != nil {
 			return nil, err
@@ -53,6 +63,20 @@ func (g ZoneProxyListenerGenerator) Generate(
 	}
 
 	for _, el := range proxy.DataplaneZoneListeners.EgressListeners {
+		if el.MeshResources.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+			zoneProxyLog.Info("skipping zone egress listener: MeshServices must be in Exclusive mode",
+				"mesh", el.MeshResources.Mesh.GetMeta().GetName(),
+				"listener", el.Listener.Name,
+			)
+			continue
+		}
+		if proxy.WorkloadIdentity == nil {
+			zoneProxyLog.Info("skipping zone egress listener: WorkloadIdentity is required for egress mTLS",
+				"mesh", el.MeshResources.Mesh.GetMeta().GetName(),
+				"listener", el.Listener.Name,
+			)
+			continue
+		}
 		generated, err := g.generateEgressListener(proxy, el)
 		if err != nil {
 			return nil, err
@@ -144,10 +168,6 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	proxy *core_xds.Proxy,
 	el *core_xds.DataplaneEgressListener,
 ) (*core_xds.ResourceSet, error) {
-	if proxy.WorkloadIdentity == nil {
-		return nil, nil
-	}
-
 	rs := core_xds.NewResourceSet()
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, el.MeshResources.Mesh)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)

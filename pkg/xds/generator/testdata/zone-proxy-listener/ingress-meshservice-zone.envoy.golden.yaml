@@ -1,5 +1,5 @@
 resources:
-- name: default_backend__east_msvc_80
+- name: kri_msvc_default_east__backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
@@ -7,12 +7,12 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: default_backend__east_msvc_80
+    name: kri_msvc_default_east__backend_80
     type: EDS
-- name: default_backend__east_msvc_80
+- name: kri_msvc_default_east__backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: default_backend__east_msvc_80
+    clusterName: kri_msvc_default_east__backend_80
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -21,7 +21,7 @@ resources:
               address: 192.168.0.1
               portValue: 2521
         loadBalancingWeight: 1
-- name: inbound:10.0.0.1:10001
+- name: self_zoneingress_dp_zone-ingress-port
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -38,11 +38,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default_backend__east_msvc_80
-          statPrefix: default_backend__east_msvc_80
+          cluster: kri_msvc_default_east__backend_80
+          statPrefix: kri_msvc_default_east__backend_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    name: inbound:10.0.0.1:10001
+    name: self_zoneingress_dp_zone-ingress-port
+    statPrefix: self_zoneingress_dp_zone-ingress-port
     trafficDirection: INBOUND
