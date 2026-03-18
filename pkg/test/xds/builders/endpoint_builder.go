@@ -1,6 +1,8 @@
 package builders
 
 import (
+	"maps"
+
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
@@ -41,9 +43,7 @@ func (e *EndpointBuilder) WithTagsMap(tags map[string]string) *EndpointBuilder {
 }
 
 func (e *EndpointBuilder) AddTagsMap(tags map[string]string) *EndpointBuilder {
-	for k, v := range tags {
-		e.res.Tags[k] = v
-	}
+	maps.Copy(e.res.Tags, tags)
 	return e
 }
 

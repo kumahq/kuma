@@ -9,6 +9,7 @@ import (
 	meshextsvc "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	meshsvc "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
@@ -228,6 +229,18 @@ func (r Resources) MeshIdentities() *meshidentity_api.MeshIdentityResourceList {
 		}
 	}
 	return list.(*meshidentity_api.MeshIdentityResourceList)
+}
+
+func (r Resources) MeshOpenTelemetryBackends() *motb_api.MeshOpenTelemetryBackendResourceList {
+	list, ok := r.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType]
+	if !ok {
+		var err error
+		list, err = registry.Global().NewList(motb_api.MeshOpenTelemetryBackendType)
+		if err != nil {
+			return &motb_api.MeshOpenTelemetryBackendResourceList{}
+		}
+	}
+	return list.(*motb_api.MeshOpenTelemetryBackendResourceList)
 }
 
 func (r Resources) MeshTrusts() *meshtrust_api.MeshTrustResourceList {

@@ -11,7 +11,7 @@ type PolicyDefault struct {
 	Hostnames []string `json:"hostnames,omitempty" policyMerge:"mergeValues"`
 }
 
-func (x *To) GetDefault() interface{} {
+func (x *To) GetDefault() any {
 	reversed := slices.Clone(x.Rules)
 	slices.Reverse(reversed)
 	return PolicyDefault{

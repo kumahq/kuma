@@ -244,7 +244,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 			}
 			resource = overview.(core_model.Resource)
 		}
-		var res interface{}
+		var res any
 
 		res, err = formatResource(resource, request.QueryParameter("format"), r.k8sMapper, request.QueryParameter("namespace"))
 		if err != nil {
@@ -991,7 +991,7 @@ func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api
 	}
 
 	if include := request.QueryParameter("include"); include != "" {
-		for _, v := range strings.Split(include, ",") {
+		for v := range strings.SplitSeq(include, ",") {
 			switch api_types.GetDataplanesXdsConfigParamsInclude(v) {
 			case api_types.Diff:
 			default:
@@ -1067,9 +1067,9 @@ func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, 
 	}
 }
 
-type matchedPoliciesToResponse func([]core_xds.TypedMatchingPolicies, *restful.Request, *core_mesh.MeshResource, *core_mesh.DataplaneResource, xds_context.Resources) (interface{}, error)
+type matchedPoliciesToResponse func([]core_xds.TypedMatchingPolicies, *restful.Request, *core_mesh.MeshResource, *core_mesh.DataplaneResource, xds_context.Resources) (any, error)
 
-func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, _ *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (interface{}, error) {
+func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, _ *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (any, error) {
 	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
 		if len(matched.SingleItemRules.Rules) == 0 {
@@ -1084,7 +1084,7 @@ func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolici
 	return api_common.PoliciesList{Policies: conf}, nil
 }
 
-func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (interface{}, error) {
+func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (any, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
 		return nil, rest_errors.NewBadRequestError(err.Error())
@@ -1092,7 +1092,7 @@ func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPol
 
 	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
-		rctx := outbound.RootContext[interface{}](mesh, matched.ToRules.ResourceRules).
+		rctx := outbound.RootContext[any](mesh, matched.ToRules.ResourceRules).
 			WithID(kri.NoSectionName(outboundKri)).
 			WithID(outboundKri)
 		computed := rctx.ResourceRule()
@@ -1109,7 +1109,7 @@ func matchedPoliciesToOutboundPolicy(matchedPolicies []core_xds.TypedMatchingPol
 	return api_common.PoliciesList{Policies: conf}, nil
 }
 
-func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
+func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (any, error) {
 	inboundKri, err := kri.FromString(request.PathParameter("inbound_kri"))
 	if err != nil {
 		return nil, rest_errors.NewBadRequestError(err.Error())
@@ -1150,7 +1150,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 	return api_common.InboundPoliciesList{Policies: conf}, nil
 }
 
-func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
+func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (any, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
 		return nil, rest_errors.NewBadRequestError(err.Error())
@@ -1171,7 +1171,7 @@ func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, r
 					apiRules = append(apiRules, api_common.RouteRules{
 						Conf:    rr.Default,
 						Kri:     originToKRI(conf.OriginByMatches[meshhttproute_api.HashMatches(rr.Matches)].Resource, matched.Type).Kri,
-						Matches: util_slices.Map(rr.Matches, func(m meshhttproute_api.Match) interface{} { return m }),
+						Matches: util_slices.Map(rr.Matches, func(m meshhttproute_api.Match) any { return m }),
 					})
 				}
 			}
@@ -1191,7 +1191,7 @@ func matchedPoliciesToRoutes(matchedPolicies []core_xds.TypedMatchingPolicies, r
 	return api_common.RoutesList{Routes: routeConfs}, nil
 }
 
-func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (interface{}, error) {
+func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolicies, request *restful.Request, mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, resources xds_context.Resources) (any, error) {
 	outboundKri, err := kri.FromString(request.PathParameter("outbound_kri"))
 	if err != nil {
 		return nil, rest_errors.NewBadRequestError(err.Error())
@@ -1203,7 +1203,7 @@ func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolici
 
 	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
-		rctx := outbound.RootContext[interface{}](mesh, matched.ToRules.ResourceRules).
+		rctx := outbound.RootContext[any](mesh, matched.ToRules.ResourceRules).
 			WithID(kri.NoSectionName(outboundKri)).
 			WithID(outboundKri).
 			WithID(routeKri)
@@ -1396,7 +1396,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				rs := make([]api_common.InboundRule, len(rulesForInbound))
 				for i := range rulesForInbound {
 					rs[i] = api_common.InboundRule{
-						Conf:   []interface{}{rulesForInbound[i].Conf.GetDefault()},
+						Conf:   []any{rulesForInbound[i].Conf.GetDefault()},
 						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}

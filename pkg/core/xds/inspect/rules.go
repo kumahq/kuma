@@ -2,6 +2,7 @@ package inspect
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -29,10 +30,8 @@ type RuleAttachment struct {
 }
 
 func (r *RuleAttachment) AddAddress(address string) {
-	for _, a := range r.Addresses {
-		if a == address {
-			return
-		}
+	if slices.Contains(r.Addresses, address) {
+		return
 	}
 	r.Addresses = append(r.Addresses, address)
 }

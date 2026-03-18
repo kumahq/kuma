@@ -5,6 +5,7 @@ import (
 	"context"
 	std_errors "errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -422,13 +423,9 @@ func NewExecutables() Executables {
 func (c *Executables) getPathsMap() map[string]string {
 	result := make(map[string]string, 6)
 
-	for name, path := range c.ExecutablesPathsIPv4.getPathsMap() {
-		result[name] = path
-	}
+	maps.Copy(result, c.ExecutablesPathsIPv4.getPathsMap())
 
-	for name, path := range c.ExecutablesPathsIPv6.getPathsMap() {
-		result[name] = path
-	}
+	maps.Copy(result, c.ExecutablesPathsIPv6.getPathsMap())
 
 	return result
 }
@@ -773,9 +770,7 @@ func getPathsMap(eps ...executablesPaths) map[string]string {
 	result := map[string]string{}
 
 	for _, ep := range eps {
-		for name, path := range ep.getPathsMap() {
-			result[name] = path
-		}
+		maps.Copy(result, ep.getPathsMap())
 	}
 
 	return result

@@ -345,12 +345,11 @@ func (p *PodConverter) dataplaneFor(
 					key := fmt.Sprintf("%s:%d", l.Address, l.Port)
 					if existing, ok := portSvc[key]; ok {
 						if existing.typ != l.Type {
-							converterLog.Error(nil, "services have conflicting zone-proxy-type on the same port: ignoring the second service",
-								"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
-						} else {
-							converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
-								"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
+							return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
+								l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
 						}
+						converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
+							"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
 						continue
 					}
 					portSvc[key] = portEntry{zpSvc.Name, l.Type}
@@ -514,9 +513,7 @@ func mergeLabels(existingLabels map[string]string, podLabels map[string]string) 
 	if existingLabels != nil {
 		mergedLabels = maps.Clone(existingLabels)
 	}
-	for k, v := range podLabels {
-		mergedLabels[k] = v
-	}
+	maps.Copy(mergedLabels, podLabels)
 	return mergedLabels
 }
 

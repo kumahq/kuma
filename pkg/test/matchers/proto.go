@@ -8,17 +8,17 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
-func MatchProto(expected interface{}) types.GomegaMatcher {
+func MatchProto(expected any) types.GomegaMatcher {
 	return &ProtoMatcher{
 		Expected: expected,
 	}
 }
 
 type ProtoMatcher struct {
-	Expected interface{}
+	Expected any
 }
 
-func (p *ProtoMatcher) Match(actual interface{}) (bool, error) {
+func (p *ProtoMatcher) Match(actual any) (bool, error) {
 	if actual == nil && p.Expected == nil {
 		return true, nil
 	}
@@ -42,12 +42,12 @@ func (p *ProtoMatcher) Match(actual interface{}) (bool, error) {
 	return proto.Equal(actualProto, expectedProto), nil
 }
 
-func (p *ProtoMatcher) FailureMessage(actual interface{}) string {
+func (p *ProtoMatcher) FailureMessage(actual any) string {
 	differences := cmp.Diff(p.Expected, actual, protocmp.Transform())
 	return "Expected matching protobuf message:\n" + differences
 }
 
-func (p *ProtoMatcher) NegatedFailureMessage(actual interface{}) string {
+func (p *ProtoMatcher) NegatedFailureMessage(actual any) string {
 	return "Expected different protobuf but was the same"
 }
 

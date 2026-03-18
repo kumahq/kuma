@@ -54,6 +54,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
 		inboundTagsDisabled bool
+		expectedErr         string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -150,6 +151,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
 
 			// then
+			if given.expectedErr != "" {
+				Expect(err).To(MatchError(ContainSubstring(given.expectedErr)))
+				return
+			}
 			Expect(err).ToNot(HaveOccurred())
 
 			actual, err := yaml.Marshal(existingDataplane)
@@ -401,7 +406,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		Entry("43. Zone-proxy-only Pod with ingress and egress services on the same port", testCase{
 			pod:            "43.pod.yaml",
 			servicesForPod: "43.services-for-pod.yaml",
-			dataplane:      "43.dataplane.yaml",
+			expectedErr:    "conflicting listener types on port 10001",
 		}),
 	)
 

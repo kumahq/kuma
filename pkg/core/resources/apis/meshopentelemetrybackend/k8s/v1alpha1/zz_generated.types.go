@@ -11,6 +11,7 @@ import (
 	policy "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -107,4 +108,20 @@ func (l *MeshOpenTelemetryBackendList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshOpenTelemetryBackend{}, &MeshOpenTelemetryBackendList{})
+	registry.RegisterObjectType(&policy.MeshOpenTelemetryBackend{}, &MeshOpenTelemetryBackend{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshOpenTelemetryBackend",
+		},
+	})
+	registry.RegisterListType(&policy.MeshOpenTelemetryBackend{}, &MeshOpenTelemetryBackendList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshOpenTelemetryBackendList",
+		},
+	})
 }

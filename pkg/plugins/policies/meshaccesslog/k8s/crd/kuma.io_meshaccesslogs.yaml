@@ -136,6 +136,32 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  backendRef:
+                                    description: |-
+                                      BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                      defines the collector endpoint. Mutually exclusive with Endpoint.
+                                    properties:
+                                      kind:
+                                        description: Kind of the backend resource.
+                                        enum:
+                                        - MeshOpenTelemetryBackend
+                                        type: string
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Labels to match the referenced resource. Use for cross-zone references
+                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
+                                          Name. When multiple resources match, the oldest by creation time wins.
+                                        type: object
+                                      name:
+                                        description: |-
+                                          Name of the referenced resource (metadata.name). Use for same-cluster
+                                          references. Mutually exclusive with Labels.
+                                        type: string
+                                    required:
+                                    - kind
+                                    type: object
                                   body:
                                     description: |-
                                       Body is a raw string or an OTLP any value as described at
@@ -150,13 +176,13 @@ spec:
                                             stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
+                                    default: ""
+                                    description: |-
+                                      Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+
+                                      Deprecated: use BackendRef instead.
                                     example: otel-collector:4317
-                                    minLength: 1
                                     type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -368,6 +394,32 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  backendRef:
+                                    description: |-
+                                      BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                      defines the collector endpoint. Mutually exclusive with Endpoint.
+                                    properties:
+                                      kind:
+                                        description: Kind of the backend resource.
+                                        enum:
+                                        - MeshOpenTelemetryBackend
+                                        type: string
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Labels to match the referenced resource. Use for cross-zone references
+                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
+                                          Name. When multiple resources match, the oldest by creation time wins.
+                                        type: object
+                                      name:
+                                        description: |-
+                                          Name of the referenced resource (metadata.name). Use for same-cluster
+                                          references. Mutually exclusive with Labels.
+                                        type: string
+                                    required:
+                                    - kind
+                                    type: object
                                   body:
                                     description: |-
                                       Body is a raw string or an OTLP any value as described at
@@ -382,13 +434,13 @@ spec:
                                             stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
+                                    default: ""
+                                    description: |-
+                                      Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+
+                                      Deprecated: use BackendRef instead.
                                     example: otel-collector:4317
-                                    minLength: 1
                                     type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -600,6 +652,32 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  backendRef:
+                                    description: |-
+                                      BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                      defines the collector endpoint. Mutually exclusive with Endpoint.
+                                    properties:
+                                      kind:
+                                        description: Kind of the backend resource.
+                                        enum:
+                                        - MeshOpenTelemetryBackend
+                                        type: string
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Labels to match the referenced resource. Use for cross-zone references
+                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
+                                          Name. When multiple resources match, the oldest by creation time wins.
+                                        type: object
+                                      name:
+                                        description: |-
+                                          Name of the referenced resource (metadata.name). Use for same-cluster
+                                          references. Mutually exclusive with Labels.
+                                        type: string
+                                    required:
+                                    - kind
+                                    type: object
                                   body:
                                     description: |-
                                       Body is a raw string or an OTLP any value as described at
@@ -614,13 +692,13 @@ spec:
                                             stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
+                                    default: ""
+                                    description: |-
+                                      Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+
+                                      Deprecated: use BackendRef instead.
                                     example: otel-collector:4317
-                                    minLength: 1
                                     type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -747,6 +825,49 @@ spec:
                   required:
                   - default
                   - targetRef
+                  type: object
+                type: array
+            type: object
+          status:
+            description: Status is the current status of the Kuma MeshAccessLog resource.
+            properties:
+              conditions:
+                items:
+                  properties:
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - message
+                  - reason
+                  - status
+                  - type
                   type: object
                 type: array
             type: object

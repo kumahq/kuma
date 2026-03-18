@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 
@@ -183,9 +184,7 @@ func gatewayListenerInfoFromProxy(
 	)
 
 	outboundEndpoints := core_xds.EndpointMap{}
-	for k, v := range meshCtx.EndpointMap {
-		outboundEndpoints[k] = v
-	}
+	maps.Copy(outboundEndpoints, meshCtx.EndpointMap)
 	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshCtx.Resource,
@@ -193,9 +192,7 @@ func gatewayListenerInfoFromProxy(
 		meshCtx.DataSourceLoader,
 		proxy.Zone,
 	)
-	for k, v := range esEndpoints {
-		outboundEndpoints[k] = v
-	}
+	maps.Copy(outboundEndpoints, esEndpoints)
 
 	listenerInfos := map[uint32]GatewayListenerInfo{}
 
@@ -263,7 +260,7 @@ func (g Generator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx
 }
 
 func GenerateRTDS(limits []RuntimeResoureLimitListener) *core_xds.Resource {
-	layer := map[string]interface{}{}
+	layer := map[string]any{}
 	for _, limit := range limits {
 		layer[fmt.Sprintf("envoy.resource_limits.listener.%s.connection_limit", limit.Name)] = limit.ConnectionLimit
 	}

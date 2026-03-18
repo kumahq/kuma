@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -261,6 +262,58 @@ func ValidateLength(path PathBuilder, maxLength int, v string) ValidationError {
 	}
 
 	return err
+}
+
+// ValidateBackendResourceRef checks that a BackendResourceRef has a valid kind
+// and exactly one of name or labels set.
+func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationError {
+	var verr ValidationError
+	if ref == nil {
+		return verr
+	}
+	if ref.Kind != common_api.BackendResourceMeshOpenTelemetryBackend {
+		verr.AddErrorAt(RootedAt("kind"),
+			MakeFieldMustBeOneOfErr("kind", string(common_api.BackendResourceMeshOpenTelemetryBackend)))
+	}
+	if ref.Name == "" && len(ref.Labels) == 0 {
+		verr.AddViolation("", MustHaveExactlyOneOf("backendRef", "name", "labels"))
+	}
+	if ref.Name != "" && len(ref.Labels) > 0 {
+		verr.AddViolation("", MustHaveOnlyOne("backendRef", "name", "labels"))
+	}
+	return verr
+}
+
+// ValidateOtelBackendRefOrEndpoint validates that exactly one of endpoint or
+// backendRef is set. If backendRef is set, delegates to ValidateBackendResourceRef.
+// If endpoint is set, rejects URL characters and runs optional extra validators.
+// Extra validators allow policies to enforce stricter endpoint rules for
+// backward compatibility (e.g. MeshMetric requires host:port).
+func ValidateOtelBackendRefOrEndpoint(
+	endpoint string,
+	backendRef *common_api.BackendResourceRef,
+	extraEndpointValidators ...func(string) ValidationError,
+) ValidationError {
+	var verr ValidationError
+
+	switch {
+	case endpoint != "" && backendRef != nil:
+		verr.AddViolation("", MustHaveOnlyOne("openTelemetry", "endpoint", "backendRef"))
+		return verr
+	case endpoint == "" && backendRef == nil:
+		verr.AddViolation("", MustHaveExactlyOneOf("openTelemetry", "endpoint", "backendRef"))
+		return verr
+	case backendRef != nil:
+		verr.AddErrorAt(RootedAt("backendRef"), ValidateBackendResourceRef(backendRef))
+	case strings.ContainsAny(endpoint, "/?#"):
+		verr.AddViolationAt(RootedAt("endpoint"), "must be in host:port format, not a URL")
+	default:
+		for _, v := range extraEndpointValidators {
+			verr.Add(v(endpoint))
+		}
+	}
+
+	return verr
 }
 
 func ValidateBackendRef(b common_api.BackendRef) ValidationError {

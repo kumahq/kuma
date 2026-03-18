@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"maps"
 	"sort"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -152,9 +153,7 @@ func (s *ResourceSet) AddSet(set *ResourceSet) *ResourceSet {
 		if s.typeToNamesIndex[typ] == nil {
 			s.typeToNamesIndex[typ] = map[string]*Resource{}
 		}
-		for name, resource := range resources {
-			s.typeToNamesIndex[typ][name] = resource
-		}
+		maps.Copy(s.typeToNamesIndex[typ], resources)
 	}
 	return s
 }

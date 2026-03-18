@@ -93,12 +93,10 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func() {
+		for range 100 {
+			wg.Go(func() {
 				fetch()
-				wg.Done()
-			}()
+			})
 		}
 		wg.Wait()
 
@@ -131,12 +129,10 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func() {
+		for range 100 {
+			wg.Go(func() {
 				fetch()
-				wg.Done()
-			}()
+			})
 		}
 		wg.Wait()
 
@@ -154,12 +150,10 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func() {
+		for range 100 {
+			wg.Go(func() {
 				fetch()
-				wg.Done()
-			}()
+			})
 		}
 		wg.Wait()
 
@@ -230,12 +224,10 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func() {
+		for range 100 {
+			wg.Go(func() {
 				fetch(false)
-				wg.Done()
-			}()
+			})
 		}
 		wg.Wait()
 
