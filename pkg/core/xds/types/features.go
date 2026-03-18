@@ -44,3 +44,8 @@ const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
 
 // FeatureStrictInboundPorts indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
 const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
+
+// FeatureOtelViaKumaDp indicates that kuma-dp can act as a gRPC proxy for OTel
+// traces and access logs. When present, the CP routes the OTel cluster to a Unix
+// socket instead of connecting directly to the collector.
+const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"

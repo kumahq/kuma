@@ -204,6 +204,9 @@ type Proxy struct {
 	Zone string
 	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config
 	InternalAddresses []InternalAddress
+	// OtelPipeBackends accumulates unified OTel backends across policy plugins.
+	// Populated during xDS generation, consumed by the generator to write /otel dynconf.
+	OtelPipeBackends *OtelPipeBackends
 }
 
 func (p *Proxy) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
