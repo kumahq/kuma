@@ -58,29 +58,13 @@ func ListenersForService(pod *kube_core.Pod, svc *kube_core.Service) ([]*mesh_pr
 		}
 
 		state := mesh_proto.Dataplane_Networking_Listener_Ready
-
-		if container != nil {
-			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
-				state = mesh_proto.Dataplane_Networking_Listener_NotReady
-			}
-		}
-
-		// also we're checking whether kuma-sidecar container is ready
-		if cs := util_k8s.FindContainerOrInitContainerStatus(
-			util_k8s.KumaSidecarContainerName,
-			pod.Status.ContainerStatuses,
-			pod.Status.InitContainerStatuses,
-		); cs != nil && !cs.Ready {
-			state = mesh_proto.Dataplane_Networking_Listener_NotReady
-		}
-
-		if pod.DeletionTimestamp != nil {
+		if !podReady(pod, container) {
 			state = mesh_proto.Dataplane_Networking_Listener_NotReady
 		}
 
 		name := svcPort.Name
 		if name == "" {
-			name = fmt.Sprintf("%s-%d", svc.Name, svcPort.Port)
+			name = fmt.Sprintf("%d", svcPort.Port)
 		}
 
 		listeners = append(listeners, &mesh_proto.Dataplane_Networking_Listener{

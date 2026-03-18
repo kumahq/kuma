@@ -383,6 +383,26 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "39.services-for-pod.yaml",
 			dataplane:      "39.dataplane.yaml",
 		}),
+		Entry("40. Zone-proxy-only Pod where service port differs from container port", testCase{
+			pod:            "40.pod.yaml",
+			servicesForPod: "40.services-for-pod.yaml",
+			dataplane:      "40.dataplane.yaml",
+		}),
+		Entry("41. Zone-proxy-only Pod with unnamed service port - listener name derived from service", testCase{
+			pod:            "41.pod.yaml",
+			servicesForPod: "41.services-for-pod.yaml",
+			dataplane:      "41.dataplane.yaml",
+		}),
+		Entry("42. Zone-proxy-only Pod with two ingress services on the same port", testCase{
+			pod:            "42.pod.yaml",
+			servicesForPod: "42.services-for-pod.yaml",
+			dataplane:      "42.dataplane.yaml",
+		}),
+		Entry("43. Zone-proxy-only Pod with ingress and egress services on the same port", testCase{
+			pod:            "43.pod.yaml",
+			servicesForPod: "43.services-for-pod.yaml",
+			dataplane:      "43.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",

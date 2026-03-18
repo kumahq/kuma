@@ -328,12 +328,14 @@ func (p *PodConverter) dataplaneFor(
 			dataplane.Networking.Inbound = ifaces
 		}
 
-		for _, zpSvc := range zoneProxyServices {
-			listeners, lErr := ListenersForService(pod, zpSvc)
-			if lErr != nil {
-				return nil, lErr
+		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
+			for _, zpSvc := range zoneProxyServices {
+				listeners, lErr := ListenersForService(pod, zpSvc)
+				if lErr != nil {
+					return nil, lErr
+				}
+				dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, listeners...)
 			}
-			dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, listeners...)
 		}
 
 		// Zone-proxy-only dataplane: no inbounds, no gateway, but has listeners.
