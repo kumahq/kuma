@@ -8,6 +8,7 @@ import (
 )
 
 // MeshMetric enables collection and export of service mesh metrics. It configures sidecar and application metrics scraping, allows customization of which metrics are published, and supports exporting to Prometheus or OpenTelemetry backends for monitoring and observability.
+// +kuma:policy:has_status=true
 type MeshMetric struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -131,10 +132,21 @@ type PrometheusTls struct {
 }
 
 type OpenTelemetryBackend struct {
-	// Endpoint for OpenTelemetry collector
+	// Endpoint for OpenTelemetry collector.
+	//
+	// Deprecated: use BackendRef instead.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=""
 	Endpoint string `json:"endpoint"`
+	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 	// RefreshInterval defines how frequent metrics should be pushed to collector
 	RefreshInterval *k8s.Duration `json:"refreshInterval,omitempty"`
+}
+
+type MeshMetricStatus struct {
+	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 // +kubebuilder:validation:Enum=Disabled;ProvidedTLS;ActiveMTLSBackend

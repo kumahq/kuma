@@ -211,7 +211,7 @@ func processToResourceRules(policies core_model.ResourceList, resources xds_cont
 }
 
 type artificialPolicyItem struct {
-	conf      interface{}
+	conf      any
 	targetRef common_api.TargetRef
 }
 
@@ -219,7 +219,7 @@ func (a *artificialPolicyItem) GetTargetRef() common_api.TargetRef {
 	return a.targetRef
 }
 
-func (a *artificialPolicyItem) GetDefault() interface{} {
+func (a *artificialPolicyItem) GetDefault() any {
 	return a.conf
 }
 

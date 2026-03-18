@@ -36,28 +36,140 @@
                     "Type": "STRING",
                     "Value": "test-label"
                   }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.5"
+                  }
                 }
               ],
               "StartTime": "0001-01-01T00:00:00Z",
               "Time": "2024-01-01T01:01:01.000000001Z",
-              "Count": 0,
-              "Sum": 0,
-              "QuantileValues": [
+              "Value": 2
+            },
+            {
+              "Attributes": [
                 {
-                  "Quantile": 0.5,
-                  "Value": 2
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
                 },
                 {
-                  "Quantile": 0.9,
-                  "Value": 5
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
                 },
                 {
-                  "Quantile": 0.99,
-                  "Value": 20
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.9"
+                  }
                 }
-              ]
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 5
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.99"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 20
             }
           ]
+        }
+      },
+      {
+        "Name": "custom_metric_scoped_seconds_count",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 0
+            }
+          ],
+          "Temporality": "CumulativeTemporality",
+          "IsMonotonic": true
+        }
+      },
+      {
+        "Name": "custom_metric_scoped_seconds_sum",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 0
+            }
+          ],
+          "Temporality": "CumulativeTemporality",
+          "IsMonotonic": true
         }
       }
     ]
@@ -91,26 +203,272 @@
                     "Type": "STRING",
                     "Value": "test-label"
                   }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.5"
+                  }
                 }
               ],
               "StartTime": "0001-01-01T00:00:00Z",
               "Time": "2024-01-01T01:01:01.000000001Z",
-              "Count": 500,
-              "Sum": 1000,
-              "QuantileValues": [
+              "Value": 2
+            },
+            {
+              "Attributes": [
                 {
-                  "Quantile": 0.5,
-                  "Value": 2
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
                 },
                 {
-                  "Quantile": 0.9,
-                  "Value": 5
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
                 },
                 {
-                  "Quantile": 0.99,
-                  "Value": 20
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.9"
+                  }
                 }
-              ]
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 5
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.99"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 20
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.5"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 3
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.9"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 6
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.99"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 11
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.5"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 4
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.9"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 7
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                },
+                {
+                  "Key": "quantile",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "0.99"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 13
+            }
+          ]
+        }
+      },
+      {
+        "Name": "custom_metric_seconds_count",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 500
             },
             {
               "Attributes": [
@@ -131,22 +489,7 @@
               ],
               "StartTime": "0001-01-01T00:00:00Z",
               "Time": "2024-01-01T01:01:01.000000001Z",
-              "Count": 100,
-              "Sum": 600,
-              "QuantileValues": [
-                {
-                  "Quantile": 0.5,
-                  "Value": 3
-                },
-                {
-                  "Quantile": 0.9,
-                  "Value": 6
-                },
-                {
-                  "Quantile": 0.99,
-                  "Value": 11
-                }
-              ]
+              "Value": 100
             },
             {
               "Attributes": [
@@ -167,24 +510,85 @@
               ],
               "StartTime": "0001-01-01T00:00:00Z",
               "Time": "2024-01-01T01:01:01.000000001Z",
-              "Count": 200,
-              "Sum": 800,
-              "QuantileValues": [
-                {
-                  "Quantile": 0.5,
-                  "Value": 4
-                },
-                {
-                  "Quantile": 0.9,
-                  "Value": 7
-                },
-                {
-                  "Quantile": 0.99,
-                  "Value": 13
-                }
-              ]
+              "Value": 200
             }
-          ]
+          ],
+          "Temporality": "CumulativeTemporality",
+          "IsMonotonic": true
+        }
+      },
+      {
+        "Name": "custom_metric_seconds_sum",
+        "Description": "",
+        "Unit": "",
+        "Data": {
+          "DataPoints": [
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-fe04929f294bcdea"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 1000
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 600
+            },
+            {
+              "Attributes": [
+                {
+                  "Key": "envoy_cluster_name",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "echo-server_kuma-test_svc_8080-0382aaf295add2eb"
+                  }
+                },
+                {
+                  "Key": "extraLabel",
+                  "Value": {
+                    "Type": "STRING",
+                    "Value": "test-label"
+                  }
+                }
+              ],
+              "StartTime": "0001-01-01T00:00:00Z",
+              "Time": "2024-01-01T01:01:01.000000001Z",
+              "Value": 800
+            }
+          ],
+          "Temporality": "CumulativeTemporality",
+          "IsMonotonic": true
         }
       }
     ]

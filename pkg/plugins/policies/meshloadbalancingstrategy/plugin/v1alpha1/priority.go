@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"math"
+	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
@@ -95,10 +96,5 @@ func doesRuleApply(rule *api.FromZone, localZone string) bool {
 	if rule == nil {
 		return true
 	}
-	for _, zone := range rule.Zones {
-		if zone == localZone {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(rule.Zones, localZone)
 }

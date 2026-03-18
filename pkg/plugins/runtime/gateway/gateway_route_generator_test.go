@@ -2221,7 +2221,7 @@ conf:
 			},
 		),
 	}
-	handleArg := func(arg interface{}) {
+	handleArg := func(arg any) {
 		GinkgoHelper()
 
 		switch val := arg.(type) {
@@ -2243,7 +2243,7 @@ conf:
 			Expect(StoreNamedFixture(rt, "gateway-http-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, args ...interface{}) {
+			func(goldenFileName string, args ...any) {
 				// given
 				for _, arg := range args {
 					handleArg(arg)
@@ -2271,7 +2271,7 @@ conf:
 			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, args ...interface{}) {
+			func(goldenFileName string, args ...any) {
 				// given
 				for _, arg := range args {
 					handleArg(arg)
@@ -2291,7 +2291,7 @@ conf:
 
 	Context("with a TCP gateway", func() {
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, args ...interface{}) {
+			func(goldenFileName string, args ...any) {
 				// given
 				for _, arg := range args {
 					handleArg(arg)
@@ -2314,7 +2314,7 @@ conf:
 			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, args ...interface{}) {
+			func(goldenFileName string, args ...any) {
 				// given
 				for _, arg := range args {
 					handleArg(arg)

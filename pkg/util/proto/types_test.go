@@ -16,6 +16,12 @@ type sampleStruct struct {
 	} `json:"nested"`
 }
 
+type sampleStructWithOmitEmpty struct {
+	Name   string   `json:"name,omitempty"`
+	Active bool     `json:"active,omitempty"`
+	Labels []string `json:"labels,omitempty"`
+}
+
 var _ = Describe("Proto helpers", func() {
 	obj := sampleStruct{
 		Name:   "Alice",
@@ -36,6 +42,20 @@ var _ = Describe("Proto helpers", func() {
 	It("StructToMapOfAny should convert struct to map", func() {
 		out := util_proto.StructToMapOfAny(obj)
 		Expect(out).To(Equal(expected))
+	})
+
+	It("StructToMapOfAny should ignore json tag options", func() {
+		out := util_proto.StructToMapOfAny(sampleStructWithOmitEmpty{
+			Name:   "Alice",
+			Active: true,
+			Labels: []string{"one", "two"},
+		})
+
+		Expect(out).To(Equal(map[string]any{
+			"name":   "Alice",
+			"active": true,
+			"labels": []any{"one", "two"},
+		}))
 	})
 
 	It("StructToProtoStruct should convert struct to *structpb.Struct", func() {

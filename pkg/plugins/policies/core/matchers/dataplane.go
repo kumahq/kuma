@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -214,9 +215,7 @@ func DppSelectedByPolicy(
 		tags := map[string]string{
 			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
 		}
-		for k, v := range pointer.Deref(ref.Tags) {
-			tags[k] = v
-		}
+		maps.Copy(tags, pointer.Deref(ref.Tags))
 		inbounds, gwListeners, gateway := inboundsSelectedByTags(tags, dpp, gateway)
 		return inbounds, gwListeners, gateway, nil
 	case common_api.MeshGateway:

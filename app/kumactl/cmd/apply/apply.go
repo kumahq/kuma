@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -57,49 +59,17 @@ name: demo
 
 Apply a resource from external URL
 $ kumactl apply -f https://example.com/resource.yaml
+
+Apply all resources from a directory
+$ kumactl apply -f resources/
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			_ = kumactl_cmd.CheckCompatibility(pctx.FetchServerVersion, cmd.ErrOrStderr())
 
-			var b []byte
-			var err error
-
-			if ctx.args.file == "-" {
-				b, err = io.ReadAll(cmd.InOrStdin())
-				if err != nil {
-					return err
-				}
-			} else {
-				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
-					if _, err := url.ParseRequestURI(ctx.args.file); err != nil {
-						return errors.Wrap(err, "invalid URL for --file")
-					}
-					client := &http.Client{
-						Timeout: timeout,
-					}
-					req, err := http.NewRequest(http.MethodGet, ctx.args.file, http.NoBody)
-					if err != nil {
-						return errors.Wrap(err, "error creating new http request")
-					}
-					resp, err := client.Do(req) // #nosec G704 -- URL validated with ParseRequestURI above
-					if err != nil {
-						return errors.Wrap(err, "error with GET http request")
-					}
-					if resp.StatusCode != http.StatusOK {
-						return errors.Wrap(err, "error while retrieving URL")
-					}
-					defer resp.Body.Close()
-					b, err = io.ReadAll(resp.Body)
-					if err != nil {
-						return errors.Wrap(err, "error while reading provided file")
-					}
-				} else {
-					b, err = os.ReadFile(ctx.args.file)
-					if err != nil {
-						return errors.Wrap(err, "error while reading provided file")
-					}
-				}
+			b, err := readContent(ctx.args.file, cmd)
+			if err != nil {
+				return err
 			}
 			if len(b) == 0 {
 				return fmt.Errorf("no resource(s) passed to apply")
@@ -164,11 +134,107 @@ $ kumactl apply -f https://example.com/resource.yaml
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply. Pass `-` to read from stdin")
+	cmd.Flags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file or directory to apply. When a directory is provided, all .yaml, .yml, and .json files are applied. Pass `-` to read from stdin")
 	_ = cmd.MarkFlagRequired("file")
 	cmd.Flags().StringToStringVarP(&ctx.args.vars, "var", "v", map[string]string{}, "Variable to replace in configuration")
 	cmd.Flags().BoolVar(&ctx.args.dryRun, "dry-run", false, "Resolve variable and prints result out without actual applying")
 	return cmd
+}
+
+var supportedExtensions = map[string]bool{
+	".yaml": true,
+	".yml":  true,
+	".json": true,
+}
+
+func readContent(file string, cmd *cobra.Command) ([]byte, error) {
+	if file == "-" {
+		return io.ReadAll(cmd.InOrStdin())
+	}
+	if strings.HasPrefix(file, "http://") || strings.HasPrefix(file, "https://") {
+		return readURL(file)
+	}
+	info, err := os.Stat(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "error while reading provided file")
+	}
+	if info.IsDir() {
+		return readDirectory(file)
+	}
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "error while reading provided file")
+	}
+	return b, nil
+}
+
+func readURL(file string) ([]byte, error) {
+	if _, err := url.ParseRequestURI(file); err != nil {
+		return nil, errors.Wrap(err, "invalid URL for --file")
+	}
+	client := &http.Client{
+		Timeout: timeout,
+	}
+	req, err := http.NewRequest(http.MethodGet, file, http.NoBody)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating new http request")
+	}
+	resp, err := client.Do(req) // #nosec G704 -- URL validated with ParseRequestURI above
+	if err != nil {
+		return nil, errors.Wrap(err, "error with GET http request")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("error while retrieving URL")
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "error while reading provided file")
+	}
+	return b, nil
+}
+
+func readDirectory(dir string) ([]byte, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading directory")
+	}
+	var files []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		// Skip symlinks that point to directories
+		if entry.Type()&os.ModeSymlink != 0 {
+			resolved, err := os.Stat(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				continue
+			}
+			if resolved.IsDir() {
+				continue
+			}
+		}
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
+		if supportedExtensions[ext] {
+			files = append(files, filepath.Join(dir, entry.Name()))
+		}
+	}
+	sort.Strings(files)
+	if len(files) == 0 {
+		return nil, nil
+	}
+	var combined []byte
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error reading file %s", f)
+		}
+		if len(combined) > 0 {
+			combined = append(combined, []byte("\n---\n")...)
+		}
+		combined = append(combined, b...)
+	}
+	return combined, nil
 }
 
 func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) ([]string, bool, error) {

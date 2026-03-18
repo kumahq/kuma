@@ -1,0 +1,3 @@
+violations:
+- field: spec.endpoint.port
+  message: port must be a valid (1-65535)

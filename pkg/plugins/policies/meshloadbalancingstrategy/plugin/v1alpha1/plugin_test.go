@@ -1360,7 +1360,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						ResourceRules: outbound.ResourceRules{
 							kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"): outbound.ResourceRule{
-								Conf: []interface{}{
+								Conf: []any{
 									api.Conf{
 										HashPolicies: &[]api.HashPolicy{
 											{
@@ -1374,7 +1374,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 							},
 							kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-3_"): outbound.ResourceRule{
-								Conf: []interface{}{
+								Conf: []any{
 									api.Conf{
 										HashPolicies: &[]api.HashPolicy{
 											{
@@ -1702,7 +1702,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
-									Conf: []interface{}{
+									Conf: []any{
 										api.Conf{
 											LocalityAwareness: &api.LocalityAwareness{
 												LocalZone: &api.LocalZone{

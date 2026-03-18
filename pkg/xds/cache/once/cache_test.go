@@ -33,7 +33,7 @@ var _ = Describe("OnceCache", func() {
 	It("should cache Get() queries", func() {
 		var count int32 = 0
 		var val int32 = 1
-		fn := once.RetrieverFunc(func(ctx context.Context, s string) (interface{}, error) {
+		fn := once.RetrieverFunc(func(ctx context.Context, s string) (any, error) {
 			atomic.AddInt32(&count, 1)
 			v := atomic.LoadInt32(&val)
 			return v, nil
@@ -84,21 +84,19 @@ var _ = Describe("OnceCache", func() {
 	It("should cache concurrent Get() requests", func() {
 		var count int32 = 0
 		var val int32 = 1
-		fn := once.RetrieverFunc(func(ctx context.Context, s string) (interface{}, error) {
+		fn := once.RetrieverFunc(func(ctx context.Context, s string) (any, error) {
 			atomic.AddInt32(&count, 1)
 			v := atomic.LoadInt32(&val)
 			return v, nil
 		})
 		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func() {
+		for range 100 {
+			wg.Go(func() {
 				out, err := cache.GetOrRetrieve(context.Background(), "key", fn)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(out.(int32)).To(Equal(atomic.LoadInt32(&val)))
-				wg.Done()
-			}()
+			})
 		}
 		wg.Wait()
 
@@ -119,7 +117,7 @@ var _ = Describe("OnceCache", func() {
 	It("should retry previously failed Get() requests", func() {
 		var count int32 = 0
 		var hasError int32 = 1
-		fn := once.RetrieverFunc(func(ctx context.Context, s string) (interface{}, error) {
+		fn := once.RetrieverFunc(func(ctx context.Context, s string) (any, error) {
 			atomic.AddInt32(&count, 1)
 			if atomic.LoadInt32(&hasError) != 0 {
 				return "", errors.New("it's an error")

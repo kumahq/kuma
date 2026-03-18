@@ -129,7 +129,7 @@ func ExecuteOwnerTests(
 			err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				tr := core_mesh.TrafficRouteResource{
 					Spec: &v1alpha1.TrafficRoute{
 						Conf: &v1alpha1.TrafficRoute_Conf{
@@ -168,7 +168,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			var prev model.Resource = meshRes
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				curr := &core_mesh.TrafficRouteResource{
 					Spec: &v1alpha1.TrafficRoute{
 						Conf: &v1alpha1.TrafficRoute_Conf{

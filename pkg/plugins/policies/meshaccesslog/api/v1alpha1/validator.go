@@ -28,7 +28,7 @@ func (r *MeshAccessLogResource) validate() error {
 	if r.Spec.From != nil {
 		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	}
-	if r.Spec.From != nil {
+	if r.Spec.Rules != nil {
 		verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
 	}
 	return verr.OrNil()
@@ -154,6 +154,10 @@ func validateBackend(backend Backend) validators.ValidationError {
 			verr.AddViolationAt(root, validators.MustBeDefined)
 			break
 		}
+		verr.AddErrorAt(root, validators.ValidateOtelBackendRefOrEndpoint(
+			backend.OpenTelemetry.Endpoint,
+			backend.OpenTelemetry.BackendRef,
+		))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}

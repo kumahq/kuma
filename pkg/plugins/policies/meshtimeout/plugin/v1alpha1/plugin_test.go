@@ -522,7 +522,7 @@ var _ = Describe("MeshTimeout", func() {
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType): {
 						Resource: testMeshHTTPRouteMeta(),
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Http: &api.Http{
 									RequestTimeout:    test.ParseDuration("88s"),
@@ -533,7 +533,7 @@ var _ = Describe("MeshTimeout", func() {
 					},
 					kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType): {
 						Resource: testMeshServiceMeta(),
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Http: &api.Http{
 									RequestTimeout:    test.ParseDuration("99s"),
@@ -566,7 +566,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								ConnectionTimeout: test.ParseDuration("10s"),
 								IdleTimeout:       test.ParseDuration("1h"),
@@ -604,7 +604,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								ConnectionTimeout: test.ParseDuration("10s"),
 								IdleTimeout:       test.ParseDuration("1h"),

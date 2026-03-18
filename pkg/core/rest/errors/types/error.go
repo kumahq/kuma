@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Error following https://kong-aip.netlify.app/aip/193/
 type Error struct {
@@ -33,11 +36,12 @@ type InvalidParameter struct {
 }
 
 func (e *Error) Error() string {
-	msg := fmt.Sprintf("%s (%s)", e.Title, e.Detail)
+	var msg strings.Builder
+	fmt.Fprintf(&msg, "%s (%s)", e.Title, e.Detail)
 	for _, cause := range e.InvalidParameters {
-		msg += fmt.Sprintf(";%s=%s ", cause.Field, cause.Reason)
+		fmt.Fprintf(&msg, ";%s=%s ", cause.Field, cause.Reason)
 	}
-	return msg
+	return msg.String()
 }
 
 type Cause struct {

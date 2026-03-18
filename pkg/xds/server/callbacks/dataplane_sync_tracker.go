@@ -44,7 +44,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	t.Lock()
 	defer t.Unlock()
 
-	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is invoked when dataplane disconnects
+	ctx, cancel := context.WithCancel(context.Background())
 	state := &watchdogState{
 		cancelFunc: cancel,
 		stopped:    make(chan struct{}),

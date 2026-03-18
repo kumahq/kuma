@@ -82,7 +82,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	It("should delete all resources", func() {
 		upstreamResponse := client_v2.UpstreamResponse{}
 		removedResources := []model.ResourceKey{}
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			m := meshBuilder(i)
 			removedResources = append(removedResources, model.WithoutMesh(fmt.Sprintf("mesh-%d", i)))
 			err := resourceStore.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
@@ -104,7 +104,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	})
 
 	It("should delete resources which are not represented in upstream and create new", func() {
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			m := meshBuilder(i)
 			err := resourceStore.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
 			Expect(err).ToNot(HaveOccurred())
@@ -145,7 +145,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	})
 
 	It("should delete resources which are not represented in upstream and create new when is an initial request", func() {
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			m := meshBuilder(i)
 			err := resourceStore.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
 			Expect(err).ToNot(HaveOccurred())

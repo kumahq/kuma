@@ -35,18 +35,18 @@ func New(expirationTime time.Duration, name string, metrics metrics.Metrics) (*C
 
 type Retriever interface {
 	// Call method called when a cache miss happens which will return the actual value that needs to be cached
-	Call(ctx context.Context, key string) (interface{}, error)
+	Call(ctx context.Context, key string) (any, error)
 }
-type RetrieverFunc func(context.Context, string) (interface{}, error)
+type RetrieverFunc func(context.Context, string) (any, error)
 
-func (f RetrieverFunc) Call(ctx context.Context, key string) (interface{}, error) {
+func (f RetrieverFunc) Call(ctx context.Context, key string) (any, error) {
 	return f(ctx, key)
 }
 
 // GetOrRetrieve will return the cached value and if it isn't present will call `Retriever`.
 // It is guaranteed there will only on one concurrent call to `Retriever` for each key, other accesses to the key will be blocked until `Retriever.Call` returns.
 // If `Retriever.Call` fails the error will not be cached and subsequent calls will call the `Retriever` again.
-func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retriever) (interface{}, error) {
+func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retriever) (any, error) {
 	v, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()
@@ -56,7 +56,7 @@ func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retriev
 	if !stored {
 		c.metrics.WithLabelValues("get", "hit-wait").Inc()
 	}
-	o.Do(func() (interface{}, error) {
+	o.Do(func() (any, error) {
 		defer c.onceMap.Delete(key)
 		val, found := c.cache.Get(key)
 		if found {

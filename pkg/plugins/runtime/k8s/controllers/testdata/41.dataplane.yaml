@@ -1,0 +1,17 @@
+mesh: default
+metadata:
+  labels:
+    app: zone-proxy
+    k8s.kuma.io/namespace: demo
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+spec:
+  networking:
+    address: 192.168.0.1
+    listeners:
+    - address: 192.168.0.1
+      name: "10001"
+      port: 10001
+      type: ZoneIngress
+    transparentProxying:
+      reachableBackends: {}
