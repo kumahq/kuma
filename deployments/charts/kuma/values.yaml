@@ -759,16 +759,17 @@ egress:
 
 # -- List of meshes to deploy zone proxies for.
 # Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount.
-# Optionally renders a Mesh resource and default policies (unfederated zones only).
+# Optionally renders a Mesh resource (unfederated zones only).
 # Example single-mesh configuration:
 meshes:
   - name: mesh-1
     # -- Create a Mesh resource for this entry. Ignored when controlPlane.kdsGlobalAddress is set.
     createMesh: true
-    # -- List of default policies to create with the mesh. Ignored when controlPlane.kdsGlobalAddress is set.
-    # Supported values: MeshCircuitBreaker, MeshRetry, MeshTimeout
-    createPolicies:
-      - MeshTimeout
+    # -- Skip creating initial policies for this mesh. Maps directly to Mesh.spec.skipCreatingInitialPolicies.
+    # The control plane creates default policies (MeshTimeout, MeshCircuitBreaker, MeshRetry) automatically.
+    # Use this to skip all policies ["*"] or specific ones ["MeshTimeout", "MeshRetry"].
+    # Ignored when controlPlane.kdsGlobalAddress is set.
+    skipCreatingInitialPolicies: ["*"]
 
     ingress:
       # -- Deploy a zone ingress for this mesh.
