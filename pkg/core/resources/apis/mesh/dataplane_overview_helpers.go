@@ -38,8 +38,16 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	}
 
 	if t.Spec.Dataplane.GetNetworking().HasZoneProxyListeners() {
-		allInboundsOffline = false
-		allInboundsOnline = true
+		networking := t.Spec.Dataplane.GetNetworking()
+		readyListeners := len(networking.GetReadyZoneIngressListeners()) + len(networking.GetReadyZoneEgressListeners())
+		totalListeners := 0
+		for _, l := range networking.GetListeners() {
+			if l.Type == mesh_proto.Dataplane_Networking_Listener_ZoneIngress || l.Type == mesh_proto.Dataplane_Networking_Listener_ZoneEgress {
+				totalListeners++
+			}
+		}
+		allInboundsOffline = readyListeners == 0
+		allInboundsOnline = readyListeners == totalListeners
 	}
 
 	if !proxyOnline || allInboundsOffline {

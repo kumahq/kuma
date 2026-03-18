@@ -95,11 +95,6 @@ func BuildDataplaneZoneEgressEndpointMap(
 			}
 		}
 	}
-	for serviceName, endpoints := range outbound {
-		var newEndpoints []core_xds.Endpoint
-		newEndpoints = append(newEndpoints, endpoints...)
-		outbound[serviceName] = newEndpoints
-	}
 	return outbound
 }
 

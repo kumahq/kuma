@@ -681,7 +681,12 @@ func (r TagSelectorRank) CompareTo(other TagSelectorRank) int {
 // HasZoneProxyListeners returns true when the Networking contains at least one
 // embedded zone proxy listener (ZoneIngress or ZoneEgress type).
 func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
-	return n != nil && len(n.GetListeners()) > 0
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneIngress || l.Type == Dataplane_Networking_Listener_ZoneEgress {
+			return true
+		}
+	}
+	return false
 }
 
 // IsZoneProxyOnly returns true when the Dataplane has zone proxy listeners but

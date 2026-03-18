@@ -54,13 +54,15 @@ func GenerateClusters(
 			if meshCtx.IsExternalService(serviceName) {
 				switch {
 				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
-					// MeshExternalService is only available through egress.
-					// When WorkloadIdentity is enabled we build an UpstreamTlsContext that
-					// verifies the zone egress peer certificate using the egress SPIFFE IDs
-					// precomputed in MeshContext, instead of the SecretsTracker-based path.
+					sni := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
 					if proxy.WorkloadIdentity != nil {
-						sni := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
-						upstreamCtx, err := UpstreamTLSContext(proxy, sni, meshCtx.ZoneEgressSANs())
+						// MeshExternalService is only routable through zone egress in workload-identity mode.
+						// Skip cluster generation if no zone egress SANs are available.
+						egressSANs := meshCtx.ZoneEgressSANs()
+						if len(egressSANs) == 0 {
+							continue
+						}
+						upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
 						if err != nil {
 							return nil, err
 						}
@@ -76,7 +78,7 @@ func GenerateClusters(
 								meshCtx.Resource,
 								mesh_proto.ZoneEgressServiceName,
 								true,
-								SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace),
+								sni,
 								false,
 							))
 					}
