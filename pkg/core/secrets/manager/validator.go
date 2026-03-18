@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -71,10 +72,8 @@ func (s *secretValidator) secretUsedByMTLSBackend(name string, mesh string, back
 	if err != nil {
 		return false, errors.Wrapf(err, "could not retrieve secrets in use by backend %q", backend.Name)
 	}
-	for _, secret := range secrets {
-		if secret == name {
-			return true, nil
-		}
+	if slices.Contains(secrets, name) {
+		return true, nil
 	}
 	return false, nil
 }

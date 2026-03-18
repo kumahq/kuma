@@ -76,7 +76,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		return nil, err
 	}
 
-	features := []interface{}{}
+	features := []any{}
 	for feature := range parameters.Features {
 		features = append(features, feature)
 	}
@@ -84,7 +84,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	runtimeLayers := []*envoy_bootstrap_v3.RuntimeLayer{{
 		Name: "kuma",
 		LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
-			StaticLayer: util_proto.MustStruct(map[string]interface{}{
+			StaticLayer: util_proto.MustStruct(map[string]any{
 				"re2.max_program_size.error_level": 4294967295,
 				"re2.max_program_size.warn_level":  1000,
 			}),
@@ -383,7 +383,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneProxyType] = util_proto.MustNewValueForStruct(parameters.ProxyType)
 	}
 	if len(parameters.DynamicMetadata) > 0 {
-		md := make(map[string]interface{}, len(parameters.DynamicMetadata))
+		md := make(map[string]any, len(parameters.DynamicMetadata))
 		for k, v := range parameters.DynamicMetadata {
 			md[k] = v
 		}

@@ -73,7 +73,7 @@ func (c *countingResourcesManager) reset() {
 var _ = Describe("MeshSnapshot Cache", func() {
 	testDataplaneResources := func(n int, mesh, version, address string) []*core_mesh.DataplaneResource {
 		resources := []*core_mesh.DataplaneResource{}
-		for i := 0; i < n; i++ {
+		for i := range n {
 			resources = append(resources, samples.DataplaneBackendBuilder().
 				WithName(fmt.Sprintf("dp-%d", i)).
 				WithMesh(mesh).
@@ -86,7 +86,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 	}
 	testTrafficRouteResources := func(n int, mesh, version string) []*core_mesh.TrafficRouteResource {
 		resources := []*core_mesh.TrafficRouteResource{}
-		for i := 0; i < n; i++ {
+		for i := range n {
 			resources = append(resources, &core_mesh.TrafficRouteResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("tr-%d", i), Version: version},
 				Spec: &mesh_proto.TrafficRoute{},
@@ -133,7 +133,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 	})
 
 	BeforeEach(func() {
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			mesh := fmt.Sprintf("mesh-%d", i)
 			err := s.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
@@ -244,14 +244,12 @@ var _ = Describe("MeshSnapshot Cache", func() {
 
 	It("should cache concurrent Get() requests", func() {
 		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func() {
+		for range 100 {
+			wg.Go(func() {
 				ctx, err := meshCache.GetMeshContext(context.Background(), "mesh-0")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ctx).NotTo(BeNil())
-				wg.Done()
-			}()
+			})
 		}
 		wg.Wait()
 
