@@ -264,7 +264,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 											},
 										},
 									},
-										Resources: map[core_model.ResourceType]core_model.ResourceList{
+									Resources: map[core_model.ResourceType]core_model.ResourceList{
 										meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
 											Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
 										},
