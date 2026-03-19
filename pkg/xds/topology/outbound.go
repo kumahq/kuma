@@ -77,6 +77,7 @@ func BuildEgressEndpointMap(
 
 // BuildDataplaneZoneEgressEndpointMap builds endpoints only for MeshExternalServices reachable from the zone.
 // Used for embedded zone egress listeners in a Dataplane resource.
+// Always uses unified (KRI) naming as this is new infrastructure that only supports Exclusive MeshServices mode.
 func BuildDataplaneZoneEgressEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
@@ -86,10 +87,8 @@ func BuildDataplaneZoneEgressEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	for _, mes := range meshExternalServices {
-		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, true)
-		if err != nil {
+		if err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, true); err != nil {
 			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-			continue
 		}
 	}
 	return outbound

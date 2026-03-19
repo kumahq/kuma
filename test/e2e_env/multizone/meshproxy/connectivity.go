@@ -254,7 +254,7 @@ spec:
 
 	It("should route cross-zone traffic via new zone ingress proxies and record metrics on zone-proxy-ingress", func() {
 		uniIngressFilter := fmt.Sprintf(
-			"cluster.%s_test-server__%s_msvc_80.upstream_rq_active",
+			"cluster.kri_msvc_%s_%s__test-server_80.upstream_rq_active",
 			meshName, multizone.UniZone1.ZoneName(),
 		)
 		kubeZone1IngressFilter := fmt.Sprintf(
@@ -262,11 +262,10 @@ spec:
 			meshName, multizone.KubeZone1.ZoneName(), namespace,
 		)
 		kubeZone2IngressFilter := fmt.Sprintf(
-			"cluster.%s_test-server_%s_%s_msvc_80.upstream_rq_active",
-			meshName, namespace, multizone.KubeZone2.ZoneName(),
+			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_active",
+			meshName, multizone.KubeZone2.ZoneName(),namespace,
 		)
 
-		// time.Sleep(1*time.Hour)
 		// Kubernetes client -> Universal zone via zone-proxy-ingress
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(
@@ -322,7 +321,7 @@ spec:
 
 	It("should route cross-zone traffic to MeshExternalService and record metrics on zone-proxy-egress", func() {
 		uniEgressFilter := fmt.Sprintf(
-			"cluster.%s_external-service__%s_extsvc_8080.upstream_rq_200",
+			"cluster.kri_extsvc_%s_%s__external-service_8080.upstream_rq_200",
 			meshName, multizone.UniZone1.ZoneName(),
 		)
 		kubeEgressFilter := fmt.Sprintf(
