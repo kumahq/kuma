@@ -62,7 +62,7 @@ func BaseAccessLogBuilder(
 		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
 			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc)
 			if endpoint == nil {
-				return nil
+				return func(*envoy_accesslog.AccessLog) error { return nil }
 			}
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
 				Configure(OtelBody(&otelBackend, defaultFormat, values)).

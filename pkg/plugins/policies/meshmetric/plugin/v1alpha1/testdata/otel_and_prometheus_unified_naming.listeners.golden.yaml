@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 249
+            maxDirectResponseBodySizeBytes: 435
             virtualHosts:
             - domains:
               - '*'
@@ -31,12 +31,12 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 5769d78a7294f6fd6337408563ad68ac5367abdf33ecc4e5f2bd6b861b66eeff
+                      exact: 89bcddd53f040cae9ccc6dcb3878ee69524f674bc086e828f8a4ab0fc13ee3c1
                   path: /meshmetric
                 name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -44,7 +44,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 5769d78a7294f6fd6337408563ad68ac5367abdf33ecc4e5f2bd6b861b66eeff
+                    value: 89bcddd53f040cae9ccc6dcb3878ee69524f674bc086e828f8a4ab0fc13ee3c1
           statPrefix: system_dynamicconfig
     name: system_dynamicconfig
     statPrefix: system_dynamicconfig
