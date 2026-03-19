@@ -759,92 +759,75 @@ egress:
 
 # -- List of meshes to deploy zone proxies for.
 # Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount.
-# Optionally renders a Mesh resource and default policies (unfederated zones only).
-meshes: []
+# Optionally renders a Mesh resource (unfederated zones only).
 # Example single-mesh configuration:
-# meshes:
-#   - name: default
-#     # -- Create a Mesh resource for this entry. Ignored when controlPlane.kdsGlobalAddress is set.
-#     createMesh: false
-#     # -- List of default policies to create with the mesh. Ignored when controlPlane.kdsGlobalAddress is set.
-#     # Supported values: MeshCircuitBreaker, MeshRetry, MeshTimeout
-#     createPolicies: []
-#
-#     # Choose either ingress/egress (separate Deployments) OR combinedProxies (single Deployment).
-#     # combinedProxies is mutually exclusive with ingress and egress.
-#     # NOTE: combinedProxies is NOT YET SUPPORTED; enabling it will fail chart rendering.
-#
-#     ingress:
-#       # -- Deploy a zone ingress for this mesh.
-#       enabled: true
-#       # -- Number of replicas. Ignored when hpa.enabled is true.
-#       replicas: 1
-#       # -- Override the auto-generated Service name (max 63 chars).
-#       # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
-#       service:
-#         name: ""
-#       # -- Resource requests and limits for the ingress container.
-#       resources: {}
-#       # -- Subset of Kubernetes PodSpec fields applied to the pod template
-#       # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-#       #  priorityClassName, securityContext, containerSecurityContext).
-#       podSpec: {}
-#       # -- Horizontal Pod Autoscaler settings.
-#       hpa:
-#         enabled: false
-#         minReplicas: 2
-#         maxReplicas: 5
-#         targetCPUUtilizationPercentage: 80
-#       # -- Pod Disruption Budget settings.
-#       pdb:
-#         enabled: false
-#         maxUnavailable: 1
-#
-#     egress:
-#       # -- Deploy a zone egress for this mesh.
-#       enabled: true
-#       replicas: 1
-#       # -- Override the auto-generated Service name (max 63 chars).
-#       # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
-#       service:
-#         name: ""
-#       resources: {}
-#       # -- Subset of Kubernetes PodSpec fields applied to the pod template
-#       # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-#       #  priorityClassName, securityContext, containerSecurityContext).
-#       podSpec: {}
-#       hpa:
-#         enabled: false
-#         minReplicas: 2
-#         maxReplicas: 5
-#         targetCPUUtilizationPercentage: 80
-#       pdb:
-#         enabled: false
-#         maxUnavailable: 1
-#
-#     combinedProxies:
-#       # NOT YET SUPPORTED: enabling this will fail chart rendering.
-#       # Deploy a single Deployment running both ingress and egress roles.
-#       # Mutually exclusive with ingress and egress above.
-#       enabled: false
-#       replicas: 1
-#       # -- Override the auto-generated Service name (max 63 chars).
-#       # Auto-generated: <name>-<mesh>-zoneproxy (where <name> is the chart name or nameOverride)
-#       service:
-#         name: ""
-#       resources: {}
-#       # -- Subset of Kubernetes PodSpec fields applied to the pod template
-#       # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-#       #  priorityClassName, securityContext, containerSecurityContext).
-#       podSpec: {}
-#       hpa:
-#         enabled: false
-#         minReplicas: 2
-#         maxReplicas: 5
-#         targetCPUUtilizationPercentage: 80
-#       pdb:
-#         enabled: false
-#         maxUnavailable: 1
+meshes:
+  - name: mesh-1
+    # -- Create a Mesh resource for this entry. Ignored when controlPlane.kdsGlobalAddress is set.
+    createMesh: true
+    # -- Mesh spec. Maps directly to Mesh.spec. Ignored when controlPlane.kdsGlobalAddress is set.
+    spec:
+      skipCreatingInitialPolicies:
+        - MeshTimeout
+      meshServices:
+        mode: Exclusive
+
+    ingress:
+      # -- Deploy a zone ingress for this mesh.
+      enabled: true
+      # -- Number of replicas. Ignored when hpa.enabled is true.
+      replicas: 1
+      # -- Pause container image (dummy main container for sidecar injection).
+      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
+      image: registry.k8s.io/pause:3.10
+      # -- Override the auto-generated Service name (max 63 chars).
+      # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
+      service:
+        name: my-ingress
+      # -- Resource requests and limits for the pod (pod-level resources).
+      # Applied to all containers in the pod (pause + injected kuma-sidecar).
+      resources: {}
+      # -- Subset of Kubernetes PodSpec fields applied to the pod template
+      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+      #  priorityClassName, securityContext, containerSecurityContext).
+      podSpec: {}
+      # -- Horizontal Pod Autoscaler settings.
+      hpa:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 80
+      # -- Pod Disruption Budget settings.
+      pdb:
+        enabled: false
+        maxUnavailable: 1
+
+    egress:
+      # -- Deploy a zone egress for this mesh.
+      enabled: true
+      replicas: 1
+      # -- Pause container image (dummy main container for sidecar injection).
+      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
+      image: registry.k8s.io/pause:3.10
+      # -- Override the auto-generated Service name (max 63 chars).
+      # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
+      service:
+        name: "my-egress"
+      # -- Resource requests and limits for the pod (pod-level resources).
+      # Applied to all containers in the pod (pause + injected kuma-sidecar).
+      resources: {}
+      # -- Subset of Kubernetes PodSpec fields applied to the pod template
+      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+      #  priorityClassName, securityContext, containerSecurityContext).
+      podSpec: {}
+      hpa:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 80
+      pdb:
+        enabled: false
+        maxUnavailable: 1
 
 kumactl:
   image:

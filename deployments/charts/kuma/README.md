@@ -223,7 +223,22 @@ A Helm chart for the Kuma Control Plane
 | egress.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
 | egress.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
 | egress.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
-| meshes | list | `[]` | List of meshes to deploy zone proxies for. Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount. Optionally renders a Mesh resource and default policies (unfederated zones only). |
+| meshes | list | `[{"createMesh":true,"egress":{"enabled":true,"hpa":{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80},"image":"registry.k8s.io/pause:3.10","pdb":{"enabled":false,"maxUnavailable":1},"podSpec":{},"replicas":1,"resources":{},"service":{"name":"my-egress"}},"ingress":{"enabled":true,"hpa":{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80},"image":"registry.k8s.io/pause:3.10","pdb":{"enabled":false,"maxUnavailable":1},"podSpec":{},"replicas":1,"resources":{},"service":{"name":"my-ingress"}},"name":"mesh-1","spec":{"meshServices":{"mode":"Exclusive"},"skipCreatingInitialPolicies":["MeshTimeout"]}}]` | List of meshes to deploy zone proxies for. Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount. Optionally renders a Mesh resource (unfederated zones only). Example single-mesh configuration: |
+| meshes[0].createMesh | bool | `true` | Create a Mesh resource for this entry. Ignored when controlPlane.kdsGlobalAddress is set. |
+| meshes[0].spec | object | `{"meshServices":{"mode":"Exclusive"},"skipCreatingInitialPolicies":["MeshTimeout"]}` | Mesh spec. Maps directly to Mesh.spec. Ignored when controlPlane.kdsGlobalAddress is set. |
+| meshes[0].ingress.enabled | bool | `true` | Deploy a zone ingress for this mesh. |
+| meshes[0].ingress.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
+| meshes[0].ingress.image | string | `"registry.k8s.io/pause:3.10"` | Pause container image (dummy main container for sidecar injection). Override if registry.k8s.io is not reachable or mirrored elsewhere. |
+| meshes[0].ingress.service | object | `{"name":"my-ingress"}` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
+| meshes[0].ingress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
+| meshes[0].ingress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
+| meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
+| meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
+| meshes[0].egress.enabled | bool | `true` | Deploy a zone egress for this mesh. |
+| meshes[0].egress.image | string | `"registry.k8s.io/pause:3.10"` | Pause container image (dummy main container for sidecar injection). Override if registry.k8s.io is not reachable or mirrored elsewhere. |
+| meshes[0].egress.service | object | `{"name":"my-egress"}` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
+| meshes[0].egress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
+| meshes[0].egress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
