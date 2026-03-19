@@ -25,12 +25,12 @@ func MustContextualInboundName[T sectionName](r core_model.Resource, sectionName
 	return name
 }
 
-func ContextualZoneIngressListenerName(listenerName string) string {
-	return fmt.Sprintf("self_zoneingress_dp_%s", listenerName)
+func ContextualZoneIngressListenerName(portName string) string {
+	return fmt.Sprintf("self_zoneingress_dp_%s", portName)
 }
 
-func ContextualZoneEgressListenerName(listenerName string) string {
-	return fmt.Sprintf("self_zoneegress_dp_%s", listenerName)
+func ContextualZoneEgressListenerName(portName string) string {
+	return fmt.Sprintf("self_zoneegress_dp_%s", portName)
 }
 
 func ContextualTransparentProxyName(direction string, ipVersion int) string {

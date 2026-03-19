@@ -32,10 +32,10 @@ type APIVersion string
 // StreamID represents a stream opened by XDS
 type StreamID = int64
 
-// ZoneEgress holds the resolved bind address, port and workload-identity SAN
+// ZoneEgressInstance holds the resolved bind address, port and workload-identity SAN
 // of a zone egress proxy. SAN is the SPIFFE ID when WorkloadIdentity is
 // enabled: empty for legacy mTLS deployments.
-type ZoneEgress struct {
+type ZoneEgressInstance struct {
 	Address string
 	Port    uint32
 	SAN     string
@@ -347,18 +347,13 @@ type ZoneIngressProxy struct {
 // DataplaneZoneListeners holds xDS context for zone proxy listeners
 // embedded in a regular Dataplane resource.
 type DataplaneZoneListeners struct {
-	IngressListeners []*DataplaneIngressListener
-	EgressListeners  []*DataplaneEgressListener
+	IngressListeners []*DataplaneListener
+	EgressListeners  []*DataplaneListener
 }
 
-// DataplaneIngressListener holds xDS context for a single embedded ZoneIngress listener.
-type DataplaneIngressListener struct {
-	Listener      *mesh_proto.Dataplane_Networking_Listener
-	MeshResources *MeshProxyResources
-}
-
-// DataplaneEgressListener holds xDS context for a single embedded ZoneEgress listener.
-type DataplaneEgressListener struct {
+// DataplaneListener holds xDS context for a single embedded zone proxy listener
+// (ZoneIngress or ZoneEgress).
+type DataplaneListener struct {
 	Listener      *mesh_proto.Dataplane_Networking_Listener
 	MeshResources *MeshProxyResources
 }

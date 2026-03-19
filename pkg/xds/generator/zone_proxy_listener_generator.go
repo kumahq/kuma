@@ -90,7 +90,7 @@ func (g ZoneProxyListenerGenerator) Generate(
 func (g ZoneProxyListenerGenerator) generateIngressListener(
 	proxy *core_xds.Proxy,
 	xdsCtx xds_context.Context,
-	il *core_xds.DataplaneIngressListener,
+	il *core_xds.DataplaneListener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 	cp := xdsCtx.ControlPlane
@@ -166,7 +166,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 
 func (g ZoneProxyListenerGenerator) generateEgressListener(
 	proxy *core_xds.Proxy,
-	el *core_xds.DataplaneEgressListener,
+	el *core_xds.DataplaneListener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, el.MeshResources.Mesh)

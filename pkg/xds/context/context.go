@@ -98,7 +98,13 @@ type MeshContext struct {
 	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
 	// port and, when WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must
 	// verify when opening an mTLS connection to that egress.
-	ZoneEgresses []xds.ZoneEgress
+	ZoneEgresses []xds.ZoneEgressInstance
+	// DataplaneZoneIngressEndpointMap is the shared endpoint map for embedded zone ingress
+	// listeners; built once per MeshContext and reused across all Dataplanes.
+	DataplaneZoneIngressEndpointMap xds.EndpointMap
+	// DataplaneZoneEgressEndpointMap is the shared endpoint map for embedded zone egress
+	// listeners; built once per MeshContext and reused across all Dataplanes.
+	DataplaneZoneEgressEndpointMap xds.EndpointMap
 }
 
 type ServiceInformation struct {

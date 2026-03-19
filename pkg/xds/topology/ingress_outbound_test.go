@@ -41,10 +41,10 @@ var _ = Describe("IngressTrafficRoute", func() {
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
 				// when
-				var egressAddresses []core_xds.ZoneEgress
+				var egressAddresses []core_xds.ZoneEgressInstance
 				for _, ze := range given.zoneEgress {
 					n := ze.Spec.GetNetworking()
-					egressAddresses = append(egressAddresses, core_xds.ZoneEgress{Address: n.GetAddress(), Port: n.GetPort()})
+					egressAddresses = append(egressAddresses, core_xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 				}
 				endpoints := topology.BuildIngressEndpointMap(
 					context.Background(),

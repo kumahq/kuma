@@ -297,7 +297,7 @@ var _ = Describe("TrafficRoute", func() {
 			meshMultiZoneService []*meshmzservice_api.MeshMultiZoneServiceResource
 			zoneIngresses        []*core_mesh.ZoneIngressResource
 			zoneEgresses         []*core_mesh.ZoneEgressResource
-			zoneEgressAddresses  []core_xds.ZoneEgress
+			zoneEgressAddresses  []core_xds.ZoneEgressInstance
 			externalServices     []*core_mesh.ExternalServiceResource
 			mesh                 *core_mesh.MeshResource
 			expected             core_xds.EndpointMap
@@ -309,7 +309,7 @@ var _ = Describe("TrafficRoute", func() {
 				if egressAddresses == nil {
 					for _, ze := range given.zoneEgresses {
 						n := ze.Spec.GetNetworking()
-						egressAddresses = append(egressAddresses, core_xds.ZoneEgress{Address: n.GetAddress(), Port: n.GetPort()})
+						egressAddresses = append(egressAddresses, core_xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 					}
 				}
 				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, given.externalServices, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
@@ -1630,7 +1630,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				zoneEgressAddresses: []core_xds.ZoneEgress{
+				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
 					{Address: "10.42.0.11", Port: 10002},
 				},
 				mesh: defaultMeshWithMTLS,
@@ -1684,7 +1684,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				// zoneEgressAddresses is explicitly set to simulate resolver picking Dataplane listener over legacy
-				zoneEgressAddresses: []core_xds.ZoneEgress{
+				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
 					{Address: "10.42.0.11", Port: 10002},
 				},
 				mesh: defaultMeshWithMTLS,

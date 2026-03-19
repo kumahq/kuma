@@ -83,16 +83,13 @@ func BuildDataplaneZoneEgressEndpointMap(
 	zone string,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
-	unifiedNaming bool,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	for _, mes := range meshExternalServices {
-		if mes.IsReachableFromZone(zone) {
-			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, unifiedNaming)
-			if err != nil {
-				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-				continue
-			}
+		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, true)
+		if err != nil {
+			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+			continue
 		}
 	}
 	return outbound
@@ -128,7 +125,7 @@ func BuildIngressEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 	gateways []*core_mesh.MeshGatewayResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
-	egressAddresses []core_xds.ZoneEgress,
+	egressAddresses []core_xds.ZoneEgressInstance,
 	loader datasource.Loader,
 	mtlsEnabled bool,
 ) core_xds.EndpointMap {
@@ -153,7 +150,7 @@ func BuildEdsEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
 	mtlsEnabled bool,
-	egressAddresses []core_xds.ZoneEgress,
+	egressAddresses []core_xds.ZoneEgressInstance,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
@@ -831,7 +828,7 @@ func fillExternalServicesOutboundsThroughEgress(
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	egressAddresses []core_xds.ZoneEgress,
+	egressAddresses []core_xds.ZoneEgressInstance,
 	mesh *core_mesh.MeshResource,
 	localZone string,
 	loader datasource.Loader,

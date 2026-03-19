@@ -103,7 +103,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 						},
 					},
 					DataplaneZoneListeners: &core_xds.DataplaneZoneListeners{
-						IngressListeners: []*core_xds.DataplaneIngressListener{
+						IngressListeners: []*core_xds.DataplaneListener{
 							{
 								Listener: &mesh_proto.Dataplane_Networking_Listener{
 									Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
@@ -157,7 +157,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 						},
 					},
 					DataplaneZoneListeners: &core_xds.DataplaneZoneListeners{
-						IngressListeners: []*core_xds.DataplaneIngressListener{
+						IngressListeners: []*core_xds.DataplaneListener{
 							{
 								Listener: &mesh_proto.Dataplane_Networking_Listener{
 									Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
@@ -202,7 +202,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					},
 				},
 				DataplaneZoneListeners: &core_xds.DataplaneZoneListeners{
-					EgressListeners: []*core_xds.DataplaneEgressListener{
+					EgressListeners: []*core_xds.DataplaneListener{
 						{
 							Listener: &mesh_proto.Dataplane_Networking_Listener{
 								Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
@@ -240,7 +240,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					},
 					WorkloadIdentity: testWorkloadIdentity,
 					DataplaneZoneListeners: &core_xds.DataplaneZoneListeners{
-						EgressListeners: []*core_xds.DataplaneEgressListener{
+						EgressListeners: []*core_xds.DataplaneListener{
 							{
 								Listener: &mesh_proto.Dataplane_Networking_Listener{
 									Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
