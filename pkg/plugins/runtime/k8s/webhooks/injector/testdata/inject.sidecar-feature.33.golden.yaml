@@ -65,11 +65,6 @@ spec:
     - --log-level=info
     - --concurrency=2
     env:
-    - name: HOST_IP
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: status.hostIP
     - name: INSTANCE_IP
       valueFrom:
         fieldRef:
