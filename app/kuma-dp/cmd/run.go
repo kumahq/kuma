@@ -364,6 +364,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				// interfaces so both K8s probes (podIP) and PostStart
 				// lifecycle hooks (localhost) can reach it.
 				readinessAddr = "0.0.0.0"
+				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+					readinessAddr = "::"
+				}
 			}
 			readinessReporter := readiness.NewReporter(
 				cfg.Dataplane.ReadinessUnixSocketDisabled,
