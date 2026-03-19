@@ -287,7 +287,7 @@ func createDynamicConfig(
 		})
 	}
 	for _, backend := range openTelemetryBackends {
-		backendName := backendNameFrom(backend.Endpoint) //nolint:staticcheck
+		backendName := backendNameFrom(backend.Endpoint)
 		backends = append(backends, dpapi.Backend{
 			Type: string(api.OpenTelemetryBackendType),
 			Name: &backendName,
