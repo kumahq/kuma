@@ -94,7 +94,7 @@ jobs:
           fi
 
           if [[ "${{ env.E2E_PARAM_ADMIN_UDS }}" != "" ]]; then
-            export KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET=true
+            export KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET=true
           fi
 
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then

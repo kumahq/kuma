@@ -8,6 +8,35 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### Envoy admin API now uses Unix domain socket by default
+
+The Envoy admin API (`localhost:9901`) now binds to a Unix domain socket instead of TCP by default. This eliminates the shared-network-namespace attack vector where a compromised app container could reach the admin API to kill the sidecar, dump config, or modify runtime behavior.
+
+**What changed:**
+- `KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET` defaults to `true` (previously `false` under `KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET`)
+- Config moved from `experimental.adminUnixSocket` to `bootstrapServer.params.adminUnixSocket`
+- A readiness reporter on TCP port 9902 reverse-proxies admin endpoints, so K8s probes and lifecycle hooks continue working
+- The old env var `KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET` is no longer recognized
+
+**Action required:**
+
+If you have tooling that directly accesses the Envoy admin API on `localhost:9901` (e.g., scripts calling `/config_dump`, `/stats`, `/clusters`), you need to either:
+- Use the readiness reporter proxy on port 9902 instead, OR
+- Use `curl --unix-socket /tmp/kuma-dp-*/kuma-envoy-admin.sock http://localhost/...`
+
+**How to disable (revert to TCP admin):**
+
+**Kubernetes (Helm)**
+```yaml
+experimental:
+  adminUnixSocket: false
+```
+
+**Universal**
+```sh
+KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET=false kuma-cp run
+```
+
 ### Observability: Prometheus metrics migration from Summary to Histogram
 
 Internal Kuma Prometheus metrics changed from `Summary` to `Histogram` types to fix stale values that accumulated over long windows.

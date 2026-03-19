@@ -1113,7 +1113,7 @@ meshService:
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
 				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
-				"KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET":                                                      "true",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET":                                           "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

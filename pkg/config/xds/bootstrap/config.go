@@ -50,6 +50,9 @@ type BootstrapParamsConfig struct {
 	AdminAddress string `json:"adminAddress" envconfig:"kuma_bootstrap_server_params_admin_address"`
 	// Port of Envoy Admin
 	AdminPort uint32 `json:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
+	// If true, Envoy admin API binds to a Unix domain socket instead of TCP,
+	// reducing attack surface from compromised app containers in shared pod network.
+	AdminUnixSocket bool `json:"adminUnixSocket" envconfig:"kuma_bootstrap_server_params_admin_unix_socket"`
 	// Path to access log file of Envoy Admin
 	AdminAccessLogPath string `json:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`
 	// Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
@@ -91,6 +94,7 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
 		AdminAddress:         "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
 		AdminPort:            9901,
+		AdminUnixSocket:      true,
 		AdminAccessLogPath:   os.DevNull,
 		XdsHost:              "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
 		XdsPort:              0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT

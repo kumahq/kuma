@@ -518,6 +518,8 @@ spec:
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET
+              value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED

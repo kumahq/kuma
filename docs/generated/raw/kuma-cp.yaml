@@ -88,6 +88,8 @@ bootstrapServer:
     adminAddress: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS
     # Port of Envoy Admin
     adminPort: 9901 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
+    # If true, Envoy admin API binds to a Unix domain socket instead of TCP
+    adminUnixSocket: true # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
     # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
@@ -801,9 +803,6 @@ experimental:
   sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   # If true uses Delta xDS to deliver changes to sidecars.
   deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
-  # If true, Envoy admin API binds to a Unix domain socket instead of TCP,
-  # reducing attack surface from compromised app containers in shared pod network.
-  adminUnixSocket: false # ENV: KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming
