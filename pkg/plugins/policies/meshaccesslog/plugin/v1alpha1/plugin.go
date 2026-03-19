@@ -84,11 +84,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	endpoints := &EndpointAccumulator{
 		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
-		Resources:             ctx.Mesh.Resources,
-		NodeHostIP:            proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
-		OtelEnvInventory:      proxy.Metadata.GetOtelEnvInventory(),
-		UseKumaDpPipe:         proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp),
-		WorkDir:               proxy.Metadata.WorkDir,
+		OtelPipe: &OtelPipeResolver{
+			Resources:        ctx.Mesh.Resources,
+			NodeHostIP:       proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
+			OtelEnvInventory: proxy.Metadata.GetOtelEnvInventory(),
+			Enabled:          proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp),
+			WorkDir:          proxy.Metadata.WorkDir,
+		},
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
@@ -131,10 +133,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return errors.Wrap(err, "unable to add configuration for MeshAccessLog backends")
 	}
 
-	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
-		for name, info := range endpoints.PipeBackends() {
+	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil && endpoints.OtelPipe != nil {
+		for name, info := range endpoints.OtelPipe.PipeBackends() {
 			plan := policies_xds.BuildSignalRuntimePlan(
-				endpoints.OtelEnvInventory,
+				endpoints.OtelPipe.OtelEnvInventory,
 				info.EnvPolicy,
 				core_xds.OtelSignalLogs,
 				policies_xds.AddResolvedBackendOptions{},

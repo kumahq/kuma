@@ -75,27 +75,26 @@ func BaseAccessLogBuilder(
 		}))
 }
 
-// OtelPipeBackendInfo is the per-backend info for a backend being proxied via kuma-dp.
-type OtelPipeBackendInfo = xds.OtelPipeBackend
+// OtelPipeResolver holds the context needed to resolve OTel backendRef
+// endpoints and accumulate pipe backends during access log configuration.
+type OtelPipeResolver struct {
+	Resources        xds_context.Resources
+	NodeHostIP       string
+	OtelEnvInventory *xds.OtelBootstrapInventory
+	Enabled          bool
+	WorkDir          string
+	backends         map[string]xds.OtelPipeBackend
+}
+
+func (r *OtelPipeResolver) PipeBackends() map[string]xds.OtelPipeBackend {
+	return r.backends
+}
 
 type EndpointAccumulator struct {
 	endpoints             map[LoggingEndpoint]int
 	latest                int
 	UnifiedResourceNaming bool
-	Resources             xds_context.Resources
-	NodeHostIP            string
-	OtelEnvInventory      *xds.OtelBootstrapInventory
-	// UseKumaDpPipe enables routing OTel logs through a kuma-dp Unix socket.
-	UseKumaDpPipe bool
-	// WorkDir is the kuma-dp working directory for socket paths.
-	WorkDir string
-	// pipeBackends accumulates per-backend info for dynconf (populated when UseKumaDpPipe is set).
-	pipeBackends map[string]OtelPipeBackendInfo // key: BackendName
-}
-
-// PipeBackends returns the accumulated pipe backend info for dynconf emission.
-func (acc *EndpointAccumulator) PipeBackends() map[string]OtelPipeBackendInfo {
-	return acc.pipeBackends
+	OtelPipe              *OtelPipeResolver
 }
 
 type endpointClusterName string
@@ -128,23 +127,28 @@ func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) end
 }
 
 func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccumulator) *LoggingEndpoint {
+	pipe := acc.OtelPipe
+	if pipe == nil {
+		return nil
+	}
+
 	resolved := policies_xds.ResolveOtelBackend(
 		otelBackend.BackendRef,
 		otelBackend.Endpoint,
 		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
-		acc.Resources,
+		pipe.Resources,
 	)
 	if resolved == nil {
 		return nil
 	}
 
-	if otelBackend.BackendRef != nil && acc.UseKumaDpPipe {
-		if acc.pipeBackends == nil {
-			acc.pipeBackends = map[string]OtelPipeBackendInfo{}
+	if otelBackend.BackendRef != nil && pipe.Enabled {
+		if pipe.backends == nil {
+			pipe.backends = map[string]xds.OtelPipeBackend{}
 		}
-		base := policies_xds.BuildResolvedPipeBackend(acc.WorkDir, resolved)
-		acc.pipeBackends[resolved.Name] = base
+		base := policies_xds.BuildResolvedPipeBackend(pipe.WorkDir, resolved)
+		pipe.backends[resolved.Name] = base
 		return &LoggingEndpoint{
 			SocketPath:  base.SocketPath,
 			BackendName: resolved.Name,
@@ -153,7 +157,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 	}
 
 	return &LoggingEndpoint{
-		Address:  policies_xds.ResolveAddressForDirectExport(resolved.Endpoint.Target, acc.NodeHostIP),
+		Address:  policies_xds.ResolveAddressForDirectExport(resolved.Endpoint.Target, pipe.NodeHostIP),
 		Port:     resolved.Endpoint.Port,
 		UseHTTP2: resolved.Protocol != motb_api.ProtocolHTTP,
 	}

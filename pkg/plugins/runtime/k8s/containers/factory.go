@@ -259,15 +259,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 				},
 			},
 		},
-		"HOST_IP": {
-			Name: "HOST_IP",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "status.hostIP",
-				},
-			},
-		},
 		"KUMA_CONTROL_PLANE_URL": {
 			Name:  "KUMA_CONTROL_PLANE_URL",
 			Value: i.ControlPlaneURL,
@@ -354,7 +345,17 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		}
 	}
 
-	if !i.otelPipeEnabled {
+	if i.otelPipeEnabled {
+		envVars["HOST_IP"] = kube_core.EnvVar{
+			Name: "HOST_IP",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.hostIP",
+				},
+			},
+		}
+	} else {
 		envVars["KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED",
 			Value: "false",
