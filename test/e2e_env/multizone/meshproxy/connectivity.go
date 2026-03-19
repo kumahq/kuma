@@ -263,7 +263,7 @@ spec:
 		)
 		kubeZone2IngressFilter := fmt.Sprintf(
 			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_active",
-			meshName, multizone.KubeZone2.ZoneName(),namespace,
+			meshName, multizone.KubeZone2.ZoneName(), namespace,
 		)
 
 		// Kubernetes client -> Universal zone via zone-proxy-ingress
