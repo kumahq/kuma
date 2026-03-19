@@ -2,6 +2,7 @@ package meshroute
 
 import (
 	"context"
+	"maps"
 	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -82,9 +83,7 @@ func CollectListenerInfos(
 		)
 
 		outboundEndpoints := core_xds.EndpointMap{}
-		for k, v := range meshCtx.EndpointMap {
-			outboundEndpoints[k] = v
-		}
+		maps.Copy(outboundEndpoints, meshCtx.EndpointMap)
 
 		esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 			ctx,
@@ -93,9 +92,7 @@ func CollectListenerInfos(
 			meshCtx.DataSourceLoader,
 			proxy.Zone,
 		)
-		for k, v := range esEndpoints {
-			outboundEndpoints[k] = v
-		}
+		maps.Copy(outboundEndpoints, esEndpoints)
 
 		hostInfos := mapRules(
 			meshCtx,

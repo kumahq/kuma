@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"strconv"
 	"strings"
@@ -222,9 +223,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
-		for key, value := range annotations {
-			pod.Annotations[key] = value
-		}
+		maps.Copy(pod.Annotations, annotations)
 
 		if pod.Labels == nil {
 			pod.Labels = map[string]string{}
@@ -252,9 +251,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
-		for key, value := range annotations {
-			pod.Annotations[key] = value
-		}
+		maps.Copy(pod.Annotations, annotations)
 
 		if pod.Labels == nil {
 			pod.Labels = map[string]string{}
