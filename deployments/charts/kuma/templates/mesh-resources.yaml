@@ -2,15 +2,4 @@
 {{- range $meshEntry := .Values.meshes }}
 {{- $meshName := $meshEntry.name }}
 
-{{- if and $meshEntry.createMesh (not $federated) }}
----
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: {{ $meshName }}
-{{- if $meshEntry.spec }}
-spec: {{ toYaml $meshEntry.spec | nindent 2 }}
-{{- end }}
-{{- end }}
-
 {{- end }}

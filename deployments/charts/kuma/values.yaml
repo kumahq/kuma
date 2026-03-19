@@ -759,18 +759,9 @@ egress:
 
 # -- List of meshes to deploy zone proxies for.
 # Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount.
-# Optionally renders a Mesh resource (unfederated zones only).
 # Example single-mesh configuration:
 meshes:
   - name: mesh-1
-    # -- Create a Mesh resource for this entry. Ignored when controlPlane.kdsGlobalAddress is set.
-    createMesh: true
-    # -- Mesh spec. Maps directly to Mesh.spec. Ignored when controlPlane.kdsGlobalAddress is set.
-    spec:
-      skipCreatingInitialPolicies:
-        - MeshTimeout
-      meshServices:
-        mode: Exclusive
 
     ingress:
       # -- Deploy a zone ingress for this mesh.
