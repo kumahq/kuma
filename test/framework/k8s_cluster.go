@@ -189,12 +189,12 @@ func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
 
 			tnl.Close()
 
-			delete(c.portForwards, spec)
+			delete(c.portForwards, fwdSpec)
 		}
 
 		for tnlSpec := range c.adminTunnels {
 			if tnlSpec.Matches(spec) {
-				delete(c.adminTunnels, spec)
+				delete(c.adminTunnels, tnlSpec)
 			}
 		}
 	}
