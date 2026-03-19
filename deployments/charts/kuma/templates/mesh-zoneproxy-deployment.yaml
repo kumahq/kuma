@@ -4,6 +4,9 @@
 {{- fail "each meshes entry must have a name" }}
 {{- end }}
 
+{{- $ingressEnabled := and $meshEntry.ingress $meshEntry.ingress.enabled }}
+{{- $egressEnabled := and $meshEntry.egress $meshEntry.egress.enabled }}
+
 {{- /* Validate mode */ -}}
 {{- if or (eq $.Values.controlPlane.mode "global") (eq $.Values.controlPlane.mode "standalone") }}
 {{- fail (printf "meshes[%s]: mesh-scoped zone proxies require controlPlane.mode=zone" $meshName) }}
