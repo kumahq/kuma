@@ -224,6 +224,20 @@ func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
 	return tnl
 }
 
+// GetEnvoyAdminTunnel creates or returns an Envoy admin tunnel for any named
+// app in a given namespace.
+func (c *K8sCluster) GetEnvoyAdminTunnel(appName, namespace string) envoy_admin.Tunnel {
+	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
+		AppName:   appName,
+		Namespace: namespace,
+	})
+	if err != nil {
+		c.t.Fatal(err)
+	}
+
+	return tnl
+}
+
 func (c *K8sCluster) Verbose() bool {
 	return c.verbose
 }
