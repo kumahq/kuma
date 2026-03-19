@@ -56,11 +56,12 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 	var lis net.Listener
 	var protocol, addr string
 	if r.unixSocketDisabled {
-		protocol = "tcp"
-		addr = fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
-		if govalidator.IsIPv6(addr) {
+		if govalidator.IsIPv6(r.localListenAddr) {
 			protocol = "tcp6"
-			addr = fmt.Sprintf("[%s]:%d", addr, r.localListenPort)
+			addr = fmt.Sprintf("[%s]:%d", r.localListenAddr, r.localListenPort)
+		} else {
+			protocol = "tcp"
+			addr = fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
 		}
 	} else {
 		protocol = "unix"
