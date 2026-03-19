@@ -466,9 +466,6 @@ type ExperimentalConfig struct {
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
-	// If true, Envoy admin API binds to a Unix domain socket instead of TCP,
-	// reducing attack surface from compromised app containers in shared pod network.
-	AdminUnixSocket bool `json:"adminUnixSocket" envconfig:"KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {

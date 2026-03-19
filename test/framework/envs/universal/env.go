@@ -23,7 +23,7 @@ func SetupAndGetState() []byte {
 			framework.WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"),         // we have only 1 Kuma CP instance so there is no risk setting this to 0
 		}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Universal)...)
 	if framework.Config.KumaAdminUnixSocket {
-		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET", "true"))
+		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET", "true"))
 	}
 	Expect(Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))).To(Succeed())
 	Expect(Cluster.Install(framework.EgressUniversal(func(zone string) (string, error) {

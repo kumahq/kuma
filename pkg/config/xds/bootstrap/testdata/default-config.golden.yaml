@@ -2,6 +2,7 @@ params:
   adminAccessLogPath: /dev/null
   adminAddress: 127.0.0.1
   adminPort: 9901
+  adminUnixSocket: true
   xdsConnectTimeout: 1s
   xdsHost: ""
   xdsPort: 0
