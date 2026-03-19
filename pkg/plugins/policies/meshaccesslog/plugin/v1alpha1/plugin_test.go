@@ -195,7 +195,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -244,7 +244,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -255,7 +255,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					routeKRI("route-2"): {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -266,7 +266,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					routeKRI("route-3"): {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -315,7 +315,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -326,7 +326,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					routeKRI("route-2"): {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{},
 							},
@@ -347,7 +347,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshExternalServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -814,7 +814,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									OpenTelemetry: &api.OtelBackend{
@@ -858,7 +858,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					*otherMeshServiceHTTP: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{

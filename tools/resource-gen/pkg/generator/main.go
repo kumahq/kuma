@@ -456,15 +456,15 @@ func Run() {
 }
 
 var AdditionalProtoTypes = []reflect.Type{
-	reflect.TypeOf(v1alpha1.FileLoggingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.TcpLoggingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.ZipkinTracingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.DatadogTracingBackendConfig{}),
-	reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
-	reflect.TypeOf(provided_config.ProvidedCertificateAuthorityConfig{}),
-	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
-	reflect.TypeOf(v1alpha1.DataplaneOverview{}),
-	reflect.TypeOf(system_proto.Zone{}),
+	reflect.TypeFor[v1alpha1.FileLoggingBackendConfig](),
+	reflect.TypeFor[v1alpha1.TcpLoggingBackendConfig](),
+	reflect.TypeFor[v1alpha1.ZipkinTracingBackendConfig](),
+	reflect.TypeFor[v1alpha1.DatadogTracingBackendConfig](),
+	reflect.TypeFor[v1alpha1.PrometheusMetricsBackendConfig](),
+	reflect.TypeFor[provided_config.ProvidedCertificateAuthorityConfig](),
+	reflect.TypeFor[builtin_config.BuiltinCertificateAuthorityConfig](),
+	reflect.TypeFor[v1alpha1.DataplaneOverview](),
+	reflect.TypeFor[system_proto.Zone](),
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
@@ -544,20 +544,20 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 
 		// Parse the rest.yaml
-		var restSpec map[string]interface{}
+		var restSpec map[string]any
 		if err := yaml.Unmarshal(restContent, &restSpec); err != nil {
 			return fmt.Errorf("failed to unmarshal rest.yaml: %w", err)
 		}
 
 		// Inject the schema into components.schemas
-		components, ok := restSpec["components"].(map[string]interface{})
+		components, ok := restSpec["components"].(map[string]any)
 		if !ok {
-			components = make(map[string]interface{})
+			components = make(map[string]any)
 			restSpec["components"] = components
 		}
-		schemas, ok := components["schemas"].(map[string]interface{})
+		schemas, ok := components["schemas"].(map[string]any)
 		if !ok {
-			schemas = make(map[string]interface{})
+			schemas = make(map[string]any)
 			components["schemas"] = schemas
 		}
 
@@ -566,7 +566,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		if err != nil {
 			return err
 		}
-		var schemaItemMap map[string]interface{}
+		var schemaItemMap map[string]any
 		if err := yaml.Unmarshal(schemaBytes, &schemaItemMap); err != nil {
 			return err
 		}
@@ -762,8 +762,7 @@ func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.S
 
 func (r reflector) handleOneOf(t reflect.Type) (*jsonschema.Schema, error) {
 	s := &jsonschema.Schema{}
-	for i := range t.NumField() {
-		fd := t.Field(i)
+	for fd := range t.Fields() {
 		_, ok := fd.Tag.Lookup("protobuf_oneof")
 		if !ok {
 			// skip proto specific fields like 'state', 'unknownFields', 'sizeCache'
@@ -846,39 +845,39 @@ var BackendToOneOfs = map[string][]*jsonschema.Schema{
 
 func valueMapper(r reflect.Type) *jsonschema.Schema {
 	switch r {
-	case reflect.TypeOf(wrapperspb.DoubleValue{}), reflect.TypeOf(wrapperspb.FloatValue{}):
+	case reflect.TypeFor[wrapperspb.DoubleValue](), reflect.TypeFor[wrapperspb.FloatValue]():
 		return &jsonschema.Schema{
 			Type: "number",
 		}
-	case reflect.TypeOf(wrapperspb.Int64Value{}):
+	case reflect.TypeFor[wrapperspb.Int64Value]():
 		return &jsonschema.Schema{
 			Type:   "integer",
 			Format: "int64",
 		}
-	case reflect.TypeOf(wrapperspb.UInt64Value{}):
+	case reflect.TypeFor[wrapperspb.UInt64Value]():
 		return &jsonschema.Schema{
 			Type:   "integer",
 			Format: "uint64",
 		}
-	case reflect.TypeOf(wrapperspb.Int32Value{}):
+	case reflect.TypeFor[wrapperspb.Int32Value]():
 		return &jsonschema.Schema{
 			Type:   "integer",
 			Format: "int32",
 		}
-	case reflect.TypeOf(wrapperspb.UInt32Value{}):
+	case reflect.TypeFor[wrapperspb.UInt32Value]():
 		return &jsonschema.Schema{
 			Type:   "integer",
 			Format: "uint32",
 		}
-	case reflect.TypeOf(wrapperspb.BoolValue{}):
+	case reflect.TypeFor[wrapperspb.BoolValue]():
 		return &jsonschema.Schema{
 			Type: "boolean",
 		}
-	case reflect.TypeOf(wrapperspb.StringValue{}):
+	case reflect.TypeFor[wrapperspb.StringValue]():
 		return &jsonschema.Schema{
 			Type: "string",
 		}
-	case reflect.TypeOf(wrapperspb.BytesValue{}):
+	case reflect.TypeFor[wrapperspb.BytesValue]():
 		return &jsonschema.Schema{
 			Type:   "string",
 			Format: "byte",
@@ -902,15 +901,16 @@ func snakeToCamel(s string) string {
 		return s
 	}
 
-	camel := strings.ToLower(parts[0])
+	var camel strings.Builder
+	camel.WriteString(strings.ToLower(parts[0]))
 	caser := cases.Title(language.Und)
 
 	for _, part := range parts[1:] {
 		if part == "" {
 			continue
 		}
-		camel += caser.String(strings.ToLower(part))
+		camel.WriteString(caser.String(strings.ToLower(part)))
 	}
 
-	return camel
+	return camel.String()
 }
