@@ -1535,12 +1535,6 @@ func (c *K8sCluster) ZoneName() string {
 func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.Tunnel, error) {
 	args = args.WithDefaults(portforward.EnvoyAdminDefaultSpec)
 
-	// When admin UDS is enabled, the readiness reporter reverse-proxies
-	// admin endpoints on its TCP port so we can port-forward to it.
-	if Config.KumaAdminUnixSocket {
-		args.RemotePort = 9902
-	}
-
 	if err := args.ValidateFullSpec(); err != nil {
 		return nil, errors.Wrap(err, "invalid port-forward spec")
 	}
