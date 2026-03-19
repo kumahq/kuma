@@ -11,12 +11,14 @@ import (
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -42,6 +44,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
@@ -873,6 +876,121 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedListeners: []string{"outbound_file_workload_identity.listener.golden.yaml"},
 		}),
 	)
+
+	It("should route opentelemetry backendRef via kuma-dp when feature is enabled", func() {
+		const (
+			workDir     = "/tmp"
+			backendName = "otel-backend"
+		)
+
+		resourceSet := core_xds.NewResourceSet()
+		outboundListener := outboundServiceTCPListener("other-service-tcp", 37777)
+		resourceSet.Add(&outboundListener)
+
+		motb := motb_api.NewMeshOpenTelemetryBackendResource()
+		motb.SetMeta(&test_model.ResourceMeta{
+			Mesh: "default",
+			Name: backendName,
+		})
+		motb.Spec.Endpoint = &motb_api.Endpoint{
+			Address: pointer.To("collector.mesh"),
+			Port:    pointer.To(int32(4317)),
+		}
+		motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
+
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+			Items: []*motb_api.MeshOpenTelemetryBackendResource{motb},
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(meshResources).
+			WithEndpointMap(
+				xds_builders.EndpointMap().
+					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
+					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
+			).
+			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+			AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
+			Build()
+
+		proxy := xds_builders.Proxy().
+			WithID(*core_xds.BuildProxyId("default", "backend")).
+			WithMetadata(&core_xds.DataplaneMetadata{
+				WorkDir: workDir,
+				Features: xds_types.Features{
+					xds_types.FeatureOtelViaKumaDp: true,
+				},
+			}).
+			WithDataplane(
+				builders.Dataplane().
+					WithName("backend").
+					WithMesh("default").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777).
+						WithTags(map[string]string{
+							mesh_proto.ProtocolTag: "http",
+						}),
+					),
+			).
+			WithOutbounds(xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service-tcp").
+						WithAddress("127.0.0.1").
+						WithPort(37777).Build(),
+				},
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "other-service-tcp",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									BackendRef: &common_api.BackendResourceRef{
+										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+										Name: backendName,
+									},
+								},
+							}},
+						},
+					},
+				},
+			}, core_rules.FromRules{})).
+			WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
+			Build()
+
+		proxy.OtelPipeBackends = &core_xds.OtelPipeBackends{}
+
+		meshAccessLogPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(meshAccessLogPlugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		expectedSocket := core_xds.OpenTelemetrySocketName(workDir, backendName)
+
+		clusterResources, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(clusterResources)).To(ContainSubstring(expectedSocket))
+		Expect(string(clusterResources)).ToNot(ContainSubstring("collector.mesh"))
+
+		// Plugin adds to OtelPipeBackends accumulator instead of writing dynconf directly.
+		// The generator writes the /otel route after all plugins run.
+		Expect(proxy.OtelPipeBackends.Empty()).To(BeFalse())
+		backends := proxy.OtelPipeBackends.All()
+		Expect(backends).To(HaveLen(1))
+		Expect(backends[0].SocketPath).To(Equal(expectedSocket))
+		Expect(backends[0].Endpoint).To(Equal("collector.mesh:4317"))
+		Expect(backends[0].UseHTTP).To(BeFalse())
+		Expect(backends[0].Logs).ToNot(BeNil())
+		Expect(backends[0].Logs.Enabled).To(BeTrue())
+	})
+
 	type gatewayTestCase struct {
 		routes []*core_mesh.MeshGatewayRouteResource
 		rules  core_rules.GatewayRules
