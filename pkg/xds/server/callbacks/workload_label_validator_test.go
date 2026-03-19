@@ -2,6 +2,7 @@ package callbacks_test
 
 import (
 	"context"
+	"maps"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -95,9 +96,7 @@ var _ = Describe("Workload Label Validator", func() {
 			}
 
 			dpLabels := map[string]string{"kuma.io/service": tc.dataplaneService}
-			for k, v := range tc.dataplaneLabels {
-				dpLabels[k] = v
-			}
+			maps.Copy(dpLabels, tc.dataplaneLabels)
 
 			dp := createDataplane("test-dp", "default", dpLabels)
 			err := validateConnection(dp, mesh_proto.DataplaneProxyType, "default", "test-dp")

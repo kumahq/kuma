@@ -61,7 +61,7 @@ var _ = Describe("global view", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gv).ToNot(BeNil())
 
-		for i := 0; i < math.MaxInt16; i++ {
+		for i := range math.MaxInt16 {
 			// when
 			_, err := gv.Allocate(vips.NewHostEntry(fmt.Sprintf("foo-%d.mesh", i)))
 			// then

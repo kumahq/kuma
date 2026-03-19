@@ -49,7 +49,7 @@ func NewCache(
 func (c *Cache) GetMeshContext(ctx context.Context, mesh string) (xds_context.MeshContext, error) {
 	// Check our short TTL cache for a context, ignoring whether there have been
 	// changes since it was generated.
-	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
+	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (any, error) {
 		// Check hashCache first for an existing mesh latestContext
 		var latestContext *xds_context.MeshContext
 		if cached, ok := c.hashCache.Get(mesh); ok {

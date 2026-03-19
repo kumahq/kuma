@@ -14,7 +14,7 @@ import (
 // See https://github.com/onsi/ginkgo/blob/v2/docs/MIGRATING_TO_V2.md#removed-async-testing
 func Within(timeout time.Duration, task func()) func() {
 	return func() {
-		done := make(chan interface{})
+		done := make(chan any)
 
 		go func() {
 			defer ginkgo.GinkgoRecover()

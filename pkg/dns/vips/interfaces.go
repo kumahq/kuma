@@ -39,7 +39,7 @@ func (e HostnameEntry) String() string {
 }
 
 func (e HostnameEntry) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("%d:%s", e.Type, e.Name)), nil
+	return fmt.Appendf(nil, "%d:%s", e.Type, e.Name), nil
 }
 
 func (e *HostnameEntry) UnmarshalText(text []byte) error {

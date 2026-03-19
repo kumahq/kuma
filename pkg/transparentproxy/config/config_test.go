@@ -7,7 +7,7 @@ import (
 
 var _ = Describe("NewValueOrRangeList", func() {
 	DescribeTable("should create ValueOrRangeList",
-		func(input interface{}, expected string) {
+		func(input any, expected string) {
 			// when
 			var result ValueOrRangeList
 

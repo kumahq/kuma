@@ -155,7 +155,7 @@ var _ = Describe("SNI", func() {
 
 	It("SNI hash does not easily collide of the same services with different tags", func() {
 		snis := map[string]struct{}{}
-		for i := 0; i < 100_000; i++ {
+		for i := range 100_000 {
 			sni := tls.SNIForResource("backend", "demo", meshservice_api.MeshServiceType, 8080, map[string]string{
 				"version": fmt.Sprintf("%d", i),
 			})
@@ -168,7 +168,7 @@ var _ = Describe("SNI", func() {
 	It("SNI hash does not easily collide of the services with very long names", func() {
 		snis := map[string]struct{}{}
 		serviceName := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-		for i := 0; i < 100_000; i++ {
+		for range 100_000 {
 			sni := tls.SNIForResource(serviceName+uuid.New().String(), "demo", meshservice_api.MeshServiceType, 8080, nil)
 			_, ok := snis[sni]
 			Expect(ok).To(BeFalse())

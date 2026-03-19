@@ -29,7 +29,7 @@ var _ = Describe("ZoneInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		input := system.NewZoneInsightResource()
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &v1alpha1.KDSSubscription{
 				Id: fmt.Sprintf("%d", i),
 			})
@@ -62,7 +62,7 @@ var _ = Describe("ZoneInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		input := system.NewZoneInsightResource()
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &v1alpha1.KDSSubscription{
 				Id: fmt.Sprintf("%d", i),
 			})

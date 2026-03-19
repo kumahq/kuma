@@ -319,7 +319,7 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	opts := store.NewListOptions(args...)
 
 	statement := `SELECT name, mesh, spec, version, creation_time, modification_time, labels, status FROM resources WHERE type=$1`
-	var statementArgs []interface{}
+	var statementArgs []any
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
 	rkSize := len(opts.ResourceKeys)
