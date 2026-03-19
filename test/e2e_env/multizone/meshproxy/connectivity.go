@@ -93,7 +93,7 @@ func Connectivity() {
 			Install(Parallel(
 				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client")),
 				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithWorkload("test-server")),
-				TestServerExternalServiceUniversal("external-service", 8080, false, WithDockerContainerName("kuma-es-4_external-service-meshproxy")),
+				TestServerExternalServiceUniversal(fmt.Sprintf("external-service-%s", meshName), 8080, false, WithDockerContainerName("kuma-es-4_external-service-meshproxy")),
 				zoneproxy.Install(
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithIngressPort(11001),
@@ -126,11 +126,11 @@ spec:
 			Setup(multizone.UniZone1)).To(Succeed())
 
 		// MeshExternalService for the external server running in UniZone1.
-		extServiceIP := multizone.UniZone1.GetApp("external-service").GetIP()
+		extServiceIP := multizone.UniZone1.GetApp("external-service-meshproxy").GetIP()
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(fmt.Sprintf(`
 type: MeshExternalService
-name: external-service
+name: external-service-meshproxy
 mesh: %s
 labels:
   kuma.io/origin: zone
@@ -351,7 +351,7 @@ spec:
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(
 				multizone.UniZone1, "demo-client",
-				"http://external-service.extsvc.mesh.local:8080",
+				"http://external-service-meshproxy.extsvc.mesh.local:8080",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("external-service"))
