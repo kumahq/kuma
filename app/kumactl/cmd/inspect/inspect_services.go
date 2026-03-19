@@ -47,7 +47,7 @@ var inspectServiceTable = printers.Table{
 		"STATUS",
 		"DATAPLANES",
 	},
-	RowForItem: func(i int, container interface{}) ([]string, error) {
+	RowForItem: func(i int, container any) ([]string, error) {
 		overviews := container.(*mesh.ServiceOverviewResourceList)
 		if len(overviews.Items) <= i {
 			return nil, nil
