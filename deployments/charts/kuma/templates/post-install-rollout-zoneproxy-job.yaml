@@ -1,0 +1,130 @@
+{{- if not .Values.noHelmHooks }}
+{{- $serviceAccountName := printf "%s-rollout-zoneproxy-job" (include "kuma.name" .) }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $serviceAccountName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+subjects:
+  - kind: ServiceAccount
+    name: {{ $serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "kuma.name" . }}-rollout-zoneproxy
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{ include "kuma.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    {{/* Ensure the job is created after the RBAC resources and control plane is ready */}}
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+spec:
+  ttlSecondsAfterFinished: 0
+  template:
+    metadata:
+      name: {{ template "kuma.name" . }}-rollout-zoneproxy-script
+      labels:
+    {{ include "kuma.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+      {{- with .Values.hooks.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hooks.tolerations }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      securityContext:
+      {{- toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
+      containers:
+        - name: post-install-job
+          image: "bitnami/kubectl:latest"
+          securityContext:
+          {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              set -e
+
+              echo "Waiting for control plane to be ready..."
+              kubectl wait --for=condition=available --timeout=300s deployment/{{ include "kuma.name" . }}-control-plane -n {{ .Release.Namespace }}
+
+              echo "Control plane is ready, rolling out zone proxy deployments..."
+              {{- range $meshEntry := .Values.meshes }}
+              {{- $meshName := $meshEntry.name }}
+              {{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
+              if kubectl get deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }} -n {{ $.Release.Namespace }} 2>/dev/null; then
+                echo "Rolling out {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }}"
+                kubectl rollout restart deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }} -n {{ $.Release.Namespace }}
+              fi
+              {{- end }}
+              {{- if and $meshEntry.egress $meshEntry.egress.enabled }}
+              if kubectl get deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }} -n {{ $.Release.Namespace }} 2>/dev/null; then
+                echo "Rolling out {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }}"
+                kubectl rollout restart deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }} -n {{ $.Release.Namespace }}
+              fi
+              {{- end }}
+              {{- end }}
+
+              echo "Zone proxy rollout completed"
+{{- end }}
