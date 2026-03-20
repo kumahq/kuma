@@ -7,10 +7,12 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
@@ -24,7 +26,9 @@ type Server struct {
 	address       string
 	componentDone chan struct{}
 	dnsMap        atomic.Pointer[dnsMap]
-	metrics       *metrics
+	metrics       atomic.Pointer[metrics]
+	registerer    prometheus.Registerer
+	metricsOnce   sync.Once
 	// upstreamClient is used for testing purposes
 	upstreamClient func(msg *dns.Msg) (*dns.Msg, error)
 	ready          chan struct{}
@@ -50,15 +54,26 @@ func NewServer(address string) (*Server, error) {
 	return NewServerWithCustomClient(address, handler), nil
 }
 
+type ServerOption func(*Server)
+
+func WithRegisterer(r prometheus.Registerer) ServerOption {
+	return func(s *Server) {
+		s.registerer = r
+	}
+}
+
 // NewServerWithCustomClient is used for testing purposes
-func NewServerWithCustomClient(address string, upstreamClient func(msg *dns.Msg) (*dns.Msg, error)) *Server {
+func NewServerWithCustomClient(address string, upstreamClient func(msg *dns.Msg) (*dns.Msg, error), opts ...ServerOption) *Server {
 	s := Server{
 		address:        address,
 		componentDone:  make(chan struct{}),
 		dnsMap:         atomic.Pointer[dnsMap]{},
 		ready:          make(chan struct{}),
-		metrics:        newMetrics(),
+		registerer:     prometheus.DefaultRegisterer,
 		upstreamClient: upstreamClient,
+	}
+	for _, opt := range opts {
+		opt(&s)
 	}
 	s.dnsMap.Store(&dnsMap{ARecords: make(map[string]*dnsEntry), AAAARecords: make(map[string]*dnsEntry)})
 	return &s
@@ -79,7 +94,9 @@ var _ component.GracefulComponent = &Server{}
 func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 	start := time.Now()
 	defer func() {
-		s.metrics.RequestDuration.Observe(time.Since(start).Seconds())
+		if m := s.metrics.Load(); m != nil {
+			m.RequestDuration.Observe(time.Since(start).Seconds())
+		}
 		if err := recover(); err != nil {
 			log.Error(fmt.Errorf("handler panic %v", err), "panic in DNS handler")
 			response := new(dns.Msg)
@@ -113,14 +130,18 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		proxyStart := time.Now()
 		resp, err := s.upstreamClient(req)
 		if err != nil {
-			s.metrics.UpstreamRequestFailureCount.Inc()
+			if m := s.metrics.Load(); m != nil {
+				m.UpstreamRequestFailureCount.Inc()
+			}
 			log.Error(err, "failed to write message to upstream")
 			response = new(dns.Msg)
 			response.SetRcode(req, dns.RcodeServerFailure)
 		} else {
 			response = resp
 		}
-		s.metrics.UpstreamRequestDuration.Observe(time.Since(proxyStart).Seconds())
+		if m := s.metrics.Load(); m != nil {
+			m.UpstreamRequestDuration.Observe(time.Since(proxyStart).Seconds())
+		}
 	}
 	err := res.WriteMsg(response)
 	if err != nil {
@@ -177,6 +198,10 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	if err != nil {
 		return err
 	}
+	s.metricsOnce.Do(func() {
+		m := newMetrics(s.registerer, configuration.ExtraLabels)
+		s.metrics.Store(m)
+	})
 	res := dnsMap{
 		ARecords:    make(map[string]*dnsEntry),
 		AAAARecords: make(map[string]*dnsEntry),
