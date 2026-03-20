@@ -122,11 +122,11 @@ var _ = Describe("components", func() {
 		}
 		mock.Store(&f)
 
-		_ = server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
+		Expect(server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
 "ttl": 123,
 "records": [{"name": "example.com", "ips": ["240.0.0.1", "::2"]}],
 "extraLabels": {"mesh": "default", "kuma_workload": "backend"}
-}`)))
+}`)))).To(Succeed())
 		c := new(dns.Client)
 
 		By("in the map A")
@@ -162,11 +162,11 @@ var _ = Describe("components", func() {
 		}
 		mock.Store(&f)
 
-		_ = server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
+		Expect(server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
 "ttl": 123,
 "records": [{"name": "example.com", "ips": ["240.0.0.1"]}],
 "extraLabels": {"mesh": "default", "kuma_workload": "backend", "k8s_kuma_io_namespace": "test-ns"}
-}`)))
+}`)))).To(Succeed())
 
 		msg := &dns.Msg{}
 		msg.SetQuestion("example.com.", dns.TypeA)

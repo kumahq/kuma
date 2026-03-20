@@ -198,10 +198,12 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	if err != nil {
 		return err
 	}
-	s.metricsOnce.Do(func() {
-		m := newMetrics(s.registerer, configuration.ExtraLabels)
-		s.metrics.Store(m)
-	})
+	if configuration.ExtraLabels != nil {
+		s.metricsOnce.Do(func() {
+			m := newMetrics(s.registerer, configuration.ExtraLabels)
+			s.metrics.Store(m)
+		})
+	}
 	res := dnsMap{
 		ARecords:    make(map[string]*dnsEntry),
 		AAAARecords: make(map[string]*dnsEntry),
