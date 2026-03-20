@@ -1,8 +1,11 @@
 package gatewayapi
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -11,6 +14,7 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayapi.HTTPRoute, conditions ParentConditions) error {
@@ -34,7 +38,9 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 	mergedStatuses := []gatewayapi.RouteParentStatus{}
 	var previousStatuses []gatewayapi.RouteParentStatus
 
-	// partition statuses based on whether we control them
+	// Partition existing statuses: keep other controllers' statuses as-is,
+	// collect our previous statuses separately so we can match them by ref
+	// below when parentConditions may contain new refs not yet in the status.
 	for _, status := range route.Status.Parents {
 		if status.ControllerName != common.ControllerName {
 			mergedStatuses = append(mergedStatuses, status)
@@ -43,8 +49,11 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 		}
 	}
 
-	// for each new parentstatus, either add it to the list or update the
-	// existing one
+	// For each parent ref in parentConditions, find the matching previous
+	// status (if any) or create a new one. This cannot be merged with the
+	// loop above because parentConditions may contain refs that have no
+	// existing status yet.
+	var ownedStatuses []gatewayapi.RouteParentStatus
 	for ref, conditions := range parentConditions {
 		previousStatus := gatewayapi.RouteParentStatus{
 			ParentRef:      ref,
@@ -64,8 +73,25 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, condition)
 		}
 
-		mergedStatuses = append(mergedStatuses, previousStatus)
+		ownedStatuses = append(ownedStatuses, previousStatus)
 	}
 
-	route.Status.Parents = mergedStatuses
+	// Sort our controlled statuses by parent ref to ensure deterministic
+	// ordering and avoid unnecessary status patches caused by Go map
+	// iteration order.
+	slices.SortFunc(ownedStatuses, func(a, b gatewayapi.RouteParentStatus) int {
+		return cmp.Compare(parentRefSortKey(a.ParentRef), parentRefSortKey(b.ParentRef))
+	})
+
+	route.Status.Parents = append(mergedStatuses, ownedStatuses...)
+}
+
+func parentRefSortKey(ref gatewayapi.ParentReference) string {
+	return fmt.Sprintf("%s/%s/%s/%s/%s",
+		pointer.Deref(ref.Group),
+		pointer.Deref(ref.Kind),
+		pointer.Deref(ref.Namespace),
+		ref.Name,
+		pointer.Deref(ref.SectionName),
+	)
 }
