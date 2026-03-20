@@ -26,6 +26,8 @@ var _ = Describe("DNSGenerator", func() {
 		expected         string
 		features         map[string]bool
 		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
+		dpLabels         map[string]string
+		dpMesh           string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -62,6 +64,8 @@ var _ = Describe("DNSGenerator", func() {
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
+						Mesh:    given.dpMesh,
+						Labels:  given.dpLabels,
 					},
 					Spec: &dataplane,
 				},
@@ -112,6 +116,12 @@ var _ = Describe("DNSGenerator", func() {
 			},
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
+			dpLabels: map[string]string{
+				"kuma.io/workload":      "backend",
+				"k8s.kuma.io/namespace": "test-ns",
+				"kuma.io/zone":          "zone-1",
+			},
+			dpMesh: "default",
 		}),
 		Entry("05. DNS using proxy with unified naming", testCase{
 			dataplaneFile:    "5-dataplane.input.yaml",
@@ -121,6 +131,12 @@ var _ = Describe("DNSGenerator", func() {
 				"feature-embedded-dns":            true,
 				"feature-unified-resource-naming": true,
 			},
+			dpLabels: map[string]string{
+				"kuma.io/workload":      "backend",
+				"k8s.kuma.io/namespace": "test-ns",
+				"kuma.io/zone":          "zone-1",
+			},
+			dpMesh: "default",
 		}),
 		Entry("06. DNS enabled with unified naming", testCase{
 			dataplaneFile: "6-dataplane.input.yaml",
