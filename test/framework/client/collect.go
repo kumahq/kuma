@@ -347,7 +347,7 @@ func MakeDirectRequest(
 ) (*http.Response, error) {
 	opts := CollectOptions(destination, fn...)
 
-	req, err := http.NewRequest(opts.Method, opts.URL, http.NoBody)
+	req, err := http.NewRequestWithContext(context.Background(), opts.Method, opts.URL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
