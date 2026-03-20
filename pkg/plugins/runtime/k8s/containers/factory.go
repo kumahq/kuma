@@ -79,12 +79,9 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 
 	// Note that validation requires the resource limit is not empty.
 	cpuRequest := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
-	ncpu := cpuRequest.MilliValue() / 1000
-	if ncpu < 2 {
-		// Only autotune to down to 2 to mitigate the latency
-		// risk if a worker thread blocks.
-		ncpu = 2
-	}
+	// Only autotune to down to 2 to mitigate the latency
+	// risk if a worker thread blocks.
+	ncpu := max(cpuRequest.MilliValue()/1000, 2)
 
 	return ncpu, nil
 }
