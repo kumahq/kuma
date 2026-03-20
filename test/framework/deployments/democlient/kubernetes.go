@@ -1,6 +1,8 @@
 package democlient
 
 import (
+	"maps"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -97,9 +99,7 @@ func (k *k8SDeployment) service() *corev1.Service {
 
 func (k *k8SDeployment) getAnnotations() map[string]string {
 	annotations := make(map[string]string)
-	for key, value := range k.opts.PodAnnotations {
-		annotations[key] = value
-	}
+	maps.Copy(annotations, k.opts.PodAnnotations)
 	return annotations
 }
 
