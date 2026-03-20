@@ -231,6 +231,104 @@ var _ = Describe("ResolveBackend", func() {
 
 		Expect(runtime.Traces.Transport.Compression).To(BeEmpty())
 	})
+
+	It("should ignore an empty endpoint override", func() {
+		cfg := Config{
+			Shared: Layer{
+				Endpoint: FieldValue{Present: true, Value: ""},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "collector.example:4317",
+			EnvPolicy: &core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceEnvFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.Endpoint).To(Equal("collector.example:4317"))
+	})
+
+	It("should ignore a gRPC URL endpoint with a path", func() {
+		cfg := Config{
+			Shared: Layer{
+				Endpoint: FieldValue{Present: true, Value: "https://collector.example:4317/custom"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "collector.example:4317",
+			EnvPolicy: &core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceEnvFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.Protocol).To(Equal(core_xds.OtelProtocolGRPC))
+		Expect(runtime.Traces.Transport.Endpoint).To(Equal("collector.example:4317"))
+	})
+
+	It("should keep shared headers when signal headers are malformed", func() {
+		cfg := Config{
+			Shared: Layer{
+				Headers: FieldValue{Present: true, Value: "authorization=token"},
+			},
+			Traces: Layer{
+				Headers: FieldValue{Present: true, Value: "authorization"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "collector.example:4317",
+			EnvPolicy: &core_xds.OtelResolvedEnvPolicy{
+				Mode:                 motb_api.EnvModeOptional,
+				Precedence:           motb_api.EnvPrecedenceEnvFirst,
+				AllowSignalOverrides: true,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled:         true,
+				EnvInputPresent: true,
+				OverrideKinds:   []string{"headers"},
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.Headers).To(HaveKeyWithValue("authorization", "token"))
+	})
+
+	It("should keep TLS enabled for an https endpoint even when the same layer sets insecure=true", func() {
+		cfg := Config{
+			Shared: Layer{
+				Endpoint: FieldValue{Present: true, Value: "https://collector.example:4318"},
+				Insecure: FieldValue{Present: true, Value: "true"},
+				Protocol: FieldValue{Present: true, Value: "http/protobuf"},
+			},
+		}
+		backend := core_xds.OtelPipeBackend{
+			Endpoint: "collector.example:4317",
+			EnvPolicy: &core_xds.OtelResolvedEnvPolicy{
+				Mode:       motb_api.EnvModeOptional,
+				Precedence: motb_api.EnvPrecedenceEnvFirst,
+			},
+			Traces: &core_xds.OtelSignalRuntimePlan{
+				Enabled: true,
+			},
+		}
+
+		runtime := cfg.ResolveBackend(backend)
+
+		Expect(runtime.Traces.Transport.Endpoint).To(Equal("collector.example:4318"))
+		Expect(runtime.Traces.Transport.UseTLS).To(HaveValue(BeTrue()))
+	})
 })
 
 var _ = Describe("resolveEndpointAddress", func() {
@@ -253,5 +351,15 @@ var _ = Describe("resolveEndpointAddress", func() {
 
 	It("should return endpoint unchanged when not in host:port format", func() {
 		Expect(resolveEndpointAddress("collector")).To(Equal("collector"))
+	})
+})
+
+var _ = Describe("parseHeaders", func() {
+	It("should use baggage parsing semantics", func() {
+		headers := parseHeaders("user=id%20token,key2=value2,invalid-entry")
+
+		Expect(headers).To(HaveKeyWithValue("user", "id token"))
+		Expect(headers).To(HaveKeyWithValue("key2", "value2"))
+		Expect(headers).NotTo(HaveKey("invalid-entry"))
 	})
 })

@@ -75,4 +75,64 @@ var _ = Describe("DiscoverWithLookup", func() {
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.CompressionPresent).To(BeTrue())
 	})
+
+	It("should treat empty env values as unset", func() {
+		env := map[string]string{
+			"OTEL_EXPORTER_OTLP_ENDPOINT": "   ",
+		}
+
+		cfg := discoverWithLookup(false, func(name string) (string, bool) {
+			value, ok := env[name]
+			return value, ok
+		})
+
+		Expect(cfg.Inventory).ToNot(BeNil())
+		Expect(cfg.Inventory.Shared).To(BeNil())
+		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
+	})
+
+	It("should report a shared pathful endpoint as invalid when protocol defaults to grpc", func() {
+		env := map[string]string{
+			"OTEL_EXPORTER_OTLP_ENDPOINT": "https://collector.example:4317/custom",
+		}
+
+		cfg := discoverWithLookup(false, func(name string) (string, bool) {
+			value, ok := env[name]
+			return value, ok
+		})
+
+		Expect(cfg.Inventory).ToNot(BeNil())
+		Expect(cfg.Inventory.ValidationErrors).To(ContainElement("shared.endpoint"))
+	})
+
+	It("should report a signal pathful endpoint as invalid when it inherits grpc from shared config", func() {
+		env := map[string]string{
+			"OTEL_EXPORTER_OTLP_PROTOCOL":        "grpc",
+			"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://collector.example:4317/traces",
+		}
+
+		cfg := discoverWithLookup(false, func(name string) (string, bool) {
+			value, ok := env[name]
+			return value, ok
+		})
+
+		Expect(cfg.Inventory).ToNot(BeNil())
+		Expect(cfg.Inventory.ValidationErrors).To(ContainElement("traces.endpoint"))
+	})
+
+	It("should trim protocol values before validation", func() {
+		env := map[string]string{
+			"OTEL_EXPORTER_OTLP_PROTOCOL": " http/protobuf ",
+		}
+
+		cfg := discoverWithLookup(false, func(name string) (string, bool) {
+			value, ok := env[name]
+			return value, ok
+		})
+
+		Expect(cfg.Inventory).ToNot(BeNil())
+		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
+		Expect(cfg.Inventory.Shared).ToNot(BeNil())
+		Expect(cfg.Inventory.Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
+	})
 })

@@ -238,6 +238,29 @@ var _ = Describe("senderFactory", func() {
 		Expect(err.Error()).To(ContainSubstring("502"))
 		Expect(err.Error()).To(ContainSubstring("collector failed"))
 	})
+
+	It("should register cleanup for HTTP transports", func() {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		factory := &senderFactory{}
+		DeferCleanup(factory.close)
+
+		_, err := factory.newTraceExporter(otelenv.SignalRuntime{
+			Enabled:  true,
+			HTTPPath: "/v1/traces",
+			Transport: otelenv.ExporterTransport{
+				Protocol: core_xds.OtelProtocolHTTPProtobuf,
+				Endpoint: strings.TrimPrefix(server.URL, "http://"),
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(factory.closeFns).To(HaveLen(1))
+
+		factory.close()
+	})
 })
 
 var _ = Describe("otlpHTTPURL", func() {

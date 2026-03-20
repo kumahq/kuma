@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -16,7 +17,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/meshmetrics"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
 	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
@@ -415,3 +419,54 @@ func (g fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string
 
 	return &bootstrap, &types.KumaSidecarConfiguration{}, nil
 }
+
+var _ = Describe("metricsTargetsForBackends", func() {
+	It("should skip blocked metrics runtimes", func() {
+		targets := metricsTargetsForBackends([]core_xds.OtelPipeBackend{
+			{
+				Name:       "blocked",
+				SocketPath: "/tmp/blocked.sock",
+				Endpoint:   "collector.example:4317",
+				EnvPolicy: &core_xds.OtelResolvedEnvPolicy{
+					Mode:       motb_api.EnvModeOptional,
+					Precedence: motb_api.EnvPrecedenceEnvFirst,
+				},
+				Metrics: &core_xds.OtelSignalRuntimePlan{
+					Enabled:         true,
+					BlockedReasons:  []string{core_xds.OtelBlockedReasonRequiredEnvMissing},
+					RefreshInterval: "5s",
+				},
+			},
+		}, otelenv.Config{})
+
+		Expect(targets).To(BeEmpty())
+	})
+
+	It("should return targets only for usable metrics runtimes", func() {
+		targets := metricsTargetsForBackends([]core_xds.OtelPipeBackend{
+			{
+				Name:       "metrics",
+				SocketPath: "/tmp/metrics.sock",
+				Endpoint:   "collector.example:4317",
+				Metrics: &core_xds.OtelSignalRuntimePlan{
+					Enabled:         true,
+					RefreshInterval: "5s",
+				},
+			},
+			{
+				Name:       "logs-only",
+				SocketPath: "/tmp/logs.sock",
+				Endpoint:   "collector.example:4317",
+				Logs: &core_xds.OtelSignalRuntimePlan{
+					Enabled: true,
+				},
+			},
+		}, otelenv.Config{})
+
+		Expect(targets).To(Equal([]meshmetrics.OtelExportTarget{{
+			Name:            "metrics",
+			SocketPath:      "/tmp/metrics.sock",
+			RefreshInterval: 5 * time.Second,
+		}}))
+	})
+})

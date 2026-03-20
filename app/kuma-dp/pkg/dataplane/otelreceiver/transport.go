@@ -248,6 +248,7 @@ func (f *senderFactory) httpClient(transport otelenv.ExporterTransport) (*http.C
 		key:    key,
 		client: client,
 	})
+	f.closeFns = append(f.closeFns, httpTransport.CloseIdleConnections)
 	return client, nil
 }
 

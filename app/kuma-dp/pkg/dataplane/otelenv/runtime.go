@@ -11,7 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
+
+	"go.opentelemetry.io/otel/baggage"
 
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -112,12 +113,14 @@ func (c Config) resolveSignal(
 	}
 
 	if sharedAllowed {
-		applyOverride(&runtime, endpointOverrideForLayer(c.Shared, signal, protocol, false), preferEnv)
-		applyOverride(&runtime, transportOverrideForLayer(c.Shared), preferEnv)
+		endpointOverride := endpointOverrideForLayer(c.Shared, signal, protocol, false)
+		applyOverride(&runtime, endpointOverride, preferEnv)
+		applyOverride(&runtime, transportOverrideForLayer(c.Shared, endpointOverride.UseTLS == nil), preferEnv)
 	}
 	if signalAllowed {
-		applyOverride(&runtime, endpointOverrideForLayer(sigLayer, signal, protocol, true), preferEnv)
-		applyOverride(&runtime, transportOverrideForLayer(sigLayer), preferEnv)
+		endpointOverride := endpointOverrideForLayer(sigLayer, signal, protocol, true)
+		applyOverride(&runtime, endpointOverride, preferEnv)
+		applyOverride(&runtime, transportOverrideForLayer(sigLayer, endpointOverride.UseTLS == nil), preferEnv)
 	}
 
 	return runtime
@@ -213,6 +216,9 @@ func endpointOverrideForLayer(
 	}
 
 	value := strings.TrimSpace(layer.Endpoint.Value)
+	if value == "" {
+		return exporterOverride{}
+	}
 	parsedURL, err := url.Parse(value)
 	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
 		return exporterOverride{
@@ -246,9 +252,11 @@ func endpointOverrideForLayer(
 		}
 		return override
 	default:
-		target := path.Join(parsedURL.Host, parsedURL.Path)
+		if parsedURL.Path != "" {
+			return exporterOverride{}
+		}
 		override := exporterOverride{
-			Endpoint: &target,
+			Endpoint: &parsedURL.Host,
 		}
 		if strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "unix") {
 			override.UseTLS = boolPtr(false)
@@ -259,15 +267,18 @@ func endpointOverrideForLayer(
 	}
 }
 
-func transportOverrideForLayer(layer Layer) exporterOverride {
+func transportOverrideForLayer(layer Layer, allowInsecure bool) exporterOverride {
 	override := exporterOverride{}
 
-	if layer.Insecure.Present {
+	if allowInsecure && layer.Insecure.Present {
 		override.UseTLS = boolPtr(!strings.EqualFold(strings.TrimSpace(layer.Insecure.Value), "true"))
 	}
 	if layer.Headers.Present {
-		override.Headers = parseHeaders(layer.Headers.Value)
-		override.HeadersPresent = true
+		headers := parseHeaders(layer.Headers.Value)
+		if len(headers) > 0 {
+			override.Headers = headers
+			override.HeadersPresent = true
+		}
 	}
 	if layer.Compression.Present {
 		if compression, ok := parseCompression(layer.Compression.Value); ok {
@@ -323,22 +334,9 @@ func parseTimeout(value string) (time.Duration, bool) {
 
 func parseHeaders(value string) map[string]string {
 	headers := map[string]string{}
-	for header := range strings.SplitSeq(value, ",") {
-		name, headerValue, ok := strings.Cut(header, "=")
-		if !ok {
-			continue
-		}
-
-		name = strings.TrimSpace(name)
-		if !isValidHeaderKey(name) {
-			continue
-		}
-
-		unescapedValue, err := url.PathUnescape(headerValue)
-		if err != nil {
-			continue
-		}
-		headers[name] = strings.TrimSpace(unescapedValue)
+	parsed, _ := baggage.Parse(value)
+	for _, member := range parsed.Members() {
+		headers[member.Key()] = member.Value()
 	}
 	return headers
 }
@@ -397,23 +395,4 @@ func copyBoolPtr(p *bool) *bool {
 	}
 	v := *p
 	return &v
-}
-
-func isValidHeaderKey(key string) bool {
-	if key == "" {
-		return false
-	}
-	for _, c := range key {
-		if !isTokenChar(c) {
-			return false
-		}
-	}
-	return true
-}
-
-func isTokenChar(c rune) bool {
-	return c <= unicode.MaxASCII && (unicode.IsLetter(c) ||
-		unicode.IsDigit(c) ||
-		c == '!' || c == '#' || c == '$' || c == '%' || c == '&' || c == '\'' || c == '*' ||
-		c == '+' || c == '-' || c == '.' || c == '^' || c == '_' || c == '`' || c == '|' || c == '~')
 }

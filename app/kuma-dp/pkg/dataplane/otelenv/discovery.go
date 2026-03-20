@@ -81,6 +81,10 @@ func readField(name string, lookup func(string) (string, bool)) FieldValue {
 	if !ok {
 		return FieldValue{}
 	}
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return FieldValue{}
+	}
 	return FieldValue{
 		Present: true,
 		Value:   value,
@@ -122,6 +126,7 @@ func buildLayerInventory(
 	validationErrors *[]string,
 ) *core_xds.OtelSignalEnvInventory {
 	endpointParsedAsURL, endpointHasPath := endpointCharacteristics(layer.Endpoint)
+	effectiveLayerProtocol := effectiveProtocol(name, layer, validationErrors)
 	if layer.Compression.Present {
 		if _, ok := parseCompression(layer.Compression.Value); !ok {
 			*validationErrors = append(*validationErrors, fmt.Sprintf("%s.compression", name))
@@ -131,6 +136,9 @@ func buildLayerInventory(
 		if _, ok := parseTimeout(layer.Timeout.Value); !ok {
 			*validationErrors = append(*validationErrors, fmt.Sprintf("%s.timeout", name))
 		}
+	}
+	if endpointParsedAsURL && endpointHasPath && effectiveProtocolForEndpoint(layer, shared) == core_xds.OtelProtocolGRPC {
+		*validationErrors = append(*validationErrors, fmt.Sprintf("%s.endpoint", name))
 	}
 	inventory := &core_xds.OtelSignalEnvInventory{
 		EndpointPresent:          layer.Endpoint.Present,
@@ -144,7 +152,7 @@ func buildLayerInventory(
 		CertificatePresent:       layer.Certificate.Present,
 		ClientCertificatePresent: layer.ClientCertificate.Present,
 		ClientKeyPresent:         layer.ClientKey.Present,
-		EffectiveProtocol:        effectiveProtocol(name, layer, validationErrors),
+		EffectiveProtocol:        effectiveLayerProtocol,
 		EffectiveAuthMode:        effectiveAuthMode(name, layer, validationErrors),
 		OverrideKinds:            overrideKinds(layer, shared),
 	}
@@ -174,15 +182,34 @@ func effectiveProtocol(
 		return ""
 	}
 
-	switch layer.Protocol.Value {
-	case string(core_xds.OtelProtocolGRPC):
-		return core_xds.OtelProtocolGRPC
-	case string(core_xds.OtelProtocolHTTPProtobuf):
-		return core_xds.OtelProtocolHTTPProtobuf
-	default:
-		*validationErrors = append(*validationErrors, fmt.Sprintf("%s.protocol", name))
+	if parsed, ok := parseProtocol(layer.Protocol.Value); ok {
+		return parsed
+	}
+	*validationErrors = append(*validationErrors, fmt.Sprintf("%s.protocol", name))
+	return core_xds.OtelProtocolUnknown
+}
+
+func effectiveProtocolForEndpoint(layer Layer, shared Layer) core_xds.OtelProtocol {
+	if parsed, ok := parseProtocolField(layer.Protocol); ok {
+		return parsed
+	}
+	if layer.Protocol.Present {
 		return core_xds.OtelProtocolUnknown
 	}
+	if parsed, ok := parseProtocolField(shared.Protocol); ok {
+		return parsed
+	}
+	if shared.Protocol.Present {
+		return core_xds.OtelProtocolUnknown
+	}
+	return core_xds.OtelProtocolGRPC
+}
+
+func parseProtocolField(field FieldValue) (core_xds.OtelProtocol, bool) {
+	if !field.Present {
+		return "", false
+	}
+	return parseProtocol(field.Value)
 }
 
 func effectiveAuthMode(
