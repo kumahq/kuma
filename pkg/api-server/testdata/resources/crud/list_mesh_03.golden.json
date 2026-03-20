@@ -6,14 +6,14 @@
    "name": "m2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "kri": "kri_m____m2_"
+   "kri": "kri_m__default_kuma-system_m2_"
   },
   {
    "type": "Mesh",
    "name": "m3",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "kri": "kri_m____m3_"
+   "kri": "kri_m__default_kuma-system_m3_"
   }
  ],
  "next": null

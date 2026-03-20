@@ -10,7 +10,7 @@
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
- "kri": "kri_mtrust_meshtrust-test_default__trust-1_",
+ "kri": "kri_mtrust_meshtrust-test_default_kuma-system_trust-1_",
  "spec": {
   "origin": {
    "kri": "kri-test-value"
