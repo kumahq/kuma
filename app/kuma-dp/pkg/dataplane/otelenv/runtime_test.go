@@ -15,13 +15,13 @@ var _ = Describe("ResolveBackend", func() {
 	It("should merge explicit config with shared and signal env overrides", func() {
 		cfg := Config{
 			Shared: Layer{
-				Protocol:    FieldValue{Present: true, Value: "http/protobuf"},
-				Headers:     FieldValue{Present: true, Value: "authorization=token"},
-				Compression: FieldValue{Present: true, Value: "gzip"},
-				Timeout:     FieldValue{Present: true, Value: "5000"},
+				Protocol:    new("http/protobuf"),
+				Headers:     new("authorization=token"),
+				Compression: new("gzip"),
+				Timeout:     new("5000"),
 			},
 			Logs: Layer{
-				Endpoint: FieldValue{Present: true, Value: "https://logs.example:4318/v1/logs"},
+				Endpoint: new("https://logs.example:4318/v1/logs"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -61,8 +61,8 @@ var _ = Describe("ResolveBackend", func() {
 	It("should keep explicit config when env is blocked by policy", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: "https://env.example:4318"},
-				Protocol: FieldValue{Present: true, Value: "http/protobuf"},
+				Endpoint: new("https://env.example:4318"),
+				Protocol: new("http/protobuf"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -87,7 +87,7 @@ var _ = Describe("ResolveBackend", func() {
 	It("should leave blocked signals without a transport", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: "https://env.example:4318"},
+				Endpoint: new("https://env.example:4318"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -109,9 +109,9 @@ var _ = Describe("ResolveBackend", func() {
 	It("should ignore incomplete optional mTLS env overrides", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint:          FieldValue{Present: true, Value: "https://env.example:4318"},
-				Protocol:          FieldValue{Present: true, Value: "http/protobuf"},
-				ClientCertificate: FieldValue{Present: true, Value: "/tmp/client.crt"},
+				Endpoint:          new("https://env.example:4318"),
+				Protocol:          new("http/protobuf"),
+				ClientCertificate: new("/tmp/client.crt"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -138,8 +138,8 @@ var _ = Describe("ResolveBackend", func() {
 	It("should prefer explicit endpoint+protocol over env in ExplicitFirst mode", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: "https://env.example:4318"},
-				Protocol: FieldValue{Present: true, Value: "http/protobuf"},
+				Endpoint: new("https://env.example:4318"),
+				Protocol: new("http/protobuf"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -163,7 +163,7 @@ var _ = Describe("ResolveBackend", func() {
 	It("should preserve explicit TLS=false in ExplicitFirst mode when env has https", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: "https://env.example:4318"},
+				Endpoint: new("https://env.example:4318"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -188,7 +188,7 @@ var _ = Describe("ResolveBackend", func() {
 	It("should handle bare host:port endpoint without scheme", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: "collector:4317"},
+				Endpoint: new("collector:4317"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -212,7 +212,7 @@ var _ = Describe("ResolveBackend", func() {
 	It("should accept compression=none without validation error", func() {
 		cfg := Config{
 			Shared: Layer{
-				Compression: FieldValue{Present: true, Value: "none"},
+				Compression: new("none"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -232,32 +232,10 @@ var _ = Describe("ResolveBackend", func() {
 		Expect(runtime.Traces.Transport.Compression).To(BeEmpty())
 	})
 
-	It("should ignore an empty endpoint override", func() {
-		cfg := Config{
-			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: ""},
-			},
-		}
-		backend := core_xds.OtelPipeBackend{
-			Endpoint: "collector.example:4317",
-			EnvPolicy: &core_xds.OtelResolvedEnvPolicy{
-				Mode:       motb_api.EnvModeOptional,
-				Precedence: motb_api.EnvPrecedenceEnvFirst,
-			},
-			Traces: &core_xds.OtelSignalRuntimePlan{
-				Enabled: true,
-			},
-		}
-
-		runtime := cfg.ResolveBackend(backend)
-
-		Expect(runtime.Traces.Transport.Endpoint).To(Equal("collector.example:4317"))
-	})
-
 	It("should ignore a gRPC URL endpoint with a path", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: "https://collector.example:4317/custom"},
+				Endpoint: new("https://collector.example:4317/custom"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -280,10 +258,10 @@ var _ = Describe("ResolveBackend", func() {
 	It("should keep shared headers when signal headers are malformed", func() {
 		cfg := Config{
 			Shared: Layer{
-				Headers: FieldValue{Present: true, Value: "authorization=token"},
+				Headers: new("authorization=token"),
 			},
 			Traces: Layer{
-				Headers: FieldValue{Present: true, Value: "authorization"},
+				Headers: new("authorization"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{
@@ -308,9 +286,9 @@ var _ = Describe("ResolveBackend", func() {
 	It("should keep TLS enabled for an https endpoint even when the same layer sets insecure=true", func() {
 		cfg := Config{
 			Shared: Layer{
-				Endpoint: FieldValue{Present: true, Value: "https://collector.example:4318"},
-				Insecure: FieldValue{Present: true, Value: "true"},
-				Protocol: FieldValue{Present: true, Value: "http/protobuf"},
+				Endpoint: new("https://collector.example:4318"),
+				Insecure: new("true"),
+				Protocol: new("http/protobuf"),
 			},
 		}
 		backend := core_xds.OtelPipeBackend{

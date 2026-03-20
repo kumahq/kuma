@@ -76,7 +76,7 @@ var _ = Describe("Manager reconcile", func() {
 	It("should restart backend when resolved runtime changes", func() {
 		manager := NewManager(otelenv.Config{
 			Shared: otelenv.Layer{
-				Endpoint: otelenv.FieldValue{Present: true, Value: "env-collector:4317"},
+				Endpoint: new("env-collector:4317"),
 			},
 		})
 		DeferCleanup(manager.stopAll)
@@ -129,9 +129,10 @@ var _ = Describe("Manager reconcile", func() {
 		}()
 		defer logsServer.Stop()
 
+		logsEndpoint := logsListener.Addr().String()
 		manager := NewManager(otelenv.Config{
 			Logs: otelenv.Layer{
-				Endpoint: otelenv.FieldValue{Present: true, Value: logsListener.Addr().String()},
+				Endpoint: &logsEndpoint,
 			},
 		})
 		DeferCleanup(manager.stopAll)

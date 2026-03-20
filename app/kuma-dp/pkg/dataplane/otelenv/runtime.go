@@ -78,7 +78,7 @@ func (c Config) resolveSignal(
 		BlockedReasons: slices.Clone(plan.BlockedReasons),
 	}
 
-	if isHardBlocked(plan) {
+	if plan.IsHardBlocked() {
 		return runtime
 	}
 
@@ -100,7 +100,7 @@ func (c Config) resolveSignal(
 		Protocol: protocol,
 	}
 	runtime.Transport.Endpoint = explicit.Transport.Endpoint
-	runtime.Transport.UseTLS = copyBoolPtr(explicit.Transport.UseTLS)
+	runtime.Transport.UseTLS = new(*explicit.Transport.UseTLS)
 	runtime.Transport.Headers = maps.Clone(explicit.Transport.Headers)
 	runtime.Transport.Compression = explicit.Transport.Compression
 	runtime.Transport.Timeout = explicit.Transport.Timeout
@@ -137,7 +137,7 @@ func explicitTransport(backend core_xds.OtelPipeBackend, signal core_xds.OtelSig
 		Transport: ExporterTransport{
 			Protocol: protocol,
 			Endpoint: resolveEndpointAddress(backend.Endpoint),
-			UseTLS:   boolPtr(backend.UseHTTPS),
+			UseTLS:   new(backend.UseHTTPS),
 		},
 	}
 	if protocol == core_xds.OtelProtocolGRPC {
@@ -159,18 +159,20 @@ func resolveEndpointAddress(endpoint string) string {
 	return net.JoinHostPort(hostIP, port)
 }
 
-func pickProtocol(current core_xds.OtelProtocol, field FieldValue, preferEnv bool) core_xds.OtelProtocol {
-	if !field.Present {
+func pickProtocol(current core_xds.OtelProtocol, field *string, preferEnv bool) core_xds.OtelProtocol {
+	if field == nil {
 		return current
 	}
 
-	parsed, ok := parseProtocol(field.Value)
+	parsed, ok := parseProtocol(*field)
 	if !ok {
 		return current
 	}
+
 	if preferEnv || current == "" {
 		return parsed
 	}
+
 	return current
 }
 
@@ -211,11 +213,11 @@ func endpointOverrideForLayer(
 	protocol core_xds.OtelProtocol,
 	signalSpecific bool,
 ) exporterOverride {
-	if !layer.Endpoint.Present {
+	if layer.Endpoint == nil {
 		return exporterOverride{}
 	}
 
-	value := strings.TrimSpace(layer.Endpoint.Value)
+	value := strings.TrimSpace(*layer.Endpoint)
 	if value == "" {
 		return exporterOverride{}
 	}
@@ -232,9 +234,9 @@ func endpointOverrideForLayer(
 			Endpoint: &parsedURL.Host,
 		}
 		if strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "unix") {
-			override.UseTLS = boolPtr(false)
+			override.UseTLS = new(false)
 		} else {
-			override.UseTLS = boolPtr(true)
+			override.UseTLS = new(true)
 		}
 
 		pathValue := parsedURL.Path
@@ -259,9 +261,9 @@ func endpointOverrideForLayer(
 			Endpoint: &parsedURL.Host,
 		}
 		if strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "unix") {
-			override.UseTLS = boolPtr(false)
+			override.UseTLS = new(false)
 		} else {
-			override.UseTLS = boolPtr(true)
+			override.UseTLS = new(true)
 		}
 		return override
 	}
@@ -270,32 +272,36 @@ func endpointOverrideForLayer(
 func transportOverrideForLayer(layer Layer, allowInsecure bool) exporterOverride {
 	override := exporterOverride{}
 
-	if allowInsecure && layer.Insecure.Present {
-		override.UseTLS = boolPtr(!strings.EqualFold(strings.TrimSpace(layer.Insecure.Value), "true"))
+	if allowInsecure && layer.Insecure != nil {
+		override.UseTLS = new(!strings.EqualFold(strings.TrimSpace(*layer.Insecure), "true"))
 	}
-	if layer.Headers.Present {
-		headers := parseHeaders(layer.Headers.Value)
+	if layer.Headers != nil {
+		headers := parseHeaders(*layer.Headers)
 		if len(headers) > 0 {
 			override.Headers = headers
 			override.HeadersPresent = true
 		}
 	}
-	if layer.Compression.Present {
-		if compression, ok := parseCompression(layer.Compression.Value); ok {
+
+	if layer.Compression != nil {
+		if compression, ok := parseCompression(*layer.Compression); ok {
 			override.Compression = &compression
 		}
 	}
-	if layer.Timeout.Present {
-		if timeout, ok := parseTimeout(layer.Timeout.Value); ok {
+
+	if layer.Timeout != nil {
+		if timeout, ok := parseTimeout(*layer.Timeout); ok {
 			override.Timeout = &timeout
 		}
 	}
-	if layer.Certificate.Present {
-		override.Certificate = &layer.Certificate.Value
+
+	if layer.Certificate != nil {
+		override.Certificate = layer.Certificate
 	}
-	if layer.ClientCertificate.Present && layer.ClientKey.Present {
-		override.ClientCertificate = &layer.ClientCertificate.Value
-		override.ClientKey = &layer.ClientKey.Value
+
+	if layer.ClientCertificate != nil && layer.ClientKey != nil {
+		override.ClientCertificate = layer.ClientCertificate
+		override.ClientKey = layer.ClientKey
 	}
 
 	return override
@@ -341,16 +347,6 @@ func parseHeaders(value string) map[string]string {
 	return headers
 }
 
-func isHardBlocked(plan *core_xds.OtelSignalRuntimePlan) bool {
-	if plan == nil {
-		return false
-	}
-	if len(plan.MissingFields) > 0 {
-		return true
-	}
-	return slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonRequiredEnvMissing)
-}
-
 func sharedEnvAllowed(plan *core_xds.OtelSignalRuntimePlan) bool {
 	if plan == nil {
 		return false
@@ -383,16 +379,4 @@ func layerForSignal(cfg Config, signal core_xds.OtelSignal) Layer {
 	default:
 		return Layer{}
 	}
-}
-
-func boolPtr(value bool) *bool {
-	return &value
-}
-
-func copyBoolPtr(p *bool) *bool {
-	if p == nil {
-		return nil
-	}
-	v := *p
-	return &v
 }

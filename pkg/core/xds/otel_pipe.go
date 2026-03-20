@@ -31,6 +31,18 @@ type OtelSignalRuntimePlan struct {
 	RefreshInterval string   `json:"refreshInterval,omitempty"`
 }
 
+func (p *OtelSignalRuntimePlan) IsHardBlocked() bool {
+	if p == nil {
+		return false
+	}
+
+	if len(p.MissingFields) > 0 {
+		return true
+	}
+
+	return slices.Contains(p.BlockedReasons, OtelBlockedReasonRequiredEnvMissing)
+}
+
 // OtelPipeBackend represents one MOTB backend for the unified /otel dynconf route.
 // All signals sharing this backend use the same SocketPath.
 type OtelPipeBackend struct {

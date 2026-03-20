@@ -27,20 +27,15 @@ type Config struct {
 }
 
 type Layer struct {
-	Endpoint          FieldValue
-	Protocol          FieldValue
-	Headers           FieldValue
-	Timeout           FieldValue
-	Compression       FieldValue
-	Insecure          FieldValue
-	Certificate       FieldValue
-	ClientCertificate FieldValue
-	ClientKey         FieldValue
-}
-
-type FieldValue struct {
-	Present bool
-	Value   string
+	Endpoint          *string
+	Protocol          *string
+	Headers           *string
+	Timeout           *string
+	Compression       *string
+	Insecure          *string
+	Certificate       *string
+	ClientCertificate *string
+	ClientKey         *string
 }
 
 func Discover(pipeEnabled bool) Config {
@@ -76,19 +71,16 @@ func readLayer(prefix string, lookup func(string) (string, bool)) Layer {
 	}
 }
 
-func readField(name string, lookup func(string) (string, bool)) FieldValue {
+func readField(name string, lookup func(string) (string, bool)) *string {
 	value, ok := lookup(name)
 	if !ok {
-		return FieldValue{}
+		return nil
 	}
 	value = strings.TrimSpace(value)
 	if value == "" {
-		return FieldValue{}
+		return nil
 	}
-	return FieldValue{
-		Present: true,
-		Value:   value,
-	}
+	return &value
 }
 
 func buildInventory(cfg Config) *core_xds.OtelBootstrapInventory {
@@ -127,31 +119,35 @@ func buildLayerInventory(
 ) *core_xds.OtelSignalEnvInventory {
 	endpointParsedAsURL, endpointHasPath := endpointCharacteristics(layer.Endpoint)
 	effectiveLayerProtocol := effectiveProtocol(name, layer, validationErrors)
-	if layer.Compression.Present {
-		if _, ok := parseCompression(layer.Compression.Value); !ok {
+
+	if layer.Compression != nil {
+		if _, ok := parseCompression(*layer.Compression); !ok {
 			*validationErrors = append(*validationErrors, fmt.Sprintf("%s.compression", name))
 		}
 	}
-	if layer.Timeout.Present {
-		if _, ok := parseTimeout(layer.Timeout.Value); !ok {
+
+	if layer.Timeout != nil {
+		if _, ok := parseTimeout(*layer.Timeout); !ok {
 			*validationErrors = append(*validationErrors, fmt.Sprintf("%s.timeout", name))
 		}
 	}
+
 	if endpointParsedAsURL && endpointHasPath && effectiveProtocolForEndpoint(layer, shared) == core_xds.OtelProtocolGRPC {
 		*validationErrors = append(*validationErrors, fmt.Sprintf("%s.endpoint", name))
 	}
+
 	inventory := &core_xds.OtelSignalEnvInventory{
-		EndpointPresent:          layer.Endpoint.Present,
+		EndpointPresent:          layer.Endpoint != nil,
 		EndpointParsedAsURL:      endpointParsedAsURL,
 		EndpointHasPath:          endpointHasPath,
-		ProtocolPresent:          layer.Protocol.Present,
-		HeadersPresent:           layer.Headers.Present,
-		TimeoutPresent:           layer.Timeout.Present,
-		CompressionPresent:       layer.Compression.Present,
-		InsecurePresent:          layer.Insecure.Present,
-		CertificatePresent:       layer.Certificate.Present,
-		ClientCertificatePresent: layer.ClientCertificate.Present,
-		ClientKeyPresent:         layer.ClientKey.Present,
+		ProtocolPresent:          layer.Protocol != nil,
+		HeadersPresent:           layer.Headers != nil,
+		TimeoutPresent:           layer.Timeout != nil,
+		CompressionPresent:       layer.Compression != nil,
+		InsecurePresent:          layer.Insecure != nil,
+		CertificatePresent:       layer.Certificate != nil,
+		ClientCertificatePresent: layer.ClientCertificate != nil,
+		ClientKeyPresent:         layer.ClientKey != nil,
 		EffectiveProtocol:        effectiveLayerProtocol,
 		EffectiveAuthMode:        effectiveAuthMode(name, layer, validationErrors),
 		OverrideKinds:            overrideKinds(layer, shared),
@@ -160,12 +156,12 @@ func buildLayerInventory(
 	return inventory
 }
 
-func endpointCharacteristics(field FieldValue) (bool, bool) {
-	if !field.Present {
+func endpointCharacteristics(field *string) (bool, bool) {
+	if field == nil {
 		return false, false
 	}
 
-	parsedURL, err := url.Parse(strings.TrimSpace(field.Value))
+	parsedURL, err := url.Parse(strings.TrimSpace(*field))
 	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
 		return false, false
 	}
@@ -178,38 +174,33 @@ func effectiveProtocol(
 	layer Layer,
 	validationErrors *[]string,
 ) core_xds.OtelProtocol {
-	if !layer.Protocol.Present {
+	if layer.Protocol == nil {
 		return ""
 	}
 
-	if parsed, ok := parseProtocol(layer.Protocol.Value); ok {
+	if parsed, ok := parseProtocol(*layer.Protocol); ok {
 		return parsed
 	}
+
 	*validationErrors = append(*validationErrors, fmt.Sprintf("%s.protocol", name))
+
 	return core_xds.OtelProtocolUnknown
 }
 
 func effectiveProtocolForEndpoint(layer Layer, shared Layer) core_xds.OtelProtocol {
-	if parsed, ok := parseProtocolField(layer.Protocol); ok {
-		return parsed
-	}
-	if layer.Protocol.Present {
+	if layer.Protocol != nil {
+		if parsed, ok := parseProtocol(*layer.Protocol); ok {
+			return parsed
+		}
 		return core_xds.OtelProtocolUnknown
 	}
-	if parsed, ok := parseProtocolField(shared.Protocol); ok {
-		return parsed
-	}
-	if shared.Protocol.Present {
+	if shared.Protocol != nil {
+		if parsed, ok := parseProtocol(*shared.Protocol); ok {
+			return parsed
+		}
 		return core_xds.OtelProtocolUnknown
 	}
 	return core_xds.OtelProtocolGRPC
-}
-
-func parseProtocolField(field FieldValue) (core_xds.OtelProtocol, bool) {
-	if !field.Present {
-		return "", false
-	}
-	return parseProtocol(field.Value)
 }
 
 func effectiveAuthMode(
@@ -217,16 +208,16 @@ func effectiveAuthMode(
 	layer Layer,
 	validationErrors *[]string,
 ) core_xds.OtelAuthMode {
-	if layer.ClientCertificate.Present != layer.ClientKey.Present {
+	if (layer.ClientCertificate != nil) != (layer.ClientKey != nil) {
 		*validationErrors = append(*validationErrors, fmt.Sprintf("%s.mtls", name))
 	}
 
 	switch {
-	case layer.ClientCertificate.Present && layer.ClientKey.Present:
+	case layer.ClientCertificate != nil && layer.ClientKey != nil:
 		return core_xds.OtelAuthModeMTLS
-	case layer.Certificate.Present:
+	case layer.Certificate != nil:
 		return core_xds.OtelAuthModeTLS
-	case layer.Headers.Present:
+	case layer.Headers != nil:
 		return core_xds.OtelAuthModeHeaders
 	default:
 		return core_xds.OtelAuthModeNone
@@ -248,12 +239,11 @@ func overrideKinds(layer Layer, shared Layer) []string {
 	return overrides
 }
 
-func appendIfDifferent(overrides *[]string, field string, signal FieldValue, shared FieldValue) {
-	if !signal.Present {
+func appendIfDifferent(overrides *[]string, field string, signal *string, shared *string) {
+	if signal == nil {
 		return
 	}
-
-	if !shared.Present || signal.Value != shared.Value {
+	if shared == nil || *signal != *shared {
 		*overrides = append(*overrides, field)
 	}
 }
