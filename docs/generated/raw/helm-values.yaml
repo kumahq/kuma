@@ -761,7 +761,7 @@ egress:
 # Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount.
 # Example single-mesh configuration:
 meshes:
-  - name: mesh-1
+  - name: default
 
     ingress:
       # -- Deploy a zone ingress for this mesh.
