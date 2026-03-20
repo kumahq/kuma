@@ -117,6 +117,7 @@ spec:
 
 		// wait for MeshIdentity to be reconciled by SPIRE provider before checking traffic
 		isMeshIdentityReady := func(name string) (bool, error) {
+			GinkgoHelper()
 			output, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
 			if err != nil {
 				return false, err
