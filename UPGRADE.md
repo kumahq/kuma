@@ -514,7 +514,6 @@ The default inbound request timeout is now 15s instead of being unbounded.
 If you need longer inbound timeouts make sure to create a policy to override it.
 
 For example:
-```
 type: MeshTimeout
 name: mt-higher-inbound
 mesh: mesh-1
