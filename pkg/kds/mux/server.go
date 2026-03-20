@@ -1,6 +1,7 @@
 package mux
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -113,7 +114,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
 	s.metrics.RegisterGRPC(grpcServer)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
 	if err != nil {
 		return err
 	}
