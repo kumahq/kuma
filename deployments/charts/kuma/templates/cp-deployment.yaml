@@ -195,11 +195,13 @@ spec:
                 resourceFieldRef:
                   containerName: control-plane
                   resource: limits.memory
+                  divisor: {{ .Values.controlPlane.runtime.goMemLimit.divisor | quote }}
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
                   containerName: control-plane
                   resource: limits.cpu
+                  divisor: {{ .Values.controlPlane.runtime.goMaxProcs.divisor | quote }}
           args:
             - run
             - --log-level={{ .Values.controlPlane.logLevel }}
