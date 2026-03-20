@@ -259,8 +259,8 @@ type DataplaneRuntime struct {
 	// StrictInboundPortsEnabled indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
 	StrictInboundPortsEnabled bool `json:"strictInboundPortsEnabled" envconfig:"kuma_dataplane_runtime_strict_inbound_ports_enabled"`
 	// OtelPipeEnabled controls whether kuma-dp advertises FeatureOtelViaKumaDp to the CP.
-	// When false, MeshTrace and MeshAccessLog backendRefs use direct Envoy clusters instead
-	// of routing through kuma-dp Unix sockets. Default: true.
+	// When false, observability policy backendRefs (MeshTrace, MeshAccessLog, MeshMetric)
+	// use direct Envoy clusters instead of routing through kuma-dp Unix sockets. Default: true.
 	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_dataplane_runtime_otel_pipe_enabled"`
 }
 

@@ -565,24 +565,47 @@ func setupObservability(
 
 	otelManager := otelreceiver.NewManager(discoveredOtelEnv)
 	otelManager.SetOnReconcile(func(backends []core_xds.OtelPipeBackend) {
-		var targets []meshmetrics.OtelExportTarget
-		for _, b := range backends {
-			if b.Metrics == nil || !b.Metrics.Enabled {
-				continue
-			}
-			ri, _ := time.ParseDuration(b.Metrics.RefreshInterval)
-			ri = cmp.Or(ri, time.Minute)
-			targets = append(targets, meshmetrics.OtelExportTarget{
-				Name:            b.Name,
-				SocketPath:      b.SocketPath,
-				RefreshInterval: ri,
-			})
-		}
-		mm.OnOtelTargetsChange(targets)
+		mm.OnOtelTargetsChange(metricsTargetsForBackends(backends, discoveredOtelEnv))
 	})
 	if err := fetcher.AddHandler(core_xds.OtelDynconfPath, otelManager.OnOtelChange); err != nil {
 		return nil, err
 	}
 
 	return []component.Component{accessLogStreamer, metricsServer, mm, otelManager}, nil
+}
+
+func metricsTargetsForBackends(
+	backends []core_xds.OtelPipeBackend,
+	discoveredOtelEnv otelenv.Config,
+) []meshmetrics.OtelExportTarget {
+	var targets []meshmetrics.OtelExportTarget
+	for _, backend := range backends {
+		runtime := discoveredOtelEnv.ResolveBackend(backend).Metrics
+		if !metricsRuntimeUsable(runtime) || backend.Metrics == nil {
+			continue
+		}
+
+		refreshInterval, err := time.ParseDuration(backend.Metrics.RefreshInterval)
+		if err != nil {
+			runLog.V(1).Info("invalid metrics refresh interval from CP, using default",
+				"backend", backend.Name, "value", backend.Metrics.RefreshInterval, "error", err)
+		}
+		refreshInterval = cmp.Or(refreshInterval, time.Minute)
+		targets = append(targets, meshmetrics.OtelExportTarget{
+			Name:            backend.Name,
+			SocketPath:      backend.SocketPath,
+			RefreshInterval: refreshInterval,
+		})
+	}
+	return targets
+}
+
+func metricsRuntimeUsable(runtime otelenv.SignalRuntime) bool {
+	if !runtime.Enabled {
+		return false
+	}
+	if runtime.Transport.Protocol == "" || runtime.Transport.Endpoint == "" {
+		return false
+	}
+	return runtime.Transport.Protocol != core_xds.OtelProtocolHTTPProtobuf || runtime.HTTPPath != ""
 }
