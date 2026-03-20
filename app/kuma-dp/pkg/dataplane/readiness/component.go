@@ -89,12 +89,13 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
-	// Only register the full admin reverse proxy when the readiness
-	// reporter itself listens on a Unix socket (filesystem-protected).
-	// When listening on TCP (unixSocketDisabled=true), exposing all
-	// admin endpoints would re-open the attack surface UDS is meant
-	// to close.
-	if r.adminSocketPath != "" && !r.unixSocketDisabled {
+	// When admin is on UDS, reverse-proxy all admin endpoints so
+	// that operators can still reach /stats, /config_dump, etc.
+	// Security model:
+	// - Sidecars: readiness reporter listens on UDS (filesystem-protected)
+	// - Ingress/egress: readiness reporter listens on TCP but these
+	//   are standalone pods with no co-located app container.
+	if r.adminSocketPath != "" {
 		mux.Handle("/", r.adminProxy())
 	}
 	server := &http.Server{
