@@ -18,44 +18,6 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
-type SignalRuntime struct {
-	Enabled        bool
-	BlockedReasons []string
-	HTTPPath       string
-	Transport      ExporterTransport
-}
-
-type BackendRuntime struct {
-	Traces  SignalRuntime
-	Logs    SignalRuntime
-	Metrics SignalRuntime
-}
-
-type ExporterTransport struct {
-	Protocol          core_xds.OtelProtocol
-	Endpoint          string
-	UseTLS            *bool
-	Headers           map[string]string
-	Compression       string
-	Timeout           time.Duration
-	Certificate       string
-	ClientCertificate string
-	ClientKey         string // #nosec G117 -- OTLP mTLS config field, not a hardcoded key
-}
-
-type exporterOverride struct {
-	Endpoint          *string
-	UseTLS            *bool
-	HTTPPath          *string
-	Headers           map[string]string
-	HeadersPresent    bool
-	Compression       *string
-	Timeout           *time.Duration
-	Certificate       *string
-	ClientCertificate *string
-	ClientKey         *string // #nosec G117 -- OTLP mTLS config field, not a hardcoded key
-}
-
 func (c Config) ResolveBackend(backend core_xds.OtelPipeBackend) BackendRuntime {
 	return BackendRuntime{
 		Traces:  c.resolveSignal(backend, core_xds.OtelSignalTraces, backend.Traces),
@@ -91,36 +53,28 @@ func (c Config) resolveSignal(
 	if sharedAllowed {
 		protocol = pickProtocol(protocol, c.Shared.Protocol, preferEnv)
 	}
+
 	sigLayer := layerForSignal(c, signal)
 	if signalAllowed {
 		protocol = pickProtocol(protocol, sigLayer.Protocol, preferEnv)
 	}
 
-	runtime.Transport = ExporterTransport{
-		Protocol: protocol,
-	}
-	runtime.Transport.Endpoint = explicit.Transport.Endpoint
+	runtime.Transport = explicit.Transport
+	runtime.Transport.Protocol = protocol
 	runtime.Transport.UseTLS = new(*explicit.Transport.UseTLS)
 	runtime.Transport.Headers = maps.Clone(explicit.Transport.Headers)
-	runtime.Transport.Compression = explicit.Transport.Compression
-	runtime.Transport.Timeout = explicit.Transport.Timeout
-	runtime.Transport.Certificate = explicit.Transport.Certificate
-	runtime.Transport.ClientCertificate = explicit.Transport.ClientCertificate
-	runtime.Transport.ClientKey = explicit.Transport.ClientKey
+
 	runtime.HTTPPath = explicit.HTTPPath
 	if runtime.Transport.Protocol == core_xds.OtelProtocolHTTPProtobuf && runtime.HTTPPath == "" {
 		runtime.HTTPPath = path.Join("/", backend.Path, "v1", string(signal))
 	}
 
 	if sharedAllowed {
-		endpointOverride := endpointOverrideForLayer(c.Shared, signal, protocol, false)
-		applyOverride(&runtime, endpointOverride, preferEnv)
-		applyOverride(&runtime, transportOverrideForLayer(c.Shared, endpointOverride.UseTLS == nil), preferEnv)
+		runtime.mergeLayer(c.Shared, signal, false, preferEnv)
 	}
+
 	if signalAllowed {
-		endpointOverride := endpointOverrideForLayer(sigLayer, signal, protocol, true)
-		applyOverride(&runtime, endpointOverride, preferEnv)
-		applyOverride(&runtime, transportOverrideForLayer(sigLayer, endpointOverride.UseTLS == nil), preferEnv)
+		runtime.mergeLayer(sigLayer, signal, true, preferEnv)
 	}
 
 	return runtime
@@ -140,6 +94,7 @@ func explicitTransport(backend core_xds.OtelPipeBackend, signal core_xds.OtelSig
 			UseTLS:   new(backend.UseHTTPS),
 		},
 	}
+
 	if protocol == core_xds.OtelProtocolGRPC {
 		runtime.HTTPPath = ""
 	}
@@ -147,9 +102,111 @@ func explicitTransport(backend core_xds.OtelPipeBackend, signal core_xds.OtelSig
 	return runtime
 }
 
-// resolveEndpointAddress fills in the host portion of the endpoint when the CP
-// sent an empty host (e.g. ":4317"). Uses HOST_IP env var, falling back to
-// 127.0.0.1.
+type resolvedEndpoint struct {
+	Host     string
+	HTTPPath string
+	UseTLS   *bool // non-nil when URL scheme determined TLS
+}
+
+// resolveEndpoint parses the layer's endpoint for the given protocol and
+// signal context. Returns ok=false when absent or incompatible (gRPC + path).
+func (layer Layer) resolveEndpoint(
+	protocol core_xds.OtelProtocol,
+	signal core_xds.OtelSignal,
+	signalSpecific bool,
+) (resolvedEndpoint, bool) {
+	if layer.Endpoint == nil {
+		return resolvedEndpoint{}, false
+	}
+	value := strings.TrimSpace(*layer.Endpoint)
+	if value == "" {
+		return resolvedEndpoint{}, false
+	}
+
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return resolvedEndpoint{Host: value}, true
+	}
+
+	if parsed.Path != "" && protocol != core_xds.OtelProtocolHTTPProtobuf {
+		return resolvedEndpoint{}, false
+	}
+
+	ep := resolvedEndpoint{Host: parsed.Host}
+	if strings.EqualFold(parsed.Scheme, "http") || strings.EqualFold(parsed.Scheme, "unix") {
+		ep.UseTLS = new(false)
+	} else {
+		ep.UseTLS = new(true)
+	}
+
+	if protocol == core_xds.OtelProtocolHTTPProtobuf {
+		p := parsed.Path
+		switch {
+		case signalSpecific && p == "":
+			ep.HTTPPath = "/"
+		case signalSpecific:
+			ep.HTTPPath = p
+		case p != "":
+			ep.HTTPPath = path.Join(p, "v1", string(signal))
+		}
+	}
+
+	return ep, true
+}
+
+// mergeLayer applies an env layer's parsed values onto the runtime transport.
+func (r *SignalRuntime) mergeLayer(layer Layer, signal core_xds.OtelSignal, signalSpecific, preferEnv bool) {
+	tlsFromScheme := false
+	if ep, ok := layer.resolveEndpoint(r.Transport.Protocol, signal, signalSpecific); ok {
+		if preferEnv || r.Transport.Endpoint == "" {
+			r.Transport.Endpoint = ep.Host
+		}
+		if ep.HTTPPath != "" && (preferEnv || r.HTTPPath == "") {
+			r.HTTPPath = ep.HTTPPath
+		}
+		if ep.UseTLS != nil && (preferEnv || r.Transport.UseTLS == nil) {
+			r.Transport.UseTLS = new(*ep.UseTLS)
+			tlsFromScheme = true
+		}
+	}
+
+	if !tlsFromScheme && layer.Insecure != nil && (preferEnv || r.Transport.UseTLS == nil) {
+		r.Transport.UseTLS = new(!strings.EqualFold(strings.TrimSpace(*layer.Insecure), "true"))
+	}
+
+	if layer.Headers != nil && (preferEnv || len(r.Transport.Headers) == 0) {
+		if headers := parseHeaders(*layer.Headers); len(headers) > 0 {
+			r.Transport.Headers = headers
+		}
+	}
+
+	if layer.Compression != nil && (preferEnv || r.Transport.Compression == "") {
+		if c, ok := parseCompression(*layer.Compression); ok {
+			r.Transport.Compression = c
+		}
+	}
+
+	if layer.Timeout != nil && (preferEnv || r.Transport.Timeout == 0) {
+		if t, ok := parseTimeout(*layer.Timeout); ok {
+			r.Transport.Timeout = t
+		}
+	}
+
+	mergeString(&r.Transport.Certificate, layer.Certificate, preferEnv)
+	if layer.ClientCertificate != nil && layer.ClientKey != nil && (preferEnv || r.Transport.ClientCertificate == "") {
+		r.Transport.ClientCertificate = *layer.ClientCertificate
+		r.Transport.ClientKey = *layer.ClientKey
+	}
+}
+
+func mergeString(target *string, source *string, preferEnv bool) {
+	if source != nil && (preferEnv || *target == "") {
+		*target = *source
+	}
+}
+
+// resolveEndpointAddress fills in the host portion when the CP sent an empty
+// host (e.g. ":4317"). Uses HOST_IP env var, falling back to 127.0.0.1.
 func resolveEndpointAddress(endpoint string) string {
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil || host != "" {
@@ -174,137 +231,6 @@ func pickProtocol(current core_xds.OtelProtocol, field *string, preferEnv bool) 
 	}
 
 	return current
-}
-
-func applyOverride(runtime *SignalRuntime, override exporterOverride, preferEnv bool) {
-	if override.Endpoint != nil && (preferEnv || runtime.Transport.Endpoint == "") {
-		runtime.Transport.Endpoint = *override.Endpoint
-	}
-	if override.UseTLS != nil && (preferEnv || runtime.Transport.UseTLS == nil) {
-		v := *override.UseTLS
-		runtime.Transport.UseTLS = &v
-	}
-	if override.HTTPPath != nil && (preferEnv || runtime.HTTPPath == "") {
-		runtime.HTTPPath = *override.HTTPPath
-	}
-	if override.HeadersPresent && (preferEnv || len(runtime.Transport.Headers) == 0) {
-		runtime.Transport.Headers = maps.Clone(override.Headers)
-	}
-	if override.Compression != nil && (preferEnv || runtime.Transport.Compression == "") {
-		runtime.Transport.Compression = *override.Compression
-	}
-	if override.Timeout != nil && (preferEnv || runtime.Transport.Timeout == 0) {
-		runtime.Transport.Timeout = *override.Timeout
-	}
-	if override.Certificate != nil && (preferEnv || runtime.Transport.Certificate == "") {
-		runtime.Transport.Certificate = *override.Certificate
-	}
-	if override.ClientCertificate != nil && (preferEnv || runtime.Transport.ClientCertificate == "") {
-		runtime.Transport.ClientCertificate = *override.ClientCertificate
-	}
-	if override.ClientKey != nil && (preferEnv || runtime.Transport.ClientKey == "") {
-		runtime.Transport.ClientKey = *override.ClientKey
-	}
-}
-
-func endpointOverrideForLayer(
-	layer Layer,
-	signal core_xds.OtelSignal,
-	protocol core_xds.OtelProtocol,
-	signalSpecific bool,
-) exporterOverride {
-	if layer.Endpoint == nil {
-		return exporterOverride{}
-	}
-
-	value := strings.TrimSpace(*layer.Endpoint)
-	if value == "" {
-		return exporterOverride{}
-	}
-	parsedURL, err := url.Parse(value)
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return exporterOverride{
-			Endpoint: &value,
-		}
-	}
-
-	switch protocol {
-	case core_xds.OtelProtocolHTTPProtobuf:
-		override := exporterOverride{
-			Endpoint: &parsedURL.Host,
-		}
-		if strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "unix") {
-			override.UseTLS = new(false)
-		} else {
-			override.UseTLS = new(true)
-		}
-
-		pathValue := parsedURL.Path
-		if signalSpecific {
-			if pathValue == "" {
-				pathValue = "/"
-			}
-			override.HTTPPath = &pathValue
-			return override
-		}
-
-		if pathValue != "" {
-			pathValue = path.Join(pathValue, "v1", string(signal))
-			override.HTTPPath = &pathValue
-		}
-		return override
-	default:
-		if parsedURL.Path != "" {
-			return exporterOverride{}
-		}
-		override := exporterOverride{
-			Endpoint: &parsedURL.Host,
-		}
-		if strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "unix") {
-			override.UseTLS = new(false)
-		} else {
-			override.UseTLS = new(true)
-		}
-		return override
-	}
-}
-
-func transportOverrideForLayer(layer Layer, allowInsecure bool) exporterOverride {
-	override := exporterOverride{}
-
-	if allowInsecure && layer.Insecure != nil {
-		override.UseTLS = new(!strings.EqualFold(strings.TrimSpace(*layer.Insecure), "true"))
-	}
-	if layer.Headers != nil {
-		headers := parseHeaders(*layer.Headers)
-		if len(headers) > 0 {
-			override.Headers = headers
-			override.HeadersPresent = true
-		}
-	}
-
-	if layer.Compression != nil {
-		if compression, ok := parseCompression(*layer.Compression); ok {
-			override.Compression = &compression
-		}
-	}
-
-	if layer.Timeout != nil {
-		if timeout, ok := parseTimeout(*layer.Timeout); ok {
-			override.Timeout = &timeout
-		}
-	}
-
-	if layer.Certificate != nil {
-		override.Certificate = layer.Certificate
-	}
-
-	if layer.ClientCertificate != nil && layer.ClientKey != nil {
-		override.ClientCertificate = layer.ClientCertificate
-		override.ClientKey = layer.ClientKey
-	}
-
-	return override
 }
 
 func parseProtocol(value string) (core_xds.OtelProtocol, bool) {

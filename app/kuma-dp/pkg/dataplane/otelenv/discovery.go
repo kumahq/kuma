@@ -3,7 +3,6 @@ package otelenv
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 
@@ -17,62 +16,39 @@ const (
 	metricsEnvPrefix = "OTEL_EXPORTER_OTLP_METRICS"
 )
 
-type Config struct {
-	PipeEnabled bool
-	Shared      Layer
-	Traces      Layer
-	Logs        Layer
-	Metrics     Layer
-	Inventory   *core_xds.OtelBootstrapInventory
-}
-
-type Layer struct {
-	Endpoint          *string
-	Protocol          *string
-	Headers           *string
-	Timeout           *string
-	Compression       *string
-	Insecure          *string
-	Certificate       *string
-	ClientCertificate *string
-	ClientKey         *string
-}
-
+// Discover creates a new Config by reading environment variables
 func Discover(pipeEnabled bool) Config {
-	return discoverWithLookup(pipeEnabled, os.LookupEnv)
+	return discoverWithLookup(pipeEnabled, OSEnvReader{})
 }
 
-func discoverWithLookup(
-	pipeEnabled bool,
-	lookup func(string) (string, bool),
-) Config {
+func discoverWithLookup(pipeEnabled bool, reader EnvReader) Config {
 	cfg := Config{
 		PipeEnabled: pipeEnabled,
-		Shared:      readLayer(sharedEnvPrefix, lookup),
-		Traces:      readLayer(tracesEnvPrefix, lookup),
-		Logs:        readLayer(logsEnvPrefix, lookup),
-		Metrics:     readLayer(metricsEnvPrefix, lookup),
+		Shared:      readLayer(sharedEnvPrefix, reader),
+		Traces:      readLayer(tracesEnvPrefix, reader),
+		Logs:        readLayer(logsEnvPrefix, reader),
+		Metrics:     readLayer(metricsEnvPrefix, reader),
 	}
 	cfg.Inventory = buildInventory(cfg)
 	return cfg
 }
 
-func readLayer(prefix string, lookup func(string) (string, bool)) Layer {
+func readLayer(prefix string, reader EnvReader) Layer {
 	return Layer{
-		Endpoint:          readField(prefix+"_ENDPOINT", lookup),
-		Protocol:          readField(prefix+"_PROTOCOL", lookup),
-		Headers:           readField(prefix+"_HEADERS", lookup),
-		Timeout:           readField(prefix+"_TIMEOUT", lookup),
-		Compression:       readField(prefix+"_COMPRESSION", lookup),
-		Insecure:          readField(prefix+"_INSECURE", lookup),
-		Certificate:       readField(prefix+"_CERTIFICATE", lookup),
-		ClientCertificate: readField(prefix+"_CLIENT_CERTIFICATE", lookup),
-		ClientKey:         readField(prefix+"_CLIENT_KEY", lookup),
+		Endpoint:          readField(reader, prefix+"_ENDPOINT"),
+		Protocol:          readField(reader, prefix+"_PROTOCOL"),
+		Headers:           readField(reader, prefix+"_HEADERS"),
+		Timeout:           readField(reader, prefix+"_TIMEOUT"),
+		Compression:       readField(reader, prefix+"_COMPRESSION"),
+		Insecure:          readField(reader, prefix+"_INSECURE"),
+		Certificate:       readField(reader, prefix+"_CERTIFICATE"),
+		ClientCertificate: readField(reader, prefix+"_CLIENT_CERTIFICATE"),
+		ClientKey:         readField(reader, prefix+"_CLIENT_KEY"),
 	}
 }
 
-func readField(name string, lookup func(string) (string, bool)) *string {
-	value, ok := lookup(name)
+func readField(reader EnvReader, name string) *string {
+	value, ok := reader.Lookup(name)
 	if !ok {
 		return nil
 	}
@@ -98,12 +74,15 @@ func buildInventory(cfg Config) *core_xds.OtelBootstrapInventory {
 	if inventory.Shared != nil && !inventory.Shared.HasAnyInput() {
 		inventory.Shared = nil
 	}
+
 	if inventory.Traces != nil && !inventory.Traces.HasAnyInput() {
 		inventory.Traces = nil
 	}
+
 	if inventory.Logs != nil && !inventory.Logs.HasAnyInput() {
 		inventory.Logs = nil
 	}
+
 	if inventory.Metrics != nil && !inventory.Metrics.HasAnyInput() {
 		inventory.Metrics = nil
 	}
