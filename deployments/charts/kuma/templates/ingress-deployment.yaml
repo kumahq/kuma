@@ -87,10 +87,11 @@ spec:
             - --log-level={{ .Values.ingress.logLevel | default "info" }}
           ports:
             - containerPort: 10001
-{{- if not .Values.experimental.adminUnixSocket }}
+{{- if .Values.experimental.adminUnixSocket }}
+            - containerPort: 9902
+{{- else }}
             - containerPort: 9901
 {{- end }}
-            - containerPort: 9902
           livenessProbe:
             httpGet:
               path: "/ready"

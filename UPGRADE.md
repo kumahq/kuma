@@ -13,10 +13,10 @@ does not have any particular instructions.
 The Envoy admin API (`localhost:9901`) now binds to a Unix domain socket instead of TCP by default. This eliminates the shared-network-namespace attack vector where a compromised app container could reach the admin API to kill the sidecar, dump config, or modify runtime behavior.
 
 **What changed:**
-- `KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET` defaults to `true` (previously `false` under `KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET`)
-- Config moved from `experimental.adminUnixSocket` to `bootstrapServer.params.adminUnixSocket`
-- A readiness reporter on TCP port 9902 reverse-proxies admin endpoints, so K8s probes and lifecycle hooks continue working
-- The old env var `KUMA_EXPERIMENTAL_ADMIN_UNIX_SOCKET` is no longer recognized
+- `KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET` defaults to `true`
+- Helm value: `experimental.adminUnixSocket` (default `true`)
+- A readiness reporter on TCP port 9902 handles K8s probes and lifecycle hooks
+- Port 9902 must not conflict with application ports in sidecar-injected pods
 
 **Action required:**
 

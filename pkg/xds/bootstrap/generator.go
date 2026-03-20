@@ -147,7 +147,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if request.Workdir != "" {
 			params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
 		} else {
-			log.Info("admin UDS feature enabled but workdir is empty, falling back to TCP admin")
+			log.Info("[WARNING] admin UDS enabled but workdir is empty, falling back to TCP admin", "proxyId", proxyId.String())
 		}
 	}
 

@@ -34,6 +34,7 @@ type Reporter struct {
 	localListenAddr    string
 	localListenPort    uint32
 	adminSocketPath    string
+	adminClient        *http.Client
 	isTerminating      atomic.Bool
 }
 
@@ -50,6 +51,14 @@ func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, 
 
 func (r *Reporter) SetAdminSocketPath(path string) {
 	r.adminSocketPath = path
+	r.adminClient = &http.Client{
+		Timeout: 3 * time.Second,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", path)
+			},
+		},
+	}
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
@@ -80,7 +89,12 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
-	if r.adminSocketPath != "" {
+	// Only register the full admin reverse proxy when the readiness
+	// reporter itself listens on a Unix socket (filesystem-protected).
+	// When listening on TCP (unixSocketDisabled=true), exposing all
+	// admin endpoints would re-open the attack surface UDS is meant
+	// to close.
+	if r.adminSocketPath != "" && !r.unixSocketDisabled {
 		mux.Handle("/", r.adminProxy())
 	}
 	server := &http.Server{
@@ -140,16 +154,7 @@ func (r *Reporter) writeState(writer http.ResponseWriter, req *http.Request, sta
 }
 
 func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
-	client := &http.Client{
-		Timeout: 3 * time.Second,
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", r.adminSocketPath)
-			},
-		},
-	}
-
-	resp, err := client.Get("http://localhost/ready")
+	resp, err := r.adminClient.Get("http://localhost/ready")
 	if err != nil {
 		logger.V(1).Info("envoy admin not ready", "err", err)
 		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
@@ -182,7 +187,7 @@ func (r *Reporter) adminProxy() http.Handler {
 		},
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
 			logger.Error(err, "admin proxy error")
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			http.Error(w, "admin backend unavailable", http.StatusBadGateway)
 		},
 		ErrorLog: adapter.ToStd(logger),
 	}
