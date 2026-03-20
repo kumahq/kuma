@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"net"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelreceiver"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/probes"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/readiness"
 	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
@@ -197,6 +200,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			rootCtx.Features = []string{
 				xds_types.FeatureTCPAccessLogViaNamedPipe,
 			}
+			if cfg.DataplaneRuntime.OtelPipeEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
+			}
 
 			if cfg.DNS.ProxyPort != 0 {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)
@@ -225,6 +231,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
+
+			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
+				rootCtx.BootstrapDynamicMetadata[core_xds.FieldDynamicHostIP] = hostIP
+			}
+			discoveredEnv := otelenv.Discover(cfg.DataplaneRuntime.OtelPipeEnabled)
+			rootCtx.DiscoveredOtelEnv = discoveredEnv
+			rootCtx.BootstrapOtelEnv = discoveredEnv.Inventory
 
 			return nil
 		},
@@ -259,7 +272,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			runLog.Info("fetching bootstrap configuration")
-			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.Features)
+			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.BootstrapOtelEnv, rootCtx.Features)
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
@@ -336,7 +349,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				),
 			)
 
-			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
+			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher, rootCtx.DiscoveredOtelEnv)
 			if err != nil {
 				return err
 			}
@@ -501,7 +514,14 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
-func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
+func setupObservability(
+	ctx context.Context,
+	kumaSidecarConfiguration *types.KumaSidecarConfiguration,
+	bootstrap *envoy_bootstrap_v3.Bootstrap,
+	cfg *kumadp.Config,
+	fetcher *configfetcher.ConfigFetcher,
+	discoveredOtelEnv otelenv.Config,
+) ([]component.Component, error) {
 	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 	accessLogStreamer := component.NewResilientComponent(
@@ -542,5 +562,27 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 	if err != nil {
 		return nil, err
 	}
-	return []component.Component{accessLogStreamer, metricsServer, mm}, nil
+
+	otelManager := otelreceiver.NewManager(discoveredOtelEnv)
+	otelManager.SetOnReconcile(func(backends []core_xds.OtelPipeBackend) {
+		var targets []meshmetrics.OtelExportTarget
+		for _, b := range backends {
+			if b.Metrics == nil || !b.Metrics.Enabled {
+				continue
+			}
+			ri, _ := time.ParseDuration(b.Metrics.RefreshInterval)
+			ri = cmp.Or(ri, time.Minute)
+			targets = append(targets, meshmetrics.OtelExportTarget{
+				Name:            b.Name,
+				SocketPath:      b.SocketPath,
+				RefreshInterval: ri,
+			})
+		}
+		mm.OnOtelTargetsChange(targets)
+	})
+	if err := fetcher.AddHandler(core_xds.OtelDynconfPath, otelManager.OnOtelChange); err != nil {
+		return nil, err
+	}
+
+	return []component.Component{accessLogStreamer, metricsServer, mm, otelManager}, nil
 }
