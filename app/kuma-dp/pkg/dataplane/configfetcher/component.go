@@ -40,8 +40,8 @@ func NewConfigFetcher(socketPath string, ticker *time.Ticker, perHandlerTimeout 
 		httpClient: http.Client{
 			Timeout: 5 * time.Second,
 			Transport: &http.Transport{
-				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-					return net.Dial(unixDomainSocket, socketPath)
+				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+					return (&net.Dialer{}).DialContext(ctx, unixDomainSocket, socketPath)
 				},
 			},
 		},
