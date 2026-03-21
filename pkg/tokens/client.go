@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -29,7 +30,7 @@ func (tc TokenClient) Generate(tokenReq any) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "could not marshal token request to json")
 	}
-	req, err := http.NewRequest(http.MethodPost, tc.url, bytes.NewReader(reqBytes))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, tc.url, bytes.NewReader(reqBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "could not construct the request")
 	}
