@@ -1,6 +1,7 @@
 package inspect
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -82,7 +83,9 @@ func Inspect() {
 	DescribeTable("should execute inspect of policies",
 		func(policyType string, policyName string) {
 			Eventually(func(g Gomega) {
-				r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName))
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName), http.NoBody)
+				g.Expect(err).ToNot(HaveOccurred())
+				r, err := http.DefaultClient.Do(req)
 				g.Expect(err).ToNot(HaveOccurred())
 				defer r.Body.Close()
 				g.Expect(r).To(HaveHTTPStatus(200))
@@ -132,7 +135,9 @@ spec:
 			}
 			Expect(clientDp).ToNot(BeEmpty(), "no demo-client dpp found")
 
-			r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, clientDp))
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, clientDp), http.NoBody)
+			g.Expect(err).ToNot(HaveOccurred())
+			r, err := http.DefaultClient.Do(req)
 			g.Expect(err).ToNot(HaveOccurred())
 			defer r.Body.Close()
 			g.Expect(r).To(HaveHTTPStatus(200))

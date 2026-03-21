@@ -1,6 +1,7 @@
 package http_test
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 
@@ -37,7 +38,7 @@ var _ = Describe("Http Util", func() {
 				Expect(client).ToNot(BeIdenticalTo(delegate))
 
 				// when
-				req, err := http.NewRequest(http.MethodGet, given.requestURL, http.NoBody)
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, given.requestURL, http.NoBody)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

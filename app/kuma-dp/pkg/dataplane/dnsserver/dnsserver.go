@@ -59,7 +59,7 @@ func New(opts *Opts) (*DNSServer, error) {
 
 func (s *DNSServer) GetVersion() (string, error) {
 	path := s.path
-	command := exec.Command(path, "--version")
+	command := exec.CommandContext(context.Background(), path, "--version")
 	output, err := command.Output()
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to execute coreDNS at path %s", path)

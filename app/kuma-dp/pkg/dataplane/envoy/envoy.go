@@ -163,7 +163,11 @@ func (e *Envoy) WaitForDone() {
 }
 
 func (e *Envoy) FailHealthchecks() error {
-	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), "", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -175,7 +179,11 @@ func (e *Envoy) FailHealthchecks() error {
 }
 
 func (e *Envoy) DrainForever() error {
-	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/drain_listeners?inboundonly&graceful&skip_exit", e.opts.AdminPort), "", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/drain_listeners?inboundonly&graceful&skip_exit", e.opts.AdminPort), http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -192,7 +200,7 @@ func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {
 		return nil, err
 	}
 	arg := "--version"
-	command := exec.Command(resolvedPath, arg)
+	command := exec.CommandContext(context.Background(), resolvedPath, arg)
 	output, err := command.Output()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to execute %s with arguments %q", resolvedPath, arg)

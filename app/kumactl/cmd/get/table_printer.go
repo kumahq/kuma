@@ -81,7 +81,7 @@ type RowPrinter struct {
 func (rp RowPrinter) AsTable() printers.Table {
 	return printers.Table{
 		Headers: rp.Headers,
-		RowForItem: func(i int, container interface{}) ([]string, error) {
+		RowForItem: func(i int, container any) ([]string, error) {
 			rl, ok := container.(model.ResourceList)
 			if ok {
 				items := rl.GetItems()
@@ -96,7 +96,7 @@ func (rp RowPrinter) AsTable() printers.Table {
 				return rp.RowFn(rp.Now, container.(model.Resource)), nil
 			}
 		},
-		FooterFn: func(container interface{}) string {
+		FooterFn: func(container any) string {
 			rl, ok := container.(model.ResourceList)
 			if !ok {
 				return ""

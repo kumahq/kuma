@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"net"
@@ -12,7 +13,7 @@ import (
 
 func StartServer(log logr.Logger, server *http.Server, ready *atomic.Bool, errChan chan error) error {
 	l := log.WithValues("tls", server.TLSConfig != nil, "interface", server.Addr)
-	listener, err := net.Listen("tcp", server.Addr)
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", server.Addr)
 	if err != nil {
 		return err
 	}

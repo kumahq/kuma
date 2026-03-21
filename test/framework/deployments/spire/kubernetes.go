@@ -3,6 +3,7 @@ package spire
 import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/test/framework"
@@ -87,6 +88,27 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 	if err != nil {
 		return err
 	}
+
+	pods := k8s.ListPods(cluster.GetTesting(),
+		cluster.GetKubectlOptions(t.namespace),
+		metav1.ListOptions{
+			LabelSelector: selector,
+		},
+	)
+	if len(pods) == 0 {
+		return errors.Errorf("no pods found with selector %q in namespace %q", selector, t.namespace)
+	}
+
+	for _, pod := range pods {
+		if err := k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
+			cluster.GetKubectlOptions(t.namespace),
+			pod.Name,
+			framework.DefaultRetries*3, // spire is fetched from the internet. Increase the timeout to prevent long downloads of images.
+			framework.DefaultTimeout); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

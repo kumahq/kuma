@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -12,7 +13,9 @@ import (
 
 func Api() {
 	It("works with /policies", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/policies")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, universal.Cluster.GetKuma().GetAPIServerAddress()+"/policies", http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -22,7 +25,9 @@ func Api() {
 	})
 
 	It("works with /", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress())
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, universal.Cluster.GetKuma().GetAPIServerAddress(), http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -32,7 +37,9 @@ func Api() {
 	})
 
 	It("gets k8s version of default mesh", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default?format=k8s")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, universal.Cluster.GetKuma().GetAPIServerAddress()+"/meshes/default?format=k8s", http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -45,7 +52,9 @@ func Api() {
 	})
 
 	It("gets universal version of default mesh", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, universal.Cluster.GetKuma().GetAPIServerAddress()+"/meshes/default", http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -69,7 +78,7 @@ func Api() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, universal.Cluster.GetKuma().GetAPIServerAddress()+given.path, http.NoBody)
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, universal.Cluster.GetKuma().GetAPIServerAddress()+given.path, http.NoBody)
 				g.Expect(err).ToNot(HaveOccurred())
 				req.Header.Add("authorization", "Bearer "+token)
 				r, err := http.DefaultClient.Do(req)
