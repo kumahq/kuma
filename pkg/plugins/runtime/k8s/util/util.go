@@ -130,9 +130,7 @@ func CopyStringMap(in map[string]string) map[string]string {
 		return nil
 	}
 	out := make(map[string]string)
-	for key, value := range in {
-		out[key] = value
-	}
+	maps.Copy(out, in)
 	return out
 }
 

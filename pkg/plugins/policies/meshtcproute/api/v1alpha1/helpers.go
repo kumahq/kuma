@@ -5,7 +5,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (x *To) GetDefault() interface{} {
+func (x *To) GetDefault() any {
 	if len(x.Rules) == 0 {
 		return Rule{
 			Default: RuleConf{

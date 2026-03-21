@@ -6,14 +6,14 @@ import (
 )
 
 func DisplayName(resType string) string {
-	displayName := ""
+	var displayName strings.Builder
 	for i, c := range resType {
 		if unicode.IsUpper(c) && i != 0 {
-			displayName += " "
+			displayName.WriteString(" ")
 		}
-		displayName += string(c)
+		displayName.WriteRune(c)
 	}
-	return displayName
+	return displayName.String()
 }
 
 func PluralType(resType string) string {

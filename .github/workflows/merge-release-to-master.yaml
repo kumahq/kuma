@@ -14,6 +14,8 @@ on:
         default: ""
 permissions:
   contents: read
+env:
+  MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   release:
     runs-on: ubuntu-24.04
@@ -33,7 +35,6 @@ jobs:
       - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       - run: |
           git config --global user.email "110050114+kumahq[bot]@users.noreply.github.com"
           git config --global user.name "kumahq[bot]"

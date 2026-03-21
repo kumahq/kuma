@@ -45,7 +45,7 @@ var _ = Describe("Insight Persistence", func() {
 		t := time.Now().UnixMilli()
 		now := &t
 		step = func(count int) {
-			for i := 0; i < count; i++ {
+			for range count {
 				atomic.AddInt64(now, minInterval.Milliseconds())
 				tickCh <- time.UnixMilli(atomic.LoadInt64(now))
 			}

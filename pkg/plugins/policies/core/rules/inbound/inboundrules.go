@@ -46,7 +46,7 @@ func newRuleEntryAdapter[T common.BaseEntry](base T) *ruleEntryAdapter[T] {
 	return &ruleEntryAdapter[T]{BaseEntry: base}
 }
 
-func (r *ruleEntryAdapter[T]) GetDefault() interface{} {
+func (r *ruleEntryAdapter[T]) GetDefault() any {
 	return r.BaseEntry.GetDefault()
 }
 

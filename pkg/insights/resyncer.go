@@ -233,7 +233,7 @@ func (e *eventBatch) add(
 
 func (r *resyncer) Start(stop <-chan struct{}) error {
 	resyncEvents := make(chan resyncEvent, r.eventBufferCapacity)
-	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is called before channel close in deferred shutdown block
+	ctx, cancel := context.WithCancel(context.Background())
 	defer func() {
 		cancel()
 		close(resyncEvents)

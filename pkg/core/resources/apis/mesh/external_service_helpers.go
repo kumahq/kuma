@@ -10,7 +10,7 @@ func (es *ExternalServiceResource) IsReachableFromZone(zone string) bool {
 	return es.Spec.Tags[mesh_proto.ZoneTag] == "" || es.Spec.Tags[mesh_proto.ZoneTag] == zone
 }
 
-func (esl *ExternalServiceResourceList) MarshalLog() interface{} {
+func (esl *ExternalServiceResourceList) MarshalLog() any {
 	maskedList := make([]*ExternalServiceResource, 0, len(esl.Items))
 	for _, es := range esl.Items {
 		maskedList = append(maskedList, es.MarshalLog().(*ExternalServiceResource))
@@ -21,7 +21,7 @@ func (esl *ExternalServiceResourceList) MarshalLog() interface{} {
 	}
 }
 
-func (es *ExternalServiceResource) MarshalLog() interface{} {
+func (es *ExternalServiceResource) MarshalLog() any {
 	spec := proto.Clone(es.Spec).(*mesh_proto.ExternalService)
 	if spec == nil {
 		return es

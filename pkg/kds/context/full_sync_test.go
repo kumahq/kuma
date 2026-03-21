@@ -34,8 +34,8 @@ var _ = Describe("Full sync tests", func() {
 		done := make(chan struct{})
 
 		for _, file := range files {
-			if strings.HasSuffix(file.Name(), ".input.yaml") {
-				zoneName := strings.TrimSuffix(file.Name(), ".input.yaml")
+			if before, ok := strings.CutSuffix(file.Name(), ".input.yaml"); ok {
+				zoneName := before
 				resourceStore := store.NewPaginationStore(memory.NewStore())
 				fullPath := path.Join(folder, file.Name())
 				Expect(test_store.LoadResourcesFromFile(ctx, resourceStore, fullPath)).To(Succeed())
@@ -58,12 +58,10 @@ var _ = Describe("Full sync tests", func() {
 		cfg.Mode = config_core.Global
 		rt := setup.NewTestRuntime(ctx, cfg, globalStore)
 		Expect(global.Setup(rt)).To(Succeed())
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			defer GinkgoRecover()
 			Expect(rt.Start(done)).To(Succeed())
-		}()
+		})
 		// start zones
 		for zoneName, zoneStore := range zones {
 			if zoneName == "global" {
@@ -77,12 +75,10 @@ var _ = Describe("Full sync tests", func() {
 			cfg.Multizone.Global.KDS.ZoneInsightFlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 			rt := setup.NewTestRuntime(ctx, cfg, zoneStore)
 			Expect(zone.Setup(rt)).To(Succeed())
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				defer GinkgoRecover()
 				Expect(rt.Start(done)).To(Succeed())
-			}()
+			})
 		}
 
 		// Wait for some time to ensure sync was complete

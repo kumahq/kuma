@@ -20,12 +20,12 @@ func ToJSON(spec ResourceSpec) ([]byte, error) {
 	}
 }
 
-func ToMap(spec ResourceSpec) (map[string]interface{}, error) {
+func ToMap(spec ResourceSpec) (map[string]any, error) {
 	v, err := ToJSON(spec)
 	if err != nil {
 		return nil, err
 	}
-	result := map[string]interface{}{}
+	result := map[string]any{}
 	if err := json.Unmarshal(v, &result); err != nil {
 		return result, err
 	}

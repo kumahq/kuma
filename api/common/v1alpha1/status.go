@@ -6,13 +6,16 @@ import (
 )
 
 const (
-	GeneratedCondition string = "Generated"
+	GeneratedCondition           string = "Generated"
+	BackendRefsResolvedCondition string = "BackendRefsResolved"
 )
 
 const (
-	GeneratedReason     string = "Generated"
-	TemplateErrorReason string = "TemplateError"
-	CollisionReason     string = "Collision"
+	GeneratedReason              string = "Generated"
+	TemplateErrorReason          string = "TemplateError"
+	CollisionReason              string = "Collision"
+	AllBackendRefsResolvedReason string = "AllBackendRefsResolved"
+	UnresolvedBackendRefsReason  string = "UnresolvedBackendRefs"
 )
 
 type Condition struct {

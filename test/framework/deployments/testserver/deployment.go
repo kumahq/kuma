@@ -247,7 +247,7 @@ func AddInitContainer(initContainer corev1.Container) DeploymentOptsFn {
 	}
 }
 
-type TestServer interface{}
+type TestServer any
 
 type Deployment interface {
 	framework.Deployment

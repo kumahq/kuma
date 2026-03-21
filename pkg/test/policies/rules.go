@@ -23,7 +23,7 @@ func newTestOrigin() common.Origin {
 }
 
 //nolint:staticcheck // SA1019 Test utility: creates deprecated core_rules.Rule for testing
-func NewRule(s subsetutils.Subset, conf interface{}) *core_rules.Rule {
+func NewRule(s subsetutils.Subset, conf any) *core_rules.Rule {
 	originByMatches := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
 	if c, ok := conf.(meshhttproute_api.PolicyDefault); ok {
@@ -40,7 +40,7 @@ func NewRule(s subsetutils.Subset, conf interface{}) *core_rules.Rule {
 	}
 }
 
-func NewOutboundRule(r core_model.ResourceMeta, conf interface{}) outbound.ResourceRule {
+func NewOutboundRule(r core_model.ResourceMeta, conf any) outbound.ResourceRule {
 	originByMatches := map[common_api.MatchesHash]common.Origin{}
 
 	if c, ok := conf.(meshhttproute_api.PolicyDefault); ok {
@@ -51,7 +51,7 @@ func NewOutboundRule(r core_model.ResourceMeta, conf interface{}) outbound.Resou
 
 	return outbound.ResourceRule{
 		Resource:        r,
-		Conf:            []interface{}{conf},
+		Conf:            []any{conf},
 		Origin:          []common.Origin{newTestOrigin()},
 		OriginByMatches: originByMatches,
 	}

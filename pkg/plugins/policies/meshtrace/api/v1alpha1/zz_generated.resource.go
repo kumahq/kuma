@@ -5,7 +5,6 @@ package v1alpha1
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -80,13 +79,15 @@ const (
 var _ model.Resource = &MeshTraceResource{}
 
 type MeshTraceResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshTrace
+	Meta   model.ResourceMeta
+	Spec   *MeshTrace
+	Status *MeshTraceStatus
 }
 
 func NewMeshTraceResource() *MeshTraceResource {
 	return &MeshTraceResource{
-		Spec: &MeshTrace{},
+		Spec:   &MeshTrace{},
+		Status: &MeshTraceStatus{},
 	}
 }
 
@@ -117,11 +118,21 @@ func (t *MeshTraceResource) SetSpec(spec model.ResourceSpec) error {
 }
 
 func (t *MeshTraceResource) GetStatus() model.ResourceStatus {
-	return nil
+	return t.Status
 }
 
-func (t *MeshTraceResource) SetStatus(model.ResourceStatus) error {
-	return errors.New("status not supported")
+func (t *MeshTraceResource) SetStatus(status model.ResourceStatus) error {
+	protoType, ok := status.(*MeshTraceStatus)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Status", status)
+	} else {
+		if protoType == nil {
+			t.Status = &MeshTraceStatus{}
+		} else {
+			t.Status = protoType
+		}
+		return nil
+	}
 }
 
 func (t *MeshTraceResource) Descriptor() model.ResourceTypeDescriptor {
@@ -196,7 +207,7 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
-	HasStatus:                    false,
+	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mtr",
 	IsFromAsRules:                false,

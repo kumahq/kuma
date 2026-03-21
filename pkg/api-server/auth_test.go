@@ -1,6 +1,7 @@
 package api_server_test
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -64,7 +65,9 @@ var _ = Describe("Auth test", func() {
 			resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp).To(HaveHTTPStatus(200))
-			resp, err = http.Get(fmt.Sprintf("http://localhost:%d/secrets", httpPort))
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://localhost:%d/secrets", httpPort), http.NoBody)
+			g.Expect(err).ToNot(HaveOccurred())
+			resp, err = http.DefaultClient.Do(req)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp).To(HaveHTTPStatus(200))
 		}, "5s", "100ms").Should(Succeed())
@@ -95,7 +98,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
 		// when - simulate request from external IP by setting RemoteAddr
-		req := httptest.NewRequest(http.MethodGet, "/secrets", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)
@@ -107,7 +110,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
 		// when - simulate request from external IP without client certs by setting RemoteAddr
-		req := httptest.NewRequest(http.MethodGet, "/secrets", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)
@@ -128,7 +131,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to config endpoints from other machine using HTTP", func() {
 		// when - simulate request from external IP by setting RemoteAddr
-		req := httptest.NewRequest(http.MethodGet, "/config", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/config", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)

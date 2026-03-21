@@ -37,6 +37,7 @@ type DataplaneProxyFactory struct {
 	virtualProbesEnabled         bool
 	applicationProbeProxyPort    uint32
 	unifiedResourceNamingEnabled bool
+	otelPipeEnabled              bool
 	spireEnabled                 bool
 }
 
@@ -51,6 +52,7 @@ func NewDataplaneProxyFactory(
 	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
 	unifiedResourceNamingEnabled bool,
+	otelPipeEnabled bool,
 	spireEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
@@ -64,6 +66,7 @@ func NewDataplaneProxyFactory(
 		virtualProbesEnabled:         virtualProbesEnabled,
 		applicationProbeProxyPort:    applicationProbeProxyPort,
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
+		otelPipeEnabled:              otelPipeEnabled,
 		spireEnabled:                 spireEnabled,
 	}
 }
@@ -76,12 +79,9 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 
 	// Note that validation requires the resource limit is not empty.
 	cpuRequest := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
-	ncpu := cpuRequest.MilliValue() / 1000
-	if ncpu < 2 {
-		// Only autotune to down to 2 to mitigate the latency
-		// risk if a worker thread blocks.
-		ncpu = 2
-	}
+	// Only autotune to down to 2 to mitigate the latency
+	// risk if a worker thread blocks.
+	ncpu := max(cpuRequest.MilliValue()/1000, 2)
 
 	return ncpu, nil
 }
@@ -342,6 +342,22 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		}
 	}
 
+	if i.otelPipeEnabled {
+		envVars["HOST_IP"] = kube_core.EnvVar{
+			Name: "HOST_IP",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.hostIP",
+				},
+			},
+		}
+	} else {
+		envVars["KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED",
+			Value: "false",
+		}
+	}
 	if enabled, _, err := metadata.Annotations(podAnnotations).GetEnabledWithDefault(i.spireEnabled, metadata.KumaSpireSupport); err != nil {
 		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaSpireSupport)
 	} else if enabled {

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"sort"
 	"strings"
@@ -11,7 +12,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_policy "github.com/kumahq/kuma/v2/pkg/core/policy"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
@@ -51,11 +52,11 @@ func (t Tags) DestinationClusterName(
 	// hash the tag names to generate a unique cluster name.
 	h := sha256.New()
 
-	for _, k := range maps.SortedKeys(t) {
+	for _, k := range util_maps.SortedKeys(t) {
 		h.Write([]byte(k))
 		h.Write([]byte(t[k]))
 	}
-	for _, k := range maps.SortedKeys(additionalIdentifyingTags) {
+	for _, k := range util_maps.SortedKeys(additionalIdentifyingTags) {
 		h.Write([]byte(k))
 		h.Write([]byte(additionalIdentifyingTags[k]))
 	}
@@ -85,9 +86,7 @@ func (t Tags) WithoutTags(tags ...string) Tags {
 
 func (t Tags) WithTags(keysAndValues ...string) Tags {
 	result := Tags{}
-	for tagName, tagValue := range t {
-		result[tagName] = tagValue
-	}
+	maps.Copy(result, t)
 	for i := 0; i+1 < len(keysAndValues); i += 2 {
 		key, value := keysAndValues[i], keysAndValues[i+1]
 		result[key] = value
@@ -228,8 +227,8 @@ func With(tags ...string) TagKeyTransformer {
 
 func TagsFromString(tagsString string) (Tags, error) {
 	result := Tags{}
-	tagPairs := strings.Split(tagsString, ",")
-	for _, pair := range tagPairs {
+	tagPairs := strings.SplitSeq(tagsString, ",")
+	for pair := range tagPairs {
 		split := strings.Split(pair, "=")
 		if len(split) != 2 {
 			return nil, errors.New("invalid format of tags, pairs should be separated by , and key should be separated from value by =")

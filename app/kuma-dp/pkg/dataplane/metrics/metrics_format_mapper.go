@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,26 +29,51 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 		return scopedMetrics
 	}
 	for _, prometheusMetric := range appMetrics {
-		var scopedAggregations map[instrumentation.Scope]metricdata.Aggregation
 		switch prometheusMetric.GetType() {
-		case io_prometheus_client.MetricType_GAUGE:
-			scopedAggregations = scopedGauges(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 		case io_prometheus_client.MetricType_SUMMARY:
-			scopedAggregations = scopedSummaries(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
-		case io_prometheus_client.MetricType_COUNTER:
-			scopedAggregations = scopedCounters(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
-		case io_prometheus_client.MetricType_HISTOGRAM:
-			scopedAggregations = scopedHistograms(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
+			// The OTel prometheus exporter does not support metricdata.Summary
+			// (returns nil from metricType(), causing HTTP 500 since v0.63.0).
+			// Convert to gauge + counter metrics matching Prometheus exposition format.
+			for scope, dps := range scopedSummaryGauges(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime) {
+				scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
+					Name:        prometheusMetric.GetName(),
+					Description: prometheusMetric.GetHelp(),
+					Data:        metricdata.Gauge[float64]{DataPoints: dps},
+				})
+			}
+			for scope, dps := range scopedSummaryCounts(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime) {
+				scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
+					Name:        prometheusMetric.GetName() + "_count",
+					Description: prometheusMetric.GetHelp(),
+					Data:        metricdata.Sum[float64]{IsMonotonic: true, Temporality: metricdata.CumulativeTemporality, DataPoints: dps},
+				})
+			}
+			for scope, dps := range scopedSummarySums(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime) {
+				scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
+					Name:        prometheusMetric.GetName() + "_sum",
+					Description: prometheusMetric.GetHelp(),
+					Data:        metricdata.Sum[float64]{IsMonotonic: true, Temporality: metricdata.CumulativeTemporality, DataPoints: dps},
+				})
+			}
 		default:
-			log.Info("got unsupported metric type", "type", prometheusMetric.Type)
-		}
-
-		for scope, aggregations := range scopedAggregations {
-			scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
-				Name:        prometheusMetric.GetName(),
-				Description: prometheusMetric.GetHelp(),
-				Data:        aggregations,
-			})
+			var scopedAggregations map[instrumentation.Scope]metricdata.Aggregation
+			switch prometheusMetric.GetType() {
+			case io_prometheus_client.MetricType_GAUGE:
+				scopedAggregations = scopedGauges(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
+			case io_prometheus_client.MetricType_COUNTER:
+				scopedAggregations = scopedCounters(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
+			case io_prometheus_client.MetricType_HISTOGRAM:
+				scopedAggregations = scopedHistograms(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
+			default:
+				log.Info("got unsupported metric type", "type", prometheusMetric.Type)
+			}
+			for scope, aggregations := range scopedAggregations {
+				scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
+					Name:        prometheusMetric.GetName(),
+					Description: prometheusMetric.GetHelp(),
+					Data:        aggregations,
+				})
+			}
 		}
 	}
 
@@ -76,28 +102,58 @@ func scopedGauges(prometheusData []*io_prometheus_client.Metric, kumaVersion str
 	return scopedAggregations
 }
 
-func scopedSummaries(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
-	scopedDataPoints := map[instrumentation.Scope][]metricdata.SummaryDataPoint{}
+// scopedSummaryGauges converts Prometheus summaries to Gauge data points.
+// The OTel prometheus exporter does not support metricdata.Summary, so we
+// convert each quantile value into a Gauge data point with a "quantile"
+// attribute, preserving the original semantics.
+func scopedSummaryGauges(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope][]metricdata.DataPoint[float64] {
+	scopedDataPoints := map[instrumentation.Scope][]metricdata.DataPoint[float64]{}
 	for _, metric := range prometheusData {
 		scope, attributes := extractScope(metric, kumaVersion)
 		attributes = append(attributes, extraAttributes...)
-		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.SummaryDataPoint{
-			Attributes:     attribute.NewSet(attributes...),
-			Time:           getTimeOrFallback(metric.TimestampMs, requestTime),
-			QuantileValues: toOpenTelemetryQuantile(metric.Summary.Quantile),
-			Sum:            pointer.Deref(metric.Summary.SampleSum),
-			Count:          pointer.Deref(metric.Summary.SampleCount),
-		})
-	}
-
-	scopedAggregations := map[instrumentation.Scope]metricdata.Aggregation{}
-	for scope, data := range scopedDataPoints {
-		scopedAggregations[scope] = metricdata.Summary{
-			DataPoints: data,
+		t := getTimeOrFallback(metric.TimestampMs, requestTime)
+		for _, q := range metric.Summary.GetQuantile() {
+			attrs := make([]attribute.KeyValue, len(attributes), len(attributes)+1)
+			copy(attrs, attributes)
+			attrs = append(attrs, attribute.String("quantile", strconv.FormatFloat(q.GetQuantile(), 'g', -1, 64)))
+			scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.DataPoint[float64]{
+				Attributes: attribute.NewSet(attrs...),
+				Time:       t,
+				Value:      q.GetValue(),
+			})
 		}
 	}
+	return scopedDataPoints
+}
 
-	return scopedAggregations
+// scopedSummaryCounts converts Prometheus summary sample counts to Sum data points.
+func scopedSummaryCounts(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope][]metricdata.DataPoint[float64] {
+	scopedDataPoints := map[instrumentation.Scope][]metricdata.DataPoint[float64]{}
+	for _, metric := range prometheusData {
+		scope, attributes := extractScope(metric, kumaVersion)
+		attributes = append(attributes, extraAttributes...)
+		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.DataPoint[float64]{
+			Attributes: attribute.NewSet(attributes...),
+			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
+			Value:      float64(pointer.Deref(metric.Summary.SampleCount)),
+		})
+	}
+	return scopedDataPoints
+}
+
+// scopedSummarySums converts Prometheus summary sample sums to Sum data points.
+func scopedSummarySums(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope][]metricdata.DataPoint[float64] {
+	scopedDataPoints := map[instrumentation.Scope][]metricdata.DataPoint[float64]{}
+	for _, metric := range prometheusData {
+		scope, attributes := extractScope(metric, kumaVersion)
+		attributes = append(attributes, extraAttributes...)
+		scopedDataPoints[scope] = append(scopedDataPoints[scope], metricdata.DataPoint[float64]{
+			Attributes: attribute.NewSet(attributes...),
+			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
+			Value:      pointer.Deref(metric.Summary.SampleSum),
+		})
+	}
+	return scopedDataPoints
 }
 
 func scopedCounters(prometheusData []*io_prometheus_client.Metric, kumaVersion string, extraAttributes []attribute.KeyValue, requestTime time.Time) map[instrumentation.Scope]metricdata.Aggregation {
@@ -172,17 +228,6 @@ func getTimeOrFallback(timestampMs *int64, fallback time.Time) time.Time {
 	} else {
 		return fallback
 	}
-}
-
-func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantile) []metricdata.QuantileValue {
-	var otelQuantiles []metricdata.QuantileValue
-	for _, quantile := range prometheusQuantiles {
-		otelQuantiles = append(otelQuantiles, metricdata.QuantileValue{
-			Quantile: quantile.GetQuantile(),
-			Value:    quantile.GetValue(),
-		})
-	}
-	return otelQuantiles
 }
 
 func extractScope(metric *io_prometheus_client.Metric, kumaVersion string) (instrumentation.Scope, []attribute.KeyValue) {

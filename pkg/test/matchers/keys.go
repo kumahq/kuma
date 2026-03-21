@@ -26,7 +26,7 @@ func AllKeys(matcher types.GomegaMatcher) types.GomegaMatcher {
 	}
 }
 
-func (m *allKeysMatcher) Match(actual interface{}) (bool, error) {
+func (m *allKeysMatcher) Match(actual any) (bool, error) {
 	if reflect.TypeOf(actual).Kind() != reflect.Map {
 		return false, fmt.Errorf("%v is type %T, expected map", actual, actual)
 	}
@@ -38,10 +38,10 @@ func (m *allKeysMatcher) Match(actual interface{}) (bool, error) {
 	return true, nil
 }
 
-func (m *allKeysMatcher) matchKeys(actual interface{}) []error {
+func (m *allKeysMatcher) matchKeys(actual any) []error {
 	var errs []error
 	actualValue := reflect.ValueOf(actual)
-	keys := map[interface{}]bool{}
+	keys := map[any]bool{}
 	for _, keyValue := range actualValue.MapKeys() {
 		key := keyValue.Interface()
 		keys[key] = true
@@ -83,7 +83,7 @@ func (m *allKeysMatcher) matchKeys(actual interface{}) []error {
 	return errs
 }
 
-func (m *allKeysMatcher) FailureMessage(actual interface{}) string {
+func (m *allKeysMatcher) FailureMessage(actual any) string {
 	failures := make([]string, len(m.failures))
 
 	for i := range m.failures {
@@ -99,7 +99,7 @@ func (m *allKeysMatcher) FailureMessage(actual interface{}) string {
 		))
 }
 
-func (m *allKeysMatcher) NegatedFailureMessage(actual interface{}) string {
+func (m *allKeysMatcher) NegatedFailureMessage(actual any) string {
 	return format.Message(actual, "not to match keys")
 }
 

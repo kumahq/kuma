@@ -56,7 +56,7 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 		protocol = "unix"
 		addr = core_xds.ReadinessReporterSocketName(r.socketDir)
 	}
-	lis, err := net.Listen(protocol, addr)
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), protocol, addr)
 	if err != nil {
 		return err
 	}

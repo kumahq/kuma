@@ -165,7 +165,7 @@ func buildHealthCheck(conf *mesh_proto.HealthCheck_Conf) *envoy_core.HealthCheck
 	}
 }
 
-func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interface{}) *envoy_core.HealthCheck {
+func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker any) *envoy_core.HealthCheck {
 	switch hc := healthChecker.(type) {
 	case *envoy_core.HealthCheck_HttpHealthCheck_:
 		healthCheck.HealthChecker = hc

@@ -3,9 +3,11 @@
 package ebpf
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path"
@@ -60,7 +62,7 @@ func (p Program) LoadAndAttach(cfg config.InitializedConfigIPvX, programs embed.
 func run(cmdToExec string, args, envVars []string, stdout, stderr io.Writer) error {
 	_, _ = fmt.Fprintf(stdout, "Running: %s %s %s\n", strings.Join(envVars, " "), cmdToExec, strings.Join(args, " "))
 
-	cmd := exec.Command(cmdToExec, args...)
+	cmd := exec.CommandContext(context.Background(), cmdToExec, args...)
 	cmd.Env = append(os.Environ(), envVars...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
@@ -249,9 +251,7 @@ func Flags(flags map[string]string) FlagGenerator {
 			f["--verbose"] = ""
 		}
 
-		for k, v := range flags {
-			f[k] = v
-		}
+		maps.Copy(f, flags)
 
 		return mapFlagsToSlice(f), nil
 	}

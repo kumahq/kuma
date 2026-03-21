@@ -16,6 +16,7 @@ linters:
     - loggercheck
     - makezero
     - misspell
+    - modernize
     - nolintlint
     - nonamedreturns
     - nosprintfhostport
@@ -137,6 +138,12 @@ linters:
       locale: US
       ignore-rules:
         - cancelled
+    modernize:
+      disable:
+        # Simplify code by using go1.26's new(expr).
+        - newexpr
+        # Suggest replacing omitempty with omitzero for struct fields.
+        - omitzero
     nolintlint:
       allow-unused: false
       require-specific: true
@@ -179,6 +186,9 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: .* is deprecated: use common.WithPolicyAttributes instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*.Endpoint is deprecated: use BackendRef instead'
       - linters:
           - staticcheck
         text: 'ST1001: should not use dot imports'

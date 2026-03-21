@@ -199,7 +199,7 @@ func ipStrToPtr(ipstr string) (unsafe.Pointer, error) {
 		return nil, fmt.Errorf("error parse ip: %s", ipstr)
 	} else if ip.To4() != nil {
 		// ipv4, we need to clear the bytes
-		for i := 0; i < 12; i++ {
+		for i := range 12 {
 			ip[i] = 0
 		}
 	}

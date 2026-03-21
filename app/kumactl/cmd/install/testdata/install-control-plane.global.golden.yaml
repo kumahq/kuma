@@ -160,6 +160,7 @@ rules:
       - meshexternalservices
       - meshidentities
       - meshmultizoneservices
+      - meshopentelemetrybackends
       - meshservices
       - meshtrusts
       - meshzoneaddresses
@@ -484,7 +485,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 1a7485518b2c3b76432aa26cf0146ca1e73a505110c0185d8d85fe1937fbdbcd
+        checksum/tls-secrets: 56dd60812eef97a138b8a217d337a4649318078d1dcc22fa6c0486aac066d452
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -577,11 +578,13 @@ spec:
                 resourceFieldRef:
                   containerName: control-plane
                   resource: limits.memory
+                  divisor: "1"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
                   containerName: control-plane
                   resource: limits.cpu
+                  divisor: "1"
           args:
             - run
             - --log-level=info
@@ -706,6 +709,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - meshzoneaddresses
@@ -771,6 +775,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - meshzoneaddresses
@@ -855,6 +860,7 @@ webhooks:
           - meshexternalservices
           - meshidentities
           - meshmultizoneservices
+          - meshopentelemetrybackends
           - meshservices
           - meshtrusts
           - meshzoneaddresses

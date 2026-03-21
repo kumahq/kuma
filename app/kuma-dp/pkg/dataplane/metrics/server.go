@@ -18,6 +18,7 @@ import (
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
+	prom_client "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/otlptranslator"
@@ -152,7 +153,7 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		}
 	}
 
-	lis, err := net.Listen("unix", s.socketPath)
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", s.socketPath)
 	if err != nil {
 		return err
 	}
@@ -176,7 +177,9 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		return err
 	}
 	sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
-	s.prometheusHandler = promhttp.Handler()
+	s.prometheusHandler = promhttp.HandlerFor(prom_client.DefaultGatherer, promhttp.HandlerOpts{
+		ErrorHandling: promhttp.ContinueOnError,
+	})
 
 	errCh := make(chan error)
 	go func() {
@@ -339,7 +342,7 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 }
 
 func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, expfmt.Format) {
-	req, err := http.NewRequest(http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), http.NoBody) // #nosec G704 -- operator-configured metrics target
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), http.NoBody) // #nosec G704 -- operator-configured metrics target
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil, ""

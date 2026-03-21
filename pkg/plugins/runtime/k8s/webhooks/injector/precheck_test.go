@@ -103,7 +103,7 @@ var _ = Describe("annotation deprecation", func() {
 			if given.expectedKeyDeprecated {
 				Expect(logSink.root.messages).To(ContainElement(
 					logInfo{
-						name: nil, tags: []interface{}{"key", given.annotationKey, "message", given.expectedKeyDeprecationMessage},
+						name: nil, tags: []any{"key", given.annotationKey, "message", given.expectedKeyDeprecationMessage},
 						msg: "WARNING: using deprecated pod annotation",
 					},
 				))
@@ -145,7 +145,7 @@ var _ = Describe("annotation deprecation", func() {
 			Expect(logSink.root.messages).To(ContainElement(
 				logInfo{
 					name: nil,
-					tags: []interface{}{"key", annotationKey},
+					tags: []any{"key", annotationKey},
 					msg:  "WARNING: using deprecated pod annotation, use MeshMetric policy instead",
 				},
 			))
@@ -187,7 +187,7 @@ func createPod(annotationName, value string) *kube_core.Pod {
 // logInfo is the information for a particular fakeLogSink message.
 type logInfo struct {
 	name []string
-	tags []interface{}
+	tags []any
 	msg  string
 }
 
@@ -209,7 +209,7 @@ func (r *fakeLogSinkRoot) exportMessages() []string {
 // just records the name.
 type fakeLogSink struct {
 	name []string
-	tags []interface{}
+	tags []any
 
 	root *fakeLogSinkRoot
 }
@@ -227,8 +227,8 @@ func (f *fakeLogSink) WithName(name string) logr.LogSink {
 	}
 }
 
-func (f *fakeLogSink) WithValues(vals ...interface{}) logr.LogSink {
-	tags := append([]interface{}(nil), f.tags...)
+func (f *fakeLogSink) WithValues(vals ...any) logr.LogSink {
+	tags := append([]any(nil), f.tags...)
 	tags = append(tags, vals...)
 	return &fakeLogSink{
 		name: f.name,
@@ -237,8 +237,8 @@ func (f *fakeLogSink) WithValues(vals ...interface{}) logr.LogSink {
 	}
 }
 
-func (f *fakeLogSink) Error(err error, msg string, vals ...interface{}) {
-	tags := append([]interface{}(nil), f.tags...)
+func (f *fakeLogSink) Error(err error, msg string, vals ...any) {
+	tags := append([]any(nil), f.tags...)
 	tags = append(tags, "error", err)
 	tags = append(tags, vals...)
 	f.root.messages = append(f.root.messages, logInfo{
@@ -248,8 +248,8 @@ func (f *fakeLogSink) Error(err error, msg string, vals ...interface{}) {
 	})
 }
 
-func (f *fakeLogSink) Info(level int, msg string, vals ...interface{}) {
-	tags := append([]interface{}(nil), f.tags...)
+func (f *fakeLogSink) Info(level int, msg string, vals ...any) {
+	tags := append([]any(nil), f.tags...)
 	tags = append(tags, vals...)
 	f.root.messages = append(f.root.messages, logInfo{
 		name: append([]string(nil), f.name...),

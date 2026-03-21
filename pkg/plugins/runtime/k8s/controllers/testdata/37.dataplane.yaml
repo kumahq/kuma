@@ -1,0 +1,28 @@
+mesh: default
+metadata:
+  labels:
+    app: mixed-proxy
+    k8s.kuma.io/namespace: demo
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health:
+        ready: true
+      port: 8080
+      protocol: tcp
+      tags:
+        app: mixed-proxy
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: backend
+        k8s.kuma.io/service-port: "80"
+        kuma.io/protocol: tcp
+        kuma.io/service: backend_demo_svc_80
+        kuma.io/zone: zone-1
+    listeners:
+    - address: 192.168.0.1
+      name: ze-main
+      port: 10002
+      type: ZoneEgress

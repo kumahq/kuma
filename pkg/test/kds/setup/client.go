@@ -10,7 +10,7 @@ import (
 )
 
 func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
-	for i := 0; i < len(clientStreams); i++ {
+	for i := range clientStreams {
 		clientID := fmt.Sprintf("client-%d", i)
 		item := clientStreams[i]
 		comp := kds_client_v2.NewKDSSyncClient(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client_v2.NewDeltaKDSStream(item, clientID, fmt.Sprintf("cp-%d", i), "", len(resourceTypes)), cb, 0)

@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"maps"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
@@ -67,9 +68,7 @@ func SetGatewayListeners(proxy *core_xds.Proxy, listenerInfoPerPort map[uint32]G
 	if ext := proxy.RuntimeExtensions[metadata.PluginName]; ext != nil {
 		existingListeners = ext.(map[uint32]GatewayListenerInfo)
 	}
-	for port, info := range listenerInfoPerPort {
-		existingListeners[port] = info
-	}
+	maps.Copy(existingListeners, listenerInfoPerPort)
 	proxy.RuntimeExtensions[metadata.PluginName] = existingListeners
 }
 

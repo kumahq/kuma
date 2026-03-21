@@ -7,6 +7,7 @@ import (
 	"go/types"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -51,7 +52,7 @@ func flags() flag.FlagSet {
 	return *set
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		fileName := pass.Fset.File(file.Pos()).Name()
 		fileNameWithoutExtension := stripExtension(fileName)
@@ -273,13 +274,13 @@ func hasAnnotations(field *ast.Field, requiredAnnotations ...string) bool {
 		return false
 	}
 
-	comments := ""
+	var comments strings.Builder
 	for _, line := range field.Doc.List {
-		comments += line.Text + "\n"
+		comments.WriteString(line.Text + "\n")
 	}
 
 	for _, requiredAnnotation := range requiredAnnotations {
-		if !strings.Contains(comments, requiredAnnotation) {
+		if !strings.Contains(comments.String(), requiredAnnotation) {
 			return false
 		}
 	}
@@ -307,13 +308,7 @@ func hasOmitEmptyTag(field *ast.Field) bool {
 
 	// Check if "omitempty" is in the tag
 	tagParts := strings.Split(jsonTag, ",")
-	for _, part := range tagParts {
-		if part == "omitempty" {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(tagParts, "omitempty")
 }
 
 // Extracts the struct name from the filename

@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
@@ -41,10 +42,8 @@ func (s *secretRevocations) IsRevoked(ctx context.Context, id string) (bool, err
 	}
 	rawIds := strings.TrimSuffix(string(data), "\n")
 	ids := strings.Split(rawIds, ",")
-	for _, revokedId := range ids {
-		if revokedId == id {
-			return true, nil
-		}
+	if slices.Contains(ids, id) {
+		return true, nil
 	}
 	return false, nil
 }

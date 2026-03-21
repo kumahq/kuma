@@ -1,5 +1,7 @@
 package zone
 
+import "slices"
+
 const (
 	IngressScope string = "ingress"
 	EgressScope  string = "egress"
@@ -11,11 +13,5 @@ var FullScope = []string{
 }
 
 func InScope(scope []string, s string) bool {
-	for _, item := range scope {
-		if item == s {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(scope, s)
 }

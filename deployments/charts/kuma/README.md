@@ -71,6 +71,9 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
+| controlPlane.runtime | object | `{"goMaxProcs":{"divisor":"1"},"goMemLimit":{"divisor":"1"}}` | Go runtime settings for the control plane |
+| controlPlane.runtime.goMaxProcs | object | `{"divisor":"1"}` | Divisor for GOMAXPROCS (resourceFieldRef divisor for limits.cpu) |
+| controlPlane.runtime.goMemLimit | object | `{"divisor":"1"}` | Divisor for GOMEMLIMIT (resourceFieldRef divisor for limits.memory) |
 | controlPlane.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | controlPlane.terminationGracePeriodSeconds | int | `30` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |

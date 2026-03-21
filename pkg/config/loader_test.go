@@ -227,6 +227,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
 			Expect(cfg.Runtime.Kubernetes.Injector.UnifiedResourceNamingEnabled).To(BeTrue())
+			Expect(cfg.Runtime.Kubernetes.Injector.OtelPipeEnabled).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.MountPath).To(Equal("/run/test"))
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.SocketFileName).To(Equal("my-socket"))
@@ -399,6 +400,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.CoreResources.Status.MeshMultiZoneServiceInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.CoreResources.Status.MeshIdentityInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.CoreResources.Status.WorkloadInterval.Duration).To(Equal(9 * time.Second))
+			Expect(cfg.CoreResources.Status.MeshOpenTelemetryBackendInterval.Duration).To(Equal(10 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -603,6 +605,7 @@ runtime:
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
       unifiedResourceNamingEnabled: true
+      otelPipeEnabled: false
       spire:
         enabled: true
         mountPath: "/run/test"
@@ -804,6 +807,7 @@ coreResources:
     meshMultiZoneServiceInterval: 7s
     meshIdentityInterval: 8s
     workloadInterval: 9s
+    meshOpenTelemetryBackendInterval: 10s
 policies:
   pluginPoliciesEnabled:
     - meshaccesslog
@@ -964,6 +968,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY":                          "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED":                         "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_SOCKET_FILE_NAME":                                  "my-socket",
@@ -1123,6 +1128,7 @@ meshService:
 				"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL":                              "7s",
 				"KUMA_CORE_RESOURCES_STATUS_MESH_IDENTITY_INTERVAL":                                        "8s",
 				"KUMA_CORE_RESOURCES_STATUS_WORKLOAD_INTERVAL":                                             "9s",
+				"KUMA_CORE_RESOURCES_STATUS_MESH_OPEN_TELEMETRY_BACKEND_INTERVAL":                          "10s",
 				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
 				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
 				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
