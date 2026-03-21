@@ -28,7 +28,7 @@ func NewScheme() (*kube_runtime.Scheme, error) {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
 	}
 	if err := gatewayapi.Install(s); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", gatewayapi.GroupVersion)
+		return nil, errors.Wrapf(err, "could not add %v to scheme", gatewayapi.GroupVersion)
 	}
 	if err := registry.AddToScheme(s); err != nil {
 		return nil, err
