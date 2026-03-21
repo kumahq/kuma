@@ -4,7 +4,6 @@ import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
-	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
@@ -76,14 +75,11 @@ func NewOtelBuilder() *Builder[access_loggers_otel.OpenTelemetryAccessLogConfig]
 
 func CommonConfig(logName string, clusterName string) Configurer[access_loggers_otel.OpenTelemetryAccessLogConfig] {
 	return func(otel *access_loggers_otel.OpenTelemetryAccessLogConfig) error {
-		otel.CommonConfig = &access_loggers_grpc.CommonGrpcAccessLogConfig{
-			LogName:             logName,
-			TransportApiVersion: envoy_core.ApiVersion_V3,
-			GrpcService: &envoy_core.GrpcService{
-				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
-						ClusterName: clusterName,
-					},
+		otel.LogName = logName
+		otel.GrpcService = &envoy_core.GrpcService{
+			TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+					ClusterName: clusterName,
 				},
 			},
 		}
