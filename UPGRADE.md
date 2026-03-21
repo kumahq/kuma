@@ -508,6 +508,26 @@ Policies targeting `spec.targetRef.kind: MeshGateway` and setting the `spec.load
 `to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
 was ambiguous and nondeterministic.
 
+### MeshTimeout
+
+The default inbound request timeout is now 15s instead of being unbounded.
+If you need longer inbound timeouts make sure to create a policy to override it.
+
+For example:
+type: MeshTimeout
+name: mt-higher-inbound
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 60s
+```
+
 ### MeshExternalService
 
 #### Removal of unix sockets support
