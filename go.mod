@@ -95,6 +95,7 @@ require (
 	sigs.k8s.io/controller-tools v0.20.1
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.5.0
+	sigs.k8s.io/gateway-api/conformance v1.5.1
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -295,7 +296,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
 
-require sigs.k8s.io/gateway-api/conformance v1.5.1
 
 replace (
 	github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.14.0-kong-1
