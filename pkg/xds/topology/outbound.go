@@ -91,6 +91,121 @@ func BuildEdsEndpointMap(
 	return outbound
 }
 
+<<<<<<< HEAD
+=======
+func fillMeshMultiZoneServices(
+	outbound core_xds.EndpointMap,
+	meshServicesByName map[kri.Identifier]*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+) {
+	for _, mzSvc := range meshMultiZoneServices {
+		for _, matchedMs := range mzSvc.Status.MeshServices {
+			ri := kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         matchedMs.Mesh,
+				Zone:         matchedMs.Zone,
+				Namespace:    matchedMs.Namespace,
+				Name:         matchedMs.Name,
+			}
+			ms, ok := meshServicesByName[ri]
+			if !ok {
+				continue
+			}
+			if !ms.IsLocalMeshService() && ms.Spec.State != meshservice_api.StateAvailable {
+				// we don't want to load balance to zones that has no available endpoints.
+				// we check this only for non-local services, because if service is unavailable in the local zone it has no endpoints.
+				// if a new local endpoint just become healthy, we can add it immediately without waiting for state to be reconciled.
+				continue
+			}
+			for _, port := range mzSvc.Spec.Ports {
+				serviceName := destinationname.MustResolve(false, mzSvc, port)
+
+				existingEndpoints := outbound[destinationname.MustResolve(false, ms, port)]
+				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
+			}
+		}
+	}
+}
+
+func fillRemoteMeshServices(
+	outbound core_xds.EndpointMap,
+	services []*meshservice_api.MeshServiceResource,
+	zoneIngress []*core_mesh.ZoneIngressResource,
+	mesh *core_mesh.MeshResource,
+	localZone string,
+	mtlsEnabled bool,
+) {
+	if !mtlsEnabled {
+		return
+	}
+
+	ziInstances := map[string]struct{}{}
+
+	// introduction of MeshIdentity doesn't requires mTLS on mesh
+	zoneToEndpoints := map[string][]core_xds.Endpoint{}
+	for _, zi := range zoneIngress {
+		if !zi.IsRemoteIngress(localZone) {
+			continue
+		}
+
+		if !zi.HasPublicAddress() {
+			// Zone Ingress is not reachable yet from other clusters.
+			// This may happen when Ingress Service is pending waiting on
+			// External IP on Kubernetes.
+			continue
+		}
+
+		ziAddress := zi.Spec.GetNetworking().GetAdvertisedAddress()
+		ziPort := zi.Spec.GetNetworking().GetAdvertisedPort()
+		ziCoordinates := buildCoordinates(ziAddress, ziPort)
+
+		if _, ok := ziInstances[ziCoordinates]; ok {
+			// many Ingress instances can be placed in front of one load
+			// balancer (all instances can have the same public address and
+			// port).
+			// In this case we only need one Instance avoiding creating
+			// unnecessary duplicated endpoints
+			continue
+		}
+
+		zoneToEndpoints[zi.Spec.Zone] = append(zoneToEndpoints[zi.Spec.Zone], core_xds.Endpoint{
+			Target:   ziAddress,
+			Port:     ziPort,
+			Tags:     nil,
+			Weight:   1,
+			Locality: GetLocality(localZone, &zi.Spec.Zone, mesh.LocalityAwareLbEnabled()),
+		})
+	}
+
+	for _, ms := range services {
+		if ms.IsLocalMeshService() {
+			continue
+		}
+		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		for _, port := range ms.Spec.Ports {
+			serviceName := destinationname.MustResolve(false, ms, port)
+			for _, endpoint := range zoneToEndpoints[msZone] {
+				ep := endpoint
+				ep.Locality = &core_xds.Locality{
+					Zone:     msZone,
+					Priority: priorityRemote,
+				}
+				ep.Tags = map[string]string{
+					mesh_proto.ServiceTag: serviceName,
+					mesh_proto.ZoneTag:    msZone,
+				}
+				outbound[serviceName] = append(outbound[serviceName], ep)
+			}
+		}
+	}
+}
+
+type MeshServiceIdentity struct {
+	Resource   *meshservice_api.MeshServiceResource
+	Identities map[string]struct{}
+}
+
+>>>>>>> daf00b8678 (fix(zoneingress): no public address causes DPP reconciliation failure (#15926))
 // endpointWeight defines default weight for in-cluster endpoint.
 // Examples of having service "backend":
 //  1. Single-zone deployment, 2 instances in one cluster (zone1)
