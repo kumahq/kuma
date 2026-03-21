@@ -237,7 +237,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			discoveredEnv := otelenv.Discover(cfg.DataplaneRuntime.OtelPipeEnabled)
 			rootCtx.DiscoveredOtelEnv = discoveredEnv
-			rootCtx.BootstrapOtelEnv = discoveredEnv.Inventory
+			rootCtx.BootstrapOtelEnv = &discoveredEnv.Inventory
 
 			return nil
 		},

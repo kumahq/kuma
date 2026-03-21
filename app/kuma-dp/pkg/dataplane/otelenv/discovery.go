@@ -9,32 +9,58 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
-const (
-	sharedEnvPrefix  = "OTEL_EXPORTER_OTLP"
-	tracesEnvPrefix  = "OTEL_EXPORTER_OTLP_TRACES"
-	logsEnvPrefix    = "OTEL_EXPORTER_OTLP_LOGS"
-	metricsEnvPrefix = "OTEL_EXPORTER_OTLP_METRICS"
-)
+var envPrefix = map[core_xds.OtelSignal]string{
+	core_xds.OtelSignalShared:  "OTEL_EXPORTER_OTLP",
+	core_xds.OtelSignalTraces:  "OTEL_EXPORTER_OTLP_TRACES",
+	core_xds.OtelSignalLogs:    "OTEL_EXPORTER_OTLP_LOGS",
+	core_xds.OtelSignalMetrics: "OTEL_EXPORTER_OTLP_METRICS",
+}
 
-// Discover creates a new Config by reading environment variables
 func Discover(pipeEnabled bool) Config {
 	return discoverWithLookup(pipeEnabled, OSEnvReader{})
 }
 
 func discoverWithLookup(pipeEnabled bool, reader EnvReader) Config {
-	cfg := Config{
-		PipeEnabled: pipeEnabled,
-		Shared:      readLayer(sharedEnvPrefix, reader),
-		Traces:      readLayer(tracesEnvPrefix, reader),
-		Logs:        readLayer(logsEnvPrefix, reader),
-		Metrics:     readLayer(metricsEnvPrefix, reader),
-	}
-	cfg.Inventory = buildInventory(cfg)
-	return cfg
+	return NewConfig(pipeEnabled,
+		readLayer(core_xds.OtelSignalShared, reader),
+		readLayer(core_xds.OtelSignalTraces, reader),
+		readLayer(core_xds.OtelSignalLogs, reader),
+		readLayer(core_xds.OtelSignalMetrics, reader),
+	)
 }
 
-func readLayer(prefix string, reader EnvReader) Layer {
+func NewConfig(pipeEnabled bool, shared, traces, logs, metrics Layer) Config {
+	sharedInv := shared.analyze(nil)
+	tracesInv := traces.analyze(&shared)
+	logsInv := logs.analyze(&shared)
+	metricsInv := metrics.analyze(&shared)
+
+	return Config{
+		PipeEnabled: pipeEnabled,
+		Shared:      shared,
+		Traces:      traces,
+		Logs:        logs,
+		Metrics:     metrics,
+		Inventory: core_xds.OtelBootstrapInventory{
+			PipeEnabled: pipeEnabled,
+			Shared:      sharedInv,
+			Traces:      tracesInv,
+			Logs:        logsInv,
+			Metrics:     metricsInv,
+			ValidationErrors: slices.Concat(
+				sharedInv.GetValidationErrors(),
+				tracesInv.GetValidationErrors(),
+				logsInv.GetValidationErrors(),
+				metricsInv.GetValidationErrors(),
+			),
+		},
+	}
+}
+
+func readLayer(signal core_xds.OtelSignal, reader EnvReader) Layer {
+	prefix := envPrefix[signal]
 	return Layer{
+		Signal:            signal,
 		Endpoint:          readField(reader, prefix+"_ENDPOINT"),
 		Protocol:          readField(reader, prefix+"_PROTOCOL"),
 		Headers:           readField(reader, prefix+"_HEADERS"),
@@ -59,53 +85,10 @@ func readField(reader EnvReader, name string) *string {
 	return &value
 }
 
-func buildInventory(cfg Config) *core_xds.OtelBootstrapInventory {
-	sharedInv, sharedErrs := buildLayerInventory("shared", cfg.Shared, Layer{})
-	tracesInv, tracesErrs := buildLayerInventory(string(core_xds.OtelSignalTraces), cfg.Traces, cfg.Shared)
-	logsInv, logsErrs := buildLayerInventory(string(core_xds.OtelSignalLogs), cfg.Logs, cfg.Shared)
-	metricsInv, metricsErrs := buildLayerInventory(string(core_xds.OtelSignalMetrics), cfg.Metrics, cfg.Shared)
-
-	return &core_xds.OtelBootstrapInventory{
-		PipeEnabled:      cfg.PipeEnabled,
-		Shared:           sharedInv,
-		Traces:           tracesInv,
-		Logs:             logsInv,
-		Metrics:          metricsInv,
-		ValidationErrors: slices.Concat(sharedErrs, tracesErrs, logsErrs, metricsErrs),
-	}
-}
-
-func buildLayerInventory(
-	name string,
-	layer Layer,
-	shared Layer,
-) (*core_xds.OtelSignalEnvInventory, []string) {
-	endpointParsedAsURL, endpointHasPath := endpointCharacteristics(layer.Endpoint)
-	effectiveLayerProtocol, protoErrors := effectiveProtocol(name, layer)
-	authMode, authErrors := effectiveAuthMode(name, layer)
-
-	errors := slices.Concat(protoErrors, authErrors)
-
-	if layer.Compression != nil {
-		if _, ok := parseCompression(*layer.Compression); !ok {
-			errors = append(errors, fmt.Sprintf("%s.compression", name))
-		}
-	}
-
-	if layer.Timeout != nil {
-		if _, ok := parseTimeout(*layer.Timeout); !ok {
-			errors = append(errors, fmt.Sprintf("%s.timeout", name))
-		}
-	}
-
-	if endpointParsedAsURL && endpointHasPath && effectiveProtocolForEndpoint(layer, shared) == core_xds.OtelProtocolGRPC {
-		errors = append(errors, fmt.Sprintf("%s.endpoint", name))
-	}
-
+func (layer Layer) analyze(shared *Layer) *core_xds.OtelSignalEnvInventory {
 	inv := &core_xds.OtelSignalEnvInventory{
+		Signal:                   layer.Signal,
 		EndpointPresent:          layer.Endpoint != nil,
-		EndpointParsedAsURL:      endpointParsedAsURL,
-		EndpointHasPath:          endpointHasPath,
 		ProtocolPresent:          layer.Protocol != nil,
 		HeadersPresent:           layer.Headers != nil,
 		TimeoutPresent:           layer.Timeout != nil,
@@ -114,45 +97,101 @@ func buildLayerInventory(
 		CertificatePresent:       layer.Certificate != nil,
 		ClientCertificatePresent: layer.ClientCertificate != nil,
 		ClientKeyPresent:         layer.ClientKey != nil,
-		EffectiveProtocol:        effectiveLayerProtocol,
-		EffectiveAuthMode:        authMode,
-		OverrideKinds:            overrideKinds(layer, shared),
+		OverrideKinds:            layer.overrideKinds(shared),
+	}
+
+	if layer.Protocol != nil {
+		if parsed, ok := parseProtocol(*layer.Protocol); ok {
+			inv.EffectiveProtocol = parsed
+		} else {
+			inv.EffectiveProtocol = core_xds.OtelProtocolUnknown
+			inv.ValidationErrors = append(inv.ValidationErrors, fmt.Sprintf("%s.protocol", inv.Signal))
+		}
+	}
+
+	if layer.Endpoint != nil {
+		if parsed, err := url.Parse(*layer.Endpoint); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+			inv.EndpointParsedAsURL = true
+			inv.EndpointHasPath = parsed.Path != ""
+			if parsed.Path != "" && effectiveProtocolForEndpoint(layer, shared) == core_xds.OtelProtocolGRPC {
+				inv.ValidationErrors = append(inv.ValidationErrors, fmt.Sprintf("%s.endpoint", inv.Signal))
+			}
+		}
+	}
+
+	if layer.Compression != nil {
+		if _, ok := parseCompression(*layer.Compression); !ok {
+			inv.ValidationErrors = append(inv.ValidationErrors, fmt.Sprintf("%s.compression", inv.Signal))
+		}
+	}
+
+	if layer.Timeout != nil {
+		if _, ok := parseTimeout(*layer.Timeout); !ok {
+			inv.ValidationErrors = append(inv.ValidationErrors, fmt.Sprintf("%s.timeout", inv.Signal))
+		}
+	}
+
+	if (layer.ClientCertificate != nil) != (layer.ClientKey != nil) {
+		inv.ValidationErrors = append(inv.ValidationErrors, fmt.Sprintf("%s.mtls", inv.Signal))
+	}
+
+	switch {
+	case layer.ClientCertificate != nil && layer.ClientKey != nil:
+		inv.EffectiveAuthMode = core_xds.OtelAuthModeMTLS
+	case layer.Certificate != nil:
+		inv.EffectiveAuthMode = core_xds.OtelAuthModeTLS
+	case layer.Headers != nil:
+		inv.EffectiveAuthMode = core_xds.OtelAuthModeHeaders
+	default:
+		inv.EffectiveAuthMode = core_xds.OtelAuthModeNone
 	}
 
 	if !inv.HasAnyInput() {
-		return nil, errors
+		return nil
 	}
-
-	return inv, errors
+	return inv
 }
 
-func endpointCharacteristics(field *string) (bool, bool) {
-	if field == nil {
-		return false, false
+func (layer Layer) overrideKinds(shared *Layer) []string {
+	if shared == nil {
+		return nil
 	}
 
-	parsedURL, err := url.Parse(strings.TrimSpace(*field))
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return false, false
+	type fieldPair struct {
+		name          string
+		signal, share *string
 	}
 
-	return true, parsedURL.Path != ""
+	// Pre-sorted alphabetically so the result is already sorted.
+	pairs := []fieldPair{
+		{"certificate", layer.Certificate, shared.Certificate},
+		{"clientCertificate", layer.ClientCertificate, shared.ClientCertificate},
+		{"clientKey", layer.ClientKey, shared.ClientKey},
+		{"compression", layer.Compression, shared.Compression},
+		{"endpoint", layer.Endpoint, shared.Endpoint},
+		{"headers", layer.Headers, shared.Headers},
+		{"insecure", layer.Insecure, shared.Insecure},
+		{"protocol", layer.Protocol, shared.Protocol},
+		{"timeout", layer.Timeout, shared.Timeout},
+	}
+
+	var kinds []string
+	for pair := range slices.Values(pairs) {
+		if pair.signal != nil && (pair.share == nil || *pair.signal != *pair.share) {
+			kinds = append(kinds, pair.name)
+		}
+	}
+
+	return kinds
 }
 
-func effectiveProtocol(name string, layer Layer) (core_xds.OtelProtocol, []string) {
-	if layer.Protocol == nil {
-		return "", nil
+func effectiveProtocolForEndpoint(layer Layer, shared *Layer) core_xds.OtelProtocol {
+	protocols := []*string{layer.Protocol}
+	if shared != nil {
+		protocols = append(protocols, shared.Protocol)
 	}
 
-	if parsed, ok := parseProtocol(*layer.Protocol); ok {
-		return parsed, nil
-	}
-
-	return core_xds.OtelProtocolUnknown, []string{fmt.Sprintf("%s.protocol", name)}
-}
-
-func effectiveProtocolForEndpoint(layer Layer, shared Layer) core_xds.OtelProtocol {
-	for _, field := range []*string{layer.Protocol, shared.Protocol} {
+	for field := range slices.Values(protocols) {
 		if field == nil {
 			continue
 		}
@@ -165,46 +204,4 @@ func effectiveProtocolForEndpoint(layer Layer, shared Layer) core_xds.OtelProtoc
 	}
 
 	return core_xds.OtelProtocolGRPC
-}
-
-func effectiveAuthMode(name string, layer Layer) (core_xds.OtelAuthMode, []string) {
-	var errors []string
-	if (layer.ClientCertificate != nil) != (layer.ClientKey != nil) {
-		errors = append(errors, fmt.Sprintf("%s.mtls", name))
-	}
-
-	switch {
-	case layer.ClientCertificate != nil && layer.ClientKey != nil:
-		return core_xds.OtelAuthModeMTLS, errors
-	case layer.Certificate != nil:
-		return core_xds.OtelAuthModeTLS, errors
-	case layer.Headers != nil:
-		return core_xds.OtelAuthModeHeaders, errors
-	default:
-		return core_xds.OtelAuthModeNone, errors
-	}
-}
-
-func overrideKinds(layer Layer, shared Layer) []string {
-	// Table is pre-sorted alphabetically so the result is already sorted.
-	var overrides []string
-	for _, pair := range []struct {
-		name          string
-		signal, share *string
-	}{
-		{"certificate", layer.Certificate, shared.Certificate},
-		{"clientCertificate", layer.ClientCertificate, shared.ClientCertificate},
-		{"clientKey", layer.ClientKey, shared.ClientKey},
-		{"compression", layer.Compression, shared.Compression},
-		{"endpoint", layer.Endpoint, shared.Endpoint},
-		{"headers", layer.Headers, shared.Headers},
-		{"insecure", layer.Insecure, shared.Insecure},
-		{"protocol", layer.Protocol, shared.Protocol},
-		{"timeout", layer.Timeout, shared.Timeout},
-	} {
-		if pair.signal != nil && (pair.share == nil || *pair.signal != *pair.share) {
-			overrides = append(overrides, pair.name)
-		}
-	}
-	return overrides
 }

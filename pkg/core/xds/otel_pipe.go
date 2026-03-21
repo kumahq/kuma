@@ -43,6 +43,27 @@ func (p *OtelSignalRuntimePlan) IsHardBlocked() bool {
 	return slices.Contains(p.BlockedReasons, OtelBlockedReasonRequiredEnvMissing)
 }
 
+func (p *OtelSignalRuntimePlan) SharedEnvAllowed() bool {
+	if p == nil {
+		return false
+	}
+
+	return !slices.ContainsFunc(
+		p.BlockedReasons,
+		func(reason string) bool {
+			return reason == OtelBlockedReasonEnvDisabledByPolicy ||
+				reason == OtelBlockedReasonMultipleBackends
+		},
+	)
+}
+
+func (p *OtelSignalRuntimePlan) SignalEnvAllowed() bool {
+	if !p.SharedEnvAllowed() {
+		return false
+	}
+	return !slices.Contains(p.BlockedReasons, OtelBlockedReasonSignalOverridesBlocked)
+}
+
 // OtelPipeBackend represents one MOTB backend for the unified /otel dynconf route.
 // All signals sharing this backend use the same SocketPath.
 type OtelPipeBackend struct {

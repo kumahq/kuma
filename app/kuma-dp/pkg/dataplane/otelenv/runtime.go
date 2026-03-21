@@ -2,7 +2,6 @@ package otelenv
 
 import (
 	"cmp"
-	"maps"
 	"net"
 	"net/url"
 	"os"
@@ -17,6 +16,11 @@ import (
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
+
+// runtimeOption applies a configuration value to a SignalRuntime.
+// Options are collected in precedence order and applied sequentially -
+// last writer wins, matching the OTel SDK's option pattern.
+type runtimeOption func(*SignalRuntime)
 
 func (c Config) ResolveBackend(backend core_xds.OtelPipeBackend) BackendRuntime {
 	return BackendRuntime{
@@ -44,63 +48,188 @@ func (c Config) resolveSignal(
 		return runtime
 	}
 
-	explicit := explicitTransport(backend, signal)
-	sharedAllowed := sharedEnvAllowed(plan)
-	signalAllowed := signalEnvAllowed(plan)
-	preferEnv := backend.EnvPolicy != nil && backend.EnvPolicy.Precedence != motb_api.EnvPrecedenceExplicitFirst
+	preferEnv := backend.EnvPolicy != nil &&
+		backend.EnvPolicy.Precedence != motb_api.EnvPrecedenceExplicitFirst
 
-	protocol := explicit.Transport.Protocol
-	if sharedAllowed {
-		protocol = pickProtocol(protocol, c.Shared.Protocol, preferEnv)
+	type source struct{ protocol, fields []runtimeOption }
+
+	explicit := source{
+		protocol: []runtimeOption{withProtocol(explicitProtocol(backend))},
+		fields:   explicitFieldOptions(backend, signal),
 	}
 
-	sigLayer := layerForSignal(c, signal)
-	if signalAllowed {
-		protocol = pickProtocol(protocol, sigLayer.Protocol, preferEnv)
+	var env []source
+	if plan.SharedEnvAllowed() {
+		p, f := c.Shared.runtimeOptions(signal, false)
+		env = append(env, source{p, f})
 	}
 
-	runtime.Transport = explicit.Transport
-	runtime.Transport.Protocol = protocol
-	runtime.Transport.UseTLS = new(*explicit.Transport.UseTLS)
-	runtime.Transport.Headers = maps.Clone(explicit.Transport.Headers)
+	if plan.SignalEnvAllowed() {
+		p, f := layerForSignal(c, signal).runtimeOptions(signal, true)
+		env = append(env, source{p, f})
+	}
 
-	runtime.HTTPPath = explicit.HTTPPath
+	// Lowest precedence first - last applied wins.
+	var sources []source
+	if preferEnv {
+		sources = slices.Concat([]source{explicit}, env)
+	} else {
+		sources = append(env, explicit)
+	}
+
+	// Phase 1: protocol (endpoint path handling depends on it).
+	for src := range slices.Values(sources) {
+		for opt := range slices.Values(src.protocol) {
+			opt(&runtime)
+		}
+	}
+
+	// Phase 2: all other fields.
+	for src := range slices.Values(sources) {
+		for opt := range slices.Values(src.fields) {
+			opt(&runtime)
+		}
+	}
+
 	if runtime.Transport.Protocol == core_xds.OtelProtocolHTTPProtobuf && runtime.HTTPPath == "" {
 		runtime.HTTPPath = path.Join("/", backend.Path, "v1", string(signal))
 	}
 
-	if sharedAllowed {
-		runtime.mergeLayer(c.Shared, signal, false, preferEnv)
-	}
-
-	if signalAllowed {
-		runtime.mergeLayer(sigLayer, signal, true, preferEnv)
-	}
-
 	return runtime
 }
 
-func explicitTransport(backend core_xds.OtelPipeBackend, signal core_xds.OtelSignal) SignalRuntime {
-	protocol := core_xds.OtelProtocolGRPC
+// --- option constructors ---
+
+func withProtocol(p core_xds.OtelProtocol) runtimeOption {
+	return func(r *SignalRuntime) { r.Transport.Protocol = p }
+}
+
+func withEndpoint(endpoint string) runtimeOption {
+	return func(r *SignalRuntime) { r.Transport.Endpoint = endpoint }
+}
+
+func withUseTLS(useTLS bool) runtimeOption {
+	return func(r *SignalRuntime) { r.Transport.UseTLS = new(useTLS) }
+}
+
+func withHTTPPath(p string) runtimeOption {
+	return func(r *SignalRuntime) { r.HTTPPath = p }
+}
+
+func withHeaders(headers map[string]string) runtimeOption {
+	return func(r *SignalRuntime) { r.Transport.Headers = headers }
+}
+
+func withCompression(compression string) runtimeOption {
+	return func(r *SignalRuntime) { r.Transport.Compression = compression }
+}
+
+func withTimeout(timeout time.Duration) runtimeOption {
+	return func(r *SignalRuntime) { r.Transport.Timeout = timeout }
+}
+
+func withCertificate(cert string) runtimeOption {
+	return func(r *SignalRuntime) { r.Transport.Certificate = cert }
+}
+
+func withClientCerts(cert, key string) runtimeOption {
+	return func(r *SignalRuntime) {
+		r.Transport.ClientCertificate = cert
+		r.Transport.ClientKey = key
+	}
+}
+
+// --- option sources ---
+
+func explicitProtocol(backend core_xds.OtelPipeBackend) core_xds.OtelProtocol {
 	if backend.UseHTTP {
-		protocol = core_xds.OtelProtocolHTTPProtobuf
+		return core_xds.OtelProtocolHTTPProtobuf
 	}
-
-	runtime := SignalRuntime{
-		HTTPPath: path.Join("/", backend.Path, "v1", string(signal)),
-		Transport: ExporterTransport{
-			Protocol: protocol,
-			Endpoint: resolveEndpointAddress(backend.Endpoint),
-			UseTLS:   new(backend.UseHTTPS),
-		},
-	}
-
-	if protocol == core_xds.OtelProtocolGRPC {
-		runtime.HTTPPath = ""
-	}
-
-	return runtime
+	return core_xds.OtelProtocolGRPC
 }
+
+func explicitFieldOptions(backend core_xds.OtelPipeBackend, signal core_xds.OtelSignal) []runtimeOption {
+	opts := []runtimeOption{
+		withEndpoint(resolveEndpointAddress(backend.Endpoint)),
+		withUseTLS(backend.UseHTTPS),
+	}
+
+	if backend.UseHTTP {
+		opts = append(opts, withHTTPPath(path.Join("/", backend.Path, "v1", string(signal))))
+	}
+
+	return opts
+}
+
+// runtimeOptions produces options by parsing the layer's raw env var values.
+// Protocol options are returned separately because endpoint resolution
+// depends on the fully-resolved protocol.
+func (layer Layer) runtimeOptions(signal core_xds.OtelSignal, signalSpecific bool) ([]runtimeOption, []runtimeOption) {
+	var protocolOpts, fieldOpts []runtimeOption
+
+	if layer.Protocol != nil {
+		if p, ok := parseProtocol(*layer.Protocol); ok {
+			protocolOpts = append(protocolOpts, withProtocol(p))
+		}
+	}
+
+	fieldOpts = append(fieldOpts, layer.endpointAndTLSOption(signal, signalSpecific))
+
+	if layer.Headers != nil {
+		if headers := parseHeaders(*layer.Headers); len(headers) > 0 {
+			fieldOpts = append(fieldOpts, withHeaders(headers))
+		}
+	}
+
+	if layer.Compression != nil {
+		if c, ok := parseCompression(*layer.Compression); ok {
+			fieldOpts = append(fieldOpts, withCompression(c))
+		}
+	}
+
+	if layer.Timeout != nil {
+		if t, ok := parseTimeout(*layer.Timeout); ok {
+			fieldOpts = append(fieldOpts, withTimeout(t))
+		}
+	}
+
+	if layer.Certificate != nil {
+		fieldOpts = append(fieldOpts, withCertificate(*layer.Certificate))
+	}
+
+	if layer.ClientCertificate != nil && layer.ClientKey != nil {
+		fieldOpts = append(fieldOpts, withClientCerts(*layer.ClientCertificate, *layer.ClientKey))
+	}
+
+	return protocolOpts, fieldOpts
+}
+
+// endpointAndTLSOption returns a single option that handles both endpoint
+// resolution and TLS. These interact because URL scheme-derived TLS
+// suppresses the Insecure env var within the same layer.
+func (layer Layer) endpointAndTLSOption(signal core_xds.OtelSignal, signalSpecific bool) runtimeOption {
+	return func(r *SignalRuntime) {
+		tlsFromScheme := false
+		if ep, ok := layer.resolveEndpoint(r.Transport.Protocol, signal, signalSpecific); ok {
+			r.Transport.Endpoint = ep.Host
+			if ep.HTTPPath != "" {
+				r.HTTPPath = ep.HTTPPath
+			}
+			if ep.UseTLS != nil {
+				r.Transport.UseTLS = new(*ep.UseTLS)
+				tlsFromScheme = true
+			}
+		}
+
+		if !tlsFromScheme && layer.Insecure != nil {
+			if insecure, err := strconv.ParseBool(*layer.Insecure); err == nil {
+				r.Transport.UseTLS = new(!insecure)
+			}
+		}
+	}
+}
+
+// --- endpoint resolution ---
 
 type resolvedEndpoint struct {
 	Host     string
@@ -108,8 +237,6 @@ type resolvedEndpoint struct {
 	UseTLS   *bool // non-nil when URL scheme determined TLS
 }
 
-// resolveEndpoint parses the layer's endpoint for the given protocol and
-// signal context. Returns ok=false when absent or incompatible (gRPC + path).
 func (layer Layer) resolveEndpoint(
 	protocol core_xds.OtelProtocol,
 	signal core_xds.OtelSignal,
@@ -118,14 +245,10 @@ func (layer Layer) resolveEndpoint(
 	if layer.Endpoint == nil {
 		return resolvedEndpoint{}, false
 	}
-	value := strings.TrimSpace(*layer.Endpoint)
-	if value == "" {
-		return resolvedEndpoint{}, false
-	}
 
-	parsed, err := url.Parse(value)
+	parsed, err := url.Parse(*layer.Endpoint)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return resolvedEndpoint{Host: value}, true
+		return resolvedEndpoint{Host: *layer.Endpoint}, true
 	}
 
 	if parsed.Path != "" && protocol != core_xds.OtelProtocolHTTPProtobuf {
@@ -133,11 +256,7 @@ func (layer Layer) resolveEndpoint(
 	}
 
 	ep := resolvedEndpoint{Host: parsed.Host}
-	if strings.EqualFold(parsed.Scheme, "http") || strings.EqualFold(parsed.Scheme, "unix") {
-		ep.UseTLS = new(false)
-	} else {
-		ep.UseTLS = new(true)
-	}
+	ep.UseTLS = new(!isInsecureScheme(parsed.Scheme))
 
 	if protocol == core_xds.OtelProtocolHTTPProtobuf {
 		p := parsed.Path
@@ -154,87 +273,27 @@ func (layer Layer) resolveEndpoint(
 	return ep, true
 }
 
-// mergeLayer applies an env layer's parsed values onto the runtime transport.
-func (r *SignalRuntime) mergeLayer(layer Layer, signal core_xds.OtelSignal, signalSpecific, preferEnv bool) {
-	tlsFromScheme := false
-	if ep, ok := layer.resolveEndpoint(r.Transport.Protocol, signal, signalSpecific); ok {
-		if preferEnv || r.Transport.Endpoint == "" {
-			r.Transport.Endpoint = ep.Host
-		}
-		if ep.HTTPPath != "" && (preferEnv || r.HTTPPath == "") {
-			r.HTTPPath = ep.HTTPPath
-		}
-		if ep.UseTLS != nil && (preferEnv || r.Transport.UseTLS == nil) {
-			r.Transport.UseTLS = new(*ep.UseTLS)
-			tlsFromScheme = true
-		}
-	}
-
-	if !tlsFromScheme && layer.Insecure != nil && (preferEnv || r.Transport.UseTLS == nil) {
-		r.Transport.UseTLS = new(!strings.EqualFold(strings.TrimSpace(*layer.Insecure), "true"))
-	}
-
-	if layer.Headers != nil && (preferEnv || len(r.Transport.Headers) == 0) {
-		if headers := parseHeaders(*layer.Headers); len(headers) > 0 {
-			r.Transport.Headers = headers
-		}
-	}
-
-	if layer.Compression != nil && (preferEnv || r.Transport.Compression == "") {
-		if c, ok := parseCompression(*layer.Compression); ok {
-			r.Transport.Compression = c
-		}
-	}
-
-	if layer.Timeout != nil && (preferEnv || r.Transport.Timeout == 0) {
-		if t, ok := parseTimeout(*layer.Timeout); ok {
-			r.Transport.Timeout = t
-		}
-	}
-
-	mergeString(&r.Transport.Certificate, layer.Certificate, preferEnv)
-	if layer.ClientCertificate != nil && layer.ClientKey != nil && (preferEnv || r.Transport.ClientCertificate == "") {
-		r.Transport.ClientCertificate = *layer.ClientCertificate
-		r.Transport.ClientKey = *layer.ClientKey
+func isInsecureScheme(scheme string) bool {
+	switch strings.ToLower(scheme) {
+	case "http", "unix":
+		return true
+	default:
+		return false
 	}
 }
 
-func mergeString(target *string, source *string, preferEnv bool) {
-	if source != nil && (preferEnv || *target == "") {
-		*target = *source
-	}
-}
+// --- parse helpers ---
 
-// resolveEndpointAddress fills in the host portion when the CP sent an empty
-// host (e.g. ":4317"). Uses HOST_IP env var, falling back to 127.0.0.1.
 func resolveEndpointAddress(endpoint string) string {
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil || host != "" {
 		return endpoint
 	}
-	hostIP := cmp.Or(os.Getenv("HOST_IP"), "127.0.0.1")
-	return net.JoinHostPort(hostIP, port)
-}
-
-func pickProtocol(current core_xds.OtelProtocol, field *string, preferEnv bool) core_xds.OtelProtocol {
-	if field == nil {
-		return current
-	}
-
-	parsed, ok := parseProtocol(*field)
-	if !ok {
-		return current
-	}
-
-	if preferEnv || current == "" {
-		return parsed
-	}
-
-	return current
+	return net.JoinHostPort(cmp.Or(os.Getenv("HOST_IP"), "127.0.0.1"), port)
 }
 
 func parseProtocol(value string) (core_xds.OtelProtocol, bool) {
-	switch strings.TrimSpace(value) {
+	switch value {
 	case string(core_xds.OtelProtocolGRPC):
 		return core_xds.OtelProtocolGRPC, true
 	case string(core_xds.OtelProtocolHTTPProtobuf):
@@ -245,8 +304,7 @@ func parseProtocol(value string) (core_xds.OtelProtocol, bool) {
 }
 
 func parseCompression(value string) (string, bool) {
-	v := strings.ToLower(strings.TrimSpace(value))
-	switch v {
+	switch strings.ToLower(value) {
 	case "gzip":
 		return "gzip", true
 	case "none", "":
@@ -257,41 +315,26 @@ func parseCompression(value string) (string, bool) {
 }
 
 func parseTimeout(value string) (time.Duration, bool) {
-	timeoutMS, err := strconv.Atoi(strings.TrimSpace(value))
+	timeoutMS, err := strconv.Atoi(value)
 	if err != nil || timeoutMS < 0 {
 		return 0, false
 	}
+
 	return time.Duration(timeoutMS) * time.Millisecond, true
 }
 
 func parseHeaders(value string) map[string]string {
-	headers := map[string]string{}
 	parsed, _ := baggage.Parse(value)
-	for _, member := range parsed.Members() {
+	if parsed.Len() == 0 {
+		return nil
+	}
+
+	headers := make(map[string]string, parsed.Len())
+	for member := range slices.Values(parsed.Members()) {
 		headers[member.Key()] = member.Value()
 	}
+
 	return headers
-}
-
-func sharedEnvAllowed(plan *core_xds.OtelSignalRuntimePlan) bool {
-	if plan == nil {
-		return false
-	}
-	for _, reason := range plan.BlockedReasons {
-		switch reason {
-		case core_xds.OtelBlockedReasonEnvDisabledByPolicy,
-			core_xds.OtelBlockedReasonMultipleBackends:
-			return false
-		}
-	}
-	return true
-}
-
-func signalEnvAllowed(plan *core_xds.OtelSignalRuntimePlan) bool {
-	if !sharedEnvAllowed(plan) || plan == nil {
-		return false
-	}
-	return !slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonSignalOverridesBlocked)
 }
 
 func layerForSignal(cfg Config, signal core_xds.OtelSignal) Layer {

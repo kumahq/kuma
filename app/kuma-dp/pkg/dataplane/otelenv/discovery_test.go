@@ -20,7 +20,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 
 		cfg := discoverWithLookup(true, env)
 
-		Expect(cfg.Inventory).ToNot(BeNil())
 		Expect(cfg.Inventory.PipeEnabled).To(BeTrue())
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.EndpointPresent).To(BeTrue())
@@ -46,7 +45,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 
 		cfg := discoverWithLookup(false, env)
 
-		Expect(cfg.Inventory).ToNot(BeNil())
 		Expect(cfg.Inventory.ValidationErrors).To(ConsistOf("shared.protocol", "shared.timeout", "shared.compression", "traces.mtls"))
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolUnknown))
@@ -61,7 +59,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 
 		cfg := discoverWithLookup(false, env)
 
-		Expect(cfg.Inventory).ToNot(BeNil())
 		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.CompressionPresent).To(BeTrue())
@@ -74,7 +71,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 
 		cfg := discoverWithLookup(false, env)
 
-		Expect(cfg.Inventory).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared).To(BeNil())
 		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
 	})
@@ -86,7 +82,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 
 		cfg := discoverWithLookup(false, env)
 
-		Expect(cfg.Inventory).ToNot(BeNil())
 		Expect(cfg.Inventory.ValidationErrors).To(ContainElement("shared.endpoint"))
 	})
 
@@ -98,7 +93,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 
 		cfg := discoverWithLookup(false, env)
 
-		Expect(cfg.Inventory).ToNot(BeNil())
 		Expect(cfg.Inventory.ValidationErrors).To(ContainElement("traces.endpoint"))
 	})
 
@@ -109,7 +103,6 @@ var _ = Describe("DiscoverWithLookup", func() {
 
 		cfg := discoverWithLookup(false, env)
 
-		Expect(cfg.Inventory).ToNot(BeNil())
 		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
