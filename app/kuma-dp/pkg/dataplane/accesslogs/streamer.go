@@ -106,8 +106,8 @@ func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) error {
 		var accessLogMsg []byte
 
 		type wrappedMessage struct {
-			Address string      `json:"address"`
-			Message interface{} `json:"message"`
+			Address string `json:"address"`
+			Message any    `json:"message"`
 		}
 
 		var wrappedMsg wrappedMessage

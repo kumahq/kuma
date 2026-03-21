@@ -14,7 +14,7 @@ import (
 )
 
 type KubernetesResourcesClient interface {
-	Get(ctx context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]interface{}, error)
+	Get(ctx context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]any, error)
 }
 
 type HTTPKubernetesResourcesClient struct {
@@ -35,7 +35,7 @@ func NewHTTPKubernetesResourcesClient(client util_http.Client, defs []model.Reso
 	}
 }
 
-func (k *HTTPKubernetesResourcesClient) Get(ctx context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]interface{}, error) {
+func (k *HTTPKubernetesResourcesClient) Get(ctx context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]any, error) {
 	api, err := k.api.GetResourceApi(descriptor.Name)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (k *HTTPKubernetesResourcesClient) Get(ctx context.Context, descriptor mode
 	if resp.StatusCode != 200 {
 		return nil, errors.Errorf("unexpected status code: %d %s", resp.StatusCode, b)
 	}
-	obj := map[string]interface{}{}
+	obj := map[string]any{}
 	if err := json.Unmarshal(b, &obj); err != nil {
 		return nil, err
 	}
