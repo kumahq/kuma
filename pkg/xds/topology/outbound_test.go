@@ -1603,6 +1603,20 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("remote MeshService without Zone Ingress public address is not included", testCase{
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
+					builders.ZoneIngress().
+						WithZone("east").
+						// No AdvertisedAddress/AdvertisedPort - simulates pending external IP
+						Build(),
+				},
+				meshServices: []*meshservice_api.MeshServiceResource{
+					samples.MeshServiceSyncedBackend(), // remote MeshService from "east" zone
+				},
+				mesh: defaultMeshWithMTLS,
+				// No endpoints should be generated because Zone Ingress has no public address
+				expected: core_xds.EndpointMap{},
+			}),
 		)
 		Describe("BuildEgressEndpointMap()", func() {
 			type testCase struct {
