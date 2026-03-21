@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"runtime"
@@ -85,7 +86,7 @@ func UnsafeStartTCPServer(
 		}
 		defer ns.Unset() //nolint:errcheck
 
-		l, err := net.Listen("tcp", address)
+		l, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", address)
 		if err != nil {
 			errorC <- fmt.Errorf("cannot start TCP server: %s", err)
 		}

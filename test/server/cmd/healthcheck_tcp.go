@@ -21,7 +21,7 @@ func newHealthCheckTCP() *cobra.Command {
 		Short: "Run Test Server for TCP Health Check test",
 		Long:  `Run Test Server for TCP Health Check test.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			ln, err := net.Listen("tcp", fmt.Sprintf(":%d", args.port))
+			ln, err := (&net.ListenConfig{}).Listen(cmd.Context(), "tcp", fmt.Sprintf(":%d", args.port))
 			if err != nil {
 				return err
 			}

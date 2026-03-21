@@ -1420,7 +1420,7 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
 		container := c.name
-		createCmd := exec.Command("k3d", "node", "create", name, "-c", container, "--k3s-node-label", label)
+		createCmd := exec.CommandContext(context.Background(), "k3d", "node", "create", name, "-c", container, "--k3s-node-label", label)
 		createCmd.Stdout = os.Stdout
 		return createCmd.Run()
 	case KindK8sType, AwsK8sType, AzureK8sType:
@@ -1476,7 +1476,7 @@ func (c *K8sCluster) DeleteNode(name string) error {
 		if err != nil {
 			return err
 		}
-		return exec.Command("k3d", "node", "delete", name).Run()
+		return exec.CommandContext(context.Background(), "k3d", "node", "delete", name).Run()
 	case KindK8sType, AwsK8sType, AzureK8sType:
 		return errors.New("deleting new node not available for " + string(Config.K8sType))
 	default:
