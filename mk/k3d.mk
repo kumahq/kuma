@@ -429,7 +429,7 @@ ifeq (,$(or $(K3D_DEPLOY_HELM_DONT_CLEAN),$(K3D_DEPLOY_HELM_DONT_CLEAN_RELEASE))
 	$(Q)$(HELM) delete --wait --ignore-not-found --namespace $(KUMA_NAMESPACE) $(PROJECT_NAME) >/dev/null 2>&1
 
 	$(Q)echo "Waiting for control plane pods to terminate..."
-	$(Q)until $(KUBECTL) get pods --namespace $(KUMA_NAMESPACE) --selector app=$(PROJECT_NAME)-control-plane >/dev/null 2>&1; do \
+	$(Q)until [ -z "$$($(KUBECTL) get pods --namespace $(KUMA_NAMESPACE) --selector app=$(PROJECT_NAME)-control-plane -o name 2>/dev/null)" ]; do \
 	  echo "  Still terminating..."; \
 	  sleep 1; \
 	done
