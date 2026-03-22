@@ -3,28 +3,28 @@
 ## k3d cluster setup
 
 ```bash
-make k3d/start KIND_CLUSTER_NAME=kuma-1
-export KUBECONFIG=~/.kube/kind-kuma-1-config
+make k3d/cluster/start CLUSTER=kuma-1
+export KUBECONFIG=~/.kube/k3d-kuma-1.yaml
 ```
 
-Kubeconfig: `~/.kube/kind-<name>-config`. k3d context: `k3d-<name>`.
+Kubeconfig: `~/.kube/k3d-<name>.yaml`. k3d context: `k3d-<name>`.
 
 ### Build, load, and deploy
 
 ```bash
 # One step: build images, load into k3d, clean previous release, helm install, wait for CP
-make k3d/deploy/helm KIND_CLUSTER_NAME=kuma-1
+make k3d/cluster/deploy/helm CLUSTER=kuma-1
 
 # Or step by step:
-make k3d/load KIND_CLUSTER_NAME=kuma-1
-make k3d/deploy/helm/upgrade k3d/deploy/wait/cp KIND_CLUSTER_NAME=kuma-1
+make k3d/cluster/load CLUSTER=kuma-1
+make k3d/cluster/deploy/helm/upgrade k3d/cluster/deploy/wait/cp CLUSTER=kuma-1
 ```
 
 ### Variables
 
 | Variable | Default | Purpose |
 |:---------|:--------|:--------|
-| `KIND_CLUSTER_NAME` | `kuma` | Cluster name |
+| `CLUSTER` | `kuma` | Cluster name (accepts `kuma`, digits, or `kuma-<N>`) |
 | `KUMA_MODE` | `zone` | `zone` or `global` |
 | `K3D_HELM_DEPLOY_NO_CNI` | unset | Set `true` to skip CNI (lighter for local dev) |
 | `K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS` | unset | Extra helm values, space-separated |
@@ -33,22 +33,22 @@ make k3d/deploy/helm/upgrade k3d/deploy/wait/cp KIND_CLUSTER_NAME=kuma-1
 ### Deploy with custom settings
 
 ```bash
-make k3d/deploy/helm KIND_CLUSTER_NAME=kuma-1 \
+make k3d/cluster/deploy/helm CLUSTER=kuma-1 \
   K3D_HELM_DEPLOY_NO_CNI=true \
   K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS="dataPlane.features.unifiedResourceNaming=true"
 ```
 
-Other targets: `k3d/deploy/kumactl` (deploy via CLI), `k3d/deploy/demo` (demo app), `k3d/stop` (delete cluster).
+Other targets: `k3d/cluster/deploy/kumactl` (deploy via CLI), `k3d/cluster/deploy/demo` (demo app), `k3d/cluster/stop` (delete cluster), `k3d/destroy` (delete all clusters + network).
 
-Renamed targets that will error: `k3d/restart` (use `k3d/restart/kumactl`), `k3d/deploy/kuma` (use `k3d/deploy/kumactl`).
+Old target names still work but print a deprecation warning. Targets `k3d/deploy/kuma` and `k3d/restart` will error with the new name.
 
 ### Skaffold dev loop
 
 Hot-reload: watches code changes, rebuilds, redeploys. Config: `skaffold.yaml`.
 
 ```bash
-make k3d/start KIND_CLUSTER_NAME=kuma-1
-export KUBECONFIG=~/.kube/kind-kuma-1-config
+make k3d/cluster/start CLUSTER=kuma-1
+export KUBECONFIG=~/.kube/k3d-kuma-1.yaml
 make dev/fetch-demo
 skaffold dev
 ```
@@ -95,11 +95,11 @@ kubectl patch mesh default --type merge \
 
 ### Test a policy change locally
 
-1. Build, load, deploy: `make k3d/deploy/helm KIND_CLUSTER_NAME=kuma-1`
+1. Build, load, deploy: `make k3d/cluster/deploy/helm CLUSTER=kuma-1`
 2. Create a test namespace with sidecar injection: `kubectl label namespace <ns> kuma.io/sidecar-injection=enabled`
 3. Deploy a test workload and apply the policy
 4. Inspect Envoy config to verify xDS changes (see Envoy admin API above)
-5. Clean up: `make k3d/stop KIND_CLUSTER_NAME=kuma-1`
+5. Clean up: `make k3d/cluster/stop CLUSTER=kuma-1`
 
 ## CPU limit workaround
 

@@ -66,11 +66,41 @@ type K8sCluster struct {
 
 var _ Cluster = &K8sCluster{}
 
+func defaultKubeConfigPath(clusterName string) string {
+	k8sType := K3dK8sType // default matches K8S_CLUSTER_TOOL in mk/e2e.new.mk
+	if Config != nil {
+		k8sType = Config.K8sType
+	} else if value := os.Getenv("KUMA_K8S_TYPE"); value != "" {
+		k8sType = K8sType(value)
+	}
+
+	var primary string
+	switch k8sType {
+	case KindK8sType:
+		primary = os.ExpandEnv(fmt.Sprintf(defaultToolKubeConfigPathPattern, "kind", clusterName))
+	case K3dK8sType, K3dCalicoK8sType:
+		primary = os.ExpandEnv(fmt.Sprintf(defaultToolKubeConfigPathPattern, "k3d", clusterName))
+	default:
+		return os.ExpandEnv(fmt.Sprintf(legacyKubeConfigPathPattern, clusterName))
+	}
+
+	if _, err := os.Stat(primary); err == nil {
+		return primary
+	}
+	// Fall back to the pre-refactor filename so that clusters created before
+	// the tool-prefixed naming scheme are still discovered.
+	legacy := os.ExpandEnv(fmt.Sprintf(oldKindKubeConfigPathPattern, clusterName))
+	if _, err := os.Stat(legacy); err == nil {
+		return legacy
+	}
+	return primary
+}
+
 func NewK8sCluster(t testing.TestingT, clusterName string, verbose bool) *K8sCluster {
 	return &K8sCluster{
 		t:                   t,
 		name:                clusterName,
-		kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, clusterName)),
+		kubeconfig:          defaultKubeConfigPath(clusterName),
 		forwardedPortsChans: []chan struct{}{},
 		verbose:             verbose,
 		deployments:         map[string]Deployment{},

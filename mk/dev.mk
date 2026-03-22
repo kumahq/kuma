@@ -33,7 +33,8 @@ K8S_MAX_VERSION=v1.34.1-k3s1
 KUBEBUILDER_ASSETS_VERSION=1.33
 
 GO := $(shell $(MISE) which go)
-export GO_VERSION := $(shell $(GO) mod edit -json | jq -r .Go)
+JQ := $(shell $(MISE) which jq)
+export GO_VERSION := $(shell $(GO) mod edit -json | $(JQ) -r .Go)
 GOOS := $(shell $(GO) env GOOS)
 GOARCH := $(shell $(GO) env GOARCH)
 
@@ -43,9 +44,8 @@ define GATE_PUSH
 $(if $(filter $(ALLOW_PUSH),true),$(1), # $(1))
 endef
 
-# The e2e tests depend on Kind kubeconfigs being in this directory,
-# so this is location should not be changed by developers.
-KUBECONFIG_DIR := $(HOME)/.kube
+# KUBECONFIG_DIR is defined in mk/k8s.mk (included via Makefile).
+# Do not redefine it here.
 
 PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
 
@@ -59,7 +59,7 @@ PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy --output $(BUF_C
 PROTO_XDS := $(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
-K3D_BIN=$(MISE) exec -- k3d
+K3D=$(MISE) exec -- k3d
 KIND=$(shell $(MISE) which kind)
 SETUP_ENVTEST=$(shell $(MISE) which setup-envtest)
 KUBEBUILDER_ASSETS=$(shell $(SETUP_ENVTEST) use $(KUBEBUILDER_ASSETS_VERSION) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
@@ -134,7 +134,12 @@ dev/merge-release:
 .PHONY: dev/enrc
 dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	@echo 'export CI_TOOLS_DIR=$$(expand_path .tools)' > .envrc
-	@for c in $(patsubst %,$(KUBECONFIG_DIR)/kind-%-config,kuma $(K8SCLUSTERS)) $(KUBECONFIG_DIR)/kind-kuma-current ; do \
+	@for c in \
+		$(KUBECONFIG_DIR)/kind-kuma.yaml \
+		$(patsubst %,$(KUBECONFIG_DIR)/kind-%.yaml,$(K8SCLUSTERS)) \
+		$(KUBECONFIG_DIR)/k3d-kuma.yaml \
+		$(patsubst %,$(KUBECONFIG_DIR)/k3d-%.yaml,$(K8SCLUSTERS)) \
+		$(KUBECONFIG_DIR)/kind-kuma-current ; do \
 		echo "path_add KUBECONFIG $$c" ; \
 	done >> .envrc
 	@echo 'export KUBECONFIG' >> .envrc
