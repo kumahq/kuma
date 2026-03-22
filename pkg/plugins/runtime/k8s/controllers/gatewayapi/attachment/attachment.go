@@ -150,7 +150,7 @@ func nameMatchesWildcardName(name, pat gatewayapi.Hostname) bool {
 	return strings.HasSuffix(string(name), suffix) && suffix != string(name)
 }
 
-func hostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames []gatewayapi.Hostname) bool {
+func HostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames []gatewayapi.Hostname) bool {
 	if len(routeHostnames) == 0 {
 		return true
 	}
@@ -203,7 +203,7 @@ func evaluateGatewayAttachment(
 		)
 	}
 
-	if !hostnamesIntersect(routeHostnames, listenerHostnames) {
+	if !HostnamesIntersect(routeHostnames, listenerHostnames) {
 		return NoHostnameIntersection, nil
 	}
 
