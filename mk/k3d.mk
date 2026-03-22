@@ -277,7 +277,7 @@ k3d/docker/credentials/cleanup:
 K3D_CREATE_CLUSTER ?= $(KUMA_DIR)/mk/resources/k3d-create-cluster.sh
 
 .PHONY: k3d/cluster/create
-k3d/cluster/create:
+k3d/cluster/create: $(KUBECONFIG_DIR)
 	$(Q)$(K3D_CREATE_CLUSTER) \
 	  "$(DOCKER_NETWORK)" \
 	  "$(K3D_PORT_PREFIX_LOCK_DIR)" \

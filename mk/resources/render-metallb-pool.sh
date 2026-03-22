@@ -22,6 +22,11 @@ parent_subnet=$(
     | head -n 1
 )
 
+if [ -z "$parent_subnet" ]; then
+  echo "Docker network '$network' has no IPv4 subnet configured" >&2
+  exit 1
+fi
+
 prefix_len="${parent_subnet##*/}"
 if [ "$prefix_len" -gt 16 ]; then
   echo "Docker network '$network' subnet $parent_subnet is narrower than /16; MetalLB needs at least /16" >&2

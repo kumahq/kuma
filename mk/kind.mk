@@ -79,7 +79,7 @@ kind/cluster/stop: kind/cleanup-docker-credentials
 .PHONY: kind/clusters/stop
 kind/clusters/stop:
 	@$(KIND) delete clusters --all
-	@rm -f $(KUBECONFIG_DIR)/kind-*.yaml
+	@rm -f $(KUBECONFIG_DIR)/kind-kuma*.yaml
 
 .PHONY: kind/cluster/load/images
 kind/cluster/load/images:
