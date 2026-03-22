@@ -34,7 +34,8 @@ KUBEBUILDER_ASSETS_VERSION=1.33
 
 GO := $(shell $(MISE) which go)
 JQ := $(shell $(MISE) which jq)
-export GO_VERSION := $(shell $(GO) mod edit -json | $(JQ) -r .Go)
+GO_VERSION = $(shell $(GO) mod edit -json | $(JQ) -r .Go)
+export GO_VERSION
 GOOS := $(shell $(GO) env GOOS)
 GOARCH := $(shell $(GO) env GOARCH)
 
@@ -53,10 +54,11 @@ BUF=$(shell $(MISE) which buf)
 
 # Proto dependencies via Buf
 BUF_CACHE_DIR := $(CI_TOOLS_DIR)/buf/cache
-PROTO_GOOGLE_APIS := $(shell $(BUF) export buf.build/googleapis/googleapis --output $(BUF_CACHE_DIR)/googleapis && echo $(BUF_CACHE_DIR)/googleapis)
-PROTO_PGV := $(shell $(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $(BUF_CACHE_DIR)/pgv && echo $(BUF_CACHE_DIR)/pgv)
-PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
-PROTO_XDS := $(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
+PROTO_GOOGLE_APIS := $(BUF_CACHE_DIR)/googleapis
+PROTO_PGV := $(BUF_CACHE_DIR)/pgv
+PROTO_ENVOY := $(BUF_CACHE_DIR)/envoy
+PROTO_XDS := $(BUF_CACHE_DIR)/xds
+PROTO_DEPS := $(PROTO_GOOGLE_APIS) $(PROTO_PGV) $(PROTO_ENVOY) $(PROTO_XDS)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
 K3D=$(MISE) exec -- k3d
@@ -86,7 +88,7 @@ TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
 TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 
-LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
+LATEST_RELEASE_BRANCH = $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
 
 .PHONY: cmd/check/%
 cmd/check/%:
@@ -103,6 +105,21 @@ install: cmd/check/curl cmd/check/git cmd/check/unzip cmd/check/make cmd/check/g
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)
+
+$(BUF_CACHE_DIR):
+	@mkdir -p $@
+
+$(PROTO_GOOGLE_APIS): | $(BUF_CACHE_DIR)
+	$(BUF) export buf.build/googleapis/googleapis --output $@
+
+$(PROTO_PGV): | $(BUF_CACHE_DIR)
+	$(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $@
+
+$(PROTO_ENVOY): | $(BUF_CACHE_DIR)
+	$(BUF) export buf.build/envoyproxy/envoy --output $@
+
+$(PROTO_XDS): | $(BUF_CACHE_DIR)
+	$(BUF) export buf.build/cncf/xds --output $@
 
 # kubectl always writes the current context into the first config file. When
 # debugging, it's common to switch contexts and we don't want to edit the Kind
@@ -131,7 +148,7 @@ dev/merge-release:
 
 # Generate a .envrc that prepends e2e test suite configs to whatever
 # KUBECONFIG currently has, and stores CI tooling in .tools.
-.PHONY: dev/enrc
+.PHONY: dev/envrc
 dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	@echo 'export CI_TOOLS_DIR=$$(expand_path .tools)' > .envrc
 	@for c in \

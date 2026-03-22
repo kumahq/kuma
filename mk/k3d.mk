@@ -68,7 +68,7 @@ K3D_DISABLE := $(filter-out $(strip $(K3D_ENABLE)),$(K3D_DISABLE_DEFAULT))
 
 K3D_CLUSTER_CREATE_OPTS ?= \
 	--image "$(K3S_IMAGE)" \
-	--volume "$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0" \
+	--volume "$(subst @,\@,$(abspath $(KUMA_DIR)))/test/framework/deployments:/tmp/deployments@server:0" \
 	--network "$(DOCKER_NETWORK)" \
 	--timeout "120s" \
 	--k3s-arg "--kubelet-arg=image-gc-high-threshold=100@server:0" \
@@ -116,6 +116,19 @@ k3d/%: KUMACTL := $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl
 k3d/cluster/%: export KUBECONFIG  = $(K3D_CLUSTER_KUBECONFIG)
 k3d/cluster/%: export KUBECONTEXT = $(CLUSTER_KUBECONTEXT)
 
+.PHONY: k3d/cluster/start/% k3d/cluster/load/images/% k3d/cluster/wait/% k3d/cluster/stop/%
+k3d/cluster/start/%: CLUSTER = $*
+k3d/cluster/start/%: k3d/cluster/start
+
+k3d/cluster/load/images/%: CLUSTER = $*
+k3d/cluster/load/images/%: k3d/cluster/load/images
+
+k3d/cluster/wait/%: CLUSTER = $*
+k3d/cluster/wait/%: k3d/cluster/wait
+
+k3d/cluster/stop/%: CLUSTER = $*
+k3d/cluster/stop/%: k3d/cluster/stop
+
 # --- Diagnostics ---
 
 .PHONY: k3d/cluster/diagnose
@@ -131,11 +144,11 @@ k3d/cluster/diagnose:
 # which is required because `k3d image import` needs the tagged images to exist.
 
 .PHONY: k3d/cluster/load
-k3d/cluster/load:
 ifndef K3D_DONT_LOAD
-	$(Q)$(MAKE) images
-	$(Q)$(MAKE) docker/tag
-	$(Q)$(MAKE) k3d/cluster/load/images
+k3d/cluster/load: images docker/tag k3d/cluster/load/images
+else
+k3d/cluster/load:
+	@:
 endif
 
 K3D_IMAGE_IMPORT_MODE    ?= direct
@@ -157,7 +170,7 @@ k3d/cluster/load/images:
 # --- CNI setup ---
 
 .PHONY: k3d/cluster/cni/setup
-k3d/cluster/cni/setup: k3d/cluster/cni/setup/$(K3D_CNI) ; @
+k3d/cluster/cni/setup: k3d/cluster/create k3d/cluster/cni/setup/$(K3D_CNI) ; @
 
 .PHONY: k3d/cluster/cni/setup/flannel
 k3d/cluster/cni/setup/flannel: ; @
@@ -179,7 +192,7 @@ k3d/cluster/cni/setup/calico:
 # --- eBPF setup ---
 
 .PHONY: k3d/cluster/ebpf/setup
-k3d/cluster/ebpf/setup:
+k3d/cluster/ebpf/setup: k3d/cluster/cni/setup
 ifeq ($(GOOS),darwin)
 	$(Q)docker exec k3d-$(CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
 	docker exec k3d-$(CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
@@ -256,7 +269,6 @@ $(dir $(DOCKER_NETWORK_LOCK)):
 
 DOCKERHUB_PULL_CREDENTIAL ?=
 
-.PHONY: $(K3D_REGISTRY_FILE)
 $(K3D_REGISTRY_FILE):
 	$(Q)mkdir -p $(dir $@)
 ifneq ($(DOCKERHUB_PULL_CREDENTIAL),)
@@ -279,39 +291,33 @@ k3d/docker/credentials/cleanup:
 K3D_CREATE_CLUSTER ?= $(KUMA_DIR)/mk/resources/k3d-create-cluster.sh
 
 .PHONY: k3d/cluster/create
-k3d/cluster/create: $(KUBECONFIG_DIR)
+k3d/cluster/create: $(KUBECONFIG_DIR) k3d/docker/network/create k3d/docker/credentials/setup
 	$(Q)$(K3D_CREATE_CLUSTER) \
 	  "$(DOCKER_NETWORK)" \
 	  "$(K3D_PORT_PREFIX_LOCK_DIR)" \
 	  -- \
 	  $(K3D) cluster create $(CLUSTER_NAME) $(K3D_CLUSTER_CREATE_OPTS)
+	$(Q)$(call k8s_link_legacy_kubeconfig,$(K3D_CLUSTER_KUBECONFIG))
 
 .PHONY: k3d/cluster/stop
 k3d/cluster/stop:
-	$(Q)$(K3D) cluster delete $(CLUSTER_NAME) && rm -f $(K3D_CLUSTER_KUBECONFIG)
+	$(Q)$(K3D) cluster delete $(CLUSTER_NAME) && \
+	  $(call k8s_unlink_legacy_kubeconfig,$(K3D_CLUSTER_KUBECONFIG)) && \
+	  rm -f $(K3D_CLUSTER_KUBECONFIG)
 
-# Orchestrated via sequential $(MAKE) calls to guarantee ordering under -j.
 .PHONY: k3d/cluster/start
-k3d/cluster/start:
-	$(Q)$(MAKE) k3d/docker/network/create
-	$(Q)$(MAKE) k3d/docker/credentials/setup
-	$(Q)$(MAKE) k3d/cluster/create
-	$(Q)$(MAKE) k3d/cluster/cni/setup
-	$(Q)$(MAKE) k3d/cluster/ebpf/setup
-	$(Q)$(MAKE) k3d/cluster/wait
-	$(Q)$(MAKE) k3d/cluster/metallb/setup
+k3d/cluster/start: k3d/cluster/metallb/setup
 
 # --- MetalLB ---
 
 METALLB_RENDER_POOL    ?= $(KUMA_DIR)/mk/resources/render-metallb-pool.sh
 METALLB_RESOURCES      ?= $(TMP_DIR_K8S)/metallb-$(CLUSTER_NAME).yaml
 
-.PHONY: $(METALLB_RESOURCES)
 $(METALLB_RESOURCES): $(METALLB_RENDER_POOL) k3d/docker/network/create
 	$(Q)$(METALLB_RENDER_POOL) $(DOCKER_NETWORK) $(CLUSTER_NUMBER) $@ $(METALLB_NAMESPACE)
 
 .PHONY: k3d/cluster/metallb/setup
-k3d/cluster/metallb/setup: $(METALLB_RESOURCES)
+k3d/cluster/metallb/setup: k3d/cluster/wait $(METALLB_RESOURCES)
 	$(Q)$(KUBECTL) apply \
 	  --filename $(METALLB_MANIFESTS)
 
@@ -330,7 +336,7 @@ k3d/cluster/metallb/setup: $(METALLB_RESOURCES)
 .PHONY: k3d/cluster/wait
 k3d/cluster/wait: NAMESPACE   ?= kube-system
 k3d/cluster/wait: MAX_RETRIES ?= 30
-k3d/cluster/wait:
+k3d/cluster/wait: k3d/cluster/ebpf/setup
 	$(Q)tries=0; \
 	until $(KUBECTL) wait pods --all \
 	  --context $(KUBECONTEXT) \
@@ -353,6 +359,10 @@ k3d/clusters/destroy:
 	@for cluster in $$($(K3D) cluster list --output json | $(JQ) -r '.[].name'); do \
 		echo "Deleting cluster $$cluster"; \
 		$(K3D) cluster delete $$cluster; \
+		legacy="$(KUBECONFIG_DIR)/$$cluster.yaml"; \
+		if [ -L "$$legacy" ] && [ "$$(readlink "$$legacy")" = "$(KUBECONFIG_DIR)/k3d-$$cluster.yaml" ]; then \
+			rm -f "$$legacy"; \
+		fi; \
 		rm -f $(KUBECONFIG_DIR)/k3d-$$cluster.yaml; \
 	done
 
@@ -395,7 +405,7 @@ k3d/cluster/deploy/wait/mesh:
 # --- Deploy: kumactl ---
 
 .PHONY: k3d/cluster/deploy/kumactl/install
-k3d/cluster/deploy/kumactl/install:
+k3d/cluster/deploy/kumactl/install: build/kumactl k3d/cluster/load
 	$(Q)$(KUMACTL) install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) \
 	  | $(KUBECTL) apply --filename - \
 	  | grep --invert-match 'unchanged'
@@ -407,18 +417,19 @@ k3d/cluster/deploy/kumactl/clean:
 		| $(KUBECTL) delete --filename -
 
 .PHONY: k3d/cluster/deploy/kumactl
-k3d/cluster/deploy/kumactl:
-	$(Q)$(MAKE) build/kumactl
-	$(Q)$(MAKE) k3d/cluster/load
-	$(Q)$(MAKE) k3d/cluster/deploy/kumactl/install
-	$(Q)$(MAKE) k3d/cluster/deploy/wait/cp
+k3d/cluster/deploy/kumactl: k3d/cluster/deploy/kumactl/install k3d/cluster/deploy/wait/cp
+
+.PHONY: k3d/cluster/restart/kumactl/stop
+k3d/cluster/restart/kumactl/stop: k3d/cluster/stop
+
+.PHONY: k3d/cluster/restart/kumactl/start
+k3d/cluster/restart/kumactl/start: k3d/cluster/restart/kumactl/stop k3d/cluster/start
+
+.PHONY: k3d/cluster/restart/kumactl/deploy
+k3d/cluster/restart/kumactl/deploy: k3d/cluster/restart/kumactl/start k3d/cluster/deploy/kumactl
 
 .PHONY: k3d/cluster/restart/kumactl
-k3d/cluster/restart/kumactl:
-	$(Q)$(MAKE) k3d/cluster/stop
-	$(Q)$(MAKE) k3d/cluster/start
-	$(Q)$(MAKE) k3d/cluster/deploy/kumactl
-	$(Q)$(MAKE) k3d/cluster/deploy/demo
+k3d/cluster/restart/kumactl: k3d/cluster/restart/kumactl/deploy k3d/cluster/deploy/demo
 
 # --- Deploy: Helm ---
 
@@ -449,12 +460,10 @@ ifeq (,$(or $(K3D_DEPLOY_HELM_DONT_CLEAN),$(K3D_DEPLOY_HELM_DONT_CLEAN_NS)))
 endif
 
 .PHONY: k3d/cluster/deploy/helm/clean
-k3d/cluster/deploy/helm/clean:
-	$(Q)$(MAKE) k3d/cluster/deploy/helm/clean/release
-	$(Q)$(MAKE) k3d/cluster/deploy/helm/clean/ns
+k3d/cluster/deploy/helm/clean: k3d/cluster/deploy/helm/clean/release k3d/cluster/deploy/helm/clean/ns
 
 .PHONY: k3d/cluster/deploy/helm/upgrade
-k3d/cluster/deploy/helm/upgrade:
+k3d/cluster/deploy/helm/upgrade: k3d/cluster/load k3d/cluster/deploy/helm/clean
 	$(Q)echo "Upgrading or installing Helm release '$(PROJECT_NAME)'..."
 	$(Q)$(HELM) upgrade $(PROJECT_NAME) ./deployments/charts/$(PROJECT_NAME) \
 		--install \
@@ -463,11 +472,7 @@ k3d/cluster/deploy/helm/upgrade:
 		$(strip $(K3D_HELM_DEPLOY_OPTS))
 
 .PHONY: k3d/cluster/deploy/helm
-k3d/cluster/deploy/helm:
-	$(Q)$(MAKE) k3d/cluster/load
-	$(Q)$(MAKE) k3d/cluster/deploy/helm/clean
-	$(Q)$(MAKE) k3d/cluster/deploy/helm/upgrade
-	$(Q)$(MAKE) k3d/cluster/deploy/wait/cp
+k3d/cluster/deploy/helm: k3d/cluster/deploy/helm/upgrade k3d/cluster/deploy/wait/cp
 
 # --- Deploy: demo ---
 

@@ -27,6 +27,19 @@ kind/setup-docker-credentials:
 kind/cleanup-docker-credentials:
 	@rm -f /tmp/.kuma-dev/kind-config.json
 
+.PHONY: kind/cluster/start/% kind/cluster/load/images/% kind/cluster/wait/% kind/cluster/stop/%
+kind/cluster/start/%: CLUSTER = $*
+kind/cluster/start/%: kind/cluster/start
+
+kind/cluster/load/images/%: CLUSTER = $*
+kind/cluster/load/images/%: kind/cluster/load/images
+
+kind/cluster/wait/%: CLUSTER = $*
+kind/cluster/wait/%: kind/cluster/wait
+
+kind/cluster/stop/%: CLUSTER = $*
+kind/cluster/stop/%: kind/cluster/stop
+
 # Create the Docker network before kind so kind uses it as primary via
 # KIND_EXPERIMENTAL_DOCKER_NETWORK. This puts kind nodes directly on the
 # same network as universal test containers - no secondary interface needed.
@@ -42,6 +55,7 @@ kind/cluster/start: $(KUBECONFIG_DIR) kind/setup-docker-credentials k8s/docker/n
 			--quiet --wait 120s && \
 		KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) scale deployment --replicas 1 coredns --namespace kube-system && \
 		$(MAKE) kind/cluster/wait)
+	@$(call k8s_link_legacy_kubeconfig,$(KIND_CLUSTER_KUBECONFIG))
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
@@ -71,11 +85,21 @@ kind/cluster/wait:
 .PHONY: kind/cluster/stop
 kind/cluster/stop: kind/cleanup-docker-credentials
 	@$(KIND) delete cluster --kubeconfig $(KIND_CLUSTER_KUBECONFIG) --name $(CLUSTER_NAME)
+	@$(call k8s_unlink_legacy_kubeconfig,$(KIND_CLUSTER_KUBECONFIG))
 	@rm -f $(KIND_CLUSTER_KUBECONFIG)
 
 .PHONY: kind/clusters/stop
 kind/clusters/stop:
 	@$(KIND) delete clusters --all
+	@for kubeconfig in $(KUBECONFIG_DIR)/kind-kuma*.yaml; do \
+		[ -e "$$kubeconfig" ] || continue; \
+		cluster="$${kubeconfig##*/kind-}"; \
+		cluster="$${cluster%.yaml}"; \
+		legacy="$(KUBECONFIG_DIR)/$$cluster.yaml"; \
+		if [ -L "$$legacy" ] && [ "$$(readlink "$$legacy")" = "$$kubeconfig" ]; then \
+			rm -f "$$legacy"; \
+		fi; \
+	done
 	@rm -f $(KUBECONFIG_DIR)/kind-kuma*.yaml
 
 .PHONY: kind/cluster/load/images

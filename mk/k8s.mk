@@ -57,9 +57,19 @@ k8s_cluster_kubeconfig = $(KUBECONFIG_DIR)/$(1)-$(2).yaml
 
 KIND_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,kind,$(CLUSTER_NAME))
 K3D_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,k3d,$(CLUSTER_NAME))
+LEGACY_CLUSTER_KUBECONFIG := $(KUBECONFIG_DIR)/$(CLUSTER_NAME).yaml
 
-# Compatibility alias: kong-mesh and older workflows reference KIND_KUBECONFIG
-KIND_KUBECONFIG = $(KIND_CLUSTER_KUBECONFIG)
+# Compatibility alias: kong-mesh and older workflows reference
+# `KIND_KUBECONFIG` as the active cluster kubeconfig regardless of tool.
+KIND_KUBECONFIG = $(LEGACY_CLUSTER_KUBECONFIG)
+
+define k8s_link_legacy_kubeconfig
+ln -snf "$(abspath $(1))" "$(LEGACY_CLUSTER_KUBECONFIG)"
+endef
+
+define k8s_unlink_legacy_kubeconfig
+if [ -L "$(LEGACY_CLUSTER_KUBECONFIG)" ] && [ "$$(readlink "$(LEGACY_CLUSTER_KUBECONFIG)")" = "$(abspath $(1))" ]; then rm -f "$(LEGACY_CLUSTER_KUBECONFIG)"; fi
+endef
 
 # Temp workspace for generated k8s manifests and caches
 TMP_DIR_K8S ?= /tmp/.kuma-dev

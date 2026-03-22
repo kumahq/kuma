@@ -64,23 +64,23 @@ endif
 
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
-test/e2e/k8s/start/cluster/$1:
-	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/start
-
-.PHONY: test/e2e/k8s/load/images/$1
-test/e2e/k8s/load/images/$1:
-	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/load/images
+test/e2e/k8s/start/cluster/$1: CLUSTER = $1
+test/e2e/k8s/start/cluster/$1: $(K8S_CLUSTER_TOOL)/cluster/start
 
 .PHONY: test/e2e/k8s/wait/$1
-test/e2e/k8s/wait/$1:
-	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/wait
+test/e2e/k8s/wait/$1: CLUSTER = $1
+test/e2e/k8s/wait/$1: test/e2e/k8s/start/cluster/$1 $(K8S_CLUSTER_TOOL)/cluster/wait
+
+.PHONY: test/e2e/k8s/load/images/$1
+test/e2e/k8s/load/images/$1: CLUSTER = $1
+test/e2e/k8s/load/images/$1: test/e2e/k8s/wait/$1 $(K8S_CLUSTER_TOOL)/cluster/load/images
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
-test/e2e/k8s/stop/cluster/$1:
-	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/stop
+test/e2e/k8s/stop/cluster/$1: CLUSTER = $1
+test/e2e/k8s/stop/cluster/$1: $(K8S_CLUSTER_TOOL)/cluster/stop
 endef
 
-$(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
+$(foreach cluster,$(K8SCLUSTERS),$(eval $(call gen-k8sclusters,$(cluster))))
 
 ifdef K8SCLUSTERS
 E2E_ENV_VARS += K8SCLUSTERS="$(K8SCLUSTERS)"
@@ -92,8 +92,7 @@ test/e2e/list:
 	@echo $(ALL_TESTS)
 
 .PHONY: test/e2e/k8s/start
-test/e2e/k8s/start: $(K8SCLUSTERS_START_TARGETS)
-	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # execute after start targets
+test/e2e/k8s/start: $(K8SCLUSTERS_LOAD_IMAGES_TARGETS)
 
 .PHONY: test/e2e/k8s/stop
 test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)

@@ -3,7 +3,7 @@ TEST_PKG_LIST ?= ./...
 REPORTS_DIR ?= build/reports
 # Path to the kumactl binary for Linux. This binary will be uploaded to Docker
 # containers during transparent proxy tests.
-KUMACTL_LINUX_BIN ?= $(BUILD_DIR)/artifacts-linux-$(GOARCH)/kumactl/kumactl
+KUMACTL_LINUX_BIN ?= build/artifacts-linux-$(GOARCH)/kumactl/kumactl
 
 GINKGO_UNIT_TEST_FLAGS ?= \
 	--skip-package ./test --race
@@ -55,6 +55,5 @@ test/cni: TEST_PKG_LIST=./app/cni/...
 test/cni: test ## Dev: Run `cni` tests only
 
 .PHONY: test/transparentproxy
-test/transparentproxy:
-	GOOS=linux $(MAKE) build/kumactl
+test/transparentproxy: $(KUMACTL_LINUX_BIN)
 	KUMACTL_LINUX_BIN=$(KUMACTL_LINUX_BIN) $(UNIT_TEST_ENV) $(GINKGO_TEST) -v ./test/transparentproxy/...

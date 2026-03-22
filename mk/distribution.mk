@@ -23,7 +23,12 @@ TAR_EXCLUDES=--exclude=passwd --exclude=group
 # $(3) - coredns extension to use (or `skip` if we shouldn't include COREDNS)
 # $(4) - primary envoy to use in the distribution (the binary that will be called `envoy`)
 define make_distributions_target
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp build/artifacts-$(1)-$(2)/kuma-dp
+build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): \
+	build/artifacts-$(1)-$(2)/kumactl \
+	build/artifacts-$(1)-$(2)/kuma-cp \
+	build/artifacts-$(1)-$(2)/kuma-dp \
+	$(if $(filter skip,$(3)),,build/artifacts-$(1)-$(2)/coredns) \
+	$(if $(filter skip,$(4)),,build/artifacts-$(1)-$(2)/envoy)
 	rm -rf $$@
 	mkdir -p $$@/bin $$@/conf
 	command cp build/artifacts-$(1)-$(2)/kumactl/kumactl $$@/bin
@@ -34,13 +39,13 @@ build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-
 	command cp -r dashboards $$@/
 # CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly just coredns)
 ifneq ($(3),skip)
-	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
 	command cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
 endif
 
 # Package envoy
-	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_EXT_$(1)_$(2)=$(subst envoy,,$(4))
+ifneq ($(4),skip)
 	command cp -r build/artifacts-$(1)-$(2)/envoy/* $$@/bin
+endif
 
 	# Set permissions correctly
 	find $$@ -type f | xargs chmod 555
@@ -103,7 +108,7 @@ endif
 build/distributions/out: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 	cd $@; sha256sum *.tar.gz > $(DISTRIBUTION_TARGET_NAME).sha256
 
-.PHONY: build/info/distribution/repo
+.PHONY: build/info/cloudsmith_repository
 build/info/cloudsmith_repository:
 	@echo $(PULP_PACKAGE_TYPE)-binaries-$(PULP_DIST_VERSION)
 

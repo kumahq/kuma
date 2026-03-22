@@ -19,7 +19,7 @@ helm-docs: ## Dev: Runs helm-docs generator
 	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/generated/raw
-docs/generated/raw: docs/generated/raw/rbac.yaml
+docs/generated/raw: $(PROTO_DEPS) docs/generated/raw/rbac.yaml
 	mkdir -p $@
 	command cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
 	command cp $(HELM_VALUES_FILE) $@/helm-values.yaml
@@ -33,7 +33,6 @@ docs/generated/raw: docs/generated/raw/rbac.yaml
 		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
 		$(DOCS_PROTOS)
 
-.PHONY: docs/generated/raw/rbac.yaml
 docs/generated/raw/rbac.yaml:
 	@mkdir -p docs/generated/raw
 	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
@@ -53,7 +52,6 @@ API_DIRS     ?= $(TOP)/api/openapi/specs:base
 docs/generated:
 	mkdir -p $@
 
-.PHONY: docs/generated/openapi.yaml
 docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs/generated/openapi/prepare/specs
 	@echo "Rewriting /specs/ paths in all YAML files..."
 	@mkdir -p $(BUILD_DIR)/oapitmp-rewritten
