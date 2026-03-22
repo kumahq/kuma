@@ -39,8 +39,10 @@ while ! mkdir "$lock_dir" 2>/dev/null; do
 done
 trap 'rmdir "$lock_dir"' EXIT INT TERM
 
+# Scan ALL containers' host ports (not just those on our network) because
+# k3d's serverlb binds on 0.0.0.0 and may not be attached to $network.
 used_prefixes=$(
-  docker ps --filter "network=${network}" --format '{{.Ports}}' \
+  docker ps --format '{{.Ports}}' \
     | tr ',' '\n' \
     | sed -E 's/^ *| *$//g; s/^[0-9a-fA-F.:[\]]*://; s/->.*$//' \
     | awk '{
