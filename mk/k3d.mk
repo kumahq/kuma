@@ -50,7 +50,9 @@ endif
 endif
 
 K3D_CNI := $(strip $(K3D_CNI))
-ifneq ($(filter $(K3D_CNI),flannel calico),$(K3D_CNI))
+ifeq ($(K3D_CNI),)
+  override K3D_CNI := flannel
+else ifneq ($(filter $(K3D_CNI),flannel calico),$(K3D_CNI))
   $(warning Unsupported K3D_CNI '$(K3D_CNI)', using flannel)
   override K3D_CNI := flannel
 endif
