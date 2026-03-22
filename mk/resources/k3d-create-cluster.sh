@@ -39,18 +39,32 @@ while ! mkdir "$lock_dir" 2>/dev/null; do
 done
 trap 'rmdir "$lock_dir"' EXIT INT TERM
 
-# Scan ALL containers' host ports (not just those on our network) because
-# k3d's serverlb binds on 0.0.0.0 and may not be attached to $network.
+# Scan ALL containers' host-bound ports and extract the 3-digit prefix
+# of each (e.g. 30080 -> 300). Docker port output looks like:
+#   80/tcp, 0.0.0.0:30080-30099->30080-30099/tcp, [::]:30080->30080/tcp
+# We split on commas, extract the host port (before "->"), strip the
+# IP binding, and collect prefixes. All done in awk to avoid sed
+# character-class portability issues.
 used_prefixes=$(
   docker ps --format '{{.Ports}}' \
-    | tr ',' '\n' \
-    | sed -E 's/^ *| *$//g; s/^[0-9a-fA-F.:[\]]*://; s/->.*$//' \
-    | awk '{
-        if ($0 ~ /^[0-9]+-[0-9]+$/) {
-          split($0, r, "-")
-          for (p = r[1]; p <= r[2]; p++) print substr(p, 1, 3)
-        } else if ($0 ~ /^[0-9]+$/) {
-          print substr($0, 1, 3)
+    | awk -F'[, ]+' '{
+        for (i = 1; i <= NF; i++) {
+          s = $i
+          # skip entries without "->" (no host binding, e.g. "80/tcp")
+          idx = index(s, "->")
+          if (idx == 0) continue
+          # isolate the host side (before "->")
+          s = substr(s, 1, idx - 1)
+          # strip IP prefix: remove everything up to and including the last ":"
+          n = split(s, parts, ":")
+          s = parts[n]
+          # expand ranges and extract 3-digit prefixes
+          if (s ~ /^[0-9]+-[0-9]+$/) {
+            split(s, r, "-")
+            for (p = r[1]; p <= r[2]; p++) print substr(p, 1, 3)
+          } else if (s ~ /^[0-9]+$/) {
+            print substr(s, 1, 3)
+          }
         }
       }' \
     | sort -u
