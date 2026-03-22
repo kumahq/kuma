@@ -112,16 +112,15 @@ func attachedRoutesForListeners(
 			}
 
 			// No sectionName: count only for listeners whose hostname intersects.
-			routeHostnames := make([]gatewayapi.Hostname, len(route.Spec.Hostnames))
-			for j, h := range route.Spec.Hostnames {
-				routeHostnames[j] = gatewayapi.Hostname(h)
-			}
 			for _, listener := range gateway.Spec.Listeners {
 				var listenerHostnames []gatewayapi.Hostname
 				if listener.Hostname != nil {
-					listenerHostnames = []gatewayapi.Hostname{gatewayapi.Hostname(*listener.Hostname)}
+					listenerHostnames = []gatewayapi.Hostname{*listener.Hostname}
+				} else {
+					// Nil hostname means the listener matches all hostnames.
+					listenerHostnames = []gatewayapi.Hostname{""}
 				}
-				if attachment.HostnamesIntersect(routeHostnames, listenerHostnames) {
+				if attachment.HostnamesIntersect(route.Spec.Hostnames, listenerHostnames) {
 					attached := result[listener.Name]
 					attached.num++
 					result[listener.Name] = attached
