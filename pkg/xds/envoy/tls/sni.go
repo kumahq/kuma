@@ -5,8 +5,6 @@ import (
 	"hash/fnv"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -28,7 +26,7 @@ func SNIFromTags(tags envoy_tags.Tags) string {
 func TagsFromSNI(sni string) (envoy_tags.Tags, error) {
 	parts := strings.Split(sni, "{")
 	if len(parts) > 2 {
-		return nil, errors.New(fmt.Sprintf("cannot parse tags from sni: %s", sni))
+		return nil, fmt.Errorf("cannot parse tags from sni: %s", sni)
 	}
 	if len(parts) == 1 {
 		return envoy_tags.Tags{mesh_proto.ServiceTag: parts[0]}, nil

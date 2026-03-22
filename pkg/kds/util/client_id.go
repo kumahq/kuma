@@ -22,7 +22,7 @@ func MetadataFromIncomingCtx(ctx context.Context, key string) (string, error) {
 		return "", errors.New("metadata is not provided")
 	}
 	if len(md[key]) == 0 {
-		return "", errors.New(fmt.Sprintf("%q is not present in metadata", key))
+		return "", fmt.Errorf("%q is not present in metadata", key)
 	}
 	return md[key][0], nil
 }

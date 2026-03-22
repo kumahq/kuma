@@ -1,6 +1,7 @@
 package netns
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -137,7 +138,7 @@ func genSuffixes() (uint8, uint8, error) {
 		}
 	}
 
-	return 0, 0, fmt.Errorf("out of available suffixes")
+	return 0, 0, errors.New("out of available suffixes")
 }
 
 func getIfaceAddresses() ([]*net.IPNet, error) {

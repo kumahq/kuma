@@ -1,6 +1,7 @@
 package spire
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -151,7 +152,7 @@ func (u *universalDeployment) GetAgentJoinToken(cluster framework.Cluster, agent
 	token = strings.TrimSpace(token)
 
 	if token == "" {
-		return "", fmt.Errorf("generated token is empty")
+		return "", errors.New("generated token is empty")
 	}
 
 	return token, nil

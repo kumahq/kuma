@@ -72,7 +72,7 @@ $ kumactl apply -f resources/
 				return err
 			}
 			if len(b) == 0 {
-				return fmt.Errorf("no resource(s) passed to apply")
+				return errors.New("no resource(s) passed to apply")
 			}
 			var resources []model.Resource
 			rawResources := yaml.SplitYAML(string(b))

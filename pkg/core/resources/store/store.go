@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -34,48 +34,48 @@ type strictResourceStore struct {
 
 func (s *strictResourceStore) Create(ctx context.Context, r model.Resource, fs ...CreateOptionsFunc) error {
 	if r == nil {
-		return fmt.Errorf("ResourceStore.Create() requires a non-nil resource")
+		return errors.New("ResourceStore.Create() requires a non-nil resource")
 	}
 	if r.GetMeta() != nil {
-		return fmt.Errorf("ResourceStore.Create() ignores resource.GetMeta() but the argument has a non-nil value")
+		return errors.New("ResourceStore.Create() ignores resource.GetMeta() but the argument has a non-nil value")
 	}
 	opts := NewCreateOptions(fs...)
 	if opts.Name == "" {
-		return fmt.Errorf("ResourceStore.Create() requires options.Name to be a non-empty value")
+		return errors.New("ResourceStore.Create() requires options.Name to be a non-empty value")
 	}
 	if r.Descriptor().Scope == model.ScopeMesh && opts.Mesh == "" {
-		return fmt.Errorf("ResourceStore.Create() requires options.Mesh to be a non-empty value")
+		return errors.New("ResourceStore.Create() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.Create(ctx, r, fs...)
 }
 
 func (s *strictResourceStore) Update(ctx context.Context, r model.Resource, fs ...UpdateOptionsFunc) error {
 	if r == nil {
-		return fmt.Errorf("ResourceStore.Update() requires a non-nil resource")
+		return errors.New("ResourceStore.Update() requires a non-nil resource")
 	}
 	if r.GetMeta() == nil {
-		return fmt.Errorf("ResourceStore.Update() requires resource.GetMeta() to be a non-nil value previously returned by ResourceStore.Get()")
+		return errors.New("ResourceStore.Update() requires resource.GetMeta() to be a non-nil value previously returned by ResourceStore.Get()")
 	}
 	return s.delegate.Update(ctx, r, fs...)
 }
 
 func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs ...DeleteOptionsFunc) error {
 	if r == nil {
-		return fmt.Errorf("ResourceStore.Delete() requires a non-nil resource")
+		return errors.New("ResourceStore.Delete() requires a non-nil resource")
 	}
 	opts := NewDeleteOptions(fs...)
 	if opts.Name == "" {
-		return fmt.Errorf("ResourceStore.Delete() requires options.Name to be a non-empty value")
+		return errors.New("ResourceStore.Delete() requires options.Name to be a non-empty value")
 	}
 	if r.Descriptor().Scope == model.ScopeMesh && opts.Mesh == "" {
-		return fmt.Errorf("ResourceStore.Delete() requires options.Mesh to be a non-empty value")
+		return errors.New("ResourceStore.Delete() requires options.Mesh to be a non-empty value")
 	}
 	if r.GetMeta() != nil {
 		if opts.Name != r.GetMeta().GetName() {
-			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetName() == options.Name")
+			return errors.New("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetName() == options.Name")
 		}
 		if opts.Mesh != r.GetMeta().GetMesh() {
-			return fmt.Errorf("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetMesh() == options.Mesh")
+			return errors.New("ResourceStore.Delete() requires resource.GetMeta() either to be a nil or resource.GetMeta().GetMesh() == options.Mesh")
 		}
 	}
 	return s.delegate.Delete(ctx, r, fs...)
@@ -83,24 +83,24 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 
 func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...GetOptionsFunc) error {
 	if r == nil {
-		return fmt.Errorf("ResourceStore.Get() requires a non-nil resource")
+		return errors.New("ResourceStore.Get() requires a non-nil resource")
 	}
 	if r.GetMeta() != nil {
-		return fmt.Errorf("ResourceStore.Get() ignores resource.GetMeta() but the argument has a non-nil value")
+		return errors.New("ResourceStore.Get() ignores resource.GetMeta() but the argument has a non-nil value")
 	}
 	opts := NewGetOptions(fs...)
 	if opts.Name == "" {
-		return fmt.Errorf("ResourceStore.Get() requires options.Name to be a non-empty value")
+		return errors.New("ResourceStore.Get() requires options.Name to be a non-empty value")
 	}
 	if r.Descriptor().Scope == model.ScopeMesh && opts.Mesh == "" {
-		return fmt.Errorf("ResourceStore.Get() requires options.Mesh to be a non-empty value")
+		return errors.New("ResourceStore.Get() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.Get(ctx, r, fs...)
 }
 
 func (s *strictResourceStore) List(ctx context.Context, rs model.ResourceList, fs ...ListOptionsFunc) error {
 	if rs == nil {
-		return fmt.Errorf("ResourceStore.List() requires a non-nil resource list")
+		return errors.New("ResourceStore.List() requires a non-nil resource list")
 	}
 	return s.delegate.List(ctx, rs, fs...)
 }

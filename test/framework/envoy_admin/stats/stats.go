@@ -1,6 +1,7 @@
 package stats
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/onsi/gomega/types"
@@ -59,7 +60,7 @@ type statMatcher struct {
 func (m *statMatcher) Match(actual any) (bool, error) {
 	stats, ok := actual.(*Stats)
 	if !ok {
-		return false, fmt.Errorf("BeEqual matcher expects a Stats")
+		return false, errors.New("BeEqual matcher expects a Stats")
 	}
 
 	if len(stats.Stats) == 0 {

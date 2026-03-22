@@ -434,7 +434,7 @@ func (c *K8sCluster) installCRDs() error {
 	re := regexp.MustCompile(regexPattern)
 	matches := re.FindAllStringSubmatch(crds, -1)
 	if matches == nil {
-		return fmt.Errorf("no matches found")
+		return errors.New("no matches found")
 	}
 
 	for _, match := range matches {

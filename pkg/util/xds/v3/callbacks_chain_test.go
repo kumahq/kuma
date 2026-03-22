@@ -2,7 +2,7 @@ package v3_test
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -28,14 +28,14 @@ var _ = Describe("CallbacksChain", func() {
 		first = CallbacksFuncs{
 			OnStreamOpenFunc: func(ctx context.Context, streamID int64, typ string) error {
 				calls = append(calls, methodCall{"1st", "OnStreamOpen()", []any{ctx, streamID, typ}})
-				return fmt.Errorf("1st: OnStreamOpen()")
+				return errors.New("1st: OnStreamOpen()")
 			},
 			OnStreamClosedFunc: func(streamID int64, n *envoy_core.Node) {
 				calls = append(calls, methodCall{"1st", "OnStreamClosed()", []any{streamID, n}})
 			},
 			OnStreamRequestFunc: func(streamID int64, req *envoy_sd.DiscoveryRequest) error {
 				calls = append(calls, methodCall{"1st", "OnStreamRequest()", []any{streamID, req}})
-				return fmt.Errorf("1st: OnStreamRequest()")
+				return errors.New("1st: OnStreamRequest()")
 			},
 			OnStreamResponseFunc: func(ctx context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 				calls = append(calls, methodCall{"1st", "OnStreamResponse()", []any{ctx, streamID, req, resp}})
@@ -44,14 +44,14 @@ var _ = Describe("CallbacksChain", func() {
 		second = CallbacksFuncs{
 			OnStreamOpenFunc: func(ctx context.Context, streamID int64, typ string) error {
 				calls = append(calls, methodCall{"2nd", "OnStreamOpen()", []any{ctx, streamID, typ}})
-				return fmt.Errorf("2nd: OnStreamOpen()")
+				return errors.New("2nd: OnStreamOpen()")
 			},
 			OnStreamClosedFunc: func(streamID int64, n *envoy_core.Node) {
 				calls = append(calls, methodCall{"2nd", "OnStreamClosed()", []any{streamID, n}})
 			},
 			OnStreamRequestFunc: func(streamID int64, req *envoy_sd.DiscoveryRequest) error {
 				calls = append(calls, methodCall{"2nd", "OnStreamRequest()", []any{streamID, req}})
-				return fmt.Errorf("2nd: OnStreamRequest()")
+				return errors.New("2nd: OnStreamRequest()")
 			},
 			OnStreamResponseFunc: func(ctx context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 				calls = append(calls, methodCall{"2nd", "OnStreamResponse()", []any{ctx, streamID, req, resp}})

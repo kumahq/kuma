@@ -162,7 +162,7 @@ func handleMergeValues(confs []any) ([]GroupedConfs, error) {
 			continue
 		}
 		if field.Type.Kind() != reflect.Slice || field.Type.Elem().Kind() != reflect.String {
-			return nil, fmt.Errorf("a mergeValues field must be a slice of strings")
+			return nil, errors.New("a mergeValues field must be a slice of strings")
 		}
 
 		keyFieldIndex = pointer.To(fieldIndex)

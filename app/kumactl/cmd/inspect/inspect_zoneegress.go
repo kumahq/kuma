@@ -30,7 +30,7 @@ func newInspectZoneEgressCmd(pctx *cmd.RootContext) *cobra.Command {
 				inspectionType = InspectionTypeConfigDump
 			}
 			if includeEDS && inspectionType != InspectionTypeConfigDump {
-				return errors.New(fmt.Sprintf("flag '--include-eds' can be used only when '--type=%s'", InspectionTypeConfigDump))
+				return fmt.Errorf("flag '--include-eds' can be used only when '--type=%s'", InspectionTypeConfigDump)
 			}
 
 			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.ZoneEgressResourceTypeDescriptor)

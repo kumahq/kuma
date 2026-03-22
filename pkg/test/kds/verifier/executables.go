@@ -2,6 +2,7 @@ package verifier
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -69,7 +70,7 @@ func WaitResponse(timeout time.Duration, testFunc func(rs []model.Resource)) Exe
 			}
 			testFunc(rs.GetItems())
 		case <-time.After(timeout):
-			return fmt.Errorf("timeout exceeded")
+			return errors.New("timeout exceeded")
 		}
 		return nil
 	}
@@ -100,7 +101,7 @@ func WaitRequest(timeout time.Duration, testFunc func(rs *envoy_sd.DiscoveryRequ
 		case req := <-tc.ClientStream().SentCh:
 			testFunc(req)
 		case <-time.After(timeout):
-			return fmt.Errorf("timeout exceeded")
+			return errors.New("timeout exceeded")
 		}
 		return nil
 	}

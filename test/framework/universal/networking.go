@@ -193,7 +193,7 @@ func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) erro
 		}
 	}
 	if sshPrivKeyFile == "" {
-		return fmt.Errorf("unable to prepare directories to copy the files: no private key available")
+		return errors.New("unable to prepare directories to copy the files: no private key available")
 	}
 
 	for localPath, destPath := range files {

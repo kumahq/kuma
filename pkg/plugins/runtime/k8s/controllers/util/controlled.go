@@ -59,7 +59,7 @@ func ManageControlledObject(
 	case 1:
 		item, ok := items[0].(kube_client.Object)
 		if !ok {
-			return nil, fmt.Errorf("expected runtime.Object to be client.Object")
+			return nil, errors.New("expected runtime.Object to be client.Object")
 		}
 
 		original := item.DeepCopyObject().(kube_client.Object)

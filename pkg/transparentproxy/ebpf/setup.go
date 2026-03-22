@@ -3,6 +3,7 @@
 package ebpf
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -26,7 +27,7 @@ func GetNonLoopbackRunningInterface() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("cannot find other than loopback interface")
+	return "", errors.New("cannot find other than loopback interface")
 }
 
 func InterfaceIsUp(ifName string) bool {
@@ -51,14 +52,14 @@ func GetFileInode(path string) (uint64, error) {
 	}
 	stat, ok := f.Sys().(*syscall.Stat_t)
 	if !ok {
-		return 0, fmt.Errorf("not syscall.Stat_t")
+		return 0, errors.New("not syscall.Stat_t")
 	}
 	return stat.Ino, nil
 }
 
 func Setup(cfg config.InitializedConfigIPvX) (string, error) {
 	if os.Getuid() != 0 {
-		return "", fmt.Errorf("root user in required for this process or container")
+		return "", errors.New("root user is required for this process or container")
 	}
 
 	if err := rlimit.RemoveMemlock(); err != nil {

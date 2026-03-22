@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"errors"
 	"fmt"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -72,7 +73,7 @@ func (s *Snapshot) GetVersionMap(typeURL string) map[string]string {
 // ConstructVersionMap will construct a version map based on the current state of a snapshot
 func (s *Snapshot) ConstructVersionMap() error {
 	if s == nil {
-		return fmt.Errorf("missing snapshot")
+		return errors.New("missing snapshot")
 	}
 
 	// The snapshot resources never change, so no need to ever rebuild.

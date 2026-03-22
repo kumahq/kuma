@@ -2,7 +2,6 @@ package watchdog_test
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -82,7 +81,7 @@ var _ = Describe("SimpleWatchdog", func() {
 
 	It("should call OnError() when OnTick() returns an error", test.Within(5*time.Second, func() {
 		// given
-		expectedErr := fmt.Errorf("expected error")
+		expectedErr := errors.New("expected error")
 		// and
 		watchdog := SimpleWatchdog{
 			NewTicker: func() *time.Ticker {

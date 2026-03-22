@@ -3,6 +3,7 @@
 package ebpf
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -40,7 +41,7 @@ func CleanPathsRelativeToBPFFS(paths ...string) func(cfg config.InitializedConfi
 
 func UnloadEbpfPrograms(programs []*Program, cfg config.InitializedConfigIPvX) (string, error) {
 	if os.Getuid() != 0 {
-		return "", fmt.Errorf("root user in required for this process or container")
+		return "", errors.New("root user is required for this process or container")
 	}
 
 	mounts, err := mountinfo.GetMounts(mountinfo.SingleEntryFilter(cfg.Ebpf.BPFFSPath))

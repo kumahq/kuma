@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"strconv"
 	"strings"
@@ -174,7 +173,7 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 
 	meta, ok := (r.GetMeta()).(memoryMeta)
 	if !ok {
-		return fmt.Errorf("MemoryStore.Update() requires r.GetMeta() to be of type memoryMeta")
+		return errors.New("MemoryStore.Update() requires r.GetMeta() to be of type memoryMeta")
 	}
 
 	// Name must be provided via r.GetMeta()
@@ -230,7 +229,7 @@ func (c *memoryStore) delete(r core_model.Resource, fs ...store.DeleteOptionsFun
 
 	_, ok := (r.GetMeta()).(memoryMeta)
 	if r.GetMeta() != nil && !ok {
-		return fmt.Errorf("MemoryStore.Delete() requires r.GetMeta() either to be nil or to be of type memoryMeta")
+		return errors.New("MemoryStore.Delete() requires r.GetMeta() either to be nil or to be of type memoryMeta")
 	}
 
 	// Name must be provided via DeleteOptions
@@ -245,13 +244,13 @@ func (c *memoryStore) delete(r core_model.Resource, fs ...store.DeleteOptionsFun
 		}
 		obj, err := registry.Global().NewObject(core_model.ResourceType(child.ResourceType))
 		if err != nil {
-			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
+			return errors.New("MemoryStore.Delete() couldn't unmarshal child resource")
 		}
 		if err := c.unmarshalRecord(childRecord, obj); err != nil {
-			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
+			return errors.New("MemoryStore.Delete() couldn't unmarshal child resource")
 		}
 		if err := c.delete(obj, store.DeleteByKey(childRecord.Name, childRecord.Mesh)); err != nil {
-			return fmt.Errorf("MemoryStore.Delete() couldn't delete linked child resource")
+			return errors.New("MemoryStore.Delete() couldn't delete linked child resource")
 		}
 	}
 	c.records = append(c.records[:idx], c.records[idx+1:]...)

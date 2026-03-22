@@ -181,7 +181,7 @@ func validateIpFamilyMode(val string) error {
 	if slices.Contains(validValues, val) {
 		return nil
 	}
-	return errors.New(fmt.Sprintf("value '%s' is not a valid IP family mode", val))
+	return fmt.Errorf("value '%s' is not a valid IP family mode", val)
 }
 
 // Deprecated

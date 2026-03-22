@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
@@ -50,7 +49,7 @@ func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
 		lbConfig := e.Lb.GetRingHash()
 		hashfn, ok := envoy_cluster.Cluster_RingHashLbConfig_HashFunction_value[lbConfig.HashFunction]
 		if !ok {
-			return errors.New(fmt.Sprintf("Invalid ring hash function %s", lbConfig.HashFunction))
+			return fmt.Errorf("Invalid ring hash function %s", lbConfig.HashFunction) //nolint:staticcheck // ST1005: error strings should not be capitalized
 		}
 
 		c.LbConfig = &envoy_cluster.Cluster_RingHashLbConfig_{

@@ -225,16 +225,16 @@ func getZoneStoreType(
 	}
 	subscription := zoneInsightRes.Spec.GetLastSubscription()
 	if !subscription.IsOnline() {
-		return "", fmt.Errorf("zone is offline")
+		return "", errors.New("zone is offline")
 	}
 	kdsSubscription, ok := subscription.(*system_proto.KDSSubscription)
 	if !ok {
-		return "", fmt.Errorf("cannot map subscription")
+		return "", errors.New("cannot map subscription")
 	}
 	config := kdsSubscription.GetConfig()
 	cfg := &config_cp.Config{}
 	if err := config_util.FromYAML([]byte(config), cfg); err != nil {
-		return "", fmt.Errorf("cannot read control-plane configuration")
+		return "", errors.New("cannot read control-plane configuration")
 	}
 	return cfg.Store.Type, nil
 }

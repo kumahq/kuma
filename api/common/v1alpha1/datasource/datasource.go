@@ -82,7 +82,7 @@ type Inline struct {
 // It prevents directory traversal attacks and other malicious file access patterns.
 func validateFilePath(path string) error {
 	if path == "" {
-		return fmt.Errorf("file path cannot be empty")
+		return errors.New("file path cannot be empty")
 	}
 
 	// Check for directory traversal attempts in the original path

@@ -3,6 +3,7 @@ package dnsproxy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -40,7 +41,7 @@ func NewServer(address string) (*Server, error) {
 		return nil, fmt.Errorf("failed to read DNS for /etc/resolv.conf %w", err)
 	}
 	if len(config.Servers) == 0 {
-		return nil, fmt.Errorf("no server found in /etc/resolv.conf")
+		return nil, errors.New("no server found in /etc/resolv.conf")
 	}
 	etcResolveHostPort := net.JoinHostPort(config.Servers[0], config.Port)
 	handler := func(msg *dns.Msg) (*dns.Msg, error) {

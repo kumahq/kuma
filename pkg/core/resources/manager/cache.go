@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -102,7 +103,7 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 	}
 	opts := store.NewListOptions(fs...)
 	if !opts.IsCacheable() {
-		return fmt.Errorf("filter functions are not allowed for cached store")
+		return errors.New("filter functions are not allowed for cached store")
 	}
 	cacheKey := fmt.Sprintf("LIST:%s:%s:%s", list.GetItemType(), opts.HashCode(), tenantID)
 	obj, found := c.cache.Get(cacheKey)

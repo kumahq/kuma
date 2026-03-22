@@ -151,9 +151,43 @@ linters:
     nonamedreturns:
       report-error-in-defer: false
     revive:
+      enable-all-rules: false
+      enable-default-rules: true
       max-open-files: 2048
       rules:
+        - name: blank-imports
+          disabled: true
+        - name: context-as-argument
+          disabled: true
+        - name: dot-imports
+          disabled: true
+        - name: error-naming
+          disabled: true
+        - name: error-return
+          disabled: true
+        - name: error-strings
+          disabled: true
+        - name: errorf
+        - name: exported
+          disabled: true
+        - name: increment-decrement
+          disabled: true
+        - name: indent-error-flow
+          disabled: true
+        - name: receiver-naming
+          disabled: true
+        - name: redefines-builtin-id
+          disabled: true
+        - name: superfluous-else
+          disabled: true
+        - name: unexported-return
+          disabled: true
+        - name: unused-parameter
+          disabled: true
+        - name: use-errors-new
         - name: var-declaration
+        - name: var-naming
+          disabled: true
     staticcheck:
       checks:
         - all

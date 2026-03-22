@@ -3,7 +3,7 @@ package dnsproxy_test
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"net"
 	"strconv"
 	"sync"
@@ -95,7 +95,7 @@ var _ = Describe("components", func() {
 	})
 	It("failing network", func() {
 		f := func(req *dns.Msg) (*dns.Msg, error) {
-			return nil, fmt.Errorf("some error")
+			return nil, errors.New("some error")
 		}
 		mock.Store(&f)
 		msg := &dns.Msg{}
@@ -158,7 +158,7 @@ var _ = Describe("components", func() {
 	})
 	It("metrics have extra labels after ReloadMap", func() {
 		f := func(req *dns.Msg) (*dns.Msg, error) {
-			return nil, fmt.Errorf("should not call upstream for local entry")
+			return nil, errors.New("should not call upstream for local entry")
 		}
 		mock.Store(&f)
 

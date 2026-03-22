@@ -83,7 +83,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 				return errors.New("flag '--include' can be used only when '--type=config'")
 			}
 			if includeEDS && inspectionType != InspectionTypeConfigDump {
-				return errors.New(fmt.Sprintf("flag '--include-eds' can be used only when '--type=%s'", InspectionTypeConfigDump))
+				return fmt.Errorf("flag '--include-eds' can be used only when '--type=%s'", InspectionTypeConfigDump)
 			}
 
 			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.DataplaneResourceTypeDescriptor)
