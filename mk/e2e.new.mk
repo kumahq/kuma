@@ -1,8 +1,8 @@
 K8SCLUSTERS = kuma-1 kuma-2
 K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/k8s/start/cluster/, $(K8SCLUSTERS))
-K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/k8s/stop/cluster/, $(K8SCLUSTERS))
-K8SCLUSTERS_LOAD_IMAGES_TARGETS  = $(addprefix test/e2e/k8s/load/images/, $(K8SCLUSTERS))
-K8SCLUSTERS_WAIT_TARGETS  = $(addprefix test/e2e/k8s/wait/, $(K8SCLUSTERS))
+K8SCLUSTERS_STOP_TARGETS = $(addprefix test/e2e/k8s/stop/cluster/, $(K8SCLUSTERS))
+K8SCLUSTERS_LOAD_IMAGES_TARGETS = $(addprefix test/e2e/k8s/load/images/, $(K8SCLUSTERS))
+K8SCLUSTERS_WAIT_TARGETS = $(addprefix test/e2e/k8s/wait/, $(K8SCLUSTERS))
 # export `IPV6=true` to enable IPv6 testing
 
 # Targets to run prior to running the tests
@@ -14,12 +14,12 @@ E2E_K8S_BIN_DEPS = images/test
 E2E_UNIVERSAL_BIN_DEPS = images/test
 ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
-E2E_K8S_BIN_DEPS+= docker/load
-E2E_UNIVERSAL_BIN_DEPS+= docker/load
+E2E_K8S_BIN_DEPS += docker/load
+E2E_UNIVERSAL_BIN_DEPS += docker/load
 else
-E2E_K8S_BIN_DEPS+= build/kumactl images
-E2E_UNIVERSAL_BIN_DEPS+= build/kumactl
-E2E_ENV_VARS+= GINKGO_EDITOR_INTEGRATION=true
+E2E_K8S_BIN_DEPS += build/kumactl images
+E2E_UNIVERSAL_BIN_DEPS += build/kumactl
+E2E_ENV_VARS += GINKGO_EDITOR_INTEGRATION=true
 endif
 
 # We don't use `go list` here because Ginkgo requires disk path names,
@@ -33,9 +33,9 @@ MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone
 GINKGO_E2E_TEST_FLAGS ?=
 GINKGO_E2E_LABEL_FILTERS ?=
 
-GINKGO_TEST_E2E=$(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
+GINKGO_TEST_E2E = $(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
 ifdef DEBUG
-GINKGO_TEST_E2E+=--procs 1 --keep-going=false --fail-fast
+GINKGO_TEST_E2E += --procs 1 --keep-going=false --fail-fast
 endif
 
 define append_label_filter
@@ -44,7 +44,7 @@ endef
 
 K8S_CLUSTER_TOOL ?= k3d
 ifeq ($(K8S_CLUSTER_TOOL),k3d)
-	ifeq ($(K3D_NETWORK_CNI),calico)
+	ifeq ($(K3D_CNI),calico)
 		E2E_ENV_VARS += KUMA_K8S_TYPE=k3d-calico
 	else
 		E2E_ENV_VARS += KUMA_K8S_TYPE=k3d
@@ -64,19 +64,19 @@ endif
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/start
+	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/start
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load/images
+	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/load/images
 
 .PHONY: test/e2e/k8s/wait/$1
 test/e2e/k8s/wait/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/wait
+	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/wait
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/stop
+	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/stop
 endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
@@ -135,7 +135,7 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e
 ifdef DEBUG
 	@need_start=0; \
 	for cluster in $(K8SCLUSTERS); do \
-		if ! KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$$cluster-config $(KUBECTL) cluster-info >/dev/null 2>&1; then \
+		if ! KUBECONFIG=$(KUBECONFIG_DIR)/$(K8S_CLUSTER_TOOL)-$$cluster.yaml $(KUBECTL) cluster-info >/dev/null 2>&1; then \
 			need_start=1; \
 			break; \
 		fi; \
@@ -160,7 +160,7 @@ test/e2e-gatewayapi: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e
 	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
-test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k3d/network/create ## Run universal e2e tests. Use DEBUG=1 to more easily find issues
+test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k8s/docker/network/create ## Run universal e2e tests. Use DEBUG=1 to more easily find issues
 	$(MAKE) docker/tag/test
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(UNIVERSAL_E2E_PKG_LIST)
 
