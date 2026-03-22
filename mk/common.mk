@@ -11,17 +11,10 @@ Q := $(if $(V),,@)
 
 # --- String helpers ---
 
-_digits := 0 1 2 3 4 5 6 7 8 9
-
-# _strip_chars(chars, text): fold over $(1), removing each character from $(2)
-_strip_chars = $(if $(1),\
-  $(call _strip_chars,\
-    $(wordlist 2,$(words $(1)),$(1)),\
-    $(subst $(firstword $(1)),,$(2))),\
-  $(2))
-
-# _is_digits(x): "yes" iff x is non-empty and contains only digits
-_is_digits = $(if $(strip $(1)),$(if $(strip $(call _strip_chars,$(_digits),$(1))),,yes))
+# _is_digits(x): "yes" iff x is non-empty and contains only digits.
+# Uses $(shell) because recursive $(call) crashes GNU Make (segfault)
+# when evaluated during Makefile parsing in certain versions.
+_is_digits = $(if $(strip $(1)),$(if $(shell echo '$(1)' | grep -qE '^[0-9]+$$' && echo yes),yes))
 
 # --- _retry ---
 
