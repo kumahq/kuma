@@ -12,11 +12,11 @@ helm = "4.1.3"
 helm-docs = "1.14.2"
 kind = "0.31.0"
 kubectl = "1.35.2"
-protoc = "34.0"
+protoc = "34.1"
 shellcheck = "0.11.0"
 yq = "4.52.4"
 node = "24"
-"npm:@redocly/cli" = "2.21.1"
+"npm:@redocly/cli" = "2.24.0"
 "npm:oas-toolkit" = "latest"
 "aqua:bufbuild/protoc-gen-validate" = "1.3.3"
 "aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.6.1"
@@ -27,7 +27,7 @@ node = "24"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.6.0"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.20.1"
-"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20260311125736-37c380b7405b"
+"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20260318145839-6c9615a2a166"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
 #     .github/workflows/_build_publish.yaml
@@ -39,4 +39,4 @@ node = "24"
 #     .github/workflows/transparentproxy-tests.yaml
 #     .github/workflows/update-insecure-dependencies.yaml
 golangci-lint = "2.11.3"
-skaffold = "2.18.0"
+skaffold = "2.18.1"
