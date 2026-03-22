@@ -27,10 +27,14 @@ kind/setup-docker-credentials:
 kind/cleanup-docker-credentials:
 	@rm -f /tmp/.kuma-dev/kind-config.json
 
+# Create the Docker network before kind so kind uses it as primary via
+# KIND_EXPERIMENTAL_DOCKER_NETWORK. This puts kind nodes directly on the
+# same network as universal test containers - no secondary interface needed.
 .PHONY: kind/cluster/start
-kind/cluster/start: $(KUBECONFIG_DIR) kind/setup-docker-credentials
+kind/cluster/start: $(KUBECONFIG_DIR) kind/setup-docker-credentials k8s/docker/network/create
 	$(KIND) get clusters | grep -x "$(CLUSTER_NAME)" >/dev/null 2>&1 && echo "Kind cluster already running." || \
-		($(KIND) create cluster \
+		(KIND_EXPERIMENTAL_DOCKER_NETWORK=$(DOCKER_NETWORK) \
+		$(KIND) create cluster \
 			--name "$(CLUSTER_NAME)" \
 			--config "$(KUMA_DIR)/test/kind/cluster-$(if $(IPV6),ipv6-,)$(CLUSTER_NAME).yaml" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
@@ -38,7 +42,6 @@ kind/cluster/start: $(KUBECONFIG_DIR) kind/setup-docker-credentials
 			--quiet --wait 120s && \
 		KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) scale deployment --replicas 1 coredns --namespace kube-system && \
 		$(MAKE) kind/cluster/wait)
-	@$(MAKE) --no-print-directory kind/docker/network/connect
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
@@ -46,12 +49,6 @@ kind/cluster/start: $(KUBECONFIG_DIR) kind/setup-docker-credentials
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
-
-.PHONY: kind/docker/network/connect
-kind/docker/network/connect: k8s/docker/network/create
-	$(Q)for node in $$($(KIND) get nodes --name $(CLUSTER_NAME)); do \
-	  docker network connect $(DOCKER_NETWORK) $$node 2>/dev/null || true; \
-	done
 
 .PHONY: kind/cluster/wait
 kind/cluster/wait:
