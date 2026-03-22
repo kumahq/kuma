@@ -51,6 +51,7 @@ ifeq ($(K8S_CLUSTER_TOOL),k3d)
 	endif
 endif
 ifeq ($(K8S_CLUSTER_TOOL),kind)
+	E2E_ENV_VARS += KUMA_K8S_TYPE=kind
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!kind-not-supported)
 endif
 ifdef IPV6
