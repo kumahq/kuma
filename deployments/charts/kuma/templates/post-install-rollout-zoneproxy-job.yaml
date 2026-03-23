@@ -1,4 +1,10 @@
-{{- if not .Values.noHelmHooks }}
+{{- $hasZoneProxies := false }}
+{{- range $meshEntry := .Values.meshes }}
+{{- if or (and $meshEntry.ingress $meshEntry.ingress.enabled) (and $meshEntry.egress $meshEntry.egress.enabled) }}
+{{- $hasZoneProxies = true }}
+{{- end }}
+{{- end }}
+{{- if and (not .Values.noHelmHooks) $hasZoneProxies }}
 {{- $serviceAccountName := printf "%s-rollout-zoneproxy-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
@@ -88,9 +94,9 @@ spec:
       restartPolicy: OnFailure
       securityContext:
       {{- toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
-      containers:
-        - name: post-install-job
-          image: "bitnami/kubectl:latest"
+      initContainers:
+        - name: wait-for-control-plane
+          image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
           securityContext:
           {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
           resources:
@@ -101,30 +107,38 @@ spec:
                cpu: "100m"
                memory: "256Mi"
           command:
-            - 'sh'
-            - '-c'
-            - |
-              set -e
-
-              echo "Waiting for control plane to be ready..."
-              kubectl wait --for=condition=available --timeout=300s deployment/{{ include "kuma.name" . }}-control-plane -n {{ .Release.Namespace }}
-
-              echo "Control plane is ready, rolling out zone proxy deployments..."
-              {{- range $meshEntry := .Values.meshes }}
-              {{- $meshName := $meshEntry.name }}
-              {{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
-              if kubectl get deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }} -n {{ $.Release.Namespace }} 2>/dev/null; then
-                echo "Rolling out {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }}"
-                kubectl rollout restart deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }} -n {{ $.Release.Namespace }}
-              fi
-              {{- end }}
-              {{- if and $meshEntry.egress $meshEntry.egress.enabled }}
-              if kubectl get deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }} -n {{ $.Release.Namespace }} 2>/dev/null; then
-                echo "Rolling out {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }}"
-                kubectl rollout restart deployment {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }} -n {{ $.Release.Namespace }}
-              fi
-              {{- end }}
-              {{- end }}
-
-              echo "Zone proxy rollout completed"
+            - 'kubectl'
+            - 'wait'
+            - '--for=condition=available'
+            - '--timeout=300s'
+            - 'deployment/{{ include "kuma.name" . }}-control-plane'
+            - '-n'
+            - '{{ .Release.Namespace }}'
+      containers:
+        - name: post-install-job
+          image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
+          securityContext:
+          {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+          command:
+            - 'kubectl'
+            - 'rollout'
+            - 'restart'
+            {{- range $meshEntry := .Values.meshes }}
+            {{- $meshName := $meshEntry.name }}
+            {{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
+            - 'deployment/{{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }}'
+            {{- end }}
+            {{- if and $meshEntry.egress $meshEntry.egress.enabled }}
+            - 'deployment/{{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }}'
+            {{- end }}
+            {{- end }}
+            - '-n'
+            - '{{ $.Release.Namespace }}'
 {{- end }}
