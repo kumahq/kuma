@@ -154,9 +154,7 @@ var _ = Describe("Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then a watchdog is active
-			Eventually(func() int32 {
-				return activeWatchdogs.Load()
-			}, "5s", "10ms").Should(Equal(int32(1)))
+			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
 
 			// and when new stream from backend-01 is connected  and request is sent
 			err = callbacks.OnStreamOpen(context.Background(), streamID2, "")
@@ -166,9 +164,7 @@ var _ = Describe("Sync", func() {
 			Expect(err.Error()).To(ContainSubstring("already an active stream"))
 
 			// then only one watchdog is active
-			Eventually(func() int32 {
-				return activeWatchdogs.Load()
-			}, "5s", "10ms").Should(Equal(int32(1)))
+			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
 
 			callbacks.OnStreamClosed(streamID2, node)
 			Expect(cleanupDone.Load()).To(BeFalse())
@@ -187,9 +183,7 @@ var _ = Describe("Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then a watchdog is active
-			Eventually(func() int32 {
-				return activeWatchdogs.Load()
-			}, "5s", "10ms").Should(Equal(int32(1)))
+			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when the third stream is closed
 			callbacks.OnStreamClosed(streamID3, node)
