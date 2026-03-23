@@ -48,7 +48,7 @@ func newHealthCheckTCP() *cobra.Command {
 							break
 						}
 
-						s.WriteString(string(buf[:length]))
+						s.Write(buf[:length])
 						healthCheckLog.V(1).Info("receive from connection", "buffer", s.String())
 
 						if idx := strings.LastIndex(s.String(), args.request); idx != -1 {
