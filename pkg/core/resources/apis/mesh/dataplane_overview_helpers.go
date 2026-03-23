@@ -46,15 +46,15 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 				totalListeners++
 			}
 		}
-		allListenersOffline := readyListeners == 0
-		allListenersOnline := readyListeners == totalListeners
-		if !proxyOnline || allListenersOffline {
+
+		switch {
+		case !proxyOnline || readyListeners == 0:
 			return Offline, errs
-		}
-		if !allListenersOnline {
+		case readyListeners < totalListeners:
 			return PartiallyDegraded, errs
+		default:
+			return Online, nil
 		}
-		return Online, nil
 	}
 
 	if !proxyOnline || allInboundsOffline {
