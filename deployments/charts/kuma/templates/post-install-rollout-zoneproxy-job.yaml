@@ -27,7 +27,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
-  namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": "post-install"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
@@ -47,7 +46,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
-  namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": "post-install"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"

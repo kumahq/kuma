@@ -1,5 +1,0 @@
-{{- $federated := $.Values.controlPlane.kdsGlobalAddress }}
-{{- range $meshEntry := .Values.meshes }}
-{{- $meshName := $meshEntry.name }}
-
-{{- end }}

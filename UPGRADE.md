@@ -40,7 +40,7 @@ If you manage RBAC resources outside of Helm (e.g., via GitOps or manual manifes
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: <release>-rollout-zoneproxy-job
+  name: <chart-name>-rollout-zoneproxy-job
 rules:
   - apiGroups:
       - "apps"
