@@ -336,14 +336,14 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 				statement.WriteString(" OR ")
 			}
 			argsIndex++
-			statement.WriteString(fmt.Sprintf("(mesh=$%d AND", argsIndex))
+			fmt.Fprintf(&statement, "(mesh=$%d AND", argsIndex)
 			statementArgs = append(statementArgs, mesh)
 			for idx, name := range names {
 				argsIndex++
 				if idx == 0 {
-					statement.WriteString(fmt.Sprintf(" name IN ($%d", argsIndex))
+					fmt.Fprintf(&statement, " name IN ($%d", argsIndex)
 				} else {
-					statement.WriteString(fmt.Sprintf(",$%d", argsIndex))
+					fmt.Fprintf(&statement, ",$%d", argsIndex)
 				}
 				statementArgs = append(statementArgs, name)
 			}
@@ -354,12 +354,12 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	}
 	if opts.Mesh != "" {
 		argsIndex++
-		statement.WriteString(fmt.Sprintf(" AND mesh=$%d", argsIndex))
+		fmt.Fprintf(&statement, " AND mesh=$%d", argsIndex)
 		statementArgs = append(statementArgs, opts.Mesh)
 	}
 	if opts.NameContains != "" {
 		argsIndex++
-		statement.WriteString(fmt.Sprintf(" AND name LIKE $%d", argsIndex))
+		fmt.Fprintf(&statement, " AND name LIKE $%d", argsIndex)
 		statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
 	}
 	statement.WriteString(" ORDER BY name, mesh")
