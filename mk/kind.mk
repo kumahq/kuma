@@ -28,17 +28,17 @@ kind/cleanup-docker-credentials:
 	@rm -f /tmp/.kuma-dev/kind-config.json
 
 .PHONY: kind/cluster/start/% kind/cluster/load/images/% kind/cluster/wait/% kind/cluster/stop/%
-kind/cluster/start/%: CLUSTER = $*
-kind/cluster/start/%: kind/cluster/start
+kind/cluster/start/%:
+	@$(MAKE) --no-print-directory CLUSTER=$* kind/cluster/start
 
-kind/cluster/load/images/%: CLUSTER = $*
-kind/cluster/load/images/%: kind/cluster/load/images
+kind/cluster/load/images/%:
+	@$(MAKE) --no-print-directory CLUSTER=$* kind/cluster/load/images
 
-kind/cluster/wait/%: CLUSTER = $*
-kind/cluster/wait/%: kind/cluster/wait
+kind/cluster/wait/%:
+	@$(MAKE) --no-print-directory CLUSTER=$* kind/cluster/wait
 
-kind/cluster/stop/%: CLUSTER = $*
-kind/cluster/stop/%: kind/cluster/stop
+kind/cluster/stop/%:
+	@$(MAKE) --no-print-directory CLUSTER=$* kind/cluster/stop
 
 # Create the Docker network before kind so kind uses it as primary via
 # KIND_EXPERIMENTAL_DOCKER_NETWORK. This puts kind nodes directly on the

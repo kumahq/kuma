@@ -117,17 +117,17 @@ k3d/cluster/%: export KUBECONFIG  = $(K3D_CLUSTER_KUBECONFIG)
 k3d/cluster/%: export KUBECONTEXT = $(CLUSTER_KUBECONTEXT)
 
 .PHONY: k3d/cluster/start/% k3d/cluster/load/images/% k3d/cluster/wait/% k3d/cluster/stop/%
-k3d/cluster/start/%: CLUSTER = $*
-k3d/cluster/start/%: k3d/cluster/start
+k3d/cluster/start/%:
+	$(Q)$(MAKE) --no-print-directory CLUSTER=$* k3d/cluster/start
 
-k3d/cluster/load/images/%: CLUSTER = $*
-k3d/cluster/load/images/%: k3d/cluster/load/images
+k3d/cluster/load/images/%:
+	$(Q)$(MAKE) --no-print-directory CLUSTER=$* k3d/cluster/load/images
 
-k3d/cluster/wait/%: CLUSTER = $*
-k3d/cluster/wait/%: k3d/cluster/wait
+k3d/cluster/wait/%:
+	$(Q)$(MAKE) --no-print-directory CLUSTER=$* k3d/cluster/wait
 
-k3d/cluster/stop/%: CLUSTER = $*
-k3d/cluster/stop/%: k3d/cluster/stop
+k3d/cluster/stop/%:
+	$(Q)$(MAKE) --no-print-directory CLUSTER=$* k3d/cluster/stop
 
 # --- Diagnostics ---
 
