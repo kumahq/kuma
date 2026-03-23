@@ -760,7 +760,7 @@ egress:
 # -- List of meshes to deploy zone proxies for.
 # Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount.
 # Example single-mesh configuration:
-# meshes: []
+# meshes:
 #   - name: default
 #
 #     ingress:
