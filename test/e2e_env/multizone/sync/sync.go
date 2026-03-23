@@ -380,20 +380,20 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 
 		It("should sync policy with a long name and store it as display name", func() {
 			// given
-			name := ""
+			var name strings.Builder
 			for range 253 {
-				name += "x"
+				name.WriteString("x")
 			}
 
 			// when
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
+			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name.String(), 100)))).To(Succeed())
 
 			// then
-			hashedName := hash.HashedName(meshName, name)
+			hashedName := hash.HashedName(meshName, name.String())
 			for _, cluster := range multizone.Zones() {
 				Eventually(func() (string, error) {
 					return cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
-				}, "30s", "1s").Should(ContainSubstring(`kuma.io/display-name: ` + name))
+				}, "30s", "1s").Should(ContainSubstring(`kuma.io/display-name: ` + name.String()))
 			}
 		})
 	})

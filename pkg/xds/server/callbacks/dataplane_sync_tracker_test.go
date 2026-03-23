@@ -131,13 +131,13 @@ var _ = Describe("Sync", func() {
 
 		It("should start only one watchdog per dataplane", func() {
 			// setup
-			var activeWatchdogs int32
+			var activeWatchdogs atomic.Int32
 			var cleanupDone atomic.Bool
 			tracker := NewDataplaneSyncTracker(sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, _ *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 				return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
-					atomic.AddInt32(&activeWatchdogs, 1)
+					activeWatchdogs.Add(1)
 					<-ctx.Done()
-					atomic.AddInt32(&activeWatchdogs, -1)
+					activeWatchdogs.Add(-1)
 					cleanupDone.Store(true)
 				})
 			}))
@@ -155,7 +155,7 @@ var _ = Describe("Sync", func() {
 
 			// then a watchdog is active
 			Eventually(func() int32 {
-				return atomic.LoadInt32(&activeWatchdogs)
+				return activeWatchdogs.Load()
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// and when new stream from backend-01 is connected  and request is sent
@@ -167,7 +167,7 @@ var _ = Describe("Sync", func() {
 
 			// then only one watchdog is active
 			Eventually(func() int32 {
-				return atomic.LoadInt32(&activeWatchdogs)
+				return activeWatchdogs.Load()
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			callbacks.OnStreamClosed(streamID2, node)
@@ -178,7 +178,7 @@ var _ = Describe("Sync", func() {
 			Expect(cleanupDone.Load()).To(BeTrue())
 
 			// then there is no active watchdog
-			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
+			Expect(activeWatchdogs.Load()).To(Equal(int32(0)))
 
 			// and when the third stream from backend-01 is connected after the first active stream closed and request is sent
 			err = callbacks.OnStreamOpen(context.Background(), streamID3, "")
@@ -188,14 +188,14 @@ var _ = Describe("Sync", func() {
 
 			// then a watchdog is active
 			Eventually(func() int32 {
-				return atomic.LoadInt32(&activeWatchdogs)
+				return activeWatchdogs.Load()
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when the third stream is closed
 			callbacks.OnStreamClosed(streamID3, node)
 
 			// then no watchdog is active
-			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
+			Expect(activeWatchdogs.Load()).To(Equal(int32(0)))
 		})
 
 		It("should pass stream context to watchdog factory when supported", test.Within(5*time.Second, func() {
