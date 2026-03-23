@@ -97,7 +97,7 @@ make test/e2e/debug K8SCLUSTERS=kuma-1 E2E_PKG_LIST=./test/e2e/trafficpermission
 Running `make test/e2e/debug` can intentionally leave resources if test fails. Clean them up with   
 
 ```bash
-make k3d/stop/all && docker stop $(docker ps -aq) # omit $ for fish
+make k3d/destroy && docker stop $(docker ps -aq) # omit $ for fish
 ```
 
 ### Tests failing because of disk pressure

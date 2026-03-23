@@ -110,7 +110,7 @@ func combineMetrics(metricsChan <-chan map[instrumentation.Scope][]metricdata.Me
 }
 
 func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) map[instrumentation.Scope][]metricdata.Metrics {
-	req, err := http.NewRequest(http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{}), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{}), http.NoBody)
 	if err != nil {
 		log.Error(err, "failed to create request")
 		return nil

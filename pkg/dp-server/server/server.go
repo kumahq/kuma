@@ -103,7 +103,7 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		TLSConfig:         tlsConfig,
 		ErrorLog:          adapter.ToStd(log),
 	}
-	l, err := net.Listen("tcp", server.Addr)
+	l, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", server.Addr)
 	if err != nil {
 		return err
 	}

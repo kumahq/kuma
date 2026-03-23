@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"slices"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/dns/dpapi"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	util_net "github.com/kumahq/kuma/v2/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
@@ -53,7 +55,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 	if proxy.Metadata.HasFeature(xds_types.FeatureEmbeddedDNS) {
 		// This is purposefully set to 30s to avoid DNS cache stale with ExternalService and Kong Gateway see: https://github.com/kumahq/kuma/issues/13353.
 		// https://github.com/kumahq/kuma/issues/13463
-		dnsInfo := dpapi.DNSProxyConfig{TTL: 30, Records: []dpapi.DNSRecord{}}
+		dnsInfo := dpapi.DNSProxyConfig{TTL: 30, Records: []dpapi.DNSRecord{}, ExtraLabels: dnsExtraLabels(proxy)}
 		for name, addresses := range vips {
 			dnsInfo.Records = append(dnsInfo.Records, dpapi.DNSRecord{
 				Name: name,
@@ -101,4 +103,21 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 		Origin:   metadata.OriginDNS,
 	})
 	return resources, nil
+}
+
+func dnsExtraLabels(proxy *core_xds.Proxy) map[string]string {
+	labels := map[string]string{}
+	dpLabels := proxy.Dataplane.GetMeta().GetLabels()
+
+	if workloadName := dpLabels[k8s_metadata.KumaWorkload]; workloadName != "" {
+		labels["kuma_workload"] = workloadName
+	}
+	if ns := dpLabels[mesh_proto.KubeNamespaceTag]; ns != "" {
+		labels["k8s_kuma_io_namespace"] = ns
+	}
+	labels["mesh"] = proxy.Dataplane.GetMeta().GetMesh()
+	if zone := dpLabels[mesh_proto.ZoneTag]; zone != "" {
+		labels["kuma_io_zone"] = zone
+	}
+	return labels
 }

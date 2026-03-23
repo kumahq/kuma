@@ -15,7 +15,7 @@ type templateFilter interface {
 	Filter(name string) bool
 }
 
-func renderFilesWithFilter(templates []data.File, args interface{}, newRenderer func(data.File) (templateRenderer, error), filter templateFilter) ([]data.File, error) {
+func renderFilesWithFilter(templates []data.File, args any, newRenderer func(data.File) (templateRenderer, error), filter templateFilter) ([]data.File, error) {
 	renderedFiles := make([]data.File, len(templates))
 
 	for i, template := range templates {
@@ -37,7 +37,7 @@ func renderFilesWithFilter(templates []data.File, args interface{}, newRenderer 
 }
 
 type templateRenderer interface {
-	Execute(w io.Writer, data interface{}) error
+	Execute(w io.Writer, data any) error
 }
 
 func simpleTemplateRenderer(text data.File) (templateRenderer, error) {

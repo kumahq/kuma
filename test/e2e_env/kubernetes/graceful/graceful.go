@@ -1,6 +1,7 @@
 package graceful
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -129,7 +130,11 @@ spec:
 	})
 
 	requestThroughGateway := func() error {
-		resp, err := httpClient.Get("http://" + gwIP + ":8080")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+gwIP+":8080", http.NoBody)
+		if err != nil {
+			return err
+		}
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			return err
 		}

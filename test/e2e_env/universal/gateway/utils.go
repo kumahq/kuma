@@ -183,7 +183,7 @@ func ProxySimpleRequests(cluster Cluster, instance, gateway, host string, opts .
 	return func(g Gomega) {
 		targetPath := path.Join("test", GinkgoT().Name())
 		var escaped []string
-		for _, segment := range strings.Split(targetPath, "/") {
+		for segment := range strings.SplitSeq(targetPath, "/") {
 			escaped = append(escaped, url.PathEscape(segment))
 		}
 

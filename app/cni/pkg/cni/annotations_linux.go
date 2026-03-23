@@ -3,6 +3,7 @@ package cni
 import (
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -129,7 +130,7 @@ func validateIPs(addresses string) error {
 	}
 
 	// Split the string into individual addresses based on commas.
-	for _, address := range strings.Split(addresses, ",") {
+	for address := range strings.SplitSeq(addresses, ",") {
 		address = strings.TrimSpace(address)
 
 		// Check if the address is a valid CIDR block.
@@ -177,10 +178,8 @@ func validateIpFamilyMode(val string) error {
 	}
 
 	validValues := []string{"dualstack", "ipv4", "ipv6"}
-	for _, valid := range validValues {
-		if valid == val {
-			return nil
-		}
+	if slices.Contains(validValues, val) {
+		return nil
 	}
 	return errors.New(fmt.Sprintf("value '%s' is not a valid IP family mode", val))
 }

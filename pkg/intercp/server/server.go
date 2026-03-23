@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -98,7 +99,7 @@ func (d *InterCpServer) Ready() bool {
 }
 
 func (d *InterCpServer) Start(stop <-chan struct{}) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", d.config.Port))
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf(":%d", d.config.Port))
 	if err != nil {
 		return err
 	}

@@ -283,7 +283,6 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 func findMergeKeyField(typ reflect.Type) (reflect.StructField, bool) {
 	var key *reflect.StructField
 	for field := range typ.Fields() {
-		field := field
 		if strings.Contains(field.Tag.Get(policyMergeTag), mergeKey) {
 			key = &field
 			break

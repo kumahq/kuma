@@ -11,6 +11,7 @@ type DNSRecord struct {
 }
 
 type DNSProxyConfig struct {
-	Records []DNSRecord `json:"records"`
-	TTL     int         `json:"ttl"`
+	Records     []DNSRecord       `json:"records"`
+	TTL         int               `json:"ttl"`
+	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 }

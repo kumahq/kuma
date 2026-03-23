@@ -6,6 +6,7 @@ import (
 	std_errors "errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -65,11 +66,41 @@ type K8sCluster struct {
 
 var _ Cluster = &K8sCluster{}
 
+func defaultKubeConfigPath(clusterName string) string {
+	k8sType := K3dK8sType // default matches K8S_CLUSTER_TOOL in mk/e2e.new.mk
+	if Config != nil {
+		k8sType = Config.K8sType
+	} else if value := os.Getenv("KUMA_K8S_TYPE"); value != "" {
+		k8sType = K8sType(value)
+	}
+
+	var primary string
+	switch k8sType {
+	case KindK8sType:
+		primary = os.ExpandEnv(fmt.Sprintf(defaultToolKubeConfigPathPattern, "kind", clusterName))
+	case K3dK8sType, K3dCalicoK8sType:
+		primary = os.ExpandEnv(fmt.Sprintf(defaultToolKubeConfigPathPattern, "k3d", clusterName))
+	default:
+		return os.ExpandEnv(fmt.Sprintf(legacyKubeConfigPathPattern, clusterName))
+	}
+
+	if _, err := os.Stat(primary); err == nil {
+		return primary
+	}
+	// Fall back to the pre-refactor filename so that clusters created before
+	// the tool-prefixed naming scheme are still discovered.
+	legacy := os.ExpandEnv(fmt.Sprintf(oldKindKubeConfigPathPattern, clusterName))
+	if _, err := os.Stat(legacy); err == nil {
+		return legacy
+	}
+	return primary
+}
+
 func NewK8sCluster(t testing.TestingT, clusterName string, verbose bool) *K8sCluster {
 	return &K8sCluster{
 		t:                   t,
 		name:                clusterName,
-		kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, clusterName)),
+		kubeconfig:          defaultKubeConfigPath(clusterName),
 		forwardedPortsChans: []chan struct{}{},
 		verbose:             verbose,
 		deployments:         map[string]Deployment{},
@@ -471,9 +502,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + Config.XDSApiVersion
 	}
 
-	for opt, value := range c.opts.ctlOpts {
-		argsMap[opt] = value
-	}
+	maps.Copy(argsMap, c.opts.ctlOpts)
 
 	for k, v := range argsMap {
 		args = append(args, k, v)
@@ -529,9 +558,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["controlPlane.replicas"] = strconv.Itoa(c.opts.cpReplicas)
 	}
 
-	for opt, value := range c.opts.helmOpts {
-		values[opt] = value
-	}
+	maps.Copy(values, c.opts.helmOpts)
 
 	if Config.XDSApiVersion != "" {
 		values["controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_API_VERSION"] = Config.XDSApiVersion
@@ -712,11 +739,9 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 
 	for i := range appsToInstall {
 		idx := i
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			appsToInstall[idx].Outcome = c.WaitApp(appsToInstall[idx].Name, appsToInstall[idx].Namespace, appsToInstall[idx].Replicas)
-		}()
+		})
 	}
 
 	wg.Wait() // Because of the wait group we have a memory barrier which allows us to read Outcome in a thread safe manner.
@@ -1062,7 +1087,7 @@ func (c *K8sCluster) deleteCRDs() error {
 		return err
 	}
 	deleteCmd := []string{"delete"}
-	for _, l := range strings.Split(out, "\n") {
+	for l := range strings.SplitSeq(out, "\n") {
 		if strings.Contains(l, "kuma.io") {
 			deleteCmd = append(deleteCmd, l)
 		}
@@ -1396,7 +1421,7 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		return errors.Errorf("%s pods: %d. expected %d", name, len(pods), replicas)
 	}
 
-	for i := 0; i < replicas; i++ {
+	for i := range replicas {
 		podError := k8s.WaitUntilPodAvailableE(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
@@ -1425,7 +1450,7 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
 		container := c.name
-		createCmd := exec.Command("k3d", "node", "create", name, "-c", container, "--k3s-node-label", label)
+		createCmd := exec.CommandContext(context.Background(), "k3d", "node", "create", name, "-c", container, "--k3s-node-label", label)
 		createCmd.Stdout = os.Stdout
 		return createCmd.Run()
 	case KindK8sType, AwsK8sType, AzureK8sType:
@@ -1481,7 +1506,7 @@ func (c *K8sCluster) DeleteNode(name string) error {
 		if err != nil {
 			return err
 		}
-		return exec.Command("k3d", "node", "delete", name).Run()
+		return exec.CommandContext(context.Background(), "k3d", "node", "delete", name).Run()
 	case KindK8sType, AwsK8sType, AzureK8sType:
 		return errors.New("deleting new node not available for " + string(Config.K8sType))
 	default:

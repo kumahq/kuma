@@ -31,6 +31,6 @@ func (i *TestingT) Hash() string {
 }
 
 // Logf logs a test progress message.
-func Logf(format string, args ...interface{}) {
+func Logf(format string, args ...any) {
 	logger.Default.Logf(ginkgo.GinkgoT(), format, args...)
 }
