@@ -108,7 +108,7 @@ endif
 
 # --- k3d-specific context ---
 
-CLUSTER_KUBECONTEXT := k3d-$(CLUSTER_NAME)
+CLUSTER_KUBECONTEXT = k3d-$(CLUSTER_NAME)
 
 # --- Target-specific variables ---
 

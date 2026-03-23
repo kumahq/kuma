@@ -35,29 +35,22 @@ $(if $(_k8s_cluster_valid),,$(error Invalid CLUSTER "$(CLUSTER)". Expected "kuma
 
 # --- Derived variables ---
 
-# Numeric suffix (used for MetalLB subnet offset, port allocation)
-ifeq ($(CLUSTER),kuma)
-  CLUSTER_NUMBER := 0
-else ifneq ($(filter kuma-%,$(CLUSTER)),)
-  CLUSTER_NUMBER := $(patsubst kuma-%,%,$(CLUSTER))
-else
-  CLUSTER_NUMBER := $(CLUSTER)
-endif
+# Numeric suffix (used for MetalLB subnet offset, port allocation).
+# Keep this recursive so target-specific `CLUSTER=...` overrides propagate
+# into per-cluster e2e targets created after parse time.
+k8s_cluster_number = $(if $(filter kuma,$(1)),0,$(if $(filter kuma-%,$(1)),$(patsubst kuma-%,%,$(1)),$(1)))
+CLUSTER_NUMBER = $(call k8s_cluster_number,$(CLUSTER))
 
-# Canonical cluster name: "kuma" stays "kuma"; numbers become "kuma-<N>"
-ifeq ($(CLUSTER_NUMBER),0)
-  CLUSTER_NAME := kuma
-else
-  CLUSTER_NAME := kuma-$(CLUSTER_NUMBER)
-endif
+# Canonical cluster name: "kuma" stays "kuma"; numbers become "kuma-<N>".
+CLUSTER_NAME = $(if $(filter 0,$(CLUSTER_NUMBER)),kuma,kuma-$(CLUSTER_NUMBER))
 
 # Tool-specific kubeconfig paths keep kind and k3d clusters from clobbering
 # each other's files when they share the same cluster name.
 k8s_cluster_kubeconfig = $(KUBECONFIG_DIR)/$(1)-$(2).yaml
 
-KIND_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,kind,$(CLUSTER_NAME))
-K3D_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,k3d,$(CLUSTER_NAME))
-LEGACY_CLUSTER_KUBECONFIG := $(KUBECONFIG_DIR)/$(CLUSTER_NAME).yaml
+KIND_CLUSTER_KUBECONFIG = $(call k8s_cluster_kubeconfig,kind,$(CLUSTER_NAME))
+K3D_CLUSTER_KUBECONFIG = $(call k8s_cluster_kubeconfig,k3d,$(CLUSTER_NAME))
+LEGACY_CLUSTER_KUBECONFIG = $(KUBECONFIG_DIR)/$(CLUSTER_NAME).yaml
 
 # Compatibility alias: kong-mesh and older workflows reference
 # `KIND_KUBECONFIG` as the active cluster kubeconfig regardless of tool.
