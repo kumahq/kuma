@@ -181,7 +181,11 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Eventually(func() bool {
-			resp, err := http.Get(testurl) // #nosec G107 -- reused in different places
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, testurl, http.NoBody)
+			if err != nil {
+				return false
+			}
+			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				return false
 			}

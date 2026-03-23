@@ -96,7 +96,7 @@ This could help expedite your development process if you only made changes to th
 
 With Skaffold we can utilize code live reload on k8s cluster. Everytime you make a change in code Kuma will be rebuild and reinstalled on cluster.
 
-1. Run `make k3d/start`
+1. Run `make k3d/cluster/start`
 2. Run `make dev/fetch-demo` to get the Kuma counter demo app
 3. Run `skaffold dev`
 
@@ -107,7 +107,7 @@ In this section we'll go into how to trigger a breakpoint both in K8S and Univer
 
 ### K8S
 
-1. Run `make k3d/start`
+1. Run `make k3d/cluster/start`
 2. Run `skaffold debug`
 3. Run goland/vscode debugger with remote target on port `56268` (Skaffold will log exposed port for debugging)
 4. Put a breakpoint where you want 
@@ -148,8 +148,8 @@ Required settings for the run configuration:
 
 1. Environment variables
    1. `KUMACTLBIN=<path-to-built-kumactl>` should point to the `kumactl` of your local build, e.g. `/Users/<username>/go/src/github.com/<username>/kuma/build/artifacts-darwin-arm64/kumactl/kumactl`
-   2. `KUMA_K8S_TYPE=k3d` or `kind` if you also specified when starting the clusters 
-   3. `K3D_NETWORK_CNI=flannel` only needed if you are using the `k3d` cluster type, which is the default
+   2. `KUMA_K8S_TYPE=k3d` (default) or `kind` - must match the tool used to start the clusters
+   3. `K3D_CNI=flannel` only needed if you are using the `k3d` cluster type, which is the default
 2. Go tool arguments
    1. Prepare the values for Envoy version and Kuma product version
       1. Envoy version: execute `ENVOY_VERSION=$(make build/info | grep Envoy | cut -d '=' -f 2)`
@@ -172,7 +172,7 @@ When you need to restart the debugging:
 
 Execute
 ```bash
-make -j k3d/restart
+make k3d/cluster/restart/kumactl
 ```
 
 To stop any existing Kuma K3D cluster, start a new K3D cluster, load images, deploy Kuma and Kuma counter demo. 

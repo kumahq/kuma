@@ -66,7 +66,7 @@ func newGRPCServerCmd() *cobra.Command {
 test-server grpc server --port 8080
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			ln, err := net.Listen("tcp", fmt.Sprintf(":%d", args.port))
+			ln, err := (&net.ListenConfig{}).Listen(cmd.Context(), "tcp", fmt.Sprintf(":%d", args.port))
 			if err != nil {
 				return err
 			}

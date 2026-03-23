@@ -213,7 +213,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 	return cmd
 }
 
-func shouldSkipKubeObject(obj map[string]interface{}, ectx *exportContext) bool {
+func shouldSkipKubeObject(obj map[string]any, ectx *exportContext) bool {
 	if ectx.args.profile == profileAll {
 		return false
 	}
@@ -221,7 +221,7 @@ func shouldSkipKubeObject(obj map[string]interface{}, ectx *exportContext) bool 
 	if !ok {
 		return false
 	}
-	meta := metadata.(map[string]interface{})
+	meta := metadata.(map[string]any)
 	if ns, found := meta["namespace"]; found {
 		// we can't apply non system namespace resource on global
 		return ns != ectx.args.systemNamespace
@@ -230,12 +230,12 @@ func shouldSkipKubeObject(obj map[string]interface{}, ectx *exportContext) bool 
 }
 
 // cleans kubernetes object, so it can be applied on any other cluster
-func cleanKubeObject(obj map[string]interface{}) {
+func cleanKubeObject(obj map[string]any) {
 	metadata, ok := obj["metadata"]
 	if !ok {
 		return
 	}
-	meta := metadata.(map[string]interface{})
+	meta := metadata.(map[string]any)
 	delete(meta, "resourceVersion")
 	delete(meta, "ownerReferences")
 	delete(meta, "uid")
@@ -244,16 +244,16 @@ func cleanKubeObject(obj map[string]interface{}) {
 }
 
 // cleans kubernetes object, so it can be applied on any other cluster
-func removeExcludedLabels(excludedLabels map[string]struct{}, obj map[string]interface{}) {
+func removeExcludedLabels(excludedLabels map[string]struct{}, obj map[string]any) {
 	metadata, ok := obj["metadata"]
 	if !ok {
 		return
 	}
-	meta := metadata.(map[string]interface{})
+	meta := metadata.(map[string]any)
 	if labels, found := meta["labels"]; found {
-		labelsMap, ok := labels.(map[string]interface{})
+		labelsMap, ok := labels.(map[string]any)
 		if ok {
-			filtered := map[string]interface{}{}
+			filtered := map[string]any{}
 			for key, value := range labelsMap {
 				if _, found := excludedLabels[key]; !found {
 					filtered[key] = value
@@ -263,9 +263,9 @@ func removeExcludedLabels(excludedLabels map[string]struct{}, obj map[string]int
 		}
 	}
 	if annotations, found := meta["annotations"]; found {
-		annotationsMap, ok := annotations.(map[string]interface{})
+		annotationsMap, ok := annotations.(map[string]any)
 		if ok {
-			filtered := map[string]interface{}{}
+			filtered := map[string]any{}
 			for key, value := range annotationsMap {
 				if _, found := excludedLabels[key]; !found {
 					filtered[key] = value

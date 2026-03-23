@@ -82,6 +82,31 @@
     {
       "customType": "regex",
       "description": [
+        " Update envoyproxy/go-control-plane require versions in go.mod to match the base version",
+        " of the latest -kong-N tag on the kumahq fork. When the fork publishes envoy/v1.37.0-kong-1,",
+        " this bumps the require from v1.36.0 to v1.37.0.",
+        "",
+        " Works in tandem with the shared preset's custom regex manager that bumps the replace",
+        " directives to the full -kong-N version. Both updates land in the same grouped PR via the",
+        " shared preset's grouping rule.",
+        "",
+        " The extractVersionTemplate strips the -kong-N suffix so only the base version is written",
+        " to the require line, while the packageNameTemplate remaps envoyproxy to kumahq so Renovate",
+        " queries the fork's version list on the Go proxy"
+      ],
+      "managerFilePatterns": ["/(^|/)go\\.mod$/"],
+      "matchStrings": [
+        "(?<depName>github\\.com/envoyproxy/go-control-plane(?:/(?:contrib|envoy|ratelimit))?) (?<currentValue>v[^\\s]+)"
+      ],
+      "datasourceTemplate": "go",
+      "packageNameTemplate": "{{{replace 'envoyproxy' 'kumahq' depName}}}",
+      "extractVersionTemplate": "^(?<version>v\\d+\\.\\d+\\.\\d+)-kong-.+",
+      "autoReplaceStringTemplate": "{{{depName}}} {{{newVersion}}}",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": [
         " Update kubectl image tag in Helm chart README.md.",
         " Keeps documentation in sync with values.yaml when Renovate updates kubectl.",
         " Uses Markdown table pattern (RE2 compatible)"
@@ -281,6 +306,25 @@
       "groupName": "go version",
       "rangeStrategy": "bump",
       "enabled": true
+    },
+    {
+      "description": [
+        " Disable gomod manager for all go-control-plane packages (both envoyproxy require entries",
+        " and kumahq replace entries). Without this, gomod bumps require versions to upstream",
+        " releases and rewrites replace targets to non-kong tags, losing the fork's patches.",
+        "",
+        " The custom regex managers handle updates instead: the shared preset bumps replace",
+        " directives to -kong-N versions, and the local manager bumps require versions to match.",
+        " Uses explicit dep names because the {/,}** glob pattern does not reliably match"
+      ],
+      "matchManagers": ["gomod"],
+      "matchDepNames": [
+        "github.com/envoyproxy/go-control-plane",
+        "github.com/envoyproxy/go-control-plane/*",
+        "github.com/kumahq/go-control-plane",
+        "github.com/kumahq/go-control-plane/*"
+      ],
+      "enabled": false
     },
     {
       "description": [

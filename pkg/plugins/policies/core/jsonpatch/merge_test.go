@@ -2,7 +2,6 @@ package jsonpatch_test
 
 import (
 	accesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	grpcv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	open_telemetryv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -22,9 +21,7 @@ var _ = Describe("Json Patch merge", func() {
 				Name: "envoy.access_loggers.open_telemetry",
 				ConfigType: &accesslogv3.AccessLog_TypedConfig{
 					TypedConfig: util_proto.MustMarshalAny(&open_telemetryv3.OpenTelemetryAccessLogConfig{
-						CommonConfig: &grpcv3.CommonGrpcAccessLogConfig{
-							LogName: "a",
-						},
+						LogName: "a",
 					}),
 				},
 			},
@@ -36,7 +33,7 @@ var _ = Describe("Json Patch merge", func() {
 		patches := []common_api.JsonPatchBlock{
 			{
 				Op:    "replace",
-				Path:  pointer.To("/accessLog/0/typedConfig/commonConfig/logName"),
+				Path:  pointer.To("/accessLog/0/typedConfig/logName"),
 				Value: []byte(`"y"`),
 			},
 		}
@@ -53,7 +50,7 @@ var _ = Describe("Json Patch merge", func() {
 		mergedOtel := &open_telemetryv3.OpenTelemetryAccessLogConfig{}
 		err = util_proto.UnmarshalAnyTo(mergedHcm.AccessLog[0].GetTypedConfig(), mergedOtel)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mergedOtel.CommonConfig.LogName).To(Equal("y"))
+		Expect(mergedOtel.LogName).To(Equal("y"))
 	})
 
 	It("should not merge for snake_case", func() {
@@ -61,7 +58,7 @@ var _ = Describe("Json Patch merge", func() {
 		patches := []common_api.JsonPatchBlock{
 			{
 				Op:    "replace",
-				Path:  pointer.To("/access_log/0/typed_config/common_config/log_name"),
+				Path:  pointer.To("/access_log/0/typed_config/log_name"),
 				Value: []byte(`"y"`),
 			},
 		}
