@@ -297,6 +297,9 @@ k3d/cluster/create: $(KUBECONFIG_DIR) k3d/docker/network/create k3d/docker/crede
 	  "$(K3D_PORT_PREFIX_LOCK_DIR)" \
 	  -- \
 	  $(K3D) cluster create $(CLUSTER_NAME) $(K3D_CLUSTER_CREATE_OPTS)
+	$(Q)$(K3D) kubeconfig merge $(CLUSTER_NAME) \
+	  --output $(K3D_CLUSTER_KUBECONFIG) \
+	  --overwrite
 	$(Q)$(call k8s_link_legacy_kubeconfig,$(K3D_CLUSTER_KUBECONFIG))
 
 .PHONY: k3d/cluster/stop
