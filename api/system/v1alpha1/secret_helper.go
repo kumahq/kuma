@@ -1,5 +1,5 @@
 package v1alpha1
 
-func (s *Secret) MarshalLog() any {
+func (*Secret) MarshalLog() any {
 	return "***"
 }

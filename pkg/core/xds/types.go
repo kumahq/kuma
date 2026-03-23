@@ -240,8 +240,8 @@ type WorkloadIdentity struct {
 	AdditionalResources *ResourceSet
 }
 
-func (c *WorkloadIdentity) CertLifetime() time.Duration {
-	return c.ExpirationTime.Sub(pointer.Deref(c.GenerationTime))
+func (i *WorkloadIdentity) CertLifetime() time.Duration {
+	return i.ExpirationTime.Sub(pointer.Deref(i.GenerationTime))
 }
 
 func (i *WorkloadIdentity) ExpiringSoon() bool {

@@ -15,14 +15,14 @@ import (
 
 var AllowedMTLSBackends = 1
 
-func (m *MeshResource) Validate() error {
+func (r *MeshResource) Validate() error {
 	var verr validators.ValidationError
-	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
-	verr.AddError("logging", validateLogging(m.Spec.Logging))
-	verr.AddError("tracing", validateTracing(m.Spec.Tracing))
-	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
-	verr.AddError("constraints", validateConstraints(m.Spec.Constraints))
-	verr.AddError("", validateZoneEgress(m.Spec.Routing, m.Spec.Mtls))
+	verr.AddError("mtls", validateMtls(r.Spec.Mtls))
+	verr.AddError("logging", validateLogging(r.Spec.Logging))
+	verr.AddError("tracing", validateTracing(r.Spec.Tracing))
+	verr.AddError("metrics", validateMetrics(r.Spec.Metrics))
+	verr.AddError("constraints", validateConstraints(r.Spec.Constraints))
+	verr.AddError("", validateZoneEgress(r.Spec.Routing, r.Spec.Mtls))
 	return verr.OrNil()
 }
 

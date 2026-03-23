@@ -5,9 +5,9 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (t *MeshHealthCheckResource) Deprecations() []string {
-	deprecations := validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)
-	for _, to := range pointer.Deref(t.Spec.To) {
+func (r *MeshHealthCheckResource) Deprecations() []string {
+	deprecations := validators.TopLevelTargetRefDeprecations(r.Spec.TargetRef)
+	for _, to := range pointer.Deref(r.Spec.To) {
 		if to.Default.HealthyPanicThreshold != nil {
 			deprecations = append(deprecations, "healthyPanicThreshold for 'to[].default' is deprecated. "+
 				"The setting has been moved to MeshCircuitBreaker policy, please use MeshCircuitBreaker policy instead.")

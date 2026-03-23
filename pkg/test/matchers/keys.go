@@ -99,7 +99,7 @@ func (m *allKeysMatcher) FailureMessage(actual any) string {
 		))
 }
 
-func (m *allKeysMatcher) NegatedFailureMessage(actual any) string {
+func (*allKeysMatcher) NegatedFailureMessage(actual any) string {
 	return format.Message(actual, "not to match keys")
 }
 

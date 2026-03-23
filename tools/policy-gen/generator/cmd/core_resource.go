@@ -148,66 +148,66 @@ func New{{.Name}}Resource() *{{.Name}}Resource {
 	}
 }
 
-func (t *{{.Name}}Resource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *{{.Name}}Resource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *{{.Name}}Resource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *{{.Name}}Resource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *{{.Name}}Resource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *{{.Name}}Resource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *{{.Name}}Resource) SetSpec(spec model.ResourceSpec) error {
+func (r *{{.Name}}Resource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*{{.Name}})
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &{{.Name}}{}
+			r.Spec = &{{.Name}}{}
 		} else  {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
 {{ if .HasStatus }}
-func (t *{{.Name}}Resource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *{{.Name}}Resource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *{{.Name}}Resource) SetStatus(status model.ResourceStatus) error {
+func (r *{{.Name}}Resource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*{{.Name}}Status)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &{{.Name}}Status{}
+			r.Status = &{{.Name}}Status{}
 		} else  {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 {{ else }}
-func (t *{{.Name}}Resource) GetStatus() model.ResourceStatus {
+func (*{{.Name}}Resource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *{{.Name}}Resource) SetStatus(model.ResourceStatus) error {
+func (*{{.Name}}Resource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 {{ end }}
 
-func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
+func (*{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
 	return {{.Name}}ResourceTypeDescriptor 
 }
 
-func (t *{{.Name}}Resource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *{{.Name}}Resource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

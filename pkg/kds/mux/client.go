@@ -284,7 +284,7 @@ func (c *client) startClusters(
 	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
-func (c *client) startHealthCheck(
+func (*client) startHealthCheck(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
@@ -325,7 +325,7 @@ func (c *client) startHealthCheck(
 	}
 }
 
-func (c *client) handleProcessingErrors(
+func (*client) handleProcessingErrors(
 	stream grpc.ClientStream,
 	log logr.Logger,
 	processingErrorsCh chan error,
@@ -352,7 +352,7 @@ func (c *client) handleProcessingErrors(
 	}
 }
 
-func (c *client) NeedLeaderElection() bool {
+func (*client) NeedLeaderElection() bool {
 	return true
 }
 

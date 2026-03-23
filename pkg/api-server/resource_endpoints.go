@@ -192,7 +192,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 	}
 }
 
-func (r *resourceEndpoints) methodNotAllowed(detail string) func(request *restful.Request, response *restful.Response) {
+func (*resourceEndpoints) methodNotAllowed(detail string) func(request *restful.Request, response *restful.Response) {
 	return func(request *restful.Request, response *restful.Response) {
 		err := &types.Error{
 			Status: 405,
@@ -714,7 +714,7 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 	return err
 }
 
-func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
+func (*resourceEndpoints) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
 
 	immutableLabels := []string{
@@ -743,7 +743,7 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 	return err
 }
 
-func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
+func (*resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 	policyRole := core_model.PolicyRole(resource.GetMeta())
 	// at the moment on universal all policies have system policy role
@@ -976,7 +976,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 	}
 }
 
-func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetDataplanesXdsConfigParams, error) {
+func (*resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetDataplanesXdsConfigParams, error) {
 	params := &api_types.GetDataplanesXdsConfigParams{
 		Shadow:  pointer.To(false),
 		Include: &[]api_types.GetDataplanesXdsConfigParamsInclude{},

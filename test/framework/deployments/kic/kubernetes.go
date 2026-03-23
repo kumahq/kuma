@@ -25,7 +25,7 @@ type k8sDeployment struct {
 
 var _ Deployment = &k8sDeployment{}
 
-func (t *k8sDeployment) Name() string {
+func (*k8sDeployment) Name() string {
 	return DeploymentName
 }
 
@@ -97,7 +97,7 @@ func (t *k8sDeployment) Delete(cluster framework.Cluster) error {
 	return cluster.(*framework.K8sCluster).TriggerDeleteNamespace(t.ingressNamespace)
 }
 
-func (t *k8sDeployment) IP(namespace string) (string, error) {
+func (*k8sDeployment) IP(namespace string) (string, error) {
 	ip, err := retry.DoWithRetryInterfaceE(
 		kubernetes.Cluster.GetTesting(),
 		"get the clusterIP of the Kong Ingress Controller Service",

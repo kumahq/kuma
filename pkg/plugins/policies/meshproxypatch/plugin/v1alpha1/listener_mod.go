@@ -63,7 +63,7 @@ func (l *listenerModificator) remove(resources *core_xds.ResourceSet) {
 	}
 }
 
-func (l *listenerModificator) add(resources *core_xds.ResourceSet, listener *envoy_listener.Listener) *core_xds.ResourceSet {
+func (*listenerModificator) add(resources *core_xds.ResourceSet, listener *envoy_listener.Listener) *core_xds.ResourceSet {
 	return resources.Add(&core_xds.Resource{
 		Name:     listener.Name,
 		Origin:   metadata.OriginMeshProxyPatch,

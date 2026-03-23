@@ -52,11 +52,11 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+func (plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+func (plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, tags, resources, opts...)
 }
 
@@ -173,7 +173,7 @@ func (p plugin) configureDPP(
 	return nil
 }
 
-func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy) error {
+func (plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy) error {
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
 		return NewModifier(envoyResource).
@@ -540,7 +540,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 // configurations based on the client. That's why we are computing rules for MeshSubset
 //
 //nolint:staticcheck // SA1019 Zone egress uses old Rule format, per function comment
-func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
+func (plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 	rules := util_maps.AllValues(fr.Rules)
 	if len(rules) == 0 {
 		return nil
@@ -548,7 +548,7 @@ func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 	return rules[0].Compute(subsetutils.MeshElement())
 }
 
-func (p plugin) configureRDS(
+func (plugin) configureRDS(
 	l *envoy_listener.Listener,
 	routes map[string]*envoy_route.RouteConfiguration,
 	conf *api.Conf,

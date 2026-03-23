@@ -91,56 +91,56 @@ func NewWorkloadResource() *WorkloadResource {
 	}
 }
 
-func (t *WorkloadResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *WorkloadResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *WorkloadResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *WorkloadResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *WorkloadResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *WorkloadResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *WorkloadResource) SetSpec(spec model.ResourceSpec) error {
+func (r *WorkloadResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*Workload)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &Workload{}
+			r.Spec = &Workload{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *WorkloadResource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *WorkloadResource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *WorkloadResource) SetStatus(status model.ResourceStatus) error {
+func (r *WorkloadResource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*WorkloadStatus)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &WorkloadStatus{}
+			r.Status = &WorkloadStatus{}
 		} else {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 
-func (t *WorkloadResource) Descriptor() model.ResourceTypeDescriptor {
+func (*WorkloadResource) Descriptor() model.ResourceTypeDescriptor {
 	return WorkloadResourceTypeDescriptor
 }
 
-func (t *WorkloadResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *WorkloadResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

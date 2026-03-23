@@ -70,7 +70,7 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 	return c.validateLabels(r, ns)
 }
 
-func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
+func (*ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
 	// Assume this means one of the following:
 	// - sync from another zone
 	// - GC cleanup resources due to OwnerRef. ("system:serviceaccount:kube-system:generic-garbage-collector")
@@ -109,7 +109,7 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	return nil
 }
 
-func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
+func (*ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
 	return &admission.Response{
 		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,

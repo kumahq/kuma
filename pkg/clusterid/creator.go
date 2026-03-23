@@ -22,7 +22,7 @@ func (c *clusterIDCreator) Start(_ <-chan struct{}) error {
 	return c.create()
 }
 
-func (c *clusterIDCreator) NeedLeaderElection() bool {
+func (*clusterIDCreator) NeedLeaderElection() bool {
 	return true
 }
 

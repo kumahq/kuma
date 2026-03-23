@@ -161,6 +161,6 @@ func (a *Allocator) allocateVIPs(ctx context.Context, typeDesc model.ResourceTyp
 	return nil
 }
 
-func (a *Allocator) NeedLeaderElection() bool {
+func (*Allocator) NeedLeaderElection() bool {
 	return true
 }

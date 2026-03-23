@@ -10,7 +10,7 @@ type AltStatNameConfigurer struct{}
 
 var _ ClusterConfigurer = &AltStatNameConfigurer{}
 
-func (e *AltStatNameConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
+func (*AltStatNameConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	sanitizedName := util_xds.SanitizeMetric(cluster.Name)
 	if sanitizedName != cluster.Name {
 		cluster.AltStatName = sanitizedName

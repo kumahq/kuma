@@ -91,56 +91,56 @@ func NewMeshOpenTelemetryBackendResource() *MeshOpenTelemetryBackendResource {
 	}
 }
 
-func (t *MeshOpenTelemetryBackendResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshOpenTelemetryBackendResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshOpenTelemetryBackendResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshOpenTelemetryBackendResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshOpenTelemetryBackendResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshOpenTelemetryBackendResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshOpenTelemetryBackendResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshOpenTelemetryBackendResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshOpenTelemetryBackend)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshOpenTelemetryBackend{}
+			r.Spec = &MeshOpenTelemetryBackend{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshOpenTelemetryBackendResource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *MeshOpenTelemetryBackendResource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *MeshOpenTelemetryBackendResource) SetStatus(status model.ResourceStatus) error {
+func (r *MeshOpenTelemetryBackendResource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*MeshOpenTelemetryBackendStatus)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &MeshOpenTelemetryBackendStatus{}
+			r.Status = &MeshOpenTelemetryBackendStatus{}
 		} else {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshOpenTelemetryBackendResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshOpenTelemetryBackendResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshOpenTelemetryBackendResourceTypeDescriptor
 }
 
-func (t *MeshOpenTelemetryBackendResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshOpenTelemetryBackendResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

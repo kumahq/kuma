@@ -135,7 +135,7 @@ func (d *InterCpServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *InterCpServer) NeedLeaderElection() bool {
+func (*InterCpServer) NeedLeaderElection() bool {
 	return false
 }
 

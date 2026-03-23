@@ -34,11 +34,11 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+func (plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshTrafficPermissionType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+func (plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.EgressMatchedPolicies(api.MeshTrafficPermissionType, tags, resources, opts...)
 }
 
@@ -124,7 +124,7 @@ func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key cor
 	return nil
 }
 
-func (p plugin) denyRules() core_rules.Rules {
+func (plugin) denyRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
 			Subset: subsetutils.MeshSubset(),
@@ -135,7 +135,7 @@ func (p plugin) denyRules() core_rules.Rules {
 	}
 }
 
-func (p plugin) allowRules() core_rules.Rules {
+func (plugin) allowRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
 			Subset: subsetutils.MeshSubset(),

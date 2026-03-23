@@ -48,7 +48,7 @@ func (g *MeshExternalServiceHostnameGenerator) UpdateResourceStatus(ctx context.
 	return nil
 }
 
-func (g *MeshExternalServiceHostnameGenerator) HasStatusChanged(resource model.Resource, generatorStatuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) (bool, error) {
+func (*MeshExternalServiceHostnameGenerator) HasStatusChanged(resource model.Resource, generatorStatuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) (bool, error) {
 	es, ok := resource.(*meshexternalservice_api.MeshExternalServiceResource)
 	if !ok {
 		return false, errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshexternalservice_api.MeshExternalServiceResource)(nil), resource)
@@ -56,7 +56,7 @@ func (g *MeshExternalServiceHostnameGenerator) HasStatusChanged(resource model.R
 	return !reflect.DeepEqual(addresses, es.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, es.Status.HostnameGenerators), nil
 }
 
-func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
+func (*MeshExternalServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
 	es, ok := resource.(*meshexternalservice_api.MeshExternalServiceResource)
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshexternalservice_api.MeshExternalServiceResource)(nil), resource)

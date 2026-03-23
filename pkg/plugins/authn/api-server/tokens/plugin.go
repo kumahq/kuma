@@ -73,7 +73,7 @@ func (c *plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenti
 	return UserTokenAuthenticator(validator), nil
 }
 
-func (c *plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginConfig) error {
+func (*plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginConfig) error {
 	return nil
 }
 
@@ -107,10 +107,10 @@ func EnsureUserTokenSigningKeyExists(ctx context.Context, resManager core_manage
 	return core_tokens.EnsureDefaultSigningKeyExist(system.UserTokenSigningKeyPrefix, ctx, resManager, logger)
 }
 
-func (c *plugin) Name() plugins.PluginName {
+func (*plugin) Name() plugins.PluginName {
 	return PluginName
 }
 
-func (c *plugin) Order() int {
+func (*plugin) Order() int {
 	return plugins.EnvironmentPreparedOrder + 1
 }

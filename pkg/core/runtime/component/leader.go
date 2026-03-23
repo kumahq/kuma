@@ -32,25 +32,25 @@ type LeaderInfoComponent struct {
 	leader int32
 }
 
-func (l *LeaderInfoComponent) Start(stop <-chan struct{}) error {
-	l.setLeader(true)
+func (c *LeaderInfoComponent) Start(stop <-chan struct{}) error {
+	c.setLeader(true)
 	<-stop
-	l.setLeader(false)
+	c.setLeader(false)
 	return nil
 }
 
-func (l *LeaderInfoComponent) NeedLeaderElection() bool {
+func (*LeaderInfoComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func (p *LeaderInfoComponent) setLeader(leader bool) {
+func (c *LeaderInfoComponent) setLeader(leader bool) {
 	var value int32
 	if leader {
 		value = 1
 	}
-	atomic.StoreInt32(&p.leader, value)
+	atomic.StoreInt32(&c.leader, value)
 }
 
-func (p *LeaderInfoComponent) IsLeader() bool {
-	return atomic.LoadInt32(&(p.leader)) == 1
+func (c *LeaderInfoComponent) IsLeader() bool {
+	return atomic.LoadInt32(&(c.leader)) == 1
 }

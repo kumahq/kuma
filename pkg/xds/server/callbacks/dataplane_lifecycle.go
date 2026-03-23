@@ -225,7 +225,7 @@ func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing core_m
 	return d.authenticator.Authenticate(ctx, existing, credential)
 }
 
-func (d *DataplaneLifecycle) validateProxyKey(proxyKey core_model.ResourceKey, proxyResource core_model.Resource) error {
+func (*DataplaneLifecycle) validateProxyKey(proxyKey core_model.ResourceKey, proxyResource core_model.Resource) error {
 	if core_model.MetaToResourceKey(proxyResource.GetMeta()) != proxyKey {
 		return errors.Errorf("proxyId %s does not match proxy resource %s", proxyKey, proxyResource.GetMeta())
 	}

@@ -213,6 +213,6 @@ func (zw *ZoneWatch) cleanupStaleConnections(zone zoneTenant, zoneInsight *syste
 	}
 }
 
-func (zw *ZoneWatch) NeedLeaderElection() bool {
+func (*ZoneWatch) NeedLeaderElection() bool {
 	return false
 }

@@ -50,7 +50,7 @@ func (m memoryMeta) GetName() string {
 	return m.Name
 }
 
-func (m memoryMeta) GetNameExtensions() core_model.ResourceNameExtensions {
+func (memoryMeta) GetNameExtensions() core_model.ResourceNameExtensions {
 	return core_model.ResourceNameExtensionsUnsupported
 }
 
@@ -337,7 +337,7 @@ func (c *memoryStore) findRecords(resourceType string, mesh string, contains str
 	return res
 }
 
-func (c *memoryStore) marshalRecord(
+func (*memoryStore) marshalRecord(
 	resourceType string,
 	meta memoryMeta,
 	spec core_model.ResourceSpec,
@@ -368,7 +368,7 @@ func (c *memoryStore) marshalRecord(
 	}, nil
 }
 
-func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r core_model.Resource) error {
+func (*memoryStore) unmarshalRecord(s *memoryStoreRecord, r core_model.Resource) error {
 	r.SetMeta(memoryMeta{
 		Name:             s.Name,
 		Mesh:             s.Mesh,

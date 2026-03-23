@@ -58,7 +58,7 @@ func NewForwardingEnvoyAdminClient(
 
 var _ admin.EnvoyAdminClient = &forwardingKdsEnvoyAdminClient{}
 
-func (f *forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneResource) error {
+func (*forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneResource) error {
 	panic("not implemented")
 }
 

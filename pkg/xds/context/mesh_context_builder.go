@@ -443,7 +443,7 @@ func (m *meshContextBuilder) generateServicesInformation(
 	return servicesInformation
 }
 
-func (m *meshContextBuilder) resolveProtocol(
+func (*meshContextBuilder) resolveProtocol(
 	mesh *core_mesh.MeshResource,
 	endpointMap xds.EndpointMap,
 	esEndpointMap xds.EndpointMap,
@@ -467,7 +467,7 @@ func (m *meshContextBuilder) resolveProtocol(
 	}
 }
 
-func (m *meshContextBuilder) resolveTLSReadiness(
+func (*meshContextBuilder) resolveTLSReadiness(
 	mesh *core_mesh.MeshResource,
 	serviceInsights *core_mesh.ServiceInsightResourceList,
 	servicesInformation map[string]*ServiceInformation,
@@ -544,7 +544,7 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 	return nil
 }
 
-func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
+func (*meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
 	slices.Sort(managedTypes)
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(globalContext.hash)

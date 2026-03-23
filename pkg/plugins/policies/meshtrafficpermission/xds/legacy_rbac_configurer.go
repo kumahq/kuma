@@ -217,7 +217,7 @@ func (c *LegacyRBACConfigurer) principalFromSubset(ss subsetutils.Subset) *rbac_
 	}
 }
 
-func (c *LegacyRBACConfigurer) not(p *rbac_config.Principal) *rbac_config.Principal {
+func (*LegacyRBACConfigurer) not(p *rbac_config.Principal) *rbac_config.Principal {
 	return &rbac_config.Principal{
 		Identifier: &rbac_config.Principal_NotId{
 			NotId: p,

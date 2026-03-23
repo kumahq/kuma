@@ -113,11 +113,11 @@ func (h *httpFilterModificator) addAfter(hcm *envoy_hcm.HttpConnectionManager, f
 	}
 }
 
-func (h *httpFilterModificator) addLast(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
+func (*httpFilterModificator) addLast(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
 	hcm.HttpFilters = append(hcm.HttpFilters, filterMod)
 }
 
-func (h *httpFilterModificator) addFirst(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
+func (*httpFilterModificator) addFirst(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {
 	hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{filterMod}, hcm.HttpFilters...)
 }
 

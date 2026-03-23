@@ -91,56 +91,56 @@ func NewMeshIdentityResource() *MeshIdentityResource {
 	}
 }
 
-func (t *MeshIdentityResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshIdentityResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshIdentityResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshIdentityResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshIdentityResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshIdentityResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshIdentityResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshIdentityResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshIdentity)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshIdentity{}
+			r.Spec = &MeshIdentity{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshIdentityResource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *MeshIdentityResource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *MeshIdentityResource) SetStatus(status model.ResourceStatus) error {
+func (r *MeshIdentityResource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*MeshIdentityStatus)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &MeshIdentityStatus{}
+			r.Status = &MeshIdentityStatus{}
 		} else {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshIdentityResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshIdentityResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshIdentityResourceTypeDescriptor
 }
 
-func (t *MeshIdentityResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshIdentityResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

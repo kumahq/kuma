@@ -395,7 +395,7 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	return bodyBytes, respContentType
 }
 
-func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
+func (*Hijacker) passRequestHeaders(into http.Header, from http.Header) {
 	// pass request headers
 	// https://github.com/prometheus/prometheus/blob/main/scrape/scrape.go#L772
 	for _, header := range prometheusRequestHeaders {
@@ -406,7 +406,7 @@ func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
 	}
 }
 
-func (s *Hijacker) NeedLeaderElection() bool {
+func (*Hijacker) NeedLeaderElection() bool {
 	return false
 }
 

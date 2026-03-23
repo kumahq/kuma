@@ -571,6 +571,6 @@ type MeshServiceConfig struct {
 	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD"`
 }
 
-func (i MeshServiceConfig) Validate() error {
+func (MeshServiceConfig) Validate() error {
 	return nil
 }

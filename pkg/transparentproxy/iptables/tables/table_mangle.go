@@ -15,7 +15,7 @@ type MangleTable struct {
 	postrouting *chains.Chain
 }
 
-func (t *MangleTable) Name() consts.TableName {
+func (*MangleTable) Name() consts.TableName {
 	return consts.TableMangle
 }
 
@@ -43,7 +43,7 @@ func (t *MangleTable) Chains() []*chains.Chain {
 	return []*chains.Chain{t.prerouting, t.input, t.forward, t.output, t.postrouting}
 }
 
-func (t *MangleTable) CustomChains() []*chains.Chain {
+func (*MangleTable) CustomChains() []*chains.Chain {
 	return nil
 }
 

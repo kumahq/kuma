@@ -43,7 +43,7 @@ type TransparentProxyConfig struct {
 	IPV6                bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
 }
 
-func (c TransparentProxyConfig) Validate() error {
+func (TransparentProxyConfig) Validate() error {
 	if Config.KumactlLinuxBin != "" {
 		_, err := os.Stat(Config.KumactlLinuxBin)
 		if os.IsNotExist(err) {
@@ -60,7 +60,7 @@ func (c TransparentProxyConfig) Validate() error {
 	return nil
 }
 
-func (c TransparentProxyConfig) AutoConfigure() error {
+func (TransparentProxyConfig) AutoConfigure() error {
 	absoluteKumactlPath, err := filepath.Abs(Config.KumactlLinuxBin)
 	if err != nil {
 		return err

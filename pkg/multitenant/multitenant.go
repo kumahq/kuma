@@ -33,19 +33,19 @@ var SingleTenant = &singleTenant{}
 
 type singleTenant struct{}
 
-func (s singleTenant) GetID(context.Context) (string, error) {
+func (singleTenant) GetID(context.Context) (string, error) {
 	return "", nil
 }
 
-func (s singleTenant) GetIDs(context.Context) ([]string, error) {
+func (singleTenant) GetIDs(context.Context) ([]string, error) {
 	return []string{""}, nil
 }
 
-func (s singleTenant) SupportsSharding() bool {
+func (singleTenant) SupportsSharding() bool {
 	return false
 }
 
-func (s singleTenant) IDSupported(ctx context.Context, id string) (bool, error) {
+func (singleTenant) IDSupported(ctx context.Context, id string) (bool, error) {
 	return true, nil
 }
 

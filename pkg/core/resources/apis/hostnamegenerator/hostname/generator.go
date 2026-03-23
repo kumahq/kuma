@@ -264,7 +264,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 	return nil
 }
 
-func (g *Generator) NeedLeaderElection() bool {
+func (*Generator) NeedLeaderElection() bool {
 	return true
 }
 

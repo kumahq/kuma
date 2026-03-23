@@ -90,6 +90,6 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (r *catalogWriter) NeedLeaderElection() bool {
+func (*catalogWriter) NeedLeaderElection() bool {
 	return true
 }

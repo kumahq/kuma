@@ -8,7 +8,7 @@ import (
 
 type ResetTagsHeaderConfigurer struct{}
 
-func (r *ResetTagsHeaderConfigurer) Configure(rc *envoy_config_route_v3.RouteConfiguration) error {
+func (*ResetTagsHeaderConfigurer) Configure(rc *envoy_config_route_v3.RouteConfiguration) error {
 	rc.RequestHeadersToRemove = append(rc.RequestHeadersToRemove, tags.TagsHeaderName)
 	return nil
 }

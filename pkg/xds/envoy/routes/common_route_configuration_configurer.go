@@ -8,7 +8,7 @@ import (
 
 type CommonRouteConfigurationConfigurer struct{}
 
-func (c CommonRouteConfigurationConfigurer) Configure(routeConfiguration *envoy_config_route_v3.RouteConfiguration) error {
+func (CommonRouteConfigurationConfigurer) Configure(routeConfiguration *envoy_config_route_v3.RouteConfiguration) error {
 	routeConfiguration.ValidateClusters = util_proto.Bool(false)
 	return nil
 }

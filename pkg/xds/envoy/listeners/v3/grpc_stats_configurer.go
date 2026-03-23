@@ -12,7 +12,7 @@ type GrpcStatsConfigurer struct{}
 
 var _ FilterChainConfigurer = &GrpcStatsConfigurer{}
 
-func (g *GrpcStatsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (*GrpcStatsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	config := &envoy_grpc_stats.FilterConfig{
 		EmitFilterState: true,
 	}

@@ -23,7 +23,7 @@ type TemplateResolver struct{}
 
 var _ template.ProxyTemplateResolver = TemplateResolver{}
 
-func (r TemplateResolver) GetTemplate(proxy *core_xds.Proxy) *mesh_proto.ProxyTemplate {
+func (TemplateResolver) GetTemplate(proxy *core_xds.Proxy) *mesh_proto.ProxyTemplate {
 	if proxy.Dataplane == nil {
 		return nil
 	}

@@ -59,7 +59,7 @@ func (p *IngressProxyBuilder) Build(
 	return proxy, nil
 }
 
-func (p *IngressProxyBuilder) buildZoneIngressProxy(
+func (*IngressProxyBuilder) buildZoneIngressProxy(
 	zoneIngress *core_mesh.ZoneIngressResource,
 	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) *core_xds.ZoneIngressProxy {

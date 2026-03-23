@@ -27,7 +27,7 @@ import (
 
 type InboundProxyGenerator struct{}
 
-func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {

@@ -45,6 +45,6 @@ type DisabledIssuer struct{}
 
 var _ TokenIssuer = &DisabledIssuer{}
 
-func (d DisabledIssuer) Generate(context.Context, Identity, time.Duration) (tokens.Token, error) {
+func (DisabledIssuer) Generate(context.Context, Identity, time.Duration) (tokens.Token, error) {
 	return "", tokens.IssuerDisabled
 }

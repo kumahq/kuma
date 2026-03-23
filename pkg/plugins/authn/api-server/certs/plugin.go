@@ -18,7 +18,7 @@ func init() {
 
 var _ plugins.AuthnAPIServerPlugin = plugin{}
 
-func (c plugin) NewAuthenticator(_ plugins.PluginContext) (authn.Authenticator, error) {
+func (plugin) NewAuthenticator(_ plugins.PluginContext) (authn.Authenticator, error) {
 	log.Info("WARNING: admin client certificates are deprecated. Please migrate to user token as API Server authentication mechanism.")
 	return ClientCertAuthenticator, nil
 }

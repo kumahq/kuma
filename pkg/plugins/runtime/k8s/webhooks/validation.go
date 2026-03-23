@@ -115,7 +115,7 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 	return coreRes, k8sObj, nil
 }
 
-func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
+func (*validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
 	var verr validators.ValidationError
 	labelsPath := validators.Root().Field("labels")
 	if origin, ok := core_model.ResourceOrigin(rm); ok {
@@ -126,7 +126,7 @@ func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validator
 	return verr
 }
 
-func (h *validatingHandler) Supports(admission.Request) bool {
+func (*validatingHandler) Supports(admission.Request) bool {
 	return true
 }
 

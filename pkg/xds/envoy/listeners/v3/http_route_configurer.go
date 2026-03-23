@@ -72,6 +72,6 @@ type HttpScopedRouteConfigurer struct{}
 
 var _ FilterChainConfigurer = &HttpScopedRouteConfigurer{}
 
-func (c *HttpScopedRouteConfigurer) Configure(_ *envoy_listener.FilterChain) error {
+func (*HttpScopedRouteConfigurer) Configure(_ *envoy_listener.FilterChain) error {
 	return errors.New("scoped routes not implemented")
 }

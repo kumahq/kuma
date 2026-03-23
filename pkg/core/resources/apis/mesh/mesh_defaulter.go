@@ -7,9 +7,9 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
-func (mesh *MeshResource) Default() error {
+func (r *MeshResource) Default() error {
 	// default settings for Prometheus metrics
-	for idx, backend := range mesh.Spec.GetMetrics().GetBackends() {
+	for idx, backend := range r.Spec.GetMetrics().GetBackends() {
 		if backend.GetType() != mesh_proto.MetricsPrometheusType {
 			continue
 		}
@@ -56,7 +56,7 @@ func (mesh *MeshResource) Default() error {
 		if err != nil {
 			return errors.Wrap(err, "could not convert the backend")
 		}
-		mesh.Spec.Metrics.Backends[idx].Conf = str
+		r.Spec.Metrics.Backends[idx].Conf = str
 	}
 	return nil
 }

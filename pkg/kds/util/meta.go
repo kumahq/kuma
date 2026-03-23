@@ -113,11 +113,11 @@ func (r *resourceMeta) GetName() string {
 	return r.name
 }
 
-func (r *resourceMeta) GetNameExtensions() model.ResourceNameExtensions {
+func (*resourceMeta) GetNameExtensions() model.ResourceNameExtensions {
 	return model.ResourceNameExtensionsUnsupported
 }
 
-func (r *resourceMeta) GetVersion() string {
+func (*resourceMeta) GetVersion() string {
 	return ""
 }
 
@@ -125,11 +125,11 @@ func (r *resourceMeta) GetMesh() string {
 	return r.mesh
 }
 
-func (r *resourceMeta) GetCreationTime() time.Time {
+func (*resourceMeta) GetCreationTime() time.Time {
 	return time.Unix(0, 0)
 }
 
-func (r *resourceMeta) GetModificationTime() time.Time {
+func (*resourceMeta) GetModificationTime() time.Time {
 	return time.Unix(0, 0)
 }
 

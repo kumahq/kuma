@@ -178,7 +178,7 @@ func (s *Server) Start(stop <-chan struct{}) error {
 	return err
 }
 
-func (s *Server) NeedLeaderElection() bool {
+func (*Server) NeedLeaderElection() bool {
 	return false
 }
 

@@ -124,7 +124,7 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 	return m.ResourceManager.Update(ctx, resource, fs...)
 }
 
-func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.DataplaneResource, error) {
+func (*dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.DataplaneResource, error) {
 	dp, ok := resource.(*core_mesh.DataplaneResource)
 	if !ok {
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.DataplaneResource)(nil), resource)
@@ -159,7 +159,7 @@ func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource)
 	dp.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag] = m.zone
 }
 
-func (m *dataplaneManager) setHealth(dp *core_mesh.DataplaneResource) {
+func (*dataplaneManager) setHealth(dp *core_mesh.DataplaneResource) {
 	for _, inbound := range dp.Spec.Networking.Inbound {
 		if inbound.ServiceProbe != nil {
 			inbound.State = mesh_proto.Dataplane_Networking_Inbound_NotReady

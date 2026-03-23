@@ -566,7 +566,7 @@ func (m *mockApplication) startTCPServer(ctx context.Context) error {
 	})
 }
 
-func (m *mockApplication) handleTcpConnections(l net.Listener, ctx context.Context, cErr chan<- error) {
+func (*mockApplication) handleTcpConnections(l net.Listener, ctx context.Context, cErr chan<- error) {
 	for {
 		conn, err := l.Accept()
 		if err != nil {

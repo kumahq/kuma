@@ -35,11 +35,11 @@ type ReachableServicesGraphBuilder func(meshName string, resources Resources) Re
 
 type AnyToAnyReachableServicesGraph struct{}
 
-func (a AnyToAnyReachableServicesGraph) CanReach(map[string]string, map[string]string) bool {
+func (AnyToAnyReachableServicesGraph) CanReach(map[string]string, map[string]string) bool {
 	return true
 }
 
-func (a AnyToAnyReachableServicesGraph) CanReachBackend(map[string]string, kri.Identifier) bool {
+func (AnyToAnyReachableServicesGraph) CanReachBackend(map[string]string, kri.Identifier) bool {
 	return true
 }
 

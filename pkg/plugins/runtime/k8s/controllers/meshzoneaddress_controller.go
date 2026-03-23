@@ -160,7 +160,7 @@ func (r *MeshZoneAddressReconciler) resolveCoordinates(
 	}
 }
 
-func (r *MeshZoneAddressReconciler) coordinatesFromLoadBalancer(
+func (*MeshZoneAddressReconciler) coordinatesFromLoadBalancer(
 	log logr.Logger,
 	svc *kube_core.Service,
 ) (string, int32, error) {

@@ -194,7 +194,7 @@ func (d *VIPsAllocator) fetchView(ctx context.Context, mesh string) (*vips.Virtu
 	return meshView, gv, nil
 }
 
-func (d *VIPsAllocator) updateView(gv *vips.GlobalView, meshView *vips.VirtualOutboundMeshView) error {
+func (*VIPsAllocator) updateView(gv *vips.GlobalView, meshView *vips.VirtualOutboundMeshView) error {
 	for _, hostEntry := range meshView.HostnameEntries() {
 		if hostEntry.Type == vips.Host && net.ParseIP(hostEntry.Name) != nil {
 			continue

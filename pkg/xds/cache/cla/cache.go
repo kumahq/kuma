@@ -51,7 +51,7 @@ func (c *CachedRetriever) GetCLA(ctx context.Context, meshName, meshHash string,
 
 type Retriever struct{}
 
-func (r *Retriever) GetCLA(_ context.Context, _, _ string, cluster envoy_common.Cluster, apiVersion xds.APIVersion, endpointMap xds.EndpointMap) (proto.Message, error) {
+func (*Retriever) GetCLA(_ context.Context, _, _ string, cluster envoy_common.Cluster, apiVersion xds.APIVersion, endpointMap xds.EndpointMap) (proto.Message, error) {
 	matchTags := map[string]string{}
 	for tag, val := range cluster.Tags() {
 		if tag != mesh_proto.ServiceTag {

@@ -46,7 +46,7 @@ func (k *K8SDeployment) Deploy(cluster framework.Cluster) error {
 	return framework.Combine(funcs...)(cluster)
 }
 
-func (k *K8SDeployment) Delete(cluster framework.Cluster) error {
+func (*K8SDeployment) Delete(cluster framework.Cluster) error {
 	return nil
 }
 

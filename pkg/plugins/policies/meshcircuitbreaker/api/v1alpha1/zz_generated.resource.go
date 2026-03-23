@@ -90,46 +90,46 @@ func NewMeshCircuitBreakerResource() *MeshCircuitBreakerResource {
 	}
 }
 
-func (t *MeshCircuitBreakerResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshCircuitBreakerResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshCircuitBreakerResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshCircuitBreakerResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshCircuitBreakerResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshCircuitBreakerResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshCircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshCircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshCircuitBreaker)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshCircuitBreaker{}
+			r.Spec = &MeshCircuitBreaker{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshCircuitBreakerResource) GetStatus() model.ResourceStatus {
+func (*MeshCircuitBreakerResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshCircuitBreakerResource) SetStatus(model.ResourceStatus) error {
+func (*MeshCircuitBreakerResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshCircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshCircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshCircuitBreakerResourceTypeDescriptor
 }
 
-func (t *MeshCircuitBreakerResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshCircuitBreakerResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

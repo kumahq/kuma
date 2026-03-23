@@ -57,7 +57,7 @@ func (f *from) Resource(r core_model.Resource) Resource {
 	}
 }
 
-func (f *from) Meta(r core_model.Resource) v1alpha1.ResourceMeta {
+func (*from) Meta(r core_model.Resource) v1alpha1.ResourceMeta {
 	meta := v1alpha1.ResourceMeta{}
 	if r == nil {
 		return meta
@@ -94,7 +94,7 @@ var To = &to{}
 
 type to struct{}
 
-func (t *to) Core(r Resource) (core_model.Resource, error) {
+func (*to) Core(r Resource) (core_model.Resource, error) {
 	resource, err := registry.Global().NewObject(core_model.ResourceType(r.GetMeta().Type))
 	if err != nil {
 		return nil, err

@@ -147,7 +147,7 @@ func matchesService(mzSvc *meshmzservice_api.MeshMultiZoneServiceResource, svc *
 	return true
 }
 
-func (s *StatusUpdater) NeedLeaderElection() bool {
+func (*StatusUpdater) NeedLeaderElection() bool {
 	return true
 }
 

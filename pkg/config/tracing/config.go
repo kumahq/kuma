@@ -21,6 +21,6 @@ type OpenTelemetry struct {
 	Endpoint string `json:"endpoint,omitempty" envconfig:"kuma_tracing_opentelemetry_endpoint"`
 }
 
-func (c OpenTelemetry) Validate() error {
+func (OpenTelemetry) Validate() error {
 	return nil
 }

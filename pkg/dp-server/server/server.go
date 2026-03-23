@@ -135,7 +135,7 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *DpServer) NeedLeaderElection() bool {
+func (*DpServer) NeedLeaderElection() bool {
 	return false
 }
 

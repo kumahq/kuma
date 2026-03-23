@@ -111,7 +111,7 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 
-func (b *remoteBootstrapClient) resourceMetadata(cfg kuma_dp.DataplaneResources) types.ProxyResources {
+func (*remoteBootstrapClient) resourceMetadata(cfg kuma_dp.DataplaneResources) types.ProxyResources {
 	var maxMemory uint64
 
 	if cfg.MaxMemoryBytes == 0 {

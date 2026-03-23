@@ -17,7 +17,7 @@ func NewContainerPatchValidatorWebhook() k8s_common.AdmissionValidator {
 	return &ContainerPatchValidator{}
 }
 
-func (h *ContainerPatchValidator) InjectDecoder(d admission.Decoder) {
+func (*ContainerPatchValidator) InjectDecoder(d admission.Decoder) {
 }
 
 func (h *ContainerPatchValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -27,7 +27,7 @@ func (h *ContainerPatchValidator) Handle(ctx context.Context, req admission.Requ
 	return admission.Allowed("")
 }
 
-func (h *ContainerPatchValidator) Supports(req admission.Request) bool {
+func (*ContainerPatchValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("ContainerPatch")
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

@@ -42,7 +42,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHo
 	return nil
 }
 
-func (c RoutesConfigurer) setHeadersModifications(route *envoy_config_route_v3.Route, modify *mesh_proto.TrafficRoute_Http_Modify) {
+func (RoutesConfigurer) setHeadersModifications(route *envoy_config_route_v3.Route, modify *mesh_proto.TrafficRoute_Http_Modify) {
 	for _, add := range modify.GetRequestHeaders().GetAdd() {
 		appendAction := envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
 		if add.Append {
@@ -106,7 +106,7 @@ func (c RoutesConfigurer) routeMatch(match *mesh_proto.TrafficRoute_Http_Match) 
 	return envoyMatch
 }
 
-func (c RoutesConfigurer) headerMatcher(name string, matcher *mesh_proto.TrafficRoute_Http_Match_StringMatcher) *envoy_config_route_v3.HeaderMatcher {
+func (RoutesConfigurer) headerMatcher(name string, matcher *mesh_proto.TrafficRoute_Http_Match_StringMatcher) *envoy_config_route_v3.HeaderMatcher {
 	headerMatcher := &envoy_config_route_v3.HeaderMatcher{
 		Name: name,
 	}
@@ -134,7 +134,7 @@ func (c RoutesConfigurer) headerMatcher(name string, matcher *mesh_proto.Traffic
 	return headerMatcher
 }
 
-func (c RoutesConfigurer) setPathMatcher(
+func (RoutesConfigurer) setPathMatcher(
 	matcher *mesh_proto.TrafficRoute_Http_Match_StringMatcher,
 	routeMatch *envoy_config_route_v3.RouteMatch,
 ) {
@@ -156,7 +156,7 @@ func (c RoutesConfigurer) setPathMatcher(
 	}
 }
 
-func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
+func (RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 	for _, cluster := range clusters {
 		if cluster.IsExternalService() {
 			return true
@@ -209,7 +209,7 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 	return routeAction
 }
 
-func (c RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.RouteAction, modify *mesh_proto.TrafficRoute_Http_Modify) {
+func (RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.RouteAction, modify *mesh_proto.TrafficRoute_Http_Modify) {
 	if modify.GetPath() != nil {
 		switch modify.GetPath().Type.(type) {
 		case *mesh_proto.TrafficRoute_Http_Modify_Path_RewritePrefix:
@@ -243,7 +243,7 @@ func (c RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.Ro
 	}
 }
 
-func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*anypb.Any, error) {
+func (*RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*anypb.Any, error) {
 	typedPerFilterConfig := map[string]*anypb.Any{}
 
 	if route.RateLimit != nil {

@@ -86,7 +86,7 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 	return ncpu, nil
 }
 
-func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
+func (*DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
 	adminPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaEnvoyAdminPort)
 	return adminPort, err
 }

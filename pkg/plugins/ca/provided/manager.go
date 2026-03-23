@@ -80,11 +80,11 @@ func (p *providedCaManager) getCa(ctx context.Context, mesh string, backend *mes
 	return pair, nil
 }
 
-func (p *providedCaManager) EnsureBackends(ctx context.Context, mesh model.Resource, backend []*mesh_proto.CertificateAuthorityBackend) error {
+func (*providedCaManager) EnsureBackends(ctx context.Context, mesh model.Resource, backend []*mesh_proto.CertificateAuthorityBackend) error {
 	return nil // Cert and Key are created by user and pointed in the configuration which is validated first
 }
 
-func (p *providedCaManager) UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+func (*providedCaManager) UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
 	cfg := &config.ProvidedCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		return nil, errors.Wrap(err, "could not convert backend config to ProvidedCertificateAuthorityConfig")

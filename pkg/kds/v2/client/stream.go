@@ -235,7 +235,7 @@ func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 }
 
 // go-contro-plane cache keeps them as a <resource_name>.<mesh_name>
-func (s *stream) mapRemovedResources(removedResourceNames []string) []core_model.ResourceKey {
+func (*stream) mapRemovedResources(removedResourceNames []string) []core_model.ResourceKey {
 	removed := []core_model.ResourceKey{}
 	for _, resourceName := range removedResourceNames {
 		index := strings.LastIndex(resourceName, ".")

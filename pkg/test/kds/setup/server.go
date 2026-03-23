@@ -58,7 +58,7 @@ type testRuntimeContext struct {
 	envoyAdminClient         admin.EnvoyAdminClient
 }
 
-func (t *testRuntimeContext) DataSourceLoader() datasource.Loader {
+func (*testRuntimeContext) DataSourceLoader() datasource.Loader {
 	panic("implement me")
 }
 
@@ -66,31 +66,31 @@ func (t *testRuntimeContext) ResourceStore() store.ResourceStore {
 	return t.rs
 }
 
-func (t *testRuntimeContext) SecretStore() secret_store.SecretStore {
+func (*testRuntimeContext) SecretStore() secret_store.SecretStore {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) ConfigStore() store.ResourceStore {
+func (*testRuntimeContext) ConfigStore() store.ResourceStore {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) GlobalInsightService() globalinsight.GlobalInsightService {
+func (*testRuntimeContext) GlobalInsightService() globalinsight.GlobalInsightService {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) CaManagers() core_ca.Managers {
+func (*testRuntimeContext) CaManagers() core_ca.Managers {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) ConfigManager() config_manager.ConfigManager {
+func (*testRuntimeContext) ConfigManager() config_manager.ConfigManager {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) LeaderInfo() component.LeaderInfo {
+func (*testRuntimeContext) LeaderInfo() component.LeaderInfo {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) LookupIP() lookup.LookupIPFunc {
+func (*testRuntimeContext) LookupIP() lookup.LookupIPFunc {
 	panic("implement me")
 }
 
@@ -98,19 +98,19 @@ func (t *testRuntimeContext) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return t.envoyAdminClient
 }
 
-func (t *testRuntimeContext) APIInstaller() customization.APIInstaller {
+func (*testRuntimeContext) APIInstaller() customization.APIInstaller {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) XDS() xds_runtime.XDSRuntimeContext {
+func (*testRuntimeContext) XDS() xds_runtime.XDSRuntimeContext {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) CAProvider() secrets.CaProvider {
+func (*testRuntimeContext) CAProvider() secrets.CaProvider {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) DpServer() *server.DpServer {
+func (*testRuntimeContext) DpServer() *server.DpServer {
 	panic("implement me")
 }
 
@@ -118,15 +118,15 @@ func (t *testRuntimeContext) KDSContext() *kds_context.Context {
 	return t.kdsContext
 }
 
-func (t *testRuntimeContext) APIServerAuthenticator() authn.Authenticator {
+func (*testRuntimeContext) APIServerAuthenticator() authn.Authenticator {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) ResourceValidators() runtime.ResourceValidators {
+func (*testRuntimeContext) ResourceValidators() runtime.ResourceValidators {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) Access() runtime.Access {
+func (*testRuntimeContext) Access() runtime.Access {
 	panic("implement me")
 }
 
@@ -134,23 +134,23 @@ func (t *testRuntimeContext) AppContext() context.Context {
 	return t.ctx
 }
 
-func (t *testRuntimeContext) ExtraReportsFn() runtime.ExtraReportsFn {
+func (*testRuntimeContext) ExtraReportsFn() runtime.ExtraReportsFn {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) TokenIssuers() builtin.TokenIssuers {
+func (*testRuntimeContext) TokenIssuers() builtin.TokenIssuers {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) MeshCache() *mesh.Cache {
+func (*testRuntimeContext) MeshCache() *mesh.Cache {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) InterCPClientPool() *client.Pool {
+func (*testRuntimeContext) InterCPClientPool() *client.Pool {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) IdentityProviders() providers.IdentityProviders {
+func (*testRuntimeContext) IdentityProviders() providers.IdentityProviders {
 	panic("implement me")
 }
 
@@ -190,7 +190,7 @@ func (t *testRuntimeContext) Tenants() multitenant.Tenants {
 	return t.tenants
 }
 
-func (t *testRuntimeContext) Transactions() store.Transactions {
+func (*testRuntimeContext) Transactions() store.Transactions {
 	return store.NoTransactions{}
 }
 
@@ -198,11 +198,11 @@ func (t *testRuntimeContext) EventBus() events.EventBus {
 	return t.eventBus
 }
 
-func (t *testRuntimeContext) Extensions() context.Context {
+func (*testRuntimeContext) Extensions() context.Context {
 	return context.Background()
 }
 
-func (t *testRuntimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
+func (*testRuntimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
 	return func(*restful.WebService) error { return nil }
 }
 

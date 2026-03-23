@@ -10,7 +10,7 @@ type HttpConfigurer struct{}
 
 var _ ClusterConfigurer = &HttpConfigurer{}
 
-func (p *HttpConfigurer) Configure(c *envoy_cluster.Cluster) error {
+func (*HttpConfigurer) Configure(c *envoy_cluster.Cluster) error {
 	return UpdateCommonHttpProtocolOptions(c, func(options *envoy_upstream_http.HttpProtocolOptions) {
 		if options.UpstreamProtocolOptions == nil {
 			options.UpstreamProtocolOptions = &envoy_upstream_http.HttpProtocolOptions_ExplicitHttpConfig_{

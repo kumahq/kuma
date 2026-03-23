@@ -23,7 +23,7 @@ func (r *MeshTrafficPermissionResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func (*MeshTrafficPermissionResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

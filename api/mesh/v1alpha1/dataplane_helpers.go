@@ -251,7 +251,7 @@ func (n *Dataplane_Networking) GetOutboundInterfaces() []OutboundInterface {
 	return ofaces
 }
 
-func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networking_Outbound) OutboundInterface {
+func (*Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networking_Outbound) OutboundInterface {
 	oface := OutboundInterface{
 		DataplanePort: outbound.Port,
 	}

@@ -51,11 +51,11 @@ func (t *tracer) Start(stop <-chan struct{}) error {
 	return nil
 }
 
-func (t *tracer) NeedLeaderElection() bool {
+func (*tracer) NeedLeaderElection() bool {
 	return false
 }
 
-func (p *plugin) Customize(rt core_runtime.Runtime) error {
+func (*plugin) Customize(rt core_runtime.Runtime) error {
 	otel := rt.Config().Tracing.OpenTelemetry
 	if !otel.Enabled && otel.Endpoint == "" {
 		return nil

@@ -64,7 +64,7 @@ func (t TracingProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 	return resources, nil
 }
 
-func (t TracingProxyGenerator) endpointForZipkin(cfg *mesh_proto.ZipkinTracingBackendConfig) (*core_xds.Endpoint, error) {
+func (TracingProxyGenerator) endpointForZipkin(cfg *mesh_proto.ZipkinTracingBackendConfig) (*core_xds.Endpoint, error) {
 	url, err := net_url.ParseRequestURI(cfg.Url)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid URL of Zipkin")
@@ -83,7 +83,7 @@ func (t TracingProxyGenerator) endpointForZipkin(cfg *mesh_proto.ZipkinTracingBa
 	}, nil
 }
 
-func (t TracingProxyGenerator) endpointForDatadog(cfg *mesh_proto.DatadogTracingBackendConfig) (*core_xds.Endpoint, error) {
+func (TracingProxyGenerator) endpointForDatadog(cfg *mesh_proto.DatadogTracingBackendConfig) (*core_xds.Endpoint, error) {
 	if cfg.Port > 0xFFFF || cfg.Port < 1 {
 		return nil, errors.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
 	}

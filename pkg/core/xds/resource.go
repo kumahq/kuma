@@ -158,7 +158,7 @@ func (s *ResourceSet) AddSet(set *ResourceSet) *ResourceSet {
 	return s
 }
 
-func (s *ResourceSet) typeName(resource ResourcePayload) string {
+func (*ResourceSet) typeName(resource ResourcePayload) string {
 	return "type.googleapis.com/" + string(resource.ProtoReflect().Descriptor().FullName())
 }
 

@@ -26,7 +26,7 @@ func (r *MeshCircuitBreakerResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func (*MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

@@ -190,16 +190,16 @@ func (f CallbacksFuncs) OnFetchResponse(req *envoy_sd.DiscoveryRequest, resp *en
 	}
 }
 
-func (f CallbacksFuncs) OnDeltaStreamOpen(ctx context.Context, i int64, s string) error {
+func (CallbacksFuncs) OnDeltaStreamOpen(ctx context.Context, i int64, s string) error {
 	return nil
 }
 
-func (f CallbacksFuncs) OnDeltaStreamClosed(i int64, n *envoy_core.Node) {
+func (CallbacksFuncs) OnDeltaStreamClosed(i int64, n *envoy_core.Node) {
 }
 
-func (f CallbacksFuncs) OnStreamDeltaRequest(i int64, request *envoy_sd.DeltaDiscoveryRequest) error {
+func (CallbacksFuncs) OnStreamDeltaRequest(i int64, request *envoy_sd.DeltaDiscoveryRequest) error {
 	return nil
 }
 
-func (f CallbacksFuncs) OnStreamDeltaResponse(i int64, request *envoy_sd.DeltaDiscoveryRequest, response *envoy_sd.DeltaDiscoveryResponse) {
+func (CallbacksFuncs) OnStreamDeltaResponse(i int64, request *envoy_sd.DeltaDiscoveryRequest, response *envoy_sd.DeltaDiscoveryResponse) {
 }

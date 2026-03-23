@@ -92,56 +92,56 @@ func NewMeshServiceResource() *MeshServiceResource {
 	}
 }
 
-func (t *MeshServiceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshServiceResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshServiceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshServiceResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshServiceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshServiceResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshServiceResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshServiceResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshService)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshService{}
+			r.Spec = &MeshService{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshServiceResource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *MeshServiceResource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *MeshServiceResource) SetStatus(status model.ResourceStatus) error {
+func (r *MeshServiceResource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*MeshServiceStatus)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &MeshServiceStatus{}
+			r.Status = &MeshServiceStatus{}
 		} else {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshServiceResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshServiceResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshServiceResourceTypeDescriptor
 }
 
-func (t *MeshServiceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshServiceResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

@@ -31,7 +31,7 @@ import (
 
 type fakeLoader struct{}
 
-func (f *fakeLoader) Load(
+func (*fakeLoader) Load(
 	_ context.Context,
 	_ string,
 	source *system_proto.DataSource,

@@ -127,7 +127,7 @@ func init() {
 
 type FailingResourceGenerator struct{}
 
-func (c FailingResourceGenerator) Generate(context.Context, *model.ResourceSet, xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
+func (FailingResourceGenerator) Generate(context.Context, *model.ResourceSet, xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
 	panic("generator for this resource should not be called")
 }
 

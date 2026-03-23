@@ -30,7 +30,7 @@ type accessLogStreamer struct {
 	senders map[string]*logSender
 }
 
-func (s *accessLogStreamer) NeedLeaderElection() bool {
+func (*accessLogStreamer) NeedLeaderElection() bool {
 	return false
 }
 

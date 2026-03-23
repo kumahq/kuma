@@ -90,46 +90,46 @@ func NewMeshHTTPRouteResource() *MeshHTTPRouteResource {
 	}
 }
 
-func (t *MeshHTTPRouteResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshHTTPRouteResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshHTTPRouteResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshHTTPRouteResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshHTTPRouteResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshHTTPRouteResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshHTTPRouteResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshHTTPRouteResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshHTTPRoute)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshHTTPRoute{}
+			r.Spec = &MeshHTTPRoute{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshHTTPRouteResource) GetStatus() model.ResourceStatus {
+func (*MeshHTTPRouteResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshHTTPRouteResource) SetStatus(model.ResourceStatus) error {
+func (*MeshHTTPRouteResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshHTTPRouteResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshHTTPRouteResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshHTTPRouteResourceTypeDescriptor
 }
 
-func (t *MeshHTTPRouteResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshHTTPRouteResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

@@ -325,7 +325,7 @@ func (g Generator) generateCDS(
 	return resources, nil
 }
 
-func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo) (*core_xds.ResourceSet, error) {
+func (Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo) (*core_xds.ResourceSet, error) {
 	switch info.Listener.Protocol {
 	case mesh_proto.MeshGateway_Listener_HTTPS,
 		mesh_proto.MeshGateway_Listener_HTTP:

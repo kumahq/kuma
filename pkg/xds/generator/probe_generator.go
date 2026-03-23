@@ -18,7 +18,7 @@ import (
 
 type ProbeProxyGenerator struct{}
 
-func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	// if app probe proxy is enabled for this DP, Virtual Probes are not needed
 	appProbeProxyEnabled := proxy.Metadata.GetAppProbeProxyEnabled()
 	if appProbeProxyEnabled {

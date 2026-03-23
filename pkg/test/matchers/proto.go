@@ -47,7 +47,7 @@ func (p *ProtoMatcher) FailureMessage(actual any) string {
 	return "Expected matching protobuf message:\n" + differences
 }
 
-func (p *ProtoMatcher) NegatedFailureMessage(actual any) string {
+func (*ProtoMatcher) NegatedFailureMessage(actual any) string {
 	return "Expected different protobuf but was the same"
 }
 

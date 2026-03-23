@@ -161,11 +161,11 @@ func (ds *dummySecrets) GetAllInOne(ctx context.Context, _ *core_mesh.MeshResour
 	return ds.identity(), &core_xds.CaSecret{PemCerts: [][]byte{[]byte("COMBINED")}}, nil
 }
 
-func (ds *dummySecrets) identity() *core_xds.IdentitySecret {
+func (*dummySecrets) identity() *core_xds.IdentitySecret {
 	return &core_xds.IdentitySecret{PemCerts: [][]byte{[]byte("CERT")}, PemKey: []byte("KEY")}
 }
 
-func (ds *dummySecrets) cas(meshes ...*core_mesh.MeshResource) map[string]*core_xds.CaSecret {
+func (*dummySecrets) cas(meshes ...*core_mesh.MeshResource) map[string]*core_xds.CaSecret {
 	cas := map[string]*core_xds.CaSecret{}
 	for _, mesh := range meshes {
 		cas[mesh.GetMeta().GetName()] = &core_xds.CaSecret{PemCerts: [][]byte{[]byte("CA")}}
@@ -173,7 +173,7 @@ func (ds *dummySecrets) cas(meshes ...*core_mesh.MeshResource) map[string]*core_
 	return cas
 }
 
-func (ds *dummySecrets) Info(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) *secrets.Info {
+func (*dummySecrets) Info(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) *secrets.Info {
 	return &secrets.Info{
 		Expiration: time.Unix(2, 2),
 		Generation: time.Unix(1, 1),
@@ -193,4 +193,4 @@ func (ds *dummySecrets) Info(proxyType mesh_proto.ProxyType, dpKey model.Resourc
 	}
 }
 
-func (ds *dummySecrets) Cleanup(mesh_proto.ProxyType, model.ResourceKey) {}
+func (*dummySecrets) Cleanup(mesh_proto.ProxyType, model.ResourceKey) {}

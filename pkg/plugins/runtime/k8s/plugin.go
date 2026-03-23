@@ -42,7 +42,7 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) Customize(rt core_runtime.Runtime) error {
+func (*plugin) Customize(rt core_runtime.Runtime) error {
 	if rt.Config().Environment != config_core.KubernetesEnvironment {
 		return nil
 	}

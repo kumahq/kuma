@@ -56,12 +56,12 @@ type authCallbacks struct {
 	deltaStreams map[core_xds.StreamID]stream
 }
 
-func (d *authCallbacks) getStreams() map[core_xds.StreamID]stream {
-	return d.streams
+func (c *authCallbacks) getStreams() map[core_xds.StreamID]stream {
+	return c.streams
 }
 
-func (d *authCallbacks) getDeltaStreams() map[core_xds.StreamID]stream {
-	return d.deltaStreams
+func (c *authCallbacks) getDeltaStreams() map[core_xds.StreamID]stream {
+	return c.deltaStreams
 }
 
 type stream struct {
@@ -76,11 +76,11 @@ type stream struct {
 
 var _ util_xds.MultiXDSCallbacks = &authCallbacks{}
 
-func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
-	a.Lock()
-	defer a.Unlock()
+func (c *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
+	c.Lock()
+	defer c.Unlock()
 
-	a.streams[streamID] = stream{
+	c.streams[streamID] = stream{
 		ctx:      ctx,
 		resource: nil,
 	}
@@ -88,22 +88,22 @@ func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.Stre
 	return nil
 }
 
-func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
-	a.Lock()
-	delete(a.streams, streamID)
-	a.Unlock()
+func (c *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
+	c.Lock()
+	delete(c.streams, streamID)
+	c.Unlock()
 }
 
-func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
+func (c *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
 	core.Log.V(1).Info("OnStreamRequest auth", "req", req)
-	return a.onStreamRequest(streamID, req, a.getStreams)
+	return c.onStreamRequest(streamID, req, c.getStreams)
 }
 
-func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
-	a.Lock()
-	defer a.Unlock()
+func (c *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
+	c.Lock()
+	defer c.Unlock()
 
-	a.deltaStreams[streamID] = stream{
+	c.deltaStreams[streamID] = stream{
 		ctx:      ctx,
 		resource: nil,
 	}
@@ -112,19 +112,19 @@ func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds
 	return nil
 }
 
-func (a *authCallbacks) OnDeltaStreamClosed(streamID int64) {
-	a.Lock()
-	delete(a.deltaStreams, streamID)
-	a.Unlock()
+func (c *authCallbacks) OnDeltaStreamClosed(streamID int64) {
+	c.Lock()
+	delete(c.deltaStreams, streamID)
+	c.Unlock()
 }
 
-func (a *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) error {
+func (c *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) error {
 	core.Log.V(1).Info("OnStreamDeltaRequest auth", "req", req)
-	return a.onStreamRequest(streamID, req, a.getDeltaStreams)
+	return c.onStreamRequest(streamID, req, c.getDeltaStreams)
 }
 
-func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds.Request, getStreamsState func() map[core_xds.StreamID]stream) error {
-	s, err := a.stream(streamID, req, getStreamsState)
+func (c *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds.Request, getStreamsState func() map[core_xds.StreamID]stream) error {
+	s, err := c.stream(streamID, req, getStreamsState)
 	if err != nil {
 		return err
 	}
@@ -134,21 +134,21 @@ func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds
 		if err != nil {
 			return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
 		}
-		if err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
+		if err := c.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
 			return errors.Wrap(err, "authentication failed")
 		}
 		s.authenticated = true
 	}
-	a.Lock()
+	c.Lock()
 	getStreamsState()[streamID] = s
-	a.Unlock()
+	c.Unlock()
 	return nil
 }
 
-func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request, getStreamsState func() map[core_xds.StreamID]stream) (stream, error) {
-	a.RLock()
+func (c *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request, getStreamsState func() map[core_xds.StreamID]stream) (stream, error) {
+	c.RLock()
 	s, ok := getStreamsState()[streamID]
-	a.RUnlock()
+	c.RUnlock()
 	if !ok {
 		return stream{}, errors.New("stream is not present")
 	}
@@ -163,7 +163,7 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request,
 
 	if s.resource == nil {
 		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-		res, err := a.resource(user.Ctx(s.ctx, user.ControlPlane), md, req.NodeId())
+		res, err := c.resource(user.Ctx(s.ctx, user.ControlPlane), md, req.NodeId())
 		if err != nil {
 			return stream{}, err
 		}
@@ -172,7 +172,7 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request,
 	return s, nil
 }
 
-func (a *authCallbacks) resource(ctx context.Context, md *core_xds.DataplaneMetadata, nodeID string) (model.Resource, error) {
+func (c *authCallbacks) resource(ctx context.Context, md *core_xds.DataplaneMetadata, nodeID string) (model.Resource, error) {
 	if md.Resource != nil {
 		return md.Resource, nil
 	}
@@ -195,9 +195,9 @@ func (a *authCallbacks) resource(ctx context.Context, md *core_xds.DataplaneMeta
 		return nil, errors.Errorf("unsupported proxy type %q", md.GetProxyType())
 	}
 
-	backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
+	backoff := retry.WithMaxRetries(uint64(c.dpNotFoundRetry.MaxTimes), retry.NewConstant(c.dpNotFoundRetry.Backoff))
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
-		err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
+		err := c.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
 		if core_store.IsNotFound(err) {
 			return retry.RetryableError(errors.Errorf(
 				"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",

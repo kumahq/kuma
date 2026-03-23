@@ -90,7 +90,7 @@ func (c Configurer) configureListener(
 	return nil
 }
 
-func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener, listenerFiltersExcludedOnPorts []uint32) error {
+func (Configurer) configureListenerFilter(listener *envoy_listener.Listener, listenerFiltersExcludedOnPorts []uint32) error {
 	hasTlsInspector := false
 	hasHttpInspector := false
 	for _, filter := range listener.ListenerFilters {

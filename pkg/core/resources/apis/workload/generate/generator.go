@@ -131,7 +131,7 @@ func (g *Generator) createWorkload(ctx context.Context, log logr.Logger, workloa
 	log.V(1).Info("created Workload")
 }
 
-func (g *Generator) NeedLeaderElection() bool {
+func (*Generator) NeedLeaderElection() bool {
 	return true
 }
 

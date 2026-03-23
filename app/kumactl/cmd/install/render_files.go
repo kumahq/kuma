@@ -65,6 +65,6 @@ func (f ExcludePrefixesFilter) Filter(name string) bool {
 
 type NoneFilter struct{}
 
-func (f NoneFilter) Filter(name string) bool {
+func (NoneFilter) Filter(name string) bool {
 	return true
 }

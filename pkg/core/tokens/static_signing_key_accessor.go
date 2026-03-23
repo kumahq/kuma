@@ -39,6 +39,6 @@ func (s *staticSigningKeyAccessor) GetPublicKey(ctx context.Context, keyID KeyID
 	return key, nil
 }
 
-func (s *staticSigningKeyAccessor) GetLegacyKey(context.Context, KeyID) ([]byte, error) {
+func (*staticSigningKeyAccessor) GetLegacyKey(context.Context, KeyID) ([]byte, error) {
 	return nil, errors.New("not supported")
 }

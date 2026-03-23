@@ -54,7 +54,7 @@ func (t *TimeoutResource) validateConf() validators.ValidationError {
 	return err
 }
 
-func (t *TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Tcp) validators.ValidationError {
+func (*TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Tcp) validators.ValidationError {
 	var err validators.ValidationError
 	if conf == nil {
 		return err
@@ -66,7 +66,7 @@ func (t *TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *mes
 	return validateDuration_GreaterThan0(path.Field("idleTimeout"), conf.IdleTimeout)
 }
 
-func (t *TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Http) validators.ValidationError {
+func (*TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Http) validators.ValidationError {
 	var err validators.ValidationError
 	if conf == nil {
 		return err
@@ -80,7 +80,7 @@ func (t *TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *me
 	return err
 }
 
-func (t *TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Grpc) validators.ValidationError {
+func (*TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Grpc) validators.ValidationError {
 	var err validators.ValidationError
 	if conf == nil {
 		return err

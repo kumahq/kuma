@@ -183,6 +183,6 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 	}
 }
 
-func (s *server) FetchHealthCheck(ctx context.Context, response *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) (*envoy_service_health.HealthCheckSpecifier, error) {
+func (*server) FetchHealthCheck(ctx context.Context, response *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) (*envoy_service_health.HealthCheckSpecifier, error) {
 	panic("not implemented")
 }

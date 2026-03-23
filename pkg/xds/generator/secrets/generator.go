@@ -40,7 +40,7 @@ func createIdentitySecretResource(name string, identity *core_xds.IdentitySecret
 
 // GenerateForZoneEgress generates whatever secrets were referenced in the
 // zone egress config generation.
-func (g Generator) GenerateForZoneEgress(
+func (Generator) GenerateForZoneEgress(
 	ctx context.Context,
 	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
@@ -91,7 +91,7 @@ func (g Generator) GenerateForZoneEgress(
 
 // Generate uses the SecretsTracker on Proxy and
 // generates whatever secrets were used in the config generation.
-func (g Generator) Generate(
+func (Generator) Generate(
 	ctx context.Context,
 	_ *core_xds.ResourceSet,
 	xdsCtx xds_context.Context,

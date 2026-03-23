@@ -22,7 +22,7 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (*MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

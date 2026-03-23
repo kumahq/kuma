@@ -21,61 +21,61 @@ var allowedKinds = map[string]struct{}{
 	string(common_api.MeshMultiZoneService): {},
 }
 
-func (d *DataplaneResource) Validate() error {
+func (r *DataplaneResource) Validate() error {
 	var err validators.ValidationError
 
 	net := validators.RootedAt("networking")
 
-	if d.Spec.GetNetworking() == nil {
+	if r.Spec.GetNetworking() == nil {
 		err.AddViolationAt(net, "must be defined")
 		return err.OrNil()
 	}
 
-	if admin := d.Spec.GetNetworking().GetAdmin(); admin != nil {
+	if admin := r.Spec.GetNetworking().GetAdmin(); admin != nil {
 		adminPort := net.Field("admin").Field("port")
 
-		if d.UsesInboundInterface(core_meta.LoopbackIPv4, admin.GetPort()) {
+		if r.UsesInboundInterface(core_meta.LoopbackIPv4, admin.GetPort()) {
 			err.AddViolationAt(adminPort, "must differ from inbound")
 		}
-		if d.UsesOutboundInterface(core_meta.LoopbackIPv4, admin.GetPort()) {
+		if r.UsesOutboundInterface(core_meta.LoopbackIPv4, admin.GetPort()) {
 			err.AddViolationAt(adminPort, "must differ from outbound")
 		}
 	}
 
 	switch {
-	case d.Spec.IsDelegatedGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
+	case r.Spec.IsDelegatedGateway():
+		if len(r.Spec.GetNetworking().GetInbound()) > 0 {
 			err.AddViolationAt(net.Field("inbound"),
 				"inbound cannot be defined for delegated gateways")
 		}
 
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
+		err.AddErrorAt(net.Field("gateway"), validateGateway(r.Spec.GetNetworking().GetGateway()))
+		err.Add(validateNetworking(r.Spec.GetNetworking()))
+		err.Add(validateProbes(r.Spec.GetProbes()))
 
-	case d.Spec.IsBuiltinGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
+	case r.Spec.IsBuiltinGateway():
+		if len(r.Spec.GetNetworking().GetInbound()) > 0 {
 			err.AddViolationAt(net.Field("inbound"), "inbound cannot be defined for builtin gateways")
 		}
 
-		if len(d.Spec.GetNetworking().GetOutbound()) > 0 {
+		if len(r.Spec.GetNetworking().GetOutbound()) > 0 {
 			err.AddViolationAt(net.Field("outbound"), "outbound cannot be defined for builtin gateways")
 		}
 
-		if d.Spec.GetProbes() != nil {
+		if r.Spec.GetProbes() != nil {
 			err.AddViolationAt(net.Field("probes"), "probes cannot be defined for builtin gateways")
 		}
 
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
+		err.AddErrorAt(net.Field("gateway"), validateGateway(r.Spec.GetNetworking().GetGateway()))
+		err.Add(validateNetworking(r.Spec.GetNetworking()))
 
 	default:
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
-		if d.Spec.GetMetrics() != nil {
-			err.Add(validateMetricsBackend(d.Spec.GetMetrics()))
+		err.Add(validateNetworking(r.Spec.GetNetworking()))
+		err.Add(validateProbes(r.Spec.GetProbes()))
+		if r.Spec.GetMetrics() != nil {
+			err.Add(validateMetricsBackend(r.Spec.GetMetrics()))
 		}
-		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
+		err.AddErrorAt(net.Field("listeners"), validateListeners(r.Spec.GetNetworking()))
 	}
 
 	return err.OrNil()

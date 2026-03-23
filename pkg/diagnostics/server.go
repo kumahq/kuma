@@ -30,7 +30,7 @@ type diagnosticsServer struct {
 	ready   atomic.Bool
 }
 
-func (s *diagnosticsServer) NeedLeaderElection() bool {
+func (*diagnosticsServer) NeedLeaderElection() bool {
 	return false
 }
 

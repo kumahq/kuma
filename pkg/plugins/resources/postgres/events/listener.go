@@ -94,6 +94,6 @@ func (k *listener) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (k *listener) NeedLeaderElection() bool {
+func (*listener) NeedLeaderElection() bool {
 	return false
 }

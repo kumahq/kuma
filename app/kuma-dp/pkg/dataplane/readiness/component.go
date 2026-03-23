@@ -116,7 +116,7 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	}
 }
 
-func (r *Reporter) NeedLeaderElection() bool {
+func (*Reporter) NeedLeaderElection() bool {
 	return false
 }
 

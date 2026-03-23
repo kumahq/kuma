@@ -312,7 +312,7 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 	panic("Port forward wasn't setup!")
 }
 
-func (c *K8sControlPlane) GetMetrics() (string, error) {
+func (*K8sControlPlane) GetMetrics() (string, error) {
 	panic("not implemented")
 }
 

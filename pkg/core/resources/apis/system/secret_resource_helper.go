@@ -32,9 +32,9 @@ func (l *GlobalSecretResourceList) MarshalLog() any {
 	return list
 }
 
-func (gs *GlobalSecretResource) MarshalLog() any {
+func (r *GlobalSecretResource) MarshalLog() any {
 	return secretResource{
-		Meta: gs.Meta,
+		Meta: r.Meta,
 		Spec: "***",
 	}
 }

@@ -98,7 +98,7 @@ func (rbr *ResolvedBackendRef) RealResourceBackendRef() *RealResourceBackendRef 
 
 type LegacyBackendRef common_api.BackendRef
 
-func (lbr *LegacyBackendRef) isResolvedBackendRef() {}
+func (*LegacyBackendRef) isResolvedBackendRef() {}
 
 type RealResourceBackendRef struct {
 	Resource kri.Identifier
@@ -106,7 +106,7 @@ type RealResourceBackendRef struct {
 	Weight   uint
 }
 
-func (rbr *RealResourceBackendRef) isResolvedBackendRef() {}
+func (*RealResourceBackendRef) isResolvedBackendRef() {}
 
 func TargetRefToKRI(origin kri.Identifier, ref common_api.TargetRef) kri.Identifier {
 	if origin.IsEmpty() {

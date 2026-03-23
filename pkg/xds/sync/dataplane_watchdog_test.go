@@ -40,7 +40,7 @@ func (s *staticSnapshotReconciler) Reconcile(_ context.Context, _ xds_context.Co
 	return true, nil
 }
 
-func (s *staticSnapshotReconciler) Clear(proxyId *core_xds.ProxyId) error {
+func (*staticSnapshotReconciler) Clear(proxyId *core_xds.ProxyId) error {
 	return nil
 }
 
@@ -48,19 +48,19 @@ type staticIdentityProvider struct {
 	_ *core_xds.Proxy
 }
 
-func (s *staticIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+func (*staticIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
-func (s *staticIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+func (*staticIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
-func (s *staticIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *core_xds.Proxy) (*core_xds.WorkloadIdentity, error) {
+func (*staticIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *core_xds.Proxy) (*core_xds.WorkloadIdentity, error) {
 	return nil, nil
 }
 
-func (s *staticIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+func (*staticIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
 }
 

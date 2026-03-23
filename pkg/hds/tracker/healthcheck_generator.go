@@ -192,7 +192,7 @@ func (g *SnapshotGenerator) envoyHealthCheck(port uint32, clusterName string) *e
 	}
 }
 
-func (g *SnapshotGenerator) upstreamBindConfig(addr string, port uint32) *envoy_core.BindConfig {
+func (*SnapshotGenerator) upstreamBindConfig(addr string, port uint32) *envoy_core.BindConfig {
 	return &envoy_core.BindConfig{
 		SourceAddress: &envoy_core.SocketAddress{
 			Address: addr,

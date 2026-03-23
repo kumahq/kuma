@@ -20,16 +20,16 @@ func init() {
 	core_plugins.Register(core_plugins.Memory, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, core_store.Transactions, error) {
+func (*plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, core_store.Transactions, error) {
 	log.Info("kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane.")
 	return NewStore(), core_store.NoTransactions{}, nil
 }
 
-func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
+func (*plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
 	return 0, errors.New("migrations are not supported for Memory resource store")
 }
 
-func (p *plugin) EventListener(context core_plugins.PluginContext, writer events.Emitter) error {
+func (*plugin) EventListener(context core_plugins.PluginContext, writer events.Emitter) error {
 	context.ResourceStore().DefaultResourceStore().(*memoryStore).SetEventWriter(writer)
 	return nil
 }

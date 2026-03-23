@@ -133,7 +133,7 @@ func (v *SecretValidator) validateGlobalSecret(verr *validators.ValidationError,
 	v.validateSecretData(verr, secret)
 }
 
-func (v *SecretValidator) validateSecretData(verr *validators.ValidationError, secret *kube_core.Secret) {
+func (*SecretValidator) validateSecretData(verr *validators.ValidationError, secret *kube_core.Secret) {
 	// validate convention of the secret
 	if len(secret.Data["value"]) == 0 {
 		verr.AddViolationAt(validators.RootedAt("data").Field("value"), "cannot be empty.")

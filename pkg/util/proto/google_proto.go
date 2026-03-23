@@ -154,6 +154,6 @@ func (o mergeOptions) mergeMap(dst, src protoreflect.Map, fd protoreflect.FieldD
 	})
 }
 
-func (o mergeOptions) cloneBytes(v protoreflect.Value) protoreflect.Value {
+func (mergeOptions) cloneBytes(v protoreflect.Value) protoreflect.Value {
 	return protoreflect.ValueOfBytes(append([]byte{}, v.Bytes()...))
 }

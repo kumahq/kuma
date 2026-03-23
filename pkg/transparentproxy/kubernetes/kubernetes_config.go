@@ -342,7 +342,7 @@ func (c configurer) pathConfigMapf(format string, a ...any) string {
 	)
 }
 
-func (c configurer) pathRuntimef(format string, a ...any) string {
+func (configurer) pathRuntimef(format string, a ...any) string {
 	return "runtime.injector." + fmt.Sprintf(format, a...)
 }
 

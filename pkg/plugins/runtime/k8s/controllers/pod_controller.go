@@ -574,7 +574,7 @@ type MeshServiceExclusivePredicate struct {
 	predicate.Funcs
 }
 
-func (p MeshServiceExclusivePredicate) Update(e event.UpdateEvent) bool {
+func (MeshServiceExclusivePredicate) Update(e event.UpdateEvent) bool {
 	oldMesh, err := e.ObjectOld.(*mesh_k8s.Mesh).GetSpec()
 	if err != nil {
 		return false

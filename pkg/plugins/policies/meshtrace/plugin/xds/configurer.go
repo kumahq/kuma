@@ -169,7 +169,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	})
 }
 
-func (c *Configurer) envoyPercent(intOrStr intstr.IntOrString) (*envoy_type.Percent, error) {
+func (*Configurer) envoyPercent(intOrStr intstr.IntOrString) (*envoy_type.Percent, error) {
 	decimal, err := common_api.NewDecimalFromIntOrString(intOrStr)
 	if err != nil {
 		return nil, err

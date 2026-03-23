@@ -62,7 +62,7 @@ const (
 // HTTPFilterChainGenerator generates a filter chain for a HTTP listener.
 type HTTPFilterChainGenerator struct{}
 
-func (g *HTTPFilterChainGenerator) Generate(
+func (*HTTPFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
@@ -105,7 +105,7 @@ func newTLSFilterChain(
 	return hostResources, builder, nil
 }
 
-func (g *HTTPSFilterChainGenerator) Generate(
+func (*HTTPSFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
@@ -354,7 +354,7 @@ func newTCPFilterChain(
 // TCPFilterChainGenerator generates a filter chain for a TCP or TLS listener.
 type TCPFilterChainGenerator struct{}
 
-func (g *TCPFilterChainGenerator) Generate(
+func (*TCPFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,

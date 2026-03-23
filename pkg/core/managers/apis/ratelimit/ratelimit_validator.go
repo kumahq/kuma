@@ -21,7 +21,7 @@ func (r *RateLimitValidator) ValidateUpdate(ctx context.Context, previousRateLim
 	return r.validateDestinations(ctx, previousRateLimit.GetMeta().GetMesh(), newRateLimit.Destinations())
 }
 
-func (r *RateLimitValidator) ValidateDelete(ctx context.Context, name string) error {
+func (*RateLimitValidator) ValidateDelete(ctx context.Context, name string) error {
 	return nil
 }
 

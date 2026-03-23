@@ -1,5 +1,5 @@
 package v1alpha1
 
-func (r *ZoneIngress) GetProxyType() ProxyTypeLabelValues {
+func (*ZoneIngress) GetProxyType() ProxyTypeLabelValues {
 	return ZoneIngressLabel
 }

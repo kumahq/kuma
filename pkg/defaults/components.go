@@ -77,7 +77,7 @@ func (e *DefaultComponent) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (e DefaultComponent) NeedLeaderElection() bool {
+func (DefaultComponent) NeedLeaderElection() bool {
 	return true
 }
 

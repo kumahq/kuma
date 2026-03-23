@@ -34,7 +34,7 @@ func (r caRequest) MeshName() []string {
 	return []string{r.meshName}
 }
 
-func (r allInOneCaRequest) Name() string {
+func (allInOneCaRequest) Name() string {
 	return names.GetSecretName(xds_tls.MeshCaResource, "secret", "all")
 }
 

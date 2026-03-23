@@ -16,7 +16,7 @@ var _ output.Printer = &printer{}
 
 type printer struct{}
 
-func (p *printer) Print(obj any, out io.Writer) error {
+func (*printer) Print(obj any, out io.Writer) error {
 	b, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return err

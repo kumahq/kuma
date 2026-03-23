@@ -13,7 +13,7 @@ type OriginalDstFilterConfigurer struct{}
 
 var _ ListenerConfigurer = &OriginalDstFilterConfigurer{}
 
-func (c *OriginalDstFilterConfigurer) Configure(l *envoy_listener.Listener) error {
+func (*OriginalDstFilterConfigurer) Configure(l *envoy_listener.Listener) error {
 	typedConfig, err := proto.MarshalAnyDeterministic(&envoy_extensions_filters_listener_original_dst_v3.OriginalDst{})
 	if err != nil {
 		return err

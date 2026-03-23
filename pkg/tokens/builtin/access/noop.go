@@ -10,10 +10,10 @@ type NoopDpTokenAccess struct{}
 
 var _ DataplaneTokenAccess = NoopDpTokenAccess{}
 
-func (n NoopDpTokenAccess) ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error {
+func (NoopDpTokenAccess) ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error {
 	return nil
 }
 
-func (n NoopDpTokenAccess) ValidateGenerateZoneIngressToken(ctx context.Context, zone string, user user.User) error {
+func (NoopDpTokenAccess) ValidateGenerateZoneIngressToken(ctx context.Context, zone string, user user.User) error {
 	return nil
 }

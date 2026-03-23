@@ -106,7 +106,7 @@ func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	return stdout, nil
 }
 
-func (c *UniversalControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
+func (*UniversalControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
 	panic("not implemented")
 }
 

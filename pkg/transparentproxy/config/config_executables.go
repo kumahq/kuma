@@ -557,7 +557,7 @@ func (c *Executables) String() string {
 	return strings.Join(result, ",")
 }
 
-func (c *Executables) Type() string {
+func (*Executables) Type() string {
 	return "name:path[,name:path...]"
 }
 

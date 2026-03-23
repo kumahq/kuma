@@ -25,7 +25,7 @@ type staticTokenIssuer struct{}
 
 var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
 
-func (s *staticTokenIssuer) Generate(ctx context.Context, identity issuer.DataplaneIdentity, validFor time.Duration) (core_tokens.Token, error) {
+func (*staticTokenIssuer) Generate(ctx context.Context, identity issuer.DataplaneIdentity, validFor time.Duration) (core_tokens.Token, error) {
 	return fmt.Sprintf("token-for-%s-%s", identity.Name, identity.Mesh), nil
 }
 

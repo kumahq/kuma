@@ -17,7 +17,7 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (secret_store.SecretStore, error) {
+func (*plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (secret_store.SecretStore, error) {
 	mgr, ok := k8s_extensions.FromManagerContext(pc.Extensions())
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")

@@ -220,7 +220,7 @@ func (d *deltaDiscoveryRequest) GetResourceNames() []string {
 	return d.GetResourceNamesSubscribe()
 }
 
-func (d *deltaDiscoveryRequest) VersionInfo() string {
+func (*deltaDiscoveryRequest) VersionInfo() string {
 	return ""
 }
 

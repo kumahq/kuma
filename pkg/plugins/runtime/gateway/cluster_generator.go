@@ -147,7 +147,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 	return resources, nil
 }
 
-func (c *ClusterGenerator) generateRealBackendRefCluster(
+func (*ClusterGenerator) generateRealBackendRefCluster(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
 	backendRef *resolve.RealResourceBackendRef,
@@ -209,7 +209,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	return cluster, service, nil
 }
 
-func (c *ClusterGenerator) generateMeshCluster(
+func (*ClusterGenerator) generateMeshCluster(
 	meshCtx xds_context.MeshContext,
 	info GatewayListenerInfo,
 	dest *route.Destination,

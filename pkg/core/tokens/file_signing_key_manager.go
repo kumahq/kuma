@@ -34,10 +34,10 @@ func (f *fileSigningKeyManager) GetLatestSigningKey(context.Context) (*rsa.Priva
 	return key, f.keyID, err
 }
 
-func (f *fileSigningKeyManager) CreateDefaultSigningKey(context.Context) error {
+func (*fileSigningKeyManager) CreateDefaultSigningKey(context.Context) error {
 	return errors.New("it's not possible to create key when using file signing key manager")
 }
 
-func (f *fileSigningKeyManager) CreateSigningKey(context.Context, KeyID) error {
+func (*fileSigningKeyManager) CreateSigningKey(context.Context, KeyID) error {
 	return errors.New("it's not possible to create key when using file signing key manager")
 }

@@ -118,7 +118,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	return routing, destinations, outbounds
 }
 
-func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
+func (*DataplaneProxyBuilder) resolveVIPOutbounds(
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
 	tpEnabled bool,

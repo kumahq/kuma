@@ -30,7 +30,7 @@ func (t *testDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, 
 	return t.response, nil
 }
 
-func (t *testDataplaneInspectClient) InspectConfigDump(ctx context.Context, mesh, name string) ([]byte, error) {
+func (*testDataplaneInspectClient) InspectConfigDump(ctx context.Context, mesh, name string) ([]byte, error) {
 	return nil, nil
 }
 

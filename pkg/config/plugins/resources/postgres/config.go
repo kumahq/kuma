@@ -89,8 +89,8 @@ func (cfg ReadReplica) Validate() error {
 	return nil
 }
 
-func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
-	mode, err := cfg.TLS.Mode.postgresMode()
+func (c PostgresStoreConfig) ConnectionString() (string, error) {
+	mode, err := c.TLS.Mode.postgresMode()
 	if err != nil {
 		return "", err
 	}
@@ -105,18 +105,18 @@ func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
 		return fmt.Sprintf("%s='%s'", name, escape(value))
 	}
 	variables := []string{
-		quotedVariable("host", cfg.Host),
-		intVariable("port", cfg.Port),
-		quotedVariable("user", cfg.User),
-		quotedVariable("password", cfg.Password),
-		quotedVariable("dbname", cfg.DbName),
-		intVariable("connect_timeout", cfg.ConnectionTimeout),
+		quotedVariable("host", c.Host),
+		intVariable("port", c.Port),
+		quotedVariable("user", c.User),
+		quotedVariable("password", c.Password),
+		quotedVariable("dbname", c.DbName),
+		intVariable("connect_timeout", c.ConnectionTimeout),
 		variable("sslmode", mode),
-		quotedVariable("sslcert", cfg.TLS.CertPath),
-		quotedVariable("sslkey", cfg.TLS.KeyPath),
-		quotedVariable("sslrootcert", cfg.TLS.CAPath),
+		quotedVariable("sslcert", c.TLS.CertPath),
+		quotedVariable("sslkey", c.TLS.KeyPath),
+		quotedVariable("sslrootcert", c.TLS.CAPath),
 	}
-	if cfg.TLS.DisableSSLSNI {
+	if c.TLS.DisableSSLSNI {
 		variables = append(variables, "sslsni=0")
 	}
 	return strings.Join(variables, " "), nil
@@ -185,48 +185,48 @@ func (s TLSPostgresStoreConfig) Validate() error {
 	return nil
 }
 
-func (p *PostgresStoreConfig) Sanitize() {
-	p.Password = config.SanitizedValue
+func (c *PostgresStoreConfig) Sanitize() {
+	c.Password = config.SanitizedValue
 }
 
-func (p *PostgresStoreConfig) Validate() error {
-	if len(p.Host) < 1 {
+func (c *PostgresStoreConfig) Validate() error {
+	if len(c.Host) < 1 {
 		return errors.New("Host should not be empty")
 	}
-	if p.Port < 0 {
+	if c.Port < 0 {
 		return errors.New("Port cannot be negative")
 	}
-	if len(p.User) < 1 {
+	if len(c.User) < 1 {
 		return errors.New("User should not be empty")
 	}
-	if len(p.Password) < 1 {
+	if len(c.Password) < 1 {
 		return errors.New("Password should not be empty")
 	}
-	if len(p.DbName) < 1 {
+	if len(c.DbName) < 1 {
 		return errors.New("DbName should not be empty")
 	}
-	if err := p.TLS.Validate(); err != nil {
+	if err := c.TLS.Validate(); err != nil {
 		return errors.Wrap(err, "TLS validation failed")
 	}
-	if p.MinOpenConnections < 0 {
+	if c.MinOpenConnections < 0 {
 		return errors.New("MinOpenConnections should be greater than 0")
 	}
-	if p.MinOpenConnections > p.MaxOpenConnections {
+	if c.MinOpenConnections > c.MaxOpenConnections {
 		return errors.New("MinOpenConnections should be less than MaxOpenConnections")
 	}
-	if p.MaxConnectionLifetime.Duration < 0 {
+	if c.MaxConnectionLifetime.Duration < 0 {
 		return errors.New("MaxConnectionLifetime should be greater than 0")
 	}
-	if p.MaxConnectionLifetimeJitter.Duration < 0 {
+	if c.MaxConnectionLifetimeJitter.Duration < 0 {
 		return errors.New("MaxConnectionLifetimeJitter should be greater than 0")
 	}
-	if p.MaxConnectionLifetimeJitter.Duration > p.MaxConnectionLifetime.Duration {
+	if c.MaxConnectionLifetimeJitter.Duration > c.MaxConnectionLifetime.Duration {
 		return errors.New("MaxConnectionLifetimeJitter should be less than MaxConnectionLifetime")
 	}
-	if p.HealthCheckInterval.Duration < 0 {
+	if c.HealthCheckInterval.Duration < 0 {
 		return errors.New("HealthCheckInterval should be greater than 0")
 	}
-	if err := p.ReadReplica.Validate(); err != nil {
+	if err := c.ReadReplica.Validate(); err != nil {
 		return errors.Wrapf(err, "ReadReplica validation failed")
 	}
 	return nil

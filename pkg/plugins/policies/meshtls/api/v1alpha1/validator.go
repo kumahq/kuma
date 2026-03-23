@@ -24,7 +24,7 @@ func (r *MeshTLSResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func (*MeshTLSResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

@@ -90,7 +90,7 @@ func (c *virtualHostModificator) remove(routeCfg *envoy_route.RouteConfiguration
 	routeCfg.VirtualHosts = vHosts
 }
 
-func (c *virtualHostModificator) add(routeCfg *envoy_route.RouteConfiguration, vHost *envoy_route.VirtualHost) {
+func (*virtualHostModificator) add(routeCfg *envoy_route.RouteConfiguration, vHost *envoy_route.VirtualHost) {
 	routeCfg.VirtualHosts = append(routeCfg.VirtualHosts, vHost)
 }
 

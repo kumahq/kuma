@@ -90,46 +90,46 @@ func NewMeshFaultInjectionResource() *MeshFaultInjectionResource {
 	}
 }
 
-func (t *MeshFaultInjectionResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshFaultInjectionResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshFaultInjectionResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshFaultInjectionResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshFaultInjectionResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshFaultInjectionResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshFaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshFaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshFaultInjection)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshFaultInjection{}
+			r.Spec = &MeshFaultInjection{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshFaultInjectionResource) GetStatus() model.ResourceStatus {
+func (*MeshFaultInjectionResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshFaultInjectionResource) SetStatus(model.ResourceStatus) error {
+func (*MeshFaultInjectionResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshFaultInjectionResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshFaultInjectionResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshFaultInjectionResourceTypeDescriptor
 }
 
-func (t *MeshFaultInjectionResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshFaultInjectionResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

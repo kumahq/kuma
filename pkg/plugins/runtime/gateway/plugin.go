@@ -37,7 +37,7 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
+func (*plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	if context.Config().Environment == config_core.KubernetesEnvironment {
 		mesh_k8s.RegisterK8sGatewayTypes()
 		mesh_k8s.RegisterK8sGatewayAPITypes()
@@ -45,7 +45,7 @@ func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, con
 	return nil
 }
 
-func (p *plugin) Apply(ctx context.Context, meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error {
+func (*plugin) Apply(ctx context.Context, meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error {
 	if proxy.Dataplane == nil || !proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
@@ -72,7 +72,7 @@ func SetGatewayListeners(proxy *core_xds.Proxy, listenerInfoPerPort map[uint32]G
 	proxy.RuntimeExtensions[metadata.PluginName] = existingListeners
 }
 
-func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
+func (*plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	// Insert our resolver before the default so that we can intercept
 	// builtin gateway dataplanes.
 	generator.DefaultTemplateResolver = template.SequentialResolver(
@@ -86,11 +86,11 @@ func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, conf
 	return nil
 }
 
-func (p *plugin) Name() core_plugins.PluginName {
+func (*plugin) Name() core_plugins.PluginName {
 	return metadata.PluginName
 }
 
-func (p *plugin) Order() int {
+func (*plugin) Order() int {
 	// It has to go before Environment is prepared, so we have resources registered in K8S schema
 	return core_plugins.EnvironmentPreparingOrder - 1
 }

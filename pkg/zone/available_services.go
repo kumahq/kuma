@@ -76,7 +76,7 @@ func (t *ZoneAvailableServicesTracker) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (t *ZoneAvailableServicesTracker) NeedLeaderElection() bool {
+func (*ZoneAvailableServicesTracker) NeedLeaderElection() bool {
 	return true
 }
 

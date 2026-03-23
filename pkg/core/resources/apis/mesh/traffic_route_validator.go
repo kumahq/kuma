@@ -72,7 +72,7 @@ func (d *TrafficRouteResource) validateHTTPModify(
 	return err
 }
 
-func (d *TrafficRouteResource) validateModificationPath(
+func (*TrafficRouteResource) validateModificationPath(
 	pathBuilder validators.PathBuilder,
 	path *mesh_proto.TrafficRoute_Http_Modify_Path,
 	match *mesh_proto.TrafficRoute_Http_Match,
@@ -99,7 +99,7 @@ func (d *TrafficRouteResource) validateModificationPath(
 	return err
 }
 
-func (d *TrafficRouteResource) validateModificationHost(
+func (*TrafficRouteResource) validateModificationHost(
 	pathBuilder validators.PathBuilder,
 	host *mesh_proto.TrafficRoute_Http_Modify_Host,
 ) validators.ValidationError {
@@ -122,7 +122,7 @@ func (d *TrafficRouteResource) validateModificationHost(
 	return err
 }
 
-func (d *TrafficRouteResource) validateModificationHeaders(
+func (*TrafficRouteResource) validateModificationHeaders(
 	pathBuilder validators.PathBuilder,
 	headers *mesh_proto.TrafficRoute_Http_Modify_Headers,
 ) validators.ValidationError {
@@ -194,7 +194,7 @@ func (d *TrafficRouteResource) validateHTTPMatch(pathBuilder validators.PathBuil
 	return err
 }
 
-func (d *TrafficRouteResource) validateStringMatcher(pathBuilder validators.PathBuilder, matcher *mesh_proto.TrafficRoute_Http_Match_StringMatcher) validators.ValidationError {
+func (*TrafficRouteResource) validateStringMatcher(pathBuilder validators.PathBuilder, matcher *mesh_proto.TrafficRoute_Http_Match_StringMatcher) validators.ValidationError {
 	var err validators.ValidationError
 	switch matcher.GetMatcherType().(type) {
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Exact:
@@ -212,7 +212,7 @@ func (d *TrafficRouteResource) validateStringMatcher(pathBuilder validators.Path
 	return err
 }
 
-func (d *TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder, split []*mesh_proto.TrafficRoute_Split) validators.ValidationError {
+func (*TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder, split []*mesh_proto.TrafficRoute_Split) validators.ValidationError {
 	var err validators.ValidationError
 	if len(split) == 0 {
 		err.AddViolationAt(pathBuilder, "must have at least one element")
@@ -235,7 +235,7 @@ func (d *TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder,
 	return err
 }
 
-func (d *TrafficRouteResource) validateDestination(pathBuilder validators.PathBuilder, destination map[string]string) validators.ValidationError {
+func (*TrafficRouteResource) validateDestination(pathBuilder validators.PathBuilder, destination map[string]string) validators.ValidationError {
 	return ValidateSelector(pathBuilder, destination, ValidateTagsOpts{
 		RequireAtLeastOneTag: true,
 		RequireService:       true,

@@ -22,7 +22,7 @@ func (r *resourceMetaObject) GetName() string {
 	return r.Name
 }
 
-func (r *resourceMetaObject) GetNameExtensions() core_model.ResourceNameExtensions {
+func (*resourceMetaObject) GetNameExtensions() core_model.ResourceNameExtensions {
 	return core_model.ResourceNameExtensionsUnsupported
 }
 

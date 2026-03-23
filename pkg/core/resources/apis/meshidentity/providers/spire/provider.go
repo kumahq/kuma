@@ -17,7 +17,7 @@ func InitProvider() {
 	core_plugins.Register(core_plugins.PluginName(meshidentity_api.SpireType), &plugin{})
 }
 
-func (p plugin) NewIdentityProvider(context core_plugins.PluginContext, config core_plugins.PluginConfig) (providers.IdentityProvider, error) {
+func (plugin) NewIdentityProvider(context core_plugins.PluginContext, config core_plugins.PluginConfig) (providers.IdentityProvider, error) {
 	var socketPath string
 	switch context.Config().Environment {
 	case config_core.UniversalEnvironment:

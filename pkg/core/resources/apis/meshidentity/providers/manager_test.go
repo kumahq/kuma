@@ -126,19 +126,19 @@ type noIdentityProvider struct {
 	_ *xds.Proxy
 }
 
-func (s *noIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+func (*noIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
-func (s *noIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+func (*noIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
-func (s *noIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *xds.Proxy) (*xds.WorkloadIdentity, error) {
+func (*noIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *xds.Proxy) (*xds.WorkloadIdentity, error) {
 	return nil, nil
 }
 
-func (s *noIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+func (*noIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
 }
 
@@ -146,21 +146,21 @@ type staticIdentityProvider struct {
 	_ *xds.Proxy
 }
 
-func (s *staticIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+func (*staticIdentityProvider) Validate(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
-func (s *staticIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
+func (*staticIdentityProvider) Initialize(_ context.Context, _ *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
-func (s *staticIdentityProvider) CreateIdentity(_ context.Context, mid *meshidentity_api.MeshIdentityResource, _ *xds.Proxy) (*xds.WorkloadIdentity, error) {
+func (*staticIdentityProvider) CreateIdentity(_ context.Context, mid *meshidentity_api.MeshIdentityResource, _ *xds.Proxy) (*xds.WorkloadIdentity, error) {
 	return &xds.WorkloadIdentity{
 		KRI:            kri.From(mid),
 		ManagementMode: xds.KumaManagementMode,
 	}, nil
 }
 
-func (s *staticIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+func (*staticIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
 }

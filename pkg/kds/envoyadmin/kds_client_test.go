@@ -325,7 +325,7 @@ func (m *mockStream) SendMsg(request any) error {
 	return nil
 }
 
-func (m *mockStream) Recv() (*mesh_proto.XDSConfigResponse, error) {
+func (*mockStream) Recv() (*mesh_proto.XDSConfigResponse, error) {
 	return nil, nil
 }
 

@@ -23,7 +23,7 @@ func NewGenerator() generator_core.ResourceGenerator {
 
 type generator struct{}
 
-func (g generator) Generate(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds_context.Context, proxy *xds.Proxy) (*xds.ResourceSet, error) {
+func (generator) Generate(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds_context.Context, proxy *xds.Proxy) (*xds.ResourceSet, error) {
 	proxy.OtelPipeBackends = &xds.OtelPipeBackends{}
 
 	for _, policy := range plugins.Plugins().PolicyPlugins(ordered.Policies) {

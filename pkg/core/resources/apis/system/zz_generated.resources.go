@@ -29,41 +29,41 @@ func NewConfigResource() *ConfigResource {
 	}
 }
 
-func (t *ConfigResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ConfigResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ConfigResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ConfigResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ConfigResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ConfigResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.Config)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &system_proto.Config{}
+			r.Spec = &system_proto.Config{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ConfigResource) GetStatus() model.ResourceStatus {
+func (r *ConfigResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ConfigResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ConfigResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ConfigResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ConfigResource) Descriptor() model.ResourceTypeDescriptor {
 	return ConfigResourceTypeDescriptor
 }
 
@@ -148,41 +148,41 @@ func NewSecretResource() *SecretResource {
 	}
 }
 
-func (t *SecretResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *SecretResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *SecretResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *SecretResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *SecretResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *SecretResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
+func (r *SecretResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.Secret)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &system_proto.Secret{}
+			r.Spec = &system_proto.Secret{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *SecretResource) GetStatus() model.ResourceStatus {
+func (r *SecretResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *SecretResource) SetStatus(_ model.ResourceStatus) error {
+func (r *SecretResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *SecretResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *SecretResource) Descriptor() model.ResourceTypeDescriptor {
 	return SecretResourceTypeDescriptor
 }
 
@@ -267,41 +267,41 @@ func NewZoneResource() *ZoneResource {
 	}
 }
 
-func (t *ZoneResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.Zone)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &system_proto.Zone{}
+			r.Spec = &system_proto.Zone{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneResource) GetStatus() model.ResourceStatus {
+func (r *ZoneResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneResourceTypeDescriptor
 }
 
@@ -387,41 +387,41 @@ func NewZoneInsightResource() *ZoneInsightResource {
 	}
 }
 
-func (t *ZoneInsightResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneInsightResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneInsightResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneInsightResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneInsightResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneInsightResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.ZoneInsight)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &system_proto.ZoneInsight{}
+			r.Spec = &system_proto.ZoneInsight{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneInsightResource) GetStatus() model.ResourceStatus {
+func (r *ZoneInsightResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneInsightResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneInsightResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneInsightResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneInsightResourceTypeDescriptor
 }
 
@@ -505,46 +505,46 @@ func NewZoneOverviewResource() *ZoneOverviewResource {
 	}
 }
 
-func (t *ZoneOverviewResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneOverviewResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneOverviewResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneOverviewResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneOverviewResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneOverviewResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.ZoneOverview)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &system_proto.ZoneOverview{}
+			r.Spec = &system_proto.ZoneOverview{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneOverviewResource) GetStatus() model.ResourceStatus {
+func (r *ZoneOverviewResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneOverviewResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneOverviewResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneOverviewResourceTypeDescriptor
 }
 
-func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
-	t.SetMeta(resource.GetMeta())
+func (r *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	r.SetMeta(resource.GetMeta())
 	overview := &system_proto.ZoneOverview{
 		Zone: resource.GetSpec().(*system_proto.Zone),
 	}
@@ -555,7 +555,7 @@ func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight 
 		}
 		overview.ZoneInsight = ins
 	}
-	return t.SetSpec(overview)
+	return r.SetSpec(overview)
 }
 
 var _ model.ResourceList = &ZoneOverviewResourceList{}

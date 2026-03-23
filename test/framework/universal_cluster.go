@@ -290,15 +290,15 @@ func (c *UniversalCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 }
 
 // K8s
-func (c *UniversalCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
+func (*UniversalCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
 	return nil
 }
 
-func (c *UniversalCluster) CreateNamespace(namespace string) error {
+func (*UniversalCluster) CreateNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc) error {
+func (*UniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc) error {
 	return nil
 }
 

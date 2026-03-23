@@ -204,7 +204,7 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 	return nil
 }
 
-func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChain, conf *api.LocalTCP) error {
+func (*Configurer) configureTcpListener(filterChain *envoy_listener.FilterChain, conf *api.LocalTCP) error {
 	if pointer.Deref(conf.Disabled) || conf.ConnectionRate == nil {
 		// MeshRateLimit policy is matched for the DPP, but rate limit either disabled
 		// or not configured. Potentially we can return errors that bubble up to GUI from here.
@@ -235,7 +235,7 @@ func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChai
 	return nil
 }
 
-func (c *Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *anypb.Any) {
+func (*Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *anypb.Any) {
 	if route.TypedPerFilterConfig == nil {
 		route.TypedPerFilterConfig = map[string]*anypb.Any{}
 	}

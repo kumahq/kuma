@@ -16,7 +16,7 @@ type k8sDeployment struct {
 
 var _ Deployment = &k8sDeployment{}
 
-func (t *k8sDeployment) Name() string {
+func (*k8sDeployment) Name() string {
 	return DeploymentName
 }
 

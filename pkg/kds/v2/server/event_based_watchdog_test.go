@@ -21,12 +21,12 @@ type staticReconciler struct {
 	changedResTypes chan map[core_model.ResourceType]struct{}
 }
 
-func (s staticReconciler) SupportedTypes() []core_model.ResourceType {
+func (staticReconciler) SupportedTypes() []core_model.ResourceType {
 	// TODO implement me
 	panic("implement me")
 }
 
-func (s staticReconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
+func (staticReconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
 }
 
 func (s staticReconciler) Reconcile(ctx context.Context, node *envoy_core.Node, m map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
@@ -34,7 +34,7 @@ func (s staticReconciler) Reconcile(ctx context.Context, node *envoy_core.Node, 
 	return nil, true
 }
 
-func (s staticReconciler) Clear(node *envoy_core.Node) error {
+func (staticReconciler) Clear(node *envoy_core.Node) error {
 	return nil
 }
 

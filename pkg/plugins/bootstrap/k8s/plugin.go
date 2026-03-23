@@ -41,7 +41,7 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.PluginConfig) error {
+func (*plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.PluginConfig) error {
 	if b.Config().Environment != config_core.KubernetesEnvironment {
 		return nil
 	}
@@ -177,7 +177,7 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 	})
 }
 
-func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
+func (*plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
 	if b.Config().Environment != config_core.KubernetesEnvironment {
 		return nil
 	}
@@ -193,11 +193,11 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 	return nil
 }
 
-func (p *plugin) Name() core_plugins.PluginName {
+func (*plugin) Name() core_plugins.PluginName {
 	return core_plugins.Kubernetes
 }
 
-func (p *plugin) Order() int {
+func (*plugin) Order() int {
 	return core_plugins.EnvironmentPreparingOrder
 }
 
@@ -213,7 +213,7 @@ const (
 	leaderElectionLost = "leader election lost"
 )
 
-func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
+func (m *kubeComponentManager) Start(done <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
@@ -221,11 +221,11 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 		cancel()
 	}()
 
-	defer cm.waitForDone()
+	defer m.waitForDone()
 
-	if err := cm.Manager.Start(ctx); err != nil {
+	if err := m.Manager.Start(ctx); err != nil {
 		if err.Error() == leaderElectionLost {
-			cm.GetLogger().Info("leader election lost, stopping")
+			m.GetLogger().Info("leader election lost, stopping")
 			return nil
 		}
 		return errors.Wrap(err, "error running Kubernetes Manager")
@@ -238,18 +238,18 @@ var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-cha
 	return nil
 })
 
-func (k *kubeComponentManager) Add(components ...component.Component) error {
+func (m *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {
-		k.components = append(k.components, c)
-		if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
+		m.components = append(m.components, c)
+		if err := m.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (k *kubeComponentManager) Ready() bool {
-	for _, c := range k.components {
+func (m *kubeComponentManager) Ready() bool {
+	for _, c := range m.components {
 		if rc, ok := c.(component.ReadyComponent); ok && !rc.Ready() {
 			return false
 		}
@@ -257,8 +257,8 @@ func (k *kubeComponentManager) Ready() bool {
 	return true
 }
 
-func (k *kubeComponentManager) waitForDone() {
-	for _, c := range k.components {
+func (m *kubeComponentManager) waitForDone() {
+	for _, c := range m.components {
 		if gc, ok := c.(component.GracefulComponent); ok {
 			gc.WaitForDone()
 		}

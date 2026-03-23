@@ -123,7 +123,7 @@ func (d *HealthCheckResource) validateConf() validators.ValidationError {
 	return err
 }
 
-func (d *HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.FloatValue) validators.ValidationError {
+func (*HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.FloatValue) validators.ValidationError {
 	var err validators.ValidationError
 	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
 		err.AddViolationAt(path, "must be in range [0.0 - 100.0]")

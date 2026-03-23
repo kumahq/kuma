@@ -205,22 +205,22 @@ type MatchesHash string
 type BackendRefHash string
 
 // Hash returns a hash of the BackendRef
-func (in BackendRef) Hash() BackendRefHash {
-	keys := util_maps.SortedKeys(pointer.Deref(in.Tags))
+func (b BackendRef) Hash() BackendRefHash {
+	keys := util_maps.SortedKeys(pointer.Deref(b.Tags))
 	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
-		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Tags)[k]))
+		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, pointer.Deref(b.Tags)[k]))
 	}
 
-	keys = util_maps.SortedKeys(pointer.Deref(in.Labels))
-	orderedLabels := make([]string, 0, len(pointer.Deref(in.Labels)))
+	keys = util_maps.SortedKeys(pointer.Deref(b.Labels))
+	orderedLabels := make([]string, 0, len(pointer.Deref(b.Labels)))
 	for _, k := range keys {
-		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Labels)[k]))
+		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, pointer.Deref(b.Labels)[k]))
 	}
 
-	name := in.Name
-	if in.Port != nil {
-		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
+	name := b.Name
+	if b.Port != nil {
+		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(b.Name), *b.Port))
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), pointer.Deref(in.Mesh)))
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", b.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), pointer.Deref(b.Mesh)))
 }

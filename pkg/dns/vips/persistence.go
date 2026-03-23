@@ -143,7 +143,7 @@ func (m *Persistence) getGroupedByMesh(ctx context.Context) (map[string]*config_
 	return resourceByMesh, nil
 }
 
-func (m *Persistence) configToVirtualOutboundMeshView(resource *config_model.ConfigResource) (*VirtualOutboundMeshView, error) {
+func (*Persistence) configToVirtualOutboundMeshView(resource *config_model.ConfigResource) (*VirtualOutboundMeshView, error) {
 	if resource.Spec.Config == "" {
 		return NewEmptyVirtualOutboundView(), nil
 	}

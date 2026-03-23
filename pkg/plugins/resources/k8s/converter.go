@@ -53,7 +53,7 @@ func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_mode
 	return c.KubeFactory.NewList(rl)
 }
 
-func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
+func (*SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
 	out.SetMeta(&KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()})
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()

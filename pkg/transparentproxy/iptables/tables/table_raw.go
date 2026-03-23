@@ -12,7 +12,7 @@ type RawTable struct {
 	output     *chains.Chain
 }
 
-func (t *RawTable) Name() consts.TableName {
+func (*RawTable) Name() consts.TableName {
 	return consts.TableRaw
 }
 
@@ -28,7 +28,7 @@ func (t *RawTable) Chains() []*chains.Chain {
 	return []*chains.Chain{t.prerouting, t.output}
 }
 
-func (t *RawTable) CustomChains() []*chains.Chain {
+func (*RawTable) CustomChains() []*chains.Chain {
 	return nil
 }
 

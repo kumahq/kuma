@@ -56,7 +56,7 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+func (plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources, opts...)
 }
 
@@ -76,7 +76,7 @@ func workloadIdentity(proxy *core_xds.Proxy) (string, string) {
 	return zone, workloadKRI
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
 	if !ok {
 		return nil

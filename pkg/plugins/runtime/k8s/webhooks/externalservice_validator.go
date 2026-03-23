@@ -96,7 +96,7 @@ func (h *ExternalServiceValidator) ValidateUpdate(ctx context.Context, req admis
 	return admission.Allowed("")
 }
 
-func (h *ExternalServiceValidator) Supports(req admission.Request) bool {
+func (*ExternalServiceValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("ExternalService")
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

@@ -20,7 +20,7 @@ func init() {
 	core_plugins.Register(core_plugins.Universal, &plugin{})
 }
 
-func (p *plugin) Customize(rt core_runtime.Runtime) error {
+func (*plugin) Customize(rt core_runtime.Runtime) error {
 	if rt.Config().Environment != core.UniversalEnvironment {
 		return nil
 	}

@@ -21,14 +21,14 @@ type denyingValidator struct{}
 
 var _ k8s_common.AdmissionValidator = &denyingValidator{}
 
-func (d *denyingValidator) InjectDecoder(kube_admission.Decoder) {
+func (*denyingValidator) InjectDecoder(kube_admission.Decoder) {
 }
 
-func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_admission.Response {
+func (*denyingValidator) Handle(context.Context, kube_admission.Request) kube_admission.Response {
 	return kube_admission.Denied("")
 }
 
-func (d *denyingValidator) Supports(req kube_admission.Request) bool {
+func (*denyingValidator) Supports(req kube_admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("TrafficRoute")
 	return req.Kind.Group == gvk.Group && req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version
 }

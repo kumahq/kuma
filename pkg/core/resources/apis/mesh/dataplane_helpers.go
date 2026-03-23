@@ -19,15 +19,15 @@ import (
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
-func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
-	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
+func (r *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
+	return r.UsesInboundInterface(address, port) || r.UsesOutboundInterface(address, port)
 }
 
-func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bool {
-	if d == nil {
+func (r *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bool {
+	if r == nil {
 		return false
 	}
-	for _, iface := range d.Spec.Networking.GetInboundInterfaces() {
+	for _, iface := range r.Spec.Networking.GetInboundInterfaces() {
 		// compare against port and IP address of the dataplane
 		if port == iface.DataplanePort && overlap(address, net.ParseIP(iface.DataplaneIP)) {
 			return true
@@ -40,11 +40,11 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 	return false
 }
 
-func (d *DataplaneResource) UsesOutboundInterface(address net.IP, port uint32) bool {
-	if d == nil {
+func (r *DataplaneResource) UsesOutboundInterface(address net.IP, port uint32) bool {
+	if r == nil {
 		return false
 	}
-	for _, oface := range d.Spec.Networking.GetOutboundInterfaces() {
+	for _, oface := range r.Spec.Networking.GetOutboundInterfaces() {
 		// compare against port and IP address of the dataplane
 		if port == oface.DataplanePort && overlap(address, net.ParseIP(oface.DataplaneIP)) {
 			return true
@@ -62,8 +62,8 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
-func (d *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto.PrometheusMetricsBackendConfig, error) {
-	if d == nil || mesh == nil || mesh.Meta.GetName() != d.Meta.GetMesh() || !mesh.HasPrometheusMetricsEnabled() {
+func (r *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto.PrometheusMetricsBackendConfig, error) {
+	if r == nil || mesh == nil || mesh.Meta.GetName() != r.Meta.GetMesh() || !mesh.HasPrometheusMetricsEnabled() {
 		return nil, nil
 	}
 	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
@@ -72,12 +72,12 @@ func (d *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto
 		return nil, err
 	}
 
-	if d.Spec.GetMetrics().GetType() == mesh_proto.MetricsPrometheusType {
+	if r.Spec.GetMetrics().GetType() == mesh_proto.MetricsPrometheusType {
 		dpCfg := mesh_proto.PrometheusMetricsBackendConfig{}
-		if err := util_proto.ToTyped(d.Spec.Metrics.Conf, &dpCfg); err != nil {
+		if err := util_proto.ToTyped(r.Spec.Metrics.Conf, &dpCfg); err != nil {
 			return nil, err
 		}
-		d.mergeLists(&cfg, &dpCfg)
+		r.mergeLists(&cfg, &dpCfg)
 		proto.Merge(&cfg, &dpCfg)
 	}
 	return &cfg, nil
@@ -86,7 +86,7 @@ func (d *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto
 // After proto.Merge called two lists are merged and we cannot be sure
 // of order of the elements and if the element is from the Mesh or from
 // the Dataplane resource.
-func (d *DataplaneResource) mergeLists(
+func (*DataplaneResource) mergeLists(
 	meshCfg *mesh_proto.PrometheusMetricsBackendConfig,
 	dpCfg *mesh_proto.PrometheusMetricsBackendConfig,
 ) {
@@ -108,35 +108,35 @@ func (d *DataplaneResource) mergeLists(
 	dpCfg.Aggregate = unduplicatedConfig
 }
 
-func (d *DataplaneResource) GetIP() string {
-	if d == nil {
+func (r *DataplaneResource) GetIP() string {
+	if r == nil {
 		return ""
 	}
-	if d.Spec.Networking.AdvertisedAddress != "" {
-		return d.Spec.Networking.AdvertisedAddress
+	if r.Spec.Networking.AdvertisedAddress != "" {
+		return r.Spec.Networking.AdvertisedAddress
 	} else {
-		return d.Spec.Networking.Address
+		return r.Spec.Networking.Address
 	}
 }
 
-func (d *DataplaneResource) IsIPv6() bool {
-	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
+func (r *DataplaneResource) IsIPv6() bool {
+	return r != nil && govalidator.IsIPv6(r.Spec.GetNetworking().GetAddress())
 }
 
-func (d *DataplaneResource) GetAddress() string {
-	if d == nil || d.Spec == nil {
+func (r *DataplaneResource) GetAddress() string {
+	if r == nil || r.Spec == nil {
 		return ""
 	}
 
-	return d.Spec.GetNetworking().GetAddress()
+	return r.Spec.GetNetworking().GetAddress()
 }
 
-func (d *DataplaneResource) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
-	if d == nil {
+func (r *DataplaneResource) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
+	if r == nil {
 		return &tproxy_dp.DataplaneConfig{}
 	}
 
-	if tp := d.Spec.GetNetworking().GetTransparentProxying(); tp != nil {
+	if tp := r.Spec.GetNetworking().GetTransparentProxying(); tp != nil {
 		return &tproxy_dp.DataplaneConfig{
 			IPFamilyMode: tproxy_config.IPFamilyModeFromStringer(tp.GetIpFamilyMode()),
 			Redirect: tproxy_dp.DataplaneRedirect{
@@ -149,54 +149,54 @@ func (d *DataplaneResource) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
 	return &tproxy_dp.DataplaneConfig{}
 }
 
-func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
-	if d == nil {
+func (r *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
+	if r == nil {
 		return ""
 	}
-	ip := d.GetIP()
-	adminPort := d.AdminPort(defaultAdminPort)
+	ip := r.GetIP()
+	adminPort := r.AdminPort(defaultAdminPort)
 	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
 }
 
-func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
-	if d == nil {
+func (r *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
+	if r == nil {
 		return 0
 	}
-	if adminPort := d.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
+	if adminPort := r.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
 		return adminPort
 	}
 	return defaultAdminPort
 }
 
-func (d *DataplaneResource) Hash() []byte {
+func (r *DataplaneResource) Hash() []byte {
 	hasher := fnv.New128a()
-	_, _ = hasher.Write(core_model.HashMeta(d))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
+	_, _ = hasher.Write(core_model.HashMeta(r))
+	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAddress()))
+	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAdvertisedAddress()))
 	return hasher.Sum(nil)
 }
 
 // InboundIdentifyingName returns a dataplane KRI with portName as section name
 // when inbound tags are disabled, falling back to IdentifyingName otherwise.
-func (d *DataplaneResource) InboundIdentifyingName(inboundTagsDisabled bool, portName string) string {
+func (r *DataplaneResource) InboundIdentifyingName(inboundTagsDisabled bool, portName string) string {
 	if inboundTagsDisabled && portName != "" {
-		id := kri.WithSectionName(kri.FromResourceMeta(d.GetMeta(), DataplaneType), portName)
+		id := kri.WithSectionName(kri.FromResourceMeta(r.GetMeta(), DataplaneType), portName)
 		if !id.IsEmpty() {
 			return id.String()
 		}
 	}
-	return d.IdentifyingName(inboundTagsDisabled)
+	return r.IdentifyingName(inboundTagsDisabled)
 }
 
 // IdentifyingName returns the workload label when inbound tags are disabled,
 // falling back to the identifying service name.
-func (d *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
+func (r *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
 	if inboundTagsDisabled {
-		if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+		if workload := r.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 			return workload
 		}
 	}
-	services := d.Spec.TagSet().Values(mesh_proto.ServiceTag)
+	services := r.Spec.TagSet().Values(mesh_proto.ServiceTag)
 	if len(services) > 0 {
 		return services[0]
 	}

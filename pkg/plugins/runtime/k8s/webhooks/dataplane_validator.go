@@ -103,7 +103,7 @@ func (h *DataplaneValidator) ValidateUpdate(ctx context.Context, req admission.R
 	return admission.Allowed("")
 }
 
-func (h *DataplaneValidator) Supports(req admission.Request) bool {
+func (*DataplaneValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("Dataplane")
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

@@ -177,6 +177,6 @@ func buildDataplaneProxies(
 	return result
 }
 
-func (s *StatusUpdater) NeedLeaderElection() bool {
+func (*StatusUpdater) NeedLeaderElection() bool {
 	return true
 }

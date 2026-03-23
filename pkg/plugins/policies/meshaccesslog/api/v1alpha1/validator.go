@@ -34,7 +34,7 @@ func (r *MeshAccessLogResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func (*MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,

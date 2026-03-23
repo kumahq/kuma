@@ -90,46 +90,46 @@ func NewMeshZoneAddressResource() *MeshZoneAddressResource {
 	}
 }
 
-func (t *MeshZoneAddressResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshZoneAddressResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshZoneAddressResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshZoneAddressResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshZoneAddressResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshZoneAddressResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshZoneAddressResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshZoneAddressResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshZoneAddress)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshZoneAddress{}
+			r.Spec = &MeshZoneAddress{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshZoneAddressResource) GetStatus() model.ResourceStatus {
+func (*MeshZoneAddressResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshZoneAddressResource) SetStatus(model.ResourceStatus) error {
+func (*MeshZoneAddressResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshZoneAddressResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshZoneAddressResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshZoneAddressResourceTypeDescriptor
 }
 
-func (t *MeshZoneAddressResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshZoneAddressResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

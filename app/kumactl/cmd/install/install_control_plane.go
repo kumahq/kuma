@@ -43,7 +43,7 @@ func (cv *componentVersion) Set(v string) error {
 	return nil
 }
 
-func (cv *componentVersion) Type() string {
+func (*componentVersion) Type() string {
 	return "string"
 }
 

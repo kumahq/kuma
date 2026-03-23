@@ -65,7 +65,7 @@ type ApiServer struct {
 	httpsReady atomic.Bool
 }
 
-func (a *ApiServer) NeedLeaderElection() bool {
+func (*ApiServer) NeedLeaderElection() bool {
 	return false
 }
 

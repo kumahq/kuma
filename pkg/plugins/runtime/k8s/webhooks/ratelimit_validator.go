@@ -96,7 +96,7 @@ func (h *RateLimitValidator) ValidateUpdate(ctx context.Context, req admission.R
 	return admission.Allowed("")
 }
 
-func (h *RateLimitValidator) Supports(req admission.Request) bool {
+func (*RateLimitValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("RateLimit")
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

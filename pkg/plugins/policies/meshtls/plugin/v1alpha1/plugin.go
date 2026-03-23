@@ -51,7 +51,7 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(
+func (plugin) MatchedPolicies(
 	dataplane *core_mesh.DataplaneResource,
 	resources xds_context.Resources,
 	opts ...core_plugins.MatchedPoliciesOption,
@@ -59,7 +59,7 @@ func (p plugin) MatchedPolicies(
 	return matchers.MatchedPolicies(api.MeshTLSType, dataplane, resources, opts...)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.Dataplane == nil {
 		return nil
 	}

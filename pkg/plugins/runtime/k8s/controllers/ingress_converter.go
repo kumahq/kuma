@@ -75,7 +75,7 @@ type coordinates struct {
 	port    uint32
 }
 
-func (p *PodConverter) coordinatesFromAnnotations(annotations metadata.Annotations) (*coordinates, error) {
+func (*PodConverter) coordinatesFromAnnotations(annotations metadata.Annotations) (*coordinates, error) {
 	publicAddress, addressExist := annotations.GetString(metadata.KumaIngressPublicAddressAnnotation)
 	publicPort, portExist, err := annotations.GetUint32(metadata.KumaIngressPublicPortAnnotation)
 	if err != nil {
@@ -128,7 +128,7 @@ func (p *PodConverter) coordinatesFromNodePort(ctx context.Context, service *kub
 	return nil, errors.New("could not find valid Node address for Ingress publicAddress")
 }
 
-func (p *PodConverter) coordinatesFromLoadBalancer(service *kube_core.Service) (*coordinates, error) {
+func (*PodConverter) coordinatesFromLoadBalancer(service *kube_core.Service) (*coordinates, error) {
 	if len(service.Status.LoadBalancer.Ingress) == 0 {
 		converterLog.V(1).Info("load balancer for ingress is not yet ready")
 		return nil, nil

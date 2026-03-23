@@ -79,14 +79,14 @@ func (s *Secret) SetSpec(spec core_model.ResourceSpec) {
 	}
 }
 
-func (s *Secret) GetStatus() (core_model.ResourceStatus, error) {
+func (*Secret) GetStatus() (core_model.ResourceStatus, error) {
 	return nil, nil
 }
 
-func (s *Secret) SetStatus(status core_model.ResourceStatus) error {
+func (*Secret) SetStatus(status core_model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (s *Secret) Scope() model.Scope {
+func (*Secret) Scope() model.Scope {
 	return model.ScopeNamespace
 }

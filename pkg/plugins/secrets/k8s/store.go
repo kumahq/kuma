@@ -275,7 +275,7 @@ var _ Converter = &SimpleConverter{}
 
 type SimpleConverter struct{}
 
-func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.Secret, error) {
+func (*SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.Secret, error) {
 	secret := &kube_core.Secret{}
 	switch r.Descriptor().Name {
 	case secret_model.SecretType:
@@ -301,7 +301,7 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.
 	return secret, nil
 }
 
-func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out core_model.Resource) error {
+func (*SimpleConverter) ToCoreResource(secret *kube_core.Secret, out core_model.Resource) error {
 	out.SetMeta(&KubernetesMetaAdapter{
 		ObjectMeta: secret.ObjectMeta,
 		SecretType: secret.Type,

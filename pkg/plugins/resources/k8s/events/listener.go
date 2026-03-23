@@ -125,7 +125,7 @@ func (k *listener) OnDelete(obj any) {
 	})
 }
 
-func (k *listener) NeedLeaderElection() bool {
+func (*listener) NeedLeaderElection() bool {
 	return false
 }
 

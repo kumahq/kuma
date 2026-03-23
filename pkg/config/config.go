@@ -12,6 +12,6 @@ var _ Config = BaseConfig{}
 
 type BaseConfig struct{}
 
-func (c BaseConfig) Sanitize()          {}
-func (c BaseConfig) PostProcess() error { return nil }
-func (c BaseConfig) Validate() error    { return nil }
+func (BaseConfig) Sanitize()          {}
+func (BaseConfig) PostProcess() error { return nil }
+func (BaseConfig) Validate() error    { return nil }

@@ -13,6 +13,6 @@ func init() {
 	core_plugins.Register(core_plugins.CaBuiltin, &plugin{})
 }
 
-func (p plugin) NewCaManager(context core_plugins.PluginContext, config core_plugins.PluginConfig) (ca.Manager, error) {
+func (plugin) NewCaManager(context core_plugins.PluginContext, config core_plugins.PluginConfig) (ca.Manager, error) {
 	return NewBuiltinCaManager(context.ResourceManager()), nil
 }

@@ -90,46 +90,46 @@ func NewMeshHealthCheckResource() *MeshHealthCheckResource {
 	}
 }
 
-func (t *MeshHealthCheckResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshHealthCheckResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshHealthCheckResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshHealthCheckResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshHealthCheckResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshHealthCheckResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshHealthCheckResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshHealthCheckResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshHealthCheck)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshHealthCheck{}
+			r.Spec = &MeshHealthCheck{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshHealthCheckResource) GetStatus() model.ResourceStatus {
+func (*MeshHealthCheckResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshHealthCheckResource) SetStatus(model.ResourceStatus) error {
+func (*MeshHealthCheckResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshHealthCheckResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshHealthCheckResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshHealthCheckResourceTypeDescriptor
 }
 
-func (t *MeshHealthCheckResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshHealthCheckResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

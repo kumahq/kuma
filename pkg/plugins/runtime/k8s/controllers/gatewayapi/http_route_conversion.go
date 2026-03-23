@@ -56,7 +56,7 @@ func (r *HTTPRouteReconciler) gapiToMeshRules(
 	return rules, prepareConditions(conditions), nil
 }
 
-func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
+func (*HTTPRouteReconciler) gapiServiceToMeshRoute(
 	routeNamespace string,
 	rules []v1alpha1.Rule,
 	parent *kube_core.Service,
@@ -180,7 +180,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	}, conditions, nil
 }
 
-func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRouteMatch) (v1alpha1.Match, bool) {
+func (*HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRouteMatch) (v1alpha1.Match, bool) {
 	var match v1alpha1.Match
 
 	match.Path = &v1alpha1.PathMatch{

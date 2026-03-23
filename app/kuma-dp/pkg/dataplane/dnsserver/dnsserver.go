@@ -73,7 +73,7 @@ func (s *DNSServer) GetVersion() (string, error) {
 	return string(match[1]), nil
 }
 
-func (s *DNSServer) NeedLeaderElection() bool {
+func (*DNSServer) NeedLeaderElection() bool {
 	return false
 }
 

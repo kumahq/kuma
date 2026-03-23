@@ -59,7 +59,7 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 	return globalInsights, nil
 }
 
-func (gis *defaultGlobalInsightService) aggregateDataplanes(
+func (*defaultGlobalInsightService) aggregateDataplanes(
 	meshInsights *mesh.MeshInsightResourceList,
 	globalInsight *api_types.GlobalInsight,
 ) {
@@ -86,7 +86,7 @@ func (gis *defaultGlobalInsightService) aggregateDataplanes(
 	}
 }
 
-func (gis *defaultGlobalInsightService) aggregatePolicies(
+func (*defaultGlobalInsightService) aggregatePolicies(
 	meshInsights *mesh.MeshInsightResourceList,
 	globalInsight *api_types.GlobalInsight,
 ) {
@@ -99,7 +99,7 @@ func (gis *defaultGlobalInsightService) aggregatePolicies(
 	}
 }
 
-func (gis *defaultGlobalInsightService) aggregateResources(
+func (*defaultGlobalInsightService) aggregateResources(
 	meshInsights *mesh.MeshInsightResourceList,
 	globalInsight *api_types.GlobalInsight,
 ) {

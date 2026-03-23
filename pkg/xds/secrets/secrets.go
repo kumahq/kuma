@@ -242,7 +242,7 @@ func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKe
 	s.Unlock()
 }
 
-func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagSet, ownMesh *core_mesh.MeshResource, otherMeshInfos []*core_mesh.MeshResource) (UpdateKinds, string) {
+func (*secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagSet, ownMesh *core_mesh.MeshResource, otherMeshInfos []*core_mesh.MeshResource) (UpdateKinds, string) {
 	if info == nil {
 		return UpdateEverything(), "mTLS is enabled and DP hasn't received a certificate yet"
 	}

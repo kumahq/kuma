@@ -23,7 +23,7 @@ import (
 
 type DNSGenerator struct{}
 
-func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tp := proxy.GetTransparentProxy()
 
 	// DNS only makes sense when transparent proxy is used

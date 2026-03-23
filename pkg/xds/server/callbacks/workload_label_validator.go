@@ -91,6 +91,6 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 	return nil
 }
 
-func (v *WorkloadLabelValidator) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey) {
+func (*WorkloadLabelValidator) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey) {
 	// No-op
 }

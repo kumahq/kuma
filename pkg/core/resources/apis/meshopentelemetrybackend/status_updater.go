@@ -84,7 +84,7 @@ func (s *StatusUpdater) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (s *StatusUpdater) NeedLeaderElection() bool {
+func (*StatusUpdater) NeedLeaderElection() bool {
 	return true
 }
 

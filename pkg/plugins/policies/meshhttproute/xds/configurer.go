@@ -103,7 +103,7 @@ func (c RoutesConfigurer) routeMatch(match api.Match) []routeMatch {
 }
 
 // Not every API match maps cleanly to a single envoy match
-func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.RouteMatch {
+func (RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.RouteMatch {
 	switch match.Type {
 	case api.Exact:
 		return []*envoy_route.RouteMatch{{
@@ -160,7 +160,7 @@ func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.Rou
 	}
 }
 
-func (c RoutesConfigurer) routeMethodMatch(envoyMatch *envoy_route.RouteMatch, method api.Method) {
+func (RoutesConfigurer) routeMethodMatch(envoyMatch *envoy_route.RouteMatch, method api.Method) {
 	matcher := envoy_type_matcher.StringMatcher{
 		MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 			Exact: string(method),
@@ -216,7 +216,7 @@ func routeQueryParamsMatch(envoyMatch *envoy_route.RouteMatch, matches []api.Que
 	}
 }
 
-func (c RoutesConfigurer) hasExternal(split []envoy_common.Split) bool {
+func (RoutesConfigurer) hasExternal(split []envoy_common.Split) bool {
 	for _, s := range split {
 		if s.HasExternalService() {
 			return true

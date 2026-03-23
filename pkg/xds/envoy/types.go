@@ -49,7 +49,7 @@ func (c *ClusterImpl) Service() string { return c.service }
 func (c *ClusterImpl) Name() string    { return c.name }
 func (c *ClusterImpl) Weight() uint32  { return c.weight }
 func (c *ClusterImpl) Tags() tags.Tags { return c.tags }
-func (c *ClusterImpl) SNI() string     { return "" }
+func (*ClusterImpl) SNI() string       { return "" }
 
 // Mesh returns a non-empty string only if the cluster is in a different mesh
 // from the context.

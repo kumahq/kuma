@@ -101,7 +101,7 @@ func (a *adminTokenBootstrap) generateAdminToken(ctx context.Context) (string, e
 	return token, err
 }
 
-func (a *adminTokenBootstrap) NeedLeaderElection() bool {
+func (*adminTokenBootstrap) NeedLeaderElection() bool {
 	return true
 }
 

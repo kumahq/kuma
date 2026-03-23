@@ -50,7 +50,7 @@ func NewClient(rpcs service.EnvoyAdminRPCs, resManager manager.ReadOnlyResourceM
 
 var _ admin.EnvoyAdminClient = &kdsEnvoyAdminClient{}
 
-func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneResource) error {
+func (*kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneResource) error {
 	panic("not implemented")
 }
 

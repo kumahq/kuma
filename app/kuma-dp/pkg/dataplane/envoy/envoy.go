@@ -65,7 +65,7 @@ type EnvoyVersion struct {
 	KumaDpCompatible bool
 }
 
-func (e *Envoy) NeedLeaderElection() bool {
+func (*Envoy) NeedLeaderElection() bool {
 	return false
 }
 

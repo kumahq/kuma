@@ -39,19 +39,19 @@ var _ = Describe("Tenant callbacks", func() {
 
 type sampleTenants struct{}
 
-func (s sampleTenants) GetID(ctx context.Context) (string, error) {
+func (sampleTenants) GetID(ctx context.Context) (string, error) {
 	tenant, _ := multitenant.TenantFromCtx(ctx)
 	return tenant, nil
 }
 
-func (s sampleTenants) GetIDs(ctx context.Context) ([]string, error) {
+func (sampleTenants) GetIDs(ctx context.Context) ([]string, error) {
 	return nil, nil
 }
 
-func (s sampleTenants) SupportsSharding() bool {
+func (sampleTenants) SupportsSharding() bool {
 	return false
 }
 
-func (s sampleTenants) IDSupported(ctx context.Context, id string) (bool, error) {
+func (sampleTenants) IDSupported(ctx context.Context, id string) (bool, error) {
 	return true, nil
 }

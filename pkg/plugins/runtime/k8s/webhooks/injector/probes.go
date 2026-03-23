@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 )
 
-func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
+func (*KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
 	enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	if err != nil {

@@ -39,11 +39,11 @@ func (r ResourceMeta) GetName() string {
 	return r.Name
 }
 
-func (r ResourceMeta) GetNameExtensions() core_model.ResourceNameExtensions {
+func (ResourceMeta) GetNameExtensions() core_model.ResourceNameExtensions {
 	return core_model.ResourceNameExtensionsUnsupported
 }
 
-func (r ResourceMeta) GetVersion() string {
+func (ResourceMeta) GetVersion() string {
 	return ""
 }
 

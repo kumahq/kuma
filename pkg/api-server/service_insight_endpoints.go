@@ -166,7 +166,7 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 }
 
 // paginateResources paginates resources manually, because we are expanding resources.
-func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, restList *rest.ResourceList) error {
+func (*serviceInsightEndpoints) paginateResources(request *restful.Request, restList *rest.ResourceList) error {
 	page, err := pagination(request)
 	if err != nil {
 		return err

@@ -174,11 +174,11 @@ func (d *xdsCallbacks) onStreamOpen(ctx context.Context, streamID core_xds.Strea
 // NoopDataplaneCallbacks are empty callbacks that helps to implement DataplaneCallbacks without need to implement every function.
 type NoopDataplaneCallbacks struct{}
 
-func (n *NoopDataplaneCallbacks) OnProxyConnected(core_xds.StreamID, core_model.ResourceKey, context.Context, core_xds.DataplaneMetadata) error {
+func (*NoopDataplaneCallbacks) OnProxyConnected(core_xds.StreamID, core_model.ResourceKey, context.Context, core_xds.DataplaneMetadata) error {
 	return nil
 }
 
-func (n *NoopDataplaneCallbacks) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey) {
+func (*NoopDataplaneCallbacks) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey) {
 }
 
 var _ DataplaneCallbacks = &NoopDataplaneCallbacks{}

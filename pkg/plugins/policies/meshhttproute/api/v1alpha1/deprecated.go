@@ -4,6 +4,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
 )
 
-func (t *MeshHTTPRouteResource) Deprecations() []string {
-	return validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)
+func (r *MeshHTTPRouteResource) Deprecations() []string {
+	return validators.TopLevelTargetRefDeprecations(r.Spec.TargetRef)
 }

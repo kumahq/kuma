@@ -33,7 +33,7 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, identity user.User, valid
 
 type DisabledIssuer struct{}
 
-func (d DisabledIssuer) Generate(context.Context, user.User, time.Duration) (tokens.Token, error) {
+func (DisabledIssuer) Generate(context.Context, user.User, time.Duration) (tokens.Token, error) {
 	return "", tokens.IssuerDisabled
 }
 

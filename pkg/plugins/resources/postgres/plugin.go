@@ -20,7 +20,7 @@ func init() {
 	core_plugins.Register(core_plugins.Postgres, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.ResourceStore, core_store.Transactions, error) {
+func (*plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.ResourceStore, core_store.Transactions, error) {
 	cfg, ok := config.(*postgres.PostgresStoreConfig)
 	if !ok {
 		return nil, nil, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
@@ -44,7 +44,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	}
 }
 
-func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
+func (*plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
 	cfg, ok := config.(*postgres.PostgresStoreConfig)
 	if !ok {
 		return 0, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
@@ -52,7 +52,7 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 	return MigrateDb(*cfg)
 }
 
-func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
+func (*plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
 	postgresListener := postgres_events.NewListener(*pc.Config().Store.Postgres, out)
 	return pc.ComponentManager().Add(component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), postgresListener, pc.Config().General.ResilientComponentBaseBackoff.Duration, pc.Config().General.ResilientComponentMaxBackoff.Duration))
 }

@@ -39,15 +39,15 @@ func (k *serverStream) Recv() (*envoy_sd.DeltaDiscoveryRequest, error) {
 	return res, nil
 }
 
-func (k *serverStream) SetHeader(metadata.MD) error {
+func (*serverStream) SetHeader(metadata.MD) error {
 	panic("not implemented")
 }
 
-func (k *serverStream) SendHeader(metadata.MD) error {
+func (*serverStream) SendHeader(metadata.MD) error {
 	panic("not implemented")
 }
 
-func (k *serverStream) SetTrailer(metadata.MD) {
+func (*serverStream) SetTrailer(metadata.MD) {
 	panic("not implemented")
 }
 
@@ -55,10 +55,10 @@ func (k *serverStream) Context() context.Context {
 	return k.stream.Context()
 }
 
-func (k *serverStream) SendMsg(m any) error {
+func (*serverStream) SendMsg(m any) error {
 	panic("not implemented")
 }
 
-func (k *serverStream) RecvMsg(m any) error {
+func (*serverStream) RecvMsg(m any) error {
 	panic("not implemented")
 }

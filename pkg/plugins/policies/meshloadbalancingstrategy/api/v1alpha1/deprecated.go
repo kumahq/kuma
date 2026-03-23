@@ -7,9 +7,9 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-func (t *MeshLoadBalancingStrategyResource) Deprecations() []string {
-	deprecations := validateHashPoliciesType(pointer.Deref(t.Spec.To))
-	deprecations = append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
+func (r *MeshLoadBalancingStrategyResource) Deprecations() []string {
+	deprecations := validateHashPoliciesType(pointer.Deref(r.Spec.To))
+	deprecations = append(deprecations, validators.TopLevelTargetRefDeprecations(r.Spec.TargetRef)...)
 	return deprecations
 }
 

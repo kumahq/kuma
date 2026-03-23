@@ -54,7 +54,7 @@ type WorkloadConfig struct {
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL"`
 }
 
-func (i WorkloadConfig) Validate() error {
+func (WorkloadConfig) Validate() error {
 	return nil
 }
 

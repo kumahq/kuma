@@ -215,7 +215,7 @@ type fileBasedKubernetesResourcesClient struct{}
 
 var _ client.KubernetesResourcesClient = &fileBasedKubernetesResourcesClient{}
 
-func (f fileBasedKubernetesResourcesClient) Get(_ context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]any, error) {
+func (fileBasedKubernetesResourcesClient) Get(_ context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]any, error) {
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", fmt.Sprintf("kube-input.%s.%s.json", descriptor.Name, name)))
 	if err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ type staticResourcesListClient struct{}
 
 var _ client.ResourcesListClient = &staticResourcesListClient{}
 
-func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
+func (staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
 	defs := registry.Global().ObjectDescriptors()
 	return mappers.MapResourceTypeDescription(defs, false, true), nil
 }

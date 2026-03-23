@@ -56,11 +56,11 @@ func InTx(ctx context.Context, transactions Transactions, fn func(ctx context.Co
 
 type NoopTransaction struct{}
 
-func (n NoopTransaction) Commit(context.Context) error {
+func (NoopTransaction) Commit(context.Context) error {
 	return nil
 }
 
-func (n NoopTransaction) Rollback(context.Context) error {
+func (NoopTransaction) Rollback(context.Context) error {
 	return nil
 }
 
@@ -68,7 +68,7 @@ var _ Transaction = &NoopTransaction{}
 
 type NoTransactions struct{}
 
-func (n NoTransactions) Begin(context.Context) (Transaction, error) {
+func (NoTransactions) Begin(context.Context) (Transaction, error) {
 	return NoopTransaction{}, nil
 }
 

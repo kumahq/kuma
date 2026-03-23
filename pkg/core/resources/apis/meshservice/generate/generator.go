@@ -270,7 +270,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	}
 }
 
-func (g *Generator) NeedLeaderElection() bool {
+func (*Generator) NeedLeaderElection() bool {
 	return true
 }
 

@@ -40,7 +40,7 @@ func (m *membershipValidator) ValidateCreate(_ context.Context, key model.Resour
 	return m.validateDp(key, newDp, mesh)
 }
 
-func (m *membershipValidator) validateDp(key model.ResourceKey, dp *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) error {
+func (*membershipValidator) validateDp(key model.ResourceKey, dp *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) error {
 	constraints := mesh.Spec.GetConstraints()
 	if constraints == nil {
 		return nil

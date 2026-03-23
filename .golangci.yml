@@ -152,12 +152,15 @@ linters:
     revive:
       max-open-files: 2048
       rules:
+        - name: receiver-naming
+        - name: unused-receiver
+          arguments:
+            - allow-regex: "^_"
         - name: var-declaration
     staticcheck:
       checks:
         - all
         - -ST1003 # Poorly chosen identifier
-        - -ST1016 # Use consistent method receiver names
         - -SA4011 # Break statement with no effect. Did you mean to break out of an outer loop?
     usestdlibvars:
       http-status-code: false

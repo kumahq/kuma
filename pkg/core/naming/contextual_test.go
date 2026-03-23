@@ -11,13 +11,13 @@ import (
 
 type fakeResource struct{}
 
-func (f *fakeResource) GetMeta() core_model.ResourceMeta          { return nil }
-func (f *fakeResource) SetMeta(core_model.ResourceMeta)           {}
-func (f *fakeResource) GetSpec() core_model.ResourceSpec          { return nil }
-func (f *fakeResource) SetSpec(core_model.ResourceSpec) error     { return nil }
-func (f *fakeResource) GetStatus() core_model.ResourceStatus      { return nil }
-func (f *fakeResource) SetStatus(core_model.ResourceStatus) error { return nil }
-func (f *fakeResource) Descriptor() core_model.ResourceTypeDescriptor {
+func (*fakeResource) GetMeta() core_model.ResourceMeta          { return nil }
+func (*fakeResource) SetMeta(core_model.ResourceMeta)           {}
+func (*fakeResource) GetSpec() core_model.ResourceSpec          { return nil }
+func (*fakeResource) SetSpec(core_model.ResourceSpec) error     { return nil }
+func (*fakeResource) GetStatus() core_model.ResourceStatus      { return nil }
+func (*fakeResource) SetStatus(core_model.ResourceStatus) error { return nil }
+func (*fakeResource) Descriptor() core_model.ResourceTypeDescriptor {
 	return core_model.ResourceTypeDescriptor{Name: "UnknownType"}
 }
 

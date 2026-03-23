@@ -104,7 +104,7 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 	return admission.Allowed("")
 }
 
-func (h *MeshValidator) Supports(req admission.Request) bool {
+func (*MeshValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("Mesh")
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

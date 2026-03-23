@@ -337,6 +337,6 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	return identites
 }
 
-func (s *StatusUpdater) NeedLeaderElection() bool {
+func (*StatusUpdater) NeedLeaderElection() bool {
 	return true
 }

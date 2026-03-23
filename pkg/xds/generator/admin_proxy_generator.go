@@ -187,7 +187,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	return resources, nil
 }
 
-func (g AdminProxyGenerator) getAddress(proxy *core_xds.Proxy) string {
+func (AdminProxyGenerator) getAddress(proxy *core_xds.Proxy) string {
 	if proxy.Dataplane != nil {
 		return proxy.Dataplane.Spec.GetNetworking().Address
 	}

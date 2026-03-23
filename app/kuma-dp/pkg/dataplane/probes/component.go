@@ -98,7 +98,7 @@ func (p *Prober) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (p *Prober) NeedLeaderElection() bool {
+func (*Prober) NeedLeaderElection() bool {
 	return false
 }
 

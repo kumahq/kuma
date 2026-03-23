@@ -39,13 +39,13 @@ func Default() *Config {
 	}
 }
 
-func (c *Config) PostProcess() error {
+func (*Config) PostProcess() error {
 	return nil
 }
 
-func (c *Config) Sanitize() {
+func (*Config) Sanitize() {
 }
 
-func (c *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }

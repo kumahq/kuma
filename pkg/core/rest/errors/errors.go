@@ -7,25 +7,25 @@ import (
 
 type Unauthenticated struct{}
 
-func (e *Unauthenticated) Error() string {
+func (*Unauthenticated) Error() string {
 	return "Unauthenticated"
 }
 
 type MethodNotAllowed struct{}
 
-func (e *MethodNotAllowed) Error() string {
+func (*MethodNotAllowed) Error() string {
 	return "Method not allowed"
 }
 
 type Conflict struct{}
 
-func (e *Conflict) Error() string {
+func (*Conflict) Error() string {
 	return "Conflict"
 }
 
 type ServiceUnavailable struct{}
 
-func (e *ServiceUnavailable) Error() string {
+func (*ServiceUnavailable) Error() string {
 	return "Service unavailable"
 }
 
@@ -44,7 +44,7 @@ func (e *BadRequest) Error() string {
 	return fmt.Sprintf("bad request: %s", e.msg)
 }
 
-func (e *BadRequest) Is(err error) bool {
+func (*BadRequest) Is(err error) bool {
 	return reflect.TypeFor[*BadRequest]() == reflect.TypeOf(err)
 }
 
@@ -63,6 +63,6 @@ func (e *NotFound) Error() string {
 	return fmt.Sprintf("not found: %s", e.msg)
 }
 
-func (e *NotFound) Is(err error) bool {
+func (*NotFound) Is(err error) bool {
 	return reflect.TypeFor[*NotFound]() == reflect.TypeOf(err)
 }

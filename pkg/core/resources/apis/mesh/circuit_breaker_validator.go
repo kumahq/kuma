@@ -66,7 +66,7 @@ func (c *CircuitBreakerResource) validateConf() validators.ValidationError {
 	return err
 }
 
-func (c *CircuitBreakerResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.UInt32Value) validators.ValidationError {
+func (*CircuitBreakerResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.UInt32Value) validators.ValidationError {
 	var err validators.ValidationError
 	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
 		err.AddViolationAt(path, "has to be in [0.0 - 100.0] range")

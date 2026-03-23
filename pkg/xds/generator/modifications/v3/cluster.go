@@ -47,7 +47,7 @@ func (c *clusterModificator) remove(resources *core_xds.ResourceSet) {
 	}
 }
 
-func (c *clusterModificator) add(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) *core_xds.ResourceSet {
+func (*clusterModificator) add(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) *core_xds.ResourceSet {
 	return resources.Add(&core_xds.Resource{
 		Name:     clusterMod.Name,
 		Origin:   metadata.OriginProxyTemplateModifications,

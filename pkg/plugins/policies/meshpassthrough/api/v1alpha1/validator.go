@@ -29,7 +29,7 @@ func (r *MeshPassthroughResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (*MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

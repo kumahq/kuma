@@ -49,6 +49,6 @@ type DisabledIssuer struct{}
 
 var _ DataplaneTokenIssuer = &DisabledIssuer{}
 
-func (d DisabledIssuer) Generate(context.Context, DataplaneIdentity, time.Duration) (tokens.Token, error) {
+func (DisabledIssuer) Generate(context.Context, DataplaneIdentity, time.Duration) (tokens.Token, error) {
 	return "", tokens.IssuerDisabled
 }

@@ -21,7 +21,7 @@ func (r *ExternalServiceValidator) ValidateUpdate(ctx context.Context, previousE
 	return r.validateRateLimits(ctx, previousExternalService.GetMeta().GetMesh(), newExternalService.Spec.GetTags()[mesh_proto.ServiceTag])
 }
 
-func (r *ExternalServiceValidator) ValidateDelete(ctx context.Context, name string) error {
+func (*ExternalServiceValidator) ValidateDelete(ctx context.Context, name string) error {
 	return nil
 }
 

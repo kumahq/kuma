@@ -640,11 +640,11 @@ type CreateOrDeletePredicate struct {
 	predicate.Funcs
 }
 
-func (p CreateOrDeletePredicate) Create(e event.CreateEvent) bool {
+func (CreateOrDeletePredicate) Create(e event.CreateEvent) bool {
 	return true
 }
 
-func (p CreateOrDeletePredicate) Delete(e event.DeleteEvent) bool {
+func (CreateOrDeletePredicate) Delete(e event.DeleteEvent) bool {
 	return true
 }
 
@@ -652,7 +652,7 @@ type GatewayAnnotationChangedPredicate struct {
 	predicate.Funcs
 }
 
-func (p GatewayAnnotationChangedPredicate) Update(e event.UpdateEvent) bool {
+func (GatewayAnnotationChangedPredicate) Update(e event.UpdateEvent) bool {
 	if e.ObjectOld == nil || e.ObjectNew == nil {
 		return false
 	}

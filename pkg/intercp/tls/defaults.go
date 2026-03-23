@@ -40,7 +40,7 @@ func (e *DefaultsComponent) Start(stop <-chan struct{}) error {
 	})
 }
 
-func (e DefaultsComponent) NeedLeaderElection() bool {
+func (DefaultsComponent) NeedLeaderElection() bool {
 	return true
 }
 

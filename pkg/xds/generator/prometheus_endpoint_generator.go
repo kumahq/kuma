@@ -31,7 +31,7 @@ var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-gener
 // rather than introduce undeterministic behavior.
 type PrometheusEndpointGenerator struct{}
 
-func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(xdsCtx.Mesh.Resource)
 	if err != nil {

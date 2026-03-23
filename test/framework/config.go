@@ -103,7 +103,7 @@ type ControlPlaneConfig struct {
 	AdditionalYamlConfig string            `json:"additionalYamlConfig,omitempty"`
 }
 
-func (c E2eConfig) Validate() error {
+func (E2eConfig) Validate() error {
 	if Config.KumactlBin != "" {
 		_, err := os.Stat(Config.KumactlBin)
 		if os.IsNotExist(err) {
@@ -113,7 +113,7 @@ func (c E2eConfig) Validate() error {
 	return nil
 }
 
-func (c E2eConfig) AutoConfigure() error {
+func (E2eConfig) AutoConfigure() error {
 	if Config.CNIConf.ConfName == "" {
 		switch Config.K8sType {
 		case KindK8sType:

@@ -144,6 +144,6 @@ func (h *heartbeatComponent) connectToLeader(ctx context.Context) error {
 	return nil
 }
 
-func (h *heartbeatComponent) NeedLeaderElection() bool {
+func (*heartbeatComponent) NeedLeaderElection() bool {
 	return false
 }

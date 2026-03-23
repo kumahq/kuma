@@ -20,7 +20,7 @@ import (
 
 type fakeUserTokenClient struct{}
 
-func (f *fakeUserTokenClient) Generate(name string, groups []string, validFor time.Duration) (string, error) {
+func (*fakeUserTokenClient) Generate(name string, groups []string, validFor time.Duration) (string, error) {
 	return "token-" + name + "-" + strings.Join(groups, ",") + "-" + validFor.String(), nil
 }
 

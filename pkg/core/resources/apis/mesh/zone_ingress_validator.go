@@ -42,7 +42,7 @@ func (r *ZoneIngressResource) validateNetworking(path validators.PathBuilder, ne
 	return err
 }
 
-func (r *ZoneIngressResource) validateAvailableServices(path validators.PathBuilder, availableServices []*mesh_proto.ZoneIngress_AvailableService) validators.ValidationError {
+func (*ZoneIngressResource) validateAvailableServices(path validators.PathBuilder, availableServices []*mesh_proto.ZoneIngress_AvailableService) validators.ValidationError {
 	var err validators.ValidationError
 	for i, availableService := range availableServices {
 		p := path.Index(i)

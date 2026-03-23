@@ -25,41 +25,41 @@ func NewGlobalSecretResource() *GlobalSecretResource {
 	}
 }
 
-func (t *GlobalSecretResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *GlobalSecretResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *GlobalSecretResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *GlobalSecretResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *GlobalSecretResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *GlobalSecretResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *GlobalSecretResource) SetSpec(spec model.ResourceSpec) error {
+func (r *GlobalSecretResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Secret)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = value
+		r.Spec = value
 		return nil
 	}
 }
 
-func (t *GlobalSecretResource) GetStatus() model.ResourceStatus {
+func (*GlobalSecretResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *GlobalSecretResource) SetStatus(_ model.ResourceStatus) error {
+func (*GlobalSecretResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *GlobalSecretResource) Validate() error {
+func (*GlobalSecretResource) Validate() error {
 	return nil
 }
 
-func (t *GlobalSecretResource) Descriptor() model.ResourceTypeDescriptor {
+func (*GlobalSecretResource) Descriptor() model.ResourceTypeDescriptor {
 	return GlobalSecretResourceTypeDescriptor
 }
 
@@ -78,11 +78,11 @@ func (l *GlobalSecretResourceList) GetItems() []model.Resource {
 	return res
 }
 
-func (l *GlobalSecretResourceList) GetItemType() model.ResourceType {
+func (*GlobalSecretResourceList) GetItemType() model.ResourceType {
 	return GlobalSecretType
 }
 
-func (l *GlobalSecretResourceList) NewItem() model.Resource {
+func (*GlobalSecretResourceList) NewItem() model.Resource {
 	return NewGlobalSecretResource()
 }
 

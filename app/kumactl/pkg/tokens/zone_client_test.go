@@ -24,7 +24,7 @@ type zoneStaticTokenIssuer struct{}
 
 var _ zone.TokenIssuer = &zoneStaticTokenIssuer{}
 
-func (z *zoneStaticTokenIssuer) Generate(ctx context.Context, identity zone.Identity, validFor time.Duration) (zone.Token, error) {
+func (*zoneStaticTokenIssuer) Generate(ctx context.Context, identity zone.Identity, validFor time.Duration) (zone.Token, error) {
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 

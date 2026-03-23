@@ -6,7 +6,7 @@ type Config struct {
 	BufferSize uint `json:"bufferSize" envconfig:"kuma_event_bus_buffer_size"`
 }
 
-func (c Config) Validate() error {
+func (Config) Validate() error {
 	return nil
 }
 

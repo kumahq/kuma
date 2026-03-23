@@ -21,11 +21,11 @@ type grpcServer struct {
 	id string
 }
 
-func (g *grpcServer) Check(ctx context.Context, request *grpchealth.HealthCheckRequest) (*grpchealth.HealthCheckResponse, error) {
+func (*grpcServer) Check(ctx context.Context, request *grpchealth.HealthCheckRequest) (*grpchealth.HealthCheckResponse, error) {
 	return &grpchealth.HealthCheckResponse{Status: grpchealth.HealthCheckResponse_SERVING}, nil
 }
 
-func (g *grpcServer) Watch(request *grpchealth.HealthCheckRequest, server grpchealth.Health_WatchServer) error {
+func (*grpcServer) Watch(request *grpchealth.HealthCheckRequest, server grpchealth.Health_WatchServer) error {
 	return server.Send(&grpchealth.HealthCheckResponse{Status: grpchealth.HealthCheckResponse_SERVING})
 }
 

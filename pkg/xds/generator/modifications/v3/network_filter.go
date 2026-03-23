@@ -46,11 +46,11 @@ func (n *networkFilterModificator) apply(resources *core_xds.ResourceSet) error 
 	return nil
 }
 
-func (n *networkFilterModificator) addFirst(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
+func (*networkFilterModificator) addFirst(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
 	chain.Filters = append([]*envoy_listener.Filter{filter}, chain.Filters...)
 }
 
-func (n *networkFilterModificator) addLast(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
+func (*networkFilterModificator) addLast(chain *envoy_listener.FilterChain, filter *envoy_listener.Filter) {
 	chain.Filters = append(chain.Filters, filter)
 }
 

@@ -99,32 +99,32 @@ func validateFilePath(path string) error {
 	return nil
 }
 
-func (sds *SecureDataSource) ReadByControlPlane(ctx context.Context, secretManager manager.ReadOnlyResourceManager, mesh string) ([]byte, error) {
-	switch sds.Type {
+func (s *SecureDataSource) ReadByControlPlane(ctx context.Context, secretManager manager.ReadOnlyResourceManager, mesh string) ([]byte, error) {
+	switch s.Type {
 	case SecureDataSourceFile:
-		if err := validateFilePath(sds.File.Path); err != nil {
+		if err := validateFilePath(s.File.Path); err != nil {
 			return nil, fmt.Errorf("invalid file path: %w", err)
 		}
-		return os.ReadFile(sds.File.Path)
+		return os.ReadFile(s.File.Path)
 	case SecureDataSourceEnvVar:
-		value, found := os.LookupEnv(sds.EnvVar.Name)
+		value, found := os.LookupEnv(s.EnvVar.Name)
 		if !found {
-			return nil, fmt.Errorf("environment variable: %s is not defined", sds.EnvVar.Name)
+			return nil, fmt.Errorf("environment variable: %s is not defined", s.EnvVar.Name)
 		}
 		return []byte(value), nil
 	case SecureDataSourceInline:
-		return []byte(sds.InsecureInline.Value), nil
+		return []byte(s.InsecureInline.Value), nil
 	case SecureDataSourceSecretRef:
 		if secretManager == nil {
 			return nil, errors.New("resource manager is not defined")
 		}
 		resource := system.NewSecretResource()
-		if err := secretManager.Get(ctx, resource, core_store.GetByKey(sds.SecretRef.Name, mesh)); err != nil {
+		if err := secretManager.Get(ctx, resource, core_store.GetByKey(s.SecretRef.Name, mesh)); err != nil {
 			return nil, err
 		}
 		return resource.Spec.GetData().GetValue(), nil
 	default:
-		return nil, fmt.Errorf("datasource type: %s is not supported", sds.Type)
+		return nil, fmt.Errorf("datasource type: %s is not supported", s.Type)
 	}
 }
 

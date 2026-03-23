@@ -8,7 +8,7 @@ import (
 
 type TransparentProxyingConfigurer struct{}
 
-func (c *TransparentProxyingConfigurer) Configure(l *envoy_listener.Listener) error {
+func (*TransparentProxyingConfigurer) Configure(l *envoy_listener.Listener) error {
 	l.BindToPort = util_proto.Bool(false)
 	return nil
 }

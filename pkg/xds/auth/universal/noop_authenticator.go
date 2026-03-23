@@ -18,7 +18,7 @@ type noopAuthenticator struct{}
 
 var _ auth.Authenticator = &noopAuthenticator{}
 
-func (u *noopAuthenticator) Authenticate(ctx context.Context, resource model.Resource, _ auth.Credential) error {
+func (*noopAuthenticator) Authenticate(ctx context.Context, resource model.Resource, _ auth.Credential) error {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
 		return nil

@@ -151,7 +151,7 @@ func (m *MultizoneConfig) PostProcess() error {
 	)
 }
 
-func (m *MultizoneConfig) Validate() error {
+func (*MultizoneConfig) Validate() error {
 	panic("not implemented. Call Global and Zone validators as needed.")
 }
 

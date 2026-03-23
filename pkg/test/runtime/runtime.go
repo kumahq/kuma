@@ -214,7 +214,7 @@ func (d *DummyEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.R
 	return []byte("kuma:envoy:admin\n"), nil
 }
 
-func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *core_mesh.DataplaneResource) (string, error) {
+func (*DummyEnvoyAdminClient) GenerateAPIToken(dp *core_mesh.DataplaneResource) (string, error) {
 	return "token", nil
 }
 
@@ -268,11 +268,11 @@ func NewTestRuntime(
 	}
 }
 
-func (r *TestRuntime) GetInstanceId() string {
+func (*TestRuntime) GetInstanceId() string {
 	return "instance-id"
 }
 
-func (r *TestRuntime) GetClusterId() string {
+func (*TestRuntime) GetClusterId() string {
 	return "cluster-id"
 }
 
@@ -292,7 +292,7 @@ func (r *TestRuntime) GlobalInsightService() globalinsight.GlobalInsightService 
 	return r.globalInsightService
 }
 
-func (r *TestRuntime) EnvoyAdminClient() admin.EnvoyAdminClient {
+func (*TestRuntime) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return &DummyEnvoyAdminClient{}
 }
 
@@ -304,7 +304,7 @@ func (r *TestRuntime) APIInstaller() customization.APIInstaller {
 	return r.apiInstaller
 }
 
-func (r *TestRuntime) APIServerAuthenticator() authn.Authenticator {
+func (*TestRuntime) APIServerAuthenticator() authn.Authenticator {
 	return certs.ClientCertAuthenticator
 }
 
@@ -316,10 +316,10 @@ func (r *TestRuntime) TokenIssuers() tokens_builtin.TokenIssuers {
 	return r.tokenIssuers
 }
 
-func (r *TestRuntime) APIWebServiceCustomize() func(ws *restful.WebService) error {
+func (*TestRuntime) APIWebServiceCustomize() func(ws *restful.WebService) error {
 	return func(*restful.WebService) error { return nil }
 }
 
-func (r *TestRuntime) Extensions() context.Context {
+func (*TestRuntime) Extensions() context.Context {
 	return context.Background()
 }

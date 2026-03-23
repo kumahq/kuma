@@ -30,14 +30,14 @@ func (p *PrometheusStatsCounter) RecordMisses(count uint64) {
 	p.Metric.WithLabelValues("miss").Add(float64(count))
 }
 
-func (p *PrometheusStatsCounter) RecordLoadSuccess(loadTime time.Duration) {
+func (*PrometheusStatsCounter) RecordLoadSuccess(loadTime time.Duration) {
 }
 
-func (p *PrometheusStatsCounter) RecordLoadError(loadTime time.Duration) {
+func (*PrometheusStatsCounter) RecordLoadError(loadTime time.Duration) {
 }
 
-func (p *PrometheusStatsCounter) RecordEviction() {
+func (*PrometheusStatsCounter) RecordEviction() {
 }
 
-func (p *PrometheusStatsCounter) Snapshot(stats *cache.Stats) {
+func (*PrometheusStatsCounter) Snapshot(stats *cache.Stats) {
 }

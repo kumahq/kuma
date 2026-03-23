@@ -51,9 +51,9 @@ func (a *adminResourceAccess) ValidateGet(ctx context.Context, _ model.ResourceK
 	return a.validateAdminAccess(ctx, user, descriptor)
 }
 
-func (r *adminResourceAccess) validateAdminAccess(_ context.Context, u user.User, descriptor model.ResourceTypeDescriptor) error {
+func (a *adminResourceAccess) validateAdminAccess(_ context.Context, u user.User, descriptor model.ResourceTypeDescriptor) error {
 	if !descriptor.AdminOnly {
 		return nil
 	}
-	return access.Validate(r.usernames, r.groups, u, fmt.Sprintf("the resource of type %q", descriptor.Name))
+	return access.Validate(a.usernames, a.groups, u, fmt.Sprintf("the resource of type %q", descriptor.Name))
 }

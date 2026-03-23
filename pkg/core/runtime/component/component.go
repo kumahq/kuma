@@ -46,7 +46,7 @@ var _ Component = ComponentFunc(nil)
 
 type ComponentFunc func(<-chan struct{}) error
 
-func (f ComponentFunc) NeedLeaderElection() bool {
+func (ComponentFunc) NeedLeaderElection() bool {
 	return false
 }
 
@@ -58,7 +58,7 @@ var _ Component = LeaderComponentFunc(nil)
 
 type LeaderComponentFunc func(<-chan struct{}) error
 
-func (f LeaderComponentFunc) NeedLeaderElection() bool {
+func (LeaderComponentFunc) NeedLeaderElection() bool {
 	return true
 }
 

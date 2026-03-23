@@ -33,7 +33,7 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(
+func (plugin) MatchedPolicies(
 	dataplane *core_mesh.DataplaneResource,
 	resources xds_context.Resources,
 	opts ...core_plugins.MatchedPoliciesOption,
@@ -41,11 +41,11 @@ func (p plugin) MatchedPolicies(
 	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+func (plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.EgressMatchedPolicies(api.MeshCircuitBreakerType, tags, resources, opts...)
 }
 
-func (p plugin) Apply(
+func (plugin) Apply(
 	rs *core_xds.ResourceSet,
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,

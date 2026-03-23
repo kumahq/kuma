@@ -9,7 +9,7 @@ type EdsClusterConfigurer struct{}
 
 var _ ClusterConfigurer = &EdsClusterConfigurer{}
 
-func (e *EdsClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
+func (*EdsClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
 	c.ClusterDiscoveryType = &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS}
 	c.EdsClusterConfig = &envoy_cluster.Cluster_EdsClusterConfig{
 		EdsConfig: &envoy_core.ConfigSource{

@@ -291,7 +291,7 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 	return i.resManager.Create(ctx, meshTrust, store.CreateByKey(resourceName, meshName))
 }
 
-func (i *IdentityProviderReconciler) NeedLeaderElection() bool {
+func (*IdentityProviderReconciler) NeedLeaderElection() bool {
 	return true
 }
 

@@ -49,7 +49,7 @@ func (h *GatewayInstanceValidator) Handle(ctx context.Context, req admission.Req
 	return admission.Allowed("")
 }
 
-func (h *GatewayInstanceValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {
+func (*GatewayInstanceValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {
 	return admission.Allowed("")
 }
 
@@ -84,7 +84,7 @@ func (h *GatewayInstanceValidator) ValidateUpdate(ctx context.Context, req admis
 	return admission.Allowed("")
 }
 
-func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) admission.Response {
+func (*GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) admission.Response {
 	tags := gatewayInstance.Spec.Tags
 
 	err := core_mesh.ValidateTags(validators.RootedAt("tags"), tags, core_mesh.ValidateTagsOpts{ForbidService: true})
@@ -95,7 +95,7 @@ func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.MeshGa
 	return admission.Allowed("")
 }
 
-func (h *GatewayInstanceValidator) Supports(req admission.Request) bool {
+func (*GatewayInstanceValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind(reflect.TypeFor[mesh_k8s.MeshGatewayInstance]().Name())
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

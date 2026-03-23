@@ -78,7 +78,7 @@ func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker
 	}
 }
 
-func (s *storeCounter) NeedLeaderElection() bool {
+func (*storeCounter) NeedLeaderElection() bool {
 	return true
 }
 

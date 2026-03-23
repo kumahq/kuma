@@ -90,46 +90,46 @@ func NewMeshRateLimitResource() *MeshRateLimitResource {
 	}
 }
 
-func (t *MeshRateLimitResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshRateLimitResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshRateLimitResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshRateLimitResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshRateLimitResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshRateLimitResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshRateLimitResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshRateLimitResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshRateLimit)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshRateLimit{}
+			r.Spec = &MeshRateLimit{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshRateLimitResource) GetStatus() model.ResourceStatus {
+func (*MeshRateLimitResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshRateLimitResource) SetStatus(model.ResourceStatus) error {
+func (*MeshRateLimitResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshRateLimitResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshRateLimitResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshRateLimitResourceTypeDescriptor
 }
 
-func (t *MeshRateLimitResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshRateLimitResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

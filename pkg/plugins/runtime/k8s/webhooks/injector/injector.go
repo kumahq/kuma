@@ -454,7 +454,7 @@ func (i *KumaInjector) getTransparentProxyConfigMap(
 
 // applyCustomPatches applies the block of patches to the given container and returns a new,
 // patched container. If patch list is empty, the same unaltered container is returned.
-func (i *KumaInjector) applyCustomPatches(
+func (*KumaInjector) applyCustomPatches(
 	logger logr.Logger,
 	container kube_core.Container,
 	patches namedContainerPatches,
@@ -573,7 +573,7 @@ func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMo
 	return out, nil
 }
 
-func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube_core.VolumeMount {
+func (*KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube_core.VolumeMount {
 	for i := range podSpec.Containers {
 		for j := range podSpec.Containers[i].VolumeMounts {
 			if podSpec.Containers[i].VolumeMounts[j].MountPath == serviceAccountTokenMountPath {

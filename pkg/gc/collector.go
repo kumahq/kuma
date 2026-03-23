@@ -116,6 +116,6 @@ func (d *collector) cleanup(ctx context.Context, now time.Time, insightType Insi
 	return nil
 }
 
-func (d *collector) NeedLeaderElection() bool {
+func (*collector) NeedLeaderElection() bool {
 	return true
 }

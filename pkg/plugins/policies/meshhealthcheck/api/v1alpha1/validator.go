@@ -15,7 +15,7 @@ func (r *MeshHealthCheckResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshHealthCheckResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (*MeshHealthCheckResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}

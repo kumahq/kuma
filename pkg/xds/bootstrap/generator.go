@@ -253,7 +253,7 @@ func (b *bootstrapGenerator) getMetricsConfig(
 	return nil
 }
 
-func (b *bootstrapGenerator) getMetricsAddress(
+func (*bootstrapGenerator) getMetricsAddress(
 	metricsConfig *mesh_proto.PrometheusAggregateMetricsConfig,
 	dataplane *core_mesh.DataplaneResource,
 ) string {

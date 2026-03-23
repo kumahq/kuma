@@ -104,7 +104,7 @@ func (g *GoldenMatcher) NegatedFailureMessage(actual any) string {
 	return g.Matcher.NegatedFailureMessage(actualContent)
 }
 
-func (g *GoldenMatcher) actualString(actual any) (string, error) {
+func (*GoldenMatcher) actualString(actual any) (string, error) {
 	switch actual := actual.(type) {
 	case nil:
 		return "", nil

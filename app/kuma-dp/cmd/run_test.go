@@ -401,7 +401,7 @@ func verifyComponentProcess(processDescription, pidfile string, cmdlinefile stri
 
 type fakeBootstrapClient struct{}
 
-func (g fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string]string, _ []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+func (fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string]string, _ []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
 	bs, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 	if err != nil {
 		return nil, nil, err

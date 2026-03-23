@@ -32,7 +32,7 @@ import (
 
 type noopGenerateUserTokenAccess struct{}
 
-func (n *noopGenerateUserTokenAccess) ValidateGenerate(user.User) error {
+func (*noopGenerateUserTokenAccess) ValidateGenerate(user.User) error {
 	return nil
 }
 

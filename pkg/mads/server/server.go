@@ -113,7 +113,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (s *muxServer) NeedLeaderElection() bool {
+func (*muxServer) NeedLeaderElection() bool {
 	return false
 }
 

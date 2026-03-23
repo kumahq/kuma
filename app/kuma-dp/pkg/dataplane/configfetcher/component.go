@@ -102,7 +102,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (cf *ConfigFetcher) NeedLeaderElection() bool {
+func (*ConfigFetcher) NeedLeaderElection() bool {
 	return false
 }
 

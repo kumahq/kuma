@@ -169,7 +169,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(time.Now()))...)
 }
 
-func (m *meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResource, error) {
+func (*meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResource, error) {
 	mesh, ok := resource.(*core_mesh.MeshResource)
 	if !ok {
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.MeshResource)(nil), resource)
@@ -177,7 +177,7 @@ func (m *meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResourc
 	return mesh, nil
 }
 
-func (m *meshManager) meshes(list core_model.ResourceList) (*core_mesh.MeshResourceList, error) {
+func (*meshManager) meshes(list core_model.ResourceList) (*core_mesh.MeshResourceList, error) {
 	meshes, ok := list.(*core_mesh.MeshResourceList)
 	if !ok {
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.MeshResourceList)(nil), list)

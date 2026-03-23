@@ -92,56 +92,56 @@ func NewMeshExternalServiceResource() *MeshExternalServiceResource {
 	}
 }
 
-func (t *MeshExternalServiceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshExternalServiceResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshExternalServiceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshExternalServiceResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshExternalServiceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshExternalServiceResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshExternalService)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshExternalService{}
+			r.Spec = &MeshExternalService{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshExternalServiceResource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *MeshExternalServiceResource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *MeshExternalServiceResource) SetStatus(status model.ResourceStatus) error {
+func (r *MeshExternalServiceResource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*MeshExternalServiceStatus)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &MeshExternalServiceStatus{}
+			r.Status = &MeshExternalServiceStatus{}
 		} else {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshExternalServiceResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshExternalServiceResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshExternalServiceResourceTypeDescriptor
 }
 
-func (t *MeshExternalServiceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshExternalServiceResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

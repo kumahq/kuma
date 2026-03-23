@@ -72,7 +72,7 @@ func (m *Manager) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (m *Manager) NeedLeaderElection() bool {
+func (*Manager) NeedLeaderElection() bool {
 	return false
 }
 

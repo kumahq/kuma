@@ -43,11 +43,11 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (xds.TypedMatchingPolicies, error) {
+func (plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshTraceType, dataplane, resources, opts...)
 }
 
-func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
+func (plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshTraceType]
 	if !ok || len(policies.SingleItemRules.Rules) == 0 {
 		return nil

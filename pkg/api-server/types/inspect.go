@@ -39,7 +39,7 @@ func NewPolicyInspectEntry(k PolicyInspectEntryKind) PolicyInspectEntry {
 	return PolicyInspectEntry{PolicyInspectEntryKind: k}
 }
 
-func (w *PolicyInspectEntry) UnmarshalJSON(data []byte) error {
+func (e *PolicyInspectEntry) UnmarshalJSON(data []byte) error {
 	i := KindTag{}
 	if err := json.Unmarshal(data, &i); err != nil {
 		return errors.Wrap(err, `unable to find "kind"`)
@@ -58,7 +58,7 @@ func (w *PolicyInspectEntry) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, entry); err != nil {
 		return errors.Wrapf(err, "unable to parse PolicyInspectEntry of kind %q", i.Kind)
 	}
-	w.PolicyInspectEntryKind = entry
+	e.PolicyInspectEntryKind = entry
 	return nil
 }
 
@@ -153,8 +153,8 @@ func NewDataplaneInspectResponse(k DataplaneInspectResponseKind) DataplaneInspec
 	}
 }
 
-func (e DataplaneInspectResponse) MarshalJSON() ([]byte, error) {
-	switch concrete := e.DataplaneInspectResponseKind.(type) {
+func (r DataplaneInspectResponse) MarshalJSON() ([]byte, error) {
+	switch concrete := r.DataplaneInspectResponseKind.(type) {
 	case *DataplaneInspectEntryList:
 		return json.Marshal(struct {
 			KindTag
@@ -175,7 +175,7 @@ func (e DataplaneInspectResponse) MarshalJSON() ([]byte, error) {
 	panic("internal error")
 }
 
-func (w *DataplaneInspectResponse) UnmarshalJSON(data []byte) error {
+func (r *DataplaneInspectResponse) UnmarshalJSON(data []byte) error {
 	i := KindTag{}
 	if err := json.Unmarshal(data, &i); err != nil {
 		return errors.Wrap(err, `unable to find "kind"`)
@@ -192,7 +192,7 @@ func (w *DataplaneInspectResponse) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, entry); err != nil {
 		return errors.Wrapf(err, "unable to parse DataplaneInspectResponse of kind %q", i.Kind)
 	}
-	w.DataplaneInspectResponseKind = entry
+	r.DataplaneInspectResponseKind = entry
 	return nil
 }
 

@@ -61,7 +61,7 @@ func (p *Port) Uint32() uint32 { return uint32(pointer.Deref(p)) }
 
 func (p *Port) String() string { return strconv.Itoa(int(pointer.Deref(p))) }
 
-func (p *Port) Type() string { return "uint16" }
+func (*Port) Type() string { return "uint16" }
 
 func (p *Port) Set(s string) error {
 	var err error
@@ -87,7 +87,7 @@ func (p *Ports) String() string {
 	return strings.Join(ports, ",")
 }
 
-func (p *Ports) Type() string { return "uint16[,...]" }
+func (*Ports) Type() string { return "uint16[,...]" }
 
 func (p *Ports) Set(s string) error {
 	*p = nil
@@ -724,7 +724,7 @@ func (e *IPFamilyMode) String() string {
 
 // Type returns the type of the IPFamilyMode.
 // This is only used in help text by Cobra
-func (e *IPFamilyMode) Type() string {
+func (*IPFamilyMode) Type() string {
 	return "string"
 }
 

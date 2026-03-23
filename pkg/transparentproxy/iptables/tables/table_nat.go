@@ -17,7 +17,7 @@ type NatTable struct {
 	customChains []*chains.Chain
 }
 
-func (t *NatTable) Name() consts.TableName {
+func (*NatTable) Name() consts.TableName {
 	return consts.TableNat
 }
 

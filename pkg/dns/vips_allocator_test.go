@@ -52,7 +52,7 @@ type errConfigManager struct {
 	config_manager.ConfigManager
 }
 
-func (e *errConfigManager) Update(ctx context.Context, r *config_model.ConfigResource, opts ...store.UpdateOptionsFunc) error {
+func (*errConfigManager) Update(ctx context.Context, r *config_model.ConfigResource, opts ...store.UpdateOptionsFunc) error {
 	meshName, _ := vips.MeshFromConfigKey(r.GetMeta().GetName())
 	return errors.Errorf("error during update, mesh = %s", meshName)
 }

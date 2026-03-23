@@ -42,6 +42,6 @@ func (s *signingKeyFromPublicKeyAccessor) getKeyBytes(ctx context.Context, keyID
 
 // GetLegacyKey is not supported for this accessor as it's not used for signing
 // keys from pre 1.4.x version of Kuma, where we used symmetric HMAC256 method of signing DP keys.
-func (s *signingKeyFromPublicKeyAccessor) GetLegacyKey(_ context.Context, _ string) ([]byte, error) {
+func (*signingKeyFromPublicKeyAccessor) GetLegacyKey(_ context.Context, _ string) ([]byte, error) {
 	return nil, errors.New("legacy key are not supported")
 }

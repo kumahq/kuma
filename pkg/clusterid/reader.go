@@ -46,7 +46,7 @@ func (c *clusterIDReader) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (c *clusterIDReader) NeedLeaderElection() bool {
+func (*clusterIDReader) NeedLeaderElection() bool {
 	return false
 }
 

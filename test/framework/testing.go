@@ -17,7 +17,7 @@ func NewTestingT() *TestingT {
 	return &TestingT{ginkgo.GinkgoT(), ginkgo.CurrentSpecReport()}
 }
 
-func (i *TestingT) Helper() {
+func (*TestingT) Helper() {
 }
 
 func (i *TestingT) Name() string {

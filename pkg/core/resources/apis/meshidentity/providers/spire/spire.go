@@ -54,16 +54,16 @@ func NewSpireIdentityProvider(socketPath, zone string, environment config_core.E
 	}
 }
 
-func (s *spireIdentityProvider) Validate(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
+func (*spireIdentityProvider) Validate(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
-func (s *spireIdentityProvider) Initialize(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
+func (*spireIdentityProvider) Initialize(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
 	return nil
 }
 
 // GetMeshTrustCA returns nil as Spire manages its own CA externally.
-func (s *spireIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
+func (*spireIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentity_api.MeshIdentityResource) ([]byte, error) {
 	return nil, nil
 }
 

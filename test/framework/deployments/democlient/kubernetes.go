@@ -127,7 +127,7 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	return framework.Combine(funcs...)(cluster)
 }
 
-func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
+func (*k8SDeployment) Delete(cluster framework.Cluster) error {
 	// todo(jakubdyszkiewicz) right now we delete TestNamespace before we Dismiss the cluster
 	// This means that namespace is no longer available so the code below would throw an error
 	// If we ever switch DemoClient to be deployment and remove manual deletion of TestNamespace

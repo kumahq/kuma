@@ -64,7 +64,7 @@ func (d *RateLimitResource) validateHttp(path validators.PathBuilder, http *v1al
 	return err
 }
 
-func (d *RateLimitResource) validateOnRateLimit(path validators.PathBuilder, onRateLimit *v1alpha1.RateLimit_Conf_Http_OnRateLimit) validators.ValidationError {
+func (*RateLimitResource) validateOnRateLimit(path validators.PathBuilder, onRateLimit *v1alpha1.RateLimit_Conf_Http_OnRateLimit) validators.ValidationError {
 	var err validators.ValidationError
 	for i, h := range onRateLimit.GetHeaders() {
 		if h.Key == "" {

@@ -110,7 +110,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	)
 }
 
-func (t *k8SDeployment) Delete(framework.Cluster) error {
+func (*k8SDeployment) Delete(framework.Cluster) error {
 	// we delete the namespace anyway and helm.DeleteE is flaky here
 	return nil
 }

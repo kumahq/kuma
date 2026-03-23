@@ -13,8 +13,8 @@ import (
 )
 
 // FindPortByName needs to check both name and value at the same time as this is used with BackendRef which can only reference port by value
-func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
-	for _, p := range m.Spec.Ports {
+func (r *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
+	for _, p := range r.Spec.Ports {
 		if pointer.Deref(p.Name) == name {
 			return p, true
 		}
@@ -25,11 +25,11 @@ func (m *MeshServiceResource) FindPortByName(name string) (core.Port, bool) {
 	return Port{}, false
 }
 
-func (m *MeshServiceResource) IsLocalMeshService() bool {
-	if len(m.GetMeta().GetLabels()) == 0 {
+func (r *MeshServiceResource) IsLocalMeshService() bool {
+	if len(r.GetMeta().GetLabels()) == 0 {
 		return true // no labels mean that it's a local resource
 	}
-	origin, ok := m.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+	origin, ok := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 	if !ok {
 		return true // no zone label mean that it's a local resource
 	}
@@ -38,25 +38,25 @@ func (m *MeshServiceResource) IsLocalMeshService() bool {
 
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}
 
-func (t *MeshServiceResource) VIPs() []string {
-	vips := make([]string, len(t.Status.VIPs))
-	for i, vip := range t.Status.VIPs {
+func (r *MeshServiceResource) VIPs() []string {
+	vips := make([]string, len(r.Status.VIPs))
+	for i, vip := range r.Status.VIPs {
 		vips[i] = vip.IP
 	}
 	return vips
 }
 
-func (t *MeshServiceResource) AllocateVIP(vip string) {
-	t.Status.VIPs = append(t.Status.VIPs, VIP{
+func (r *MeshServiceResource) AllocateVIP(vip string) {
+	r.Status.VIPs = append(r.Status.VIPs, VIP{
 		IP: vip,
 	})
 }
 
 // todo(jakubdyszkiewicz) strongly consider putting this in MeshService object to avoid problems with computation
-func (t *MeshServiceResource) SNIName(systemNamespace string) string {
-	displayName := t.GetMeta().GetLabels()[mesh_proto.DisplayName]
-	namespace := t.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
-	origin := t.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+func (r *MeshServiceResource) SNIName(systemNamespace string) string {
+	displayName := r.GetMeta().GetLabels()[mesh_proto.DisplayName]
+	namespace := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	origin := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 	if origin == string(mesh_proto.GlobalResourceOrigin) {
 		// we need to use original name and namespace for services that were synced from another cluster
 		sniName := displayName
@@ -70,42 +70,42 @@ func (t *MeshServiceResource) SNIName(systemNamespace string) string {
 	}
 	if systemNamespace == "" && origin == string(mesh_proto.ZoneResourceOrigin) && namespace != "" {
 		// when namespace label was added to Universal MeshService to have a copy of Kubernets MeshService
-		return t.GetMeta().GetName() + "." + namespace
+		return r.GetMeta().GetName() + "." + namespace
 	}
-	return t.GetMeta().GetName()
+	return r.GetMeta().GetName()
 }
 
-func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
+func (r *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
-	for _, vip := range t.Status.VIPs {
-		for _, port := range t.Spec.Ports {
+	for _, vip := range r.Status.VIPs {
+		for _, port := range r.Spec.Ports {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     uint32(port.Port),
-				Resource: kri.WithSectionName(kri.From(t), port.GetName()),
+				Resource: kri.WithSectionName(kri.From(r), port.GetName()),
 			})
 		}
 	}
 	return outbounds
 }
 
-func (t *MeshServiceResource) Domains() *xds_types.VIPDomains {
-	if len(t.Status.VIPs) > 0 {
+func (r *MeshServiceResource) Domains() *xds_types.VIPDomains {
+	if len(r.Status.VIPs) > 0 {
 		var domains []string
-		for _, addr := range t.Status.Addresses {
+		for _, addr := range r.Status.Addresses {
 			domains = append(domains, addr.Hostname)
 		}
 		return &xds_types.VIPDomains{
-			Address: t.Status.VIPs[0].IP,
+			Address: r.Status.VIPs[0].IP,
 			Domains: domains,
 		}
 	}
 	return nil
 }
 
-func (t *MeshServiceResource) GetPorts() []core.Port {
+func (r *MeshServiceResource) GetPorts() []core.Port {
 	var ports []core.Port
-	for _, port := range t.Spec.Ports {
+	for _, port := range r.Spec.Ports {
 		ports = append(ports, core.Port(port))
 	}
 	return ports

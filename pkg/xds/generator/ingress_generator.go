@@ -20,7 +20,7 @@ import (
 
 type IngressGenerator struct{}
 
-func (i IngressGenerator) Generate(
+func (IngressGenerator) Generate(
 	_ context.Context,
 	_ *core_xds.ResourceSet,
 	xdsCtx xds_context.Context,

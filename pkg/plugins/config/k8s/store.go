@@ -202,7 +202,7 @@ func (m *KubernetesMetaAdapter) GetVersion() string {
 	return m.GetResourceVersion()
 }
 
-func (m *KubernetesMetaAdapter) GetMesh() string {
+func (*KubernetesMetaAdapter) GetMesh() string {
 	return ""
 }
 

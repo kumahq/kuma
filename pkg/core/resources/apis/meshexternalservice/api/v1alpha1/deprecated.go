@@ -9,10 +9,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
-func (t *MeshExternalServiceResource) Deprecations() []string {
+func (r *MeshExternalServiceResource) Deprecations() []string {
 	var deprecations []string
 
-	name := model.GetDisplayName(t.GetMeta())
+	name := model.GetDisplayName(r.GetMeta())
 	allErrs := apimachineryvalidation.NameIsDNS1035Label(name, false)
 	if len(allErrs) != 0 {
 		nameDeprecationMsg := fmt.Sprintf("Invalid %s resource name: '%s'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: %s",

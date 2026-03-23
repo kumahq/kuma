@@ -106,7 +106,7 @@ func (m *externalServiceManager) Update(ctx context.Context, resource core_model
 	return m.store.Update(ctx, externalService, append(fs, core_store.ModifiedAt(time.Now()))...)
 }
 
-func (m *externalServiceManager) externalService(resource core_model.Resource) (*core_mesh.ExternalServiceResource, error) {
+func (*externalServiceManager) externalService(resource core_model.Resource) (*core_mesh.ExternalServiceResource, error) {
 	externalService, ok := resource.(*core_mesh.ExternalServiceResource)
 	if !ok {
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.ExternalServiceResource)(nil), resource)
@@ -114,7 +114,7 @@ func (m *externalServiceManager) externalService(resource core_model.Resource) (
 	return externalService, nil
 }
 
-func (m *externalServiceManager) externalServices(list core_model.ResourceList) (*core_mesh.ExternalServiceResourceList, error) {
+func (*externalServiceManager) externalServices(list core_model.ResourceList) (*core_mesh.ExternalServiceResourceList, error) {
 	externalServices, ok := list.(*core_mesh.ExternalServiceResourceList)
 	if !ok {
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.ExternalServiceResourceList)(nil), list)

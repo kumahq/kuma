@@ -59,7 +59,7 @@ func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh core_model.R
 	return nil
 }
 
-func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
+func (*builtinCaManager) ValidateBackend(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
 	verr := core_validators.ValidationError{}
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
@@ -75,7 +75,7 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 	return verr.OrNil()
 }
 
-func (b *builtinCaManager) UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+func (*builtinCaManager) UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
 	return []string{
 		certSecretResKey(mesh, backend.Name).Name,
 		keySecretResKey(mesh, backend.Name).Name,

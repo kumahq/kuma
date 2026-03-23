@@ -1115,7 +1115,7 @@ func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, o
 	return yaml.Unmarshal([]byte(data), obj)
 }
 
-func (f fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+func (fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	return errors.New("not implemented")
 }
 
@@ -1179,7 +1179,7 @@ func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey
 	return yaml.Unmarshal([]byte(data), obj)
 }
 
-func (f fakeReplicaSetReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+func (fakeReplicaSetReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	return errors.New("not implemented")
 }
 
@@ -1194,7 +1194,7 @@ func (r fakeJobReader) Get(ctx context.Context, key kube_client.ObjectKey, obj k
 	return yaml.Unmarshal([]byte(data), obj)
 }
 
-func (f fakeJobReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+func (fakeJobReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	return errors.New("not implemented")
 }
 

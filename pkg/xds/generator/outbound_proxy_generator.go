@@ -189,7 +189,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	return listener, nil
 }
 
-func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)

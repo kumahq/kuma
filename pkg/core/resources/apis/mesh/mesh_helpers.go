@@ -14,16 +14,16 @@ import (
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
-func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
-	return m != nil && m.GetEnabledMetricsBackend().GetType() == mesh_proto.MetricsPrometheusType
+func (r *MeshResource) HasPrometheusMetricsEnabled() bool {
+	return r != nil && r.GetEnabledMetricsBackend().GetType() == mesh_proto.MetricsPrometheusType
 }
 
-func (m *MeshResource) GetEnabledMetricsBackend() *mesh_proto.MetricsBackend {
-	return m.GetMetricsBackend(m.Spec.GetMetrics().GetEnabledBackend())
+func (r *MeshResource) GetEnabledMetricsBackend() *mesh_proto.MetricsBackend {
+	return r.GetMetricsBackend(r.Spec.GetMetrics().GetEnabledBackend())
 }
 
-func (m *MeshResource) GetMetricsBackend(name string) *mesh_proto.MetricsBackend {
-	for _, backend := range m.Spec.GetMetrics().GetBackends() {
+func (r *MeshResource) GetMetricsBackend(name string) *mesh_proto.MetricsBackend {
+	for _, backend := range r.Spec.GetMetrics().GetBackends() {
 		if backend.Name == name {
 			return backend
 		}
@@ -31,48 +31,48 @@ func (m *MeshResource) GetMetricsBackend(name string) *mesh_proto.MetricsBackend
 	return nil
 }
 
-func (m *MeshResource) MTLSEnabled() bool {
-	return m != nil && m.Spec.GetMtls().GetEnabledBackend() != ""
+func (r *MeshResource) MTLSEnabled() bool {
+	return r != nil && r.Spec.GetMtls().GetEnabledBackend() != ""
 }
 
 // ZoneEgress works only when mTLS is enabled.
 // Configuration of mTLS is validated on Mesh configuration
 // change and when zoneEgress is enabled.
-func (m *MeshResource) ZoneEgressEnabled() bool {
-	return m != nil && m.Spec.GetRouting().GetZoneEgress()
+func (r *MeshResource) ZoneEgressEnabled() bool {
+	return r != nil && r.Spec.GetRouting().GetZoneEgress()
 }
 
-func (m *MeshResource) LocalityAwareLbEnabled() bool {
-	return m != nil && m.Spec.GetRouting().GetLocalityAwareLoadBalancing()
+func (r *MeshResource) LocalityAwareLbEnabled() bool {
+	return r != nil && r.Spec.GetRouting().GetLocalityAwareLoadBalancing()
 }
 
-func (m *MeshResource) GetLoggingBackend(name string) *mesh_proto.LoggingBackend {
+func (r *MeshResource) GetLoggingBackend(name string) *mesh_proto.LoggingBackend {
 	backends := map[string]*mesh_proto.LoggingBackend{}
-	for _, backend := range m.Spec.GetLogging().GetBackends() {
+	for _, backend := range r.Spec.GetLogging().GetBackends() {
 		backends[backend.Name] = backend
 	}
 	if name == "" {
-		return backends[m.Spec.GetLogging().GetDefaultBackend()]
+		return backends[r.Spec.GetLogging().GetDefaultBackend()]
 	}
 	return backends[name]
 }
 
-func (m *MeshResource) GetTracingBackend(name string) *mesh_proto.TracingBackend {
+func (r *MeshResource) GetTracingBackend(name string) *mesh_proto.TracingBackend {
 	backends := map[string]*mesh_proto.TracingBackend{}
-	for _, backend := range m.Spec.GetTracing().GetBackends() {
+	for _, backend := range r.Spec.GetTracing().GetBackends() {
 		backends[backend.Name] = backend
 	}
 	if name == "" {
-		return backends[m.Spec.GetTracing().GetDefaultBackend()]
+		return backends[r.Spec.GetTracing().GetDefaultBackend()]
 	}
 	return backends[name]
 }
 
 // GetLoggingBackends will return logging backends as comma separated strings
 // if empty return empty string
-func (m *MeshResource) GetLoggingBackends() string {
+func (r *MeshResource) GetLoggingBackends() string {
 	var backends []string
-	for _, backend := range m.Spec.GetLogging().GetBackends() {
+	for _, backend := range r.Spec.GetLogging().GetBackends() {
 		backend := fmt.Sprintf("%s/%s", backend.GetType(), backend.GetName())
 		backends = append(backends, backend)
 	}
@@ -81,21 +81,21 @@ func (m *MeshResource) GetLoggingBackends() string {
 
 // GetTracingBackends will return tracing backends as comma separated strings
 // if empty return empty string
-func (m *MeshResource) GetTracingBackends() string {
+func (r *MeshResource) GetTracingBackends() string {
 	var backends []string
-	for _, backend := range m.Spec.GetTracing().GetBackends() {
+	for _, backend := range r.Spec.GetTracing().GetBackends() {
 		backend := fmt.Sprintf("%s/%s", backend.GetType(), backend.GetName())
 		backends = append(backends, backend)
 	}
 	return strings.Join(backends, ", ")
 }
 
-func (m *MeshResource) GetEnabledCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {
-	return m.GetCertificateAuthorityBackend(m.Spec.GetMtls().GetEnabledBackend())
+func (r *MeshResource) GetEnabledCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {
+	return r.GetCertificateAuthorityBackend(r.Spec.GetMtls().GetEnabledBackend())
 }
 
-func (m *MeshResource) GetCertificateAuthorityBackend(name string) *mesh_proto.CertificateAuthorityBackend {
-	for _, backend := range m.Spec.GetMtls().GetBackends() {
+func (r *MeshResource) GetCertificateAuthorityBackend(name string) *mesh_proto.CertificateAuthorityBackend {
+	for _, backend := range r.Spec.GetMtls().GetBackends() {
 		if backend.Name == name {
 			return backend
 		}
@@ -151,14 +151,14 @@ func (ml *MeshResourceList) MarshalLog() any {
 	}
 }
 
-func (m *MeshResource) MarshalLog() any {
-	spec := proto.Clone(m.Spec).(*mesh_proto.Mesh)
+func (r *MeshResource) MarshalLog() any {
+	spec := proto.Clone(r.Spec).(*mesh_proto.Mesh)
 	if spec == nil {
-		return m
+		return r
 	}
 	mtls := spec.Mtls
 	if mtls == nil {
-		return m
+		return r
 	}
 	for _, backend := range mtls.Backends {
 		conf := backend.Conf
@@ -178,7 +178,7 @@ func (m *MeshResource) MarshalLog() any {
 		}
 	}
 	return &MeshResource{
-		Meta: m.Meta,
+		Meta: r.Meta,
 		Spec: spec,
 	}
 }

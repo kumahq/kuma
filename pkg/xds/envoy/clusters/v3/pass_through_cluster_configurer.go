@@ -8,7 +8,7 @@ type PassThroughClusterConfigurer struct{}
 
 var _ ClusterConfigurer = &PassThroughClusterConfigurer{}
 
-func (p *PassThroughClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
+func (*PassThroughClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
 	c.ClusterDiscoveryType = &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_ORIGINAL_DST}
 	c.LbPolicy = envoy_cluster.Cluster_CLUSTER_PROVIDED
 	return nil

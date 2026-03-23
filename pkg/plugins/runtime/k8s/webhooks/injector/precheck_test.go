@@ -214,7 +214,7 @@ type fakeLogSink struct {
 	root *fakeLogSinkRoot
 }
 
-func (f *fakeLogSink) Init(info logr.RuntimeInfo) {
+func (*fakeLogSink) Init(info logr.RuntimeInfo) {
 }
 
 func (f *fakeLogSink) WithName(name string) logr.LogSink {
@@ -258,7 +258,7 @@ func (f *fakeLogSink) Info(level int, msg string, vals ...any) {
 	})
 }
 
-func (f *fakeLogSink) Enabled(level int) bool { return true }
+func (*fakeLogSink) Enabled(level int) bool { return true }
 
 // Taken from https://github.com/kubernetes-sigs/controller-runtime/blob/release-0.19/pkg/client/interceptor/intercept_test.go#L335
 
@@ -266,31 +266,31 @@ type dummyClient struct{}
 
 var _ kube_client.WithWatch = &dummyClient{}
 
-func (d dummyClient) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, opts ...kube_client.GetOption) error {
+func (dummyClient) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, opts ...kube_client.GetOption) error {
 	return nil
 }
 
-func (d dummyClient) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+func (dummyClient) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	return nil
 }
 
-func (d dummyClient) Create(ctx context.Context, obj kube_client.Object, opts ...kube_client.CreateOption) error {
+func (dummyClient) Create(ctx context.Context, obj kube_client.Object, opts ...kube_client.CreateOption) error {
 	return nil
 }
 
-func (d dummyClient) Delete(ctx context.Context, obj kube_client.Object, opts ...kube_client.DeleteOption) error {
+func (dummyClient) Delete(ctx context.Context, obj kube_client.Object, opts ...kube_client.DeleteOption) error {
 	return nil
 }
 
-func (d dummyClient) Update(ctx context.Context, obj kube_client.Object, opts ...kube_client.UpdateOption) error {
+func (dummyClient) Update(ctx context.Context, obj kube_client.Object, opts ...kube_client.UpdateOption) error {
 	return nil
 }
 
-func (d dummyClient) Patch(ctx context.Context, obj kube_client.Object, patch kube_client.Patch, opts ...kube_client.PatchOption) error {
+func (dummyClient) Patch(ctx context.Context, obj kube_client.Object, patch kube_client.Patch, opts ...kube_client.PatchOption) error {
 	return nil
 }
 
-func (d dummyClient) DeleteAllOf(ctx context.Context, obj kube_client.Object, opts ...kube_client.DeleteAllOfOption) error {
+func (dummyClient) DeleteAllOf(ctx context.Context, obj kube_client.Object, opts ...kube_client.DeleteAllOfOption) error {
 	return nil
 }
 
@@ -298,30 +298,30 @@ func (d dummyClient) Status() kube_client.SubResourceWriter {
 	return d.SubResource("status")
 }
 
-func (d dummyClient) SubResource(subResource string) kube_client.SubResourceClient {
+func (dummyClient) SubResource(subResource string) kube_client.SubResourceClient {
 	return nil
 }
 
-func (d dummyClient) Scheme() *runtime.Scheme {
+func (dummyClient) Scheme() *runtime.Scheme {
 	return nil
 }
 
-func (d dummyClient) RESTMapper() meta.RESTMapper {
+func (dummyClient) RESTMapper() meta.RESTMapper {
 	return nil
 }
 
-func (d dummyClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+func (dummyClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
 	return schema.GroupVersionKind{}, nil
 }
 
-func (d dummyClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+func (dummyClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
 	return false, nil
 }
 
-func (d dummyClient) Watch(ctx context.Context, obj kube_client.ObjectList, opts ...kube_client.ListOption) (watch.Interface, error) {
+func (dummyClient) Watch(ctx context.Context, obj kube_client.ObjectList, opts ...kube_client.ListOption) (watch.Interface, error) {
 	return nil, nil
 }
 
-func (d dummyClient) Apply(ctx context.Context, cfg runtime.ApplyConfiguration, opts ...kube_client.ApplyOption) error {
+func (dummyClient) Apply(ctx context.Context, cfg runtime.ApplyConfiguration, opts ...kube_client.ApplyOption) error {
 	return nil
 }

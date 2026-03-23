@@ -24,7 +24,7 @@ type ZoneValidator struct {
 	unsafeDelete bool
 }
 
-func (z *ZoneValidator) InjectDecoder(admission.Decoder) {
+func (*ZoneValidator) InjectDecoder(admission.Decoder) {
 }
 
 func (z *ZoneValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -43,7 +43,7 @@ func (z *ZoneValidator) ValidateDelete(ctx context.Context, req admission.Reques
 	return admission.Allowed("")
 }
 
-func (z *ZoneValidator) Supports(req admission.Request) bool {
+func (*ZoneValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("Zone")
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }
