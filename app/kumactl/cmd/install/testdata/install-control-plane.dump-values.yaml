@@ -819,6 +819,7 @@ egress:
 #       pdb:
 #         enabled: false
 #         maxUnavailable: 1
+meshes: []
 
 kumactl:
   image:
