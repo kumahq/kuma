@@ -2,7 +2,9 @@ package meshidentity
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -113,13 +115,28 @@ spec:
 			)).
 			Setup(kubernetes.Cluster)).To(Succeed())
 
+		// wait for MeshIdentity to be reconciled by SPIRE provider before checking traffic
+		isMeshIdentityReady := func(name string) (bool, error) {
+			GinkgoHelper()
+			output, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
+			if err != nil {
+				return false, err
+			}
+			return strings.Contains(output, "PartiallyReady") || strings.Contains(output, "Successfully initialized"), nil
+		}
+		Eventually(func(g Gomega) {
+			isReady, err := isMeshIdentityReady("identity-spire")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(isReady).To(BeTrue())
+		}, "2m", "1s").Should(Succeed())
+
 		// then
 		// traffic works
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(kubernetes.Cluster, "demo-client", fmt.Sprintf("test-server.%s.svc.cluster.local:80", namespace), client.FromKubernetesPod(namespace, "demo-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server-spire"))
-		}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		}, "2m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
 		admin, err := kubernetes.Cluster.GetOrCreateAdminTunnel(portforward.Spec{
 			AppName:   "test-server",
@@ -130,8 +147,8 @@ spec:
 		// and it's a tls traffic
 		Eventually(func(g Gomega) {
 			s, err := admin.GetStats("listener.*_80.ssl.handshake")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(s).To(stats.BeGreaterThanZero())
-		}, "5s", "1s").Should(Succeed())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(s).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
 	})
 }

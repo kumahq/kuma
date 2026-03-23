@@ -380,10 +380,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 
 		It("should sync policy with a long name and store it as display name", func() {
 			// given
-			name := ""
-			for range 253 {
-				name += "x"
-			}
+			name := strings.Repeat("x", 253)
 
 			// when
 			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
