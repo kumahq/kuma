@@ -469,7 +469,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: 5233a880af63c017349873c6d7798c92e95c140a5e1eb09ffa50b24f07ece406
+        checksum/tls-secrets: e8014c929d20e15c02e08b08be7cfc46741445cd690e7924efa979b98b503cdd
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -841,6 +841,9 @@ webhooks:
           operator: NotIn
           values:
           - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
           - kuma
     objectSelector:
       matchLabels:

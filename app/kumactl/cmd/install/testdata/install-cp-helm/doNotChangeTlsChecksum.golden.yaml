@@ -807,6 +807,9 @@ webhooks:
           operator: NotIn
           values:
           - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
           - kuma-system
     objectSelector:
       matchLabels:
