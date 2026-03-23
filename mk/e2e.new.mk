@@ -67,7 +67,7 @@ define gen-k8sclusters
 test/e2e/k8s/start/cluster/$1: $(K8S_CLUSTER_TOOL)/cluster/start/$1
 
 .PHONY: test/e2e/k8s/wait/$1
-test/e2e/k8s/wait/$1: test/e2e/k8s/start/cluster/$1 $(K8S_CLUSTER_TOOL)/cluster/wait/$1
+test/e2e/k8s/wait/$1: test/e2e/k8s/start/cluster/$1
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1: test/e2e/k8s/wait/$1 $(K8S_CLUSTER_TOOL)/cluster/load/images/$1
