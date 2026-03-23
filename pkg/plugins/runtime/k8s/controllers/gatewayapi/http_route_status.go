@@ -87,11 +87,16 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 }
 
 func parentRefSortKey(ref gatewayapi.ParentReference) string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s",
+	port := ""
+	if ref.Port != nil {
+		port = fmt.Sprint(*ref.Port)
+	}
+	return fmt.Sprintf("%s/%s/%s/%s/%s/%s",
 		pointer.Deref(ref.Group),
 		pointer.Deref(ref.Kind),
 		pointer.Deref(ref.Namespace),
 		ref.Name,
 		pointer.Deref(ref.SectionName),
+		port,
 	)
 }
