@@ -316,11 +316,12 @@ k3d/cluster/start: k3d/cluster/metallb/setup
 METALLB_RENDER_POOL    ?= $(KUMA_DIR)/mk/resources/render-metallb-pool.sh
 METALLB_RESOURCES      ?= $(TMP_DIR_K8S)/metallb-$(CLUSTER_NAME).yaml
 
-$(METALLB_RESOURCES): $(METALLB_RENDER_POOL) k3d/docker/network/create
-	$(Q)$(METALLB_RENDER_POOL) $(DOCKER_NETWORK) $(CLUSTER_NUMBER) $@ $(METALLB_NAMESPACE)
+.PHONY: k3d/cluster/metallb/render
+k3d/cluster/metallb/render: k3d/docker/network/create
+	$(Q)$(METALLB_RENDER_POOL) $(DOCKER_NETWORK) $(CLUSTER_NUMBER) $(METALLB_RESOURCES) $(METALLB_NAMESPACE)
 
 .PHONY: k3d/cluster/metallb/setup
-k3d/cluster/metallb/setup: k3d/cluster/wait $(METALLB_RESOURCES)
+k3d/cluster/metallb/setup: k3d/cluster/wait k3d/cluster/metallb/render
 	$(Q)$(KUBECTL) apply \
 	  --filename $(METALLB_MANIFESTS)
 
