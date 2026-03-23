@@ -117,6 +117,7 @@ spec:
 	})
 
 	keepConnectionOpen := func() {
+		GinkgoHelper()
 		// Open TCP connections to the gateway
 		defer GinkgoRecover()
 
