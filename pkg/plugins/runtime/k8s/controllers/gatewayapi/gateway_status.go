@@ -1,8 +1,10 @@
 package gatewayapi
 
 import (
+	"cmp"
 	"context"
 	"reflect"
+	"slices"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -201,6 +203,12 @@ func mergeGatewayListenerStatuses(
 
 		statuses = append(statuses, previousStatus)
 	}
+
+	// Sort by listener name to ensure deterministic ordering and avoid
+	// unnecessary Gateway status patches caused by Go map iteration order.
+	slices.SortFunc(statuses, func(a, b gatewayapi.ListenerStatus) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return statuses
 }
