@@ -13,8 +13,8 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayapi.HTTPRoute, conditions ParentConditions) error {
