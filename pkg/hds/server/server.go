@@ -29,7 +29,7 @@ type Stream interface {
 }
 
 type server struct {
-	streamCount int64
+	streamCount atomic.Int64
 	ctx         context.Context
 	callbacks   hds_callbacks.Callbacks
 	cache       envoy_cache.Cache
@@ -73,7 +73,7 @@ func (s *server) StreamHandler(stream Stream) error {
 }
 
 func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) error {
-	streamID := atomic.AddInt64(&s.streamCount, 1)
+	streamID := s.streamCount.Add(1)
 	lastVersion := ""
 
 	var watchCancellation func()
