@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
@@ -96,8 +95,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	cp := xdsCtx.ControlPlane
 	mr := il.MeshResources
 	meshName := mr.Mesh.GetMeta().GetName()
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, mr.Mesh)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
+	getName := naming.GetNameOrFallbackFunc(true)
 
 	address := il.Listener.Address
 	port := il.Listener.Port
@@ -129,16 +127,16 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 		meshResources.MeshMultiZoneServices(),
 	)
 
-	services := zoneproxy.GetServices(dest, mr.EndpointMap, nil, unifiedNaming)
+	services := zoneproxy.GetServices(dest, mr.EndpointMap, nil, true)
 	clusters := services.Clusters()
 
-	cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, unifiedNaming)
+	cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, true)
 	if err != nil {
 		return nil, err
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress, unifiedNaming)
+	eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress, true)
 	if err != nil {
 		return nil, err
 	}
@@ -169,8 +167,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	el *core_xds.DataplaneListener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, el.MeshResources.Mesh)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
+	getName := naming.GetNameOrFallbackFunc(true)
 
 	address := el.Listener.Address
 	port := el.Listener.Port
@@ -190,9 +187,9 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	}
 
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
-	for _, cluster := range g.getMeshExternalServiceClusters(el.MeshResources, unifiedNaming) {
+	for _, cluster := range g.getMeshExternalServiceClusters(el.MeshResources, true) {
 		filterChainBuilders = append(filterChainBuilders,
-			g.buildEgressFilterChain(proxy, el.MeshResources, downstreamTLS, cluster, unifiedNaming),
+			g.buildEgressFilterChain(proxy, el.MeshResources, downstreamTLS, cluster, true),
 		)
 		cds, err := g.genClusterCDS(proxy, el.MeshResources.EndpointMap[cluster.Name()], cluster)
 		if err != nil {

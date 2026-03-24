@@ -346,6 +346,29 @@ func (c *UniversalCluster) CreateZoneEgress(
 	return app.dpApp.Start()
 }
 
+// CreateDataplaneProxy starts kuma-dp for an app registered as a regular
+// Dataplane. The dpyaml must be a Dataplane resource manifest that may include
+// a listeners section.
+func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpyaml, token string) error {
+	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, nil, false, ""); err != nil {
+		return err
+	}
+	c.apps[name] = app
+	c.networking[name] = app.universalNetworking
+	c.createEnvoyTunnel(name)
+	return app.dpApp.Start()
+}
+
+// GetAppEnvoyTunnel returns the Envoy admin tunnel for a named app (e.g. a
+// zone proxy deployed via CreateDataplaneProxy).
+func (c *UniversalCluster) GetAppEnvoyTunnel(name string) envoy_admin.Tunnel {
+	t, ok := c.envoyTunnels[name]
+	if !ok {
+		c.t.Fatalf("no envoy tunnel registered for app %q", name)
+	}
+	return t
+}
+
 func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	var opts appDeploymentOptions
 	opts.apply(opt...)

@@ -373,9 +373,12 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service, workload string) (strin
 	tokenData := map[string]interface{}{
 		"mesh": mesh,
 		"type": dpType,
-		"tags": map[string][]string{
+	}
+
+	if service != "" {
+		tokenData["tags"] = map[string][]string{
 			"kuma.io/service": {service},
-		},
+		}
 	}
 
 	if workload != "" {

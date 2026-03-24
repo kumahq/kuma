@@ -37,6 +37,10 @@ type DataplaneTemplateData struct {
 	// Transparent proxy configuration
 	TransparentProxy *TransparentProxyConfig
 
+	// Listener configuration (zone proxy mode). When set, renders a listeners
+	// block instead of inbound/outbound.
+	Listeners []ListenerConfig
+
 	// Additional raw YAML to append
 	AppendConfig string
 }
@@ -52,6 +56,13 @@ type TransparentProxyConfig struct {
 	RedirectPortInbound  string
 	RedirectPortOutbound string
 	ReachableServices    []string
+}
+
+// ListenerConfig represents a zone proxy listener (ZoneIngress or ZoneEgress).
+type ListenerConfig struct {
+	Type string // "ZoneIngress" or "ZoneEgress"
+	Name string
+	Port int
 }
 
 // ZoneIngressTemplateData represents zone ingress template data
@@ -83,6 +94,15 @@ labels:
 {{- end }}
 networking:
   address: {{ "{{ address }}" }}
+{{- if .Listeners }}
+  listeners:
+{{- range .Listeners }}
+  - type: {{ .Type }}
+    address: {{ "{{ address }}" }}
+    port: {{ .Port }}
+    name: {{ .Name }}
+{{- end }}
+{{- else }}
   inbound:
   - port: {{ .InboundPort }}
 {{- if .InboundServicePort }}
@@ -128,6 +148,7 @@ networking:
     reachableServices: [{{ joinStrings .TransparentProxy.ReachableServices "," }}]
 {{- end }}
 {{- end }}
+{{- end }}
 {{- if .AppendConfig }}
 {{ .AppendConfig }}
 {{- end }}`))
@@ -147,7 +168,9 @@ networking:
   port: {{ .Port }}`))
 )
 
-// RenderDataplaneTemplate renders a dataplane template with the given data
+// RenderDataplaneTemplate renders a dataplane template with the given data.
+// When Listeners is set, renders a zone proxy dataplane with a listeners block
+// instead of inbound/outbound.
 func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
 	var buf bytes.Buffer
 	if err := dataplaneTemplate.Execute(&buf, data); err != nil {
