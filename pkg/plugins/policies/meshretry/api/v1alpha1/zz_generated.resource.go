@@ -90,46 +90,46 @@ func NewMeshRetryResource() *MeshRetryResource {
 	}
 }
 
-func (t *MeshRetryResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshRetryResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshRetryResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshRetryResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshRetryResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshRetryResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshRetryResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshRetryResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshRetry)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshRetry{}
+			r.Spec = &MeshRetry{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshRetryResource) GetStatus() model.ResourceStatus {
+func (*MeshRetryResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshRetryResource) SetStatus(model.ResourceStatus) error {
+func (*MeshRetryResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshRetryResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshRetryResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshRetryResourceTypeDescriptor
 }
 
-func (t *MeshRetryResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshRetryResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

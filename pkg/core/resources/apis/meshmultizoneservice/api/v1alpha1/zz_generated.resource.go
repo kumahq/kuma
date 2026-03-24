@@ -92,56 +92,56 @@ func NewMeshMultiZoneServiceResource() *MeshMultiZoneServiceResource {
 	}
 }
 
-func (t *MeshMultiZoneServiceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshMultiZoneServiceResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshMultiZoneServiceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshMultiZoneServiceResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshMultiZoneServiceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshMultiZoneServiceResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshMultiZoneServiceResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshMultiZoneServiceResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshMultiZoneService)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshMultiZoneService{}
+			r.Spec = &MeshMultiZoneService{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshMultiZoneServiceResource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *MeshMultiZoneServiceResource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *MeshMultiZoneServiceResource) SetStatus(status model.ResourceStatus) error {
+func (r *MeshMultiZoneServiceResource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*MeshMultiZoneServiceStatus)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &MeshMultiZoneServiceStatus{}
+			r.Status = &MeshMultiZoneServiceStatus{}
 		} else {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshMultiZoneServiceResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshMultiZoneServiceResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshMultiZoneServiceResourceTypeDescriptor
 }
 
-func (t *MeshMultiZoneServiceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshMultiZoneServiceResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

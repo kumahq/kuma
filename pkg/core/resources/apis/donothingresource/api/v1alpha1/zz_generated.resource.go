@@ -89,46 +89,46 @@ func NewDoNothingResourceResource() *DoNothingResourceResource {
 	}
 }
 
-func (t *DoNothingResourceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *DoNothingResourceResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *DoNothingResourceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *DoNothingResourceResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *DoNothingResourceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *DoNothingResourceResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *DoNothingResourceResource) SetSpec(spec model.ResourceSpec) error {
+func (r *DoNothingResourceResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*DoNothingResource)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &DoNothingResource{}
+			r.Spec = &DoNothingResource{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *DoNothingResourceResource) GetStatus() model.ResourceStatus {
+func (*DoNothingResourceResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *DoNothingResourceResource) SetStatus(model.ResourceStatus) error {
+func (*DoNothingResourceResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *DoNothingResourceResource) Descriptor() model.ResourceTypeDescriptor {
+func (*DoNothingResourceResource) Descriptor() model.ResourceTypeDescriptor {
 	return DoNothingResourceResourceTypeDescriptor
 }
 
-func (t *DoNothingResourceResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *DoNothingResourceResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

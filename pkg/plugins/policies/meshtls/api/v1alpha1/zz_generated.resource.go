@@ -90,46 +90,46 @@ func NewMeshTLSResource() *MeshTLSResource {
 	}
 }
 
-func (t *MeshTLSResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshTLSResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshTLSResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshTLSResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshTLSResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshTLSResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshTLSResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshTLSResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshTLS)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshTLS{}
+			r.Spec = &MeshTLS{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshTLSResource) GetStatus() model.ResourceStatus {
+func (*MeshTLSResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshTLSResource) SetStatus(model.ResourceStatus) error {
+func (*MeshTLSResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshTLSResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshTLSResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTLSResourceTypeDescriptor
 }
 
-func (t *MeshTLSResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshTLSResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

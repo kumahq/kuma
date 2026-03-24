@@ -90,46 +90,46 @@ func NewMeshTimeoutResource() *MeshTimeoutResource {
 	}
 }
 
-func (t *MeshTimeoutResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshTimeoutResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshTimeoutResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshTimeoutResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshTimeoutResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshTimeoutResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshTimeoutResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshTimeoutResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshTimeout)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshTimeout{}
+			r.Spec = &MeshTimeout{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshTimeoutResource) GetStatus() model.ResourceStatus {
+func (*MeshTimeoutResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshTimeoutResource) SetStatus(model.ResourceStatus) error {
+func (*MeshTimeoutResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshTimeoutResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshTimeoutResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTimeoutResourceTypeDescriptor
 }
 
-func (t *MeshTimeoutResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshTimeoutResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

@@ -90,46 +90,46 @@ func NewMeshPassthroughResource() *MeshPassthroughResource {
 	}
 }
 
-func (t *MeshPassthroughResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshPassthroughResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshPassthroughResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshPassthroughResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshPassthroughResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshPassthroughResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshPassthroughResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshPassthroughResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshPassthrough)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshPassthrough{}
+			r.Spec = &MeshPassthrough{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshPassthroughResource) GetStatus() model.ResourceStatus {
+func (*MeshPassthroughResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshPassthroughResource) SetStatus(model.ResourceStatus) error {
+func (*MeshPassthroughResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshPassthroughResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshPassthroughResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshPassthroughResourceTypeDescriptor
 }
 
-func (t *MeshPassthroughResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshPassthroughResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

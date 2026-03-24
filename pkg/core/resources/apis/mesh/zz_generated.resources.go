@@ -29,49 +29,49 @@ func NewCircuitBreakerResource() *CircuitBreakerResource {
 	}
 }
 
-func (t *CircuitBreakerResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *CircuitBreakerResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *CircuitBreakerResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *CircuitBreakerResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *CircuitBreakerResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *CircuitBreakerResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *CircuitBreakerResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *CircuitBreakerResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *CircuitBreakerResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *CircuitBreakerResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
+func (r *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.CircuitBreaker)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.CircuitBreaker{}
+			r.Spec = &mesh_proto.CircuitBreaker{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *CircuitBreakerResource) GetStatus() model.ResourceStatus {
+func (r *CircuitBreakerResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *CircuitBreakerResource) SetStatus(_ model.ResourceStatus) error {
+func (r *CircuitBreakerResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *CircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *CircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
 	return CircuitBreakerResourceTypeDescriptor
 }
 
@@ -155,41 +155,41 @@ func NewDataplaneResource() *DataplaneResource {
 	}
 }
 
-func (t *DataplaneResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *DataplaneResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *DataplaneResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *DataplaneResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *DataplaneResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *DataplaneResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
+func (r *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.Dataplane)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.Dataplane{}
+			r.Spec = &mesh_proto.Dataplane{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *DataplaneResource) GetStatus() model.ResourceStatus {
+func (r *DataplaneResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *DataplaneResource) SetStatus(_ model.ResourceStatus) error {
+func (r *DataplaneResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *DataplaneResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *DataplaneResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneResourceTypeDescriptor
 }
 
@@ -276,41 +276,41 @@ func NewDataplaneInsightResource() *DataplaneInsightResource {
 	}
 }
 
-func (t *DataplaneInsightResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *DataplaneInsightResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *DataplaneInsightResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *DataplaneInsightResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *DataplaneInsightResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *DataplaneInsightResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
+func (r *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.DataplaneInsight)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.DataplaneInsight{}
+			r.Spec = &mesh_proto.DataplaneInsight{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *DataplaneInsightResource) GetStatus() model.ResourceStatus {
+func (r *DataplaneInsightResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *DataplaneInsightResource) SetStatus(_ model.ResourceStatus) error {
+func (r *DataplaneInsightResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *DataplaneInsightResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *DataplaneInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneInsightResourceTypeDescriptor
 }
 
@@ -394,46 +394,46 @@ func NewDataplaneOverviewResource() *DataplaneOverviewResource {
 	}
 }
 
-func (t *DataplaneOverviewResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *DataplaneOverviewResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *DataplaneOverviewResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *DataplaneOverviewResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *DataplaneOverviewResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *DataplaneOverviewResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
+func (r *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.DataplaneOverview)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.DataplaneOverview{}
+			r.Spec = &mesh_proto.DataplaneOverview{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *DataplaneOverviewResource) GetStatus() model.ResourceStatus {
+func (r *DataplaneOverviewResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *DataplaneOverviewResource) SetStatus(_ model.ResourceStatus) error {
+func (r *DataplaneOverviewResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneOverviewResourceTypeDescriptor
 }
 
-func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
-	t.SetMeta(resource.GetMeta())
+func (r *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	r.SetMeta(resource.GetMeta())
 	overview := &mesh_proto.DataplaneOverview{
 		Dataplane: resource.GetSpec().(*mesh_proto.Dataplane),
 	}
@@ -444,7 +444,7 @@ func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, ins
 		}
 		overview.DataplaneInsight = ins
 	}
-	return t.SetSpec(overview)
+	return r.SetSpec(overview)
 }
 
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
@@ -522,41 +522,41 @@ func NewExternalServiceResource() *ExternalServiceResource {
 	}
 }
 
-func (t *ExternalServiceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ExternalServiceResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ExternalServiceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ExternalServiceResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ExternalServiceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ExternalServiceResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ExternalService)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ExternalService{}
+			r.Spec = &mesh_proto.ExternalService{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ExternalServiceResource) GetStatus() model.ResourceStatus {
+func (r *ExternalServiceResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ExternalServiceResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ExternalServiceResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ExternalServiceResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ExternalServiceResource) Descriptor() model.ResourceTypeDescriptor {
 	return ExternalServiceResourceTypeDescriptor
 }
 
@@ -640,49 +640,49 @@ func NewFaultInjectionResource() *FaultInjectionResource {
 	}
 }
 
-func (t *FaultInjectionResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *FaultInjectionResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *FaultInjectionResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *FaultInjectionResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *FaultInjectionResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *FaultInjectionResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *FaultInjectionResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *FaultInjectionResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *FaultInjectionResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *FaultInjectionResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
+func (r *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.FaultInjection)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.FaultInjection{}
+			r.Spec = &mesh_proto.FaultInjection{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *FaultInjectionResource) GetStatus() model.ResourceStatus {
+func (r *FaultInjectionResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *FaultInjectionResource) SetStatus(_ model.ResourceStatus) error {
+func (r *FaultInjectionResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *FaultInjectionResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *FaultInjectionResource) Descriptor() model.ResourceTypeDescriptor {
 	return FaultInjectionResourceTypeDescriptor
 }
 
@@ -766,49 +766,49 @@ func NewHealthCheckResource() *HealthCheckResource {
 	}
 }
 
-func (t *HealthCheckResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *HealthCheckResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *HealthCheckResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *HealthCheckResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *HealthCheckResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *HealthCheckResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *HealthCheckResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *HealthCheckResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *HealthCheckResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *HealthCheckResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
+func (r *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.HealthCheck)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.HealthCheck{}
+			r.Spec = &mesh_proto.HealthCheck{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *HealthCheckResource) GetStatus() model.ResourceStatus {
+func (r *HealthCheckResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *HealthCheckResource) SetStatus(_ model.ResourceStatus) error {
+func (r *HealthCheckResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *HealthCheckResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *HealthCheckResource) Descriptor() model.ResourceTypeDescriptor {
 	return HealthCheckResourceTypeDescriptor
 }
 
@@ -892,41 +892,41 @@ func NewMeshResource() *MeshResource {
 	}
 }
 
-func (t *MeshResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.Mesh)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.Mesh{}
+			r.Spec = &mesh_proto.Mesh{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshResource) GetStatus() model.ResourceStatus {
+func (r *MeshResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshResource) SetStatus(_ model.ResourceStatus) error {
+func (r *MeshResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *MeshResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshResourceTypeDescriptor
 }
 
@@ -1012,45 +1012,45 @@ func NewMeshGatewayResource() *MeshGatewayResource {
 	}
 }
 
-func (t *MeshGatewayResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshGatewayResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshGatewayResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshGatewayResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshGatewayResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshGatewayResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshGatewayResource) Selectors() []*mesh_proto.Selector {
-	return t.Spec.GetSelectors()
+func (r *MeshGatewayResource) Selectors() []*mesh_proto.Selector {
+	return r.Spec.GetSelectors()
 }
 
-func (t *MeshGatewayResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshGatewayResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.MeshGateway)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.MeshGateway{}
+			r.Spec = &mesh_proto.MeshGateway{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshGatewayResource) GetStatus() model.ResourceStatus {
+func (r *MeshGatewayResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshGatewayResource) SetStatus(_ model.ResourceStatus) error {
+func (r *MeshGatewayResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshGatewayResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *MeshGatewayResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshGatewayResourceTypeDescriptor
 }
 
@@ -1135,45 +1135,45 @@ func NewMeshGatewayRouteResource() *MeshGatewayRouteResource {
 	}
 }
 
-func (t *MeshGatewayRouteResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshGatewayRouteResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshGatewayRouteResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshGatewayRouteResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshGatewayRouteResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshGatewayRouteResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshGatewayRouteResource) Selectors() []*mesh_proto.Selector {
-	return t.Spec.GetSelectors()
+func (r *MeshGatewayRouteResource) Selectors() []*mesh_proto.Selector {
+	return r.Spec.GetSelectors()
 }
 
-func (t *MeshGatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshGatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.MeshGatewayRoute)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.MeshGatewayRoute{}
+			r.Spec = &mesh_proto.MeshGatewayRoute{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshGatewayRouteResource) GetStatus() model.ResourceStatus {
+func (r *MeshGatewayRouteResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshGatewayRouteResource) SetStatus(_ model.ResourceStatus) error {
+func (r *MeshGatewayRouteResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshGatewayRouteResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *MeshGatewayRouteResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshGatewayRouteResourceTypeDescriptor
 }
 
@@ -1257,41 +1257,41 @@ func NewMeshInsightResource() *MeshInsightResource {
 	}
 }
 
-func (t *MeshInsightResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshInsightResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshInsightResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshInsightResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshInsightResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshInsightResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.MeshInsight)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.MeshInsight{}
+			r.Spec = &mesh_proto.MeshInsight{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshInsightResource) GetStatus() model.ResourceStatus {
+func (r *MeshInsightResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshInsightResource) SetStatus(_ model.ResourceStatus) error {
+func (r *MeshInsightResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshInsightResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *MeshInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshInsightResourceTypeDescriptor
 }
 
@@ -1375,45 +1375,45 @@ func NewProxyTemplateResource() *ProxyTemplateResource {
 	}
 }
 
-func (t *ProxyTemplateResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ProxyTemplateResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ProxyTemplateResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ProxyTemplateResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ProxyTemplateResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ProxyTemplateResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ProxyTemplateResource) Selectors() []*mesh_proto.Selector {
-	return t.Spec.GetSelectors()
+func (r *ProxyTemplateResource) Selectors() []*mesh_proto.Selector {
+	return r.Spec.GetSelectors()
 }
 
-func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ProxyTemplate)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ProxyTemplate{}
+			r.Spec = &mesh_proto.ProxyTemplate{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ProxyTemplateResource) GetStatus() model.ResourceStatus {
+func (r *ProxyTemplateResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ProxyTemplateResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ProxyTemplateResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ProxyTemplateResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ProxyTemplateResource) Descriptor() model.ResourceTypeDescriptor {
 	return ProxyTemplateResourceTypeDescriptor
 }
 
@@ -1497,49 +1497,49 @@ func NewRateLimitResource() *RateLimitResource {
 	}
 }
 
-func (t *RateLimitResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *RateLimitResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *RateLimitResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *RateLimitResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *RateLimitResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *RateLimitResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *RateLimitResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *RateLimitResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *RateLimitResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *RateLimitResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *RateLimitResource) SetSpec(spec model.ResourceSpec) error {
+func (r *RateLimitResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.RateLimit)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.RateLimit{}
+			r.Spec = &mesh_proto.RateLimit{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *RateLimitResource) GetStatus() model.ResourceStatus {
+func (r *RateLimitResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *RateLimitResource) SetStatus(_ model.ResourceStatus) error {
+func (r *RateLimitResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *RateLimitResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *RateLimitResource) Descriptor() model.ResourceTypeDescriptor {
 	return RateLimitResourceTypeDescriptor
 }
 
@@ -1623,49 +1623,49 @@ func NewRetryResource() *RetryResource {
 	}
 }
 
-func (t *RetryResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *RetryResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *RetryResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *RetryResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *RetryResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *RetryResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *RetryResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *RetryResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *RetryResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *RetryResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *RetryResource) SetSpec(spec model.ResourceSpec) error {
+func (r *RetryResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.Retry)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.Retry{}
+			r.Spec = &mesh_proto.Retry{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *RetryResource) GetStatus() model.ResourceStatus {
+func (r *RetryResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *RetryResource) SetStatus(_ model.ResourceStatus) error {
+func (r *RetryResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *RetryResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *RetryResource) Descriptor() model.ResourceTypeDescriptor {
 	return RetryResourceTypeDescriptor
 }
 
@@ -1749,41 +1749,41 @@ func NewServiceInsightResource() *ServiceInsightResource {
 	}
 }
 
-func (t *ServiceInsightResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ServiceInsightResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ServiceInsightResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ServiceInsightResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ServiceInsightResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ServiceInsightResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ServiceInsight)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ServiceInsight{}
+			r.Spec = &mesh_proto.ServiceInsight{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ServiceInsightResource) GetStatus() model.ResourceStatus {
+func (r *ServiceInsightResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ServiceInsightResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ServiceInsightResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ServiceInsightResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ServiceInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ServiceInsightResourceTypeDescriptor
 }
 
@@ -1867,41 +1867,41 @@ func NewServiceOverviewResource() *ServiceOverviewResource {
 	}
 }
 
-func (t *ServiceOverviewResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ServiceOverviewResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ServiceOverviewResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ServiceOverviewResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ServiceOverviewResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ServiceOverviewResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ServiceInsight_Service)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ServiceInsight_Service{}
+			r.Spec = &mesh_proto.ServiceInsight_Service{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ServiceOverviewResource) GetStatus() model.ResourceStatus {
+func (r *ServiceOverviewResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ServiceOverviewResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ServiceOverviewResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ServiceOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ServiceOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ServiceOverviewResourceTypeDescriptor
 }
 
@@ -1980,49 +1980,49 @@ func NewTimeoutResource() *TimeoutResource {
 	}
 }
 
-func (t *TimeoutResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *TimeoutResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *TimeoutResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *TimeoutResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *TimeoutResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *TimeoutResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *TimeoutResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *TimeoutResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *TimeoutResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *TimeoutResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *TimeoutResource) SetSpec(spec model.ResourceSpec) error {
+func (r *TimeoutResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.Timeout)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.Timeout{}
+			r.Spec = &mesh_proto.Timeout{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *TimeoutResource) GetStatus() model.ResourceStatus {
+func (r *TimeoutResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *TimeoutResource) SetStatus(_ model.ResourceStatus) error {
+func (r *TimeoutResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *TimeoutResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *TimeoutResource) Descriptor() model.ResourceTypeDescriptor {
 	return TimeoutResourceTypeDescriptor
 }
 
@@ -2106,49 +2106,49 @@ func NewTrafficLogResource() *TrafficLogResource {
 	}
 }
 
-func (t *TrafficLogResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *TrafficLogResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *TrafficLogResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *TrafficLogResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *TrafficLogResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *TrafficLogResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *TrafficLogResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *TrafficLogResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *TrafficLogResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *TrafficLogResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
+func (r *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.TrafficLog)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.TrafficLog{}
+			r.Spec = &mesh_proto.TrafficLog{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *TrafficLogResource) GetStatus() model.ResourceStatus {
+func (r *TrafficLogResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *TrafficLogResource) SetStatus(_ model.ResourceStatus) error {
+func (r *TrafficLogResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *TrafficLogResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *TrafficLogResource) Descriptor() model.ResourceTypeDescriptor {
 	return TrafficLogResourceTypeDescriptor
 }
 
@@ -2232,49 +2232,49 @@ func NewTrafficPermissionResource() *TrafficPermissionResource {
 	}
 }
 
-func (t *TrafficPermissionResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *TrafficPermissionResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *TrafficPermissionResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *TrafficPermissionResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *TrafficPermissionResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *TrafficPermissionResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *TrafficPermissionResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *TrafficPermissionResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *TrafficPermissionResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *TrafficPermissionResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
+func (r *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.TrafficPermission)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.TrafficPermission{}
+			r.Spec = &mesh_proto.TrafficPermission{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *TrafficPermissionResource) GetStatus() model.ResourceStatus {
+func (r *TrafficPermissionResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *TrafficPermissionResource) SetStatus(_ model.ResourceStatus) error {
+func (r *TrafficPermissionResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *TrafficPermissionResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *TrafficPermissionResource) Descriptor() model.ResourceTypeDescriptor {
 	return TrafficPermissionResourceTypeDescriptor
 }
 
@@ -2358,49 +2358,49 @@ func NewTrafficRouteResource() *TrafficRouteResource {
 	}
 }
 
-func (t *TrafficRouteResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *TrafficRouteResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *TrafficRouteResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *TrafficRouteResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *TrafficRouteResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *TrafficRouteResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *TrafficRouteResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (r *TrafficRouteResource) Sources() []*mesh_proto.Selector {
+	return r.Spec.GetSources()
 }
 
-func (t *TrafficRouteResource) Destinations() []*mesh_proto.Selector {
-	return t.Spec.GetDestinations()
+func (r *TrafficRouteResource) Destinations() []*mesh_proto.Selector {
+	return r.Spec.GetDestinations()
 }
 
-func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
+func (r *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.TrafficRoute)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.TrafficRoute{}
+			r.Spec = &mesh_proto.TrafficRoute{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *TrafficRouteResource) GetStatus() model.ResourceStatus {
+func (r *TrafficRouteResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *TrafficRouteResource) SetStatus(_ model.ResourceStatus) error {
+func (r *TrafficRouteResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *TrafficRouteResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *TrafficRouteResource) Descriptor() model.ResourceTypeDescriptor {
 	return TrafficRouteResourceTypeDescriptor
 }
 
@@ -2484,45 +2484,45 @@ func NewTrafficTraceResource() *TrafficTraceResource {
 	}
 }
 
-func (t *TrafficTraceResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *TrafficTraceResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *TrafficTraceResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *TrafficTraceResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *TrafficTraceResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *TrafficTraceResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *TrafficTraceResource) Selectors() []*mesh_proto.Selector {
-	return t.Spec.GetSelectors()
+func (r *TrafficTraceResource) Selectors() []*mesh_proto.Selector {
+	return r.Spec.GetSelectors()
 }
 
-func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
+func (r *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.TrafficTrace)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.TrafficTrace{}
+			r.Spec = &mesh_proto.TrafficTrace{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *TrafficTraceResource) GetStatus() model.ResourceStatus {
+func (r *TrafficTraceResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *TrafficTraceResource) SetStatus(_ model.ResourceStatus) error {
+func (r *TrafficTraceResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *TrafficTraceResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *TrafficTraceResource) Descriptor() model.ResourceTypeDescriptor {
 	return TrafficTraceResourceTypeDescriptor
 }
 
@@ -2606,45 +2606,45 @@ func NewVirtualOutboundResource() *VirtualOutboundResource {
 	}
 }
 
-func (t *VirtualOutboundResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *VirtualOutboundResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *VirtualOutboundResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *VirtualOutboundResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *VirtualOutboundResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *VirtualOutboundResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *VirtualOutboundResource) Selectors() []*mesh_proto.Selector {
-	return t.Spec.GetSelectors()
+func (r *VirtualOutboundResource) Selectors() []*mesh_proto.Selector {
+	return r.Spec.GetSelectors()
 }
 
-func (t *VirtualOutboundResource) SetSpec(spec model.ResourceSpec) error {
+func (r *VirtualOutboundResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.VirtualOutbound)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.VirtualOutbound{}
+			r.Spec = &mesh_proto.VirtualOutbound{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *VirtualOutboundResource) GetStatus() model.ResourceStatus {
+func (r *VirtualOutboundResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *VirtualOutboundResource) SetStatus(_ model.ResourceStatus) error {
+func (r *VirtualOutboundResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *VirtualOutboundResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *VirtualOutboundResource) Descriptor() model.ResourceTypeDescriptor {
 	return VirtualOutboundResourceTypeDescriptor
 }
 
@@ -2728,41 +2728,41 @@ func NewZoneEgressResource() *ZoneEgressResource {
 	}
 }
 
-func (t *ZoneEgressResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneEgressResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneEgressResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneEgressResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneEgressResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneEgressResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneEgressResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneEgressResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneEgress)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ZoneEgress{}
+			r.Spec = &mesh_proto.ZoneEgress{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneEgressResource) GetStatus() model.ResourceStatus {
+func (r *ZoneEgressResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneEgressResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneEgressResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneEgressResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneEgressResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneEgressResourceTypeDescriptor
 }
 
@@ -2849,41 +2849,41 @@ func NewZoneEgressInsightResource() *ZoneEgressInsightResource {
 	}
 }
 
-func (t *ZoneEgressInsightResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneEgressInsightResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneEgressInsightResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneEgressInsightResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneEgressInsightResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneEgressInsightResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneEgressInsightResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneEgressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneEgressInsight)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ZoneEgressInsight{}
+			r.Spec = &mesh_proto.ZoneEgressInsight{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneEgressInsightResource) GetStatus() model.ResourceStatus {
+func (r *ZoneEgressInsightResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneEgressInsightResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneEgressInsightResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneEgressInsightResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneEgressInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneEgressInsightResourceTypeDescriptor
 }
 
@@ -2967,46 +2967,46 @@ func NewZoneEgressOverviewResource() *ZoneEgressOverviewResource {
 	}
 }
 
-func (t *ZoneEgressOverviewResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneEgressOverviewResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneEgressOverviewResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneEgressOverviewResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneEgressOverviewResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneEgressOverviewResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneEgressOverviewResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneEgressOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneEgressOverview)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ZoneEgressOverview{}
+			r.Spec = &mesh_proto.ZoneEgressOverview{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneEgressOverviewResource) GetStatus() model.ResourceStatus {
+func (r *ZoneEgressOverviewResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneEgressOverviewResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneEgressOverviewResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneEgressOverviewResourceTypeDescriptor
 }
 
-func (t *ZoneEgressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
-	t.SetMeta(resource.GetMeta())
+func (r *ZoneEgressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	r.SetMeta(resource.GetMeta())
 	overview := &mesh_proto.ZoneEgressOverview{
 		ZoneEgress: resource.GetSpec().(*mesh_proto.ZoneEgress),
 	}
@@ -3017,7 +3017,7 @@ func (t *ZoneEgressOverviewResource) SetOverviewSpec(resource model.Resource, in
 		}
 		overview.ZoneEgressInsight = ins
 	}
-	return t.SetSpec(overview)
+	return r.SetSpec(overview)
 }
 
 var _ model.ResourceList = &ZoneEgressOverviewResourceList{}
@@ -3095,41 +3095,41 @@ func NewZoneIngressResource() *ZoneIngressResource {
 	}
 }
 
-func (t *ZoneIngressResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneIngressResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneIngressResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneIngressResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneIngressResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneIngressResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneIngress)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ZoneIngress{}
+			r.Spec = &mesh_proto.ZoneIngress{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneIngressResource) GetStatus() model.ResourceStatus {
+func (r *ZoneIngressResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneIngressResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneIngressResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneIngressResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneIngressResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneIngressResourceTypeDescriptor
 }
 
@@ -3219,41 +3219,41 @@ func NewZoneIngressInsightResource() *ZoneIngressInsightResource {
 	}
 }
 
-func (t *ZoneIngressInsightResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneIngressInsightResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneIngressInsightResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneIngressInsightResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneIngressInsightResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneIngressInsightResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneIngressInsight)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ZoneIngressInsight{}
+			r.Spec = &mesh_proto.ZoneIngressInsight{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneIngressInsightResource) GetStatus() model.ResourceStatus {
+func (r *ZoneIngressInsightResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneIngressInsightResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneIngressInsightResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneIngressInsightResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneIngressInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneIngressInsightResourceTypeDescriptor
 }
 
@@ -3337,46 +3337,46 @@ func NewZoneIngressOverviewResource() *ZoneIngressOverviewResource {
 	}
 }
 
-func (t *ZoneIngressOverviewResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneIngressOverviewResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *ZoneIngressOverviewResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneIngressOverviewResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *ZoneIngressOverviewResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneIngressOverviewResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneIngressOverview)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &mesh_proto.ZoneIngressOverview{}
+			r.Spec = &mesh_proto.ZoneIngressOverview{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *ZoneIngressOverviewResource) GetStatus() model.ResourceStatus {
+func (r *ZoneIngressOverviewResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *ZoneIngressOverviewResource) SetStatus(_ model.ResourceStatus) error {
+func (r *ZoneIngressOverviewResource) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+func (r *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneIngressOverviewResourceTypeDescriptor
 }
 
-func (t *ZoneIngressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
-	t.SetMeta(resource.GetMeta())
+func (r *ZoneIngressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	r.SetMeta(resource.GetMeta())
 	overview := &mesh_proto.ZoneIngressOverview{
 		ZoneIngress: resource.GetSpec().(*mesh_proto.ZoneIngress),
 	}
@@ -3387,7 +3387,7 @@ func (t *ZoneIngressOverviewResource) SetOverviewSpec(resource model.Resource, i
 		}
 		overview.ZoneIngressInsight = ins
 	}
-	return t.SetSpec(overview)
+	return r.SetSpec(overview)
 }
 
 var _ model.ResourceList = &ZoneIngressOverviewResourceList{}

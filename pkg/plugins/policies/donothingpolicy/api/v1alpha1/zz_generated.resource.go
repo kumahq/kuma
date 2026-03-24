@@ -89,46 +89,46 @@ func NewDoNothingPolicyResource() *DoNothingPolicyResource {
 	}
 }
 
-func (t *DoNothingPolicyResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *DoNothingPolicyResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *DoNothingPolicyResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *DoNothingPolicyResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *DoNothingPolicyResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *DoNothingPolicyResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *DoNothingPolicyResource) SetSpec(spec model.ResourceSpec) error {
+func (r *DoNothingPolicyResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*DoNothingPolicy)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &DoNothingPolicy{}
+			r.Spec = &DoNothingPolicy{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *DoNothingPolicyResource) GetStatus() model.ResourceStatus {
+func (*DoNothingPolicyResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *DoNothingPolicyResource) SetStatus(model.ResourceStatus) error {
+func (*DoNothingPolicyResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *DoNothingPolicyResource) Descriptor() model.ResourceTypeDescriptor {
+func (*DoNothingPolicyResource) Descriptor() model.ResourceTypeDescriptor {
 	return DoNothingPolicyResourceTypeDescriptor
 }
 
-func (t *DoNothingPolicyResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *DoNothingPolicyResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

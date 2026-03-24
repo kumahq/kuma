@@ -246,55 +246,55 @@ func New{{.ResourceName}}() *{{.ResourceName}} {
 	}
 }
 
-func (t *{{.ResourceName}}) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *{{.ResourceName}}) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *{{.ResourceName}}) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *{{.ResourceName}}) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *{{.ResourceName}}) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *{{.ResourceName}}) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
 {{with $in := .}}
 {{range .Selectors}}
-func (t *{{$in.ResourceName}}) {{.}}() []*{{$pkg}}.Selector {
-	return t.Spec.Get{{.}}()
+func (r *{{$in.ResourceName}}) {{.}}() []*{{$pkg}}.Selector {
+	return r.Spec.Get{{.}}()
 }
 {{end}}
 {{end}}
 
-func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
+func (r *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*{{$pkg}}.{{.ProtoType}})
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &{{$pkg}}.{{.ProtoType}}{}
+			r.Spec = &{{$pkg}}.{{.ProtoType}}{}
 		} else  {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *{{.ResourceName}}) GetStatus() model.ResourceStatus {
+func (r *{{.ResourceName}}) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *{{.ResourceName}}) SetStatus(_ model.ResourceStatus) error {
+func (r *{{.ResourceName}}) SetStatus(_ model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
+func (r *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
 	return {{.ResourceName}}TypeDescriptor 
 }
 {{- if and (hasSuffix .ResourceType "Overview") (ne $baseType "Service") }}
 
-func (t *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
-	t.SetMeta(resource.GetMeta())
+func (r *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	r.SetMeta(resource.GetMeta())
 	overview := &{{$pkg}}.{{.ProtoType}}{
 		{{$baseType}}: resource.GetSpec().(*{{$pkg}}.{{$baseType}}),
 	}
@@ -305,7 +305,7 @@ func (t *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight mod
 		}
 		overview.{{$baseType}}Insight = ins
 	}
-	return t.SetSpec(overview)
+	return r.SetSpec(overview)
 }
 {{- end }}
 

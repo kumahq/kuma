@@ -91,56 +91,56 @@ func NewMeshTrustResource() *MeshTrustResource {
 	}
 }
 
-func (t *MeshTrustResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshTrustResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshTrustResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshTrustResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshTrustResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshTrustResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshTrustResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshTrustResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshTrust)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshTrust{}
+			r.Spec = &MeshTrust{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshTrustResource) GetStatus() model.ResourceStatus {
-	return t.Status
+func (r *MeshTrustResource) GetStatus() model.ResourceStatus {
+	return r.Status
 }
 
-func (t *MeshTrustResource) SetStatus(status model.ResourceStatus) error {
+func (r *MeshTrustResource) SetStatus(status model.ResourceStatus) error {
 	protoType, ok := status.(*MeshTrustStatus)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
-			t.Status = &MeshTrustStatus{}
+			r.Status = &MeshTrustStatus{}
 		} else {
-			t.Status = protoType
+			r.Status = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshTrustResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshTrustResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTrustResourceTypeDescriptor
 }
 
-func (t *MeshTrustResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshTrustResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

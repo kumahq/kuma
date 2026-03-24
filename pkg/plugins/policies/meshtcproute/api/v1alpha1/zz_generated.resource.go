@@ -90,46 +90,46 @@ func NewMeshTCPRouteResource() *MeshTCPRouteResource {
 	}
 }
 
-func (t *MeshTCPRouteResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *MeshTCPRouteResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *MeshTCPRouteResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *MeshTCPRouteResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *MeshTCPRouteResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *MeshTCPRouteResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *MeshTCPRouteResource) SetSpec(spec model.ResourceSpec) error {
+func (r *MeshTCPRouteResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshTCPRoute)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &MeshTCPRoute{}
+			r.Spec = &MeshTCPRoute{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *MeshTCPRouteResource) GetStatus() model.ResourceStatus {
+func (*MeshTCPRouteResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *MeshTCPRouteResource) SetStatus(model.ResourceStatus) error {
+func (*MeshTCPRouteResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *MeshTCPRouteResource) Descriptor() model.ResourceTypeDescriptor {
+func (*MeshTCPRouteResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshTCPRouteResourceTypeDescriptor
 }
 
-func (t *MeshTCPRouteResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *MeshTCPRouteResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()

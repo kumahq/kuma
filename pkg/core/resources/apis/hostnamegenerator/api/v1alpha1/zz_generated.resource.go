@@ -90,46 +90,46 @@ func NewHostnameGeneratorResource() *HostnameGeneratorResource {
 	}
 }
 
-func (t *HostnameGeneratorResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *HostnameGeneratorResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
 
-func (t *HostnameGeneratorResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *HostnameGeneratorResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
 
-func (t *HostnameGeneratorResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *HostnameGeneratorResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
 
-func (t *HostnameGeneratorResource) SetSpec(spec model.ResourceSpec) error {
+func (r *HostnameGeneratorResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*HostnameGenerator)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &HostnameGenerator{}
+			r.Spec = &HostnameGenerator{}
 		} else {
-			t.Spec = protoType
+			r.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (t *HostnameGeneratorResource) GetStatus() model.ResourceStatus {
+func (*HostnameGeneratorResource) GetStatus() model.ResourceStatus {
 	return nil
 }
 
-func (t *HostnameGeneratorResource) SetStatus(model.ResourceStatus) error {
+func (*HostnameGeneratorResource) SetStatus(model.ResourceStatus) error {
 	return errors.New("status not supported")
 }
 
-func (t *HostnameGeneratorResource) Descriptor() model.ResourceTypeDescriptor {
+func (*HostnameGeneratorResource) Descriptor() model.ResourceTypeDescriptor {
 	return HostnameGeneratorResourceTypeDescriptor
 }
 
-func (t *HostnameGeneratorResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+func (r *HostnameGeneratorResource) Validate() error {
+	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()
