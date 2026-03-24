@@ -761,6 +761,7 @@ egress:
 # Each entry renders per-mesh Deployment(s), Service(s), HPA, PDB, and ServiceAccount.
 # Example single-mesh configuration:
 # meshes:
+#     # -- The mesh with this name must already exist or be created separately; this Helm chart will not create it
 #   - name: default
 #
 #     ingress:
