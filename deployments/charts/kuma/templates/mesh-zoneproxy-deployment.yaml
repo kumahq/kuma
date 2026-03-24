@@ -64,8 +64,8 @@ spec:
       {{- toYaml $cfg.podSpec.securityContext | trim | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
-      automountServiceAccountToken: true
-      restartPolicy: Always
+      automountServiceAccountToken: {{ default true $cfg.automountServiceAccountToken }}
+      restartPolicy: {{ default "Always" $cfg.restartPolicy }}
       {{- with (and $cfg.podSpec $cfg.podSpec.nodeSelector) }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}
@@ -74,7 +74,7 @@ spec:
       tolerations:
       {{ toYaml . | nindent 8 }}
       {{- end }}
-      terminationGracePeriodSeconds: 40
+      terminationGracePeriodSeconds: {{ default 40 $cfg.terminationGracePeriodSeconds }}
       containers:
         - name: pause
           image: {{ default "registry.k8s.io/pause:3.10" $cfg.image }}
