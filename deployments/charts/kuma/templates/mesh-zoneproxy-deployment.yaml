@@ -4,91 +4,23 @@
 {{- fail "each meshes entry must have a name" }}
 {{- end }}
 
-{{- $ingressEnabled := and $meshEntry.ingress $meshEntry.ingress.enabled }}
-{{- $egressEnabled := and $meshEntry.egress $meshEntry.egress.enabled }}
-
 {{- /* Validate mode */ -}}
 {{- if or (eq $.Values.controlPlane.mode "global") (eq $.Values.controlPlane.mode "standalone") }}
 {{- fail (printf "meshes[%s]: mesh-scoped zone proxies require controlPlane.mode=zone" $meshName) }}
 {{- end }}
 
-{{- if $ingressEnabled }}
-{{- $role := "ingress" }}
-{{- $cfg := $meshEntry.ingress }}
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
-  namespace: {{ $.Release.Namespace }}
-  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  {{- if not (and $cfg.hpa $cfg.hpa.enabled) }}
-  replicas: {{ default 1 $cfg.replicas }}
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 6 }}
-  template:
-    metadata:
-      annotations:
-        kuma.io/reachable-backends: '{"refs":[]}'
-      labels:
-        {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 8 }}
-        kuma.io/sidecar-injection: enabled
-    spec:
-      {{- if $cfg.resources }}
-      resources: {{ toYaml $cfg.resources | nindent 8 }}
-      {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.affinity) }}
-      affinity: {{ tpl (toYaml . | nindent 8) $ }}
-      {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.topologySpreadConstraints) }}
-      topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
-      {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.priorityClassName) }}
-      priorityClassName: {{ . }}
-      {{- end }}
-      {{- if and $cfg.podSpec $cfg.podSpec.securityContext }}
-      securityContext:
-      {{- toYaml $cfg.podSpec.securityContext | trim | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
-      automountServiceAccountToken: true
-      restartPolicy: Always
-      {{- with (and $cfg.podSpec $cfg.podSpec.nodeSelector) }}
-      nodeSelector:
-      {{ toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.tolerations) }}
-      tolerations:
-      {{ toYaml . | nindent 8 }}
-      {{- end }}
-      terminationGracePeriodSeconds: 40
-      containers:
-        - name: pause
-          image: {{ default "registry.k8s.io/pause:3.10" $cfg.image }}
-          imagePullPolicy: IfNotPresent
-          {{- if and $cfg.podSpec $cfg.podSpec.containerSecurityContext }}
-          securityContext:
-          {{- toYaml $cfg.podSpec.containerSecurityContext | trim | nindent 12 }}
-          {{- else }}
-          securityContext:
-            readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-          {{- end }}
+{{- /* Build list of enabled roles */ -}}
+{{- $roles := list }}
+{{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
+{{- $roles = append $roles (dict "role" "ingress" "cfg" $meshEntry.ingress) }}
+{{- end }}
+{{- if and $meshEntry.egress $meshEntry.egress.enabled }}
+{{- $roles = append $roles (dict "role" "egress" "cfg" $meshEntry.egress) }}
 {{- end }}
 
-{{- if $egressEnabled }}
-{{- $role := "egress" }}
-{{- $cfg := $meshEntry.egress }}
+{{- range $roleEntry := $roles }}
+{{- $role := $roleEntry.role }}
+{{- $cfg := $roleEntry.cfg }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -146,7 +78,7 @@ spec:
       containers:
         - name: pause
           image: {{ default "registry.k8s.io/pause:3.10" $cfg.image }}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ default "IfNotPresent" $cfg.imagePullPolicy }}
           {{- if and $cfg.podSpec $cfg.podSpec.containerSecurityContext }}
           securityContext:
           {{- toYaml $cfg.podSpec.containerSecurityContext | trim | nindent 12 }}
