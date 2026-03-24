@@ -1,32 +1,18 @@
 {{- range $meshEntry := .Values.meshes }}
 {{- $meshName := $meshEntry.name }}
 
+{{- /* Build list of enabled roles with PDB */ -}}
+{{- $roles := list }}
 {{- if and $meshEntry.ingress $meshEntry.ingress.enabled $meshEntry.ingress.pdb $meshEntry.ingress.pdb.enabled }}
-{{- $role := "ingress" }}
-{{- $cfg := $meshEntry.ingress.pdb }}
----
-{{ if $.Capabilities.APIVersions.Has "policy/v1" }}
-apiVersion: policy/v1
-{{ else if $.Capabilities.APIVersions.Has "policy/v1beta1" }}
-apiVersion: policy/v1beta1
-{{ else }}
-{{ fail "pod disruption budgets are not supported by this version of kubernetes" }}
-{{ end }}
-kind: PodDisruptionBudget
-metadata:
-  name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
-  namespace: {{ $.Release.Namespace }}
-  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
-spec:
-  maxUnavailable: {{ default 1 $cfg.maxUnavailable }}
-  selector:
-    matchLabels:
-      {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 6 }}
+{{- $roles = append $roles (dict "role" "ingress" "cfg" $meshEntry.ingress.pdb) }}
+{{- end }}
+{{- if and $meshEntry.egress $meshEntry.egress.enabled $meshEntry.egress.pdb $meshEntry.egress.pdb.enabled }}
+{{- $roles = append $roles (dict "role" "egress" "cfg" $meshEntry.egress.pdb) }}
 {{- end }}
 
-{{- if and $meshEntry.egress $meshEntry.egress.enabled $meshEntry.egress.pdb $meshEntry.egress.pdb.enabled }}
-{{- $role := "egress" }}
-{{- $cfg := $meshEntry.egress.pdb }}
+{{- range $roleEntry := $roles }}
+{{- $role := $roleEntry.role }}
+{{- $cfg := $roleEntry.cfg }}
 ---
 {{ if $.Capabilities.APIVersions.Has "policy/v1" }}
 apiVersion: policy/v1
