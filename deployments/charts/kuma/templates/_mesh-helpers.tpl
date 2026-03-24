@@ -4,7 +4,7 @@
 Generate the resource name for a per-mesh zone proxy component.
 Truncated to 63 chars (Kubernetes label value limit).
 params: { root: $, meshName: string, role: string }
-role is one of: ingress, egress, zoneproxy (combined)
+role is one of: ingress, egress
 */}}
 {{- define "kuma.mesh.zoneproxy.name" -}}
 {{- printf "%s-%s-%s" (include "kuma.name" .root) .meshName .role | trunc 63 | trimSuffix "-" -}}
