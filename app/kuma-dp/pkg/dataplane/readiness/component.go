@@ -169,7 +169,10 @@ func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Info("[WARNING] could not read admin ready response body", "err", err)
+	}
 	for k, vals := range resp.Header {
 		for _, v := range vals {
 			writer.Header().Add(k, v)
