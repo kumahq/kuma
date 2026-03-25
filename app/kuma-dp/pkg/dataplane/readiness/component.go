@@ -155,7 +155,13 @@ func (r *Reporter) writeState(writer http.ResponseWriter, req *http.Request, sta
 }
 
 func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
-	resp, err := r.adminClient.Get("http://localhost/ready")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/ready", http.NoBody)
+	if err != nil {
+		logger.V(1).Info("envoy admin not ready", "err", err)
+		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
+		return
+	}
+	resp, err := r.adminClient.Do(req)
 	if err != nil {
 		logger.V(1).Info("envoy admin not ready", "err", err)
 		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
