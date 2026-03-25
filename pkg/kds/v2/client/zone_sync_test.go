@@ -92,9 +92,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			policySync := client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				kdsCtx.TypesSentByGlobal,
@@ -102,7 +100,7 @@ var _ = Describe("Zone Delta Sync", func() {
 				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"), 0,
 			)
 			_ = policySync.Receive()
-		}()
+		})
 		closeFunc = func() {
 			defer GinkgoRecover()
 			Expect(clientStream.CloseSend()).To(Succeed())

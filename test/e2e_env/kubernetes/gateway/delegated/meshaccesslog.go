@@ -38,7 +38,7 @@ func MeshAccessLog(config *Config) func() {
 		parseLogs := func(stdout string) []log {
 			var logs []log
 
-			for _, line := range strings.Split(stdout, "\n") {
+			for line := range strings.SplitSeq(stdout, "\n") {
 				var l log
 				if err := json.Unmarshal([]byte(strings.TrimSpace(line)), &l); err != nil {
 					continue

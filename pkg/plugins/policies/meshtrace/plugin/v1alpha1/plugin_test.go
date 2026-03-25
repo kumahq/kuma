@@ -12,11 +12,13 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -514,6 +516,166 @@ var _ = Describe("MeshTrace", func() {
 			goldenFile: "empty-backend-list",
 		}),
 	)
+
+	It("should skip opentelemetry provider for dangling backendRef", func() {
+		resources := core_xds.NewResourceSet()
+		for _, resource := range inboundAndOutbound() {
+			r := resource
+			resources.Add(&r)
+		}
+
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[v1alpha1.MeshServiceType] = &v1alpha1.MeshServiceResourceList{
+			Items: []*v1alpha1.MeshServiceResource{samples.MeshServiceBackendBuilder().
+				WithZone("zone-1").
+				WithNamespace("backend-ns").
+				Build()},
+		}
+
+		context := *xds_samples.SampleContextWith(meshResources).Build()
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("backend").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777)),
+			).
+			WithOutbounds(xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OpenTelemetryBackend{
+									BackendRef: &common_api.BackendResourceRef{
+										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+										Name: "non-existent-backend",
+									},
+								},
+							}},
+						},
+					},
+				},
+			})).
+			Build()
+
+		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(meshTracePlugin.Apply(resources, context, proxy)).To(Succeed())
+
+		listenerResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerResources).ToNot(ContainSubstring("envoy.tracers.opentelemetry"))
+
+		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(strings.TrimSpace(string(clusterResources))).To(Equal("{}"))
+	})
+
+	It("should route opentelemetry via kuma-dp when feature is enabled", func() {
+		const (
+			workDir     = "/tmp"
+			backendName = "otel-backend"
+		)
+
+		resources := core_xds.NewResourceSet()
+		for _, resource := range inboundAndOutbound() {
+			r := resource
+			resources.Add(&r)
+		}
+
+		motb := motb_api.NewMeshOpenTelemetryBackendResource()
+		motb.SetMeta(&test_model.ResourceMeta{
+			Mesh: "default",
+			Name: backendName,
+		})
+		motb.Spec.Endpoint = &motb_api.Endpoint{
+			Address: new("collector.mesh"),
+			Port:    new(int32(4317)),
+		}
+		motb.Spec.Protocol = new(motb_api.ProtocolGRPC)
+
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+			Items: []*motb_api.MeshOpenTelemetryBackendResource{motb},
+		}
+
+		context := *xds_samples.SampleContextWith(meshResources).Build()
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("backend").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777)),
+			).
+			WithMetadata(&core_xds.DataplaneMetadata{
+				WorkDir: workDir,
+				Features: xds_types.Features{
+					xds_types.FeatureOtelViaKumaDp: true,
+				},
+			}).
+			WithOutbounds(xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OpenTelemetryBackend{
+									BackendRef: &common_api.BackendResourceRef{
+										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+										Name: backendName,
+									},
+								},
+							}},
+						},
+					},
+				},
+			})).
+			Build()
+
+		proxy.OtelPipeBackends = &core_xds.OtelPipeBackends{}
+
+		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(meshTracePlugin.Apply(resources, context, proxy)).To(Succeed())
+
+		expectedSocket := core_xds.OpenTelemetrySocketName(workDir, backendName)
+
+		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(clusterResources)).To(ContainSubstring(expectedSocket))
+		Expect(string(clusterResources)).ToNot(ContainSubstring("collector.mesh"))
+
+		// Plugin adds to OtelPipeBackends accumulator instead of writing dynconf directly.
+		// The generator writes the /otel route after all plugins run.
+		Expect(proxy.OtelPipeBackends.Empty()).To(BeFalse())
+		backends := proxy.OtelPipeBackends.All()
+		Expect(backends).To(HaveLen(1))
+		Expect(backends[0].SocketPath).To(Equal(expectedSocket))
+		Expect(backends[0].Endpoint).To(Equal("collector.mesh:4317"))
+		Expect(backends[0].UseHTTP).To(BeFalse())
+		Expect(backends[0].Traces).ToNot(BeNil())
+		Expect(backends[0].Traces.Enabled).To(BeTrue())
+	})
+
 	type gatewayTestCase struct {
 		rules           core_rules.SingleItemRules
 		features        xds_types.Features

@@ -29,7 +29,7 @@ type Entry[T BaseEntry] interface {
 // BaseEntry is a base interface for all entries in policies. Regardless of the type of the entry,
 // it should always contain a piece of configuration.
 type BaseEntry interface {
-	GetDefault() interface{}
+	GetDefault() any
 }
 
 type WithPolicyAttributes[T any] struct {

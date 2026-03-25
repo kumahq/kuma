@@ -28,6 +28,7 @@ build:
         dependencies:
           paths:
             - app/kuma-dp
+            - pkg/transparentproxy
     - image: kumahq/kumactl
       custom:
         buildCommand: |
@@ -36,6 +37,7 @@ build:
         dependencies:
           paths:
             - app/kumactl
+            - pkg/transparentproxy
     - image: kumahq/kuma-init
       custom:
         buildCommand: |
@@ -44,6 +46,7 @@ build:
         dependencies:
           paths:
             - app/kumactl
+            - pkg/transparentproxy
 deploy:
   helm:
     releases:

@@ -90,7 +90,7 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	filters := request.QueryParameter("type")
 	filterMap := map[v1alpha1.ServiceInsight_Service_Type]struct{}{}
 	if filters != "" {
-		for _, f := range strings.Split(filters, ",") {
+		for f := range strings.SplitSeq(filters, ",") {
 			f = strings.ToLower(strings.TrimSpace(f))
 			i, exists := v1alpha1.ServiceInsight_Service_Type_value[f]
 			if !exists {
@@ -182,14 +182,8 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 	}
 
 	total := int(restList.Total)
-	start := offset
-	if offset >= total {
-		start = total
-	}
-	end := start + page.size
-	if end >= total {
-		end = total
-	}
+	start := min(offset, total)
+	end := min(start+page.size, total)
 	restList.Items = restList.Items[start:end]
 
 	nextOffset := ""

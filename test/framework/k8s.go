@@ -70,7 +70,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml")
 }
 
 func UpdateKubeObject(
@@ -97,7 +97,7 @@ func UpdateKubeObject(
 		}
 
 		decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
-		into := map[string]interface{}{}
+		into := map[string]any{}
 
 		if err := decoder.Decode(&into); err != nil {
 			return "", err

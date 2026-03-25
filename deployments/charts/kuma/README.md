@@ -71,6 +71,9 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
+| controlPlane.runtime | object | `{"goMaxProcs":{"divisor":"1"},"goMemLimit":{"divisor":"1"}}` | Go runtime settings for the control plane |
+| controlPlane.runtime.goMaxProcs | object | `{"divisor":"1"}` | Divisor for GOMAXPROCS (resourceFieldRef divisor for limits.cpu) |
+| controlPlane.runtime.goMemLimit | object | `{"divisor":"1"}` | Divisor for GOMEMLIMIT (resourceFieldRef divisor for limits.memory) |
 | controlPlane.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | controlPlane.terminationGracePeriodSeconds | int | `30` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
@@ -227,7 +230,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.35.2@sha256:91d5a6b5c45cf4e0f95de3dda6a957725b5f4daa0193c63074aab7f4bd85eaee"` | The kubectl image tag |
+| kubectl.image.tag | string | `"v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |

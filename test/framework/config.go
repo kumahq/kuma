@@ -217,7 +217,7 @@ var defaultConf = E2eConfig{
 			HelmVersion: "2.6.10",
 		},
 	},
-	K8sType:                      KindK8sType,
+	K8sType:                      K3dK8sType, // matches K8S_CLUSTER_TOOL default in mk/e2e.new.mk
 	DefaultClusterStartupRetries: 30,
 	DefaultClusterStartupTimeout: time.Second * 3,
 	KumaCpConfig: KumaCpConfig{

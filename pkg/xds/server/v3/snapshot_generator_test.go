@@ -337,7 +337,7 @@ var _ = Describe("GenerateSnapshot", func() {
 
 		const numOfExtSrvs = 4
 
-		for i := 0; i < numOfExtSrvs; i++ {
+		for i := range numOfExtSrvs {
 			create(
 				&core_mesh.ExternalServiceResource{
 					Meta: &test_model.ResourceMeta{Name: fmt.Sprintf("es-%d", i), Mesh: "demo"},

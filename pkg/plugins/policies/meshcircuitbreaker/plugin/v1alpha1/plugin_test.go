@@ -457,7 +457,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(false),
@@ -615,7 +615,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
-									Conf: []interface{}{
+									Conf: []any{
 										api.Conf{
 											ConnectionLimits: genConnectionLimits(),
 										},

@@ -236,8 +236,8 @@ func ValidateHostname(path validators.PathBuilder, hostname string) validators.V
 		err.AddViolationAt(path, "must be at most 253 characters")
 	}
 
-	if strings.HasPrefix(hostname, "*.") {
-		if !DomainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
+	if after, ok := strings.CutPrefix(hostname, "*."); ok {
+		if !DomainRegexp.MatchString(after) {
 			err.AddViolationAt(path, "invalid wildcard domain")
 		}
 

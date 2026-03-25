@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"io"
 	"log"
 	"net"
@@ -23,7 +24,7 @@ func Tunnel(sshClient *ssh.Client, local, remote string, stopChan <-chan struct{
 		}
 	}
 
-	listener, err := net.Listen("tcp", local)
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", local)
 	if err != nil {
 		return err
 	}

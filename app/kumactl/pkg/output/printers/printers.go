@@ -15,7 +15,7 @@ import (
 
 type Table = table.Table
 
-func GenericPrint(format output.Format, data interface{}, table Table, out io.Writer) error {
+func GenericPrint(format output.Format, data any, table Table, out io.Writer) error {
 	switch format {
 	case output.JSONFormat:
 		if rl, ok := data.(model.ResourceList); ok {

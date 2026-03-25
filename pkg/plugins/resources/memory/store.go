@@ -294,7 +294,7 @@ func (c *memoryStore) List(_ context.Context, rs core_model.ResourceList, fs ...
 
 	records := c.findRecords(string(rs.GetItemType()), opts.Mesh, opts.NameContains)
 
-	for i := 0; i < len(records); i++ {
+	for i := range records {
 		r := rs.NewItem()
 		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err

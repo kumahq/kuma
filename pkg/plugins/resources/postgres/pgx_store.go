@@ -318,8 +318,9 @@ func (r *pgxResourceStore) pickRoPool() *pgxpool.Pool {
 func (r *pgxResourceStore) List(ctx context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, mesh, spec, version, creation_time, modification_time, labels, status FROM resources WHERE type=$1`
-	var statementArgs []interface{}
+	var statement strings.Builder
+	statement.WriteString(`SELECT name, mesh, spec, version, creation_time, modification_time, labels, status FROM resources WHERE type=$1`)
+	var statementArgs []any
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
 	rkSize := len(opts.ResourceKeys)
@@ -327,53 +328,53 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 		r.listQueryThresholdExceededTotal.Inc()
 	}
 	if rkSize > 0 && rkSize < int(r.maxListQueryElements) {
-		statement += " AND ("
+		statement.WriteString(" AND (")
 		res := resourceNamesByMesh(opts.ResourceKeys)
 		iter := 0
 		for mesh, names := range res {
 			if iter > 0 {
-				statement += " OR "
+				statement.WriteString(" OR ")
 			}
 			argsIndex++
-			statement += fmt.Sprintf("(mesh=$%d AND", argsIndex)
+			fmt.Fprintf(&statement, "(mesh=$%d AND", argsIndex)
 			statementArgs = append(statementArgs, mesh)
 			for idx, name := range names {
 				argsIndex++
 				if idx == 0 {
-					statement += fmt.Sprintf(" name IN ($%d", argsIndex)
+					fmt.Fprintf(&statement, " name IN ($%d", argsIndex)
 				} else {
-					statement += fmt.Sprintf(",$%d", argsIndex)
+					fmt.Fprintf(&statement, ",$%d", argsIndex)
 				}
 				statementArgs = append(statementArgs, name)
 			}
-			statement += "))"
+			statement.WriteString("))")
 			iter++
 		}
-		statement += ")"
+		statement.WriteString(")")
 	}
 	if opts.Mesh != "" {
 		argsIndex++
-		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
+		fmt.Fprintf(&statement, " AND mesh=$%d", argsIndex)
 		statementArgs = append(statementArgs, opts.Mesh)
 	}
 	if opts.NameContains != "" {
 		argsIndex++
-		statement += fmt.Sprintf(" AND name LIKE $%d", argsIndex)
+		fmt.Fprintf(&statement, " AND name LIKE $%d", argsIndex)
 		statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
 	}
-	statement += " ORDER BY name, mesh"
+	statement.WriteString(" ORDER BY name, mesh")
 
 	tx, exist := store.TxFromCtx(ctx)
 	var rows pgx.Rows
 	var err error
 	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
-		rows, err = pgxTx.Query(ctx, statement, statementArgs...)
+		rows, err = pgxTx.Query(ctx, statement.String(), statementArgs...)
 	} else {
-		rows, err = r.pickRoPool().Query(ctx, statement, statementArgs...)
+		rows, err = r.pickRoPool().Query(ctx, statement.String(), statementArgs...)
 	}
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute query: %s", statement)
+		return errors.Wrapf(err, "failed to execute query: %s", statement.String())
 	}
 	defer rows.Close()
 

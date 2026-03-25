@@ -3,6 +3,7 @@ package context
 import (
 	"context"
 	"encoding/base64"
+	"strings"
 
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -70,9 +71,9 @@ func AggregateMeshContexts(
 }
 
 func aggregatedHash(meshContexts []MeshContext) string {
-	var hash string
+	var hash strings.Builder
 	for _, meshCtx := range meshContexts {
-		hash += meshCtx.Hash
+		hash.WriteString(meshCtx.Hash)
 	}
-	return sha256.Hash(hash)
+	return sha256.Hash(hash.String())
 }

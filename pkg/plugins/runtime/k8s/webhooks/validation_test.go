@@ -100,8 +100,8 @@ func webhookRequest(inputFile string) kube_admission.Request {
 	for _, l := range lines {
 		if strings.HasPrefix(l, "#") {
 			l = strings.Trim(l, "# ")
-			keyValuePairs := strings.Split(l, ",")
-			for _, kv := range keyValuePairs {
+			keyValuePairs := strings.SplitSeq(l, ",")
+			for kv := range keyValuePairs {
 				pair := strings.Split(kv, "=")
 				switch pair[0] {
 				case "user":

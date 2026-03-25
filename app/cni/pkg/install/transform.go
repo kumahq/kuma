@@ -19,10 +19,10 @@ func transformJsonConfig(kumaCniConfig string, hostCniConfig []byte) ([]byte, er
 
 	_, hasType := parsed["type"]
 	if hasType {
-		newConfig := map[string]interface{}{
+		newConfig := map[string]any{
 			"name":       "k8s-pod-network",
 			"cniVersion": "0.3.0",
-			"plugins":    []interface{}{parsed, kumaCniConfigParsed},
+			"plugins":    []any{parsed, kumaCniConfigParsed},
 		}
 		return json.MarshalIndent(newConfig, "", "  ")
 	} else {
@@ -48,13 +48,13 @@ func transformJsonConfig(kumaCniConfig string, hostCniConfig []byte) ([]byte, er
 	return marshaled, nil
 }
 
-func getPluginsArray(parsed map[string]interface{}) ([]interface{}, error) {
+func getPluginsArray(parsed map[string]any) ([]any, error) {
 	plugins, ok := parsed["plugins"]
 	if !ok {
 		return nil, errors.New("config does not have 'plugins' field")
 	}
 
-	pluginsArray, ok := plugins.([]interface{})
+	pluginsArray, ok := plugins.([]any)
 	if !ok {
 		return nil, errors.New("config's 'plugins' field is not an array")
 	}
@@ -62,7 +62,7 @@ func getPluginsArray(parsed map[string]interface{}) ([]interface{}, error) {
 	return pluginsArray, nil
 }
 
-func removeKumaCniConfig(pluginsArray []interface{}) ([]interface{}, error) {
+func removeKumaCniConfig(pluginsArray []any) ([]any, error) {
 	kumaCniConfigIndex, err := findKumaCniConfigIndex(pluginsArray)
 	if err != nil {
 		return nil, err
@@ -73,10 +73,10 @@ func removeKumaCniConfig(pluginsArray []interface{}) ([]interface{}, error) {
 	return pluginsArray, nil
 }
 
-func findKumaCniConfigIndex(pluginsArray []interface{}) (int, error) {
+func findKumaCniConfigIndex(pluginsArray []any) (int, error) {
 	kumaCniConfigIndex := -1
 	for i, p := range pluginsArray {
-		plugin, ok := p.(map[string]interface{})
+		plugin, ok := p.(map[string]any)
 		if !ok {
 			return -1, errors.New("plugin is not an object")
 		}

@@ -22,7 +22,7 @@ type printer struct {
 	hasPrinted bool
 }
 
-func printObj(obj interface{}, out io.Writer) error {
+func printObj(obj any, out io.Writer) error {
 	b, err := yaml.Marshal(obj)
 	if err != nil {
 		return err
@@ -31,7 +31,7 @@ func printObj(obj interface{}, out io.Writer) error {
 	return err
 }
 
-func (p *printer) Print(obj interface{}, out io.Writer) error {
+func (p *printer) Print(obj any, out io.Writer) error {
 	// The common case is printing a single Kuma resource, in which
 	// case showing the meta and then the spec is more readable than
 	// showing fields in an arbitrary order. This partially addresses

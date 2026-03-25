@@ -16,12 +16,10 @@ filterChains:
             stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service-tcp)
               took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED%
               bytes'
-          commonConfig:
-            grpcService:
-              envoyGrpc:
-                clusterName: system_meshaccesslog_otel-collector-4317
-            logName: MeshAccessLog
-            transportApiVersion: V3
+          grpcService:
+            envoyGrpc:
+              clusterName: system_meshaccesslog_otel-collector-4317
+          logName: MeshAccessLog
           resourceAttributes:
             values:
             - key: kuma.mesh

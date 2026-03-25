@@ -225,7 +225,11 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			return nil, cfg, stop, err
 		case <-tick.C:
 			leftTicks--
-			r, err := http.Get("http://" + apiServer.Address() + "/config")
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+apiServer.Address()+"/config", http.NoBody)
+			if err != nil {
+				return nil, cfg, stop, err
+			}
+			r, err := http.DefaultClient.Do(req)
 			if err != nil {
 				return nil, cfg, stop, err
 			}
@@ -314,7 +318,7 @@ func apiTest(inputResourceFile string, apiServer *api_server.ApiServer, resource
 			Expect(err).NotTo(HaveOccurred())
 			body = bytes.NewBuffer(b)
 		}
-		req, err := http.NewRequest(act.method, url, body)
+		req, err := http.NewRequestWithContext(context.Background(), act.method, url, body)
 		Expect(err).NotTo(HaveOccurred())
 		if body != nil {
 			req.Header.Add("content-type", "application/json")

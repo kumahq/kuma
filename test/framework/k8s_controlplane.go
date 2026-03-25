@@ -325,7 +325,7 @@ func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, erro
 		c.t,
 		http.MethodPost,
 		fmt.Sprintf("http://%s/v3/discovery:monitoringassignments", c.madsFwd.Endpoint),
-		[]byte(fmt.Sprintf(`{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId)),
+		fmt.Appendf(nil, `{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId),
 		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,
@@ -370,7 +370,7 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service, workload string) (strin
 		dpType = "ingress"
 	}
 
-	tokenData := map[string]interface{}{
+	tokenData := map[string]any{
 		"mesh": mesh,
 		"type": dpType,
 		"tags": map[string][]string{

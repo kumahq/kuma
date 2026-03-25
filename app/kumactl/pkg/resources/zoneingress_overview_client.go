@@ -27,7 +27,7 @@ type httpZoneIngressOverviewClient struct {
 }
 
 func (d *httpZoneIngressOverviewClient) List(ctx context.Context) (*mesh.ZoneIngressOverviewResourceList, error) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/%s/_overview", mesh.ZoneIngressResourceTypeDescriptor.WsPath), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("/%s/_overview", mesh.ZoneIngressResourceTypeDescriptor.WsPath), http.NoBody)
 	if err != nil {
 		return nil, err
 	}

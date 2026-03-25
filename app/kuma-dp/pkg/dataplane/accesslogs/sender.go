@@ -1,6 +1,7 @@
 package accesslogs
 
 import (
+	"context"
 	"net"
 	"time"
 
@@ -17,7 +18,7 @@ type logSender struct {
 }
 
 func (s *logSender) connect() error {
-	conn, err := net.DialTimeout("tcp", s.address, defaultConnectTimeout)
+	conn, err := (&net.Dialer{Timeout: defaultConnectTimeout}).DialContext(context.Background(), "tcp", s.address)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect to a TCP logging backend: %s", s.address)
 	}

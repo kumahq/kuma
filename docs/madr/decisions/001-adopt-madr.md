@@ -43,7 +43,7 @@ Chosen option: MADR, because of familiarity and simplicity.
 #### Open a new MADR
 
 - Always use the [template](/docs/madr/decisions/000-template.md) and pick the next number.
-- Update the [README](/docs/madr/README.md) with a link to the MADR and a 1 line description of the subject.
+- Make sure the `Status` line is set correctly so it appears in `list.sh` output.
 - Socialize your MADR in Kuma Slack.
 
 > Prior to open a MADR it might be useful to have an informal chat with committers as they may have suggestions/ideas.
@@ -56,7 +56,7 @@ They may need to call a meeting once it's ready to iron out the final points.
 
 #### When is a MADR accepted
 
-MADR must receive at least 3 approvals and no veto to be accepted.
+MADR must receive at least 2 approvals and no veto to be accepted.
 
 Only votes from committers do count.
 Pull Request reviews are used to submit approvals or vetos.

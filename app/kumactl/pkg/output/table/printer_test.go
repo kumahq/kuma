@@ -20,7 +20,7 @@ var _ = Describe("printer", func() {
 
 	type testCase struct {
 		data       table.Table
-		items      interface{}
+		items      any
 		goldenFile string
 	}
 
@@ -53,7 +53,7 @@ var _ = Describe("printer", func() {
 			},
 			data: table.Table{
 				Headers: []string{"MESH", "NAME"},
-				RowForItem: func(i int, container interface{}) ([]string, error) {
+				RowForItem: func(i int, container any) ([]string, error) {
 					items := container.([][]string)
 					if i >= len(items) {
 						return nil, nil
@@ -70,7 +70,7 @@ var _ = Describe("printer", func() {
 			},
 			data: table.Table{
 				Headers: []string{"MESH", "NAME"},
-				RowForItem: func(i int, container interface{}) ([]string, error) {
+				RowForItem: func(i int, container any) ([]string, error) {
 					items := container.([][]string)
 					if i >= len(items) {
 						return nil, nil

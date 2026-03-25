@@ -20,7 +20,7 @@ func Proxy() *ProxyBuilder {
 			Metadata:          &core_xds.DataplaneMetadata{},
 			Policies:          core_xds.MatchedPolicies{},
 			Routing:           core_xds.Routing{},
-			RuntimeExtensions: map[string]interface{}{},
+			RuntimeExtensions: map[string]any{},
 			Zone:              "test-zone",
 		},
 	}

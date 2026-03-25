@@ -111,6 +111,8 @@ spec:
       value: 31s
     - name: KUMA_DATAPLANE_MESH
       value: default
+    - name: KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED
+      value: "false"
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED

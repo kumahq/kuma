@@ -261,7 +261,7 @@ func (d *DataplaneGenerator) GenerateN(
 	serviceName string,
 	tags ...string,
 ) {
-	for i := 0; i < count; i++ {
+	for i := range count {
 		d.generate(fmt.Sprintf("%s-%d", serviceName, i), serviceName, tags...)
 	}
 }

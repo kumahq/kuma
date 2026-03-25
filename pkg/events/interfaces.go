@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
-type Event interface{}
+type Event any
 
 type Op int
 
