@@ -79,6 +79,12 @@ func (f *from) Meta(r core_model.Resource) v1alpha1.ResourceMeta {
 	return meta
 }
 
+func (f *from) ResourceWithKRIDefaults(r core_model.Resource, zone, namespace string) Resource {
+	res := f.Resource(r)
+	setKRIDefaults(res, zone, namespace)
+	return res
+}
+
 func (f *from) ResourceList(rs core_model.ResourceList) *ResourceList {
 	items := make([]Resource, len(rs.GetItems()))
 	for i, r := range rs.GetItems() {
@@ -87,6 +93,26 @@ func (f *from) ResourceList(rs core_model.ResourceList) *ResourceList {
 	return &ResourceList{
 		Total: rs.GetPagination().Total,
 		Items: items,
+	}
+}
+
+func (f *from) ResourceListWithKRIDefaults(rs core_model.ResourceList, zone, namespace string) *ResourceList {
+	items := make([]Resource, len(rs.GetItems()))
+	for i, r := range rs.GetItems() {
+		items[i] = f.ResourceWithKRIDefaults(r, zone, namespace)
+	}
+	return &ResourceList{
+		Total: rs.GetPagination().Total,
+		Items: items,
+	}
+}
+
+func setKRIDefaults(r Resource, zone, namespace string) {
+	switch res := r.(type) {
+	case *v1alpha1.Resource:
+		res.SetKRIDefaults(zone, namespace)
+	case *unversioned.Resource:
+		res.Meta.SetKRIDefaults(zone, namespace)
 	}
 }
 

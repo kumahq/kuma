@@ -246,7 +246,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 		}
 		var res any
 
-		res, err = formatResource(resource, request.QueryParameter("format"), r.k8sMapper, request.QueryParameter("namespace"))
+		res, err = formatResource(resource, request.QueryParameter("format"), r.k8sMapper, request.QueryParameter("namespace"), r.zoneName, r.systemNamespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 			return
@@ -257,7 +257,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 	}
 }
 
-func formatResource(resource core_model.Resource, format string, k8sMapper k8s.ResourceMapperFunc, namespace string) (any, error) {
+func formatResource(resource core_model.Resource, format string, k8sMapper k8s.ResourceMapperFunc, namespace, defaultZone, defaultNamespace string) (any, error) {
 	switch format {
 	case "k8s", "kubernetes":
 		res, err := k8sMapper(resource, namespace)
@@ -266,7 +266,7 @@ func formatResource(resource core_model.Resource, format string, k8sMapper k8s.R
 		}
 		return res, nil
 	case "universal", "":
-		return rest.From.Resource(resource), nil
+		return rest.From.ResourceWithKRIDefaults(resource, defaultZone, defaultNamespace), nil
 	default:
 		err := validators.MakeFieldMustBeOneOfErr("format", "k8s", "kubernetes", "universal")
 		return nil, err.OrNil()
@@ -354,7 +354,7 @@ func (r *resourceEndpoints) listResources(withInsight bool) func(request *restfu
 				return
 			}
 		}
-		restList := rest.From.ResourceList(list)
+		restList := rest.From.ResourceListWithKRIDefaults(list, r.zoneName, r.systemNamespace)
 		restList.Next = nextLink(request, list.GetPagination().NextOffset)
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
