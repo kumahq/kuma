@@ -63,7 +63,7 @@ func renderHelmFiles(
 ) ([]data.File, error) {
 	kumaChart, err := loadCharts(templates)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load charts: %s", err)
+		return nil, fmt.Errorf("failed to load charts: %w", err)
 	}
 
 	// This is necessary because ProcessDependencies can output warnings as well
@@ -71,7 +71,7 @@ func renderHelmFiles(
 	writer := log.Writer()
 	log.SetOutput(onlyWriteWarnings{writer: writer})
 	if err := chartv2util.ProcessDependencies(kumaChart, overrideValues); err != nil {
-		return nil, fmt.Errorf("Failed to process dependencies: %s", err)
+		return nil, fmt.Errorf("failed to process dependencies: %w", err)
 	}
 	log.SetOutput(writer)
 
@@ -79,7 +79,7 @@ func renderHelmFiles(
 
 	valuesToRender, err := chartcommonutil.ToRenderValues(kumaChart, overrideValues, options, &capabilities)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to render values: %s", err)
+		return nil, fmt.Errorf("failed to render values: %w", err)
 	}
 
 	var files map[string]string
@@ -89,7 +89,7 @@ func renderHelmFiles(
 		files, err = engine.RenderWithClient(kumaChart, valuesToRender, kubeClientConfig)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Failed to render templates: %s", err)
+		return nil, fmt.Errorf("failed to render templates: %w", err)
 	}
 	files["namespace.yaml"] = kumaSystemNamespace(namespace)
 

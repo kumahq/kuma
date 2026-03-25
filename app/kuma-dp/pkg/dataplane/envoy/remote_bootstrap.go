@@ -40,7 +40,7 @@ var (
 )
 
 func InvalidRequestErr(msg string) error {
-	return fmt.Errorf("Invalid request: %s", msg)
+	return fmt.Errorf("invalid request: %s", msg)
 }
 
 func IsInvalidRequestErr(err error) bool {

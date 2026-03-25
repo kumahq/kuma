@@ -144,11 +144,11 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		newName := s.socketPath + ".bak"
 		err := os.Rename(s.socketPath, newName)
 		if err != nil {
-			return fmt.Errorf("file %s exists and probably opened by another kuma-dp instance", s.socketPath)
+			return fmt.Errorf("file %s exists and probably opened by another kuma-dp instance: %w", s.socketPath, err)
 		}
 		err = os.Remove(newName)
 		if err != nil {
-			return fmt.Errorf("not able the delete the backup file %s", newName)
+			return fmt.Errorf("not able to delete the backup file %s: %w", newName, err)
 		}
 	}
 

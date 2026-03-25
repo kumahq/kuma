@@ -275,7 +275,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			runLog.Info("fetching bootstrap configuration")
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.BootstrapOtelEnv, rootCtx.Features)
 			if err != nil {
-				return fmt.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
+				return fmt.Errorf("failed to fetch Envoy bootstrap config. %v", err)
 			}
 			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 

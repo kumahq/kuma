@@ -68,14 +68,14 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				}
 			}
 			if !cfg.AddControlPlane(cp, args.overwrite) {
-				return fmt.Errorf("Control Plane with name %q already exists. Use --overwrite to replace an existing one.", cp.Name)
+				return fmt.Errorf("control Plane with name %q already exists. Use --overwrite to replace an existing one", cp.Name)
 			}
 			ctx := &config_proto.Context{
 				Name:         cp.Name,
 				ControlPlane: cp.Name,
 			}
 			if !cfg.AddContext(ctx, args.overwrite) {
-				return fmt.Errorf("Context with name %q already exists", ctx.Name)
+				return fmt.Errorf("context with name %q already exists", ctx.Name)
 			}
 			cfg.CurrentContext = ctx.Name
 			if err := pctx.SaveConfig(); err != nil {

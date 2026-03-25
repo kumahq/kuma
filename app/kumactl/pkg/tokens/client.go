@@ -27,7 +27,7 @@ var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
 func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string, workload string, validFor time.Duration) (string, error) {
 	if validFor == 0 {
-		return "", errors.New("You must set a token validFor value")
+		return "", errors.New("you must set a token validFor value")
 	}
 	tokenReq := &types.DataplaneTokenRequest{
 		Name:     name,
