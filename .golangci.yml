@@ -16,6 +16,8 @@ linters:
     - loggercheck
     - makezero
     - misspell
+    - modernize
+    - noctx
     - nolintlint
     - nonamedreturns
     - nosprintfhostport
@@ -137,6 +139,12 @@ linters:
       locale: US
       ignore-rules:
         - cancelled
+    modernize:
+      disable:
+        # Simplify code by using go1.26's new(expr).
+        - newexpr
+        # Suggest replacing omitempty with omitzero for struct fields.
+        - omitzero
     nolintlint:
       allow-unused: false
       require-specific: true

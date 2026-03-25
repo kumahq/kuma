@@ -184,7 +184,11 @@ func (e *Envoy) adminPost(path string) error {
 		baseURL = "http://localhost"
 	}
 
-	resp, err := client.Post(baseURL+path, "", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+path, http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -209,7 +213,7 @@ func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {
 		return nil, err
 	}
 	arg := "--version"
-	command := exec.Command(resolvedPath, arg)
+	command := exec.CommandContext(context.Background(), resolvedPath, arg)
 	output, err := command.Output()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to execute %s with arguments %q", resolvedPath, arg)

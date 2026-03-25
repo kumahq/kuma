@@ -118,7 +118,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 	if app.UnixSocketPath != "" {
 		targetURL = rewriteMetricsURLForUDS(app.Path, app.QueryModifier, &url.URL{})
 	}
-	req, err := http.NewRequest(http.MethodGet, targetURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, http.NoBody)
 	if err != nil {
 		log.Error(err, "failed to create request")
 		return nil

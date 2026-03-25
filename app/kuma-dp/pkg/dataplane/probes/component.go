@@ -61,7 +61,7 @@ func NewProber(podIPAddr string, listenPort uint32) *Prober {
 }
 
 func (p *Prober) Start(stop <-chan struct{}) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", p.listenPort))
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf(":%d", p.listenPort))
 	if err != nil {
 		return err_pkg.Wrap(err, "unable to listen for the Application Probe Proxy server")
 	}

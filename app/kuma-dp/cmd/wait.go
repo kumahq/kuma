@@ -89,7 +89,7 @@ func checkIfEnvoyReady(client *http.Client, rawURL string, isUDS bool) error {
 			return fmt.Errorf("URL host must be a loopback address, got %q", host)
 		}
 	}
-	req, err := http.NewRequest(http.MethodGet, rawURL, http.NoBody)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, rawURL, http.NoBody)
 	if err != nil {
 		return err
 	}

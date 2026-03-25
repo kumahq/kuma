@@ -19,7 +19,7 @@ make build/kumactl        # Build CLI
 
 make test TEST_PKG_LIST=./pkg/xds/...    # Test specific package
 UPDATE_GOLDEN_FILES=true make test       # Update golden files
-make k3d/start && skaffold dev           # Dev environment
+make k3d/cluster/start && skaffold dev   # Dev environment
 ```
 
 ## Workflow

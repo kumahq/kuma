@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -34,7 +35,11 @@ func (s *healthCheckServer) Server() *httptest.Server {
 }
 
 func (s *healthCheckServer) Ready() error {
-	res, err := http.DefaultClient.Get(fmt.Sprintf("%s/%s", s.server.URL, healthCheckPath))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/%s", s.server.URL, healthCheckPath), http.NoBody)
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
 	if err == nil {
 		_ = res.Body.Close()
 	}

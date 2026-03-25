@@ -118,15 +118,15 @@ func loadCharts(templates []data.File) (*chartv2.Chart, error) {
 	return loader.LoadFiles(fileteredFiles)
 }
 
-func generateOverrideValues(args interface{}, helmValuesPrefix string) map[string]interface{} {
-	overrideValues := map[string]interface{}{}
+func generateOverrideValues(args any, helmValuesPrefix string) map[string]any {
+	overrideValues := map[string]any{}
 
 	v := reflect.ValueOf(args)
 	t := v.Type()
-	for i := 0; i < t.NumField(); i++ {
-		name := t.Field(i).Name
+	for field := range t.Fields() {
+		name := field.Name
 		value := v.FieldByName(name)
-		tag := t.Field(i).Tag.Get("helm")
+		tag := field.Tag.Get("helm")
 
 		splitTag := strings.Split(tag, ",")
 		if len(splitTag) == 0 {
@@ -151,15 +151,15 @@ func generateOverrideValues(args interface{}, helmValuesPrefix string) map[strin
 			n := valuePath[i]
 
 			if _, ok := root[n]; !ok {
-				root[n] = map[string]interface{}{}
+				root[n] = map[string]any{}
 			}
-			root = root[n].(map[string]interface{})
+			root = root[n].(map[string]any)
 		}
 		root[valuePath[tagCount-1]] = adjustType(value.Interface())
 	}
 
 	if helmValuesPrefix != "" {
-		return map[string]interface{}{
+		return map[string]any{
 			helmValuesPrefix: overrideValues,
 		}
 	}
@@ -168,9 +168,9 @@ func generateOverrideValues(args interface{}, helmValuesPrefix string) map[strin
 }
 
 // If the parameter value is map it has to be of a type map[string]interface{} therefore we need to convert it
-func adjustType(value interface{}) interface{} {
+func adjustType(value any) any {
 	if m, ok := value.(map[string]string); ok {
-		result := map[string]interface{}{}
+		result := map[string]any{}
 		for k, v := range m {
 			result[k] = v
 		}

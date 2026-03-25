@@ -103,7 +103,7 @@ func (t *k8sDeployment) IP(namespace string) (string, error) {
 		"get the clusterIP of the Kong Ingress Controller Service",
 		60,
 		time.Second,
-		func() (interface{}, error) {
+		func() (any, error) {
 			svc, err := k8s.GetServiceE(
 				kubernetes.Cluster.GetTesting(),
 				kubernetes.Cluster.GetKubectlOptions(namespace),

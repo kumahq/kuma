@@ -167,7 +167,7 @@ func (c *UniversalControlPlane) Exec(cmd ...string) (string, string, error) {
 }
 
 func (c *UniversalControlPlane) GenerateDpToken(mesh, service, workload string) (string, error) {
-	tokenData := map[string]interface{}{
+	tokenData := map[string]any{
 		"mesh": mesh,
 		"tags": map[string][]string{
 			"kuma.io/service": {service},
