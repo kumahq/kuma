@@ -114,9 +114,9 @@ var _ = Describe("Detect mergable clusters", func() {
 })
 
 var _ = Describe("UTF-8 metrics validation", func() {
-	const utf8Input = `# HELP http.server.duration HTTP server request duration
-# TYPE http.server.duration gauge
-http.server.duration 1.0
+	const utf8Input = `# HELP "http.server.duration" HTTP server request duration
+# TYPE "http.server.duration" gauge
+{"http.server.duration"} 1.0
 `
 	It("should parse UTF-8 metric names when utf8NamesEnabled=true", func() {
 		actual := new(bytes.Buffer)
