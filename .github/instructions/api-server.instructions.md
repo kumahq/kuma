@@ -63,7 +63,7 @@ func formatResource(resource, format, k8sMapper, namespace) (any, error) {
     switch format {
     case "k8s", "kubernetes": return k8sMapper(resource, namespace), nil  // K8s YAML
     case "universal", "": return rest.From.Resource(resource), nil        // REST JSON
-    default: return nil, errors.Errorf("unknown format: %s", format)
+    default: return nil, fmt.Errorf("unknown format: %s", format)
     }
 }
 ```

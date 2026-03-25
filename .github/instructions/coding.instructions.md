@@ -34,11 +34,11 @@ func (e *NotFound) Is(err error) bool {
 }
 
 // Wrap with context
-return errors.Errorf("failed to create dataplane: %w", err)
+return fmt.Errorf("failed to create dataplane: %w", err)
 
 // Type assertions with clear messages
 if !ok {
-    return errors.Errorf("invalid type: expected=%T, got=%T", expectedType, actualType)
+    return fmt.Errorf("invalid type: expected=%T, got=%T", expectedType, actualType)
 }
 
 // Multi-error (transactions)
