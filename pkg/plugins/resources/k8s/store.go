@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"strings"
 	"time"
@@ -50,7 +51,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		if typeIsUnregistered(err) {
-			return errors.Errorf("cannot create instance of unregistered type %q", r.Descriptor().Name)
+			return fmt.Errorf("cannot create instance of unregistered type %q", r.Descriptor().Name)
 		}
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
@@ -95,7 +96,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		if typeIsUnregistered(err) {
-			return errors.Errorf("cannot update instance of unregistered type %q", r.Descriptor().Name)
+			return fmt.Errorf("cannot update instance of unregistered type %q", r.Descriptor().Name)
 		}
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
@@ -236,7 +237,7 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 		}
 		return name, ns, nil
 	default:
-		return "", "", errors.Errorf("unknown scope %s", scope)
+		return "", "", fmt.Errorf("unknown scope %s", scope)
 	}
 }
 

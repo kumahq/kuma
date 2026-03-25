@@ -2,6 +2,7 @@ package hostname
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -38,7 +39,7 @@ func (g *MeshMultiZoneServiceHostnameGenerator) GetResources(ctx context.Context
 func (g *MeshMultiZoneServiceHostnameGenerator) UpdateResourceStatus(ctx context.Context, resource model.Resource, statuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) error {
 	service, ok := resource.(*meshmzservice_api.MeshMultiZoneServiceResource)
 	if !ok {
-		return errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
+		return fmt.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
 	}
 	service.Status.Addresses = addresses
 	service.Status.HostnameGenerators = statuses
@@ -51,7 +52,7 @@ func (g *MeshMultiZoneServiceHostnameGenerator) UpdateResourceStatus(ctx context
 func (g *MeshMultiZoneServiceHostnameGenerator) HasStatusChanged(resource model.Resource, generatorStatuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) (bool, error) {
 	service, ok := resource.(*meshmzservice_api.MeshMultiZoneServiceResource)
 	if !ok {
-		return false, errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
+		return false, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
 	}
 
 	return !reflect.DeepEqual(addresses, service.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, service.Status.HostnameGenerators), nil
@@ -60,7 +61,7 @@ func (g *MeshMultiZoneServiceHostnameGenerator) HasStatusChanged(resource model.
 func (g *MeshMultiZoneServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
 	service, ok := resource.(*meshmzservice_api.MeshMultiZoneServiceResource)
 	if !ok {
-		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
+		return "", fmt.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
 	}
 	if generator.Spec.Selector.MeshMultiZoneService == nil {
 		return "", nil

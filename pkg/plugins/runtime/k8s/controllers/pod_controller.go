@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -195,7 +196,7 @@ func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core
 	}
 
 	if pod.Namespace != r.SystemNamespace {
-		return errors.Errorf("Ingress can only be deployed in system namespace %q", r.SystemNamespace)
+		return fmt.Errorf("ingress can only be deployed in system namespace %q", r.SystemNamespace)
 	}
 	services, err := r.findMatchingServices(ctx, pod)
 	if err != nil {
@@ -217,7 +218,7 @@ func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.
 	}
 
 	if pod.Namespace != r.SystemNamespace {
-		return errors.Errorf("Egress can only be deployed in system namespace %q", r.SystemNamespace)
+		return fmt.Errorf("egress can only be deployed in system namespace %q", r.SystemNamespace)
 	}
 	services, err := r.findMatchingServices(ctx, pod)
 	if err != nil {

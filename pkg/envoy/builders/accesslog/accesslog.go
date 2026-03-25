@@ -1,12 +1,13 @@
 package accesslog
 
 import (
+	"fmt"
+
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -26,7 +27,7 @@ func Config[R any](name string, builder *Builder[R]) Configurer[envoy_accesslog.
 		}
 		msg, ok := any(r).(proto.Message)
 		if !ok {
-			return errors.Errorf("%T is not proto.Message", r)
+			return fmt.Errorf("%T is not proto.Message", r)
 		}
 		marshaled, err := util_proto.MarshalAnyDeterministic(msg)
 		if err != nil {

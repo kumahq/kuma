@@ -3,8 +3,6 @@ package plugins
 import (
 	"fmt"
 	"sort"
-
-	"github.com/pkg/errors"
 )
 
 type pluginType string
@@ -243,10 +241,10 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 }
 
 func noSuchPluginError(typ pluginType, name PluginName) error {
-	return errors.Errorf("there is no plugin registered with type=%q and name=%s", typ, name)
+	return fmt.Errorf("there is no plugin registered with type=%q and name=%s", typ, name)
 }
 
 func pluginAlreadyRegisteredError(typ pluginType, name PluginName, old, n Plugin) error {
-	return errors.Errorf("plugin with type=%q and name=%s has already been registered: old=%#v new=%#v",
+	return fmt.Errorf("plugin with type=%q and name=%s has already been registered: old=%#v new=%#v",
 		typ, name, old, n)
 }

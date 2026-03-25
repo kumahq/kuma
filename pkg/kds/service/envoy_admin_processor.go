@@ -2,9 +2,8 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -165,7 +164,7 @@ func (s *envoyAdminProcessor) executeAdminFn(
 
 	resWithAddr, ok := res.(core_model.ResourceWithAddress)
 	if !ok {
-		return nil, errors.Errorf("invalid type %T", resWithAddr)
+		return nil, fmt.Errorf("invalid type %T", res)
 	}
 
 	return adminFn(ctx, resWithAddr)

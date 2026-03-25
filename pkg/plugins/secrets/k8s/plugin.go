@@ -1,7 +1,8 @@
 package k8s
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
 
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -20,15 +21,15 @@ func init() {
 func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (secret_store.SecretStore, error) {
 	mgr, ok := k8s_extensions.FromManagerContext(pc.Extensions())
 	if !ok {
-		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
+		return nil, errors.New("k8s controller runtime Manager hasn't been configured")
 	}
 	client, ok := k8s_extensions.FromSecretClientContext(pc.Extensions())
 	if !ok {
-		return nil, errors.Errorf("secret client hasn't been configured")
+		return nil, errors.New("secret client hasn't been configured")
 	}
 	coreStore, err := NewStore(client, client, mgr.GetScheme(), pc.Config().Store.Kubernetes.SystemNamespace)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't create k8s secret store")
+		return nil, fmt.Errorf("couldn't create k8s secret store: %w", err)
 	}
 	return core_store.NewPaginationStore(coreStore), nil
 }
