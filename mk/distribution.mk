@@ -33,8 +33,8 @@ build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-
 	command cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
 	command cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
 	command cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
-	for dir in $(DISTRIBUTION_EXTRA_DIRS); do command cp -r "$$dir" "$$@/" || exit $$?; done
-	for file in $(DISTRIBUTION_EXTRA_FILES); do command cp "$$file" "$$@/" || exit $$?; done
+	for dir in $(DISTRIBUTION_EXTRA_DIRS); do command cp -r "$$$$dir" "$$@/" || exit 1; done
+	for file in $(DISTRIBUTION_EXTRA_FILES); do command cp "$$$$file" "$$@/" || exit 1; done
 # CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly just coredns)
 ifneq ($(3),skip)
 	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
