@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -43,7 +45,7 @@ func (c *RuntimeConfig) Validate(env core.EnvironmentType) error {
 		}
 	case core.UniversalEnvironment:
 	default:
-		return errors.Errorf("unknown environment type %q", env)
+		return fmt.Errorf("unknown environment type %q", env)
 	}
 	return nil
 }

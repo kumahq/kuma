@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"fmt"
 	"maps"
 	"net"
 	"slices"
@@ -8,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
@@ -203,7 +203,7 @@ func validatePortAndProtocol(portProtocols map[uint32]map[core_meta.Protocol]boo
 			counter++
 		}
 		if counter > 1 {
-			errs = multierr.Append(errs, errors.Errorf("you cannot configure http, http2, grpc on the same port %d", port))
+			errs = multierr.Append(errs, fmt.Errorf("you cannot configure http, http2, grpc on the same port %d", port))
 		}
 	}
 	return errs

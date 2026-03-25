@@ -1,9 +1,9 @@
 package proto
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -47,7 +47,7 @@ func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
 		return src, nil
 	}
 	if src.TypeUrl != dst.TypeUrl {
-		return nil, errors.Errorf("type URL of dst %q is different than src %q", dst.TypeUrl, src.TypeUrl)
+		return nil, fmt.Errorf("type URL of dst %q is different than src %q", dst.TypeUrl, src.TypeUrl)
 	}
 
 	msgType, err := FindMessageType(dst.TypeUrl)

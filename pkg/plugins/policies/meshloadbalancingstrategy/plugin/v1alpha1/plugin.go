@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -10,7 +11,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/pkg/errors"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -571,7 +571,7 @@ func (p plugin) configureRDS(
 			}
 			rs, ok := hcm.RouteSpecifier.(*envoy_hcm.HttpConnectionManager_Rds)
 			if !ok {
-				return errors.Errorf("unexpected RouteSpecifer %T", hcm.RouteSpecifier)
+				return fmt.Errorf("unexpected RouteSpecifier %T", hcm.RouteSpecifier)
 			}
 			routeConfigs = append(routeConfigs, rs.Rds.RouteConfigName)
 		}

@@ -2,12 +2,12 @@ package mux
 
 import (
 	"context"
+	"fmt"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -38,7 +38,7 @@ func KDSVersion(ctx context.Context) string {
 }
 
 func UnsupportedKDSVersion(version string) error {
-	return errors.Errorf("invalid KDS version %s. Supported versions %s %s", version, KDSVersionV2, KDSVersionV3)
+	return fmt.Errorf("invalid KDS version %s. Supported versions %s %s", version, KDSVersionV2, KDSVersionV3)
 }
 
 func DiscoveryRequestV2(request *envoy_sd_v3.DiscoveryRequest) *envoy_api_v2.DiscoveryRequest {

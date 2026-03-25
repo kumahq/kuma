@@ -2,9 +2,9 @@ package tokens
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
 	config_access "github.com/kumahq/kuma/v2/pkg/config/access"
@@ -86,7 +86,7 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 
 	accessFn, ok := AccessStrategies[context.Config().Access.Type]
 	if !ok {
-		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
+		return fmt.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
 	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), system.UserTokenSigningKeyPrefix)
 	tokenIssuer := NewUserTokenIssuer(signingKeyManager)

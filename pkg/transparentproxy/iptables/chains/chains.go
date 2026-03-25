@@ -1,6 +1,8 @@
 package chains
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
@@ -61,7 +63,7 @@ func NewChain(table consts.TableName, chain string) (*Chain, error) {
 	case "":
 		return nil, errors.New("table is required and cannot be empty")
 	default:
-		return nil, errors.Errorf(
+		return nil, fmt.Errorf(
 			"unsupported table %q (valid: [%q, %q, %q])",
 			table,
 			consts.TableRaw,

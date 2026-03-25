@@ -3,10 +3,10 @@ package client
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
 	"net/url"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/filters"
 	"google.golang.org/grpc"
@@ -49,7 +49,7 @@ func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	default:
-		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
+		return nil, fmt.Errorf("unsupported scheme %q. Use one of %v", url.Scheme, []string{"grpc", "grpcs"})
 	}
 	dialOpts = append(dialOpts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(
 		otelgrpc.WithFilter(filters.Not(filters.ServiceName(system_proto.InterCpPingService_ServiceDesc.ServiceName))),

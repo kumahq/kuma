@@ -1,10 +1,9 @@
 package resolve
 
 import (
+	"errors"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -153,7 +152,7 @@ func parseService(host string) (string, string, int32, error) {
 		// one here to note that this service is actually
 		port = 0
 	default:
-		return "", "", 0, errors.Errorf("service tag in unexpected format")
+		return "", "", 0, errors.New("service tag in unexpected format")
 	}
 
 	name, namespace := segments[0], segments[1]
