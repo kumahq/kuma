@@ -9,7 +9,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/test/framework"
 )
@@ -95,7 +94,7 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 		func() (string, error) {
 			_, err := u.dockerBackend.StopE(cluster.GetTesting(), []string{u.container}, &docker.StopOptions{Time: 1})
 			if err == nil {
-				return "Container still running", errors.Errorf("Container still running")
+				return "Container still running", fmt.Errorf("Container still running")
 			}
 			return "Container stopped", nil
 		})

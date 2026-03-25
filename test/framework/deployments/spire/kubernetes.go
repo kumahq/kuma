@@ -1,9 +1,10 @@
 package spire
 
 import (
+	"fmt"
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/test/framework"
@@ -96,7 +97,7 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 		},
 	)
 	if len(pods) == 0 {
-		return errors.Errorf("no pods found with selector %q in namespace %q", selector, t.namespace)
+		return fmt.Errorf("no pods found with selector %q in namespace %q", selector, t.namespace)
 	}
 
 	for _, pod := range pods {

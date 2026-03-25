@@ -3,11 +3,11 @@ package container
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -125,7 +125,7 @@ func buildContainerHook(cmd []string) testcontainers.ContainerHook {
 				return err
 			}
 
-			return errors.Errorf(
+			return fmt.Errorf(
 				"%s failed (exit code: %d): %s",
 				strings.Join(cmd, " "),
 				status,

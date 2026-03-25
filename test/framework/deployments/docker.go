@@ -1,6 +1,7 @@
 package deployments
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/test/framework"
 )
@@ -42,7 +42,7 @@ func NewDockerContainer(fs ...DockerContainerOptFn) (*DockerContainer, error) {
 
 	for _, f := range fs {
 		if err := f(d); err != nil {
-			return nil, errors.Errorf("couldn't create docker containter: %s", err)
+			return nil, fmt.Errorf("couldn't create docker containter: %s", err)
 		}
 	}
 

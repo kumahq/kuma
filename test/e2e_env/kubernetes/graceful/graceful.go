@@ -11,7 +11,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/util/channels"
@@ -144,7 +143,7 @@ spec:
 			if err != nil {
 				return err
 			}
-			return errors.Errorf("status code: %d body: %s", resp.StatusCode, string(bytes))
+			return fmt.Errorf("status code: %d body: %s", resp.StatusCode, string(bytes))
 		}
 		_, err = io.Copy(io.Discard, resp.Body)
 		return err
