@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -67,7 +68,7 @@ func (l *Loader) LoadFile(filename string) error {
 	}
 
 	if _, err := os.Stat(filename); err != nil {
-		return errors.Errorf("unable to access configuration file '%s', please check if the file exists and has the correct permissions", filename)
+		return fmt.Errorf("unable to access configuration file '%s', please check if the file exists and has the correct permissions: %w", filename, err)
 	}
 
 	content, err := os.ReadFile(filename)

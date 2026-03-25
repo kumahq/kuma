@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"slices"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -46,7 +47,7 @@ func (n *networkFilterModificator) apply(resources *core_xds.ResourceSet) error 
 						return errors.Wrap(err, "could not patch the resource")
 					}
 				default:
-					return errors.Errorf("invalid operation: %s", n.Operation)
+					return fmt.Errorf("invalid operation: %s", n.Operation)
 				}
 			}
 		}

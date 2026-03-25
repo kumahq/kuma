@@ -2,6 +2,7 @@ package authn_test
 
 import (
 	"context"
+	"fmt"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health_v3 "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
@@ -35,7 +36,7 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resou
 			return nil
 		}
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return fmt.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
 	return errors.New("invalid credential")
