@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -51,7 +52,7 @@ func (tc TokenClient) Generate(tokenReq any) (string, error) {
 				return "", &kumaErr
 			}
 		}
-		return "", errors.Errorf("(%d): %s", resp.StatusCode, body)
+		return "", fmt.Errorf("(%d): %s", resp.StatusCode, body)
 	}
 	return string(body), nil
 }

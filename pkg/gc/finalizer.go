@@ -2,6 +2,7 @@ package gc
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -60,7 +61,7 @@ type subscriptionFinalizer struct {
 func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Tenants, newTicker func() *time.Ticker, metrics core_metrics.Metrics, extensions context.Context, upsert store.UpsertConfig, types ...core_model.ResourceType) (component.Component, error) {
 	for _, typ := range types {
 		if !isInsightType(typ) {
-			return nil, errors.Errorf("%q type is not an Insight", typ)
+			return nil, fmt.Errorf("%q type is not an Insight", typ)
 		}
 	}
 

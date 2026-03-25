@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -43,7 +44,7 @@ func pemEncodeKey(priv crypto.PrivateKey) ([]byte, error) {
 	case *rsa.PrivateKey:
 		block = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
 	default:
-		return nil, errors.Errorf("unsupported private key type %T", priv)
+		return nil, fmt.Errorf("unsupported private key type %T", priv)
 	}
 	var keyBuf bytes.Buffer
 	if err := pem.Encode(&keyBuf, block); err != nil {

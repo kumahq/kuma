@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -190,7 +188,7 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetClustersGlobalInstanceId()
 		}
 	default:
-		return "", errors.Errorf("invalid operation %s", rpcName)
+		return "", fmt.Errorf("invalid operation %s", rpcName)
 	}
 	if globalInstanceID == "" {
 		return "", &StreamNotConnectedError{rpcName: rpcName}

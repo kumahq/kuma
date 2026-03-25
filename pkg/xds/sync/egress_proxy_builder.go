@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -152,7 +153,7 @@ func matchEgressPolicies(tags map[string]string, resources xds_context.Resources
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", plugin.Name)
 		}
 		if res.Type == "" {
-			return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", plugin.Name)
+			return nil, fmt.Errorf("matched policy didn't set type for policy plugin %s", plugin.Name)
 		}
 		pluginPolicies[res.Type] = res
 	}

@@ -2,8 +2,7 @@ package rest
 
 import (
 	"encoding/json"
-
-	"github.com/pkg/errors"
+	"errors"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
@@ -23,7 +22,7 @@ var _ json.Unmarshaler = &ResourceListReceiver{}
 
 func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 	if rec.NewResource == nil {
-		return errors.Errorf("NewResource must not be nil")
+		return errors.New("NewResource must not be nil")
 	}
 	type List struct {
 		Total uint32             `json:"total"`

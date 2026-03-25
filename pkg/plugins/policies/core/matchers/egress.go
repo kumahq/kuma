@@ -1,7 +1,7 @@
 package matchers
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -41,7 +41,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 	p := policies.GetItems()[0]
 
 	if _, ok := p.GetSpec().(core_model.Policy); !ok {
-		return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", p.Descriptor().Name)
+		return core_xds.TypedMatchingPolicies{}, fmt.Errorf("resource type %v doesn't support TargetRef matching", p.Descriptor().Name)
 	}
 
 	_, isFrom := p.GetSpec().(core_model.PolicyWithFromList)

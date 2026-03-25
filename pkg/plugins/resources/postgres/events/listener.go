@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -34,7 +35,7 @@ func (k *listener) Start(stop <-chan struct{}) error {
 	case postgres.DriverNamePgx:
 		listener, err = common_postgres.NewPgxListener(k.cfg, core.Log.WithName("postgres-event-listener-pgx"))
 	default:
-		return errors.Errorf("unsupported driver name %s", k.cfg.DriverName)
+		return fmt.Errorf("unsupported driver name %s", k.cfg.DriverName)
 	}
 
 	if err != nil {

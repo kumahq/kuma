@@ -104,7 +104,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 			if owners := mza.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
 				r.Eventf(svc, nil, kube_core.EventTypeWarning, NoPublicAddressForZoneProxyReason, "Conflict",
 					"MeshZoneAddress %s already exists and is not owned by this Service", req.Name)
-				return errors.Errorf("MeshZoneAddress already exists and is not owned by Service")
+				return errors.New("MeshZoneAddress already exists and is not owned by Service")
 			}
 		}
 		if mza.Labels == nil {

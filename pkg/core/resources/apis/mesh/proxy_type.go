@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -16,5 +16,5 @@ func ProxyTypeFromResourceType(t core_model.ResourceType) (mesh_proto.ProxyType,
 	case ZoneEgressType:
 		return mesh_proto.EgressProxyType, nil
 	}
-	return "", errors.Errorf("%s does not have a corresponding proxy type", t)
+	return "", fmt.Errorf("%s does not have a corresponding proxy type", t)
 }

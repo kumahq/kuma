@@ -7,7 +7,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -151,7 +150,7 @@ func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, 
 		"label": func(key string) (string, error) {
 			val, ok := meta.GetLabels()[key]
 			if !ok {
-				return "", errors.Errorf("label %s not found", key)
+				return "", fmt.Errorf("label %s not found", key)
 			}
 			return val, nil
 		},
