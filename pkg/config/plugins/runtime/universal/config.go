@@ -1,9 +1,9 @@
 package universal
 
 import (
+	"errors"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/v2/pkg/config"
@@ -61,13 +61,13 @@ func (i WorkloadConfig) Validate() error {
 func (u *UniversalRuntimeConfig) Validate() error {
 	var errs error
 	if u.DataplaneCleanupAge.Duration <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DataplaneCleanupAge must be positive"))
+		errs = multierr.Append(errs, errors.New(".DataplaneCleanupAge must be positive"))
 	}
 	if u.ZoneResourceCleanupAge.Duration <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".ZoneResourceCleanupAge must be positive"))
+		errs = multierr.Append(errs, errors.New(".ZoneResourceCleanupAge must be positive"))
 	}
 	if u.VIPRefreshInterval.Duration <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".VIPRefreshInterval must be positive"))
+		errs = multierr.Append(errs, errors.New(".VIPRefreshInterval must be positive"))
 	}
 	return errs
 }

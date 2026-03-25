@@ -2,6 +2,7 @@ package multizone
 
 import (
 	"crypto/x509"
+	"fmt"
 	"net/url"
 	"os"
 	"time"
@@ -80,10 +81,10 @@ func (r *ZoneConfig) PostProcess() error {
 
 func (r *ZoneConfig) Validate() error {
 	if r.Name == "" {
-		return errors.Errorf("Name is mandatory")
+		return errors.New("Name is mandatory")
 	}
 	if !govalidator.IsDNSName(r.Name) {
-		return errors.Errorf("Zone name %s has to be a valid DNS name", r.Name)
+		return fmt.Errorf("zone name %s has to be a valid DNS name", r.Name)
 	}
 	if len(r.Name) > 63 {
 		return errors.New("Zone name cannot be longer than 63 characters")
@@ -109,7 +110,7 @@ func (r *ZoneConfig) Validate() error {
 				}
 			}
 		default:
-			return errors.Errorf("unsupported scheme %q in zone GlobalAddress. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
+			return fmt.Errorf("unsupported scheme %q in zone GlobalAddress. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 		}
 		if err := r.KDS.Validate(); err != nil {
 			return errors.Wrap(err, ".KDS validation error")

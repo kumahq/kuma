@@ -2,8 +2,8 @@ package components
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
 
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
@@ -26,7 +26,7 @@ type Deps struct {
 func NewKubeAuthenticator(deps Deps) (auth.Authenticator, error) {
 	mgr, ok := k8s_extensions.FromManagerContext(deps.Extensions)
 	if !ok {
-		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
+		return nil, errors.New("k8s controller runtime Manager hasn't been configured")
 	}
 	return k8s_auth.New(mgr.GetClient(), deps.XdsMetrics), nil
 }
@@ -55,6 +55,6 @@ func DefaultAuthenticator(deps Deps, typ string) (auth.Authenticator, error) {
 	case dp_server.DpServerAuthNone:
 		return universal_auth.NewNoopAuthenticator(), nil
 	default:
-		return nil, errors.Errorf("unable to choose authenticator of %q", typ)
+		return nil, fmt.Errorf("unable to choose authenticator of %q", typ)
 	}
 }

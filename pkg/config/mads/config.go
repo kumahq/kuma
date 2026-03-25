@@ -1,6 +1,7 @@
 package mads
 
 import (
+	"fmt"
 	"slices"
 	"time"
 
@@ -62,16 +63,16 @@ func (c *MonitoringAssignmentServerConfig) Validate() error {
 	}
 	var errs error
 	if 65535 < c.Port {
-		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, errors.New(".Port must be in the range [0, 65535]"))
 	}
 
 	if len(c.ApiVersions) == 0 {
-		errs = multierr.Append(errs, errors.Errorf(".ApiVersions must contain at least one version"))
+		errs = multierr.Append(errs, errors.New(".ApiVersions must contain at least one version"))
 	}
 
 	for _, apiVersion := range c.ApiVersions {
 		if apiVersion != mads.API_V1 {
-			errs = multierr.Append(errs, errors.Errorf(".ApiVersions contains invalid version %s", apiVersion))
+			errs = multierr.Append(errs, fmt.Errorf(".ApiVersions contains invalid version %s", apiVersion))
 		}
 	}
 
@@ -85,13 +86,13 @@ func (c *MonitoringAssignmentServerConfig) Validate() error {
 		errs = multierr.Append(errs, errors.New(".TlsKeyFile cannot be empty if TlsCertFile has been set"))
 	}
 	if _, err := config_types.TLSVersion(c.TlsMinVersion); err != nil {
-		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+		errs = multierr.Append(errs, fmt.Errorf(".TlsMinVersion: %w", err))
 	}
 	if _, err := config_types.TLSVersion(c.TlsMaxVersion); err != nil {
-		errs = multierr.Append(errs, errors.New(".TlsMaxVersion"+err.Error()))
+		errs = multierr.Append(errs, fmt.Errorf(".TlsMaxVersion: %w", err))
 	}
 	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
-		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
+		errs = multierr.Append(errs, fmt.Errorf(".TlsCipherSuites: %w", err))
 	}
 	return errs
 }

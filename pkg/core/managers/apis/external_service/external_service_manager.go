@@ -2,9 +2,8 @@ package externalservice
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -109,7 +108,7 @@ func (m *externalServiceManager) Update(ctx context.Context, resource core_model
 func (m *externalServiceManager) externalService(resource core_model.Resource) (*core_mesh.ExternalServiceResource, error) {
 	externalService, ok := resource.(*core_mesh.ExternalServiceResource)
 	if !ok {
-		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.ExternalServiceResource)(nil), resource)
+		return nil, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.ExternalServiceResource)(nil), resource)
 	}
 	return externalService, nil
 }
@@ -117,7 +116,7 @@ func (m *externalServiceManager) externalService(resource core_model.Resource) (
 func (m *externalServiceManager) externalServices(list core_model.ResourceList) (*core_mesh.ExternalServiceResourceList, error) {
 	externalServices, ok := list.(*core_mesh.ExternalServiceResourceList)
 	if !ok {
-		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.ExternalServiceResourceList)(nil), list)
+		return nil, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.ExternalServiceResourceList)(nil), list)
 	}
 	return externalServices, nil
 }

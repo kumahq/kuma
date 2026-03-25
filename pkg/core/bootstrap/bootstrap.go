@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -275,7 +276,7 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().ResourceStore(pluginName)
 	if err != nil {
@@ -316,7 +317,7 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	case store.MemoryStore, store.PostgresStore:
 		pluginName = core_plugins.Universal
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().SecretStore(pluginName)
 	if err != nil {
@@ -339,7 +340,7 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	case store.MemoryStore, store.PostgresStore:
 		pluginName = core_plugins.Universal
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().ConfigStore(pluginName)
 	if err != nil {
@@ -392,7 +393,7 @@ func initializeAPIServerAuthenticator(builder *core_runtime.Builder) error {
 	authnType := builder.Config().ApiServer.Authn.Type
 	plugin, ok := core_plugins.Plugins().AuthnAPIServer()[core_plugins.PluginName(authnType)]
 	if !ok {
-		return errors.Errorf("there is not implementation of authn named %s", authnType)
+		return fmt.Errorf("there is not implementation of authn named %s", authnType)
 	}
 	authenticator, err := plugin.NewAuthenticator(builder)
 	if err != nil {
@@ -479,7 +480,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	case store.MemoryStore, store.PostgresStore:
 		cipher = secret_cipher.TODO() // get back to encryption in universal case
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	var secretValidator secret_manager.SecretValidator
 	if cfg.IsFederatedZoneCP() {

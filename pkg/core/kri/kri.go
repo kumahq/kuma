@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"golang.org/x/exp/constraints"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -88,16 +87,16 @@ func FromResourceMetaE[T ~string](rm core_model.ResourceMeta, resourceType T) (I
 func FromString(s string) (Identifier, error) {
 	parts := strings.Split(s, "_")
 	if len(parts) < 7 {
-		return Identifier{}, errors.Errorf("invalid identifier string: %q", s)
+		return Identifier{}, fmt.Errorf("invalid identifier string: %q", s)
 	}
 	if parts[0] != "kri" {
-		return Identifier{}, errors.Errorf("identifier must start with 'kri': %q", s)
+		return Identifier{}, fmt.Errorf("identifier must start with 'kri': %q", s)
 	}
 	ds := registry.Global().ObjectDescriptors(core_model.TypeFilterFn(func(d core_model.ResourceTypeDescriptor) bool {
 		return d.ShortName == parts[1] && d.ShortName != ""
 	}))
 	if len(ds) == 0 {
-		return Identifier{}, errors.Errorf("unknown short name of resource type: %q", parts[1])
+		return Identifier{}, fmt.Errorf("unknown short name of resource type: %q", parts[1])
 	}
 	return Identifier{
 		ResourceType: ds[0].Name,

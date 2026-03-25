@@ -2,6 +2,7 @@ package hostname
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -38,7 +39,7 @@ func (g *MeshServiceHostnameGenerator) GetResources(ctx context.Context) (model.
 func (g *MeshServiceHostnameGenerator) UpdateResourceStatus(ctx context.Context, resource model.Resource, statuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) error {
 	service, ok := resource.(*meshservice_api.MeshServiceResource)
 	if !ok {
-		return errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
+		return fmt.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
 	}
 	service.Status.Addresses = addresses
 	service.Status.HostnameGenerators = statuses
@@ -51,7 +52,7 @@ func (g *MeshServiceHostnameGenerator) UpdateResourceStatus(ctx context.Context,
 func (g *MeshServiceHostnameGenerator) HasStatusChanged(resource model.Resource, generatorStatuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) (bool, error) {
 	service, ok := resource.(*meshservice_api.MeshServiceResource)
 	if !ok {
-		return false, errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
+		return false, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
 	}
 
 	return !reflect.DeepEqual(addresses, service.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, service.Status.HostnameGenerators), nil
@@ -60,7 +61,7 @@ func (g *MeshServiceHostnameGenerator) HasStatusChanged(resource model.Resource,
 func (g *MeshServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
 	service, ok := resource.(*meshservice_api.MeshServiceResource)
 	if !ok {
-		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
+		return "", fmt.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
 	}
 	if generator.Spec.Selector.MeshService == nil {
 		return "", nil
