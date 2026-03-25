@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -103,7 +102,7 @@ func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, systemN
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*kube_core.Service)
 		if !ok {
-			l.WithValues("dataplane", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("service", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 
@@ -140,7 +139,7 @@ func DataplaneToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_commo
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.Dataplane)
 		if !ok {
-			l.WithValues("dataplane", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("dataplane", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 
@@ -161,7 +160,7 @@ func MeshGatewayToMeshMapper(client kube_client.Reader, l logr.Logger, ns string
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.MeshGateway)
 		if !ok {
-			l.WithValues("meshgateway", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("meshgateway", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 
@@ -189,7 +188,7 @@ func MeshGatewayRouteToMeshMapper(client kube_client.Reader, l logr.Logger, ns s
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.MeshGatewayRoute)
 		if !ok {
-			l.WithValues("meshgatewayroute", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("meshgatewayroute", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 
@@ -217,7 +216,7 @@ func ZoneIngressToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_com
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.ZoneIngress)
 		if !ok {
-			l.WithValues("zoneIngress", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("zoneIngress", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 		zoneIngress := core_mesh.NewZoneIngressResource()
@@ -246,7 +245,7 @@ func ExternalServiceToConfigMapsMapper(l logr.Logger, ns string) kube_handler.Ma
 	return func(_ context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.ExternalService)
 		if !ok {
-			l.WithValues("externalService", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("externalService", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 
@@ -261,7 +260,7 @@ func VirtualOutboundToConfigMapsMapper(l logr.Logger, ns string) kube_handler.Ma
 	return func(_ context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.VirtualOutbound)
 		if !ok {
-			l.WithValues("virtualOutbound", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("virtualOutbound", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 

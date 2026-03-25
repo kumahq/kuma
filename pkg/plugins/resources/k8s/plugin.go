@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -21,11 +21,11 @@ func init() {
 func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, core_store.Transactions, error) {
 	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
-		return nil, nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
+		return nil, nil, errors.New("k8s controller runtime Manager hasn't been configured")
 	}
 	converter, ok := k8s_runtime.FromResourceConverterContext(pc.Extensions())
 	if !ok {
-		return nil, nil, errors.Errorf("k8s resource converter hasn't been configured")
+		return nil, nil, errors.New("k8s resource converter hasn't been configured")
 	}
 	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter)
 	return store, core_store.NoTransactions{}, err
@@ -38,7 +38,7 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 func (p *plugin) EventListener(pc core_plugins.PluginContext, writer events.Emitter) error {
 	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
-		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
+		return errors.New("k8s controller runtime Manager hasn't been configured")
 	}
 	if err := pc.ComponentManager().Add(k8s_events.NewListener(mgr, writer)); err != nil {
 		return err
