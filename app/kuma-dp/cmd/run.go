@@ -465,7 +465,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	return cmd
 }
 
-func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []metrics.ApplicationToScrape {
+func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32, utf8NamesEnabled bool) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
@@ -476,7 +476,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Port:              item.Port,
 				IsIPv6:            kuma_net.IsAddressIPv6(item.Address),
 				QueryModifier:     metrics.RemoveQueryParameters,
-				MeshMetricMutator: metrics.AggregatedOtelMutator(),
+				MeshMetricMutator: metrics.AggregatedOtelMutator(utf8NamesEnabled),
 			})
 		}
 	}
@@ -488,8 +488,8 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		Port:              envoyAdminPort,
 		IsIPv6:            false,
 		QueryModifier:     metrics.AddPrometheusFormat,
-		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
-		MeshMetricMutator: metrics.AggregatedOtelMutator(),
+		Mutator:           metrics.AggregatedMetricsMutator(utf8NamesEnabled, metrics.MergeClustersForPrometheus),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(utf8NamesEnabled),
 	})
 	return applicationsToScrape
 }
@@ -502,7 +502,7 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 }
 
 func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
-	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(), cfg.DataplaneRuntime.Metrics.UTF8NamesEnabled)
 
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
@@ -537,6 +537,7 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
 		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
 		cfg.Dataplane.DrainTime.Duration,
+		cfg.DataplaneRuntime.Metrics.UTF8NamesEnabled,
 	)
 	err := fetcher.AddHandler(meshmetric_dpapi.PATH, mm.OnChange)
 	if err != nil {

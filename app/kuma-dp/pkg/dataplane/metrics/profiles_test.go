@@ -33,7 +33,7 @@ var _ = Describe("Profiles", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			actual := new(bytes.Buffer)
-			err = AggregatedMetricsMutator(ProfileMutatorGenerator(mm.Spec.Default.Sidecar))(input, actual)
+			err = AggregatedMetricsMutator(false, ProfileMutatorGenerator(mm.Spec.Default.Sidecar))(input, actual)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(toLines(actual)).To(ConsistOf(toLines(expected)))

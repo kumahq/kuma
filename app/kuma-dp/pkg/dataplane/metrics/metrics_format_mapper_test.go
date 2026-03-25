@@ -29,7 +29,7 @@ var _ = Describe("Metrics format mapper", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		metrics, err := AggregatedOtelMutator()(input)
+		metrics, err := AggregatedOtelMutator(false)(input)
 		Expect(err).ToNot(HaveOccurred())
 		openTelemetryMetrics := FromPrometheusMetrics(
 			metrics,
