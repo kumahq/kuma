@@ -321,7 +321,7 @@ spec:
 
 	It("should route cross-zone traffic to MeshExternalService and record metrics on zone-proxy-egress", func() {
 		uniEgressFilter := fmt.Sprintf(
-			"cluster.kri_extsvc_%s_%s__external-service_8080.upstream_rq_200",
+			"cluster.kri_extsvc_%s_%s__external-service-meshproxy_8080.upstream_rq_200",
 			meshName, multizone.UniZone1.ZoneName(),
 		)
 		kubeEgressFilter := fmt.Sprintf(
@@ -354,7 +354,7 @@ spec:
 				"http://external-service-meshproxy.extsvc.mesh.local:8080",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(Equal("external-service"))
+			g.Expect(response.Instance).To(Equal("external-service-meshproxy"))
 		}, "30s", "1s").Should(Succeed())
 
 		// Verify traffic was routed through UniZone1's zone-proxy-egress

@@ -44,16 +44,16 @@ func (g ZoneProxyListenerGenerator) Generate(
 		return nil, nil
 	}
 
+	if xdsCtx.Mesh.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+		zoneProxyLog.Info("skipping zone proxy listeners: MeshServices must be in Exclusive mode",
+			"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName(),
+		)
+		return nil, nil
+	}
+
 	rs := core_xds.NewResourceSet()
 
 	for _, il := range proxy.DataplaneZoneListeners.IngressListeners {
-		if il.MeshResources.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-			zoneProxyLog.Info("skipping zone ingress listener: MeshServices must be in Exclusive mode",
-				"mesh", il.MeshResources.Mesh.GetMeta().GetName(),
-				"listener", il.Listener.Name,
-			)
-			continue
-		}
 		generated, err := g.generateIngressListener(proxy, xdsCtx, il)
 		if err != nil {
 			return nil, err
@@ -61,21 +61,14 @@ func (g ZoneProxyListenerGenerator) Generate(
 		rs.AddSet(generated)
 	}
 
+	if proxy.WorkloadIdentity == nil {
+		zoneProxyLog.Info("skipping zone egress listeners: WorkloadIdentity is required for egress mTLS",
+			"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName(),
+		)
+		return rs, nil
+	}
+
 	for _, el := range proxy.DataplaneZoneListeners.EgressListeners {
-		if el.MeshResources.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-			zoneProxyLog.Info("skipping zone egress listener: MeshServices must be in Exclusive mode",
-				"mesh", el.MeshResources.Mesh.GetMeta().GetName(),
-				"listener", el.Listener.Name,
-			)
-			continue
-		}
-		if proxy.WorkloadIdentity == nil {
-			zoneProxyLog.Info("skipping zone egress listener: WorkloadIdentity is required for egress mTLS",
-				"mesh", el.MeshResources.Mesh.GetMeta().GetName(),
-				"listener", el.Listener.Name,
-			)
-			continue
-		}
 		generated, err := g.generateEgressListener(proxy, el)
 		if err != nil {
 			return nil, err
@@ -95,18 +88,15 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	cp := xdsCtx.ControlPlane
 	mr := il.MeshResources
 	meshName := mr.Mesh.GetMeta().GetName()
-	getName := naming.GetNameOrFallbackFunc(true)
 
 	address := il.Listener.Address
 	port := il.Listener.Port
 
-	zoneIngressListenerName := naming.ContextualZoneIngressListenerName(il.Listener.Name)
-	listenerName := getName(zoneIngressListenerName, envoy_names.GetInboundListenerName(address, port))
-	statPrefix := getName(zoneIngressListenerName, "")
+	listenerName := naming.ContextualZoneIngressListenerName(il.Listener.Name)
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
-		Configure(envoy_listeners.StatPrefix(statPrefix)).
+		Configure(envoy_listeners.StatPrefix(listenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
 	meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
@@ -187,9 +177,9 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	}
 
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
-	for _, cluster := range g.getMeshExternalServiceClusters(el.MeshResources, true) {
+	for _, cluster := range g.getMeshExternalServiceClusters(el.MeshResources) {
 		filterChainBuilders = append(filterChainBuilders,
-			g.buildEgressFilterChain(proxy, el.MeshResources, downstreamTLS, cluster, true),
+			g.buildEgressFilterChain(proxy, el.MeshResources.EndpointMap[cluster.Name()], downstreamTLS, cluster),
 		)
 		cds, err := g.genClusterCDS(proxy, el.MeshResources.EndpointMap[cluster.Name()], cluster)
 		if err != nil {
@@ -218,10 +208,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 }
 
 // getMeshExternalServiceClusters returns clusters for MeshExternalService BackendRefs only.
-func (g ZoneProxyListenerGenerator) getMeshExternalServiceClusters(
-	resources *core_xds.MeshProxyResources,
-	unifiedNaming bool,
-) []envoy_common.Cluster {
+func (g ZoneProxyListenerGenerator) getMeshExternalServiceClusters(resources *core_xds.MeshProxyResources) []envoy_common.Cluster {
 	svcAcc := envoy_common.NewServicesAccumulator(nil)
 	localResources := xds_context.Resources{MeshLocalResources: resources.Resources}
 	destinations := zoneproxy.BuildMeshDestinations(
@@ -233,15 +220,13 @@ func (g ZoneProxyListenerGenerator) getMeshExternalServiceClusters(
 
 	sniUsed := map[string]struct{}{}
 	for _, ref := range destinations.BackendRefs {
-		endpoints := resources.EndpointMap[naming.GetNameOrFallback(unifiedNaming, ref.Resource().String(), ref.LegacyServiceName)]
+		endpoints := resources.EndpointMap[ref.Resource().String()]
 		if _, ok := sniUsed[ref.SNI]; ok || len(endpoints) == 0 || !endpoints[0].IsExternalService() {
 			continue
 		}
 		sniUsed[ref.SNI] = struct{}{}
-		clusterName := naming.GetNameOrFallback(unifiedNaming, ref.Resource().String(), ref.LegacyServiceName)
 		cluster := plugins_xds.NewClusterBuilder().
-			WithName(clusterName).
-			WithService(ref.LegacyServiceName).
+			WithName(ref.Resource().String()).
 			WithSNI(ref.SNI).
 			WithExternalService(true).
 			Build()
@@ -280,20 +265,13 @@ func (g ZoneProxyListenerGenerator) genClusterCDS(
 
 func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 	proxy *core_xds.Proxy,
-	resources *core_xds.MeshProxyResources,
+	endpoints []core_xds.Endpoint,
 	downstreamTLS *envoy_tls.DownstreamTlsContext,
 	cluster envoy_common.Cluster,
-	unifiedNaming bool,
 ) *envoy_listeners.FilterChainBuilder {
-	meshName := resources.Mesh.GetMeta().GetName()
-	endpoints := resources.EndpointMap[cluster.Name()]
-	getName := naming.GetNameOrFallbackFunc(endpoints[0].IsMeshExternalService)
-	esName := naming.GetNameOrFallback(unifiedNaming, cluster.Name(), cluster.Service())
-	filterChainName := getName(esName, envoy_names.GetEgressFilterChainName(esName, meshName))
-	routeConfigName := getName(esName, envoy_names.GetOutboundRouteName(esName))
-	virtualHostName := esName
+	esName := cluster.Name()
 
-	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
+	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, esName).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
 		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamTLS))
@@ -306,7 +284,7 @@ func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 
 	return filterChain.
 		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-		Configure(envoy_listeners.HttpOutboundRoute(routeConfigName, virtualHostName, routes, nil))
+		Configure(envoy_listeners.HttpOutboundRoute(esName, esName, routes, nil))
 }
 
 // meshIdentityDownstreamTLS builds a DownstreamTlsContext from the proxy's WorkloadIdentity.
