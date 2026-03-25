@@ -15,11 +15,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -304,19 +302,15 @@ func createDynamicConfig(
 	}
 
 	extraLabels := map[string]string{}
+	extraLabels["mesh"] = proxy.Dataplane.GetMeta().GetMesh()
+	if zone := proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.ZoneTag]; zone != "" {
+		extraLabels["zone"] = zone
+	}
 	if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
-		workloadKRI := kri.Identifier{
-			ResourceType: workload_api.WorkloadType,
-			Mesh:         proxy.Dataplane.GetMeta().GetMesh(),
-			Zone:         proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.ZoneTag],
-			Namespace:    proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
-			Name:         workloadName,
-		}
-		extraLabels[WorkloadAttributeKey] = workloadKRI.String()
+		extraLabels[WorkloadAttributeKey] = workloadName
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
-		extraLabels["mesh"] = mesh.GetMeta().GetName()
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		if extraLabels[WorkloadAttributeKey] == "" {
 			extraLabels["service"] = proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
