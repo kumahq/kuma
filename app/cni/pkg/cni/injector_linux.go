@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -167,7 +168,7 @@ func GetEnabled(value string) (bool, error) {
 	case "disabled", "false":
 		return false, nil
 	default:
-		return false, errors.Errorf(`wrong value "%s", available values are: "enabled", "disabled", "true", "false"`, value)
+		return false, fmt.Errorf(`wrong value "%s", available values are: "enabled", "disabled", "true", "false"`, value)
 	}
 }
 

@@ -3,6 +3,7 @@ package dnsserver
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
 	"regexp"
@@ -67,7 +68,7 @@ func (s *DNSServer) GetVersion() (string, error) {
 
 	match := regexp.MustCompile(`CoreDNS-(.*)`).FindSubmatch(output)
 	if len(match) < 2 {
-		return "", errors.Errorf("unexpected version output format: %s", output)
+		return "", fmt.Errorf("unexpected version output format: %s", output)
 	}
 
 	return string(match[1]), nil

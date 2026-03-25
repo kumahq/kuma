@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	std_errors "errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -144,7 +145,7 @@ func setupChainedPlugin(ctx context.Context, mountedCniNetDir, cniConfName, kuma
 			return nil
 		}
 
-		err := errors.Errorf("cni config '%s' not found", cniConfPath)
+		err := fmt.Errorf("cni config '%s' not found", cniConfPath)
 		log.Error(err, "error chaining CNI config, retrying...")
 		return retry.RetryableError(err)
 	})

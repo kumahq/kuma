@@ -2,6 +2,7 @@ package cni
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/go-logr/logr"
@@ -107,7 +108,7 @@ func getAndValidatePodAnnotations(
 	}
 
 	if pod.Annotations[metadata.KumaSidecarInjectedAnnotation] != "true" {
-		return nil, true, errors.Errorf(
+		return nil, true, fmt.Errorf(
 			"annotation '%s' is missing or is not set to 'true'",
 			metadata.KumaSidecarInjectedAnnotation,
 		)
