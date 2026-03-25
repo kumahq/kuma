@@ -197,8 +197,13 @@ func (r *Reporter) adminProxy() http.Handler {
 		ErrorLog: adapter.ToStd(logger),
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet && req.Method != http.MethodHead {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		// Block endpoints that terminate or destabilise Envoy.
+		// Read endpoints (/stats, /config_dump, /clusters, etc.) accept
+		// both GET and POST in Envoy's admin API, so we restrict by path
+		// rather than method to preserve operator and test-framework access.
+		switch req.URL.Path {
+		case "/quitquitquit", "/drain_listeners", "/runtime_modify":
+			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		proxy.ServeHTTP(w, req)
