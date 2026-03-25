@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -8,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
@@ -82,7 +81,7 @@ func Policy(path string) (PolicyConfig, error) {
 
 	st, ok := mainStruct.Type.(*ast.StructType)
 	if !ok {
-		return PolicyConfig{}, errors.Errorf("type %s is not a struct", mainStruct.Name.String())
+		return PolicyConfig{}, fmt.Errorf("type %s is not a struct", mainStruct.Name.String())
 	}
 
 	fields := map[string]bool{}
@@ -116,7 +115,7 @@ func parseMainComment(cg *ast.CommentGroup) (string, map[string]string, []string
 		trimmed := strings.TrimPrefix(comment.Text, "// +")
 		mrkr := strings.Split(trimmed, "=")
 		if len(mrkr) != 2 {
-			return "", nil, nil, errors.Errorf("marker %s has wrong format", trimmed)
+			return "", nil, nil, fmt.Errorf("marker %s has wrong format", trimmed)
 		}
 		kumaMarkers[mrkr[0]] = mrkr[1]
 	}
@@ -194,7 +193,7 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		case "Mesh":
 			res.Scope = Mesh
 		default:
-			return res, errors.Errorf("couldn't parse %s as scope `Global` or `Mesh`", v)
+			return res, fmt.Errorf("couldn't parse %s as scope `Global` or `Mesh`", v)
 		}
 	} else {
 		res.Scope = Mesh
