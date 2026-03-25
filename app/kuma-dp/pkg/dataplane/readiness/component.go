@@ -40,25 +40,25 @@ type Reporter struct {
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32) *Reporter {
-	return &Reporter{
+func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string) *Reporter {
+	r := &Reporter{
 		unixSocketDisabled: unixSocketDisabled,
 		socketDir:          socketDir,
 		localListenPort:    localListenPort,
 		localListenAddr:    localIPAddr,
+		adminSocketPath:    adminSocketPath,
 	}
-}
-
-func (r *Reporter) SetAdminSocketPath(path string) {
-	r.adminSocketPath = path
-	r.adminClient = &http.Client{
-		Timeout: 3 * time.Second,
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", path)
+	if adminSocketPath != "" {
+		r.adminClient = &http.Client{
+			Timeout: 3 * time.Second,
+			Transport: &http.Transport{
+				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+					return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", adminSocketPath)
+				},
 			},
-		},
+		}
 	}
+	return r
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
@@ -89,12 +89,11 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
-	// When admin is on UDS, reverse-proxy all admin endpoints so
+	// When admin is on UDS, reverse-proxy read-only admin endpoints so
 	// that operators can still reach /stats, /config_dump, etc.
-	// Security model:
-	// - Sidecars: readiness reporter listens on UDS (filesystem-protected)
-	// - Ingress/egress: readiness reporter listens on TCP but these
-	//   are standalone pods with no co-located app container.
+	// Only GET and HEAD are allowed to prevent mutating endpoints
+	// (/quitquitquit, /runtime_modify, /drain_listeners, etc.) from
+	// being reachable over TCP.
 	if r.adminSocketPath != "" {
 		mux.Handle("/", r.adminProxy())
 	}
@@ -157,13 +156,13 @@ func (r *Reporter) writeState(writer http.ResponseWriter, req *http.Request, sta
 func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/ready", http.NoBody)
 	if err != nil {
-		logger.V(1).Info("envoy admin not ready", "err", err)
+		logger.Info("envoy admin not ready", "err", err)
 		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
 		return
 	}
 	resp, err := r.adminClient.Do(req)
 	if err != nil {
-		logger.V(1).Info("envoy admin not ready", "err", err)
+		logger.Info("envoy admin not ready", "err", err)
 		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
 		return
 	}
@@ -185,22 +184,25 @@ func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
 }
 
 func (r *Reporter) adminProxy() http.Handler {
-	return &httputil.ReverseProxy{
+	proxy := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
 			req.URL.Scheme = "http"
 			req.URL.Host = "localhost"
 		},
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "unix", r.adminSocketPath)
-			},
-		},
+		Transport: r.adminClient.Transport,
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
 			logger.Error(err, "admin proxy error")
 			http.Error(w, "admin backend unavailable", http.StatusBadGateway)
 		},
 		ErrorLog: adapter.ToStd(logger),
 	}
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet && req.Method != http.MethodHead {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		proxy.ServeHTTP(w, req)
+	})
 }
 
 func (r *Reporter) NeedLeaderElection() bool {

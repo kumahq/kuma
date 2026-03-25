@@ -373,10 +373,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
-				cfg.Dataplane.ReadinessPort)
-			if adminSocketPath != "" {
-				readinessReporter.SetAdminSocketPath(adminSocketPath)
-			}
+				cfg.Dataplane.ReadinessPort,
+				adminSocketPath)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

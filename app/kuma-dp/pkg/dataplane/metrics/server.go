@@ -155,13 +155,16 @@ func buildUDSClients(apps []ApplicationToScrape) map[string]http.Client {
 	return clients
 }
 
-func (s *Hijacker) getOrCreateUDSClient(socketPath string) http.Client {
+func (s *Hijacker) getUDSClient(socketPath string) http.Client {
 	if client, ok := s.httpClientsUDS[socketPath]; ok {
 		return client
 	}
-	client := createHTTPClientForUDS(socketPath)
-	s.httpClientsUDS[socketPath] = client
-	return client
+	// httpClientsUDS is built at construction time from the initial
+	// applicationsToScrape slice. This path is a safety fallback only;
+	// it creates a transient client without storing it to avoid a
+	// concurrent map write (Hijacker.ServeHTTP is called from multiple
+	// goroutines and httpClientsUDS is never updated after construction).
+	return createHTTPClientForUDS(socketPath)
 }
 
 func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, producer *AggregatedProducer) *Hijacker {
@@ -404,7 +407,7 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	logger.V(1).Info("executing get stats request", "address", app.Address, "port", app.Port, "path", app.Path)
 	switch {
 	case app.UnixSocketPath != "":
-		client := s.getOrCreateUDSClient(app.UnixSocketPath)
+		client := s.getUDSClient(app.UnixSocketPath)
 		resp, err = client.Do(req) // #nosec G704 -- operator-configured metrics target
 		if err == nil {
 			defer resp.Body.Close()
