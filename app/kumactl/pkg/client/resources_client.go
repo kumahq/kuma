@@ -3,10 +3,9 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/pkg/errors"
 
 	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
 	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
@@ -44,7 +43,7 @@ func (h HTTPResourcesListClient) List(ctx context.Context) (api_types.ResourceTy
 		return api_types.ResourceTypeDescriptionList{}, err
 	}
 	if resp.StatusCode != 200 {
-		return api_types.ResourceTypeDescriptionList{}, errors.Errorf("unexpected status code: %d %s", resp.StatusCode, b)
+		return api_types.ResourceTypeDescriptionList{}, fmt.Errorf("unexpected status code: %d %s", resp.StatusCode, b)
 	}
 	list := api_types.ResourceTypeDescriptionList{}
 	if err := json.Unmarshal(b, &list); err != nil {

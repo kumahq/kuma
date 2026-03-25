@@ -2,6 +2,7 @@ package cni
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -23,9 +24,9 @@ func pidOf(name string) (string, error) {
 	case name == "":
 		return "", errors.New("it's not possible to search for PID of process with no name")
 	case len(pids) == 0:
-		return "", errors.Errorf("couldn't find PID for '%s'", name)
+		return "", fmt.Errorf("couldn't find PID for '%s'", name)
 	case len(pids) > 1:
-		return "", errors.Errorf("more than one process '%s' running on a node, this should not happen", name)
+		return "", fmt.Errorf("more than one process '%s' running on a node, this should not happen", name)
 	default:
 		return strconv.Itoa(pids[0]), nil
 	}

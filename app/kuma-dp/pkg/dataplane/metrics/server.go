@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
-	"github.com/pkg/errors"
 	prom_client "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/expfmt"
@@ -145,11 +144,11 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		newName := s.socketPath + ".bak"
 		err := os.Rename(s.socketPath, newName)
 		if err != nil {
-			return errors.Errorf("file %s exists and probably opened by another kuma-dp instance", s.socketPath)
+			return fmt.Errorf("file %s exists and probably opened by another kuma-dp instance", s.socketPath)
 		}
 		err = os.Remove(newName)
 		if err != nil {
-			return errors.Errorf("not able the delete the backup file %s", newName)
+			return fmt.Errorf("not able the delete the backup file %s", newName)
 		}
 	}
 

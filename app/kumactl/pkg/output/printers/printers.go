@@ -1,9 +1,8 @@
 package printers
 
 import (
+	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/json"
@@ -36,6 +35,6 @@ func GenericPrint(format output.Format, data any, table Table, out io.Writer) er
 	case output.TableFormat:
 		return table.Print(data, out)
 	default:
-		return errors.Errorf("unknown output format %q", format)
+		return fmt.Errorf("unknown output format %q", format)
 	}
 }

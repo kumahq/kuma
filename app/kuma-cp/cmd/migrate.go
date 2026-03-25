@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -70,7 +72,7 @@ func migrate(cfg kuma_cp.Config) error {
 		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().ResourceStore(pluginName)
 	if err != nil {

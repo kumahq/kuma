@@ -3,10 +3,9 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
@@ -55,7 +54,7 @@ func (k *HTTPKubernetesResourcesClient) Get(ctx context.Context, descriptor mode
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.Errorf("unexpected status code: %d %s", resp.StatusCode, b)
+		return nil, fmt.Errorf("unexpected status code: %d %s", resp.StatusCode, b)
 	}
 	obj := map[string]any{}
 	if err := json.Unmarshal(b, &obj); err != nil {

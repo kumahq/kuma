@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	net_url "net/url"
@@ -39,7 +40,7 @@ var (
 )
 
 func InvalidRequestErr(msg string) error {
-	return errors.Errorf("Invalid request: %s", msg)
+	return fmt.Errorf("Invalid request: %s", msg)
 }
 
 func IsInvalidRequestErr(err error) bool {
@@ -52,7 +53,7 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 		return nil, nil, err
 	}
 	if bootstrapUrl.Scheme != "http" && bootstrapUrl.Scheme != "https" {
-		return nil, nil, errors.Errorf("unsupported URL scheme %q, must be http or https", bootstrapUrl.Scheme)
+		return nil, nil, fmt.Errorf("unsupported URL scheme %q, must be http or https", bootstrapUrl.Scheme)
 	}
 	client := &http.Client{Timeout: time.Second * 10}
 
@@ -263,7 +264,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		if resp.StatusCode/100 == 4 {
 			return nil, InvalidRequestErr(string(bodyBytes))
 		}
-		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {

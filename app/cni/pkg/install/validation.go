@@ -1,6 +1,8 @@
 package install
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -28,7 +30,7 @@ func isValidConfFile(file string) error {
 		return nil
 	}
 
-	return errors.Errorf(`configuration file "%s" missing "type" field`, file)
+	return fmt.Errorf(`configuration file "%s" missing "type" field`, file)
 }
 
 func isValidConflistFile(file string) error {
@@ -50,7 +52,7 @@ func isValidConflistFile(file string) error {
 	}
 
 	if len(missingFields) > 0 {
-		return errors.Errorf("conflist file %s missing required fields: %+v", file, missingFields)
+		return fmt.Errorf("conflist file %s missing required fields: %+v", file, missingFields)
 	}
 
 	log.V(1).Info("conflist validated", "file", file, "name", configName, "plugins", plugins)

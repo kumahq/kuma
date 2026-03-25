@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -20,7 +21,7 @@ func ValidateTokenPath(path string) error {
 		return errors.Wrapf(err, "could not read file %s", path)
 	}
 	if empty {
-		return errors.Errorf("token under file %s is empty", path)
+		return fmt.Errorf("token under file %s is empty", path)
 	}
 
 	rawToken, err := os.ReadFile(path)
