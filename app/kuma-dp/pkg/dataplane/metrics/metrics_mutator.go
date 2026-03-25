@@ -14,13 +14,9 @@ type (
 	MeshMetricMutator func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error)
 )
 
-func AggregatedOtelMutator(utf8NamesEnabled bool, metricsMutators ...PrometheusMutator) MeshMetricMutator {
+func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) MeshMetricMutator {
 	return func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
-		scheme := model.LegacyValidation
-		if utf8NamesEnabled {
-			scheme = model.UTF8Validation
-		}
-		parser := expfmt.NewTextParser(scheme)
+		parser := expfmt.NewTextParser(model.UTF8Validation)
 		metricFamilies, err := parser.TextToMetricFamilies(in)
 		if err != nil {
 			return nil, err
@@ -37,13 +33,9 @@ func AggregatedOtelMutator(utf8NamesEnabled bool, metricsMutators ...PrometheusM
 	}
 }
 
-func AggregatedMetricsMutator(utf8NamesEnabled bool, metricsMutators ...PrometheusMutator) MetricsMutator {
+func AggregatedMetricsMutator(metricsMutators ...PrometheusMutator) MetricsMutator {
 	return func(in io.Reader, out io.Writer) error {
-		scheme := model.LegacyValidation
-		if utf8NamesEnabled {
-			scheme = model.UTF8Validation
-		}
-		parser := expfmt.NewTextParser(scheme)
+		parser := expfmt.NewTextParser(model.UTF8Validation)
 		metricFamilies, err := parser.TextToMetricFamilies(in)
 		if err != nil {
 			return err

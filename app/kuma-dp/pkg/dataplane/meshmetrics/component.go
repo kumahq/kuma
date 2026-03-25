@@ -29,7 +29,6 @@ type Manager struct {
 	openTelemetryProducer *metrics.AggregatedProducer
 	runningBackends       map[string]*runningBackend
 	drainTime             time.Duration
-	utf8NamesEnabled      bool
 	ctx                   context.Context
 	cancel                context.CancelFunc
 	done                  chan struct{}
@@ -40,7 +39,7 @@ var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
 var _ component.GracefulComponent = &Manager{}
 
-func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, drainTime time.Duration, utf8NamesEnabled bool) *Manager {
+func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, drainTime time.Duration) *Manager {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Manager{
 		ctx:                   ctx,
@@ -52,7 +51,6 @@ func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryPr
 		envoyAdminPort:        envoyAdminPort,
 		runningBackends:       map[string]*runningBackend{},
 		drainTime:             drainTime,
-		utf8NamesEnabled:      utf8NamesEnabled,
 		newConfig:             make(chan dpapi.MeshMetricDpConfig),
 		done:                  make(chan struct{}),
 	}
@@ -225,7 +223,7 @@ func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Appli
 			IsIPv6:            utilnet.IsAddressIPv6(address),
 			ExtraAttributes:   extraAttributes,
 			QueryModifier:     metrics.RemoveQueryParameters,
-			MeshMetricMutator: metrics.AggregatedOtelMutator(m.utf8NamesEnabled),
+			MeshMetricMutator: metrics.AggregatedOtelMutator(),
 		})
 	}
 
@@ -237,7 +235,7 @@ func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Appli
 		IsIPv6:            false,
 		ExtraAttributes:   extraAttributes,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
-		MeshMetricMutator: metrics.AggregatedOtelMutator(m.utf8NamesEnabled, metrics.ProfileMutatorGenerator(sidecar)),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar)),
 	})
 
 	return applicationsToScrape

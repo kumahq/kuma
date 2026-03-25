@@ -273,9 +273,6 @@ type Metrics struct {
 	CertPath string `json:"metricsCertPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_cert_path"`
 	// KeyPath path to the key for metrics listener
 	KeyPath string `json:"metricsKeyPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_key_path"`
-	// UTF8NamesEnabled enables UTF-8 validation for Prometheus metric/label names.
-	// Required for Prometheus 3+ compatibility. Default: false (legacy validation).
-	UTF8NamesEnabled bool `json:"utf8NamesEnabled,omitempty" envconfig:"kuma_dataplane_runtime_metrics_utf8_names_enabled"`
 }
 
 type DynamicConfiguration struct {

@@ -37,7 +37,7 @@ var _ = Describe("Merge", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			actual := new(bytes.Buffer)
-			err = AggregatedMetricsMutator(false, MergeClustersForPrometheus)(input, actual)
+			err = AggregatedMetricsMutator(MergeClustersForPrometheus)(input, actual)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(toLines(actual)).To(ConsistOf(toLines(expected)))
@@ -118,15 +118,9 @@ var _ = Describe("UTF-8 metrics validation", func() {
 # TYPE "http.server.duration" gauge
 {"http.server.duration"} 1.0
 `
-	It("should parse UTF-8 metric names when utf8NamesEnabled=true", func() {
+	It("should parse UTF-8 metric names", func() {
 		actual := new(bytes.Buffer)
-		err := AggregatedMetricsMutator(true)(strings.NewReader(utf8Input), actual)
+		err := AggregatedMetricsMutator()(strings.NewReader(utf8Input), actual)
 		Expect(err).ToNot(HaveOccurred())
-	})
-
-	It("should fail to parse UTF-8 metric names when utf8NamesEnabled=false", func() {
-		actual := new(bytes.Buffer)
-		err := AggregatedMetricsMutator(false)(strings.NewReader(utf8Input), actual)
-		Expect(err).To(HaveOccurred())
 	})
 })
