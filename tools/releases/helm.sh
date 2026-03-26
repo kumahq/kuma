@@ -101,12 +101,7 @@ function release {
 
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
 <<<<<<< HEAD
-  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
-=======
-  local CHART_FILE
   CHART_FILE=$(tar -tf "${CHART_TAR}" | grep -E '^[^/]+/Chart\.yaml$' | head -n 1)
-  local CHART_VERSION
->>>>>>> c396276f28 (fix(helm): extract top-level Chart.yaml (#16007))
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
   # Determine release name template based on git tag
