@@ -75,6 +75,9 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					Zone:            cpZone,
 					SystemNamespace: "kuma-system",
 				},
+				Mesh: xds_context.MeshContext{
+					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+				},
 			}, given.proxy)
 			Expect(err).ToNot(HaveOccurred())
 

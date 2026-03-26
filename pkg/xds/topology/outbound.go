@@ -236,7 +236,6 @@ func fillRemoteMeshServices(
 
 	// MeshZoneAddress (mesh-scoped zone proxies) takes priority over legacy
 	// ZoneIngress for any zone that has at least one MeshZoneAddress.
-	mzaZones := map[string]struct{}{}
 	mzaInstances := map[string]struct{}{}
 	for _, mza := range meshZoneAddresses {
 		zone := mza.GetMeta().GetLabels()[mesh_proto.ZoneTag]
@@ -248,14 +247,12 @@ func fillRemoteMeshServices(
 			continue
 		}
 		mzaInstances[coordinates] = struct{}{}
-		mzaZones[zone] = struct{}{}
-		mzaZone := zone
-		zoneToEndpoints[mzaZone] = append(zoneToEndpoints[mzaZone], core_xds.Endpoint{
+		zoneToEndpoints[zone] = append(zoneToEndpoints[zone], core_xds.Endpoint{
 			Target:   mza.Spec.Address,
 			Port:     uint32(mza.Spec.Port),
 			Tags:     nil,
 			Weight:   1,
-			Locality: GetLocality(localZone, &mzaZone, mesh.LocalityAwareLbEnabled()),
+			Locality: GetLocality(localZone, &zone, mesh.LocalityAwareLbEnabled()),
 		})
 	}
 
@@ -265,7 +262,7 @@ func fillRemoteMeshServices(
 		if !zi.IsRemoteIngress(localZone) {
 			continue
 		}
-		if _, hasMZA := mzaZones[zi.Spec.Zone]; hasMZA {
+		if _, hasEndpoints := zoneToEndpoints[zi.Spec.Zone]; hasEndpoints {
 			continue
 		}
 
