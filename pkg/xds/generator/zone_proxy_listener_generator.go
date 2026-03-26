@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -15,11 +16,13 @@ import (
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
 	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	system_names "github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
@@ -156,19 +159,23 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	proxy *core_xds.Proxy,
 	el *core_xds.DataplaneListener,
 ) (*core_xds.ResourceSet, error) {
+	localResources := xds_context.Resources{MeshLocalResources: el.MeshResources.Resources}
+
+	esDestinations := localResources.MeshExternalServices().GetDestinations()
+	if len(esDestinations) == 0 {
+		return nil, nil
+	}
+
 	rs := core_xds.NewResourceSet()
-	getName := naming.GetNameOrFallbackFunc(true)
 
 	address := el.Listener.Address
 	port := el.Listener.Port
 
 	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(el.Listener.Name)
-	listenerName := getName(zoneEgressListenerName, envoy_names.GetInboundListenerName(address, port))
-	statPrefix := getName(zoneEgressListenerName, "")
 
-	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, zoneEgressListenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
-		Configure(envoy_listeners.StatPrefix(statPrefix)).
+		Configure(envoy_listeners.StatPrefix(zoneEgressListenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
 	downstreamTLS, err := meshIdentityDownstreamTLS(proxy)
@@ -176,75 +183,50 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		return nil, err
 	}
 
-	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
-	for _, cluster := range g.getMeshExternalServiceClusters(el.MeshResources) {
-		filterChainBuilders = append(filterChainBuilders,
-			g.buildEgressFilterChain(proxy, el.MeshResources.EndpointMap[cluster.Name()], downstreamTLS, cluster),
-		)
-		cds, err := g.genClusterCDS(proxy, el.MeshResources.EndpointMap[cluster.Name()], cluster)
+	for _, dst := range esDestinations {
+		esPort := dst.GetPorts()[0]
+		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
+		sni := tls.SNIForResource(id.Name, id.Mesh, id.ResourceType, esPort.GetValue(), nil)
+		clusterName := id.String()
+		endpoints := el.MeshResources.EndpointMap[clusterName]
+
+		split := plugins_xds.NewSplitBuilder().
+			WithClusterName(clusterName).
+			WithExternalService(true).
+			WithWeight(1).
+			Build()
+
+		listener.Configure(envoy_listeners.FilterChain(g.buildEgressFilterChain(proxy, endpoints, downstreamTLS, split, sni)))
+		cds, err := g.genClusterCDS(proxy, endpoints, clusterName)
 		if err != nil {
 			return nil, err
 		}
 		rs.Add(cds)
 	}
 
-	for _, fcb := range filterChainBuilders {
-		listener.Configure(envoy_listeners.FilterChain(fcb))
+	resource, err := listener.Build()
+	if err != nil {
+		return nil, err
 	}
-
-	if len(filterChainBuilders) > 0 {
-		resource, err := listener.Build()
-		if err != nil {
-			return nil, err
-		}
-		rs.Add(&core_xds.Resource{
-			Name:     resource.GetName(),
-			Origin:   metadata.OriginEgress,
-			Resource: resource,
-		})
-	}
+	rs.Add(&core_xds.Resource{
+		Name:     resource.GetName(),
+		Origin:   metadata.OriginEgress,
+		Resource: resource,
+	})
 
 	return rs, nil
-}
-
-// getMeshExternalServiceClusters returns clusters for MeshExternalService BackendRefs only.
-func (g ZoneProxyListenerGenerator) getMeshExternalServiceClusters(resources *core_xds.MeshProxyResources) []envoy_common.Cluster {
-	svcAcc := envoy_common.NewServicesAccumulator(nil)
-	localResources := xds_context.Resources{MeshLocalResources: resources.Resources}
-	destinations := zoneproxy.BuildMeshDestinations(
-		nil,
-		"",
-		localResources,
-		localResources.MeshExternalServices(),
-	)
-
-	sniUsed := map[string]struct{}{}
-	for _, ref := range destinations.BackendRefs {
-		endpoints := resources.EndpointMap[ref.Resource().String()]
-		if _, ok := sniUsed[ref.SNI]; ok || len(endpoints) == 0 || !endpoints[0].IsExternalService() {
-			continue
-		}
-		sniUsed[ref.SNI] = struct{}{}
-		cluster := plugins_xds.NewClusterBuilder().
-			WithName(ref.Resource().String()).
-			WithSNI(ref.SNI).
-			WithExternalService(true).
-			Build()
-		svcAcc.AddBackendRef(&ref.ResolvedBackendRef, cluster)
-	}
-	return svcAcc.Services().Clusters()
 }
 
 func (g ZoneProxyListenerGenerator) genClusterCDS(
 	proxy *core_xds.Proxy,
 	endpoints []core_xds.Endpoint,
-	cluster envoy_common.Cluster,
+	clusterName string,
 ) (*core_xds.Resource, error) {
 	ipv6 := proxy.Dataplane.IsIPv6()
 	systemCAPath := proxy.Metadata.GetSystemCaPath()
 	protocol := endpoints[0].Protocol()
 
-	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, cluster.Name()).
+	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
 		Configure(envoy_clusters.DefaultTimeout()).
 		ConfigureIf(core_meta.IsHTTP(protocol), envoy_clusters.Http()).
 		ConfigureIf(core_meta.IsHTTP2Based(protocol), envoy_clusters.Http2()).
@@ -267,24 +249,37 @@ func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 	proxy *core_xds.Proxy,
 	endpoints []core_xds.Endpoint,
 	downstreamTLS *envoy_tls.DownstreamTlsContext,
-	cluster envoy_common.Cluster,
+	split envoy_common.Split,
+	sni string,
 ) *envoy_listeners.FilterChainBuilder {
-	esName := cluster.Name()
+	esName := split.ClusterName()
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, esName).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
-		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
+		Configure(envoy_listeners.MatchServerNames(sni)).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamTLS))
 
 	if !core_meta.IsHTTPBased(endpoints[0].Protocol()) {
-		return filterChain.Configure(envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster))
+		return filterChain.Configure(envoy_listeners.TCPProxy(esName, split))
 	}
-
-	routes := envoy_common.Routes{envoy_common.NewRoute(envoy_common.WithCluster(cluster))}
 
 	return filterChain.
 		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-		Configure(envoy_listeners.HttpOutboundRoute(esName, esName, routes, nil))
+		Configure(envoy_listeners.AddFilterChainConfigurer(&xds.HttpOutboundRouteConfigurer{
+			RouteConfigName: esName,
+			VirtualHostName: esName,
+			Routes: []xds.OutboundRoute{
+				{
+					Match: meshhttproute_api.Match{
+						Path: &meshhttproute_api.PathMatch{
+							Type:  meshhttproute_api.PathPrefix,
+							Value: "/",
+						},
+					},
+					Split: []envoy_common.Split{split},
+				},
+			},
+		}))
 }
 
 // meshIdentityDownstreamTLS builds a DownstreamTlsContext from the proxy's WorkloadIdentity.
