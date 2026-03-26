@@ -100,7 +100,7 @@ function release {
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
-  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep -E '^[^/]+/Chart\.yaml$' | head -n 1)
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
   # Determine release name template based on git tag
