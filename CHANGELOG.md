@@ -42,6 +42,17 @@
 * fix(zoneingress): no public address causes DPP reconciliation failure (backport of #15926) [#15933](https://github.com/kumahq/kuma/pull/15933) @kumahq
 
 
+## 2.9.13
+> Released on 2026/03/25
+
+* chore(deps): bump coredns to v1.14.2 [#15977](https://github.com/kumahq/kuma/pull/15977) @bartsmykla
+* chore(deps): bump go version [#15724](https://github.com/kumahq/kuma/pull/15724) @renovate
+* chore(deps): security update [#15784](https://github.com/kumahq/kuma/pull/15784) [#15878](https://github.com/kumahq/kuma/pull/15878) @kumahq
+* chore(deps): upgrade envoy from v1.33.14 to 1.34.13 (backport of #15905) [#15913](https://github.com/kumahq/kuma/pull/15913) @kumahq
+* fix(gatewayapi): ensure statuses are deterministic (backport of #15928) [#15987](https://github.com/kumahq/kuma/pull/15987) @kumahq
+* fix(zoneingress): no public address causes DPP reconciliation failure (backport of #15926) [#15931](https://github.com/kumahq/kuma/pull/15931) @kumahq
+
+
 ## 2.7.23
 > Released on 2026/03/25
 
