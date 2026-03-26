@@ -151,7 +151,7 @@ func (m *Manager) startBackend(
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, errors.Wrapf(err, "removing existing socket %s", socketPath)
 	}
-	lis, err := net.Listen("unix", socketPath)
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", socketPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "listening on %s", socketPath)
 	}

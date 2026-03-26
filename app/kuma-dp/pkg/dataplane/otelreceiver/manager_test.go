@@ -46,8 +46,8 @@ func dialUnixGRPC(socketPath string) (*grpc.ClientConn, error) {
 	return grpc.NewClient(
 		"passthrough:///otel-local",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-			return net.Dial("unix", socketPath)
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", socketPath)
 		}),
 	)
 }
