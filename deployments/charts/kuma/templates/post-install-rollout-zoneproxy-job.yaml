@@ -1,3 +1,11 @@
+{{/*
+Post-install hook to restart mesh-scoped zone proxy deployments.
+
+Zone proxies are deployed before the control plane is fully ready. Because the
+sidecar injector webhook depends on a running control plane, the initial pods
+start without sidecars. This job waits for the control plane to become available,
+then triggers a rollout restart so pods are recreated with proper sidecar injection.
+*/}}
 {{- $hasZoneProxies := false }}
 {{- range $meshEntry := .Values.meshes }}
 {{- if or (and $meshEntry.ingress $meshEntry.ingress.enabled) (and $meshEntry.egress $meshEntry.egress.enabled) }}
@@ -24,9 +32,10 @@ imagePullSecrets:
 {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+  namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": "post-install"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
@@ -43,9 +52,10 @@ rules:
       - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+  namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": "post-install"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
@@ -53,7 +63,7 @@ metadata:
   {{- include "kuma.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
 subjects:
   - kind: ServiceAccount
