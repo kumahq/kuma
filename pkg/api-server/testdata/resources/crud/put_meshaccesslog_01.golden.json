@@ -10,7 +10,7 @@
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
- "kri": "kri_mal_default_default__my-access-log_",
+ "kri": "kri_mal_default_default_kuma-system_my-access-log_",
  "spec": {
   "to": [
    {

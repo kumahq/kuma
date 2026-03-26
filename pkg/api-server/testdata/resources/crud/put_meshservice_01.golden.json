@@ -10,7 +10,7 @@
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
- "kri": "kri_msvc_default_default__redis_",
+ "kri": "kri_msvc_default_default_kuma-system_redis_",
  "spec": {
   "state": "Unavailable",
   "selector": {

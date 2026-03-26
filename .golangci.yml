@@ -17,6 +17,7 @@ linters:
     - makezero
     - misspell
     - modernize
+    - noctx
     - nolintlint
     - nonamedreturns
     - nosprintfhostport

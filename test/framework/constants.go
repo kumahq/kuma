@@ -24,8 +24,10 @@ const (
 )
 
 const (
-	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
-	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
+	defaultKumactlConfig             = "${HOME}/.kumactl/%s-config"
+	defaultToolKubeConfigPathPattern = "${HOME}/.kube/%s-%s.yaml"
+	legacyKubeConfigPathPattern      = "${HOME}/.kube/%s.yaml"
+	oldKindKubeConfigPathPattern     = "${HOME}/.kube/kind-%s-config"
 
 	redirectPortInbound  = "15006"
 	redirectPortOutbound = "15001"

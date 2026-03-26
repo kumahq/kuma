@@ -780,7 +780,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.35.2@sha256:91d5a6b5c45cf4e0f95de3dda6a957725b5f4daa0193c63074aab7f4bd85eaee
+    tag: v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

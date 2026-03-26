@@ -142,15 +142,16 @@ func getParentRefGateway(
 }
 
 func nameMatchesWildcardName(name, pat gatewayapi.Hostname) bool {
-	suffix := strings.TrimPrefix(string(pat), "*.")
+	suffix := strings.TrimPrefix(string(pat), "*")
 	if len(suffix) == len(pat) {
 		return false
 	}
 
-	return strings.HasSuffix(string(name), suffix) && suffix != string(name)
+	// suffix is ".domain.tld" - check the name ends with it at a domain boundary.
+	return strings.HasSuffix(string(name), suffix) && string(name) != suffix[1:]
 }
 
-func hostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames []gatewayapi.Hostname) bool {
+func HostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames []gatewayapi.Hostname) bool {
 	if len(routeHostnames) == 0 {
 		return true
 	}
@@ -203,7 +204,7 @@ func evaluateGatewayAttachment(
 		)
 	}
 
-	if !hostnamesIntersect(routeHostnames, listenerHostnames) {
+	if !HostnamesIntersect(routeHostnames, listenerHostnames) {
 		return NoHostnameIntersection, nil
 	}
 

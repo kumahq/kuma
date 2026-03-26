@@ -20,7 +20,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/universal"
 )
 
-const DockerNetworkName = "kind"
+const DockerNetworkName = "kuma"
 
 type DockerBackend interface {
 	// RunAndGetIDE runs the 'docker run' command on the given image with the given options and returns the container ID
