@@ -100,6 +100,27 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
+<<<<<<< HEAD
+=======
+  local CHART_TAR
+  CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
+  local CHART_FILE
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep -E '^[^/]+/Chart\.yaml$' | head -n 1)
+  local CHART_VERSION
+  CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
+
+  # Determine release name template based on git tag
+  # If current commit has a tag starting with 'v', use v-prefixed template
+  local RELEASE_NAME_TEMPLATE="{{ .Name }}-{{ .Version }}"
+  local exactTag
+  exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "")
+  if [[ ${exactTag} =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+    RELEASE_NAME_TEMPLATE="{{ .Name }}-v{{ .Version }}"
+  fi
+
+  pushd "${GH_REPO}"
+
+>>>>>>> c396276f28 (fix(helm): extract top-level Chart.yaml (#16007))
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
