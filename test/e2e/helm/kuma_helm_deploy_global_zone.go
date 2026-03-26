@@ -93,9 +93,9 @@ interCp:
 			path := fmt.Sprintf("%s/zones/_overview", global.GetAPIServerAddress())
 			status, response := http_helper.HttpGet(c1.GetTesting(), path, nil)
 			g.Expect(status).To(Equal(http.StatusOK), "unable to contact server %q", path)
-			var parsed map[string]interface{}
+			var parsed map[string]any
 			g.Expect(json.Unmarshal([]byte(response), &parsed)).To(Succeed())
-			items, ok := parsed["items"].([]interface{})
+			items, ok := parsed["items"].([]any)
 			g.Expect(ok).To(BeTrue())
 			g.Expect(items).To(HaveLen(1))
 		}, "1m", "1s").Should(Succeed())
