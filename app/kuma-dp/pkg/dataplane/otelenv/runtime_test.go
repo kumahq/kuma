@@ -333,11 +333,21 @@ var _ = Describe("resolveEndpointAddress", func() {
 })
 
 var _ = Describe("parseHeaders", func() {
-	It("should use baggage parsing semantics", func() {
+	It("should parse OTel env var format with percent-encoding", func() {
 		headers := parseHeaders("user=id%20token,key2=value2,invalid-entry")
 
 		Expect(headers).To(HaveKeyWithValue("user", "id token"))
 		Expect(headers).To(HaveKeyWithValue("key2", "value2"))
 		Expect(headers).NotTo(HaveKey("invalid-entry"))
+	})
+
+	It("should handle unencoded spaces in values", func() {
+		headers := parseHeaders("Authorization=Bearer mytoken")
+
+		Expect(headers).To(HaveKeyWithValue("Authorization", "Bearer mytoken"))
+	})
+
+	It("should return nil for empty input", func() {
+		Expect(parseHeaders("")).To(BeNil())
 	})
 })

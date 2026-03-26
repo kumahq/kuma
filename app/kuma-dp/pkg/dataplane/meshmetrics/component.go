@@ -38,7 +38,7 @@ type Manager struct {
 	envoyAdminAddress     string
 	envoyAdminPort        uint32
 	openTelemetryProducer *metrics.AggregatedProducer
-	runningBackends       map[string]*runningBackend // pipe targets from otelreceiver
+	pipeBackends          map[string]*runningBackend // pipe targets from otelreceiver
 	directBackends        map[string]*runningBackend // inline OTel backends via Envoy sockets
 	drainTime             time.Duration
 	ctx                   context.Context
@@ -62,7 +62,7 @@ func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryPr
 		defaultAddress:        address,
 		envoyAdminAddress:     envoyAdminAddress,
 		envoyAdminPort:        envoyAdminPort,
-		runningBackends:       map[string]*runningBackend{},
+		pipeBackends:          map[string]*runningBackend{},
 		directBackends:        map[string]*runningBackend{},
 		drainTime:             drainTime,
 		newConfig:             make(chan dpapi.MeshMetricDpConfig),
@@ -115,6 +115,8 @@ func (m *Manager) OnChange(ctx context.Context, reader io.Reader) error {
 
 // OnOtelTargetsChange is called by the otelreceiver post-reconcile callback
 // (wired in run.go) to push OTEL metric export targets into the Manager.
+// Must be called from a single goroutine; not safe for concurrent use.
+// The drain-and-send sequence relies on being the sole writer to newOtelTargets.
 func (m *Manager) OnOtelTargetsChange(targets []OtelExportTarget) {
 	select {
 	case m.newOtelTargets <- targets:
@@ -200,7 +202,7 @@ func (m *Manager) stepOtelExport(targets []OtelExportTarget) error {
 
 	// shutdown removed backends
 	var toRemove []string
-	for name := range m.runningBackends {
+	for name := range m.pipeBackends {
 		if _, ok := desired[name]; !ok {
 			toRemove = append(toRemove, name)
 		}
@@ -214,7 +216,7 @@ func (m *Manager) stepOtelExport(targets []OtelExportTarget) error {
 
 	// start or reconfigure backends
 	for name, target := range desired {
-		if existing, ok := m.runningBackends[name]; ok {
+		if existing, ok := m.pipeBackends[name]; ok {
 			if existing.appliedConfig == target {
 				continue
 			}
@@ -227,17 +229,17 @@ func (m *Manager) stepOtelExport(targets []OtelExportTarget) error {
 		if err != nil {
 			return err
 		}
-		m.runningBackends[name] = exporter
+		m.pipeBackends[name] = exporter
 	}
 	return nil
 }
 
 func (m *Manager) shutdownBackend(ctx context.Context, backendName string) error {
-	err := m.runningBackends[backendName].exporter.Shutdown(ctx)
+	err := m.pipeBackends[backendName].exporter.Shutdown(ctx)
 	if err != nil && !errors.Is(err, sdkmetric.ErrReaderShutdown) {
 		return err
 	}
-	delete(m.runningBackends, backendName)
+	delete(m.pipeBackends, backendName)
 	return nil
 }
 
@@ -311,7 +313,7 @@ func (m *Manager) Shutdown() error {
 			hasError = true
 		}
 	}
-	for backendName := range m.runningBackends {
+	for backendName := range m.pipeBackends {
 		if err := m.shutdownBackend(ctx, backendName); err != nil {
 			logger.Error(err, "Failed to shutdown backend", "backend", backendName)
 			hasError = true

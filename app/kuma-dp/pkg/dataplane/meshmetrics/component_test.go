@@ -23,7 +23,7 @@ var _ = Describe("OtelExportTarget", func() {
 		defer cancel()
 		m := &Manager{
 			ctx: ctx,
-			runningBackends: map[string]*runningBackend{
+			pipeBackends: map[string]*runningBackend{
 				"backend-a": {
 					exporter:      preShutdownProvider(),
 					appliedConfig: OtelExportTarget{Name: "backend-a", SocketPath: "/tmp/a.sock", RefreshInterval: time.Minute},
@@ -40,9 +40,9 @@ var _ = Describe("OtelExportTarget", func() {
 			{Name: "backend-b", SocketPath: "/tmp/b.sock", RefreshInterval: time.Minute},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(m.runningBackends).To(HaveLen(1))
-		Expect(m.runningBackends).NotTo(HaveKey("backend-a"))
-		Expect(m.runningBackends).To(HaveKey("backend-b"))
+		Expect(m.pipeBackends).To(HaveLen(1))
+		Expect(m.pipeBackends).NotTo(HaveKey("backend-a"))
+		Expect(m.pipeBackends).To(HaveKey("backend-b"))
 	})
 
 	It("stepOtelExport removes all backends when targets are empty", func() {
@@ -50,7 +50,7 @@ var _ = Describe("OtelExportTarget", func() {
 		defer cancel()
 		m := &Manager{
 			ctx: ctx,
-			runningBackends: map[string]*runningBackend{
+			pipeBackends: map[string]*runningBackend{
 				"backend-a": {
 					exporter:      preShutdownProvider(),
 					appliedConfig: OtelExportTarget{Name: "backend-a"},
@@ -60,7 +60,7 @@ var _ = Describe("OtelExportTarget", func() {
 
 		err := m.stepOtelExport(nil)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(m.runningBackends).To(BeEmpty())
+		Expect(m.pipeBackends).To(BeEmpty())
 	})
 
 	It("stepOtelExport skips unchanged backends", func() {
@@ -70,7 +70,7 @@ var _ = Describe("OtelExportTarget", func() {
 		target := OtelExportTarget{Name: "backend-a", SocketPath: "/tmp/a.sock", RefreshInterval: time.Minute}
 		m := &Manager{
 			ctx: ctx,
-			runningBackends: map[string]*runningBackend{
+			pipeBackends: map[string]*runningBackend{
 				"backend-a": {
 					exporter:      existingProvider,
 					appliedConfig: target,
@@ -81,18 +81,18 @@ var _ = Describe("OtelExportTarget", func() {
 		// Same target - should not restart
 		err := m.stepOtelExport([]OtelExportTarget{target})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(m.runningBackends["backend-a"].exporter).To(BeIdenticalTo(existingProvider))
+		Expect(m.pipeBackends["backend-a"].exporter).To(BeIdenticalTo(existingProvider))
 	})
 
 	It("stepScraping does not touch OTEL exporters", func() {
 		m := &Manager{
-			runningBackends: map[string]*runningBackend{
+			pipeBackends: map[string]*runningBackend{
 				"existing": {},
 			},
 		}
 		// stepScraping only calls SetApplicationsToScrape on the producer.
-		// Without a producer set, we just verify runningBackends is untouched.
-		Expect(m.runningBackends).To(HaveLen(1))
+		// Without a producer set, we just verify pipeBackends is untouched.
+		Expect(m.pipeBackends).To(HaveLen(1))
 	})
 
 	It("OnOtelTargetsChange sends targets to channel", func() {

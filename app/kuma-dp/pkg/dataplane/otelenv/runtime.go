@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/otel/baggage"
-
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
@@ -323,17 +321,28 @@ func parseTimeout(value string) (time.Duration, bool) {
 	return time.Duration(timeoutMS) * time.Millisecond, true
 }
 
+// parseHeaders parses OTEL_EXPORTER_OTLP_HEADERS format: comma-separated
+// key=value pairs with percent-encoded values (OTel env var spec, not W3C
+// baggage which rejects unencoded spaces in values).
 func parseHeaders(value string) map[string]string {
-	parsed, _ := baggage.Parse(value)
-	if parsed.Len() == 0 {
-		return nil
+	var headers map[string]string
+	for pair := range strings.SplitSeq(value, ",") {
+		k, v, ok := strings.Cut(pair, "=")
+		if !ok {
+			continue
+		}
+		k = strings.TrimSpace(k)
+		if k == "" {
+			continue
+		}
+		if decoded, err := url.PathUnescape(v); err == nil {
+			v = decoded
+		}
+		if headers == nil {
+			headers = map[string]string{}
+		}
+		headers[k] = v
 	}
-
-	headers := make(map[string]string, parsed.Len())
-	for member := range slices.Values(parsed.Members()) {
-		headers[member.Key()] = member.Value()
-	}
-
 	return headers
 }
 
