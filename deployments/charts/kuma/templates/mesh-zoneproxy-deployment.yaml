@@ -77,7 +77,7 @@ spec:
       terminationGracePeriodSeconds: {{ default 40 $cfg.terminationGracePeriodSeconds }}
       containers:
         - name: pause
-          image: {{ default "registry.k8s.io/pause:3.10" $cfg.image }}
+          image: {{ $cfg.image.registry }}/{{ $cfg.image.repository }}:{{ $cfg.image.tag }}
           imagePullPolicy: {{ default "IfNotPresent" $cfg.imagePullPolicy }}
           {{- if and $cfg.podSpec $cfg.podSpec.containerSecurityContext }}
           securityContext:
