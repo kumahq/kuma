@@ -39,6 +39,7 @@ type runningServer struct {
 	server   *grpc.Server
 	closeFns []func()
 	runtime  otelenv.BackendRuntime
+	stopped  chan struct{} // closed when the Serve goroutine exits
 }
 
 var _ component.GracefulComponent = &Manager{}
@@ -91,11 +92,16 @@ func (m *Manager) OnOtelChange(ctx context.Context, r io.Reader) error {
 	return m.sendConfig(ctx, cfg.Backends)
 }
 
-func (m *Manager) sendConfig(ctx context.Context, backends []core_xds.OtelPipeBackend) error {
+func (m *Manager) sendConfig(_ context.Context, backends []core_xds.OtelPipeBackend) error {
 	select {
 	case m.newConfig <- backends:
-	case <-ctx.Done():
-		return ctx.Err()
+	default:
+		// Drop stale value, push new one.
+		select {
+		case <-m.newConfig:
+		default:
+		}
+		m.newConfig <- backends
 	}
 	return nil
 }
@@ -114,11 +120,11 @@ func (m *Manager) reconcile(backends []core_xds.OtelPipeBackend) error {
 		}
 	}
 
-	// start new backends and restart updated backends
+	// start new backends and restart updated or dead backends
 	for socketPath, b := range desired {
 		runtime := m.envConfig.ResolveBackend(b)
 		if rs, ok := m.running[socketPath]; ok {
-			if sameBackendRuntime(rs.runtime, runtime) {
+			if !rs.isStopped() && sameBackendRuntime(rs.runtime, runtime) {
 				continue
 			}
 			stopRunningServer(rs)
@@ -127,13 +133,14 @@ func (m *Manager) reconcile(backends []core_xds.OtelPipeBackend) error {
 
 		rs, err := m.startBackend(socketPath, runtime)
 		if err != nil {
+			// Notify about successfully started backends before returning
+			// so meshmetrics can begin exporting to them.
+			m.notifyReconcile(backends)
 			return errors.Wrapf(err, "failed to start OTel receiver on %s", socketPath)
 		}
 		m.running[socketPath] = rs
 	}
-	if m.onReconcile != nil {
-		m.onReconcile(backends)
-	}
+	m.notifyReconcile(backends)
 	return nil
 }
 
@@ -147,6 +154,10 @@ func (m *Manager) startBackend(
 	lis, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "listening on %s", socketPath)
+	}
+	if err := os.Chmod(socketPath, 0o600); err != nil {
+		_ = lis.Close()
+		return nil, errors.Wrapf(err, "chmod socket %s", socketPath)
 	}
 
 	senders := &senderFactory{}
@@ -176,7 +187,9 @@ func (m *Manager) startBackend(
 
 	closeFns := append([]func(){func() { _ = lis.Close() }}, senders.closeFns...)
 
+	stopped := make(chan struct{})
 	go func() {
+		defer close(stopped)
 		if err := s.Serve(lis); err != nil {
 			logger.Error(err, "OTel receiver stopped", "socketPath", socketPath)
 		}
@@ -189,13 +202,39 @@ func (m *Manager) startBackend(
 		"logsEnabled", runtime.Logs.Enabled,
 		"metricsEnabled", runtime.Metrics.Enabled,
 	)
-	return &runningServer{server: s, closeFns: closeFns, runtime: runtime}, nil
+	return &runningServer{server: s, closeFns: closeFns, runtime: runtime, stopped: stopped}, nil
+}
+
+func (m *Manager) notifyReconcile(backends []core_xds.OtelPipeBackend) {
+	if m.onReconcile == nil || len(m.running) == 0 {
+		return
+	}
+	// Filter to backends that are actually running so meshmetrics
+	// doesn't try to dial sockets that were never started.
+	var running []core_xds.OtelPipeBackend
+	for _, b := range backends {
+		if _, ok := m.running[b.SocketPath]; ok {
+			running = append(running, b)
+		}
+	}
+	if len(running) > 0 {
+		m.onReconcile(running)
+	}
 }
 
 func (m *Manager) stopAll() {
 	for socketPath, runningServer := range m.running {
 		stopRunningServer(runningServer)
 		delete(m.running, socketPath)
+	}
+}
+
+func (rs *runningServer) isStopped() bool {
+	select {
+	case <-rs.stopped:
+		return true
+	default:
+		return false
 	}
 }
 

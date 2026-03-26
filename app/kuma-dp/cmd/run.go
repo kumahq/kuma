@@ -574,6 +574,10 @@ func setupObservability(
 	return []component.Component{accessLogStreamer, metricsServer, mm, otelManager}, nil
 }
 
+// metricsTargetsForBackends converts OtelPipeBackends into meshmetrics export
+// targets. The env-resolved runtime gates whether a backend is usable (e.g. an
+// env variable blocking the signal suppresses it), while the socket path and
+// refresh interval come from the CP-provided backend config.
 func metricsTargetsForBackends(
 	backends []core_xds.OtelPipeBackend,
 	discoveredOtelEnv otelenv.Config,

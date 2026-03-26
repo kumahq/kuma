@@ -1,4 +1,4 @@
-package meshmetrics_test
+package meshmetrics
 
 import (
 	"testing"
