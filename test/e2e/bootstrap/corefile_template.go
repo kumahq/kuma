@@ -53,6 +53,7 @@ data:
 				WithHelmOpt("controlPlane.extraConfigMaps[0].readonly", "false"),
 				WithHelmOpt("controlPlane.autoscaling.enabled", "true"),
 				WithHelmOpt("controlPlane.autoscaling.minReplicas", strconv.Itoa(minReplicas)),
+				WithHelmOpt("controlPlane.envVars.KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY", "false"),
 			)).
 			Install(MeshKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(appNamespace)).
