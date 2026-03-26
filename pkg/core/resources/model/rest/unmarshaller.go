@@ -19,7 +19,7 @@ import (
 )
 
 var YAML = &unmarshaler{
-	unmarshalFn: func(bytes []byte, i interface{}) error {
+	unmarshalFn: func(bytes []byte, i any) error {
 		return yaml.Unmarshal(bytes, i)
 	},
 	marshalFn: yaml.Marshal,
@@ -31,7 +31,7 @@ var JSON = &unmarshaler{
 }
 
 type unmarshaler struct {
-	unmarshalFn func([]byte, interface{}) error
+	unmarshalFn func([]byte, any) error
 	marshalFn   func(v any) ([]byte, error)
 }
 
@@ -78,7 +78,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 	if desc.Validator != nil && desc.StructuralSchema != nil {
 		var err error
 		// desc.Schema is set only for new plugin originated policies
-		rawObj := map[string]interface{}{}
+		rawObj := map[string]any{}
 		// Unfortunately to validate new policies we must first unmarshal into a rawObj
 		if err = u.unmarshalFn(bytes, &rawObj); err != nil {
 			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}

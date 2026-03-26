@@ -37,7 +37,7 @@ type KubernetesList interface {
 }
 
 // RawMessage is a carrier for an untyped JSON payload.
-type RawMessage map[string]interface{}
+type RawMessage map[string]any
 
 // DeepCopy ...
 func (in RawMessage) DeepCopy() RawMessage {

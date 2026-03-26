@@ -213,7 +213,7 @@ func (s *UniversalApp) GetIP() string {
 
 func (s *UniversalApp) Stop() error {
 	Logf("Stopping app:%q container:%q", s.appName, s.container)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		_, err := s.dockerBackend.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1, Logger: s.logger})
 		if err != nil {
 			return nil
@@ -385,7 +385,7 @@ done
 		return "", errors.Wrapf(err, "cmd failed with %s stderr:%q stdout:%q", err, stderr, stdout)
 	}
 	// get the first line of the output
-	for _, ipStr := range strings.Split(stdout, "\n") {
+	for ipStr := range strings.SplitSeq(stdout, "\n") {
 		ip := strings.TrimSpace(ipStr)
 		if isipv6 && govalidator.IsIPv6(ip) {
 			return ip, nil

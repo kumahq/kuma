@@ -96,6 +96,6 @@ func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.MeshGa
 }
 
 func (h *GatewayInstanceValidator) Supports(req admission.Request) bool {
-	gvk := mesh_k8s.GroupVersion.WithKind(reflect.TypeOf(mesh_k8s.MeshGatewayInstance{}).Name())
+	gvk := mesh_k8s.GroupVersion.WithKind(reflect.TypeFor[mesh_k8s.MeshGatewayInstance]().Name())
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

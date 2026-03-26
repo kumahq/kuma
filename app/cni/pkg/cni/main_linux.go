@@ -47,8 +47,8 @@ type Kubernetes struct {
 type PluginConf struct {
 	types.NetConf
 
-	RawPrevResult *map[string]interface{} `json:"prevResult"`
-	PrevResult    *current.Result         `json:"-"`
+	RawPrevResult *map[string]any `json:"prevResult"`
+	PrevResult    *current.Result `json:"-"`
 
 	// plugin-specific fields
 	LogLevel   string     `json:"log_level"`

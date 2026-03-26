@@ -176,7 +176,7 @@ func (b *bundledIdentityProvider) GetMeshTrustCA(ctx context.Context, identity *
 // This reduces the load on the underlying store (e.g., OS, DB), as the CA pair doesn't change frequently.
 func (b *bundledIdentityProvider) getCAKeyPair(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, mesh string) (*util_tls.KeyPair, error) {
 	cacheKey := fmt.Sprintf("ca_pair:%s:%s", mesh, model.GetDisplayName(identity.GetMeta()))
-	ca, err := b.cache.GetOrRetrieve(ctx, cacheKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (interface{}, error) {
+	ca, err := b.cache.GetOrRetrieve(ctx, cacheKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (any, error) {
 		bundled := identity.Spec.Provider.Bundled
 		var err error
 		var cert, key []byte

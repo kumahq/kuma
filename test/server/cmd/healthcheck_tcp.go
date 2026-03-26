@@ -21,7 +21,7 @@ func newHealthCheckTCP() *cobra.Command {
 		Short: "Run Test Server for TCP Health Check test",
 		Long:  `Run Test Server for TCP Health Check test.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			ln, err := net.Listen("tcp", fmt.Sprintf(":%d", args.port))
+			ln, err := (&net.ListenConfig{}).Listen(cmd.Context(), "tcp", fmt.Sprintf(":%d", args.port))
 			if err != nil {
 				return err
 			}
@@ -37,7 +37,7 @@ func newHealthCheckTCP() *cobra.Command {
 				go func() {
 					healthCheckLog.Info("accept new connection")
 
-					s := ""
+					var s strings.Builder
 					hcIdx := -1
 					buf := make([]byte, 1024)
 
@@ -48,10 +48,10 @@ func newHealthCheckTCP() *cobra.Command {
 							break
 						}
 
-						s += string(buf[:length])
-						healthCheckLog.V(1).Info("receive from connection", "buffer", s)
+						s.Write(buf[:length])
+						healthCheckLog.V(1).Info("receive from connection", "buffer", s.String())
 
-						if idx := strings.LastIndex(s, args.request); idx != -1 {
+						if idx := strings.LastIndex(s.String(), args.request); idx != -1 {
 							healthCheckLog.Info("receive new request")
 							if _, err = conn.Write([]byte(args.response)); err != nil {
 								healthCheckLog.Error(err, "error write response to connection")
@@ -64,7 +64,7 @@ func newHealthCheckTCP() *cobra.Command {
 							break
 						}
 
-						if idx := strings.LastIndex(s, args.send); hcIdx != idx && idx != -1 {
+						if idx := strings.LastIndex(s.String(), args.send); hcIdx != idx && idx != -1 {
 							healthCheckLog.Info("receive new health check request")
 							if _, err = conn.Write([]byte(args.recv)); err != nil {
 								healthCheckLog.Error(err, "error write health check response to connection")

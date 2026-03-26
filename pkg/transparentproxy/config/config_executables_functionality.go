@@ -127,7 +127,7 @@ func verifyExistingRulesForTable(
 	}
 
 	var linesCount int
-	for _, line := range strings.Split(stdout.String(), "\n") {
+	for line := range strings.SplitSeq(stdout.String(), "\n") {
 		line = strings.TrimSpace(line)
 		switch {
 		case line == "":

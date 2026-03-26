@@ -15,6 +15,8 @@ help: ## Display this help screen
 			awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ; \
 	done
 
+include mk/common.mk
+include mk/k8s.mk # Include before dev.mk, kind.mk, and k3d.mk; they rely on variables defined here.
 include mk/dev.mk
 
 include mk/api.mk

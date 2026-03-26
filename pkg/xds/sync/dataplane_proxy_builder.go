@@ -75,7 +75,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		SecretsTracker:    secretsTracker,
 		Metadata:          meta,
 		Zone:              p.Zone,
-		RuntimeExtensions: map[string]interface{}{},
+		RuntimeExtensions: map[string]any{},
 	}
 	if dp.Spec.GetNetworking().HasZoneProxyListeners() {
 		proxy.DataplaneZoneListeners = p.buildDataplaneZoneListeners(ctx, meta, dp, meshContext)

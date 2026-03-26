@@ -1,8 +1,10 @@
 package gatewayapi
 
 import (
+	"cmp"
 	"context"
 	"reflect"
+	"slices"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -13,6 +15,7 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
@@ -71,8 +74,6 @@ func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi_v1.Ga
 	return addrs
 }
 
-const everyListener = gatewayapi.SectionName("")
-
 type attachedRoutes struct {
 	// num is the number of allowed routes for a listener
 	num int32
@@ -82,8 +83,8 @@ type attachedRoutes struct {
 // listener.
 type AttachedRoutesForListeners map[gatewayapi.SectionName]attachedRoutes
 
-// attachedRoutesForListeners returns a function that calculates the
-// conditions for routes attached to a Gateway.
+// attachedRoutesForListeners counts accepted routes per listener, resolving
+// hostname intersection when routes omit sectionName.
 func attachedRoutesForListeners(
 	ctx context.Context,
 	gateway *gatewayapi.Gateway,
@@ -96,32 +97,51 @@ func attachedRoutesForListeners(
 		return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
 	}
 
-	attachedRoutes := AttachedRoutesForListeners{}
+	result := AttachedRoutesForListeners{}
 
 	for i := range routes.Items {
 		route := routes.Items[i]
 		for _, parentRef := range route.Spec.ParentRefs {
-			sectionName := everyListener
-			if parentRef.SectionName != nil {
-				sectionName = *parentRef.SectionName
+			if !isRouteAccepted(route, parentRef) {
+				continue
 			}
 
-			for i := range route.Status.Parents {
-				refStatus := route.Status.Parents[i]
-				if reflect.DeepEqual(refStatus.ParentRef, parentRef) {
-					attached := attachedRoutes[sectionName]
+			if parentRef.SectionName != nil {
+				attached := result[*parentRef.SectionName]
+				attached.num++
+				result[*parentRef.SectionName] = attached
+				continue
+			}
 
-					if kube_apimeta.IsStatusConditionTrue(refStatus.Conditions, string(gatewayapi.RouteConditionAccepted)) {
-						attached.num++
-					}
-
-					attachedRoutes[sectionName] = attached
+			// No sectionName: count only for listeners whose hostname intersects.
+			for _, listener := range gateway.Spec.Listeners {
+				var listenerHostnames []gatewayapi.Hostname
+				if listener.Hostname != nil {
+					listenerHostnames = []gatewayapi.Hostname{*listener.Hostname}
+				} else {
+					// Nil hostname means the listener matches all hostnames.
+					listenerHostnames = []gatewayapi.Hostname{""}
+				}
+				if attachment.HostnamesIntersect(route.Spec.Hostnames, listenerHostnames) {
+					attached := result[listener.Name]
+					attached.num++
+					result[listener.Name] = attached
 				}
 			}
 		}
 	}
 
-	return attachedRoutes, nil
+	return result, nil
+}
+
+func isRouteAccepted(route gatewayapi.HTTPRoute, parentRef gatewayapi.ParentReference) bool {
+	for i := range route.Status.Parents {
+		refStatus := route.Status.Parents[i]
+		if reflect.DeepEqual(refStatus.ParentRef, parentRef) {
+			return kube_apimeta.IsStatusConditionTrue(refStatus.Conditions, string(gatewayapi.RouteConditionAccepted))
+		}
+	}
+	return false
 }
 
 // mergeGatewayListenerStatuses takes the statuses of the attached Routes and
@@ -179,12 +199,16 @@ func mergeGatewayListenerStatuses(
 			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, condition)
 		}
 
-		// Check resolved status for routes for this listener and for
-		// non-specific parents.
-		previousStatus.AttachedRoutes = attachedRouteStatuses[name].num + attachedRouteStatuses[everyListener].num
+		previousStatus.AttachedRoutes = attachedRouteStatuses[name].num
 
 		statuses = append(statuses, previousStatus)
 	}
+
+	// Sort by listener name to ensure deterministic ordering and avoid
+	// unnecessary Gateway status patches caused by Go map iteration order.
+	slices.SortFunc(statuses, func(a, b gatewayapi.ListenerStatus) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return statuses
 }

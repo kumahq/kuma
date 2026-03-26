@@ -269,6 +269,13 @@ func fillRemoteMeshServices(
 			continue
 		}
 
+		if !zi.HasPublicAddress() {
+			// Zone Ingress is not reachable yet from other clusters.
+			// This may happen when Ingress Service is pending waiting on
+			// External IP on Kubernetes.
+			continue
+		}
+
 		ziAddress := zi.Spec.GetNetworking().GetAdvertisedAddress()
 		ziPort := zi.Spec.GetNetworking().GetAdvertisedPort()
 		ziCoordinates := buildCoordinates(ziAddress, ziPort)

@@ -9,8 +9,16 @@ $(EXTRA_LD_FLAGS)"
 endef
 
 EXTRA_GOENV ?=
-GOENV=CGO_ENABLED=0 $(EXTRA_GOENV)
-GOFLAGS := -trimpath $(EXTRA_GOFLAGS)
+
+GOENV = CGO_ENABLED=0
+ifneq ($(EXTRA_GOENV),)
+GOENV += $(EXTRA_GOENV)
+endif
+
+GOFLAGS := -trimpath
+ifneq ($(EXTRA_GOFLAGS),)
+GOFLAGS += $(EXTRA_GOFLAGS)
+endif
 
 TOP := $(shell pwd)
 BUILD_DIR ?= $(TOP)/build
@@ -20,7 +28,7 @@ export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
 # An optional extension to the coredns packages
 COREDNS_EXT ?=
-COREDNS_VERSION = v1.14.1
+COREDNS_VERSION = v1.14.2
 
 # List of binaries that we have build/release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy

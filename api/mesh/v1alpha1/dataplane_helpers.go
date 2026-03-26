@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding"
 	"fmt"
+	"maps"
 	"net"
 	"reflect"
 	"sort"
@@ -508,9 +509,7 @@ func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
 	merged := TagSet{}
 
 	for _, t := range other {
-		for k, v := range t {
-			merged[k] = v
-		}
+		maps.Copy(merged, t)
 	}
 
 	return merged

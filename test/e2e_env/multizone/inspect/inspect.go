@@ -1,6 +1,7 @@
 package inspect
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -177,7 +178,9 @@ func Inspect() {
 
 		It("match dataplanes of policy", func() {
 			Eventually(func(g Gomega) {
-				r, err := http.Get(multizone.Global.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName))
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, multizone.Global.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName), http.NoBody)
+				g.Expect(err).ToNot(HaveOccurred())
+				r, err := http.DefaultClient.Do(req)
 				g.Expect(err).ToNot(HaveOccurred())
 				defer r.Body.Close()
 				g.Expect(r).To(HaveHTTPStatus(200))
@@ -210,7 +213,9 @@ spec:
           requestTimeout: 2s
           maxStreamDuration: 20s`, meshName))(multizone.Global)).To(Succeed())
 			Eventually(func(g Gomega) {
-				r, err := http.Get(multizone.Global.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, testServerDPPName))
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, multizone.Global.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, testServerDPPName), http.NoBody)
+				g.Expect(err).ToNot(HaveOccurred())
+				r, err := http.DefaultClient.Do(req)
 				g.Expect(err).ToNot(HaveOccurred())
 				defer r.Body.Close()
 				g.Expect(r).To(HaveHTTPStatus(200))

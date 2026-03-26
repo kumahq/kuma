@@ -182,7 +182,7 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest(http.MethodPost, baseURL+"/bootstrap", strings.NewReader(given.body))
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+"/bootstrap", strings.NewReader(given.body))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Set("Content-Type", "application/json")
 

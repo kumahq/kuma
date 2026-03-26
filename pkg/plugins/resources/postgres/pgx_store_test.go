@@ -57,7 +57,7 @@ var _ = Describe("PgxStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// create resources
-			for i := 0; i < 5; i++ {
+			for i := range 5 {
 				ts := &core_mesh.TrafficRouteResource{
 					Spec: &mesh_proto.TrafficRoute{
 						Sources:      []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "web"}}},

@@ -41,8 +41,8 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 	resourceBytes, err := os.ReadFile(resourcePath)
 	Expect(err).ToNot(HaveOccurred())
 
-	rawResources := strings.Split(string(resourceBytes), "---")
-	for _, rawResource := range rawResources {
+	rawResources := strings.SplitSeq(string(resourceBytes), "---")
+	for rawResource := range rawResources {
 		bytes := []byte(rawResource)
 
 		res, err := rest_types.YAML.UnmarshalCore(bytes)

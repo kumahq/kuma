@@ -184,6 +184,10 @@ func BuildResolvedPipeBackend(workDir string, resolved *ResolvedOtelBackend) cor
 }
 
 func ResolveEnvPolicy(policy *motb_api.EnvPolicy) *core_xds.OtelResolvedEnvPolicy {
+	if policy == nil {
+		return nil
+	}
+
 	return &core_xds.OtelResolvedEnvPolicy{
 		Mode:                 policy.EffectiveMode(),
 		Precedence:           policy.EffectivePrecedence(),
@@ -345,9 +349,14 @@ func CollectorEndpointString(endpoint *core_xds.Endpoint) string {
 }
 
 // ParseOtelEndpoint parses a "host:port" endpoint string into an Endpoint.
-// Prepends a synthetic scheme so url.Parse handles IPv6 and port parsing.
+// Handles bare IPv6 (multiple colons without brackets) as host-only.
 // Defaults to gRPC port 4317 when no port is specified.
 func ParseOtelEndpoint(endpoint string) *core_xds.Endpoint {
+	// Bare IPv6 without brackets (e.g. "2001:db8::1") - treat as host-only.
+	if strings.Count(endpoint, ":") > 1 && !strings.Contains(endpoint, "[") {
+		return &core_xds.Endpoint{Target: endpoint, Port: defaultOtelGrpcPort}
+	}
+
 	u, err := url.Parse("otel://" + endpoint)
 	if err != nil || u.Hostname() == "" {
 		return &core_xds.Endpoint{Target: endpoint, Port: defaultOtelGrpcPort}

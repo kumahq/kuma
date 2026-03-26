@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -270,9 +271,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 
 func (k *k8SDeployment) getAnnotations() map[string]string {
 	annotations := make(map[string]string)
-	for key, value := range k.opts.PodAnnotations {
-		annotations[key] = value
-	}
+	maps.Copy(annotations, k.opts.PodAnnotations)
 	return annotations
 }
 
@@ -280,9 +279,7 @@ func (k *k8SDeployment) getLabels() map[string]string {
 	labels := make(map[string]string)
 	labels["app"] = k.Name()
 	labels["kuma.io/mesh"] = k.opts.Mesh
-	for key, value := range k.opts.PodLabels {
-		labels[key] = value
-	}
+	maps.Copy(labels, k.opts.PodLabels)
 	return labels
 }
 

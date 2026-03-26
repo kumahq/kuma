@@ -3,7 +3,6 @@ package xds
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -15,13 +14,17 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
@@ -57,20 +60,41 @@ func BaseAccessLogBuilder(
 				Configure(bldrs_accesslog.Path(fileBackend.Path)))
 		})).
 		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
+			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc)
+			if endpoint == nil {
+				return func(*envoy_accesslog.AccessLog) error { return nil }
+			}
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
 				Configure(OtelBody(&otelBackend, defaultFormat, values)).
 				Configure(OtelAttributes(&otelBackend, values)).
 				Configure(OtelResourceAttributes(values)).
-				Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", string(backendsAcc.ClusterForEndpoint(
-					EndpointForOtel(otelBackend.Endpoint),
-				)))))
+				Configure(bldrs_accesslog.CommonConfig(
+					"MeshAccessLog",
+					string(backendsAcc.ClusterForEndpoint(*endpoint)),
+				)))
 		}))
+}
+
+// OtelPipeResolver holds the context needed to resolve OTel backendRef
+// endpoints and accumulate pipe backends during access log configuration.
+type OtelPipeResolver struct {
+	Resources        xds_context.Resources
+	NodeHostIP       string
+	OtelEnvInventory *xds.OtelBootstrapInventory
+	Enabled          bool
+	WorkDir          string
+	backends         map[string]xds.OtelPipeBackend
+}
+
+func (r *OtelPipeResolver) PipeBackends() map[string]xds.OtelPipeBackend {
+	return r.backends
 }
 
 type EndpointAccumulator struct {
 	endpoints             map[LoggingEndpoint]int
 	latest                int
 	UnifiedResourceNaming bool
+	OtelPipe              *OtelPipeResolver
 }
 
 type endpointClusterName string
@@ -87,26 +111,55 @@ func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) end
 	}
 
 	getNameOrDefault := core_system_names.GetNameOrDefault(acc.UnifiedResourceNaming)
-	name := getNameOrDefault(
-		core_system_names.AsSystemName("meshaccesslog_"+core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
-		fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
-	)
+	var name string
+	if endpoint.SocketPath != "" {
+		name = getNameOrDefault(
+			core_system_names.AsSystemName("meshaccesslog_otel_"+core_system_names.CleanName(endpoint.BackendName)),
+			fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
+		)
+	} else {
+		name = getNameOrDefault(
+			core_system_names.AsSystemName("meshaccesslog_"+core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
+			fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
+		)
+	}
 	return endpointClusterName(name)
 }
 
-const defaultOpenTelemetryGRPCPort uint32 = 4317
-
-func EndpointForOtel(endpoint string) LoggingEndpoint {
-	target := strings.Split(endpoint, ":")
-	port := defaultOpenTelemetryGRPCPort
-	if len(target) > 1 {
-		val, _ := strconv.ParseInt(target[1], 10, 32)
-		port = uint32(val)
+func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccumulator) *LoggingEndpoint {
+	pipe := acc.OtelPipe
+	if pipe == nil {
+		return nil
 	}
 
-	return LoggingEndpoint{
-		Address: target[0],
-		Port:    port,
+	resolved := policies_xds.ResolveOtelBackend(
+		otelBackend.BackendRef,
+		otelBackend.Endpoint,
+		policies_xds.ParseOtelEndpoint,
+		func(ep string) string { return ep },
+		pipe.Resources,
+	)
+	if resolved == nil {
+		return nil
+	}
+
+	if otelBackend.BackendRef != nil && pipe.Enabled {
+		if pipe.backends == nil {
+			pipe.backends = map[string]xds.OtelPipeBackend{}
+		}
+		base := policies_xds.BuildResolvedPipeBackend(pipe.WorkDir, resolved)
+		pipe.backends[resolved.Name] = base
+		return &LoggingEndpoint{
+			SocketPath:  base.SocketPath,
+			BackendName: resolved.Name,
+			UseHTTP2:    true, // Envoy→kuma-dp leg is always gRPC
+		}
+	}
+
+	return &LoggingEndpoint{
+		Address:  policies_xds.ResolveAddressForDirectExport(resolved.Endpoint.Target, pipe.NodeHostIP),
+		Port:     resolved.Endpoint.Port,
+		UseHTTP2: resolved.Protocol != motb_api.ProtocolHTTP,
 	}
 }
 
