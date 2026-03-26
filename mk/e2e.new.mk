@@ -24,7 +24,7 @@ endif
 
 # We don't use `go list` here because Ginkgo requires disk path names,
 # not Go packages names.
-TEST_NAMES = $(shell ls -1 ./test/e2e)
+TEST_NAMES = $(patsubst ./test/e2e/%/,%,$(wildcard ./test/e2e/*/))
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
 KUBE_E2E_PKG_LIST ?= ./test/e2e_env/kubernetes
