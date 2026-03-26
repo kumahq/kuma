@@ -102,12 +102,12 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
-          "legendFormat": "",
+          "expr": "sum by (envoy_http_conn_manager_prefix) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "legendFormat": "{{envoy_http_conn_manager_prefix}}",
           "refId": "A"
         }
       ],
-      "title": "Inbound Request Rate",
+      "title": "Inbound HTTP Request Rate",
       "type": "stat"
     },
     {
@@ -125,8 +125,8 @@
               "options": {
                 "match": "null",
                 "result": {
-                  "text": "0%",
-                  "color": "green"
+                  "text": "N/A",
+                  "color": "text"
                 }
               },
               "type": "special"
@@ -136,21 +136,22 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
                 "color": "yellow",
-                "value": 1
+                "value": 99
               },
               {
-                "color": "red",
-                "value": 5
+                "color": "green",
+                "value": 99.9
               }
             ]
           },
           "unit": "percent",
-          "noValue": "0%"
+          "min": 0,
+          "max": 100
         },
         "overrides": []
       },
@@ -177,12 +178,12 @@
       },
       "targets": [
         {
-          "expr": "100 * sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / clamp_min(sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])), 1)",
-          "legendFormat": "",
+          "expr": "100 * clamp_min(1 - sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])), 0)",
+          "legendFormat": "Success Rate",
           "refId": "A"
         }
       ],
-      "title": "Inbound Error Rate (5xx)",
+      "title": "Inbound HTTP Success Rate (SLO)",
       "type": "stat"
     },
     {
@@ -241,12 +242,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
-          "legendFormat": "",
+          "expr": "histogram_quantile(0.99, sum by (le, envoy_http_conn_manager_prefix) (rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])))",
+          "legendFormat": "{{envoy_http_conn_manager_prefix}}",
           "refId": "A"
         }
       ],
-      "title": "Inbound p99 Latency",
+      "title": "Inbound HTTP p99 Latency",
       "type": "stat"
     },
     {
@@ -296,7 +297,7 @@
       },
       "targets": [
         {
-          "expr": "count(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
+          "expr": "count(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\"})",
           "legendFormat": "",
           "refId": "A"
         }
@@ -313,7 +314,7 @@
         "y": 5
       },
       "id": 101,
-      "title": "Inbound Traffic",
+      "title": "Inbound HTTP",
       "type": "row"
     },
     {
@@ -382,8 +383,8 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m]))",
-          "legendFormat": "Total",
+          "expr": "sum by (envoy_http_conn_manager_prefix) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "legendFormat": "{{envoy_http_conn_manager_prefix}}",
           "refId": "A"
         }
       ],
@@ -517,7 +518,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (envoy_response_code_class)",
+          "expr": "sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])) by (envoy_response_code_class)",
           "legendFormat": "{{envoy_response_code_class}}xx",
           "refId": "A"
         }
@@ -591,12 +592,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"localhost_.*|self_inbound_dp_.*\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "B"
         }
@@ -612,8 +613,188 @@
         "x": 0,
         "y": 14
       },
+      "id": 108,
+      "title": "Inbound TCP",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisLabel": "",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "id": 109,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (envoy_listener_address) (envoy_listener_downstream_cx_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_listener_address=~\"self_inbound_dp_.*\"})",
+          "legendFormat": "{{envoy_listener_address}} active",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (envoy_listener_address) (rate(envoy_listener_downstream_cx_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_listener_address=~\"self_inbound_dp_.*\"}[5m]))",
+          "legendFormat": "{{envoy_listener_address}} new/s",
+          "refId": "B"
+        }
+      ],
+      "title": "Inbound Active Connections",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisLabel": "",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "Bps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "id": 110,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (envoy_http_conn_manager_prefix) (rate(envoy_http_downstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "legendFormat": "{{envoy_http_conn_manager_prefix}} rx",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (envoy_http_conn_manager_prefix) (rate(envoy_http_downstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "legendFormat": "{{envoy_http_conn_manager_prefix}} tx",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (envoy_tcp_prefix) (rate(envoy_tcp_downstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_tcp_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "legendFormat": "{{envoy_tcp_prefix}} rx (tcp)",
+          "refId": "C"
+        },
+        {
+          "expr": "sum by (envoy_tcp_prefix) (rate(envoy_tcp_downstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_tcp_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "legendFormat": "{{envoy_tcp_prefix}} tx (tcp)",
+          "refId": "D"
+        }
+      ],
+      "title": "Inbound Throughput",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
       "id": 102,
-      "title": "Outbound Traffic",
+      "title": "Outbound HTTP",
       "type": "row"
     },
     {
@@ -663,7 +844,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 15
+        "y": 24
       },
       "id": 8,
       "options": {
@@ -682,7 +863,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name)",
           "legendFormat": "{{envoy_cluster_name}}",
           "refId": "A"
         }
@@ -798,7 +979,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 15
+        "y": 24
       },
       "id": 9,
       "options": {
@@ -817,7 +998,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name, envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name, envoy_response_code_class)",
           "legendFormat": "{{envoy_cluster_name}} {{envoy_response_code_class}}xx",
           "refId": "A"
         }
@@ -872,7 +1053,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 15
+        "y": 24
       },
       "id": 10,
       "options": {
@@ -891,7 +1072,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (le, envoy_cluster_name))",
+          "expr": "histogram_quantile(0.99, sum(rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (le, envoy_cluster_name))",
           "legendFormat": "{{envoy_cluster_name}} p99",
           "refId": "A"
         }
@@ -905,331 +1086,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
-      },
-      "id": 104,
-      "title": "Security",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "mode": "none"
-            }
-          },
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 24
-      },
-      "id": 105,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": [
-            "mean",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "title": "RBAC Denied",
-      "type": "timeseries",
-      "targets": [
-        {
-          "expr": "sum(rate(envoy_rbac_denied{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
-          "legendFormat": "denied",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "mode": "none"
-            }
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 24
-      },
-      "id": 106,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": [
-            "mean",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "title": "Outbound TLS Handshakes",
-      "type": "timeseries",
-      "targets": [
-        {
-          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_ssl_handshake{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}[5m]))",
-          "legendFormat": "{{envoy_cluster_name}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "mode": "none"
-            }
-          },
-          "unit": "ops",
-          "min": 0
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 24
-      },
-      "id": 107,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": [
-            "lastNotNull",
-            "min"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "asc"
-        }
-      },
-      "title": "Cert Rotation Rate",
-      "type": "timeseries",
-      "targets": [
-        {
-          "expr": "sum by (pod) (rate(envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds{k8s_kuma_io_namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "description": "Rate of SDS certificate updates. Active rotation = healthy mTLS."
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
         "y": 32
       },
-      "id": 103,
-      "title": "Health",
+      "id": 111,
+      "title": "Outbound TCP",
       "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "text": "Disconnected",
-                  "color": "red"
-                },
-                "1": {
-                  "text": "Connected",
-                  "color": "green"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 33
-      },
-      "id": 11,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "expr": "min(envoy_control_plane_connected_state{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "Control Plane",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "d",
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "< 1 day (OK)",
-                  "color": "green"
-                }
-              }
-            }
-          ]
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 33
-      },
-      "id": 12,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "expr": "min(envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "mTLS Cert Expiry",
-      "type": "stat",
-      "description": "0 is normal \u2014 Kuma rotates mTLS certs every 24h"
     },
     {
       "datasource": {
@@ -1269,36 +1130,386 @@
               }
             ]
           },
+          "unit": "cps",
           "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 112,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m]))",
+          "legendFormat": "{{envoy_cluster_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "TCP Connection Rate by Destination",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisLabel": "",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "Bps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "id": 113,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m]))",
+          "legendFormat": "{{envoy_cluster_name}} rx",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m]))",
+          "legendFormat": "{{envoy_cluster_name}} tx",
+          "refId": "B"
+        }
+      ],
+      "title": "TCP Throughput by Destination",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "id": 104,
+      "title": "Security",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 42
+      },
+      "id": 105,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "RBAC Denied",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (envoy_http_conn_manager_prefix) (rate(envoy_rbac_denied{namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
+          "legendFormat": "{{envoy_http_conn_manager_prefix}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 42
+      },
+      "id": 106,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "title": "Outbound TLS Handshakes",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_ssl_handshake{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m]))",
+          "legendFormat": "{{envoy_cluster_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "ops",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 42
+      },
+      "id": 107,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "asc"
+        }
+      },
+      "title": "Cert Rotation Rate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds{namespace=~\"$namespace\",mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}[5m]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "description": "Rate of SDS certificate updates. Active rotation = healthy mTLS."
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "id": 103,
+      "title": "Health",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-text"
+            },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*Healthy.*"
+              "id": "byName",
+              "options": "Status"
             },
             "properties": [
               {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Disconnected",
+                        "color": "red"
+                      },
+                      "1": {
+                        "text": "Connected",
+                        "color": "green"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 120
               }
             ]
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*Total.*"
+              "id": "byName",
+              "options": "Uptime"
             },
             "properties": [
               {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.width",
+                "value": 120
               }
             ]
           }
@@ -1307,8 +1518,225 @@
       "gridPos": {
         "h": 8,
         "w": 12,
+        "x": 0,
+        "y": 51
+      },
+      "id": 11,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Status",
+            "desc": false
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "envoy_control_plane_connected_state{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\"}",
+          "legendFormat": "",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "envoy_server_uptime{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\"}",
+          "legendFormat": "",
+          "refId": "B",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "title": "Control Plane Connection",
+      "type": "table",
+      "transformations": [
+        {
+          "id": "seriesToColumns",
+          "options": {
+            "byField": "pod"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "__name__": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance": true,
+              "instance 1": true,
+              "instance 2": true,
+              "job": true,
+              "job 1": true,
+              "job 2": true,
+              "mesh": true,
+              "mesh 1": true,
+              "mesh 2": true,
+              "kuma_io_zone": true,
+              "kuma_io_zone 1": true,
+              "kuma_io_zone 2": true,
+              "kuma_workload": true,
+              "kuma_workload 1": true,
+              "kuma_workload 2": true,
+              "namespace": true,
+              "namespace 1": true,
+              "namespace 2": true,
+              "app": true,
+              "app 1": true,
+              "app 2": true
+            },
+            "renameByName": {
+              "pod": "Dataplane",
+              "Value #A": "Status",
+              "Value #B": "Uptime"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "d",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "< 1 day (OK)",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 67
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "min(envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\"})",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "mTLS Cert Expiry",
+      "type": "stat",
+      "description": "0 is normal \u2014 Kuma rotates mTLS certs every 24h"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisLabel": "",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Healthy",
+                  "color": "green"
+                },
+                "0": {
+                  "text": "Unhealthy",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
         "x": 12,
-        "y": 33
+        "y": 51
       },
       "id": 13,
       "options": {
@@ -1326,18 +1754,184 @@
       },
       "targets": [
         {
-          "expr": "sum(envoy_cluster_membership_healthy{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name)",
-          "legendFormat": "{{envoy_cluster_name}} Healthy",
+          "expr": "sum(envoy_cluster_membership_healthy{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name) / sum(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name)",
+          "legendFormat": "{{envoy_cluster_name}}",
           "refId": "A"
-        },
-        {
-          "expr": "sum(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name)",
-          "legendFormat": "{{envoy_cluster_name}} Total",
-          "refId": "B"
         }
       ],
       "title": "Upstream Endpoint Health",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Health ratio per destination (healthy/total). Green = 100%, yellow = degraded, red = unhealthy."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisLabel": "",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "green"
+                },
+                "1": {
+                  "text": "Open",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "unit": "short",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 59
+      },
+      "id": 320,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "clamp_max(max(envoy_cluster_circuit_breakers_default_rq_open{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"} + envoy_cluster_circuit_breakers_default_cx_open{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"} + envoy_cluster_circuit_breakers_default_rq_pending_open{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}) by (envoy_cluster_name), 1)",
+          "legendFormat": "{{envoy_cluster_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Circuit Breaker State",
+      "type": "timeseries",
+      "description": "Any circuit breaker open per destination. Green = all closed (OK), red = at least one CB open (rq, cx, or pending)."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisLabel": "",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.001
+              }
+            ]
+          },
+          "unit": "ops",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 59
+      },
+      "id": 321,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(envoy_cluster_lb_healthy_panic{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\"$destination\"}[5m])) by (envoy_cluster_name)",
+          "legendFormat": "{{envoy_cluster_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "LB Panic Mode Rate",
+      "type": "timeseries",
+      "description": "Rate of load balancer panic mode events per destination. Panic mode activates when too few healthy hosts are available, routing traffic to unhealthy hosts to avoid complete failure."
     }
   ],
   "refresh": "10s",
@@ -1417,7 +2011,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, k8s_kuma_io_namespace)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\"}, namespace)",
         "hide": 0,
         "includeAll": true,
         "allValue": ".*",
@@ -1427,7 +2021,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, k8s_kuma_io_namespace)",
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\"}, namespace)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -1442,7 +2036,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=~\"$namespace\"}, kuma_workload)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\"}, kuma_workload)",
         "hide": 0,
         "includeAll": false,
         "label": "Workload",
@@ -1451,7 +2045,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",k8s_kuma_io_namespace=~\"$namespace\"}, kuma_workload)",
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\"}, kuma_workload)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -1466,7 +2060,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
+        "definition": "label_values(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Destination",
@@ -1475,14 +2069,15 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
+          "query": "label_values(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_cluster_name=~\".*_m?svc_.*\"}, envoy_cluster_name)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
-        "type": "query"
+        "type": "query",
+        "allValue": ".*"
       }
     ]
   },

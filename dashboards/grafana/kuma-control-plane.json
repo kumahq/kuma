@@ -233,7 +233,7 @@
           },
           "expr": "leader{job=\"kuma-control-plane\"}",
           "instant": true,
-          "legendFormat": "{{ zone }} / {{ instance }}",
+          "legendFormat": "{{ zone }} / {{ pod }}",
           "refId": "A"
         }
       ],
@@ -304,7 +304,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total number of Dataplane resources \u2014 should closely match active xDS streams",
+      "description": "Dataplane resource count, falls back to active xDS streams if MeshInsight is unavailable (zone CP).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -352,7 +352,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(resources_count{job=\"kuma-control-plane\",resource_type=\"Dataplane\"})",
+          "expr": "max(resources_count{job=\"kuma-control-plane\",resource_type=\"Dataplane\"}) or sum(xds_streams_active{job=\"kuma-control-plane\"})",
           "legendFormat": "dataplanes",
           "refId": "A"
         }
@@ -1330,79 +1330,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (resource_type) (resources_count{job=\"kuma-control-plane\",resource_type=~\"Dataplane|Mesh|MeshService|HostnameGenerator|Zone|ZoneIngress|ZoneEgress\"})",
-          "legendFormat": "{{ resource_type }}",
-          "refId": "A"
-        }
-      ],
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "description": "Number of policy resources tracked by the control plane",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 57
-      },
-      "id": 52,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "title": "Policy Count",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "resources_count{job=\"kuma-control-plane\",resource_type=~\"Mesh.*|MeshTrafficPermission|MeshHTTPRoute|MeshTCPRoute\",resource_type!~\"MeshInsight|MeshService\"}",
+          "expr": "max by (resource_type) (resources_count{job=\"kuma-control-plane\",resource_type!~\".*Insight|Secret|GlobalSecret|Config\"})",
           "legendFormat": "{{ resource_type }}",
           "refId": "A"
         }
@@ -1450,8 +1378,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 65
+        "x": 12,
+        "y": 57
       },
       "id": 53,
       "options": {
@@ -1870,7 +1798,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "min by (kuma_workload) (envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\"})",
+          "expr": "min(envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A",
           "instant": true
@@ -1947,7 +1875,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "min by (kuma_workload) ((envoy_listener_ssl_certificate_expiration_unix_time_seconds{mesh=\"$mesh\"} - time()) / 3600)",
+          "expr": "min by (kuma_workload) ((envoy_listener_ssl_certificate_expiration_unix_time_seconds{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_listener_address=~\"self_inbound_dp_.*\"} - time()) / 3600)",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A"
         }
@@ -2090,7 +2018,7 @@
             "uid": "${datasource}"
           },
           "expr": "go_goroutines{job=\"kuma-control-plane\"}",
-          "legendFormat": "{{ instance }}",
+          "legendFormat": "{{ pod }}",
           "refId": "A"
         }
       ],
@@ -2159,7 +2087,7 @@
             "uid": "${datasource}"
           },
           "expr": "go_memstats_heap_alloc_bytes{job=\"kuma-control-plane\"}",
-          "legendFormat": "{{ instance }} alloc",
+          "legendFormat": "{{ pod }} alloc",
           "refId": "A"
         },
         {
@@ -2168,7 +2096,7 @@
             "uid": "${datasource}"
           },
           "expr": "process_resident_memory_bytes{job=\"kuma-control-plane\"}",
-          "legendFormat": "RSS",
+          "legendFormat": "{{ pod }} RSS",
           "refId": "B"
         },
         {
@@ -2177,7 +2105,7 @@
             "uid": "${datasource}"
           },
           "expr": "go_memstats_heap_inuse_bytes{job=\"kuma-control-plane\"}",
-          "legendFormat": "{{ instance }} in-use",
+          "legendFormat": "{{ pod }} in-use",
           "refId": "C"
         }
       ],
@@ -2247,7 +2175,7 @@
             "uid": "${datasource}"
           },
           "expr": "rate(process_cpu_seconds_total{job=\"kuma-control-plane\"}[5m])",
-          "legendFormat": "CPU cores",
+          "legendFormat": "{{ pod }}",
           "refId": "A"
         }
       ],
@@ -2316,7 +2244,7 @@
             "uid": "${datasource}"
           },
           "expr": "go_gc_duration_seconds{job=\"kuma-control-plane\",quantile=\"1\"}",
-          "legendFormat": "max",
+          "legendFormat": "{{ pod }} max",
           "refId": "A"
         },
         {
@@ -2325,7 +2253,7 @@
             "uid": "${datasource}"
           },
           "expr": "go_gc_duration_seconds{job=\"kuma-control-plane\",quantile=\"0.5\"}",
-          "legendFormat": "p50",
+          "legendFormat": "{{ pod }} p50",
           "refId": "B"
         }
       ],
@@ -2419,7 +2347,7 @@
             "uid": "${datasource}"
           },
           "expr": "process_open_fds{job=\"kuma-control-plane\"}",
-          "legendFormat": "open",
+          "legendFormat": "{{ pod }} open",
           "refId": "A"
         },
         {
@@ -2428,11 +2356,23 @@
             "uid": "${datasource}"
           },
           "expr": "process_max_fds{job=\"kuma-control-plane\"}",
-          "legendFormat": "limit",
+          "legendFormat": "{{ pod }} limit",
           "refId": "B"
         }
       ],
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 124
+      },
+      "id": 100,
+      "title": "API Server & Workqueue",
+      "type": "row"
     },
     {
       "datasource": {
@@ -2471,7 +2411,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 124
+        "y": 125
       },
       "id": 101,
       "options": {
@@ -2540,7 +2480,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 124
+        "y": 125
       },
       "id": 102,
       "options": {
@@ -2617,7 +2557,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 132
+        "y": 133
       },
       "id": 111,
       "options": {
@@ -2686,7 +2626,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 132
+        "y": 133
       },
       "id": 112,
       "options": {
@@ -2724,7 +2664,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 140
+        "y": 141
       },
       "id": 70,
       "title": "Kubernetes",
@@ -2767,7 +2707,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 141
+        "y": 142
       },
       "id": 71,
       "options": {
@@ -2840,7 +2780,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 141
+        "y": 142
       },
       "id": 72,
       "options": {
@@ -2909,7 +2849,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 149
+        "y": 150
       },
       "id": 73,
       "options": {
@@ -2978,7 +2918,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 149
+        "y": 150
       },
       "id": 74,
       "options": {
@@ -3016,7 +2956,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 157
+        "y": 158
       },
       "id": 60,
       "title": "Component Loops",
@@ -3059,7 +2999,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 158
+        "y": 159
       },
       "id": 61,
       "options": {
@@ -3164,7 +3104,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 158
+        "y": 159
       },
       "id": 62,
       "options": {
@@ -3211,7 +3151,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 166
+        "y": 167
       },
       "id": 80,
       "title": "DP Server",
@@ -3254,7 +3194,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 167
+        "y": 168
       },
       "id": 81,
       "options": {
@@ -3323,7 +3263,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 167
+        "y": 168
       },
       "id": 82,
       "options": {
@@ -3361,7 +3301,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 175
+        "y": 176
       },
       "id": 30,
       "title": "gRPC Server",
@@ -3404,7 +3344,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 176
+        "y": 177
       },
       "id": 31,
       "options": {
@@ -3482,7 +3422,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 176
+        "y": 177
       },
       "id": 32,
       "options": {
@@ -3554,6 +3494,30 @@
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Zone",
+        "multi": false,
+        "name": "zone",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
         "type": "query"
       }
     ]
