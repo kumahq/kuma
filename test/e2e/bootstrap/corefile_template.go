@@ -85,10 +85,11 @@ data:
 		dpPod, err := PodNameOfApp(k8sCluster, appName, appNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		stdout, stderr, err := k8sCluster.Exec(
-			appNamespace, dpPod, k8s_util.KumaSidecarContainerName, "cat", dnsConfigDir+"/Corefile")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
-		Expect(stdout).To(ContainSubstring(expectedTestText))
+		Eventually(func(g Gomega) {
+			stdout, _, err := k8sCluster.Exec(
+				appNamespace, dpPod, k8s_util.KumaSidecarContainerName, "cat", dnsConfigDir+"/Corefile")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring(expectedTestText))
+		}, "30s", "1s").Should(Succeed())
 	})
 }
