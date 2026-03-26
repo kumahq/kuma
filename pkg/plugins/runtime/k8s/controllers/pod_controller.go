@@ -43,6 +43,10 @@ const (
 	// FailedToGenerateKumaDataplaneReason is added to an event when
 	// a Dataplane cannot be generated or is not valid.
 	FailedToGenerateKumaDataplaneReason = "FailedToGenerateKumaDataplane"
+	// ZoneProxyListenersSkippedReason is added to a warning event when
+	// zone proxy Services are found but MeshServices mode is not Exclusive,
+	// so listener generation is skipped.
+	ZoneProxyListenersSkippedReason = "ZoneProxyListenersSkipped"
 )
 
 // PodReconciler reconciles a Pod object

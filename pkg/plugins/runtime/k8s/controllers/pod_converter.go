@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_events "k8s.io/client-go/tools/events"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -34,6 +35,7 @@ type PodConverter struct {
 	NodeGetter          kube_client.Reader
 	ResourceConverter   k8s_common.Converter
 	InboundConverter    InboundConverter
+	EventRecorder       kube_events.EventRecorder
 	Zone                string
 	SystemNamespace     string
 	Mode                config_core.CpMode
@@ -356,6 +358,9 @@ func (p *PodConverter) dataplaneFor(
 					dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
 				}
 			}
+		} else if len(zoneProxyServices) > 0 && p.EventRecorder != nil {
+			p.EventRecorder.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
+				"Zone proxy Services found but meshServices.mode is not Exclusive; set meshServices.mode=Exclusive on the Mesh to enable zone proxy listener generation")
 		}
 
 		// Zone-proxy-only dataplane: no inbounds, no gateway, but has listeners.

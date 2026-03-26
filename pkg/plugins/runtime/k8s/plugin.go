@@ -222,6 +222,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 				NodeLabelsToCopy:    rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 				InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 			},
+			EventRecorder:       mgr.GetEventRecorder("k8s.kuma.io/dataplane-generator"),
 			Zone:                rt.Config().Multizone.Zone.Name,
 			SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
 			Mode:                rt.Config().Mode,
