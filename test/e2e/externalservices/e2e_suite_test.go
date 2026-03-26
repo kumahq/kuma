@@ -16,6 +16,6 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Test ExternalServices on Kubernetes without Egress", Label("job-3"), externalservices.ExternalServicesOnKubernetesWithoutEgress)
-	_ = Describe("Test ExternalServices on Multizone Hybrid with LocalityAwareLb", Label("job-3"), externalservices.ExternalServicesOnMultizoneHybridWithLocalityAwareLb, Ordered)
+	_ = Describe("Test ExternalServices on Kubernetes without Egress", Label("job-3"), externalservices.ExternalServicesOnKubernetesWithoutEgress, Serial)
+	_ = Describe("Test ExternalServices on Multizone Hybrid with LocalityAwareLb", Label("job-3"), externalservices.ExternalServicesOnMultizoneHybridWithLocalityAwareLb, Ordered, Serial)
 )
