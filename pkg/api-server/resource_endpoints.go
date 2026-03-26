@@ -426,6 +426,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		create = true
 	} else if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to find a resource")
+		return
 	}
 
 	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
