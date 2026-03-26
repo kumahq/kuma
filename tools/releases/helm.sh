@@ -106,7 +106,7 @@ function release {
   local CHART_TAR
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
   local CHART_FILE
-  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep -E '^[^/]+/Chart\.yaml$')
   local CHART_VERSION
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
