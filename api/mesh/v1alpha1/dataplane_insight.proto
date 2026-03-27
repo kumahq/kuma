@@ -63,8 +63,6 @@ message DataplaneInsight {
       bool enabled = 1;
       bool envAllowed = 2;
       bool envInputPresent = 3;
-      // Computed state: "ready", "blocked", "missing", or "ambiguous".
-      // String (not enum) for extensibility without proto schema changes.
       string state = 4;
       repeated string overrideKinds = 5;
       repeated string missingFields = 6;
