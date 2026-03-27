@@ -1,8 +1,8 @@
-# KubeCon CFP: Hooks, Skills, Speed: AI Agents for Open Source Maintainers
+# KubeCon CFP: Hooks, Skills, Context: AI Agents for Open Source Maintainers
 
 **Track:** AI + ML
 **Format:** Session (30 min)
-**Title:** Hooks, Skills, Speed: AI Agents for Open Source Maintainers (59 chars)
+**Title:** Hooks, Skills, Context: AI Agents for Open Source Maintainers (59 chars)
 
 ---
 
