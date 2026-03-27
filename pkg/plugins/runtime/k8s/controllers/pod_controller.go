@@ -341,10 +341,13 @@ func (r *PodReconciler) createOrUpdateDataplane(
 			Name:      pod.Name,
 		},
 	}
+	var zoneProxySkipped bool
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh); err != nil {
+		skipped, err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh)
+		if err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
+		zoneProxySkipped = skipped
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
 		}
@@ -358,6 +361,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		}
 
 		return err
+	}
+	if zoneProxySkipped {
+		r.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
+			"Zone proxy Services found but meshServices.mode is not Exclusive; set meshServices.mode=Exclusive on the Mesh to enable zone proxy listener generation")
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:

@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
-	kube_events "k8s.io/client-go/tools/events"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -35,7 +34,6 @@ type PodConverter struct {
 	NodeGetter          kube_client.Reader
 	ResourceConverter   k8s_common.Converter
 	InboundConverter    InboundConverter
-	EventRecorder       kube_events.EventRecorder
 	Zone                string
 	SystemNamespace     string
 	Mode                config_core.CpMode
@@ -43,6 +41,9 @@ type PodConverter struct {
 	WorkloadLabels      []string
 }
 
+// PodToDataplane converts a Pod and its associated Services into a Dataplane resource.
+// The returned bool is true when zone proxy Services were found but ignored because
+// meshServices.mode is not Exclusive, so the caller can surface a warning to the user.
 func (p *PodConverter) PodToDataplane(
 	ctx context.Context,
 	dataplane *mesh_k8s.Dataplane,
@@ -50,17 +51,17 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 	mesh *core_mesh.MeshResource,
-) error {
+) (bool, error) {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = mesh.Meta.GetName()
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, mesh.Spec.MeshServicesMode())
+	dataplaneProto, zoneProxySkipped, err := p.dataplaneFor(ctx, pod, services, others, mesh.Spec.MeshServicesMode())
 	if err != nil {
-		return err
+		return false, err
 	}
 	currentSpec, err := dataplane.GetSpec()
 	if err != nil {
-		return err
+		return false, err
 	}
 	// we need to validate if the labels have changed
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
@@ -77,15 +78,15 @@ func (p *PodConverter) PodToDataplane(
 		model.WithWorkload(workloadName),
 	)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh && reflect.DeepEqual(labels, dataplane.GetLabels()) {
 		logger.V(1).Info("resource hasn't changed, skip")
-		return nil
+		return zoneProxySkipped, nil
 	}
 	dataplane.SetSpec(dataplaneProto)
 	dataplane.SetLabels(labels)
-	return nil
+	return zoneProxySkipped, nil
 }
 
 func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
@@ -198,7 +199,8 @@ func (p *PodConverter) dataplaneFor(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 	msMode mesh_proto.Mesh_MeshServices_Mode,
-) (*mesh_proto.Dataplane, error) {
+) (*mesh_proto.Dataplane, bool, error) {
+	var zoneProxySkipped bool
 	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
 	annotations := metadata.Annotations(pod.Annotations)
 
@@ -211,7 +213,7 @@ func (p *PodConverter) dataplaneFor(
 	}
 
 	if v, ok, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation); err != nil {
-		return nil, err
+		return nil, false, err
 	} else {
 		tpEnabledInAnnotation = ok && v
 	}
@@ -228,7 +230,7 @@ func (p *PodConverter) dataplaneFor(
 		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
 			var refs ReachableBackendRefs
 			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
-				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
+				return nil, false, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 			}
 
 			tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
@@ -239,17 +241,17 @@ func (p *PodConverter) dataplaneFor(
 
 	if tpEnabledInAnnotation {
 		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
-			return nil, err
+			return nil, false, err
 		} else if !ok {
-			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
+			return nil, false, errors.New("transparent proxying inbound port has to be set in transparent mode")
 		} else {
 			tp.RedirectPortInbound = v
 		}
 
 		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
-			return nil, err
+			return nil, false, err
 		} else if !ok {
-			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
+			return nil, false, errors.New("transparent proxying outbound port has to be set in transparent mode")
 		} else {
 			tp.RedirectPortOutbound = v
 		}
@@ -264,7 +266,7 @@ func (p *PodConverter) dataplaneFor(
 			case metadata.IpFamilyModeIPv4:
 				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
 			default:
-				return nil, errors.Errorf("invalid ip family mode '%s'", v)
+				return nil, false, errors.Errorf("invalid ip family mode '%s'", v)
 			}
 		}
 	}
@@ -288,17 +290,17 @@ func (p *PodConverter) dataplaneFor(
 		case "enabled":
 			gateway, err := p.GatewayByServiceFor(ctx, p.Zone, pod, services)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			dataplane.Networking.Gateway = gateway
 		case "provided":
 			gateway, err := p.GatewayByDeploymentFor(ctx, p.Zone, pod, services)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			dataplane.Networking.Gateway = gateway
 		default:
-			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
+			return nil, false, errors.Errorf("invalid delegated gateway type '%s'", gwType)
 		}
 	} else {
 		var regularServices, zoneProxyServices []*kube_core.Service
@@ -319,12 +321,12 @@ func (p *PodConverter) dataplaneFor(
 			if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
 				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
 				if err != nil {
-					return nil, err
+					return nil, false, err
 				}
 			} else {
 				ifaces, err = p.InboundConverter.LegacyInboundInterfacesFor(ctx, p.Zone, pod, regularServices)
 				if err != nil {
-					return nil, err
+					return nil, false, err
 				}
 			}
 			dataplane.Networking.Inbound = ifaces
@@ -341,13 +343,13 @@ func (p *PodConverter) dataplaneFor(
 			for _, zpSvc := range zoneProxyServices {
 				listeners, lErr := ListenersForService(pod, zpSvc)
 				if lErr != nil {
-					return nil, lErr
+					return nil, false, lErr
 				}
 				for _, l := range listeners {
 					key := fmt.Sprintf("%s:%d", l.Address, l.Port)
 					if existing, ok := portSvc[key]; ok {
 						if existing.typ != l.Type {
-							return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
+							return nil, false, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
 								l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
 						}
 						converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
@@ -358,9 +360,8 @@ func (p *PodConverter) dataplaneFor(
 					dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
 				}
 			}
-		} else if len(zoneProxyServices) > 0 && p.EventRecorder != nil {
-			p.EventRecorder.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
-				"Zone proxy Services found but meshServices.mode is not Exclusive; set meshServices.mode=Exclusive on the Mesh to enable zone proxy listener generation")
+		} else if len(zoneProxyServices) > 0 {
+			zoneProxySkipped = true
 		}
 
 		// Zone-proxy-only dataplane: no inbounds, no gateway, but has listeners.
@@ -379,32 +380,32 @@ func (p *PodConverter) dataplaneFor(
 	if !p.KubeOutboundsAsVIPs {
 		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, tp.ReachableServices)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		dataplane.Networking.Outbound = ofaces
 	}
 
 	metrics, err := MetricsFor(pod)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	dataplane.Metrics = metrics
 
 	probes, err := ProbesFor(pod)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	dataplane.Probes = probes
 
 	adminPort, exist, err := annotations.GetUint32(metadata.KumaEnvoyAdminPort)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if exist {
 		dataplane.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
 	}
 
-	return dataplane, nil
+	return dataplane, zoneProxySkipped, nil
 }
 
 func (p *PodConverter) GatewayByServiceFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {

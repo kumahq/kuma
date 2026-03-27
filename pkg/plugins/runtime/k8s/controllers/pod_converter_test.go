@@ -14,7 +14,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
-	kube_events "k8s.io/client-go/tools/events"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -55,9 +54,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
 		inboundTagsDisabled bool
-		meshServicesMode    mesh_proto.Mesh_MeshServices_Mode
-		expectedErr         string
-		expectedEvent       string
+		meshServicesMode   mesh_proto.Mesh_MeshServices_Mode
+		expectedErr        string
+		zoneProxySkipped   bool
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -130,7 +129,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			recorder := kube_events.NewFakeRecorder(10)
 			converter := PodConverter{
 				ServiceGetter: serviceGetter,
 				InboundConverter: InboundConverter{
@@ -142,7 +140,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 					NodeLabelsToCopy:    given.nodeLabelsToCopy,
 					InboundTagsDisabled: given.inboundTagsDisabled,
 				},
-				EventRecorder:     recorder,
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
 				WorkloadLabels:    given.workloadLabels,
@@ -157,7 +154,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Build()
 
 			// when
-			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
+			zoneProxySkipped, err := converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
 
 			// then
 			if given.expectedErr != "" {
@@ -165,13 +162,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				return
 			}
 			Expect(err).ToNot(HaveOccurred())
-
-			if given.expectedEvent != "" {
-				var event string
-				Eventually(recorder.Events).Should(Receive(&event))
-				Expect(event).To(ContainSubstring(given.expectedEvent))
-				return
-			}
+			Expect(zoneProxySkipped).To(Equal(given.zoneProxySkipped))
 
 			actual, err := yaml.Marshal(existingDataplane)
 			Expect(err).ToNot(HaveOccurred())
@@ -424,11 +415,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "43.services-for-pod.yaml",
 			expectedErr:    "conflicting listener types on port 10001",
 		}),
-		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode emits warning event", testCase{
+		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
 			pod:              "36.pod.yaml",
 			servicesForPod:   "36.services-for-pod.yaml",
+			dataplane:        "44.dataplane.yaml",
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Everywhere,
-			expectedEvent:    "ZoneProxyListenersSkipped",
+			zoneProxySkipped: true,
 		}),
 	)
 
