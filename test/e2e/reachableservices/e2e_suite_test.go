@@ -17,19 +17,26 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Auto Reachable Services Kubernetes Suite")
 }
 
-var _ = framework.E2EBeforeSuite(func() {
-	reachableservices.KubeCluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Silent)
+var _ = framework.E2ESynchronizedBeforeSuite(
+	func() []byte {
+		reachableservices.KubeCluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Silent)
 
-	err := framework.NewClusterSetup().
-		Install(framework.Kuma(config_core.Zone,
-			framework.WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
-		)).
-		Setup(reachableservices.KubeCluster)
+		err := framework.NewClusterSetup().
+			Install(framework.Kuma(config_core.Zone,
+				framework.WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
+			)).
+			Setup(reachableservices.KubeCluster)
 
-	Expect(err).ToNot(HaveOccurred())
-})
+		Expect(err).ToNot(HaveOccurred())
+		return nil
+	},
+	func(_ []byte) {},
+)
 
 var _ = framework.E2EAfterSuite(func() {
+	if reachableservices.KubeCluster == nil {
+		return
+	}
 	Expect(reachableservices.KubeCluster.DeleteKuma()).To(Succeed())
 	Expect(reachableservices.KubeCluster.DismissCluster()).To(Succeed())
 })
