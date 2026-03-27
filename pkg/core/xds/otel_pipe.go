@@ -31,6 +31,12 @@ type OtelSignalRuntimePlan struct {
 	RefreshInterval string   `json:"refreshInterval,omitempty"`
 }
 
+// IsHardBlocked checks if the plan is missing required resolution inputs.
+// This is narrower than otelenv.SignalRuntime.HasHardBlock() and
+// otelstatus.hasHardBlockedReason(), which treat any non-soft block as hard.
+// The difference is intentional: IsHardBlocked gates whether to attempt
+// resolution at all, while the broader checks gate runtime usability
+// after resolution.
 func (p *OtelSignalRuntimePlan) IsHardBlocked() bool {
 	if p == nil {
 		return false

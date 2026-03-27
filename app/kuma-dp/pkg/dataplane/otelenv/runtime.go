@@ -46,7 +46,7 @@ func (c Config) resolveSignal(
 		return runtime
 	}
 
-	preferEnv := backend.EnvPolicy != nil &&
+	preferEnv := backend.EnvPolicy == nil ||
 		backend.EnvPolicy.Precedence != motb_api.EnvPrecedenceExplicitFirst
 
 	type source struct{ protocol, fields []runtimeOption }
@@ -265,6 +265,8 @@ func (layer Layer) resolveEndpoint(
 			ep.HTTPPath = p
 		case p != "":
 			ep.HTTPPath = path.Join(p, "v1", string(signal))
+		default:
+			ep.HTTPPath = path.Join("/v1", string(signal))
 		}
 	}
 

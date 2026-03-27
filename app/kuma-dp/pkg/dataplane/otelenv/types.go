@@ -36,6 +36,22 @@ type SignalRuntime struct {
 	Transport      ExporterTransport
 }
 
+// HasHardBlock returns true if any blocked reason prevents actual signal usage.
+// Soft blocks (EnvDisabledByPolicy, SignalOverridesBlocked) are informational -
+// the signal still works via explicit configuration.
+func (r SignalRuntime) HasHardBlock() bool {
+	for _, reason := range r.BlockedReasons {
+		switch reason {
+		case core_xds.OtelBlockedReasonEnvDisabledByPolicy,
+			core_xds.OtelBlockedReasonSignalOverridesBlocked:
+			continue
+		default:
+			return true
+		}
+	}
+	return false
+}
+
 type BackendRuntime struct {
 	Traces  SignalRuntime
 	Logs    SignalRuntime

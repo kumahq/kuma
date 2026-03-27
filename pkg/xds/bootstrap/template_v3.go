@@ -398,6 +398,14 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		}
 	}
 
+	if parameters.OtelEnvInventory != nil {
+		res.Node.Metadata.Fields[core_xds.FieldOtelEnvInventory] = &structpb.Value{
+			Kind: &structpb.Value_StructValue{
+				StructValue: util_proto.MustStructToProtoStruct(parameters.OtelEnvInventory),
+			},
+		}
+	}
+
 	return res, nil
 }
 
