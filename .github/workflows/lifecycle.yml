@@ -14,7 +14,7 @@ jobs:
   lifecycle:
     permissions:
       issues: write
-    uses: kumahq/.github/.github/workflows/wfc_lifecycle.yml@cef9faf9914617521b46996e260a95a37b994dc1
+    uses: kumahq/.github/.github/workflows/wfc_lifecycle.yml@30a74b03d52864bf0e211a6d43f4bb8deb6605ef
     with:
       filesToIgnore: CONTRIBUTING.md
     secrets:
