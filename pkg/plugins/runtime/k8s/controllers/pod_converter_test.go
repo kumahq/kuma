@@ -43,14 +43,14 @@ func Parse[T any](values []string) ([]T, error) {
 
 var _ = Describe("PodToDataplane(..)", func() {
 	type testCase struct {
-		pod              string
-		servicesForPod   string
-		otherDataplanes  string
-		otherServices    string
-		otherReplicaSets string
-		otherJobs        string
-		node             string
-		dataplane        string
+		pod                 string
+		servicesForPod      string
+		otherDataplanes     string
+		otherServices       string
+		otherReplicaSets    string
+		otherJobs           string
+		node                string
+		dataplane           string
 		existingDataplane   string
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
@@ -142,8 +142,8 @@ var _ = Describe("PodToDataplane(..)", func() {
 					NodeLabelsToCopy:    given.nodeLabelsToCopy,
 					InboundTagsDisabled: given.inboundTagsDisabled,
 				},
-				EventRecorder:    recorder,
-				Zone:             "zone-1",
+				EventRecorder:     recorder,
+				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
 				WorkloadLabels:    given.workloadLabels,
 			}
