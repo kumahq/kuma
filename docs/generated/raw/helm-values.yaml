@@ -787,6 +787,8 @@ meshes:
       # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
       #  priorityClassName, securityContext, containerSecurityContext).
       podSpec: {}
+      # -- Resource requests and limits for the pause container.
+      containerResources: {}
       # -- Horizontal Pod Autoscaler settings.
       hpa:
         enabled: false
@@ -822,6 +824,8 @@ meshes:
       # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
       #  priorityClassName, securityContext, containerSecurityContext).
       podSpec: {}
+      # -- Resource requests and limits for the pause container.
+      containerResources: {}
       hpa:
         enabled: false
         minReplicas: 2
