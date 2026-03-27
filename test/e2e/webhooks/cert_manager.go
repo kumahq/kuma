@@ -57,7 +57,7 @@ func CertManagerCAInjection() {
 
 	It("should have certificate with all required DNS SANs", func() {
 		kumaNamespace := Config.KumaNamespace
-		serviceName := releaseName + "-control-plane"
+		serviceName := Config.KumaServiceName
 
 		// Verify Certificate has all required DNS names
 		Eventually(func(g Gomega) {

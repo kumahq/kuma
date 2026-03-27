@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -26,7 +27,7 @@ func CertManagerHelmValidation() {
 
 	It("should reject cert-manager enabled with secretName set", func() {
 		const certManagerNamespace = "cert-manager"
-		releaseName := fmt.Sprintf("kuma-test-%d", GinkgoRandomSeed())
+		releaseName := fmt.Sprintf("kuma-test-%s", strings.ToLower(random.UniqueId()))
 
 		err := NewClusterSetup().
 			Install(certmanager.Install(
@@ -46,7 +47,7 @@ func CertManagerHelmValidation() {
 
 	It("should reject cert-manager enabled with caBundle set", func() {
 		const certManagerNamespace = "cert-manager"
-		releaseName := fmt.Sprintf("kuma-test-%d", GinkgoRandomSeed())
+		releaseName := fmt.Sprintf("kuma-test-%s", strings.ToLower(random.UniqueId()))
 
 		err := NewClusterSetup().
 			Install(certmanager.Install(
@@ -66,7 +67,7 @@ func CertManagerHelmValidation() {
 
 	It("should reject cert-manager enabled with both secretName and caBundle set", func() {
 		const certManagerNamespace = "cert-manager"
-		releaseName := fmt.Sprintf("kuma-test-%d", GinkgoRandomSeed())
+		releaseName := fmt.Sprintf("kuma-test-%s", strings.ToLower(random.UniqueId()))
 
 		err := NewClusterSetup().
 			Install(certmanager.Install(
@@ -87,7 +88,7 @@ func CertManagerHelmValidation() {
 
 	It("should reject cert-manager enabled without cert-manager CRDs installed", func() {
 		// Don't install cert-manager, just try to install Kuma with cert-manager enabled
-		releaseName := fmt.Sprintf("kuma-test-%d", GinkgoRandomSeed())
+		releaseName := fmt.Sprintf("kuma-test-%s", strings.ToLower(random.UniqueId()))
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone,
@@ -102,7 +103,7 @@ func CertManagerHelmValidation() {
 	})
 
 	It("should accept secretName without caBundle", func() {
-		releaseName := fmt.Sprintf("kuma-test-%d", GinkgoRandomSeed())
+		releaseName := fmt.Sprintf("kuma-test-%s", strings.ToLower(random.UniqueId()))
 
 		// First, create the secret that we'll reference
 		opts := &helm.Options{
@@ -123,7 +124,7 @@ func CertManagerHelmValidation() {
 	})
 
 	It("should reject only caBundle without secretName", func() {
-		releaseName := fmt.Sprintf("kuma-test-%d", GinkgoRandomSeed())
+		releaseName := fmt.Sprintf("kuma-test-%s", strings.ToLower(random.UniqueId()))
 
 		opts := &helm.Options{
 			KubectlOptions: cluster.GetKubectlOptions(Config.KumaNamespace),

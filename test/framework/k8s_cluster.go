@@ -1086,13 +1086,31 @@ func (c *K8sCluster) deleteCRDs() error {
 	if err != nil {
 		return err
 	}
-	deleteCmd := []string{"delete"}
+
+	var kumaCRDs []string
 	for l := range strings.SplitSeq(out, "\n") {
 		if strings.Contains(l, "kuma.io") {
-			deleteCmd = append(deleteCmd, l)
+			kumaCRDs = append(kumaCRDs, l)
 		}
 	}
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), deleteCmd...)
+	if len(kumaCRDs) == 0 {
+		return nil
+	}
+
+	if err := k8s.RunKubectlE(
+		c.GetTesting(),
+		c.GetKubectlOptions(),
+		slices.Concat([]string{"delete"}, kumaCRDs)...,
+	); err != nil {
+		return err
+	}
+
+	// Wait for CRDs to be fully removed so the next suite can install cleanly
+	return k8s.RunKubectlE(
+		c.GetTesting(),
+		c.GetKubectlOptions(),
+		slices.Concat([]string{"wait", "--for=delete", "--timeout=60s"}, kumaCRDs)...,
+	)
 }
 
 func (c *K8sCluster) deleteKumaViaHelm() error {
