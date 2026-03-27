@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/util/files"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
@@ -28,7 +29,7 @@ import (
 var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 
 type BootstrapClient interface {
-	Fetch(ctx context.Context, opts Opts, metadata map[string]string, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
+	Fetch(ctx context.Context, opts Opts, metadata map[string]string, otelEnv *core_xds.OtelBootstrapInventory, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
 }
 
 type Opts struct {
