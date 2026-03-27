@@ -261,6 +261,29 @@ var _ = Describe("senderFactory", func() {
 
 		factory.close()
 	})
+
+	It("should set a backstop timeout on HTTP clients", func() {
+		factory := &senderFactory{}
+		DeferCleanup(factory.close)
+
+		client, err := factory.httpClient(otelenv.ExporterTransport{
+			Endpoint: "collector.example:4318",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(client.Timeout).To(Equal(defaultHTTPClientTimeout))
+	})
+
+	It("should honor explicit HTTP timeouts on HTTP clients", func() {
+		factory := &senderFactory{}
+		DeferCleanup(factory.close)
+
+		client, err := factory.httpClient(otelenv.ExporterTransport{
+			Endpoint: "collector.example:4318",
+			Timeout:  45 * time.Second,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(client.Timeout).To(Equal(45 * time.Second))
+	})
 })
 
 var _ = Describe("otlpHTTPURL", func() {

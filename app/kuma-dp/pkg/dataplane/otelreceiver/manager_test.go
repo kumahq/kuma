@@ -276,6 +276,28 @@ var _ = Describe("SetOnReconcile callback", func() {
 		Expect(manager.reconcile([]core_xds.OtelPipeBackend{backendA, backendB})).To(Succeed())
 		Expect(callbackBackends).To(HaveLen(2))
 	})
+
+	It("should call onReconcile with an empty list after removing all backends", func() {
+		calls := 0
+		var callbackBackends []core_xds.OtelPipeBackend
+		manager := NewManager(otelenv.Config{})
+		manager.SetOnReconcile(func(backends []core_xds.OtelPipeBackend) {
+			calls++
+			callbackBackends = append([]core_xds.OtelPipeBackend(nil), backends...)
+		})
+		DeferCleanup(manager.stopAll)
+
+		socketA := testSocketPath("empty-a")
+		backendA := traceBackend(socketA, "collector-a:4317")
+
+		Expect(manager.reconcile([]core_xds.OtelPipeBackend{backendA})).To(Succeed())
+		Expect(calls).To(Equal(1))
+		Expect(callbackBackends).To(HaveLen(1))
+
+		Expect(manager.reconcile(nil)).To(Succeed())
+		Expect(calls).To(Equal(2))
+		Expect(callbackBackends).To(BeEmpty())
+	})
 })
 
 var _ = Describe("testSocketPath helper", func() {

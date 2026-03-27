@@ -206,7 +206,7 @@ func (m *Manager) startBackend(
 }
 
 func (m *Manager) notifyReconcile(backends []core_xds.OtelPipeBackend) {
-	if m.onReconcile == nil || len(m.running) == 0 {
+	if m.onReconcile == nil {
 		return
 	}
 	// Filter to backends that are actually running so meshmetrics
@@ -217,9 +217,7 @@ func (m *Manager) notifyReconcile(backends []core_xds.OtelPipeBackend) {
 			running = append(running, b)
 		}
 	}
-	if len(running) > 0 {
-		m.onReconcile(running)
-	}
+	m.onReconcile(running)
 }
 
 func (m *Manager) stopAll() {

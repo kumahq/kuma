@@ -32,6 +32,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
+const defaultHTTPClientTimeout = 30 * time.Second
+
 type grpcConnEntry struct {
 	key  grpcConnKey
 	conn *grpc.ClientConn
@@ -52,6 +54,7 @@ type grpcConnKey struct {
 
 type httpClientKey struct {
 	endpoint          string
+	timeout           time.Duration
 	useTLS            bool
 	certificate       string
 	clientCertificate string
@@ -221,6 +224,7 @@ func (f *senderFactory) grpcConn(transport otelenv.ExporterTransport) (*grpc.Cli
 func (f *senderFactory) httpClient(transport otelenv.ExporterTransport) (*http.Client, error) {
 	key := httpClientKey{
 		endpoint:          transport.Endpoint,
+		timeout:           transport.Timeout,
 		useTLS:            pointer.Deref(transport.UseTLS),
 		certificate:       transport.Certificate,
 		clientCertificate: transport.ClientCertificate,
@@ -241,8 +245,14 @@ func (f *senderFactory) httpClient(transport otelenv.ExporterTransport) (*http.C
 		httpTransport.TLSClientConfig = tlsConfig
 	}
 
+	timeout := transport.Timeout
+	if timeout <= 0 {
+		timeout = defaultHTTPClientTimeout
+	}
+
 	client := &http.Client{
 		Transport: httpTransport,
+		Timeout:   timeout,
 	}
 	f.httpClients = append(f.httpClients, httpClientEntry{
 		key:    key,
