@@ -14,7 +14,7 @@ Reproducing a community-reported Service Mesh issue on Kubernetes used to take 1
 
 ## Version 2 — Mindset shift-focused
 
-What if your team had multiple engineers who never got bored of spinning up Kubernetes clusters? Those engineers are agents. A community-reported Kuma issue that used to take 1–2 days to reproduce now takes under 30 minutes. This case study follows a CNCF Service Mesh maintainer team's journey of embracing agentic AI for day-to-day work. The work shifted from tedious and sometimes boring to fast-paced, impact-focused work. But embracing a new way of working cannot be done without proper tooling. Agents produce non-deterministic results, and do not always follow instructions. With extensive usage of hooks and skills, the team was able to harness agents. This talk shows how the team uses LLMs to increase productivity and make their day-to-day work more impactful for the product.
+What if your team had multiple engineers who never got bored of spinning up Kubernetes clusters? Those engineers are agents. A community-reported Kuma issue that used to take 1–2 days to reproduce now takes under 30 minutes. This case study follows a CNCF Kuma Service Mesh maintainer team's journey of embracing agentic AI for day-to-day work. The work shifted from tedious and sometimes boring to fast-paced, impact-focused work. But embracing a new way of working cannot be done without proper tooling. Agents produce non-deterministic results, and do not always follow instructions. With extensive usage of hooks and skills, the team was able to harness agents. This talk shows how the team uses LLMs to increase productivity and make their day-to-day work more impactful for the product.
 
 ---
 
