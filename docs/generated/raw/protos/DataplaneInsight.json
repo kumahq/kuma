@@ -111,7 +111,8 @@
                     "type": "boolean"
                 },
                 "state": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Computed state: \"ready\", \"blocked\", \"missing\", or \"ambiguous\". String (not enum) for extensibility without proto schema changes."
                 },
                 "overrideKinds": {
                     "items": {

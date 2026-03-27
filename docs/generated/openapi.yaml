@@ -17933,6 +17933,12 @@ components:
                               type: string
                             type: array
                           state:
+                            description: >-
+                              Computed state: "ready", "blocked", "missing", or
+                              "ambiguous".
+
+                              String (not enum) for extensibility without proto
+                              schema changes.
                             type: string
                         type: object
                       metrics:
@@ -17956,6 +17962,12 @@ components:
                               type: string
                             type: array
                           state:
+                            description: >-
+                              Computed state: "ready", "blocked", "missing", or
+                              "ambiguous".
+
+                              String (not enum) for extensibility without proto
+                              schema changes.
                             type: string
                         type: object
                       name:
@@ -17981,6 +17993,12 @@ components:
                               type: string
                             type: array
                           state:
+                            description: >-
+                              Computed state: "ready", "blocked", "missing", or
+                              "ambiguous".
+
+                              String (not enum) for extensibility without proto
+                              schema changes.
                             type: string
                         type: object
                     type: object
