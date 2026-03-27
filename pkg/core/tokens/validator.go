@@ -84,7 +84,7 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 			return signingKeyError
 		}
 		if errors2.Is(err, jwt.ErrTokenNotValidYet) {
-			return errors.New("token is not yet valid: 'valid_from' date is in the future." +
+			return errors.Wrap(err, "token is not yet valid: 'valid_from' date is in the future."+
 				" Check if the system clock on the instance that issued the token is set correctly")
 		}
 		if j.storeType == store_config.MemoryStore {

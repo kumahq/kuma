@@ -58,10 +58,11 @@ var _ = Describe("Token issuer", func() {
 	var store core_store.ResourceStore
 	var signingKeyManager tokens.SigningKeyManager
 
-	now := time.Now()
+	var now time.Time
 	var ctx context.Context
 
 	BeforeEach(func() {
+		now = time.Now()
 		ctx = context.Background()
 		core.Now = func() time.Time {
 			return now
