@@ -54,9 +54,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
 		inboundTagsDisabled bool
-		meshServicesMode   mesh_proto.Mesh_MeshServices_Mode
-		expectedErr        string
-		zoneProxySkipped   bool
+		meshServicesMode    *mesh_proto.Mesh_MeshServices_Mode
+		expectedErr         string
+		zoneProxySkipped    bool
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -145,9 +145,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 				WorkloadLabels:    given.workloadLabels,
 			}
 
-			msMode := given.meshServicesMode
-			if msMode == 0 {
-				msMode = mesh_proto.Mesh_MeshServices_Exclusive
+			msMode := mesh_proto.Mesh_MeshServices_Exclusive
+			if given.meshServicesMode != nil {
+				msMode = *given.meshServicesMode
 			}
 			mesh := builders.Mesh().
 				WithMeshServicesEnabled(msMode).
@@ -419,7 +419,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:              "36.pod.yaml",
 			servicesForPod:   "36.services-for-pod.yaml",
 			dataplane:        "44.dataplane.yaml",
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Everywhere,
+			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
 			zoneProxySkipped: true,
 		}),
 	)

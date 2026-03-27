@@ -362,7 +362,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 
 		return err
 	}
-	if zoneProxySkipped {
+	if zoneProxySkipped && operationResult != kube_controllerutil.OperationResultNone {
 		r.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
 			"Zone proxy Services found but meshServices.mode is not Exclusive; set meshServices.mode=Exclusive on the Mesh to enable zone proxy listener generation")
 	}
