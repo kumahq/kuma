@@ -321,14 +321,14 @@ controlPlane:
 				"--set", "controlPlane.tls.general.certManager.enabled=true",
 				"--tls-general-secret", "my-custom-secret",
 			},
-			errorMsg: "You need to send both or neither of controlPlane.tls.general.caBundle and controlPlane.tls.general.secretName",
+			errorMsg: "secretName and caBundle must be empty",
 		}),
 		Entry("cert-manager enabled with only caBundle set", errTestCase{
 			extraArgs: []string{
 				"--set", "controlPlane.tls.general.certManager.enabled=true",
 				"--tls-general-ca-bundle", "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t",
 			},
-			errorMsg: "You need to send both or neither of controlPlane.tls.general.caBundle and controlPlane.tls.general.secretName",
+			errorMsg: "secretName and caBundle must be empty",
 		}),
 		Entry("with unexpected image tag", errTestCase{
 			extraArgs: []string{"--set", "global.image.tag=1.5.0"},
