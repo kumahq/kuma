@@ -2,11 +2,32 @@ meshes:
   - name: mesh-1
     ingress:
       enabled: true
-      replicas: 2
+      replicas: 1
       image:
         registry: registry.k8s.io
         repository: pause
         tag: "3.10"
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      containerResources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      podSpec:
+        containerSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
     egress:
       enabled: true
       replicas: 1
@@ -14,6 +35,27 @@ meshes:
         registry: registry.k8s.io
         repository: pause
         tag: "3.10"
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      containerResources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      podSpec:
+        containerSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
   - name: mesh-2
     ingress:
       enabled: true
@@ -22,10 +64,52 @@ meshes:
         registry: registry.k8s.io
         repository: pause
         tag: "3.10"
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      containerResources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      podSpec:
+        containerSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
     egress:
       enabled: true
-      replicas: 2
+      replicas: 1
       image:
         registry: registry.k8s.io
         repository: pause
         tag: "3.10"
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      containerResources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 64Mi
+      podSpec:
+        containerSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL

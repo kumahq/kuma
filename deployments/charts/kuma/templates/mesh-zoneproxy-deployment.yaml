@@ -90,6 +90,9 @@ spec:
               drop:
                 - ALL
           {{- end }}
+          {{- with $cfg.containerResources }}
+          resources: {{ toYaml . | nindent 12 }}
+          {{- end }}
 {{- end }}
 
 {{- end }}
