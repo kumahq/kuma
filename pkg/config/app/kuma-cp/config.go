@@ -564,8 +564,8 @@ func (i MeshMultiZoneServiceIPAM) Validate() error {
 }
 
 type MeshServiceConfig struct {
-	// How often we check whether MeshServices need to be generated from
-	// Dataplanes
+	// How often we check whether MeshServices need to be
+	// generated from Dataplanes set to 0 to disable automatic workload management (only applies to universal)
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
 	// How long we wait before deleting a MeshService if all Dataplanes are gone
 	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD"`

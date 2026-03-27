@@ -50,7 +50,7 @@ type UniversalRuntimeConfig struct {
 // WorkloadConfig holds configuration for Workload generation from Dataplanes.
 type WorkloadConfig struct {
 	// GenerationInterval is how often we check whether Workloads need to be
-	// generated from Dataplanes
+	// generated from Dataplanes set to 0 to disable automatic workload management
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL"`
 }
 

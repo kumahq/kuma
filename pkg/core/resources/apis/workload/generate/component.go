@@ -18,6 +18,10 @@ func Setup(rt runtime.Runtime) error {
 		return nil
 	}
 	logger := core.Log.WithName("workload").WithName("generator")
+	if rt.Config().Runtime.Universal.Workload.GenerationInterval.Duration == 0 {
+		logger.Info("Workload generator is disabled, Workloads must be managed manually")
+		return nil
+	}
 	if !slices.Contains(rt.Config().CoreResources.Enabled, "workloads") {
 		logger.Info("Workload is not enabled. Skip starting generator for Workload.")
 		return nil
