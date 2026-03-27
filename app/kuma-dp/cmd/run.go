@@ -605,7 +605,7 @@ func metricsTargetsForBackends(
 }
 
 func metricsRuntimeUsable(runtime otelenv.SignalRuntime) bool {
-	if !runtime.Enabled {
+	if !runtime.Enabled || runtime.HasHardBlock() {
 		return false
 	}
 	if runtime.Transport.Protocol == "" || runtime.Transport.Endpoint == "" {

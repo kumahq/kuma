@@ -36,6 +36,11 @@ type SignalRuntime struct {
 	Transport      ExporterTransport
 }
 
+// HasHardBlock returns true if any blocked reason prevents actual signal usage.
+func (r SignalRuntime) HasHardBlock() bool {
+	return core_xds.HasHardBlockedReason(r.BlockedReasons)
+}
+
 type BackendRuntime struct {
 	Traces  SignalRuntime
 	Logs    SignalRuntime
