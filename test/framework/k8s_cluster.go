@@ -426,7 +426,15 @@ func (c *K8sCluster) installCRDs() error {
 	if err != nil {
 		return err
 	}
-	if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), crds); err != nil {
+	crdFile, err := k8s.StoreConfigToTempFileE(c.t, crds)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(crdFile)
+	// --server-side --force-conflicts handles CRDs left over from a previous
+	// suite that were created without the last-applied-configuration annotation.
+	if err := k8s.RunKubectlE(c.t, c.GetKubectlOptions(),
+		"apply", "--server-side", "--force-conflicts", "-f", crdFile); err != nil {
 		return err
 	}
 
