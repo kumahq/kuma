@@ -221,8 +221,6 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			flush(false, &workloadIdentity)
 		case <-stop:
 			flush(true, lastEvent)
-			dataplaneID, _ := s.accessor.GetStatus()
-			s.otelStatusCache.Set(dataplaneID, nil)
 			return
 		}
 	}

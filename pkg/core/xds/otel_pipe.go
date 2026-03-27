@@ -32,11 +32,10 @@ type OtelSignalRuntimePlan struct {
 }
 
 // IsHardBlocked checks if the plan is missing required resolution inputs.
-// This is narrower than otelenv.SignalRuntime.HasHardBlock() and
-// otelstatus.hasHardBlockedReason(), which treat any non-soft block as hard.
-// The difference is intentional: IsHardBlocked gates whether to attempt
-// resolution at all, while the broader checks gate runtime usability
-// after resolution.
+// This is narrower than HasHardBlockedReason, which treats any non-soft
+// block as hard. The difference is intentional: IsHardBlocked gates whether
+// to attempt resolution at all, while HasHardBlockedReason gates runtime
+// usability after resolution.
 func (p *OtelSignalRuntimePlan) IsHardBlocked() bool {
 	if p == nil {
 		return false
@@ -47,6 +46,22 @@ func (p *OtelSignalRuntimePlan) IsHardBlocked() bool {
 	}
 
 	return slices.Contains(p.BlockedReasons, OtelBlockedReasonRequiredEnvMissing)
+}
+
+// HasHardBlockedReason returns true if any blocked reason prevents actual
+// signal usage. Soft blocks (EnvDisabledByPolicy, SignalOverridesBlocked)
+// are informational - the signal still works via explicit configuration.
+func HasHardBlockedReason(reasons []string) bool {
+	for _, reason := range reasons {
+		switch reason {
+		case OtelBlockedReasonEnvDisabledByPolicy,
+			OtelBlockedReasonSignalOverridesBlocked:
+			continue
+		default:
+			return true
+		}
+	}
+	return false
 }
 
 func (p *OtelSignalRuntimePlan) SharedEnvAllowed() bool {

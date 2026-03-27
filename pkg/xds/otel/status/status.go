@@ -100,6 +100,9 @@ func buildSignalStatus(
 	}
 }
 
+// envAllowed checks both the policy mode and the blocked reason. The blocked
+// reason is derived from the mode during resolution, but we check both to
+// guard against inconsistencies between the two resolution stages.
 func envAllowed(backend core_xds.OtelPipeBackend, plan *core_xds.OtelSignalRuntimePlan) bool {
 	if backend.EnvPolicy == nil {
 		return true
@@ -115,24 +118,11 @@ func signalState(plan *core_xds.OtelSignalRuntimePlan) string {
 	case len(plan.MissingFields) > 0,
 		slices.Contains(plan.BlockedReasons, core_xds.OtelBlockedReasonRequiredEnvMissing):
 		return SignalStateMissing
-	case len(plan.BlockedReasons) > 0 && hasHardBlockedReason(plan):
+	case len(plan.BlockedReasons) > 0 && core_xds.HasHardBlockedReason(plan.BlockedReasons):
 		return SignalStateBlocked
 	default:
 		return SignalStateReady
 	}
-}
-
-func hasHardBlockedReason(plan *core_xds.OtelSignalRuntimePlan) bool {
-	for _, reason := range plan.BlockedReasons {
-		switch reason {
-		case core_xds.OtelBlockedReasonEnvDisabledByPolicy,
-			core_xds.OtelBlockedReasonSignalOverridesBlocked:
-			continue
-		default:
-			return true
-		}
-	}
-	return false
 }
 
 func cloneStatus(status *mesh_proto.DataplaneInsight_OpenTelemetry) *mesh_proto.DataplaneInsight_OpenTelemetry {
