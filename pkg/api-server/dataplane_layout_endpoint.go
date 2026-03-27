@@ -10,10 +10,12 @@ import (
 	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/api/openapi/types"
 	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -27,13 +29,23 @@ type dataplaneLayoutEndpoint struct {
 	resManager         manager.ReadOnlyResourceManager
 	meshContextBuilder xds_context.MeshContextBuilder
 	resourceAccess     access.ResourceAccess
+	zone               string
+	environment        config_core.EnvironmentType
 }
 
-func newDataplaneLayoutEndpoint(resManager manager.ReadOnlyResourceManager, meshContextBuilder xds_context.MeshContextBuilder, resourceAccess access.ResourceAccess) *dataplaneLayoutEndpoint {
+func newDataplaneLayoutEndpoint(
+	resManager manager.ReadOnlyResourceManager,
+	meshContextBuilder xds_context.MeshContextBuilder,
+	resourceAccess access.ResourceAccess,
+	zone string,
+	environment config_core.EnvironmentType,
+) *dataplaneLayoutEndpoint {
 	return &dataplaneLayoutEndpoint{
 		resManager:         resManager,
 		meshContextBuilder: meshContextBuilder,
 		resourceAccess:     resourceAccess,
+		zone:               zone,
+		environment:        environment,
 	}
 }
 
@@ -106,10 +118,32 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		Kri:       kri.From(dataplane).String(),
 		Labels:    dataplane.GetMeta().GetLabels(),
 		Outbounds: outbounds,
+		SpiffeId:  dle.computeSpiffeID(request, meshName, dataplane),
 	}
 
 	err = response.WriteHeaderAndJson(http.StatusOK, networkingLayout, "application/json")
 	if err != nil {
 		log.Error(err, "Could not write response")
 	}
+}
+
+func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, meshName string, dataplane *core_mesh.DataplaneResource) *string {
+	ctx := request.Request.Context()
+	identities := &meshidentity_api.MeshIdentityResourceList{}
+	if err := dle.resManager.List(ctx, identities, store.ListByMesh(meshName)); err != nil {
+		return nil
+	}
+	identity, ok := meshidentity_api.BestMatched(dataplane.GetMeta().GetLabels(), identities.Items)
+	if !ok || !identity.Status.IsInitialized() {
+		return nil
+	}
+	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), dle.zone)
+	if err != nil {
+		return nil
+	}
+	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, dataplane.GetMeta(), dle.environment)
+	if err != nil {
+		return nil
+	}
+	return &spiffeID
 }

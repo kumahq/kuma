@@ -775,6 +775,9 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/DataplaneOutbound'
+        spiffeId:
+          type: string
+          description: SPIFFE ID of the dataplane's workload identity certificate
   responses:
     IndexResponse:
       description: A response for the index endpoint
