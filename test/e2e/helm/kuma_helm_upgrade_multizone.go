@@ -17,6 +17,7 @@ import (
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/api"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/versions"
 )
 
 func UpgradingWithHelmChartMultizone() {
@@ -144,12 +145,18 @@ spec:
 				Setup(zoneUniversal)
 			Expect(err).ToNot(HaveOccurred())
 
-			// Query global (already upgraded) instead of zoneK8s (still old version)
-			// because old CPs don't have the /zoneingresses endpoint that the
-			// current kumactl uses (renamed from /zone-ingresses in 2.11.0).
-			Eventually(func(g Gomega) (int, error) {
-				return NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
-			}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
+			// Old zone CPs (< 2.11.0) expose /zone-ingresses; the current kumactl
+			// calls /zoneingresses (renamed in 2.11.0). Query the zone REST API
+			// directly for old versions to avoid the endpoint mismatch.
+			if versions.IsVersionLessThan(version, "2.11.0") {
+				Eventually(func(g Gomega) (int, error) {
+					return NumberOfResourcesByPath(zoneK8s, "/zone-ingresses")
+				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
+			} else {
+				Eventually(func(g Gomega) (int, error) {
+					return NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
+			}
 
 			By("upgrade Zone")
 			// when

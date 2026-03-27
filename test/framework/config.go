@@ -65,19 +65,10 @@ type E2eConfig struct {
 	DumpDir                           string            `json:"dumpDir" envconfig:"KUMA_DUMP_DIR"`
 	DumpOnSuccess                     bool              `json:"dumpOnSuccess,omitempty" envconfig:"DUMP_ON_SUCCESS"`
 
-	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
 
 func (c E2eConfig) SupportedVersions() []versions.Version {
 	return versions.ParseFromFile(c.VersionsYamlPath)
-}
-
-type SuiteConfig struct {
-	Compatibility CompatibilitySuiteConfig `json:"compatibility,omitempty"`
-}
-
-type CompatibilitySuiteConfig struct {
-	HelmVersion string `json:"helmVersion,omitempty"`
 }
 
 type KumaCpConfig struct {
@@ -212,11 +203,6 @@ var defaultConf = E2eConfig{
 	KumaUniversalEnvVars: map[string]string{},
 	KumaK8sCtlFlags:      map[string]string{},
 	KumaZoneK8sCtlFlags:  map[string]string{},
-	SuiteConfig: SuiteConfig{
-		Compatibility: CompatibilitySuiteConfig{
-			HelmVersion: "2.6.10",
-		},
-	},
 	K8sType:                      K3dK8sType, // matches K8S_CLUSTER_TOOL default in mk/e2e.new.mk
 	DefaultClusterStartupRetries: 30,
 	DefaultClusterStartupTimeout: time.Second * 3,

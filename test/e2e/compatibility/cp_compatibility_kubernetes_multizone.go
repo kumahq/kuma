@@ -14,23 +14,27 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v2/test/framework/versions"
 )
 
 // Ensure that the upstream Kuma help repository is configured
 // and refreshed. This is needed for helm to be able to pull the
 // OldChart version of the Kuma helm chart.
-var _ = E2EBeforeSuite(func() {
-	t := NewTestingT()
-	opts := helm.Options{}
+var _ = E2ESynchronizedBeforeSuite(
+	func() []byte {
+		t := NewTestingT()
+		opts := helm.Options{}
 
-	// Adding the same repo multiple times is idempotent. The
-	// `--force-update` flag prevents helm emitting an error
-	// in this case.
-	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts,
-		"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().ToNot(HaveOccurred())
+		// Adding the same repo multiple times is idempotent. The
+		// `--force-update` flag prevents helm emitting an error
+		// in this case.
+		Expect(helm.RunHelmCommandAndGetOutputE(t, &opts,
+			"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().ToNot(HaveOccurred())
 
-	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")).Error().ToNot(HaveOccurred())
-})
+		Expect(helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")).Error().ToNot(HaveOccurred())
+		return nil
+	},
+	func(_ []byte) {})
 
 func CpCompatibilityMultizoneKubernetes() {
 	var globalCluster Cluster
@@ -130,7 +134,7 @@ metadata:
 		[]KumaDeploymentOption{
 			WithHelmChartPath(Config.HelmChartName),
 			WithoutHelmOpt("global.image.tag"),
-			WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
+			WithHelmChartVersion(versions.OldestSupportedVersionFromBuild(Config.SupportedVersions())),
 		},
 	))
 }
