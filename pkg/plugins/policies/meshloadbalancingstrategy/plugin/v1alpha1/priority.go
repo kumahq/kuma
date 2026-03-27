@@ -22,19 +22,24 @@ type CrossZoneLbGroup struct {
 	Priority uint32
 }
 
-func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
+func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
 	if conf.LocalityAwareness == nil {
 		return nil, nil
 	}
-	return getLocalLbGroups(conf, inboundTags), getCrossZoneLbGroups(conf, localZone)
+	return getLocalLbGroups(conf, inboundTags, podLabels), getCrossZoneLbGroups(conf, localZone)
 }
 
-func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) []LocalLbGroup {
+func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string) []LocalLbGroup {
 	var localGroups []LocalLbGroup
 	if conf.LocalityAwareness.LocalZone != nil {
 		rulesLen := len(pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags))
 		for i, tag := range pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags) {
 			values := inboundTags.Values(tag.Key)
+			if len(values) == 0 {
+				if v, ok := podLabels[tag.Key]; ok {
+					values = []string{v}
+				}
+			}
 			// when weights are not provided we are generating weights by ourselves
 			// the first rule has the highest priority which is 9 * 10^(number of rules - rules position -1)
 			// that makes that the highest priority locality gets 90% of the traffic and sum of all weights is a
