@@ -771,12 +771,14 @@ type DataplaneInsight_OpenTelemetry_Signal struct {
 	Enabled         bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	EnvAllowed      bool                   `protobuf:"varint,2,opt,name=envAllowed,proto3" json:"envAllowed,omitempty"`
 	EnvInputPresent bool                   `protobuf:"varint,3,opt,name=envInputPresent,proto3" json:"envInputPresent,omitempty"`
-	State           string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
-	OverrideKinds   []string               `protobuf:"bytes,5,rep,name=overrideKinds,proto3" json:"overrideKinds,omitempty"`
-	MissingFields   []string               `protobuf:"bytes,6,rep,name=missingFields,proto3" json:"missingFields,omitempty"`
-	BlockedReasons  []string               `protobuf:"bytes,7,rep,name=blockedReasons,proto3" json:"blockedReasons,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Computed state: "ready", "blocked", "missing", or "ambiguous".
+	// String (not enum) for extensibility without proto schema changes.
+	State          string   `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	OverrideKinds  []string `protobuf:"bytes,5,rep,name=overrideKinds,proto3" json:"overrideKinds,omitempty"`
+	MissingFields  []string `protobuf:"bytes,6,rep,name=missingFields,proto3" json:"missingFields,omitempty"`
+	BlockedReasons []string `protobuf:"bytes,7,rep,name=blockedReasons,proto3" json:"blockedReasons,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *DataplaneInsight_OpenTelemetry_Signal) Reset() {
