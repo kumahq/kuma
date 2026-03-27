@@ -303,6 +303,7 @@ func fillDataplaneOutbounds(
 				Target:   inboundAddress,
 				Port:     inboundPort,
 				Tags:     inboundTags,
+				Labels:   dataplane.GetMeta().GetLabels(),
 				Weight:   endpointWeight,
 				Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
 			})
@@ -339,6 +340,7 @@ func fillLocalMeshServices(
 						Target:   inboundInterface.DataplaneAdvertisedIP,
 						Port:     inboundInterface.DataplanePort,
 						Tags:     inboundTags,
+						Labels:   dpp.GetMeta().GetLabels(),
 						Weight:   1,
 						Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
 					})
