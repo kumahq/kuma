@@ -22,12 +22,13 @@ const defaultOverprovisioningFactor uint32 = 200
 func NewEndpoints(
 	existingEndpoints []*envoy_endpoint.LocalityLbEndpoints,
 	tags mesh_proto.MultiValueTagSet,
+	podLabels map[string]string,
 	conf *api.Conf,
 	localZone string,
 	egressEnabled bool,
 	origin origin.Origin,
 ) []*envoy_endpoint.LocalityLbEndpoints {
-	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, localZone)
+	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, podLabels, localZone)
 	var endpointsList []core_xds.Endpoint
 	for _, localityLbEndpoint := range existingEndpoints {
 		for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
@@ -53,6 +54,7 @@ func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) cor
 	endpoint := core_xds.Endpoint{}
 	endpoint.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
 	endpoint.Tags = envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
+	endpoint.Labels = envoy_metadata.ExtractLbLabels(lbEndpoint.Metadata)
 	address := lbEndpoint.GetEndpoint().GetAddress()
 	if address.GetSocketAddress() != nil {
 		endpoint.Target = address.GetSocketAddress().GetAddress()
@@ -105,6 +107,9 @@ func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGro
 func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endpoint *core_xds.Endpoint, localZone string) {
 	for _, localRule := range localPriorityGroups {
 		val, ok := endpoint.Tags[localRule.Key]
+		if !ok {
+			val, ok = endpoint.Labels[localRule.Key]
+		}
 		if ok && val == localRule.Value {
 			endpoint.Locality = &core_xds.Locality{
 				Zone:     localZone,
