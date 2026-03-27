@@ -49,25 +49,32 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 
-		name := k.getCoreName(identifier)
-		if err := k.resourceAccess.ValidateGet(
-			request.Request.Context(),
-			core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
-			*descriptor,
-			user.FromCtx(request.Request.Context()),
-		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+		var resource core_model.Resource
+		for _, name := range k.getCoreNames(identifier) {
+			if err := k.resourceAccess.ValidateGet(
+				request.Request.Context(),
+				core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
+				*descriptor,
+				user.FromCtx(request.Request.Context()),
+			); err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+				return
+			}
+			r := descriptor.NewObject()
+			if err = k.resManager.Get(request.Request.Context(), r, store.GetByKey(name, identifier.Mesh)); err == nil {
+				resource = r
+				break
+			} else if !store.IsNotFound(err) {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+				return
+			}
+		}
+		if resource == nil {
+			rest_errors.HandleError(request.Request.Context(), response, store.ErrorResourceNotFound(identifier.ResourceType, identifier.Name, identifier.Mesh), "Could not retrieve a resource")
 			return
 		}
 
-		resource := descriptor.NewObject()
-		err = k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh))
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
-			return
-		}
-
-		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace, k.cpZone, k.systemNamespace)
+		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not format a resource")
 			return
@@ -80,26 +87,34 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-func (k *kriEndpoint) getCoreName(kri kri.Identifier) string {
-	namespace := kri.Namespace
-	if kri.Namespace == "" {
+// getCoreNames returns candidate storage names for the given KRI in priority order.
+// When zone is empty on a Zone CP, a locally created resource (stored by name) is tried
+// before a hashed name (used for resources synced from Global CP).
+func (k *kriEndpoint) getCoreNames(id kri.Identifier) []string {
+	namespace := id.Namespace
+	if id.Namespace == "" {
 		namespace = k.systemNamespace
 	}
-	if kri.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
+	if id.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
 		if k.environment == config_core.UniversalEnvironment {
-			return kri.Name
-		} else {
-			return kri.Name + "." + namespace
+			return []string{id.Name}
 		}
-	} else {
-		// in pkg/kds/context/context.go we first take zone then namespace, needs to be the same
-		hashedName := hash.HashedName(kri.Mesh, kri.Name, kri.Zone, kri.Namespace)
-		if k.environment == config_core.UniversalEnvironment {
-			return hashedName
-		} else {
-			return hashedName + "." + k.systemNamespace
-		}
+		return []string{id.Name + "." + namespace}
 	}
+	// in pkg/kds/context/context.go we first take zone then namespace, needs to be the same
+	hashedName := hash.HashedName(id.Mesh, id.Name, id.Zone, id.Namespace)
+	if id.Zone == "" {
+		// zone="" on Zone CP is ambiguous: could be a locally created resource without a zone
+		// label OR a resource synced from Global CP. Try local name first, fall back to hash.
+		if k.environment == config_core.UniversalEnvironment {
+			return []string{id.Name, hashedName}
+		}
+		return []string{id.Name + "." + namespace, hashedName + "." + k.systemNamespace}
+	}
+	if k.environment == config_core.UniversalEnvironment {
+		return []string{hashedName}
+	}
+	return []string{hashedName + "." + k.systemNamespace}
 }
 
 func getDescriptor(resourceType core_model.ResourceType) (*core_model.ResourceTypeDescriptor, error) {
