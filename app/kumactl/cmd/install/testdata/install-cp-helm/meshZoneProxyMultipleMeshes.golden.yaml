@@ -789,12 +789,12 @@ spec:
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
     spec:
-      resources: 
-        limits:
-          memory: 64Mi
-        requests:
-          cpu: 50m
-          memory: 64Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        runAsGroup: 5678
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: kuma-mesh-1-ingress
       automountServiceAccountToken: true
       restartPolicy: Always
@@ -804,19 +804,18 @@ spec:
           image: registry.k8s.io/pause:3.10
           imagePullPolicy: IfNotPresent
           securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 65534
-          resources: 
-            limits:
-              memory: 64Mi
+                - ALL
+          resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 16Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -850,12 +849,12 @@ spec:
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
     spec:
-      resources: 
-        limits:
-          memory: 64Mi
-        requests:
-          cpu: 50m
-          memory: 64Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        runAsGroup: 5678
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: kuma-mesh-1-egress
       automountServiceAccountToken: true
       restartPolicy: Always
@@ -865,19 +864,18 @@ spec:
           image: registry.k8s.io/pause:3.10
           imagePullPolicy: IfNotPresent
           securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 65534
-          resources: 
-            limits:
-              memory: 64Mi
+                - ALL
+          resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 16Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -911,12 +909,12 @@ spec:
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
     spec:
-      resources: 
-        limits:
-          memory: 64Mi
-        requests:
-          cpu: 50m
-          memory: 64Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        runAsGroup: 5678
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: kuma-mesh-2-ingress
       automountServiceAccountToken: true
       restartPolicy: Always
@@ -926,19 +924,18 @@ spec:
           image: registry.k8s.io/pause:3.10
           imagePullPolicy: IfNotPresent
           securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 65534
-          resources: 
-            limits:
-              memory: 64Mi
+                - ALL
+          resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 16Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -972,12 +969,12 @@ spec:
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
     spec:
-      resources: 
-        limits:
-          memory: 64Mi
-        requests:
-          cpu: 50m
-          memory: 64Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        runAsGroup: 5678
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: kuma-mesh-2-egress
       automountServiceAccountToken: true
       restartPolicy: Always
@@ -987,19 +984,18 @@ spec:
           image: registry.k8s.io/pause:3.10
           imagePullPolicy: IfNotPresent
           securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 65534
-          resources: 
-            limits:
-              memory: 64Mi
+                - ALL
+          resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 16Mi
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration

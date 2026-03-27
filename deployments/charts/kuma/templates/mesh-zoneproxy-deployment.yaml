@@ -62,6 +62,13 @@ spec:
       {{- if and $cfg.podSpec $cfg.podSpec.securityContext }}
       securityContext:
       {{- toYaml $cfg.podSpec.securityContext | trim | nindent 8 }}
+      {{- else }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        runAsGroup: 5678
+        seccompProfile:
+          type: RuntimeDefault
       {{- end }}
       serviceAccountName: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
       automountServiceAccountToken: {{ default true $cfg.automountServiceAccountToken }}
@@ -85,13 +92,21 @@ spec:
           {{- else }}
           securityContext:
             readOnlyRootFilesystem: true
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
           {{- end }}
-          {{- with $cfg.containerResources }}
-          resources: {{ toYaml . | nindent 12 }}
+          {{- if $cfg.containerResources }}
+          resources: {{ toYaml $cfg.containerResources | nindent 12 }}
+          {{- else }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 16Mi
           {{- end }}
 {{- end }}
 
