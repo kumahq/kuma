@@ -22,6 +22,8 @@ func CertManagerHelmValidation() {
 	})
 
 	AfterEach(func() {
+		Expect(cluster.DeleteNamespace("cert-manager")).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
