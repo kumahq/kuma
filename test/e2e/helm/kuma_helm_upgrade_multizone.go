@@ -144,8 +144,11 @@ spec:
 				Setup(zoneUniversal)
 			Expect(err).ToNot(HaveOccurred())
 
+			// Query global (already upgraded) instead of zoneK8s (still old version)
+			// because old CPs don't have the /zoneingresses endpoint that the
+			// current kumactl uses (renamed from /zone-ingresses in 2.11.0).
 			Eventually(func(g Gomega) (int, error) {
-				return NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				return NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
 			}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
 
 			By("upgrade Zone")

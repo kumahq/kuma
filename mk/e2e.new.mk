@@ -123,6 +123,13 @@ test/e2e/debug-universal:
 
 .PHONY: test/e2e
 test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slower as they start and stop Kuma for each tests). Use DEBUG=1 to more easily find issues
+	@# Can't use --fail-on-empty here: test/e2e runs multiple suites with
+	@# --label-filter and suites that have no specs for a given label (e.g.
+	@# skipinboundtags on job-0) would fail even though that's expected.
+	@# Instead, validate the package list so we don't accidentally run the
+	@# wrong packages (like KUBE_E2E_PKG_LIST) for another year.
+	@echo '$(E2E_PKG_LIST)' | grep -q '\./test/e2e/' || \
+		{ echo "ERROR: E2E_PKG_LIST does not contain ./test/e2e/ packages: $(E2E_PKG_LIST)"; exit 1; }
 	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
