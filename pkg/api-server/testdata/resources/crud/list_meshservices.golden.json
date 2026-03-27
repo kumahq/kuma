@@ -7,7 +7,7 @@
    "name": "redis-1",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "kri": "kri_msvc_default___redis-1_",
+   "kri": "kri_msvc_default_default_kuma-system_redis-1_",
    "spec": {
     "state": "Unavailable",
     "selector": {
@@ -39,7 +39,7 @@
    "name": "redis-2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "kri": "kri_msvc_default___redis-2_",
+   "kri": "kri_msvc_default_default_kuma-system_redis-2_",
    "spec": {
     "state": "Unavailable",
     "selector": {

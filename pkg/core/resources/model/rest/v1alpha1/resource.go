@@ -36,7 +36,7 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 	}
 
 	var kriStr string
-	if id, _ := kri.FromResourceMetaE(r.ResourceMeta, r.Type); !id.IsEmpty() {
+	if id, _ := kri.FromResourceMetaE(r.ResourceMeta, r.Type, r.kriOptions()...); !id.IsEmpty() {
 		kriStr = id.String()
 	}
 

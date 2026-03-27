@@ -67,7 +67,7 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 
-		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace)
+		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace, k.cpZone, k.systemNamespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not format a resource")
 			return
