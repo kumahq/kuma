@@ -83,6 +83,10 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 		if errors2.As(err, &signingKeyError) {
 			return signingKeyError
 		}
+		if errors2.Is(err, jwt.ErrTokenNotValidYet) {
+			return errors.New("token is not yet valid: 'valid_from' date is in the future." +
+				" Check if the system clock on the instance that issued the token is set correctly")
+		}
 		if j.storeType == store_config.MemoryStore {
 			return errors.Wrap(err, "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts."+
 				" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane")
