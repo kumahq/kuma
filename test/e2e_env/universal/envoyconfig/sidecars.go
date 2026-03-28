@@ -132,8 +132,10 @@ func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func
 		// leftover clusters from the previous test (e.g. OTel from
 		// meshmetric/otel) don't leak into the next golden comparison.
 		Eventually(func(g Gomega) {
-			config := getConfig(meshName, "demo-client")
-			g.Expect(config).ToNot(ContainSubstring("opentelemetry"))
+			demoClientConfig := getConfig(meshName, "demo-client")
+			testServerConfig := getConfig(meshName, "test-server")
+			g.Expect(demoClientConfig).ToNot(ContainSubstring("opentelemetry"))
+			g.Expect(testServerConfig).ToNot(ContainSubstring("opentelemetry"))
 		}, "30s", "1s").Should(Succeed())
 	}
 }
