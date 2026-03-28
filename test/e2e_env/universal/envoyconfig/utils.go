@@ -141,12 +141,5 @@ func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor
 	return func() {
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
 		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
-		// Wait for xDS to reconcile after resource deletion so that
-		// leftover clusters/listeners from the previous test don't
-		// leak into the next golden file comparison.
-		Eventually(func(g Gomega) {
-			config := getConfig(mesh, "demo-client")
-			g.Expect(config).ToNot(ContainSubstring("opentelemetry"))
-		}, "30s", "1s").Should(Succeed(), "envoy config did not settle after cleanup")
 	}
 }

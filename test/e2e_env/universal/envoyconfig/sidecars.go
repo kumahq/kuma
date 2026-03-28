@@ -126,7 +126,16 @@ func SetupSidecarCluster() {
 }
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(meshName, policies...)
+	return func() {
+		cleanupAfterTest(meshName, policies...)()
+		// Wait for xDS to reconcile after resource deletion so that
+		// leftover clusters from the previous test (e.g. OTel from
+		// meshmetric/otel) don't leak into the next golden comparison.
+		Eventually(func(g Gomega) {
+			config := getConfig(meshName, "demo-client")
+			g.Expect(config).ToNot(ContainSubstring("opentelemetry"))
+		}, "30s", "1s").Should(Succeed())
+	}
 }
 
 func CleanupAfterSidecarSuite() {
