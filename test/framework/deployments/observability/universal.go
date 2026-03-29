@@ -95,7 +95,7 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 		func() (string, error) {
 			_, err := u.dockerBackend.StopE(cluster.GetTesting(), []string{u.container}, &docker.StopOptions{Time: 1})
 			if err == nil {
-				return "Container still running", errors.New("Container still running")
+				return "Container still running", errors.New("container still running")
 			}
 			return "Container stopped", nil
 		})
