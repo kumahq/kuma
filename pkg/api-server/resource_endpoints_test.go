@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -318,7 +319,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		realStore := core_store.NewPaginationStore(memory.NewStore())
 		failingStore := &errOnGetStore{
 			ResourceStore: realStore,
-			getErr:        fmt.Errorf("connection refused"),
+			getErr:        errors.New("connection refused"),
 			getErrType:    v1alpha1.MeshTrafficPermissionType,
 		}
 		apiServerWithErr, _, stopErr := StartApiServer(
