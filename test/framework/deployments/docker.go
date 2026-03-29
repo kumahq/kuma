@@ -42,7 +42,7 @@ func NewDockerContainer(fs ...DockerContainerOptFn) (*DockerContainer, error) {
 
 	for _, f := range fs {
 		if err := f(d); err != nil {
-			return nil, fmt.Errorf("couldn't create docker containter: %w", err)
+			return nil, fmt.Errorf("couldn't create docker container: %w", err)
 		}
 	}
 
