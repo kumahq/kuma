@@ -46,7 +46,7 @@ func New(serverURL string) (*Client, error) {
 			InsecureSkipVerify: true, // #nosec G402 -- it's acceptable as this is only to be used in testing
 		})))
 	default:
-		return nil, fmt.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
+		return nil, fmt.Errorf("unsupported scheme %q. Use one of %v", url.Scheme, []string{"grpc", "grpcs"})
 	}
 	conn, err := grpc.NewClient(url.Host, dialOpts...)
 	if err != nil {
