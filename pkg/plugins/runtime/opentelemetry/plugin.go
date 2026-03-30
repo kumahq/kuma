@@ -56,16 +56,23 @@ func (t *tracer) NeedLeaderElection() bool {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	otel := rt.Config().Tracing.OpenTelemetry
-	if !otel.Enabled && otel.Endpoint == "" {
-		return nil
+	otelTracing := rt.Config().Tracing.OpenTelemetry
+	if otelTracing.Enabled || otelTracing.Endpoint != "" {
+		t := tracer{
+			config: otelTracing,
+		}
+		if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
+			return err
+		}
 	}
 
-	t := tracer{
-		config: otel,
-	}
-	if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
-		return err
+	if rt.Config().Metrics.OpenTelemetry.Enabled {
+		mp := &metricsPusher{
+			gatherer: rt.Metrics(),
+		}
+		if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-metrics-pusher"), mp, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
+			return err
+		}
 	}
 
 	return nil
