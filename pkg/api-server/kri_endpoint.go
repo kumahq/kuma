@@ -61,7 +61,7 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 				return
 			}
 			r := descriptor.NewObject()
-			if err = k.resManager.Get(request.Request.Context(), r, store.GetByKey(name, identifier.Mesh)); err == nil {
+			if err := k.resManager.Get(request.Request.Context(), r, store.GetByKey(name, identifier.Mesh)); err == nil {
 				resource = r
 				break
 			} else if !store.IsNotFound(err) {
