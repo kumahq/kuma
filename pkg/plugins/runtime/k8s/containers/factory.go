@@ -423,6 +423,15 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		}
 	}
 
+	// Re-assert readiness env var after user overrides — overriding this
+	// would desync kuma-dp from the injected probes and break readiness.
+	if i.adminUnixSocket {
+		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
+			Value: "true",
+		}
+	}
+
 	var result []kube_core.EnvVar
 	for _, v := range envVars {
 		result = append(result, v)

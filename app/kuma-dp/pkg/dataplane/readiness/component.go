@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"sync/atomic"
 	"time"
 
@@ -26,9 +25,9 @@ const (
 )
 
 // Reporter reports the health status of this Kuma Dataplane Proxy.
-// When adminSocketPath is set, it also reverse-proxies Envoy admin
-// endpoints so that external tools can reach admin over TCP even when
-// Envoy admin listens on a Unix domain socket.
+// It only serves /ready — no other Envoy admin endpoints are exposed.
+// When adminSocketPath is set, /ready is proxied to Envoy admin so
+// the pod is only marked ready after Envoy receives its config.
 type Reporter struct {
 	unixSocketDisabled bool
 	socketDir          string
@@ -84,14 +83,6 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
-	// When admin is on UDS, reverse-proxy read-only admin endpoints so
-	// that operators can still reach /stats, /config_dump, etc.
-	// Only GET and HEAD are allowed to prevent mutating endpoints
-	// (/quitquitquit, /runtime_modify, /drain_listeners, etc.) from
-	// being reachable over TCP.
-	if r.adminSocketPath != "" {
-		mux.Handle("/", r.adminProxy())
-	}
 	server := &http.Server{
 		ReadHeaderTimeout: time.Second,
 		Handler:           mux,
@@ -176,33 +167,6 @@ func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
 	if _, err := writer.Write(body); err != nil {
 		logger.Info("[WARNING] could not write response", "err", err)
 	}
-}
-
-func (r *Reporter) adminProxy() http.Handler {
-	proxy := &httputil.ReverseProxy{
-		Director: func(req *http.Request) {
-			req.URL.Scheme = "http"
-			req.URL.Host = "localhost"
-		},
-		Transport: r.adminClient.Transport,
-		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
-			logger.Error(err, "admin proxy error")
-			http.Error(w, "admin backend unavailable", http.StatusBadGateway)
-		},
-		ErrorLog: adapter.ToStd(logger),
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		// Block endpoints that terminate or destabilize Envoy.
-		// Read endpoints (/stats, /config_dump, /clusters, etc.) accept
-		// both GET and POST in Envoy's admin API, so we restrict by path
-		// rather than method to preserve operator and test-framework access.
-		switch req.URL.Path {
-		case "/quitquitquit", "/drain_listeners", "/runtime_modify":
-			http.Error(w, "forbidden", http.StatusForbidden)
-			return
-		}
-		proxy.ServeHTTP(w, req)
-	})
 }
 
 func (r *Reporter) NeedLeaderElection() bool {
