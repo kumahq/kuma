@@ -986,6 +986,7 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
+  isCA: true
   dnsNames:
     - kuma-control-plane.kuma-system
     - kuma-control-plane.kuma-system.svc
