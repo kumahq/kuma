@@ -49,7 +49,7 @@ func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
 		lbConfig := e.Lb.GetRingHash()
 		hashfn, ok := envoy_cluster.Cluster_RingHashLbConfig_HashFunction_value[lbConfig.HashFunction]
 		if !ok {
-			return fmt.Errorf("Invalid ring hash function %s", lbConfig.HashFunction) //nolint:staticcheck // ST1005: error strings should not be capitalized
+			return fmt.Errorf("invalid ring hash function %s", lbConfig.HashFunction)
 		}
 
 		c.LbConfig = &envoy_cluster.Cluster_RingHashLbConfig_{
