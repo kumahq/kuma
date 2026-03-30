@@ -249,7 +249,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	dpZoneEgressEndpointMap := xds_topology.BuildDataplaneZoneEgressEndpointMap(
 		ctx,
 		mesh,
-		m.zone,
 		meshExternalServices,
 		loader,
 	)
