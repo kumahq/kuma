@@ -193,8 +193,8 @@
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "4xx"
+              "id": "byRegexp",
+              "options": ".*4xx.*"
             },
             "properties": [
               {
@@ -208,8 +208,8 @@
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "5xx"
+              "id": "byRegexp",
+              "options": ".*5xx.*"
             },
             "properties": [
               {

@@ -1831,7 +1831,7 @@
           "refId": "A"
         },
         {
-          "expr": "clamp_min(1 - (sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))), 0)",
+          "expr": "clamp_min(1 - ((sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) or sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])) * 0) / sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))), 0)",
           "format": "table",
           "instant": true,
           "refId": "B"

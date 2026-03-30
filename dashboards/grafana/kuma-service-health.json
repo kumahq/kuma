@@ -178,7 +178,7 @@
       },
       "targets": [
         {
-          "expr": "100 * clamp_min(1 - sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])), 0)",
+          "expr": "100 * clamp_min(1 - (sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) or vector(0)) / sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",namespace=~\"$namespace\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])), 0)",
           "legendFormat": "Success Rate",
           "refId": "A"
         }
