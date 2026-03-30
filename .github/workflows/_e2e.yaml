@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '4' && '[0, 1, 2, 3]') || '[0]') }}
+        parallelRunnerId: [0]
     steps:
       - name: "Free up disk space for the Runner"
         uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
@@ -93,7 +93,7 @@ jobs:
           fi
 
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then
-            export GINKGO_E2E_LABEL_FILTERS="job-${{ matrix.parallelRunnerId }}"
+            export GINKGO_E2E_LABEL_FILTERS="job-0"
           fi
           env
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "multizone" ]]; then
@@ -137,3 +137,9 @@ jobs:
             build/reports
             !build/reports/e2e-debug*
           retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}
+      - name: "Setup tmate debug session"
+        uses: mxschmitt/action-tmate@v3
+        if: always()
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true
