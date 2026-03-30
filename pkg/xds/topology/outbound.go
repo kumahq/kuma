@@ -75,13 +75,12 @@ func BuildEgressEndpointMap(
 	return outbound
 }
 
-// BuildDataplaneZoneEgressEndpointMap builds endpoints only for MeshExternalServices reachable from the zone.
-// Used for embedded zone egress listeners in a Dataplane resource.
+// BuildDataplaneEgressEndpointMap builds endpoints only for MeshExternalServices reachable from the dataplane.
+// Used for embedded egress listeners in a Dataplane resource.
 // Always uses unified (KRI) naming as this is new infrastructure that only supports Exclusive MeshServices mode.
-func BuildDataplaneZoneEgressEndpointMap(
+func BuildDataplaneEgressEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
-	zone string,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
