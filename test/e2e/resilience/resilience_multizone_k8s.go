@@ -1,6 +1,8 @@
 package resilience
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -14,7 +16,7 @@ func ResilienceMultizoneK8s() {
 
 	BeforeAll(func() {
 		// Global
-		global = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(60).WithTimeout(6 * time.Second).(*K8sCluster)
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Global,
 				WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
@@ -27,7 +29,7 @@ func ResilienceMultizoneK8s() {
 		globalCP := global.GetKuma()
 
 		// Cluster 1
-		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent).WithRetries(60).WithTimeout(6 * time.Second).(*K8sCluster)
 
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Zone,
