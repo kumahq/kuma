@@ -7,7 +7,7 @@
    "name": "workload-1",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "kri": "kri_wl_default_default_kuma-system_workload-1_",
+   "kri": "kri_wl_default___workload-1_",
    "spec": {},
    "status": {
     "dataplaneProxies": {
@@ -23,7 +23,7 @@
    "name": "workload-2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "kri": "kri_wl_default_default_kuma-system_workload-2_",
+   "kri": "kri_wl_default___workload-2_",
    "spec": {},
    "status": {
     "dataplaneProxies": {
