@@ -20,7 +20,7 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   e2e:
-    timeout-minutes: 60
+    timeout-minutes: 120
     # can't use env vars here
     runs-on: ${{ inputs.runner }}
     if: ${{ inputs.runner != '' }}
@@ -65,6 +65,12 @@ jobs:
           }
           EOF
           sudo service docker restart
+      - name: "Setup tmate debug session"
+        uses: mxschmitt/action-tmate@v3
+        if: always()
+        timeout-minutes: 120
+        with:
+          limit-access-to-actor: true
       - name: "Run E2E tests"
         env:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
@@ -137,9 +143,3 @@ jobs:
             build/reports
             !build/reports/e2e-debug*
           retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}
-      - name: "Setup tmate debug session"
-        uses: mxschmitt/action-tmate@v3
-        if: always()
-        timeout-minutes: 30
-        with:
-          limit-access-to-actor: true
