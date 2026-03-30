@@ -191,7 +191,7 @@ func (r *Reporter) adminProxy() http.Handler {
 		ErrorLog: adapter.ToStd(logger),
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		// Block endpoints that terminate or destabilise Envoy.
+		// Block endpoints that terminate or destabilize Envoy.
 		// Read endpoints (/stats, /config_dump, /clusters, etc.) accept
 		// both GET and POST in Envoy's admin API, so we restrict by path
 		// rather than method to preserve operator and test-framework access.
