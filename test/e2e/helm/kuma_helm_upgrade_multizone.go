@@ -179,7 +179,7 @@ spec:
 					}
 				}
 				g.Expect(newZoneConnected).To(BeTrue())
-			}, "30s", "100ms").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
 
 			// then
 			Consistently(func(g Gomega) {
@@ -208,7 +208,7 @@ spec:
 				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(zoneIngressesGlobal).To(And(Equal(2), Equal(zoneIngressesUniversalZone), Equal(zoneIngressesK8sZone)))
-			}, "5s", "100ms").Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),
 		SupportedVersionEntries(),

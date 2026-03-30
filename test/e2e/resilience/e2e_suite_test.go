@@ -16,5 +16,5 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Test Multizone Resilience for K8s", Label("job-1"), resilience.ResilienceMultizoneK8s, Ordered, Serial)
+	_ = Describe("Test Multizone Resilience for K8s", Label("job-0"), resilience.ResilienceMultizoneK8s, Ordered, Serial)
 )

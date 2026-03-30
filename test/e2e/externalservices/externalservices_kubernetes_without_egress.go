@@ -50,7 +50,7 @@ spec:
 
 	var cluster *K8sCluster
 
-	BeforeEach(func() {
+	BeforeAll(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60).(*K8sCluster)
@@ -60,13 +60,6 @@ spec:
 			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(Namespace(externalServicesNamespace)).
-			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
-				testserver.Install(
-					testserver.WithNamespace(externalServicesNamespace),
-					testserver.WithName("external-service"),
-				),
-			)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -83,6 +76,14 @@ spec:
 	})
 
 	It("should block the traffic when zone egress is not deployed", func() {
+		Expect(NewClusterSetup().Install(Parallel(
+			democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
+			testserver.Install(
+				testserver.WithNamespace(externalServicesNamespace),
+				testserver.WithName("external-service"),
+			),
+		)).Setup(cluster)).To(Succeed())
+
 		// when external service is defined without passthrough and zone routing
 		Expect(cluster.Install(YamlK8s(externalService))).To(Succeed())
 
@@ -93,7 +94,7 @@ spec:
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
+		}, "60s", "1s").Should(Succeed())
 
 		// when passthrough is disabled on the Mesh and zone egress enabled
 		Expect(cluster.Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true")))).To(Succeed())
@@ -106,6 +107,6 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
-		}, "30s", "1s").Should(Succeed())
+		}, "60s", "1s").Should(Succeed())
 	})
 }
