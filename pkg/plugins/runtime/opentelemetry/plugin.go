@@ -3,6 +3,7 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -21,6 +22,8 @@ import (
 )
 
 func init() {
+	// Registered as "tracing.opentelemetry" for historical reasons.
+	// This plugin also handles CP metrics OTLP push (metrics.openTelemetry.enabled).
 	core_plugins.Register("tracing.opentelemetry", &plugin{})
 }
 
@@ -67,6 +70,9 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 
 	if rt.Config().Metrics.OpenTelemetry.Enabled {
+		if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
+			log.Info("OTEL_EXPORTER_OTLP_ENDPOINT not set, metrics will be pushed to localhost:4317")
+		}
 		metricsLog := core.Log.WithName("otel-metrics-pusher")
 		mp := &metricsPusher{
 			gatherer: rt.Metrics(),
