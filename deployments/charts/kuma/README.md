@@ -45,6 +45,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Control Plane pods. This is rendered as a template, so you can use variables to generate match labels. |
 | controlPlane.priorityClassName | string | `""` | Priority Class Name of the Kuma Control Plane |
 | controlPlane.injectorFailurePolicy | string | `"Fail"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
+| controlPlane.madsServer.enabled | bool | `true` | Whether the Monitoring Assignment Discovery Service (MADS) server is enabled |
 | controlPlane.service.apiServer.http.nodePort | int | `30681` | Port on which Http api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.apiServer.https.nodePort | int | `30682` | Port on which Https api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.enabled | bool | `true` | Whether to create a service resource. |
