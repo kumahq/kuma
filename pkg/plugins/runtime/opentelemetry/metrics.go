@@ -43,8 +43,8 @@ func (m *metricsPusher) Start(stop <-chan struct{}) error {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 
-	if err := provider.Shutdown(shutdownCtx); err != nil {
-		m.log.Error(err, "shutting down OTLP metrics provider")
+	if shutdownErr := provider.Shutdown(shutdownCtx); shutdownErr != nil {
+		return fmt.Errorf("shutting down OTLP metrics provider: %w", shutdownErr)
 	}
 	return nil
 }
