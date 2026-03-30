@@ -626,7 +626,7 @@ var _ = Describe("PodReconciler", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`Ingress can only be deployed in system namespace "kuma-system"`))
+		Expect(err.Error()).To(Equal(`ingress can only be deployed in system namespace "kuma-system"`))
 	})
 
 	It("should not reconcile Egress with namespace other than system", func() {
@@ -640,7 +640,7 @@ var _ = Describe("PodReconciler", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`Egress can only be deployed in system namespace "kuma-system"`))
+		Expect(err.Error()).To(Equal(`egress can only be deployed in system namespace "kuma-system"`))
 	})
 
 	It("should reconcile Ingress with system namespace", func() {
