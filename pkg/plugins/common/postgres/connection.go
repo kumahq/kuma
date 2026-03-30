@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
@@ -63,6 +64,16 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetimeJitter.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
 	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTracerAttributes(spanTypeSQLAttribute))
+	// Reject connections already known to be dead before handing
+	// them out. This is a cheap in-memory check (no network I/O)
+	// that prevents "conn closed" errors from stale TCP sockets.
+	pgxConfig.PrepareConn = func(_ context.Context, conn *pgx.Conn) (bool, error) {
+		if conn.PgConn().IsClosed() {
+			return false, nil
+		}
+		return true, nil
+	}
+
 	for _, customizer := range customizers {
 		customizer.Customize(pgxConfig)
 	}
