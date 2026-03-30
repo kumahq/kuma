@@ -116,4 +116,21 @@ var _ = Describe("KRI endpoint", func() {
 		// then
 		Expect(coreName).To(Equal("without-namespace-c5v4498z5w4x9bcx"))
 	})
+
+	It("should resolve local global-scoped resource on Zone CP", func() {
+		// given: Zone CP, global-scoped resource (mesh="") created locally
+		// Reproduces github.com/kumahq/kuma/issues/15803
+		endpoint := kriEndpoint{
+			cpMode:          core.Zone,
+			cpZone:          "default",
+			environment:     core.KubernetesEnvironment,
+			systemNamespace: "kuma-system",
+		}
+
+		// when: HostnameGenerator KRI with empty mesh, zone matches cpZone
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_hg__default_kuma-system_local-mesh-service-1_"))
+
+		// then: locally originated, uses plain name
+		Expect(coreName).To(Equal("local-mesh-service-1.kuma-system"))
+	})
 })
