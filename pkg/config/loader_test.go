@@ -322,6 +322,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
 			Expect(cfg.Metrics.Dataplane.IdleTimeout.Duration).To(Equal(1 * time.Minute))
 			Expect(cfg.Metrics.ControlPlane.ReportResourcesCount).To(BeTrue())
+			Expect(cfg.Metrics.OpenTelemetry.Enabled).To(BeTrue())
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
@@ -710,6 +711,8 @@ metrics:
     idleTimeout: 1m
   controlPlane:
     reportResourcesCount: true
+  openTelemetry:
+    enabled: true
 dpServer:
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
@@ -1061,6 +1064,7 @@ meshService:
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT":                                        "true",
+				"KUMA_METRICS_OPEN_TELEMETRY_ENABLED":                                                      "true",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_TLS_MIN_VERSION":                                                           "TLSv1_3",
