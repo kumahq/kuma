@@ -794,7 +794,6 @@ spec:
         kuma.io/sidecar-injection: enabled
     spec:
       securityContext:
-        runAsNonRoot: true
         runAsUser: 5678
         runAsGroup: 5678
         seccompProfile:
@@ -854,7 +853,6 @@ spec:
         kuma.io/sidecar-injection: enabled
     spec:
       securityContext:
-        runAsNonRoot: true
         runAsUser: 5678
         runAsGroup: 5678
         seccompProfile:
@@ -914,7 +912,6 @@ spec:
         kuma.io/sidecar-injection: enabled
     spec:
       securityContext:
-        runAsNonRoot: true
         runAsUser: 5678
         runAsGroup: 5678
         seccompProfile:
@@ -974,7 +971,6 @@ spec:
         kuma.io/sidecar-injection: enabled
     spec:
       securityContext:
-        runAsNonRoot: true
         runAsUser: 5678
         runAsGroup: 5678
         seccompProfile:
