@@ -3,7 +3,9 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	prombridge "go.opentelemetry.io/contrib/bridges/prometheus"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -14,12 +16,13 @@ import (
 
 type metricsPusher struct {
 	gatherer prometheus.Gatherer
+	log      logr.Logger
 }
 
 var _ component.Component = &metricsPusher{}
 
 func (m *metricsPusher) Start(stop <-chan struct{}) error {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	exporter, err := otlpmetricgrpc.New(ctx)
@@ -33,12 +36,15 @@ func (m *metricsPusher) Start(stop <-chan struct{}) error {
 
 	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 
-	log.Info("OTLP metrics push started")
+	m.log.Info("OTLP metrics push started")
 	<-stop
-	log.Info("stopping OTLP metrics push")
+	m.log.Info("stopping OTLP metrics push")
 
-	if err := provider.Shutdown(context.Background()); err != nil {
-		log.Error(err, "shutting down OTLP metrics provider")
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := provider.Shutdown(shutdownCtx); err != nil {
+		m.log.Error(err, "shutting down OTLP metrics provider")
 	}
 	return nil
 }

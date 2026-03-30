@@ -67,10 +67,12 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 
 	if rt.Config().Metrics.OpenTelemetry.Enabled {
+		metricsLog := core.Log.WithName("otel-metrics-pusher")
 		mp := &metricsPusher{
 			gatherer: rt.Metrics(),
+			log:      metricsLog,
 		}
-		if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-metrics-pusher"), mp, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
+		if err := rt.Add(component.NewResilientComponent(metricsLog, mp, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
 			return err
 		}
 	}
