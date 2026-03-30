@@ -72,8 +72,7 @@ data:
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(k8sCluster, "default", appNamespace)
-		DebugKube(k8sCluster, "default", Config.KumaNamespace)
+		DebugKube(k8sCluster, "default", appNamespace, Config.KumaNamespace)
 	})
 
 	E2EAfterAll(func() {
