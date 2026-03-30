@@ -66,7 +66,6 @@ spec:
       {{- toYaml $cfg.podSpec.securityContext | trim | nindent 8 }}
       {{- else }}
       securityContext:
-        runAsNonRoot: true
         runAsUser: 5678
         runAsGroup: 5678
         seccompProfile:
