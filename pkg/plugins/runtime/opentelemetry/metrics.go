@@ -15,14 +15,16 @@ import (
 )
 
 type metricsPusher struct {
-	gatherer prometheus.Gatherer
-	log      logr.Logger
+	gatherer            prometheus.Gatherer
+	log                 logr.Logger
+	exporterInitTimeout time.Duration
+	shutdownTimeout     time.Duration
 }
 
 var _ component.Component = &metricsPusher{}
 
 func (m *metricsPusher) Start(stop <-chan struct{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), m.exporterInitTimeout)
 	defer cancel()
 
 	exporter, err := otlpmetricgrpc.New(ctx)
@@ -40,7 +42,7 @@ func (m *metricsPusher) Start(stop <-chan struct{}) error {
 	<-stop
 	m.log.Info("stopping OTLP metrics push")
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), m.shutdownTimeout)
 	defer shutdownCancel()
 
 	if shutdownErr := provider.Shutdown(shutdownCtx); shutdownErr != nil {
