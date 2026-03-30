@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 )
 
 var waitLog = dataplaneLog.WithName("wait")
@@ -27,26 +28,10 @@ func newWaitCmd() *cobra.Command {
 		Short: "Waits for data plane proxy to be ready",
 		Long:  `Waits for data plane proxy (Envoy) to be ready.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			var client *http.Client
+			client := httpclient.NewTCPOrUDS(args.unixSocket, args.requestTimeout, args.requestTimeout)
 			targetURL := args.url
-
 			if args.unixSocket != "" {
-				dialer := &net.Dialer{
-					Timeout: args.requestTimeout,
-				}
-				client = &http.Client{
-					Timeout: args.requestTimeout,
-					Transport: &http.Transport{
-						DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-							return dialer.DialContext(ctx, "unix", args.unixSocket)
-						},
-					},
-				}
 				targetURL = "http://localhost/ready"
-			} else {
-				client = &http.Client{
-					Timeout: args.requestTimeout,
-				}
 			}
 
 			ticker := time.NewTicker(args.checkFrequency)
@@ -57,7 +42,7 @@ func newWaitCmd() *cobra.Command {
 			for {
 				select {
 				case <-ticker.C:
-					if err := checkIfEnvoyReady(client, targetURL, args.unixSocket != ""); err != nil {
+					if err := checkIfEnvoyReady(&client, targetURL, args.unixSocket != ""); err != nil {
 						waitLog.Info("data plane proxy is not ready", "err", err)
 					} else {
 						waitLog.Info("data plane is ready")

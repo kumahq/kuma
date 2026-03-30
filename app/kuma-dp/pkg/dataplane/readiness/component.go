@@ -13,6 +13,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/bakito/go-log-logr-adapter/adapter"
 
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -49,14 +50,8 @@ func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, 
 		adminSocketPath:    adminSocketPath,
 	}
 	if adminSocketPath != "" {
-		r.adminClient = &http.Client{
-			Timeout: 3 * time.Second,
-			Transport: &http.Transport{
-				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-					return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", adminSocketPath)
-				},
-			},
-		}
+		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
+		r.adminClient = &c
 	}
 	return r
 }

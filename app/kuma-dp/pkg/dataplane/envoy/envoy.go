@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os/exec"
 	"regexp"
@@ -18,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	command_utils "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/command"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
@@ -165,23 +165,9 @@ func (e *Envoy) WaitForDone() {
 }
 
 func (e *Envoy) adminPost(path string) error {
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
+	client := httpclient.NewTCPOrUDS(e.opts.AdminSocketPath, 5*time.Second, 10*time.Second)
 	baseURL := fmt.Sprintf("http://127.0.0.1:%d", e.opts.AdminPort)
-
 	if e.opts.AdminSocketPath != "" {
-		dialer := &net.Dialer{
-			Timeout: 5 * time.Second,
-		}
-		client = &http.Client{
-			Timeout: 10 * time.Second,
-			Transport: &http.Transport{
-				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-					return dialer.DialContext(ctx, "unix", e.opts.AdminSocketPath)
-				},
-			},
-		}
 		baseURL = "http://localhost"
 	}
 

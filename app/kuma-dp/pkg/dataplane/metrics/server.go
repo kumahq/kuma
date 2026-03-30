@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	v1alpha12 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -131,16 +132,7 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 }
 
 func createHTTPClientForUDS(unixSocketPath string) http.Client {
-	dialer := &net.Dialer{
-		Timeout: 5 * time.Second,
-	}
-	return http.Client{
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return dialer.DialContext(ctx, "unix", unixSocketPath)
-			},
-		},
-	}
+	return httpclient.NewUDS(unixSocketPath, 5*time.Second, 0)
 }
 
 func buildUDSClients(apps []ApplicationToScrape) map[string]http.Client {
