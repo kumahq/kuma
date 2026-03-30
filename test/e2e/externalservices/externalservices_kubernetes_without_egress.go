@@ -2,6 +2,7 @@ package externalservices
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -50,7 +51,9 @@ spec:
 	var cluster *K8sCluster
 
 	BeforeEach(func() {
-		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+			WithTimeout(6 * time.Second).
+			WithRetries(60).(*K8sCluster)
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone)).
 			Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
@@ -69,7 +72,7 @@ spec:
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(cluster, "default", TestNamespace, externalServicesNamespace)
+		DebugKube(cluster, "default", TestNamespace, externalServicesNamespace, Config.KumaNamespace)
 	})
 
 	E2EAfterEach(func() {

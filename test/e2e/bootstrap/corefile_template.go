@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
@@ -38,7 +39,9 @@ data:
 	dnsConfigDir := "/tmp/kuma-dp-config/coredns"
 	minReplicas := 3
 	BeforeAll(func() {
-		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+			WithTimeout(6 * time.Second).
+			WithRetries(60).(*K8sCluster)
 
 		Expect(NewClusterSetup().
 			Install(Namespace(Config.KumaNamespace)).
@@ -70,6 +73,7 @@ data:
 
 	AfterEachFailure(func() {
 		DebugKube(k8sCluster, "default", appNamespace)
+		DebugKube(k8sCluster, "default", Config.KumaNamespace)
 	})
 
 	E2EAfterAll(func() {

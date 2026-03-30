@@ -54,8 +54,7 @@ func CertManagerCAInjection() {
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(cluster, namespace)
-		DebugKube(cluster, Config.KumaNamespace)
+		DebugKube(cluster, mesh, namespace, Config.KumaNamespace)
 	})
 
 	E2EAfterAll(func() {
