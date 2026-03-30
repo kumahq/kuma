@@ -19,6 +19,7 @@ import (
 
 	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
@@ -45,7 +46,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata map[string]string, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata map[string]string, otelEnv *core_xds.OtelBootstrapInventory, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
 	bootstrapUrl, err := net_url.Parse(opts.Config.ControlPlane.URL)
 	if err != nil {
 		return nil, nil, err
@@ -79,7 +80,7 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane", "features", features)
 		bootstrapUrl.Path = "/bootstrap"
-		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, opts, metadata, features)
+		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, opts, metadata, otelEnv, features)
 		if err == nil {
 			return nil
 		}
@@ -129,7 +130,7 @@ func (b *remoteBootstrapClient) resourceMetadata(cfg kuma_dp.DataplaneResources)
 	return res
 }
 
-func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client *http.Client, url *net_url.URL, opts Opts, metadata map[string]string, features []string) ([]byte, error) {
+func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client *http.Client, url *net_url.URL, opts Opts, metadata map[string]string, otelEnv *core_xds.OtelBootstrapInventory, features []string) ([]byte, error) {
 	var dataplaneResource string
 	if opts.Dataplane != nil {
 		dpJSON, err := json.Marshal(opts.Dataplane)
@@ -189,6 +190,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 			},
 		},
 		DynamicMetadata: metadata,
+		OtelEnv:         otelEnv,
 		DNSPort:         opts.Config.DNS.EnvoyDNSPort,
 		ReadinessPort:   opts.Config.Dataplane.ReadinessPort,
 		// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.

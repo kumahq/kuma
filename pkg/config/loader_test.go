@@ -153,6 +153,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.GUI.Enabled).To(BeFalse())
 			Expect(cfg.ApiServer.GUI.BasePath).To(Equal("/ui"))
 
+			Expect(cfg.MonitoringAssignmentServer.Enabled).To(BeFalse())
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval.Duration).To(Equal(12 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.DefaultFetchTimeout.Duration).To(Equal(45 * time.Second))
@@ -491,6 +492,7 @@ apiServer:
     rootUrl: https://bar.com
     basePath: /ui
 monitoringAssignmentServer:
+  enabled: false
   port: 2222
   defaultFetchTimeout: 45s
   apiVersions: [v1]
@@ -898,6 +900,7 @@ meshService:
 				"KUMA_API_SERVER_GUI_ENABLED":                                                              "false",
 				"KUMA_API_SERVER_GUI_ROOT_URL":                                                             "https://bar.com",
 				"KUMA_API_SERVER_GUI_BASE_PATH":                                                            "/ui",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED":                                                "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",

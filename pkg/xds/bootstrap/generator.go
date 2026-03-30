@@ -130,6 +130,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		TransparentProxy:     request.TransparentProxy,
 		IPv6Enabled:          request.IPv6Enabled,
 		SpireSocketPath:      request.SpireResources.SocketPath,
+		OtelEnvInventory:     request.OtelEnv,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

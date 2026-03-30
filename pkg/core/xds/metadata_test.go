@@ -117,6 +117,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 						EndpointPresent:   true,
 						EffectiveProtocol: xds.OtelProtocolHTTPProtobuf,
 						OverrideKinds:     []string{},
+						ValidationErrors:  []string{},
 					},
 					ValidationErrors: []string{},
 				},
