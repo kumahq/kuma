@@ -416,8 +416,8 @@ var _ = Describe("PodToDataplane(..)", func() {
 			expectedErr:    "conflicting listener types on port 10001",
 		}),
 		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
-			pod:              "36.pod.yaml",
-			servicesForPod:   "36.services-for-pod.yaml",
+			pod:              "44.pod.yaml",
+			servicesForPod:   "44.services-for-pod.yaml",
 			dataplane:        "44.dataplane.yaml",
 			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
 			zoneProxySkipped: true,
