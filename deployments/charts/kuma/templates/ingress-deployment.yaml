@@ -76,7 +76,7 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
-{{- if .Values.experimental.adminUnixSocket }}
+{{- if .Values.experimental.envoyAdminUnixSocket }}
             - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
               value: "true"
             - name: KUMA_READINESS_PORT
@@ -87,7 +87,7 @@ spec:
             - --log-level={{ .Values.ingress.logLevel | default "info" }}
           ports:
             - containerPort: 10001
-{{- if .Values.experimental.adminUnixSocket }}
+{{- if .Values.experimental.envoyAdminUnixSocket }}
             - containerPort: 9902
 {{- else }}
             - containerPort: 9901
@@ -95,7 +95,7 @@ spec:
           livenessProbe:
             httpGet:
               path: "/ready"
-              port: {{ if .Values.experimental.adminUnixSocket }}9902{{ else }}9901{{ end }}
+              port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
             failureThreshold: 12
             initialDelaySeconds: 60
             periodSeconds: 5
@@ -104,7 +104,7 @@ spec:
           readinessProbe:
             httpGet:
               path: "/ready"
-              port: {{ if .Values.experimental.adminUnixSocket }}9902{{ else }}9901{{ end }}
+              port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
             failureThreshold: 12
             initialDelaySeconds: 1
             periodSeconds: 5

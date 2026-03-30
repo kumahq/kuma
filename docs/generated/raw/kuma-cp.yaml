@@ -89,7 +89,9 @@ bootstrapServer:
     # Port of Envoy Admin
     adminPort: 9901 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # If true, Envoy admin API binds to a Unix domain socket instead of TCP
-    adminUnixSocket: true # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_UNIX_SOCKET
+    envoyAdminUnixSocket: true # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
+    # Port for the readiness reporter when admin uses Unix domain socket
+    readinessPort: 9902 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
     # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane

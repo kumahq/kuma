@@ -34,7 +34,7 @@ type DataplaneProxyFactory struct {
 	ContainerConfig              runtime_k8s.DataplaneContainer
 	BuiltinDNS                   runtime_k8s.BuiltinDNS
 	WaitForDataplane             bool
-	adminUnixSocket              bool
+	envoyAdminUnixSocket         bool
 	sidecarContainersEnabled     bool
 	virtualProbesEnabled         bool
 	applicationProbeProxyPort    uint32
@@ -51,7 +51,7 @@ func NewDataplaneProxyFactory(
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
-	adminUnixSocket bool,
+	envoyAdminUnixSocket bool,
 	sidecarContainersEnabled bool,
 	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
@@ -67,7 +67,7 @@ func NewDataplaneProxyFactory(
 		ContainerConfig:              containerConfig,
 		BuiltinDNS:                   builtinDNS,
 		WaitForDataplane:             waitForDataplane,
-		adminUnixSocket:              adminUnixSocket,
+		envoyAdminUnixSocket:         envoyAdminUnixSocket,
 		sidecarContainersEnabled:     sidecarContainersEnabled,
 		virtualProbesEnabled:         virtualProbesEnabled,
 		applicationProbeProxyPort:    applicationProbeProxyPort,
@@ -130,7 +130,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 	// instead of TCP. Use the dedicated readiness port for probes since
 	// K8s probes only support TCP/HTTP.
 	probePort := adminPort
-	if i.adminUnixSocket {
+	if i.envoyAdminUnixSocket {
 		probePort = i.DefaultReadinessPort
 	}
 
@@ -291,7 +291,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: i.ControlPlaneCACert,
 		},
 	}
-	if i.adminUnixSocket {
+	if i.envoyAdminUnixSocket {
 		// When admin is on UDS, force readiness reporter to use TCP so
 		// K8s probes (which only support TCP/HTTP) can reach it.
 		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
@@ -425,7 +425,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 
 	// Re-assert readiness env var after user overrides — overriding this
 	// would desync kuma-dp from the injected probes and break readiness.
-	if i.adminUnixSocket {
+	if i.envoyAdminUnixSocket {
 		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
 			Value: "true",

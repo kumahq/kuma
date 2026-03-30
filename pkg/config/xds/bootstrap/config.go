@@ -52,7 +52,9 @@ type BootstrapParamsConfig struct {
 	AdminPort uint32 `json:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
 	// If true, Envoy admin API binds to a Unix domain socket instead of TCP,
 	// reducing attack surface from compromised app containers in shared pod network.
-	AdminUnixSocket bool `json:"adminUnixSocket" envconfig:"kuma_bootstrap_server_params_admin_unix_socket"`
+	EnvoyAdminUnixSocket bool `json:"envoyAdminUnixSocket" envconfig:"kuma_bootstrap_server_params_envoy_admin_unix_socket"`
+	// Port for the readiness reporter when admin uses Unix domain socket
+	ReadinessPort uint32 `json:"readinessPort" envconfig:"kuma_bootstrap_server_params_readiness_port"`
 	// Path to access log file of Envoy Admin
 	AdminAccessLogPath string `json:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`
 	// Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
@@ -78,8 +80,11 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.AdminAccessLogPath == "" {
 		return errors.New("AdminAccessLogPath cannot be empty")
 	}
+	if b.ReadinessPort > 65535 {
+		return errors.New("ReadinessPort must be in the range [0, 65535]")
+	}
 	if b.XdsPort > 65535 {
-		return errors.New("AdminPort must be in the range [0, 65535]")
+		return errors.New("XdsPort must be in the range [0, 65535]")
 	}
 	if b.XdsConnectTimeout.Duration < 0 {
 		return errors.New("XdsConnectTimeout cannot be negative")
@@ -94,7 +99,8 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
 		AdminAddress:         "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
 		AdminPort:            9901,
-		AdminUnixSocket:      true,
+		EnvoyAdminUnixSocket: true,
+		ReadinessPort:        9902,
 		AdminAccessLogPath:   os.DevNull,
 		XdsHost:              "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
 		XdsPort:              0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT

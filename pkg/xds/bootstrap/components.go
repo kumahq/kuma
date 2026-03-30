@@ -23,7 +23,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().GetEnvoyAdminPort(),
 		rt.Config().Experimental.DeltaXds,
 		rt.Config().Experimental.InboundTagsDisabled,
-		rt.Config().BootstrapServer.Params.AdminUnixSocket,
+		rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,
 	)
 	if err != nil {
 		return err

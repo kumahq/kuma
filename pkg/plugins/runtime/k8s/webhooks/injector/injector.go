@@ -103,7 +103,7 @@ func New(
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	readinessPort uint32,
-	adminUnixSocket bool,
+	envoyAdminUnixSocket bool,
 	systemNamespace string,
 ) (*KumaInjector, error) {
 	var caCert string
@@ -121,11 +121,11 @@ func New(
 		converter:                converter,
 		defaultAdminPort:         envoyAdminPort,
 		defaultReadinessPort:     readinessPort,
-		adminUnixSocket:          adminUnixSocket,
+		envoyAdminUnixSocket:     envoyAdminUnixSocket,
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, readinessPort,
 			cfg.SidecarContainer.DataplaneContainer,
-			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, adminUnixSocket,
+			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
@@ -142,7 +142,7 @@ type KumaInjector struct {
 	proxyFactory             *containers.DataplaneProxyFactory
 	defaultAdminPort         uint32
 	defaultReadinessPort     uint32
-	adminUnixSocket          bool
+	envoyAdminUnixSocket     bool
 	systemNamespace          string
 }
 
@@ -211,7 +211,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		// When admin UDS is enabled, the readiness reporter listens on a
 		// TCP port instead of the Envoy admin port. Exclude it from
 		// inbound interception so K8s probes reach kuma-dp directly.
-		if i.adminUnixSocket && i.defaultReadinessPort != 0 {
+		if i.envoyAdminUnixSocket && i.defaultReadinessPort != 0 {
 			if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
 				return err
 			}
@@ -905,7 +905,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 
 	// When admin UDS is enabled, exclude the readiness port from inbound
 	// interception so K8s probes reach kuma-dp directly.
-	if i.adminUnixSocket && i.defaultReadinessPort != 0 {
+	if i.envoyAdminUnixSocket && i.defaultReadinessPort != 0 {
 		port := fmt.Sprintf("%d", i.defaultReadinessPort)
 		if existing := result[metadata.KumaTrafficExcludeInboundPorts]; existing != "" {
 			result[metadata.KumaTrafficExcludeInboundPorts] = existing + "," + port
