@@ -481,6 +481,10 @@ metrics:
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
+  openTelemetry:
+    # If true, push control plane metrics to an OTel collector via OTLP.
+    # Configure the collector endpoint via OTEL_EXPORTER_OTLP_* env vars.
+    enabled: false # ENV: KUMA_METRICS_OPEN_TELEMETRY_ENABLED
 # Reports configuration
 reports:
   # If true then usage stats will be reported
