@@ -487,14 +487,6 @@ metrics:
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
-  openTelemetry:
-    # If true, push control plane metrics to an OTel collector via OTLP.
-    # Configure the collector endpoint via OTEL_EXPORTER_OTLP_* env vars.
-    enabled: false # ENV: KUMA_METRICS_OPEN_TELEMETRY_ENABLED
-    # Timeout for initializing the OTLP exporter connection
-    exporterInitTimeout: 1s # ENV: KUMA_METRICS_OPEN_TELEMETRY_EXPORTER_INIT_TIMEOUT
-    # Timeout for flushing and shutting down the metrics provider
-    shutdownTimeout: 5s # ENV: KUMA_METRICS_OPEN_TELEMETRY_SHUTDOWN_TIMEOUT
 # Reports configuration
 reports:
   # If true then usage stats will be reported

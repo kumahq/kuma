@@ -50,11 +50,10 @@ type Defaults struct {
 type Metrics struct {
 	config.BaseConfig
 
-	Dataplane     *DataplaneMetrics     `json:"dataplane"`
-	Zone          *ZoneMetrics          `json:"zone"`
-	Mesh          *MeshMetrics          `json:"mesh"`
-	ControlPlane  *ControlPlaneMetrics  `json:"controlPlane"`
-	OpenTelemetry *MetricsOpenTelemetry `json:"openTelemetry"`
+	Dataplane    *DataplaneMetrics    `json:"dataplane"`
+	Zone         *ZoneMetrics         `json:"zone"`
+	Mesh         *MeshMetrics         `json:"mesh"`
+	ControlPlane *ControlPlaneMetrics `json:"controlPlane"`
 }
 
 func (m *Metrics) Validate() error {
@@ -115,21 +114,6 @@ type ControlPlaneMetrics struct {
 	// ReportResourcesCount if true will report metrics with the count of resources.
 	// Default: true
 	ReportResourcesCount bool `json:"reportResourcesCount" envconfig:"kuma_metrics_control_plane_report_resources_count"`
-}
-
-type MetricsOpenTelemetry struct {
-	config.BaseConfig
-
-	// Enabled if true will push control plane metrics to an OTel collector via OTLP.
-	// Configure the collector endpoint via standard OTEL_EXPORTER_OTLP_* environment variables.
-	// Default: false
-	Enabled bool `json:"enabled" envconfig:"kuma_metrics_open_telemetry_enabled"`
-	// ExporterInitTimeout is the timeout for initializing the OTLP exporter connection.
-	// Default: 1s
-	ExporterInitTimeout config_types.Duration `json:"exporterInitTimeout" envconfig:"kuma_metrics_open_telemetry_exporter_init_timeout"`
-	// ShutdownTimeout is the timeout for flushing and shutting down the metrics provider.
-	// Default: 5s
-	ShutdownTimeout config_types.Duration `json:"shutdownTimeout" envconfig:"kuma_metrics_open_telemetry_shutdown_timeout"`
 }
 
 func (d *MeshMetrics) Validate() error {
@@ -279,11 +263,6 @@ var DefaultConfig = func() Config {
 			},
 			ControlPlane: &ControlPlaneMetrics{
 				ReportResourcesCount: true,
-			},
-			OpenTelemetry: &MetricsOpenTelemetry{
-				Enabled:             false,
-				ExporterInitTimeout: config_types.Duration{Duration: 1 * time.Second},
-				ShutdownTimeout:     config_types.Duration{Duration: 5 * time.Second},
 			},
 		},
 		Reports: &Reports{

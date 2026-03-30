@@ -69,17 +69,11 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		}
 	}
 
-	otelMetrics := rt.Config().Metrics.OpenTelemetry
-	if otelMetrics.Enabled {
-		if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
-			log.Info("OTEL_EXPORTER_OTLP_ENDPOINT not set, metrics will be pushed to localhost:4317")
-		}
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
 		metricsLog := core.Log.WithName("otel-metrics-pusher")
 		mp := &metricsPusher{
-			gatherer:            rt.Metrics(),
-			log:                 metricsLog,
-			exporterInitTimeout: otelMetrics.ExporterInitTimeout.Duration,
-			shutdownTimeout:     otelMetrics.ShutdownTimeout.Duration,
+			gatherer: rt.Metrics(),
+			log:      metricsLog,
 		}
 		if err := rt.Add(component.NewResilientComponent(metricsLog, mp, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
 			return err
