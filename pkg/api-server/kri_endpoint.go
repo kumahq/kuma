@@ -49,28 +49,20 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 
-		var resource core_model.Resource
-		for _, name := range k.getCoreNames(identifier) {
-			if err := k.resourceAccess.ValidateGet(
-				request.Request.Context(),
-				core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
-				*descriptor,
-				user.FromCtx(request.Request.Context()),
-			); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-				return
-			}
-			r := descriptor.NewObject()
-			if err := k.resManager.Get(request.Request.Context(), r, store.GetByKey(name, identifier.Mesh)); err == nil {
-				resource = r
-				break
-			} else if !store.IsNotFound(err) {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
-				return
-			}
+		name := k.getCoreName(identifier)
+		if err := k.resourceAccess.ValidateGet(
+			request.Request.Context(),
+			core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
+			*descriptor,
+			user.FromCtx(request.Request.Context()),
+		); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			return
 		}
-		if resource == nil {
-			rest_errors.HandleError(request.Request.Context(), response, store.ErrorResourceNotFound(identifier.ResourceType, identifier.Name, identifier.Mesh), "Could not retrieve a resource")
+
+		resource := descriptor.NewObject()
+		if err := k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 			return
 		}
 
@@ -87,34 +79,31 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-// getCoreNames returns candidate storage names for the given KRI in priority order.
-// When zone is empty on a Zone CP, a locally created resource (stored by name) is tried
-// before a hashed name (used for resources synced from Global CP).
-func (k *kriEndpoint) getCoreNames(id kri.Identifier) []string {
+func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
 	namespace := id.Namespace
 	if id.Namespace == "" {
 		namespace = k.systemNamespace
 	}
 	if id.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
 		if k.environment == config_core.UniversalEnvironment {
-			return []string{id.Name}
+			return id.Name
 		}
-		return []string{id.Name + "." + namespace}
+		return id.Name + "." + namespace
 	}
-	// in pkg/kds/context/context.go we first take zone then namespace, needs to be the same
-	hashedName := hash.HashedName(id.Mesh, id.Name, id.Zone, id.Namespace)
-	if id.Zone == "" {
-		// zone="" on Zone CP is ambiguous: could be a locally created resource without a zone
-		// label OR a resource synced from Global CP. Try local name first, fall back to hash.
-		if k.environment == config_core.UniversalEnvironment {
-			return []string{id.Name, hashedName}
-		}
-		return []string{id.Name + "." + namespace, hashedName + "." + k.systemNamespace}
+	// Match HashSuffixMapper in pkg/kds/context/context.go: only include
+	// non-empty label values so the hash is identical to what KDS produces.
+	var values []string
+	if id.Zone != "" {
+		values = append(values, id.Zone)
 	}
+	if id.Namespace != "" {
+		values = append(values, id.Namespace)
+	}
+	hashedName := hash.HashedName(id.Mesh, id.Name, values...)
 	if k.environment == config_core.UniversalEnvironment {
-		return []string{hashedName}
+		return hashedName
 	}
-	return []string{hashedName + "." + k.systemNamespace}
+	return hashedName + "." + k.systemNamespace
 }
 
 func getDescriptor(resourceType core_model.ResourceType) (*core_model.ResourceTypeDescriptor, error) {

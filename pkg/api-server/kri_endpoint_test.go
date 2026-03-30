@@ -21,10 +21,10 @@ var _ = Describe("KRI endpoint", func() {
 		}
 
 		// when
-		coreNames := endpoint.getCoreNames(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
 
 		// then
-		Expect(coreNames).To(Equal([]string{"to-test-server-4cx47v8b5wcd4764.kuma-system"}))
+		Expect(coreName).To(Equal("to-test-server-4cx47v8b5wcd4764.kuma-system"))
 	})
 
 	It("should properly generate CoreName on resources synced from global to zone", func() {
@@ -38,11 +38,11 @@ var _ = Describe("KRI endpoint", func() {
 			systemNamespace: "kuma-system",
 		}
 
-		// when
-		coreNames := endpoint.getCoreNames(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
+		// when: zone="" means globally originated, hash only includes non-empty labels
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
 
-		// then (local name tried first, hash is fallback)
-		Expect(coreNames).To(Equal([]string{"to-test-server.producer-policy-flow-ns", "to-test-server-5wxzc95dxv8zb244.kuma-system"}))
+		// then
+		Expect(coreName).To(Equal("to-test-server-5wxzc95dxv8zb244.kuma-system"))
 	})
 
 	It("should properly generate CoreName on resources synced from zone to global", func() {
@@ -57,10 +57,10 @@ var _ = Describe("KRI endpoint", func() {
 		}
 
 		// when
-		coreNames := endpoint.getCoreNames(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
 
 		// then
-		Expect(coreNames).To(Equal([]string{"to-test-server-xw65cwcxxw4f7fvw.kuma-system"}))
+		Expect(coreName).To(Equal("to-test-server-xw65cwcxxw4f7fvw.kuma-system"))
 	})
 
 	It("should properly generate CoreName on resources originating on Global", func() {
@@ -75,10 +75,10 @@ var _ = Describe("KRI endpoint", func() {
 		}
 
 		// when
-		coreNames := endpoint.getCoreNames(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
 
 		// then
-		Expect(coreNames).To(Equal([]string{"to-test-server.producer-policy-flow-ns"}))
+		Expect(coreName).To(Equal("to-test-server.producer-policy-flow-ns"))
 	})
 
 	It("should properly generate CoreName on resources from the same zone", func() {
@@ -93,14 +93,14 @@ var _ = Describe("KRI endpoint", func() {
 		}
 
 		// when
-		coreNames := endpoint.getCoreNames(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_mt_producer-policy-flow_" + policyZone + "_producer-policy-flow-ns_to-test-server_"))
 
 		// then
-		Expect(coreNames).To(Equal([]string{"to-test-server.producer-policy-flow-ns"}))
+		Expect(coreName).To(Equal("to-test-server.producer-policy-flow-ns"))
 	})
 
-	It("should resolve locally created Universal resource without zone label", func() {
-		// given: Zone CP, resource created without zone/namespace labels
+	It("should resolve globally originated resource on Zone CP without zone/ns labels", func() {
+		// given: Zone CP, resource originated on Global without zone/namespace labels
 		cpZone := "default"
 		policyZone := ""
 		endpoint := kriEndpoint{
@@ -110,10 +110,10 @@ var _ = Describe("KRI endpoint", func() {
 			systemNamespace: "kuma-system",
 		}
 
-		// when: KRI has empty zone and namespace slots
-		coreNames := endpoint.getCoreNames(kri.MustFromString("kri_mtp_default_" + policyZone + "__without-namespace_"))
+		// when: zone="" means globally originated, hash computed with no extra values
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_mtp_default_" + policyZone + "__without-namespace_"))
 
-		// then: local name tried first (fixes issue #15544), hash as fallback
-		Expect(coreNames[0]).To(Equal("without-namespace"))
+		// then
+		Expect(coreName).To(Equal("without-namespace-c5v4498z5w4x9bcx"))
 	})
 })
