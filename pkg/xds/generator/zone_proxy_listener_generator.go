@@ -4,6 +4,7 @@ import (
 	"context"
 
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -196,7 +197,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 			WithWeight(1).
 			Build()
 
-		listener.Configure(envoy_listeners.FilterChain(g.buildEgressFilterChain(proxy, endpoints, downstreamTLS, split, sni)))
+		listener.Configure(envoy_listeners.FilterChain(g.buildEgressFilterChain(proxy, endpoints[0].Protocol(), downstreamTLS, split, sni)))
 		cds, err := g.genClusterCDS(proxy, endpoints, clusterName)
 		if err != nil {
 			return nil, err
@@ -222,6 +223,12 @@ func (g ZoneProxyListenerGenerator) genClusterCDS(
 	endpoints []core_xds.Endpoint,
 	clusterName string,
 ) (*core_xds.Resource, error) {
+	// This should never happen as callers should always provide at least one endpoint.
+	// If it does happen, it indicates a bug in the calling code.
+	if len(endpoints) == 0 {
+		return nil, errors.New("endpoints cannot be empty")
+	}
+
 	ipv6 := proxy.Dataplane.IsIPv6()
 	systemCAPath := proxy.Metadata.GetSystemCaPath()
 	protocol := endpoints[0].Protocol()
@@ -247,7 +254,7 @@ func (g ZoneProxyListenerGenerator) genClusterCDS(
 
 func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 	proxy *core_xds.Proxy,
-	endpoints []core_xds.Endpoint,
+	protocol core_meta.Protocol,
 	downstreamTLS *envoy_tls.DownstreamTlsContext,
 	split envoy_common.Split,
 	sni string,
@@ -259,7 +266,7 @@ func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 		Configure(envoy_listeners.MatchServerNames(sni)).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamTLS))
 
-	if !core_meta.IsHTTPBased(endpoints[0].Protocol()) {
+	if !core_meta.IsHTTPBased(protocol) {
 		return filterChain.Configure(envoy_listeners.TCPProxy(esName, split))
 	}
 
