@@ -14,16 +14,19 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/certmanager"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
 )
 
 func CertManagerCAInjection() {
-	var cluster Cluster
+	const namespace = "cert-manager-dp-test"
+	const mesh = "default"
+	var cluster *K8sCluster
 	var releaseName string
 
 	BeforeAll(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
-			WithRetries(60)
+			WithRetries(60).(*K8sCluster)
 
 		const certManagerNamespace = "cert-manager"
 
@@ -41,16 +44,23 @@ func CertManagerCAInjection() {
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("controlPlane.tls.general.certManager.enabled", "true"),
 			)).
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
+			)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEachFailure(func() {
+		DebugKube(cluster, namespace)
 		DebugKube(cluster, Config.KumaNamespace)
 	})
 
 	E2EAfterAll(func() {
 		Expect(cluster.DeleteKuma()).To(Succeed())
+		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteDeployment(certmanager.DeploymentName)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
@@ -84,79 +94,13 @@ func CertManagerCAInjection() {
 	})
 
 	It("should allow dataplane to connect to control plane", func() {
-		const namespace = "cert-manager-dp-test"
-		const mesh = "default"
-
-		// Create namespace with sidecar injection enabled
-		err := NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Deploy a simple workload that will get sidecar injected
-		deployment := `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-app
-  namespace: %s
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: test-app
-  template:
-    metadata:
-      labels:
-        app: test-app
-        kuma.io/mesh: %s
-    spec:
-      containers:
-      - name: test-app
-        image: busybox:1.36
-        command: ["sleep", "infinity"]
-`
-		err = k8s.KubectlApplyFromStringE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(namespace),
-			fmt.Sprintf(deployment, namespace, mesh),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Wait for pod to be ready (sidecar injected and running)
-		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
-				cluster.GetKubectlOptions(namespace),
-				"get", "pods", "-l", "app=test-app",
-				"-o", "jsonpath={.items[0].status.containerStatuses[*].ready}",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			// Both containers (app + sidecar) should be ready
-			g.Expect(output).To(ContainSubstring("true"))
-		}, "120s", "1s").Should(Succeed(), "Pod with sidecar should become ready")
-
 		// Verify dataplane is online (connected to control plane)
 		Eventually(func(g Gomega) {
-			online, found, err := IsDataplaneOnline(cluster, mesh, "test-app")
+			online, found, err := IsDataplaneOnline(cluster, mesh, "test-server")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(found).To(BeTrue(), "Dataplane should be found")
 			g.Expect(online).To(BeTrue(), "Dataplane should be online")
 		}, "60s", "1s").Should(Succeed(), "Dataplane should connect to control plane using cert-manager certificate")
-
-		// Cleanup
-		err = k8s.KubectlDeleteFromStringE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(namespace),
-			fmt.Sprintf(deployment, namespace, mesh),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		_, _ = k8s.RunKubectlAndGetOutputE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(),
-			"delete", "namespace", namespace,
-		)
 	})
 
 	It("should inject CA bundle into Kuma webhook configurations", func() {
