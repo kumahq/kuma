@@ -7,6 +7,10 @@ on:
       runner:
         type: string
         required: true
+      jobName:
+        type: string
+        required: false
+        default: "e2e"
 permissions:
   contents: read
 env:
@@ -20,7 +24,7 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   e2e:
-    name: "e2e (${{ fromJSON(inputs.matrix).target || 'default' }}, ${{ fromJSON(inputs.matrix).k8sVersion }}, ${{ fromJSON(inputs.matrix).arch }}${{ fromJSON(inputs.matrix).cniNetworkPlugin != 'flannel' && format(', {0}', fromJSON(inputs.matrix).cniNetworkPlugin) || '' }}${{ fromJSON(inputs.matrix).sidecarContainers != '' && ', sidecar' || '' }}) / ${{ matrix.parallelRunnerId }}"
+    name: "${{ inputs.jobName }} / ${{ matrix.parallelRunnerId }}"
     timeout-minutes: 60
     # can't use env vars here
     runs-on: ${{ inputs.runner }}

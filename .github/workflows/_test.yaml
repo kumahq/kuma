@@ -104,6 +104,7 @@ jobs:
     with:
       matrix: ${{ toJSON(matrix) }}
       runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+      jobName: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})"
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -116,4 +117,5 @@ jobs:
     with:
       matrix: ${{ toJSON(matrix) }}
       runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+      jobName: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', sidecar' || '' }})"
     secrets: inherit
