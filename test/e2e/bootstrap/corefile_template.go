@@ -60,13 +60,6 @@ data:
 			)).
 			Install(MeshKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(appNamespace)).
-			Install(democlient.Install(
-				democlient.WithName(appName),
-				democlient.WithNamespace(appNamespace),
-				democlient.WithPodAnnotations(map[string]string{
-					"kuma.io/sidecar-env-vars": fmt.Sprintf("KUMA_DNS_CONFIG_DIR=%s", dnsConfigDir),
-				}),
-			)).
 			Setup(k8sCluster),
 		).To(Succeed())
 	})
@@ -86,6 +79,15 @@ data:
 	})
 
 	It("should use Corefile template from control plane at data plane", func() {
+		Expect(NewClusterSetup().
+			Install(democlient.Install(
+				democlient.WithName(appName),
+				democlient.WithNamespace(appNamespace),
+				democlient.WithPodAnnotations(map[string]string{
+					"kuma.io/sidecar-env-vars": fmt.Sprintf("KUMA_DNS_CONFIG_DIR=%s", dnsConfigDir),
+				}),
+			)).Setup(k8sCluster),
+		).To(Succeed())
 		dpPod, err := PodNameOfApp(k8sCluster, appName, appNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
