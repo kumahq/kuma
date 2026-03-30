@@ -36,9 +36,11 @@ spec:
       appProtocol: https
     {{- end }}
     {{- if ne .Values.controlPlane.mode "global" }}
+    {{- if .Values.controlPlane.madsServer.enabled }}
     - port: 5676
       name: mads-server
       appProtocol: https
+    {{- end }}
     - port: 5678
       name: dp-server
       appProtocol: https

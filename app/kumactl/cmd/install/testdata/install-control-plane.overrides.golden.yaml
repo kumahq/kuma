@@ -539,6 +539,8 @@ spec:
               value: "kuma-ci/kuma-init:greatest"
             - name: KUMA_MODE
               value: "zone"
+            - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+              value: "true"
             - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
               value: "grpc://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
