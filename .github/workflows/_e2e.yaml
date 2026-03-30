@@ -7,10 +7,6 @@ on:
       runner:
         type: string
         required: true
-      jobName:
-        type: string
-        required: false
-        default: "e2e"
 permissions:
   contents: read
 env:
@@ -24,7 +20,7 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   e2e:
-    name: "${{ inputs.jobName }} / ${{ matrix.parallelRunnerId }}"
+    name: "${{ matrix.parallelRunnerId }}"
     timeout-minutes: 60
     # can't use env vars here
     runs-on: ${{ inputs.runner }}

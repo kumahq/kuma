@@ -95,6 +95,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
   test_e2e:
     needs: ["gen_e2e_matrix"]
+    name: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     strategy:
       max-parallel: 5
@@ -104,10 +105,10 @@ jobs:
     with:
       matrix: ${{ toJSON(matrix) }}
       runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
-      jobName: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})"
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
+    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', sidecar' || '' }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     strategy:
       max-parallel: 5
@@ -117,5 +118,4 @@ jobs:
     with:
       matrix: ${{ toJSON(matrix) }}
       runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
-      jobName: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', sidecar' || '' }})"
     secrets: inherit
