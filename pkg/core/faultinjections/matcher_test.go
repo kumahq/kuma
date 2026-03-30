@@ -85,7 +85,7 @@ var _ = Describe("Match", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(HaveLen(len(given.expected)))
 			for key := range bestMatched {
-				elements := []interface{}{}
+				elements := []any{}
 				for _, expected := range given.expected[key] {
 					elements = append(elements, MatchProto(expected.Spec))
 				}

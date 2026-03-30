@@ -66,7 +66,7 @@ var rootCmd = &cobra.Command{
 			}
 		}
 		path := fmt.Sprintf("generate/policy/%s", cfg.lowercase())
-		if err := exec.Command("make", path, "POLICIES_DIR="+cfg.basePath).Run(); err != nil {
+		if err := exec.CommandContext(cmd.Context(), "make", path, "POLICIES_DIR="+cfg.basePath).Run(); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), `
@@ -95,7 +95,7 @@ func generateType(c config) error {
 	if err != nil {
 		return err
 	}
-	err = typeTemplate.Execute(f, map[string]interface{}{
+	err = typeTemplate.Execute(f, map[string]any{
 		"name":              c.name,
 		"nameLower":         c.lowercase(),
 		"module":            path.Join(c.gomodule, c.basePath),
@@ -116,7 +116,7 @@ func generateType(c config) error {
 	if err != nil {
 		return err
 	}
-	return validatorTemplate.Execute(f, map[string]interface{}{
+	return validatorTemplate.Execute(f, map[string]any{
 		"name":              c.name,
 		"version":           c.version,
 		"generateTargetRef": c.generateTargetRef,
@@ -135,7 +135,7 @@ func generatePlugin(c config) error {
 	if err != nil {
 		return err
 	}
-	return pluginTemplate.Execute(f, map[string]interface{}{
+	return pluginTemplate.Execute(f, map[string]any{
 		"name":              c.name,
 		"version":           c.version,
 		"package":           fmt.Sprintf("%s/%s/%s/api/%s", c.gomodule, c.basePath, c.lowercase(), c.version),

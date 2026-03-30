@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"strconv"
@@ -184,9 +185,7 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	for k, count := range policyCounts {
-		b.mutable[k] = count
-	}
+	maps.Copy(b.mutable, policyCounts)
 	return nil
 }
 
@@ -211,11 +210,12 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 	}
 
 	conf := &tls.Config{MinVersion: tls.VersionTLS12}
-	conn, err := tls.Dial("tcp", net.JoinHostPort(host,
-		strconv.FormatUint(uint64(port), 10)), conf)
+	conn, err := (&tls.Dialer{Config: conf}).DialContext(context.Background(), "tcp", net.JoinHostPort(host,
+		strconv.FormatUint(uint64(port), 10)))
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	_, err = fmt.Fprint(conn, pingData)
 	if err != nil {
@@ -230,9 +230,7 @@ func (b *reportsBuffer) Append(info map[string]string) {
 	b.Lock()
 	defer b.Unlock()
 
-	for key, value := range info {
-		b.mutable[key] = value
-	}
+	maps.Copy(b.mutable, info)
 }
 
 func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {

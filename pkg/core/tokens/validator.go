@@ -45,7 +45,7 @@ func NewValidator(
 var _ Validator = &jwtTokenValidator{}
 
 func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken Token, claims Claims) error {
-	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (any, error) {
 		var keyID KeyID
 		kid, exists := token.Header[KeyIDHeader]
 		if !exists {
@@ -82,6 +82,10 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 		signingKeyError := &SigningKeyNotFound{}
 		if errors2.As(err, &signingKeyError) {
 			return signingKeyError
+		}
+		if errors2.Is(err, jwt.ErrTokenNotValidYet) {
+			return errors.Wrap(err, "token is not yet valid: 'valid_from' date is in the future."+
+				" Check if the system clock on the instance that issued the token is set correctly")
 		}
 		if j.storeType == store_config.MemoryStore {
 			return errors.Wrap(err, "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts."+

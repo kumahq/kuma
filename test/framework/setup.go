@@ -64,7 +64,7 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 		//   replicas: 0
 		//   availableReplicas: 0
 		// However, availableReplicas is a beta field that is not available in previous version of Kubernetes.
-		obj := map[string]interface{}{}
+		obj := map[string]any{}
 		if err := yaml.Unmarshal(b.Bytes(), &obj); err != nil {
 			return err
 		}
@@ -1051,14 +1051,14 @@ func DumpTempCerts(names ...string) (string, error) {
 	}
 	if err := os.WriteFile(
 		filepath.Join(path, "cert.pem"),
-		[]byte(fmt.Sprintf("---\n%s", cert)),
+		fmt.Appendf(nil, "---\n%s", cert),
 		os.ModePerm, // #nosec G306
 	); err != nil {
 		return "", err
 	}
 	if err := os.WriteFile(
 		filepath.Join(path, "key.pem"),
-		[]byte(fmt.Sprintf("---\n%s", key)),
+		fmt.Appendf(nil, "---\n%s", key),
 		os.ModePerm, // #nosec G306
 	); err != nil {
 		return "", err

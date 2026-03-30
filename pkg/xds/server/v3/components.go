@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 	generator_meta "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
+	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 	xds_callbacks "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
 	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
@@ -48,13 +49,14 @@ func RegisterXDS(
 	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks)
 	ingressReconciler := DefaultIngressReconciler(rt, xdsContext, statsCallbacks)
 	egressReconciler := DefaultEgressReconciler(rt, xdsContext, statsCallbacks)
-	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, ingressReconciler, egressReconciler, xdsMetrics, envoyCpCtx, envoy_common.APIV3)
+	otelStatusCache := otelstatus.NewCache()
+	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, ingressReconciler, egressReconciler, xdsMetrics, envoyCpCtx, otelStatusCache, envoy_common.APIV3)
 	if err != nil {
 		return err
 	}
 
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
-	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)
+	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
 
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
@@ -170,13 +172,14 @@ func DefaultEgressReconciler(
 	}
 }
 
-func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secrets) xds_callbacks.DataplaneStatusTracker {
+func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secrets, otelStatusCache *otelstatus.Cache) xds_callbacks.DataplaneStatusTracker {
 	return xds_callbacks.NewDataplaneStatusTracker(rt,
 		func(xdsMetadata *structpb.Struct, accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
 			return xds_callbacks.NewDataplaneInsightSink(
 				xdsMetadata,
 				accessor,
 				secrets,
+				otelStatusCache,
 				func() *time.Ticker {
 					return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval.Duration)
 				},

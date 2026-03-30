@@ -18,12 +18,10 @@ filterChains:
               - key: mesh
                 value:
                   stringValue: default
-          commonConfig:
-            grpcService:
-              envoyGrpc:
-                clusterName: meshaccesslog:opentelemetry:1
-            logName: MeshAccessLog
-            transportApiVersion: V3
+          grpcService:
+            envoyGrpc:
+              clusterName: meshaccesslog:opentelemetry:1
+          logName: MeshAccessLog
           resourceAttributes:
             values:
             - key: kuma.mesh

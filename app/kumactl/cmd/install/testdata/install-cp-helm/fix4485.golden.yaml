@@ -587,11 +587,13 @@ spec:
                 resourceFieldRef:
                   containerName: control-plane
                   resource: limits.memory
+                  divisor: "1"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
                   containerName: control-plane
                   resource: limits.cpu
+                  divisor: "1"
           args:
             - run
             - --log-level=info

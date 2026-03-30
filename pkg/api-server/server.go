@@ -89,7 +89,7 @@ func init() {
 		encoder.SetEscapeHTML(false)
 		return encoder
 	}
-	restful.MarshalIndent = func(v interface{}, prefix, indent string) ([]byte, error) {
+	restful.MarshalIndent = func(v any, prefix, indent string) ([]byte, error) {
 		var buf bytes.Buffer
 		encoder := restful.NewEncoder(&buf)
 		encoder.SetIndent(prefix, indent)

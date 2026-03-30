@@ -252,7 +252,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			toRules: core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
-						Conf: []interface{}{
+						Conf: []any{
 							api.Conf{
 								Interval:           test.ParseDuration("10s"),
 								Timeout:            test.ParseDuration("2s"),
@@ -586,7 +586,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
-									Conf: []interface{}{
+									Conf: []any{
 										api.Conf{
 											Interval:                     test.ParseDuration("10s"),
 											Timeout:                      test.ParseDuration("2s"),

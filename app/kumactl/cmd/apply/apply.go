@@ -175,7 +175,7 @@ func readURL(file string) ([]byte, error) {
 	client := &http.Client{
 		Timeout: timeout,
 	}
-	req, err := http.NewRequest(http.MethodGet, file, http.NoBody)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, file, http.NoBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating new http request")
 	}

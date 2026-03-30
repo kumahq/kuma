@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/util/files"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
@@ -28,7 +29,7 @@ import (
 var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 
 type BootstrapClient interface {
-	Fetch(ctx context.Context, opts Opts, metadata map[string]string, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
+	Fetch(ctx context.Context, opts Opts, metadata map[string]string, otelEnv *core_xds.OtelBootstrapInventory, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
 }
 
 type Opts struct {
@@ -162,7 +163,11 @@ func (e *Envoy) WaitForDone() {
 }
 
 func (e *Envoy) FailHealthchecks() error {
-	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), "", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -174,7 +179,11 @@ func (e *Envoy) FailHealthchecks() error {
 }
 
 func (e *Envoy) DrainForever() error {
-	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/drain_listeners?inboundonly&graceful&skip_exit", e.opts.AdminPort), "", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/drain_listeners?inboundonly&graceful&skip_exit", e.opts.AdminPort), http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -191,7 +200,7 @@ func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {
 		return nil, err
 	}
 	arg := "--version"
-	command := exec.Command(resolvedPath, arg)
+	command := exec.CommandContext(context.Background(), resolvedPath, arg)
 	output, err := command.Output()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to execute %s with arguments %q", resolvedPath, arg)

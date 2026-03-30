@@ -5,6 +5,7 @@ on:
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+  MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 permissions:
   contents: read
 jobs:
@@ -45,10 +46,9 @@ jobs:
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
           token: ${{ steps.github-app-token.outputs.token }}
-      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
         if: contains(github.event.comment.body, '/format')

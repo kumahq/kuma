@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"path"
@@ -148,9 +149,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
 	}
 
-	for k, v := range c.opts.env {
-		env[k] = v
-	}
+	maps.Copy(env, c.opts.env)
 	if c.opts.globalAddress != "" {
 		env["KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS"] = c.opts.globalAddress
 	}
@@ -528,7 +527,7 @@ func (c *UniversalCluster) Kill(appname, cmd string) error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		out, _, err := c.Exec("", "", appname, fmt.Sprintf("pgrep -f %q", cmd))
 		var exitError *ssh.ExitError
 		if errors.As(err, &exitError) {

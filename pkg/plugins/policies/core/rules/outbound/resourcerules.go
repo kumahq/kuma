@@ -19,7 +19,7 @@ import (
 type ResourceRule struct {
 	Resource            core_model.ResourceMeta
 	ResourceSectionName string
-	Conf                []interface{}
+	Conf                []any
 	Origin              []common.Origin
 
 	// OriginByMatches is an auxiliary structure for MeshHTTPRoute rules. It's a mapping between the rule (identified

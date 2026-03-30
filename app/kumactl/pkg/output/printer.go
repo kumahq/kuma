@@ -5,5 +5,5 @@ import (
 )
 
 type Printer interface {
-	Print(interface{}, io.Writer) error
+	Print(any, io.Writer) error
 }

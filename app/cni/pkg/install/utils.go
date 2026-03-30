@@ -10,7 +10,7 @@ import (
 	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 )
 
-func parseFileToHashMap(file string) (map[string]interface{}, error) {
+func parseFileToHashMap(file string) (map[string]any, error) {
 	contents, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -19,8 +19,8 @@ func parseFileToHashMap(file string) (map[string]interface{}, error) {
 	return parseBytesToHashMap(contents)
 }
 
-func parseBytesToHashMap(bytes []byte) (map[string]interface{}, error) {
-	var parsed map[string]interface{}
+func parseBytesToHashMap(bytes []byte) (map[string]any, error) {
+	var parsed map[string]any
 	err := json.Unmarshal(bytes, &parsed)
 	if err != nil {
 		return nil, err

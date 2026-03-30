@@ -41,7 +41,7 @@ func newInspectZoneIngressesCmd(pctx *cmd.RootContext) *cobra.Command {
 func zoneIngressOverviewTable(now time.Time) printers.Table {
 	return printers.Table{
 		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "KUMA-DP VERSION", "ENVOY VERSION"},
-		RowForItem: func(i int, container interface{}) ([]string, error) {
+		RowForItem: func(i int, container any) ([]string, error) {
 			zoneIngressOverviews := container.(*mesh.ZoneIngressOverviewResourceList)
 			if len(zoneIngressOverviews.Items) <= i {
 				return nil, nil

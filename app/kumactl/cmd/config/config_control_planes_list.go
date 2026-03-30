@@ -22,7 +22,7 @@ func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command
 
 			data := printers.Table{
 				Headers: []string{"ACTIVE", "NAME", "ADDRESS"},
-				RowForItem: func(i int, container interface{}) ([]string, error) {
+				RowForItem: func(i int, container any) ([]string, error) {
 					cps := container.([]*v1alpha1.ControlPlane)
 					if len(cps) <= i {
 						return nil, nil

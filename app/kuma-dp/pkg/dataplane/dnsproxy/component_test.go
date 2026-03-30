@@ -12,6 +12,8 @@ import (
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	io_prometheus "github.com/prometheus/client_model/go"
 
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/dnsproxy"
 	"github.com/kumahq/kuma/v2/pkg/test"
@@ -23,6 +25,7 @@ var _ = Describe("components", func() {
 	var server *dnsproxy.Server
 	var address string
 	var mock atomic.Pointer[func(*dns.Msg) (*dns.Msg, error)]
+	var registry *prometheus.Registry
 
 	BeforeEach(func() {
 		port, err := test.FindFreePort("127.0.0.1")
@@ -31,13 +34,14 @@ var _ = Describe("components", func() {
 		done = make(chan struct{})
 		wg = sync.WaitGroup{}
 		wg.Add(1)
+		registry = prometheus.NewRegistry()
 
 		address = net.JoinHostPort("127.0.0.1", strconv.Itoa(int(port)))
 		server = dnsproxy.NewServerWithCustomClient(address, func(msg *dns.Msg) (*dns.Msg, error) {
 			defer GinkgoRecover()
 			f := *mock.Load()
 			return f(msg)
-		})
+		}, dnsproxy.WithRegisterer(registry))
 
 		go func() {
 			defer GinkgoRecover()
@@ -118,10 +122,11 @@ var _ = Describe("components", func() {
 		}
 		mock.Store(&f)
 
-		_ = server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
+		Expect(server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
 "ttl": 123,
-"records": [{"name": "example.com", "ips": ["240.0.0.1", "::2"]}]
-}`)))
+"records": [{"name": "example.com", "ips": ["240.0.0.1", "::2"]}],
+"extraLabels": {"mesh": "default", "kuma_workload": "backend"}
+}`)))).To(Succeed())
 		c := new(dns.Client)
 
 		By("in the map A")
@@ -150,5 +155,48 @@ var _ = Describe("components", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res).To(HaveField("Rcode", Equal(dns.RcodeSuccess)))
 		Expect(res.Answer[0].String()).To(Equal("foo.com.\t125\tIN\tA\t17.0.0.1"))
+	})
+	It("metrics have extra labels after ReloadMap", func() {
+		f := func(req *dns.Msg) (*dns.Msg, error) {
+			return nil, fmt.Errorf("should not call upstream for local entry")
+		}
+		mock.Store(&f)
+
+		Expect(server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
+"ttl": 123,
+"records": [{"name": "example.com", "ips": ["240.0.0.1"]}],
+"extraLabels": {"mesh": "default", "kuma_workload": "backend", "k8s_kuma_io_namespace": "test-ns"}
+}`)))).To(Succeed())
+
+		msg := &dns.Msg{}
+		msg.SetQuestion("example.com.", dns.TypeA)
+		c := new(dns.Client)
+		_, _, err := c.Exchange(msg, address)
+		Expect(err).ToNot(HaveOccurred())
+
+		families, err := registry.Gather()
+		Expect(err).ToNot(HaveOccurred())
+
+		findMetric := func(name string) *io_prometheus.MetricFamily {
+			for _, mf := range families {
+				if mf.GetName() == name {
+					return mf
+				}
+			}
+			return nil
+		}
+
+		reqDuration := findMetric("kuma_dp_dns_request_duration_seconds")
+		Expect(reqDuration).ToNot(BeNil())
+		labels := reqDuration.GetMetric()[0].GetLabel()
+		labelMap := map[string]string{}
+		for _, l := range labels {
+			labelMap[l.GetName()] = l.GetValue()
+		}
+		Expect(labelMap).To(Equal(map[string]string{
+			"mesh":                  "default",
+			"kuma_workload":         "backend",
+			"k8s_kuma_io_namespace": "test-ns",
+		}))
 	})
 })

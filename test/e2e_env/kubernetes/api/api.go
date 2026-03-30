@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -12,31 +13,37 @@ import (
 
 func Api() {
 	It("works with /policies", func() {
-		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + "/policies")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+"/policies", http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string][]interface{}{}
+		res := map[string][]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(len(res["policies"])).To(BeNumerically(">", 2))
 	})
 
 	It("works with /", func() {
-		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress())
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress(), http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string]interface{}{}
+		res := map[string]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(res["version"]).ToNot(BeEmpty())
 	})
 
 	It("get k8s version of default mesh", func() {
-		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default?format=k8s")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+"/meshes/default?format=k8s", http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string]interface{}{}
+		res := map[string]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(res).To(HaveKey("kind"))
 		Expect(res["kind"]).To(Equal("Mesh"))
@@ -45,11 +52,13 @@ func Api() {
 	})
 
 	It("get kubernetes version of default mesh", func() {
-		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+"/meshes/default", http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		r, err := http.DefaultClient.Do(req)
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
-		res := map[string]interface{}{}
+		res := map[string]any{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(res).To(HaveKey("type"))
 		Expect(res["type"]).To(Equal("Mesh"))
@@ -69,14 +78,14 @@ func Api() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+given.path, http.NoBody)
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+given.path, http.NoBody)
 				g.Expect(err).ToNot(HaveOccurred())
 				req.Header.Add("authorization", "Bearer "+token)
 				r, err := http.DefaultClient.Do(req)
 				g.Expect(err).ToNot(HaveOccurred())
 				defer r.Body.Close()
 
-				res := map[string]interface{}{}
+				res := map[string]any{}
 				g.Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 				g.Expect(res).To(HaveKey("kind"))
 				g.Expect(res["kind"]).To(Equal("Secret"))

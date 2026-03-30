@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,7 +40,12 @@ func NewK8sEnvoyAdminTunnel(
 func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 	url := fmt.Sprintf("http://%s/stats?format=json&filter=%s", t.endpoint, name)
 
-	response, err := http.Post(url, "application/json", nil) // #nosec G107 -- make the url configurable is intended
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("content-type", "application/json")
+	response, err := http.DefaultClient.Do(req) // #nosec G107 -- make the url configurable is intended
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +70,12 @@ func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 func (t *K8sTunnel) GetClusters() (*clusters.Clusters, error) {
 	url := fmt.Sprintf("http://%s/stats?format=json", t.endpoint)
 
-	response, err := http.Post(url, "application/json", nil) // #nosec G107 -- make the url configurable is intended
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(req) // #nosec G107 -- make the url configurable is intended
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +100,12 @@ func (t *K8sTunnel) GetClusters() (*clusters.Clusters, error) {
 func (t *K8sTunnel) GetConfigDump() (*config_dump.EnvoyConfig, error) {
 	url := fmt.Sprintf("http://%s/config_dump?format=json", t.endpoint)
 
-	response, err := http.Post(url, "application/json", nil) // #nosec G107 -- make the url configurable is intended
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(req) // #nosec G107 -- make the url configurable is intended
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +130,12 @@ func (t *K8sTunnel) GetConfigDump() (*config_dump.EnvoyConfig, error) {
 func (t *K8sTunnel) ResetCounters() error {
 	url := fmt.Sprintf("http://%s/reset_counters", t.endpoint)
 
-	response, err := http.Post(url, "text", nil) // #nosec G107 -- make the url configurable is intended
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, http.NoBody)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "text")
+	response, err := http.DefaultClient.Do(req) // #nosec G107 -- make the url configurable is intended
 	if err != nil {
 		return err
 	}

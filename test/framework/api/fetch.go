@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,7 +18,9 @@ import (
 // fetchResourceFromPath performs the HTTP GET and unmarshalling for a given API path.
 func fetchResourceFromPath(g gomega.Gomega, cluster framework.Cluster, out core_model.Resource, path string) int {
 	ginkgo.GinkgoHelper()
-	r, err := http.Get(cluster.GetKuma().GetAPIServerAddress() + path)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, cluster.GetKuma().GetAPIServerAddress()+path, http.NoBody)
+	g.Expect(err).ToNot(gomega.HaveOccurred())
+	r, err := http.DefaultClient.Do(req)
 	g.Expect(err).ToNot(gomega.HaveOccurred())
 	defer func() { _ = r.Body.Close() }()
 	g.Expect(r).To(gomega.HaveHTTPStatus(200))

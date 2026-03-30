@@ -14,6 +14,7 @@ env:
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.31.12-k3s1
   K8S_MAX_VERSION: v1.34.1-k3s1
+  MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   test_unit:
     timeout-minutes: 25
@@ -23,10 +24,9 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       - run: |
           make test
   gen_e2e_matrix:

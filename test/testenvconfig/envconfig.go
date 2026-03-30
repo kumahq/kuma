@@ -104,7 +104,7 @@ var (
 )
 
 // GatherInfo gathers information about the specified struct
-func GatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
+func GatherInfo(prefix string, spec any) ([]varInfo, error) {
 	s := reflect.ValueOf(spec)
 
 	if s.Kind() != reflect.Ptr {

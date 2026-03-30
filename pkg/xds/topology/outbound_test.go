@@ -2,6 +2,7 @@ package topology_test
 
 import (
 	"context"
+	"maps"
 
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -308,9 +309,7 @@ var _ = Describe("TrafficRoute", func() {
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
 				)
-				for k, v := range esEndpoints {
-					endpoints[k] = v
-				}
+				maps.Copy(endpoints, esEndpoints)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -1602,6 +1601,20 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+			}),
+			Entry("remote MeshService without Zone Ingress public address is not included", testCase{
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
+					builders.ZoneIngress().
+						WithZone("east").
+						// No AdvertisedAddress/AdvertisedPort - simulates pending external IP
+						Build(),
+				},
+				meshServices: []*meshservice_api.MeshServiceResource{
+					samples.MeshServiceSyncedBackend(), // remote MeshService from "east" zone
+				},
+				mesh: defaultMeshWithMTLS,
+				// No endpoints should be generated because Zone Ingress has no public address
+				expected: core_xds.EndpointMap{},
 			}),
 		)
 		Describe("BuildEgressEndpointMap()", func() {

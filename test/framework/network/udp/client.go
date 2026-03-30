@@ -2,6 +2,7 @@ package udp
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"sync"
 )
@@ -29,9 +30,7 @@ func (m *ResultMap) GetFinalResults() map[string]uint {
 
 	results := map[string]uint{}
 
-	for key, value := range m.results {
-		results[key] = value
-	}
+	maps.Copy(results, m.results)
 
 	return results
 }

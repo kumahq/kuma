@@ -16,7 +16,7 @@ import (
 func buildOptionSet(rawOptions string) map[string]struct{} {
 	options := map[string]struct{}{}
 
-	for _, option := range strings.Split(rawOptions, ",") {
+	for option := range strings.SplitSeq(rawOptions, ",") {
 		options[option] = struct{}{}
 	}
 
