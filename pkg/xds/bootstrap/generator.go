@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -43,12 +42,14 @@ func NewDefaultBootstrapGenerator(
 	deltaXdsEnabled bool,
 	inboundTagsDisabled bool,
 ) (BootstrapGenerator, error) {
-	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
+	dpServerCert, err := parseCertFromFile(dpServerCertFile)
 	if err != nil {
 		return nil, err
 	}
-	if serverConfig.Params.XdsHost != "" && !hostsAndIps[serverConfig.Params.XdsHost] {
-		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, hostsAndIps.slice())
+	if serverConfig.Params.XdsHost != "" {
+		if err := dpServerCert.VerifyHostname(serverConfig.Params.XdsHost); err != nil {
+			return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, dpServerCert.DNSNames)
+		}
 	}
 	return &bootstrapGenerator{
 		resManager:              resManager,
@@ -57,7 +58,7 @@ func NewDefaultBootstrapGenerator(
 		xdsCertFile:             dpServerCertFile,
 		authEnabledForProxyType: authEnabledForProxyType,
 		enableReloadableTokens:  enableReloadableTokens,
-		hostsAndIps:             hostsAndIps,
+		dpServerCert:            dpServerCert,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
 		deltaXdsEnabled:         deltaXdsEnabled,
@@ -72,7 +73,7 @@ type bootstrapGenerator struct {
 	authEnabledForProxyType map[string]bool
 	enableReloadableTokens  bool
 	xdsCertFile             string
-	hostsAndIps             SANSet
+	dpServerCert            *x509.Certificate
 	hdsEnabled              bool
 	defaultAdminPort        uint32
 	deltaXdsEnabled         bool
@@ -210,7 +211,12 @@ var DpTokenRequired = errors.New("Dataplane Token is required. Generate token us
 var NotCA = errors.New("A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').\n" +
 	"Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE")
 
-func SANMismatchErr(host string, sans []string) error {
+func SANMismatchErr(host string, cert *x509.Certificate) error {
+	var sans []string
+	for _, ip := range cert.IPAddresses {
+		sans = append(sans, ip.String())
+	}
+	sans = append(sans, cert.DNSNames...)
 	return errors.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+
 		"Either change the --cp-address in kuma-dp to one of those or execute the following steps:\n"+
 		"1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --hostname=%s'\n"+
@@ -269,8 +275,8 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
-		if !b.hostsAndIps[request.Host] {
-			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
+		if err := b.dpServerCert.VerifyHostname(request.Host); err != nil {
+			return SANMismatchErr(request.Host, b.dpServerCert)
 		}
 	}
 	return nil
@@ -421,18 +427,7 @@ func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
 	return b.config.Params.AdminAccessLogPath
 }
 
-type SANSet map[string]bool
-
-func (s SANSet) slice() []string {
-	sans := []string{}
-	for san := range s {
-		sans = append(sans, san)
-	}
-	sort.Strings(sans)
-	return sans
-}
-
-func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
+func parseCertFromFile(dpServerCertFile string) (*x509.Certificate, error) {
 	certBytes, err := os.ReadFile(dpServerCertFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read certificate")
@@ -445,13 +440,5 @@ func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse certificate")
 	}
-
-	hostsAndIps := map[string]bool{}
-	for _, dnsName := range cert.DNSNames {
-		hostsAndIps[dnsName] = true
-	}
-	for _, ip := range cert.IPAddresses {
-		hostsAndIps[ip.String()] = true
-	}
-	return hostsAndIps, nil
+	return cert, nil
 }
