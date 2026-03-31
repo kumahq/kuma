@@ -181,6 +181,14 @@ spec:
 				g.Expect(newZoneConnected).To(BeTrue())
 			}, "60s", "1s").Should(Succeed())
 
+			// Wait for zone ingresses to settle after upgrade before checking consistency.
+			// On slow CI the old zone ingress may not be cleaned up immediately.
+			Eventually(func(g Gomega) {
+				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesGlobal).To(Equal(2))
+			}, "60s", "1s").Should(Succeed())
+
 			// then
 			Consistently(func(g Gomega) {
 				policiesGlobal, err := NumberOfResources(global, meshtimeout.MeshTimeoutResourceTypeDescriptor)
