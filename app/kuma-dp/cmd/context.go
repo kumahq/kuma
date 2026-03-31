@@ -10,8 +10,10 @@ import (
 
 	kumadp_config "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
 	kumadp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/log"
 	leader_memory "github.com/kumahq/kuma/v2/pkg/plugins/leader/memory"
 )
@@ -21,6 +23,8 @@ type RootContext struct {
 	ComponentManager         component.Manager
 	BootstrapClient          envoy.BootstrapClient
 	BootstrapDynamicMetadata map[string]string
+	BootstrapOtelEnv         *core_xds.OtelBootstrapInventory
+	DiscoveredOtelEnv        otelenv.Config
 	DataplaneTokenGenerator  func(cfg *kumadp.Config) (component.Component, error)
 	Config                   *kumadp.Config
 	LogLevel                 log.LogLevel
@@ -60,6 +64,8 @@ func DefaultRootContext() *RootContext {
 		BootstrapClient:          envoy.NewRemoteBootstrapClient(runtime.GOOS),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},
+		BootstrapOtelEnv:         nil,
+		DiscoveredOtelEnv:        otelenv.Config{},
 		DynamicConfigHandlers:    map[string]func(ctx context.Context, reader io.Reader) error{},
 		DataplaneTokenGenerator:  defaultDataplaneTokenGenerator,
 	}

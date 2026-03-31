@@ -31,6 +31,60 @@ type OtelSignalRuntimePlan struct {
 	RefreshInterval string   `json:"refreshInterval,omitempty"`
 }
 
+// IsHardBlocked checks if the plan is missing required resolution inputs.
+// This is narrower than HasHardBlockedReason, which treats any non-soft
+// block as hard. The difference is intentional: IsHardBlocked gates whether
+// to attempt resolution at all, while HasHardBlockedReason gates runtime
+// usability after resolution.
+func (p *OtelSignalRuntimePlan) IsHardBlocked() bool {
+	if p == nil {
+		return false
+	}
+
+	if len(p.MissingFields) > 0 {
+		return true
+	}
+
+	return slices.Contains(p.BlockedReasons, OtelBlockedReasonRequiredEnvMissing)
+}
+
+// HasHardBlockedReason returns true if any blocked reason prevents actual
+// signal usage. Soft blocks (EnvDisabledByPolicy, SignalOverridesBlocked)
+// are informational - the signal still works via explicit configuration.
+func HasHardBlockedReason(reasons []string) bool {
+	for _, reason := range reasons {
+		switch reason {
+		case OtelBlockedReasonEnvDisabledByPolicy,
+			OtelBlockedReasonSignalOverridesBlocked:
+			continue
+		default:
+			return true
+		}
+	}
+	return false
+}
+
+func (p *OtelSignalRuntimePlan) SharedEnvAllowed() bool {
+	if p == nil {
+		return false
+	}
+
+	return !slices.ContainsFunc(
+		p.BlockedReasons,
+		func(reason string) bool {
+			return reason == OtelBlockedReasonEnvDisabledByPolicy ||
+				reason == OtelBlockedReasonMultipleBackends
+		},
+	)
+}
+
+func (p *OtelSignalRuntimePlan) SignalEnvAllowed() bool {
+	if !p.SharedEnvAllowed() {
+		return false
+	}
+	return !slices.Contains(p.BlockedReasons, OtelBlockedReasonSignalOverridesBlocked)
+}
+
 // OtelPipeBackend represents one MOTB backend for the unified /otel dynconf route.
 // All signals sharing this backend use the same SocketPath.
 type OtelPipeBackend struct {
