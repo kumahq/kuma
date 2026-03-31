@@ -87,6 +87,12 @@ jobs:
             BASE_MATRIX_ALL='{}'
           fi
 
+          # Expand parallelRunnerId into the matrix based on each suite's parallelism
+          BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq '
+            if .test_e2e then .test_e2e.parallelRunnerId = [range(.test_e2e.parallelism[0])] else . end |
+            if .test_e2e_env then .test_e2e_env.parallelRunnerId = [range(.test_e2e_env.parallelism[0])] else . end
+          ')
+
           echo "final matrix: $BASE_MATRIX_ALL"
           {
             echo "matrix<<EOF"
@@ -95,27 +101,55 @@ jobs:
           } >> "$GITHUB_OUTPUT"
   test_e2e:
     needs: ["gen_e2e_matrix"]
-    name: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})"
+    name: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}) / ${{ matrix.parallelRunnerId }}"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
+    timeout-minutes: 60
+    runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
       max-parallel: 5
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
-    uses: ./.github/workflows/_e2e.yaml
-    with:
-      matrix: ${{ toJSON(matrix) }}
-      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
-    secrets: inherit
+    env:
+      CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
+      MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+      DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
+      KUMA_DEBUG: ${{ runner.debug == '1' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/run-e2e
+        with:
+          k8s_version: ${{ matrix.k8sVersion }}
+          cni_network_plugin: ${{ matrix.cniNetworkPlugin }}
+          arch: ${{ matrix.arch }}
+          sidecar_containers: ${{ matrix.sidecarContainers }}
+          target: ${{ matrix.target }}
+          parallel_runner_id: ${{ matrix.parallelRunnerId }}
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
-    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', sidecar' || '' }})"
+    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', sidecar' || '' }}) / ${{ matrix.parallelRunnerId }}"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
+    timeout-minutes: 60
+    runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
       max-parallel: 5
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
-    uses: ./.github/workflows/_e2e.yaml
-    with:
-      matrix: ${{ toJSON(matrix) }}
-      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
-    secrets: inherit
+    env:
+      CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
+      MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+      DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
+      KUMA_DEBUG: ${{ runner.debug == '1' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/run-e2e
+        with:
+          k8s_version: ${{ matrix.k8sVersion }}
+          cni_network_plugin: ${{ matrix.cniNetworkPlugin }}
+          arch: ${{ matrix.arch }}
+          sidecar_containers: ${{ matrix.sidecarContainers }}
+          target: ${{ matrix.target }}
+          parallel_runner_id: ${{ matrix.parallelRunnerId }}
