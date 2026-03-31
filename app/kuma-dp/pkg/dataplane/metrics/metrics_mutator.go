@@ -16,7 +16,7 @@ type (
 
 func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) MeshMetricMutator {
 	return func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
-		parser := expfmt.NewTextParser(model.LegacyValidation)
+		parser := expfmt.NewTextParser(model.UTF8Validation)
 		metricFamilies, err := parser.TextToMetricFamilies(in)
 		if err != nil {
 			return nil, err
@@ -35,7 +35,7 @@ func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) MeshMetricMutat
 
 func AggregatedMetricsMutator(metricsMutators ...PrometheusMutator) MetricsMutator {
 	return func(in io.Reader, out io.Writer) error {
-		parser := expfmt.NewTextParser(model.LegacyValidation)
+		parser := expfmt.NewTextParser(model.UTF8Validation)
 		metricFamilies, err := parser.TextToMetricFamilies(in)
 		if err != nil {
 			return err
