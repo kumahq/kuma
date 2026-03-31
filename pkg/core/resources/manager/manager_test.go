@@ -21,15 +21,15 @@ type safeToRetryError struct {
 	msg string
 }
 
-func (e *safeToRetryError) Error() string      { return e.msg }
-func (e *safeToRetryError) SafeToRetry() bool   { return true }
-func (e *safeToRetryError) Unwrap() error       { return nil }
+func (e *safeToRetryError) Error() string     { return e.msg }
+func (e *safeToRetryError) SafeToRetry() bool { return true }
+func (e *safeToRetryError) Unwrap() error     { return nil }
 
 type unsafeError struct {
 	msg string
 }
 
-func (e *unsafeError) Error() string    { return e.msg }
+func (e *unsafeError) Error() string     { return e.msg }
 func (e *unsafeError) SafeToRetry() bool { return false }
 
 // failingStore wraps a ResourceStore and fails Get() calls
