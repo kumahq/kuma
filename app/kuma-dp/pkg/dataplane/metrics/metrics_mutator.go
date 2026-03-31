@@ -5,6 +5,7 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 )
 
 type (
@@ -15,7 +16,7 @@ type (
 
 func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) MeshMetricMutator {
 	return func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
-		var parser expfmt.TextParser
+		parser := expfmt.NewTextParser(model.LegacyValidation)
 		metricFamilies, err := parser.TextToMetricFamilies(in)
 		if err != nil {
 			return nil, err
@@ -34,7 +35,7 @@ func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) MeshMetricMutat
 
 func AggregatedMetricsMutator(metricsMutators ...PrometheusMutator) MetricsMutator {
 	return func(in io.Reader, out io.Writer) error {
-		var parser expfmt.TextParser
+		parser := expfmt.NewTextParser(model.LegacyValidation)
 		metricFamilies, err := parser.TextToMetricFamilies(in)
 		if err != nil {
 			return err
