@@ -78,9 +78,7 @@ controlPlane:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -542,9 +540,7 @@ ingress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -667,9 +663,7 @@ egress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
