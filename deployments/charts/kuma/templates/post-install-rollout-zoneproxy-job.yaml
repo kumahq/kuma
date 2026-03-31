@@ -1,0 +1,152 @@
+{{/*
+Post-install hook to restart mesh-scoped zone proxy deployments.
+
+Zone proxies are deployed before the control plane is fully ready. Because the
+sidecar injector webhook depends on a running control plane, the initial pods
+start without sidecars. This job waits for the control plane to become available,
+then triggers a rollout restart so pods are recreated with proper sidecar injection.
+*/}}
+{{- $hasZoneProxies := false }}
+{{- range $meshEntry := .Values.meshes }}
+{{- if or (and $meshEntry.ingress $meshEntry.ingress.enabled) (and $meshEntry.egress $meshEntry.egress.enabled) }}
+{{- $hasZoneProxies = true }}
+{{- end }}
+{{- end }}
+{{- if and (not .Values.noHelmHooks) $hasZoneProxies }}
+{{- $serviceAccountName := printf "%s-rollout-zoneproxy-job" (include "kuma.name" .) }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $serviceAccountName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kuma.name" . }}-rollout-zoneproxy-job
+subjects:
+  - kind: ServiceAccount
+    name: {{ $serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "kuma.name" . }}-rollout-zoneproxy
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{ include "kuma.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    {{/* Ensure the job is created after the RBAC resources and control plane is ready */}}
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+spec:
+  ttlSecondsAfterFinished: 0
+  template:
+    metadata:
+      name: {{ template "kuma.name" . }}-rollout-zoneproxy-script
+      labels:
+    {{ include "kuma.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+      {{- with .Values.hooks.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hooks.tolerations }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      securityContext:
+      {{- toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
+      initContainers:
+        - name: wait-for-control-plane
+          image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
+          securityContext:
+          {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+          command:
+            - 'kubectl'
+            - 'wait'
+            - '--for=condition=available'
+            - '--timeout=300s'
+            - 'deployment/{{ include "kuma.name" . }}-control-plane'
+            - '-n'
+            - '{{ .Release.Namespace }}'
+      containers:
+        - name: post-install-job
+          image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
+          securityContext:
+          {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+          command:
+            - 'kubectl'
+            - 'rollout'
+            - 'restart'
+            {{- range $meshEntry := .Values.meshes }}
+            {{- $meshName := $meshEntry.name }}
+            {{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
+            - 'deployment/{{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "ingress") }}'
+            {{- end }}
+            {{- if and $meshEntry.egress $meshEntry.egress.enabled }}
+            - 'deployment/{{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" "egress") }}'
+            {{- end }}
+            {{- end }}
+            - '-n'
+            - '{{ $.Release.Namespace }}'
+{{- end }}
