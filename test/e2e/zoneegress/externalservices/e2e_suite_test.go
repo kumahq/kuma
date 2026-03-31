@@ -16,5 +16,5 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Test ZoneEgress for External Services in Hybrid Multizone", Label("job-1"), externalservices.HybridUniversalGlobal, Ordered, Serial)
+	_ = Describe("Test ZoneEgress for External Services in Hybrid Multizone", Label("job-1"), externalservices.HybridUniversalGlobal, Serial)
 )
