@@ -45,7 +45,7 @@ func SetupAndGetState() []byte {
 	}
 
 	Eventually(func() error {
-		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
+		return Cluster.Install(framework.E2EKuma(core.Zone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
 
 	state := framework.K8sNetworkingState{

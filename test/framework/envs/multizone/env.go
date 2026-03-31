@@ -74,7 +74,7 @@ func SetupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaD
 	go func() {
 		defer ginkgo.GinkgoRecover()
 		defer wg.Done()
-		Expect(zone.Install(Kuma(core.Zone, options...))).To(Succeed())
+		Expect(zone.Install(E2EKuma(core.Zone, options...))).To(Succeed())
 	}()
 	return zone
 }
