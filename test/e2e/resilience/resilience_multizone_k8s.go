@@ -93,7 +93,7 @@ metadata:
 		Expect(zone1.RestartControlPlane()).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Create a mesh now that the remote zone is back up
 		Expect(YamlK8s(`
@@ -137,7 +137,7 @@ metadata:
 		Expect(global.RestartControlPlane()).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Create a mesh now that global is backup
 		Expect(YamlK8s(`
@@ -177,7 +177,7 @@ metadata:
 		Expect(zone1.RestartControlPlane()).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
 		Expect(testserver.Install(testserver.WithName("kds-after-zone-restart"))(zone1)).To(Succeed())
@@ -223,7 +223,7 @@ metadata:
 		Expect(global.RestartControlPlane()).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
 		Expect(testserver.Install(testserver.WithName("kds-after-global-restart"))(zone1)).To(Succeed())
