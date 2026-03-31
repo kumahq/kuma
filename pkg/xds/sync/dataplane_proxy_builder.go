@@ -77,9 +77,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Zone:              p.Zone,
 		RuntimeExtensions: map[string]any{},
 	}
-	if dp.Spec.GetNetworking().HasZoneProxyListeners() {
-		proxy.DataplaneZoneListeners = p.buildDataplaneZoneListeners(ctx, meta, dp, meshContext)
-	}
 	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
 		err := pl.Apply(ctx, meshContext, proxy)
 		if err != nil {
@@ -87,42 +84,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		}
 	}
 	return proxy, nil
-}
-
-func (p *DataplaneProxyBuilder) buildDataplaneZoneListeners(
-	_ context.Context,
-	_ *core_xds.DataplaneMetadata,
-	dp *core_mesh.DataplaneResource,
-	meshContext xds_context.MeshContext,
-) *core_xds.DataplaneZoneListeners {
-	ingressMeshResources := &core_xds.MeshProxyResources{
-		Mesh:        meshContext.Resource,
-		EndpointMap: meshContext.DataplaneZoneIngressEndpointMap,
-		Resources:   meshContext.Resources.MeshLocalResources,
-	}
-
-	egressMeshResources := &core_xds.MeshProxyResources{
-		Mesh:        meshContext.Resource,
-		EndpointMap: meshContext.DataplaneZoneEgressEndpointMap,
-		Resources:   meshContext.Resources.MeshLocalResources,
-	}
-
-	result := &core_xds.DataplaneZoneListeners{}
-	for _, l := range dp.Spec.GetNetworking().GetListeners() {
-		switch l.Type {
-		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
-			result.IngressListeners = append(result.IngressListeners, &core_xds.DataplaneListener{
-				Listener:      l,
-				MeshResources: ingressMeshResources,
-			})
-		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
-			result.EgressListeners = append(result.EgressListeners, &core_xds.DataplaneListener{
-				Listener:      l,
-				MeshResources: egressMeshResources,
-			})
-		}
-	}
-	return result
 }
 
 func (p *DataplaneProxyBuilder) resolveRouting(

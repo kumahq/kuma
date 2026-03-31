@@ -207,8 +207,6 @@ type Proxy struct {
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
-	// DataplaneZoneListeners is non-nil when the Dataplane has embedded zone proxy listeners.
-	DataplaneZoneListeners *DataplaneZoneListeners
 	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
 	RuntimeExtensions map[string]any
 	// Zone the zone the proxy is in
@@ -342,20 +340,6 @@ type MeshProxyResources struct {
 type ZoneIngressProxy struct {
 	ZoneIngressResource *core_mesh.ZoneIngressResource
 	MeshResourceList    []*MeshProxyResources
-}
-
-// DataplaneZoneListeners holds xDS context for zone proxy listeners
-// embedded in a regular Dataplane resource.
-type DataplaneZoneListeners struct {
-	IngressListeners []*DataplaneListener
-	EgressListeners  []*DataplaneListener
-}
-
-// DataplaneListener holds xDS context for a single embedded zone proxy listener
-// (ZoneIngress or ZoneEgress).
-type DataplaneListener struct {
-	Listener      *mesh_proto.Dataplane_Networking_Listener
-	MeshResources *MeshProxyResources
 }
 
 type Routing struct {

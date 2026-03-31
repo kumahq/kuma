@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
@@ -32,8 +33,8 @@ import (
 var zoneProxyLog = core.Log.WithName("xds").WithName("zone-proxy-listener-generator")
 
 // ZoneProxyListenerGenerator generates Envoy listeners for zone proxy listeners
-// embedded in a regular Dataplane resource (DataplaneZoneListeners).
-// It is a no-op when proxy.DataplaneZoneListeners is nil.
+// embedded in a regular Dataplane resource.
+// It is a no-op when the dataplane has no zone proxy listeners.
 // Only MeshExternalService and MeshIdentity are supported; legacy ExternalService
 // and mesh.mtls are not handled here.
 type ZoneProxyListenerGenerator struct{}
@@ -44,7 +45,7 @@ func (g ZoneProxyListenerGenerator) Generate(
 	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
-	if proxy.DataplaneZoneListeners == nil {
+	if !proxy.Dataplane.Spec.GetNetworking().HasZoneProxyListeners() {
 		return nil, nil
 	}
 
@@ -57,27 +58,34 @@ func (g ZoneProxyListenerGenerator) Generate(
 
 	rs := core_xds.NewResourceSet()
 
-	for _, il := range proxy.DataplaneZoneListeners.IngressListeners {
-		generated, err := g.generateIngressListener(proxy, xdsCtx, il)
-		if err != nil {
-			return nil, err
-		}
-		rs.AddSet(generated)
-	}
+	localResources := xds_context.Resources{MeshLocalResources: xdsCtx.Mesh.Resources.MeshLocalResources}
 
-	if proxy.WorkloadIdentity == nil {
-		zoneProxyLog.Info("skipping zone egress listeners: WorkloadIdentity is required for egress mTLS",
-			"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName(),
-		)
-		return rs, nil
-	}
-
-	for _, el := range proxy.DataplaneZoneListeners.EgressListeners {
-		generated, err := g.generateEgressListener(proxy, el)
-		if err != nil {
-			return nil, err
+	for _, l := range proxy.Dataplane.Spec.GetNetworking().GetListeners() {
+		switch l.Type {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			generated, err := g.generateIngressListener(proxy, xdsCtx, l)
+			if err != nil {
+				return nil, err
+			}
+			rs.AddSet(generated)
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			if proxy.WorkloadIdentity == nil {
+				zoneProxyLog.Info("skipping zone egress listener: WorkloadIdentity is required for egress mTLS",
+					"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName(),
+				)
+				continue
+			}
+			generated, err := g.generateEgressListener(
+				proxy,
+				l,
+				localResources.MeshExternalServices().GetDestinations(),
+				xdsCtx.Mesh.DataplaneZoneEgressEndpointMap,
+			)
+			if err != nil {
+				return nil, err
+			}
+			rs.AddSet(generated)
 		}
-		rs.AddSet(generated)
 	}
 
 	return rs, nil
@@ -86,24 +94,23 @@ func (g ZoneProxyListenerGenerator) Generate(
 func (g ZoneProxyListenerGenerator) generateIngressListener(
 	proxy *core_xds.Proxy,
 	xdsCtx xds_context.Context,
-	il *core_xds.DataplaneListener,
+	listener *mesh_proto.Dataplane_Networking_Listener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 	cp := xdsCtx.ControlPlane
-	mr := il.MeshResources
-	meshName := mr.Mesh.GetMeta().GetName()
+	meshName := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
-	address := il.Listener.Address
-	port := il.Listener.Port
+	address := listener.Address
+	port := listener.Port
 
-	listenerName := naming.ContextualZoneIngressListenerName(il.Listener.Name)
+	listenerName := naming.ContextualZoneIngressListenerName(listener.Name)
 
-	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.StatPrefix(listenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
-	meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
+	meshResources := xds_context.Resources{MeshLocalResources: xdsCtx.Mesh.Resources.MeshLocalResources}
 
 	// Only expose services local to this zone.
 	localMS := &meshservice_api.MeshServiceResourceList{}
@@ -121,7 +128,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 		meshResources.MeshMultiZoneServices(),
 	)
 
-	services := zoneproxy.GetServices(dest, mr.EndpointMap, nil, true)
+	services := zoneproxy.GetServices(dest, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, nil, true)
 	clusters := services.Clusters()
 
 	cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, true)
@@ -130,21 +137,21 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress, true)
+	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, meshName, metadata.OriginIngress, true)
 	if err != nil {
 		return nil, err
 	}
 	rs.AddSet(eds)
 
 	for _, cluster := range clusters {
-		listener.Configure(envoy_listeners.FilterChain(zoneproxy.CreateFilterChain(proxy, cluster)))
+		listenerBuilder.Configure(envoy_listeners.FilterChain(zoneproxy.CreateFilterChain(proxy, cluster)))
 	}
 
 	if len(clusters) == 0 {
 		return nil, nil
 	}
 
-	resource, err := listener.Build()
+	resource, err := listenerBuilder.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -158,23 +165,22 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 
 func (g ZoneProxyListenerGenerator) generateEgressListener(
 	proxy *core_xds.Proxy,
-	el *core_xds.DataplaneListener,
+	listener *mesh_proto.Dataplane_Networking_Listener,
+	destinations []core_resources.Destination,
+	endpointMap core_xds.EndpointMap,
 ) (*core_xds.ResourceSet, error) {
-	localResources := xds_context.Resources{MeshLocalResources: el.MeshResources.Resources}
-
-	esDestinations := localResources.MeshExternalServices().GetDestinations()
-	if len(esDestinations) == 0 {
+	if len(destinations) == 0 {
 		return nil, nil
 	}
 
 	rs := core_xds.NewResourceSet()
 
-	address := el.Listener.Address
-	port := el.Listener.Port
+	address := listener.Address
+	port := listener.Port
 
-	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(el.Listener.Name)
+	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(listener.Name)
 
-	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, zoneEgressListenerName).
+	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, zoneEgressListenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.StatPrefix(zoneEgressListenerName)).
 		Configure(envoy_listeners.TLSInspector())
@@ -184,12 +190,12 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		return nil, err
 	}
 
-	for _, dst := range esDestinations {
+	for _, dst := range destinations {
 		esPort := dst.GetPorts()[0]
 		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
 		sni := tls.SNIForResource(id.Name, id.Mesh, id.ResourceType, esPort.GetValue(), nil)
 		clusterName := id.String()
-		endpoints := el.MeshResources.EndpointMap[clusterName]
+		endpoints := endpointMap[clusterName]
 
 		split := plugins_xds.NewSplitBuilder().
 			WithClusterName(clusterName).
@@ -197,7 +203,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 			WithWeight(1).
 			Build()
 
-		listener.Configure(envoy_listeners.FilterChain(g.buildEgressFilterChain(proxy, endpoints[0].Protocol(), downstreamTLS, split, sni)))
+		listenerBuilder.Configure(envoy_listeners.FilterChain(g.buildEgressFilterChain(proxy, endpoints[0].Protocol(), downstreamTLS, split, sni)))
 		cds, err := g.genClusterCDS(proxy, endpoints, clusterName)
 		if err != nil {
 			return nil, err
@@ -205,7 +211,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		rs.Add(cds)
 	}
 
-	resource, err := listener.Build()
+	resource, err := listenerBuilder.Build()
 	if err != nil {
 		return nil, err
 	}
