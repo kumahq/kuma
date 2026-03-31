@@ -37,7 +37,7 @@ var _ = Describe("components", func() {
 		registry = prometheus.NewRegistry()
 
 		address = net.JoinHostPort("127.0.0.1", strconv.Itoa(int(port)))
-		server = dnsproxy.NewServerWithCustomClient(address, func(msg *dns.Msg) (*dns.Msg, error) {
+		server = dnsproxy.NewServerWithCustomClient([]string{address}, func(msg *dns.Msg) (*dns.Msg, error) {
 			defer GinkgoRecover()
 			f := *mock.Load()
 			return f(msg)
