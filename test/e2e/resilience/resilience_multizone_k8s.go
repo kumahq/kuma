@@ -18,7 +18,7 @@ func ResilienceMultizoneK8s() {
 		// Global
 		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(60).WithTimeout(6 * time.Second).(*K8sCluster)
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Global,
+			Install(E2EKuma(core.Global,
 				WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),
@@ -32,7 +32,7 @@ func ResilienceMultizoneK8s() {
 		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent).WithRetries(60).WithTimeout(6 * time.Second).(*K8sCluster)
 
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithGlobalAddress(globalCP.GetKDSServerAddress()), WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),

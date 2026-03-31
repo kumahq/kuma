@@ -39,7 +39,7 @@ func UpgradingWithHelmChartStandalone() {
 
 			//nolint:staticcheck
 			err := NewClusterSetup().
-				Install(Kuma(core.Standalone,
+				Install(E2EKuma(core.Standalone,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmChartPath(Config.HelmChartName),
 					WithHelmReleaseName(releaseName),

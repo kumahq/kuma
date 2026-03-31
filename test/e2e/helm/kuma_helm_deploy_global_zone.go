@@ -39,7 +39,7 @@ func ZoneAndGlobalWithHelmChart() {
 		)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Global,
+			Install(E2EKuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithCPReplicas(2),
@@ -57,7 +57,7 @@ interCp:
 		Expect(global).ToNot(BeNil())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithGlobalAddress(global.GetKDSServerAddress()),

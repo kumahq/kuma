@@ -22,7 +22,7 @@ var _ = framework.E2ESynchronizedBeforeSuite(
 		skipinboundtags.KubeCluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Silent)
 
 		err := framework.NewClusterSetup().
-			Install(framework.Kuma(config_core.Zone,
+			Install(framework.E2EKuma(config_core.Zone,
 				framework.WithEnv("KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED", "true"),
 			)).
 			Setup(skipinboundtags.KubeCluster)

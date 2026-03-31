@@ -519,6 +519,12 @@ func Kuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
 	}
 }
 
+// E2EKuma is like Kuma but also removes the CPU limit from kuma-init via a ContainerPatch,
+// preventing throttling on resource-constrained CI runners.
+func E2EKuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
+	return Kuma(mode, append(opt, WithKumaInitNoCPULimit())...)
+}
+
 func WaitService(namespace, service string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilServiceAvailable(c.GetTesting(), c.GetKubectlOptions(namespace), service, 10, 3*time.Second)

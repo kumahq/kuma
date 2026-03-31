@@ -41,7 +41,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 
 		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Global)).
+			Install(E2EKuma(config_core.Global)).
 			Install(ResourceUniversal(samples.MeshMTLSBuilder().
 				WithName(defaultMesh).
 				WithEgressRoutingEnabled().
@@ -55,7 +55,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		group := errgroup.Group{}
 		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		NewClusterSetup().
-			Install(Kuma(config_core.Zone,
+			Install(E2EKuma(config_core.Zone,
 				WithIngress(),
 				WithIngressEnvoyAdminTunnel(),
 				WithEgress(),
@@ -69,7 +69,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 
 		NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal(
 				"zone4-demo-client",
 				defaultMesh,

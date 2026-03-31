@@ -46,7 +46,7 @@ data:
 		Expect(NewClusterSetup().
 			Install(Namespace(Config.KumaNamespace)).
 			Install(YamlK8s(configMap(Config.KumaNamespace))).
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))),
 				WithHelmOpt("controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH",

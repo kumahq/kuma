@@ -46,7 +46,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "cnpg.io/podRole", "instance")(zoneCluster)).To(Succeed())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global,
+			Install(E2EKuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("controlPlane.envVars.KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED", "false"),
@@ -59,7 +59,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 		Expect(global).ToNot(BeNil())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				// WithSkipDefaultMesh is required because we check if Kuma is ready by using "kubectl get mesh"
 				// here in the framework https://github.com/kumahq/kuma/blob/1633d34ad116dd1e618f4a27dd1526f5ff7d8bde/test/framework/k8s_cluster.go#L564
 				// but on universal mode we use postgres to manage resources so without this it will fail making the test suite fail

@@ -704,6 +704,15 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
+	if c.opts.kumaInitNoCPULimit {
+		const patchName = "kuma-init-no-cpu-limit"
+		if existing, ok := c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"]; ok {
+			c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"] = existing + "," + patchName
+		} else {
+			c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"] = patchName
+		}
+	}
+
 	var err error
 	switch c.opts.installationMode {
 	case KumactlInstallationMode:
@@ -725,6 +734,22 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
 		return errors.Wrap(err, "Kuma control-plane failed to start")
+	}
+
+	if c.opts.kumaInitNoCPULimit {
+		const patchName = "kuma-init-no-cpu-limit"
+		patch := fmt.Sprintf(`apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  namespace: %s
+  name: %s
+spec:
+  initPatch:
+    - op: remove
+      path: /resources/limits/cpu`, Config.KumaNamespace, patchName)
+		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), patch); err != nil {
+			return errors.Wrap(err, "failed to apply kuma-init-no-cpu-limit ContainerPatch")
+		}
 	}
 
 	var wg sync.WaitGroup

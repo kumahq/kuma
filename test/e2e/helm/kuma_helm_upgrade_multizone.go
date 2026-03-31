@@ -66,7 +66,7 @@ func UpgradingWithHelmChartMultizone() {
 			releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
 			By("Install global with version: " + version)
 			err := NewClusterSetup().
-				Install(Kuma(core.Global,
+				Install(E2EKuma(core.Global,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmChartPath(Config.HelmChartName),
 					WithHelmReleaseName(releaseName),
@@ -81,7 +81,7 @@ func UpgradingWithHelmChartMultizone() {
 
 			By("Install zone with version: " + version)
 			err = NewClusterSetup().
-				Install(Kuma(core.Zone,
+				Install(E2EKuma(core.Zone,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmChartPath(Config.HelmChartName),
 					WithHelmReleaseName(releaseName),
@@ -140,7 +140,7 @@ spec:
 
 			By("deploy a new universal zone with latest version")
 			err = NewClusterSetup().
-				Install(Kuma(core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
+				Install(E2EKuma(core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
 				Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
 				Setup(zoneUniversal)
 			Expect(err).ToNot(HaveOccurred())

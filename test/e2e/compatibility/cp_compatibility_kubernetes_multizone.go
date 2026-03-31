@@ -82,7 +82,7 @@ func CpCompatibilityMultizoneKubernetes() {
 	DescribeTable("Cross version check", func(globalConf, zoneConf []KumaDeploymentOption) {
 		// Start a global
 		err := NewClusterSetup().
-			Install(Kuma(core.Global,
+			Install(E2EKuma(core.Global,
 				append(globalConf,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmReleaseName(globalReleaseName))...,
@@ -92,7 +92,7 @@ func CpCompatibilityMultizoneKubernetes() {
 
 		// Start a zone
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				append(zoneConf,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmReleaseName(zoneReleaseName),

@@ -54,6 +54,7 @@ type kumaDeploymentOptions struct {
 	verifyKuma                  bool
 	setupKumactl                bool
 	memory                      string
+	kumaInitNoCPULimit          bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -409,6 +410,14 @@ func WithoutVerifyingKuma() KumaDeploymentOption {
 func WithoutConfiguringKumactl() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.setupKumactl = false
+	})
+}
+
+// WithKumaInitNoCPULimit removes the CPU limit from the kuma-init container via a ContainerPatch.
+// This prevents throttling on resource-constrained nodes (e.g. CI runners).
+func WithKumaInitNoCPULimit() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.kumaInitNoCPULimit = true
 	})
 }
 

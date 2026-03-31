@@ -39,7 +39,7 @@ func CertManagerCAInjection() {
 			Install(certmanager.Install(
 				certmanager.WithNamespace(certManagerNamespace),
 			)).
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("controlPlane.tls.general.certManager.enabled", "true"),

@@ -55,7 +55,7 @@ spec:
 			WithTimeout(6 * time.Second).
 			WithRetries(60).(*K8sCluster)
 		err := NewClusterSetup().
-			Install(Kuma(core.Zone)).
+			Install(E2EKuma(core.Zone)).
 			Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
 			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
