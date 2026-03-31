@@ -23,7 +23,7 @@ import (
 
 func init() {
 	// Registered as "tracing.opentelemetry" for historical reasons.
-	// This plugin also handles CP metrics OTLP push (metrics.openTelemetry.enabled).
+	// This plugin also handles CP metrics OTLP push (auto-enabled via OTEL_EXPORTER_OTLP_ENDPOINT).
 	core_plugins.Register("tracing.opentelemetry", &plugin{})
 }
 
