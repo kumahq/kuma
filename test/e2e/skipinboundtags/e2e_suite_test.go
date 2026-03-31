@@ -43,5 +43,5 @@ var _ = framework.E2EAfterSuite(func() {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Skip Inbound Tags on Kubernetes", Label("job-3"), skipinboundtags.SkipInboundTags, Serial)
+	_ = Describe("Skip Inbound Tags on Kubernetes", Label("job-3"), Ordered, skipinboundtags.SkipInboundTags, Serial)
 )

@@ -16,5 +16,5 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Test Transparent Proxy Configuration in ConfigMap", Label("job-0"), transparentproxy.TransparentProxyConfigMap, Serial)
+	_ = Describe("Test Transparent Proxy Configuration in ConfigMap", Label("job-0"), Ordered, transparentproxy.TransparentProxyConfigMap, Serial)
 )
