@@ -230,6 +230,8 @@ A Helm chart for the Kuma Control Plane
 | kubectl.image.tag | string | `"v1.34.3@sha256:1c6309bd167feb49b2bc1605bce05973002872fd0d26a2e76499ed0c903ea3cf"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
+| hooks.annotations | object | `{}` | Extra annotations to add to hook Job resources. Useful for tools like ArgoCD that need to control job lifecycle (e.g. argocd.argoproj.io/hook-delete-policy). |
+| hooks.ttlSecondsAfterFinished | int | `0` | TTL in seconds for hook Jobs after they finish. Set to null to disable automatic TTL-based deletion (recommended when using ArgoCD, which needs to read job status before deletion). |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
 | hooks.ebpfCleanup | object | `{"containerSecurityContext":{"readOnlyRootFilesystem":false},"podSecurityContext":{"runAsNonRoot":false}}` | ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs Changing below values will potentially break ebpf cleanup completely, so be cautious when doing so. |
