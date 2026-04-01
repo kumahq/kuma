@@ -28,6 +28,33 @@ The control plane ClusterRole and the namespaced Role used by the control plane 
 
 If you manage RBAC resources outside of Helm (e.g., via GitOps or manual manifests), update your RBAC rules for events in both ClusterRole and Role definitions to include the `events.k8s.io` API group for events resources.
 
+### RBAC: Added Role for mesh-scoped zone proxy rollout job
+
+When deploying mesh-scoped zone proxies via the `meshes` list in `values.yaml`, a new post-install hook job is created to rollout restart zone proxy deployments after the control plane becomes available. This job requires a new Role (namespaced to the release namespace) with permissions to `get`, `list`, and `patch` deployments in the `apps` API group.
+
+**Action required:**
+
+If you manage RBAC resources outside of Helm (e.g., via GitOps or manual manifests) and use mesh-scoped zone proxies, add the following Role in your release namespace:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: <chart-name>-rollout-zoneproxy-job
+  namespace: <release-namespace>
+rules:
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - patch
+```
+
+Along with the corresponding ServiceAccount and RoleBinding in the same namespace.
+
 ## Upgrade to `2.13.x`
 
 ### Strict Inbound Port Filtering Enabled by Default

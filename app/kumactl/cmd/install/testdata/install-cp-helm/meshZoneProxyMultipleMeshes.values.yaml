@@ -1,0 +1,31 @@
+meshes:
+  - name: mesh-1
+    ingress:
+      enabled: true
+      replicas: 1
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10"
+    egress:
+      enabled: true
+      replicas: 1
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10"
+  - name: mesh-2
+    ingress:
+      enabled: true
+      replicas: 1
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10"
+    egress:
+      enabled: true
+      replicas: 1
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10"

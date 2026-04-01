@@ -100,7 +100,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 27b418e9f5da00141a2700ff928c04be7f72b923410e63a1e58e1f72cd149640
+        checksum/tls-secrets: f682bf0be13a5363a8fe433d046be85b64bbd62026cabcead33f236e51de8fa0
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -164,6 +164,8 @@ spec:
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
               value: "zone"
+            - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+              value: "true"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
@@ -445,6 +447,39 @@ webhooks:
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: mesh-zoneproxy-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - kuma-system
+    objectSelector:
+      matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values:
+            - enabled
+        - key: kuma.io/mesh
+          operator: Exists
     clientConfig:
       caBundle: XYZ
       service:

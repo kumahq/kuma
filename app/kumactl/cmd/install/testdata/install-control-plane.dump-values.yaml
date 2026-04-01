@@ -78,9 +78,7 @@ controlPlane:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -135,6 +133,10 @@ controlPlane:
 
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Fail
+
+  madsServer:
+    # -- Whether the Monitoring Assignment Discovery Service (MADS) server is enabled
+    enabled: true
 
   service:
     apiServer:
@@ -538,9 +540,7 @@ ingress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -663,9 +663,7 @@ egress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -765,6 +763,84 @@ egress:
       nameservers: []
       # -- A list of DNS search domains for hostname lookup in the Pod.
       searches: []
+
+# List of meshes to deploy zone proxies for.
+meshes:
+  - # -- The mesh must already exist or be created separately; this Helm chart will not create it.
+    name: default
+
+    ingress:
+      # -- Deploy a zone ingress for this mesh.
+      enabled: false
+      # -- Number of replicas. Ignored when hpa.enabled is true.
+      replicas: 1
+      # Pause container image (dummy main container for sidecar injection).
+      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
+      image:
+        # -- The pause image registry
+        registry: registry.k8s.io
+        # -- The pause image repository
+        repository: pause
+        # -- The pause image tag
+        tag: "3.10"
+      service:
+        # -- Override the auto-generated Service name (max 63 chars).
+        # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
+        name: ""
+      # -- Resource requests and limits for the pod (pod-level resources).
+      # Applied to all containers in the pod (pause + injected kuma-sidecar).
+      resources: {}
+      # -- Subset of Kubernetes PodSpec fields applied to the pod template
+      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+      #  priorityClassName, securityContext, containerSecurityContext).
+      podSpec: {}
+      # -- Resource requests and limits for the pause container.
+      containerResources: {}
+      # -- Horizontal Pod Autoscaler settings.
+      hpa:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 80
+      # -- Pod Disruption Budget settings.
+      pdb:
+        enabled: false
+        maxUnavailable: 1
+
+    egress:
+      # -- Deploy a zone egress for this mesh.
+      enabled: false
+      replicas: 1
+      # Pause container image (dummy main container for sidecar injection).
+      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
+      image:
+        # -- The pause image registry
+        registry: registry.k8s.io
+        # -- The pause image repository
+        repository: pause
+        # -- The pause image tag
+        tag: "3.10"
+      service:
+        # -- Override the auto-generated Service name (max 63 chars).
+        # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
+        name: ""
+      # -- Resource requests and limits for the pod (pod-level resources).
+      # Applied to all containers in the pod (pause + injected kuma-sidecar).
+      resources: {}
+      # -- Subset of Kubernetes PodSpec fields applied to the pod template
+      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+      #  priorityClassName, securityContext, containerSecurityContext).
+      podSpec: {}
+      # -- Resource requests and limits for the pause container.
+      containerResources: {}
+      hpa:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 80
+      pdb:
+        enabled: false
+        maxUnavailable: 1
 
 kumactl:
   image:

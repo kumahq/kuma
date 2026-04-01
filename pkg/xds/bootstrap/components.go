@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
 	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
 )
@@ -18,7 +17,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 			string(mesh_proto.IngressProxyType):   rt.Config().DpServer.Authn.ZoneProxy.Type != dp_server.DpServerAuthNone,
 			string(mesh_proto.EgressProxyType):    rt.Config().DpServer.Authn.ZoneProxy.Type != dp_server.DpServerAuthNone,
 		},
-		rt.Config().DpServer.Authn.EnableReloadableTokens || rt.Config().Store.Type == store.KubernetesStore,
+		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
 		rt.Config().Experimental.DeltaXds,
