@@ -209,10 +209,6 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 		if store.IsAlreadyExists(err) || store.IsConflict(err) {
 			return retry.RetryableError(err)
 		}
-		var safeErr interface{ SafeToRetry() bool }
-		if errors.As(err, &safeErr) && safeErr.SafeToRetry() {
-			return retry.RetryableError(err)
-		}
 		return err
 	})
 }

@@ -2,9 +2,6 @@ package manager_test
 
 import (
 	"context"
-	"fmt"
-	"sync/atomic"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,37 +13,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 )
-
-type safeToRetryError struct {
-	msg string
-}
-
-func (e *safeToRetryError) Error() string     { return e.msg }
-func (e *safeToRetryError) SafeToRetry() bool { return true }
-func (e *safeToRetryError) Unwrap() error     { return nil }
-
-type unsafeError struct {
-	msg string
-}
-
-func (e *unsafeError) Error() string     { return e.msg }
-func (e *unsafeError) SafeToRetry() bool { return false }
-
-// failingStore wraps a ResourceStore and fails Get() calls
-// with the given error for the first N attempts.
-type failingStore struct {
-	store.ResourceStore
-	failTimes int32
-	attempts  atomic.Int32
-	err       error
-}
-
-func (s *failingStore) Get(ctx context.Context, r model.Resource, fs ...store.GetOptionsFunc) error {
-	if s.attempts.Add(1) <= s.failTimes {
-		return s.err
-	}
-	return s.ResourceStore.Get(ctx, r, fs...)
-}
 
 var _ = Describe("Resource Manager", func() {
 	var resStore store.ResourceStore
@@ -162,102 +128,6 @@ var _ = Describe("Resource Manager", func() {
 			res2 := core_mesh.NewTrafficRouteResource()
 			err = resManager.Get(context.Background(), res2, store.GetByKey("tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	Describe("Upsert()", func() {
-		It("should retry on SafeToRetry errors", func() {
-			// given
-			underlying := memory.NewStore()
-			fStore := &failingStore{
-				ResourceStore: underlying,
-				failTimes:     2,
-				err:           &safeToRetryError{msg: "conn closed"},
-			}
-			mgr := manager.NewResourceManager(fStore)
-
-			meshRes := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{},
-			}
-			Expect(mgr.Create(context.Background(), &meshRes,
-				store.CreateByKey("default", model.NoMesh))).To(Succeed())
-
-			// when
-			res := core_mesh.NewTrafficRouteResource()
-			key := model.ResourceKey{Mesh: "default", Name: "tr-1"}
-			err := manager.Upsert(
-				context.Background(), mgr, key, res,
-				func(r model.Resource) error {
-					tr := r.(*core_mesh.TrafficRouteResource)
-					tr.Spec = &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: map[string]string{
-								mesh_proto.ServiceTag: "*",
-							},
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: map[string]string{
-								mesh_proto.ServiceTag: "*",
-							},
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: map[string]string{
-								mesh_proto.ServiceTag: "backend",
-							},
-						},
-					}
-					return nil
-				},
-				manager.WithConflictRetry(
-					1*time.Millisecond, 5, 1,
-				),
-			)
-
-			// then — retried through failures and succeeded
-			Expect(err).ToNot(HaveOccurred())
-			Expect(fStore.attempts.Load()).To(
-				BeNumerically(">=", 3),
-				"expected at least 2 failed + 1 successful Get",
-			)
-		})
-
-		It("should not retry when SafeToRetry returns false", func() {
-			// given
-			underlying := memory.NewStore()
-			fStore := &failingStore{
-				ResourceStore: underlying,
-				failTimes:     2,
-				err:           &unsafeError{msg: "fatal error"},
-			}
-			mgr := manager.NewResourceManager(fStore)
-
-			meshRes := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{},
-			}
-			Expect(mgr.Create(context.Background(), &meshRes,
-				store.CreateByKey("default", model.NoMesh))).To(Succeed())
-
-			// when
-			res := core_mesh.NewTrafficRouteResource()
-			key := model.ResourceKey{Mesh: "default", Name: "tr-1"}
-			err := manager.Upsert(
-				context.Background(), mgr, key, res,
-				func(r model.Resource) error { return nil },
-				manager.WithConflictRetry(
-					1*time.Millisecond, 5, 1,
-				),
-			)
-
-			// then — error returned immediately, no retry
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("fatal error"))
-			Expect(fStore.attempts.Load()).To(
-				BeNumerically("==", 1),
-				fmt.Sprintf(
-					"expected exactly 1 attempt, got %d",
-					fStore.attempts.Load(),
-				),
-			)
 		})
 	})
 })
