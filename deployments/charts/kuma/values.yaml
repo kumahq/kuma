@@ -761,6 +761,13 @@ hooks:
     kubernetes.io/os: linux
   # -- Tolerations for the HELM hooks
   tolerations: []
+  # -- Extra annotations to add to hook Job resources. Useful for tools like ArgoCD
+  # that need to control job lifecycle (e.g. argocd.argoproj.io/hook-delete-policy).
+  annotations: {}
+  # -- TTL in seconds for hook Jobs after they finish. Set to null to disable automatic
+  # TTL-based deletion (recommended when using ArgoCD, which needs to read job status
+  # before deletion).
+  ttlSecondsAfterFinished: 0
   # -- Security context at the pod level for crd/webhook/ns
   podSecurityContext:
     runAsNonRoot: true
