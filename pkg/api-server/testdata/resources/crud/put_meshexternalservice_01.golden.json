@@ -10,7 +10,7 @@
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
- "kri": "kri_extsvc_default_default_kuma-system_mes-tcp_",
+ "kri": "kri_extsvc_default_default__mes-tcp_",
  "spec": {
   "match": {
    "type": "HostnameGenerator",

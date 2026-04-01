@@ -70,8 +70,15 @@ else
 	$(ACTIONLINT) -color
 endif
 
+.PHONY: grafana-lint
+grafana-lint:
+	@for f in dashboards/grafana/*.json; do \
+		echo "Linting $$f..."; \
+		$(DASHBOARD_LINTER) lint -c dashboards/grafana/.lint "$$f" || exit 1; \
+	done
+
 .PHONY: lint
-lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint actionlint
+lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint actionlint grafana-lint
 
 
 .PHONY: check

@@ -61,13 +61,12 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 		}
 
 		resource := descriptor.NewObject()
-		err = k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh))
-		if err != nil {
+		if err := k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh)); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 			return
 		}
 
-		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace, k.cpZone, k.systemNamespace)
+		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not format a resource")
 			return
@@ -80,26 +79,31 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-func (k *kriEndpoint) getCoreName(kri kri.Identifier) string {
-	namespace := kri.Namespace
-	if kri.Namespace == "" {
+func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
+	namespace := id.Namespace
+	if id.Namespace == "" {
 		namespace = k.systemNamespace
 	}
-	if kri.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
+	if id.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
 		if k.environment == config_core.UniversalEnvironment {
-			return kri.Name
-		} else {
-			return kri.Name + "." + namespace
+			return id.Name
 		}
-	} else {
-		// in pkg/kds/context/context.go we first take zone then namespace, needs to be the same
-		hashedName := hash.HashedName(kri.Mesh, kri.Name, kri.Zone, kri.Namespace)
-		if k.environment == config_core.UniversalEnvironment {
-			return hashedName
-		} else {
-			return hashedName + "." + k.systemNamespace
-		}
+		return id.Name + "." + namespace
 	}
+	// Match HashSuffixMapper in pkg/kds/context/context.go: only include
+	// non-empty label values so the hash is identical to what KDS produces.
+	var values []string
+	if id.Zone != "" {
+		values = append(values, id.Zone)
+	}
+	if id.Namespace != "" {
+		values = append(values, id.Namespace)
+	}
+	hashedName := hash.HashedName(id.Mesh, id.Name, values...)
+	if k.environment == config_core.UniversalEnvironment {
+		return hashedName
+	}
+	return hashedName + "." + k.systemNamespace
 }
 
 func getDescriptor(resourceType core_model.ResourceType) (*core_model.ResourceTypeDescriptor, error) {

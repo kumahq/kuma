@@ -211,7 +211,7 @@ func (c *Config) Sanitize() {
 }
 
 func (c *Config) PostProcess() error {
-	return multierr.Combine(
+	if err := multierr.Combine(
 		c.General.PostProcess(),
 		c.Store.PostProcess(),
 		c.BootstrapServer.PostProcess(),
@@ -225,7 +225,14 @@ func (c *Config) PostProcess() error {
 		c.Multizone.PostProcess(),
 		c.Diagnostics.PostProcess(),
 		c.Policies.PostProcess(),
-	)
+		c.DpServer.PostProcess(),
+	); err != nil {
+		return err
+	}
+	if c.Store.Type == store.KubernetesStore {
+		c.DpServer.Authn.EnableReloadableTokens = true
+	}
+	return nil
 }
 
 var DefaultConfig = func() Config {

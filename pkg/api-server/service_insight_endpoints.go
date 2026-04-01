@@ -52,7 +52,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 			}
 		}
 		s.fillStaticInfo(service, stat)
-		out := rest.From.ResourceWithKRIDefaults(serviceInsight, s.zoneName, s.systemNamespace)
+		out := rest.From.Resource(serviceInsight)
 		res := out.(*rest_unversioned.Resource)
 		res.Meta.Name = service
 		res.Spec = stat
@@ -145,7 +145,7 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 				continue
 			}
 			s.fillStaticInfo(serviceName, service)
-			out := rest.From.ResourceWithKRIDefaults(insight, s.zoneName, s.systemNamespace)
+			out := rest.From.Resource(insight)
 			res := out.(*rest_unversioned.Resource)
 			res.Meta.Name = serviceName
 			res.Spec = service
