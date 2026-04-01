@@ -197,6 +197,7 @@ var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,
+	OptionalSpec:                 false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mr",
 	IsFromAsRules:                false,

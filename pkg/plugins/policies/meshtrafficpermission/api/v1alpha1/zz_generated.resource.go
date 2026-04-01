@@ -197,6 +197,7 @@ var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasFromTargetRef:             true,
 	HasRulesTargetRef:            true,
 	HasStatus:                    false,
+	OptionalSpec:                 false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mtp",
 	IsFromAsRules:                false,

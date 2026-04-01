@@ -189,6 +189,8 @@ type ResourceTypeDescriptor struct {
 	HasRulesTargetRef bool
 	// HasStatus indicates that the policy has a status field
 	HasStatus bool
+	// OptionalSpec indicates that the spec field can be omitted when empty
+	OptionalSpec bool
 	// IsProxy indicates if this resource is a proxy
 	IsProxy bool
 	// IsDestination indicates if this resource is a destination

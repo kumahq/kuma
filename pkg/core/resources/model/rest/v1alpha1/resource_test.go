@@ -9,7 +9,6 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
 	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	meshtrafficpermissions "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
 )
 
@@ -102,8 +101,8 @@ var _ = Describe("Rest Resource", func() {
 				Expect(string(bytes)).To(MatchJSON(expected))
 			})
 
-			It("should omit spec when set to non-nil empty struct", func() {
-				// given
+			It("should omit spec when nil", func() {
+				// given - spec is nil (set by converter for optional-spec resources)
 				res := &v1alpha1.Resource{
 					ResourceMeta: v1alpha1.ResourceMeta{
 						Type:             "MeshTrafficPermission",
@@ -112,7 +111,7 @@ var _ = Describe("Rest Resource", func() {
 						CreationTime:     t1,
 						ModificationTime: t2,
 					},
-					Spec: &meshtrafficpermissions.MeshTrafficPermission{},
+					Spec: nil,
 				}
 
 				// when
@@ -120,14 +119,7 @@ var _ = Describe("Rest Resource", func() {
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(bytes)).To(MatchJSON(`{
-  "type": "MeshTrafficPermission",
-  "mesh": "default",
-  "name": "one",
-  "creationTime": "2018-07-17T16:05:36.995Z",
-  "modificationTime": "2019-07-17T16:05:36.995Z",
-  "kri": "kri_mtp_default___one_"
-}`))
+				Expect(string(bytes)).ToNot(ContainSubstring(`"spec"`))
 			})
 
 			It("should omit status when set to non-nil empty struct", func() {

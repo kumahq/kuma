@@ -1,6 +1,10 @@
 type: object
 description: ""
+{{- if .OptionalSpec }}
+required: [type, name]
+{{- else }}
 required: [type, name, spec]
+{{- end }}
 properties:
   type:
     description: 'the type of the resource'

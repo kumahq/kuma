@@ -26,9 +26,7 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !bytes.Equal(b, emptyJSON) {
-			specJSON = b
-		}
+		specJSON = b
 	}
 
 	var statusJSON json.RawMessage

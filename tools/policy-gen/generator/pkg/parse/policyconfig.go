@@ -48,6 +48,7 @@ type PolicyConfig struct {
 	IsFromAsRules                bool
 	RegisterGenerator            bool
 	Description                  string
+	OptionalSpec                 bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -183,6 +184,9 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 	}
 	if v, ok := parseBool(markers, "kuma:policy:register_generator"); ok {
 		res.RegisterGenerator = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:optional_spec"); ok {
+		res.OptionalSpec = v
 	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
 		res.KDSFlags = v
