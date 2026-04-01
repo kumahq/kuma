@@ -141,6 +141,19 @@ type EndpointList []Endpoint
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
 
+// EgressEndpointGroup holds group-level metadata alongside the actual endpoints for a single
+// external service destination. Protocol and OwnerResource are the same for every endpoint in
+// the group, so they live here rather than being read from endpoints[0].
+type EgressEndpointGroup struct {
+	Protocol      core_meta.Protocol
+	OwnerResource kri.Identifier
+	Endpoints     []Endpoint
+}
+
+// EgressEndpointMap groups endpoints by service name with group-level metadata.
+// Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
+type EgressEndpointMap map[ServiceName]EgressEndpointGroup
+
 // TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
 type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
 

@@ -104,7 +104,7 @@ type MeshContext struct {
 	DataplaneZoneIngressEndpointMap xds.EndpointMap
 	// DataplaneZoneEgressEndpointMap is the shared endpoint map for embedded zone egress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
-	DataplaneZoneEgressEndpointMap xds.EndpointMap
+	DataplaneZoneEgressEndpointMap xds.EgressEndpointMap
 }
 
 type ServiceInformation struct {

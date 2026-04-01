@@ -230,7 +230,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				},
 				meshContext: xds_context.MeshContext{
 					Resource:                       builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
-					DataplaneZoneEgressEndpointMap: core_xds.EndpointMap{},
+					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{},
 					Resources: xds_context.Resources{
 						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
 					},
@@ -273,16 +273,20 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				},
 				meshContext: xds_context.MeshContext{
 					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
-					DataplaneZoneEgressEndpointMap: core_xds.EndpointMap{
-						unifiedSvcName: []core_xds.Endpoint{
-							{
-								Target: "192.168.0.1",
-								Port:   27017,
-								Tags:   map[string]string{},
-								Weight: 1,
-								ExternalService: &core_xds.ExternalService{
-									Protocol:      core_meta.ProtocolHTTP,
-									OwnerResource: mesKRI,
+					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{
+						unifiedSvcName: core_xds.EgressEndpointGroup{
+							Protocol:      core_meta.ProtocolHTTP,
+							OwnerResource: mesKRI,
+							Endpoints: []core_xds.Endpoint{
+								{
+									Target: "192.168.0.1",
+									Port:   27017,
+									Tags:   map[string]string{},
+									Weight: 1,
+									ExternalService: &core_xds.ExternalService{
+										Protocol:      core_meta.ProtocolHTTP,
+										OwnerResource: mesKRI,
+									},
 								},
 							},
 						},
@@ -296,6 +300,58 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					},
 				},
 				expected: "egress-meshexternalservice.envoy.golden.yaml",
+			}
+		}()),
+		Entry("egress: empty endpoint group is skipped silently", func() testCase {
+			mes := builders.MeshExternalService().WithKumaVIP("242.0.0.1").Build()
+			mesKRI := kri.From(mes)
+			unifiedSvcName := kri.WithSectionName(mesKRI, mes.Spec.Match.GetName()).String()
+
+			dp := samples.DataplaneBackendBuilder().
+				With(func(r *core_mesh.DataplaneResource) {
+					r.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.0.0.1",
+							Port:    10002,
+							Name:    "zone-egress-port",
+						},
+					}
+				}).
+				Build()
+
+			return testCase{
+				proxy: &core_xds.Proxy{
+					Id:         *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion: envoy_common.APIV3,
+					Dataplane:  dp,
+					Metadata: &core_xds.DataplaneMetadata{
+						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
+						Features: map[string]bool{
+							xds_types.FeatureUnifiedResourceNaming: true,
+						},
+					},
+					WorkloadIdentity:  testWorkloadIdentity,
+					InternalAddresses: DummyInternalAddresses,
+				},
+				meshContext: xds_context.MeshContext{
+					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{
+						unifiedSvcName: core_xds.EgressEndpointGroup{
+							Protocol:      core_meta.ProtocolHTTP,
+							OwnerResource: mesKRI,
+							Endpoints:     nil,
+						},
+					},
+					Resources: xds_context.Resources{
+						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
+							},
+						},
+					},
+				},
+				expected: "egress-empty-endpoints.envoy.golden.yaml",
 			}
 		}()),
 	)

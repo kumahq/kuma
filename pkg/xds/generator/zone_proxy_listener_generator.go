@@ -4,7 +4,6 @@ import (
 	"context"
 
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -167,7 +166,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	proxy *core_xds.Proxy,
 	listener *mesh_proto.Dataplane_Networking_Listener,
 	destinations []core_resources.Destination,
-	endpointMap core_xds.EndpointMap,
+	endpointMap core_xds.EgressEndpointMap,
 ) (*core_xds.ResourceSet, error) {
 	if len(destinations) == 0 {
 		return nil, nil
@@ -190,12 +189,17 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		return nil, err
 	}
 
+	addedFilterChains := 0
 	for _, dst := range destinations {
 		esPort := dst.GetPorts()[0]
 		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
 		sni := tls.SNIForResource(id.Name, id.Mesh, id.ResourceType, esPort.GetValue(), nil)
 		clusterName := id.String()
-		endpoints := endpointMap[clusterName]
+		group := endpointMap[clusterName]
+
+		if len(group.Endpoints) == 0 {
+			continue
+		}
 
 		split := plugins_xds.NewSplitBuilder().
 			WithClusterName(clusterName).
@@ -203,12 +207,17 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 			WithWeight(1).
 			Build()
 
-		listenerBuilder.Configure(envoy_listeners.FilterChain(g.buildEgressFilterChain(proxy, endpoints[0].Protocol(), downstreamTLS, split, sni)))
-		cds, err := g.genClusterCDS(proxy, endpoints, clusterName)
+		listenerBuilder.Configure(envoy_listeners.FilterChain(g.buildEgressFilterChain(proxy, group.Protocol, downstreamTLS, split, sni)))
+		cds, err := g.genClusterCDS(proxy, group, clusterName)
 		if err != nil {
 			return nil, err
 		}
 		rs.Add(cds)
+		addedFilterChains++
+	}
+
+	if addedFilterChains == 0 {
+		return nil, nil
 	}
 
 	resource, err := listenerBuilder.Build()
@@ -226,25 +235,18 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 
 func (g ZoneProxyListenerGenerator) genClusterCDS(
 	proxy *core_xds.Proxy,
-	endpoints []core_xds.Endpoint,
+	group core_xds.EgressEndpointGroup,
 	clusterName string,
 ) (*core_xds.Resource, error) {
-	// This should never happen as callers should always provide at least one endpoint.
-	// If it does happen, it indicates a bug in the calling code.
-	if len(endpoints) == 0 {
-		return nil, errors.New("endpoints cannot be empty")
-	}
-
 	ipv6 := proxy.Dataplane.IsIPv6()
 	systemCAPath := proxy.Metadata.GetSystemCaPath()
-	protocol := endpoints[0].Protocol()
 
 	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
 		Configure(envoy_clusters.DefaultTimeout()).
-		ConfigureIf(core_meta.IsHTTP(protocol), envoy_clusters.Http()).
-		ConfigureIf(core_meta.IsHTTP2Based(protocol), envoy_clusters.Http2()).
-		Configure(envoy_clusters.ProvidedCustomEndpointCluster(ipv6, true, endpoints...)).
-		Configure(envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCAPath, true)).
+		ConfigureIf(core_meta.IsHTTP(group.Protocol), envoy_clusters.Http()).
+		ConfigureIf(core_meta.IsHTTP2Based(group.Protocol), envoy_clusters.Http2()).
+		Configure(envoy_clusters.ProvidedCustomEndpointCluster(ipv6, true, group.Endpoints...)).
+		Configure(envoy_clusters.MeshExternalServiceClientSideTLS(group.Endpoints, systemCAPath, true)).
 		Build()
 	if err != nil {
 		return nil, err
@@ -253,8 +255,8 @@ func (g ZoneProxyListenerGenerator) genClusterCDS(
 		Name:           resource.GetName(),
 		Origin:         metadata.OriginEgress,
 		Resource:       resource,
-		Protocol:       endpoints[0].ExternalService.Protocol,
-		ResourceOrigin: endpoints[0].ExternalService.OwnerResource,
+		Protocol:       group.Protocol,
+		ResourceOrigin: group.OwnerResource,
 	}, nil
 }
 

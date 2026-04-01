@@ -83,14 +83,23 @@ func BuildDataplaneZoneEgressEndpointMap(
 	mesh *core_mesh.MeshResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
+) core_xds.EgressEndpointMap {
+	tmp := core_xds.EndpointMap{}
 	for _, mes := range meshExternalServices {
-		if err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, true); err != nil {
+		if err := createMeshExternalServiceEndpoint(ctx, tmp, mes, mesh, loader, true); err != nil {
 			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 		}
 	}
-	return outbound
+	result := core_xds.EgressEndpointMap{}
+	for name, endpoints := range tmp {
+		group := core_xds.EgressEndpointGroup{Endpoints: endpoints}
+		if len(endpoints) > 0 && endpoints[0].ExternalService != nil {
+			group.Protocol = endpoints[0].ExternalService.Protocol
+			group.OwnerResource = endpoints[0].ExternalService.OwnerResource
+		}
+		result[name] = group
+	}
+	return result
 }
 
 // BuildDataplaneZoneIngressEndpointMap builds endpoints only for local MeshServices and MeshMultiZoneServices.
