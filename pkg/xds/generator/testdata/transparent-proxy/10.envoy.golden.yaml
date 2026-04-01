@@ -60,7 +60,6 @@ resources:
           cluster: self_transparentproxy_passthrough_inbound_ipv4
           statPrefix: self_transparentproxy_passthrough_inbound_ipv4
     name: self_transparentproxy_passthrough_inbound_ipv4
-    statPrefix: self_transparentproxy_passthrough_inbound_ipv4
     trafficDirection: INBOUND
     useOriginalDst: true
 - name: self_transparentproxy_passthrough_inbound_ipv6
@@ -81,7 +80,6 @@ resources:
           cluster: self_transparentproxy_passthrough_inbound_ipv6
           statPrefix: self_transparentproxy_passthrough_inbound_ipv6
     name: self_transparentproxy_passthrough_inbound_ipv6
-    statPrefix: self_transparentproxy_passthrough_inbound_ipv6
     trafficDirection: INBOUND
     useOriginalDst: true
 - name: self_transparentproxy_passthrough_outbound_ipv4
@@ -99,7 +97,6 @@ resources:
           cluster: self_transparentproxy_passthrough_outbound_ipv4
           statPrefix: self_transparentproxy_passthrough_outbound_ipv4
     name: self_transparentproxy_passthrough_outbound_ipv4
-    statPrefix: self_transparentproxy_passthrough_outbound_ipv4
     trafficDirection: OUTBOUND
     useOriginalDst: true
 - name: self_transparentproxy_passthrough_outbound_ipv6
@@ -117,6 +114,5 @@ resources:
           cluster: self_transparentproxy_passthrough_outbound_ipv6
           statPrefix: self_transparentproxy_passthrough_outbound_ipv6
     name: self_transparentproxy_passthrough_outbound_ipv6
-    statPrefix: self_transparentproxy_passthrough_outbound_ipv6
     trafficDirection: OUTBOUND
     useOriginalDst: true
