@@ -1,12 +1,15 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"encoding/json"
 	"time"
 
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
+
+var emptyJSON = []byte("{}")
 
 type Resource struct {
 	ResourceMeta
@@ -23,7 +26,7 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if string(b) != "{}" {
+		if !bytes.Equal(b, emptyJSON) {
 			specJSON = b
 		}
 	}
@@ -34,7 +37,7 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if string(b) != "{}" {
+		if !bytes.Equal(b, emptyJSON) {
 			statusJSON = b
 		}
 	}
