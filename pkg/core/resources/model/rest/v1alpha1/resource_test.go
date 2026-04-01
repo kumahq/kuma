@@ -7,6 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshtrafficpermissions "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
 )
@@ -98,6 +101,56 @@ var _ = Describe("Rest Resource", func() {
 }
 `
 				Expect(string(bytes)).To(MatchJSON(expected))
+			})
+
+			It("should omit spec when set to non-nil empty struct", func() {
+				// given
+				res := &v1alpha1.Resource{
+					ResourceMeta: v1alpha1.ResourceMeta{
+						Type:             "MeshTrafficPermission",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
+					},
+					Spec: &meshtrafficpermissions.MeshTrafficPermission{},
+				}
+
+				// when
+				bytes, err := json.Marshal(res)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).To(MatchJSON(`{
+  "type": "MeshTrafficPermission",
+  "mesh": "default",
+  "name": "one",
+  "creationTime": "2018-07-17T16:05:36.995Z",
+  "modificationTime": "2019-07-17T16:05:36.995Z",
+  "kri": "kri_mtp_default___one_"
+}`))
+			})
+
+			It("should omit status when set to non-nil empty struct", func() {
+				// given
+				res := &v1alpha1.Resource{
+					ResourceMeta: v1alpha1.ResourceMeta{
+						Type:             "MeshTrafficPermission",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
+					},
+					Spec:   samples.MeshTrafficPermission,
+					Status: &meshmetric.MeshMetricStatus{},
+				}
+
+				// when
+				bytes, err := json.Marshal(res)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).ToNot(ContainSubstring(`"status"`))
 			})
 		})
 	})

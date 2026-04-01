@@ -8,7 +8,6 @@
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
    "kri": "kri_wl_default___workload-1_",
-   "spec": {},
    "status": {
     "dataplaneProxies": {
      "connected": 2,
@@ -24,7 +23,6 @@
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
    "kri": "kri_wl_default___workload-2_",
-   "spec": {},
    "status": {
     "dataplaneProxies": {
      "connected": 4,

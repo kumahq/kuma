@@ -23,7 +23,9 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		specJSON = b
+		if string(b) != "{}" {
+			specJSON = b
+		}
 	}
 
 	var statusJSON json.RawMessage
@@ -32,7 +34,9 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		statusJSON = b
+		if string(b) != "{}" {
+			statusJSON = b
+		}
 	}
 
 	var kriStr string

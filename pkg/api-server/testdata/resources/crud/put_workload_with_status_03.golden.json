@@ -11,7 +11,6 @@
   "kuma.io/zone": "default"
  },
  "kri": "kri_wl_default_default__with-status_",
- "spec": {},
  "status": {
   "dataplaneProxies": {
    "connected": 0,
