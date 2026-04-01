@@ -10,12 +10,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	chartcommon "helm.sh/helm/v4/pkg/chart/common"
-	chartcommonutil "helm.sh/helm/v4/pkg/chart/common/util"
-	"helm.sh/helm/v4/pkg/chart/loader/archive"
-	"helm.sh/helm/v4/pkg/chart/v2/loader"
-	chartv2util "helm.sh/helm/v4/pkg/chart/v2/util"
-	"helm.sh/helm/v4/pkg/engine"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/chartutil"
+	"helm.sh/helm/v3/pkg/engine"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v2/deployments"
@@ -50,9 +47,9 @@ func renderHookTemplates(valuesFile string) ([]byte, error) {
 	}
 
 	// Load chart including pre-* / post-* templates (no filtering).
-	var files []*archive.BufferedFile
+	var files []*loader.BufferedFile
 	for _, f := range templateFiles {
-		files = append(files, &archive.BufferedFile{
+		files = append(files, &loader.BufferedFile{
 			Name: f.FullPath,
 			Data: f.Data,
 		})
@@ -63,18 +60,18 @@ func renderHookTemplates(valuesFile string) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := chartv2util.ProcessDependencies(kumaChart, overrideValues); err != nil {
+	if err := chartutil.ProcessDependencies(kumaChart, overrideValues); err != nil {
 		return nil, err
 	}
 
-	options := chartcommon.ReleaseOptions{
+	options := chartutil.ReleaseOptions{
 		Name:      kumaChart.Metadata.Name,
 		Namespace: "kuma-system",
 		Revision:  1,
 		IsInstall: true,
 	}
 
-	valuesToRender, err := chartcommonutil.ToRenderValues(kumaChart, overrideValues, options, chartcommon.DefaultCapabilities)
+	valuesToRender, err := chartutil.ToRenderValues(kumaChart, overrideValues, options, chartutil.DefaultCapabilities)
 	if err != nil {
 		return nil, err
 	}

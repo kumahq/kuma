@@ -85,7 +85,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: pre-delete-job
-          image: "registry.k8s.io/kubectl:v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37"
+          image: "registry.k8s.io/kubectl:v1.33.4@sha256:261a9ed843eb68e3d50da132245e2221d75ca19504130e47bd32788c0ff339a0"
           command:
             - 'kubectl'
             - 'delete'
@@ -190,7 +190,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: pre-install-job
-          image: "registry.k8s.io/kubectl:v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37"
+          image: "registry.k8s.io/kubectl:v1.33.4@sha256:261a9ed843eb68e3d50da132245e2221d75ca19504130e47bd32788c0ff339a0"
           securityContext:
             readOnlyRootFilesystem: true
             runAsUser: 65534
@@ -321,7 +321,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: pre-upgrade-job
-          image: "registry.k8s.io/kubectl:v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37"
+          image: "registry.k8s.io/kubectl:v1.33.4@sha256:261a9ed843eb68e3d50da132245e2221d75ca19504130e47bd32788c0ff339a0"
           securityContext:
             readOnlyRootFilesystem: true
             runAsUser: 65534
