@@ -260,6 +260,24 @@ status:
 
 ## Upgrade to `2.12.x`
 
+### Helm: Configurable hook job TTL and annotations
+
+Hook job templates (`pre-install`, `pre-upgrade`, `pre-delete`, `post-delete`, `post-install`) were modified to make `ttlSecondsAfterFinished` and job annotations configurable. This fixes ArgoCD deployments getting stuck during upgrades: with `ttlSecondsAfterFinished: 0`, Kubernetes deleted hook Jobs immediately upon completion before ArgoCD could read their status, causing syncs to hang indefinitely.
+
+New values:
+- `hooks.ttlSecondsAfterFinished` (default: `0`) — set to `null` to disable TTL deletion
+- `hooks.annotations` (default: `{}`) — extra annotations merged into all hook Job metadata
+
+**Recommended ArgoCD configuration:**
+```yaml
+hooks:
+  ttlSecondsAfterFinished: null
+  annotations:
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+```
+
+**Action required:** None for non-ArgoCD users. Default behaviour is preserved.
+
 ### Removal of `/status/zones` endpoints
 
 These endpoints were deprecated, and are now removed. You can achieve the same functionality with `/zones/_overview`.

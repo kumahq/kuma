@@ -82,8 +82,13 @@ metadata:
     {{/* Ensure the job is created after the RBAC resources and control plane is ready */}}
     "helm.sh/hook-weight": "5"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+    {{- with .Values.hooks.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
-  ttlSecondsAfterFinished: 0
+  {{- if not (kindIs "invalid" .Values.hooks.ttlSecondsAfterFinished) }}
+  ttlSecondsAfterFinished: {{ .Values.hooks.ttlSecondsAfterFinished }}
+  {{- end }}
   template:
     metadata:
       name: {{ template "kuma.name" . }}-rollout-zoneproxy-script
