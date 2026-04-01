@@ -1,0 +1,366 @@
+# HELM first deletes RBAC of Kuma, then it tries to delete Secrets. We've got validating webhook on Secrets.
+# But even that the policy of this webhook is Ignore, it fails because Kuma does not have permission to access Secrets anymore.
+# Therefore we first need to delete webhook so we can delete the rest of the deployment
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-pre-delete-job
+  namespace: kuma-system
+  annotations:
+    "helm.sh/hook": "pre-delete"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-pre-delete-job
+  annotations:
+    "helm.sh/hook": "pre-delete"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - validatingwebhookconfigurations
+    resourceNames:
+      - kuma-validating-webhook-configuration
+    verbs:
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-pre-delete-job
+  annotations:
+    "helm.sh/hook": "pre-delete"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-pre-delete-job
+subjects:
+  - kind: ServiceAccount
+    name: kuma-pre-delete-job
+    namespace: kuma-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kuma-delete-webhook
+  namespace: kuma-system
+  labels:
+  
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+    "helm.sh/hook": "pre-delete"
+    
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+spec:
+  ttlSecondsAfterFinished: 0
+  template:
+    metadata:
+      name: kuma-delete-webhook
+      labels:
+    
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      serviceAccountName: kuma-pre-delete-job
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: pre-delete-job
+          image: "registry.k8s.io/kubectl:v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37"
+          command:
+            - 'kubectl'
+            - 'delete'
+            - 'ValidatingWebhookConfiguration'
+            - '--ignore-not-found'
+            - kuma-validating-webhook-configuration
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 65534
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-patch-ns-job
+  namespace: kuma-system
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-patch-ns-job
+  namespace: kuma-system
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    resourceNames:
+      - kuma-system
+    verbs:
+      - get
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-patch-ns-job
+  namespace: kuma-system
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-patch-ns-job
+subjects:
+  - kind: ServiceAccount
+    name: kuma-patch-ns-job
+    namespace: kuma-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kuma-patch-ns
+  namespace: kuma-system
+  labels:
+  
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+    "helm.sh/hook": "pre-install"
+    
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+spec:
+  ttlSecondsAfterFinished: 0
+  template:
+    metadata:
+      name: kuma-patch-ns-script
+      labels:
+    
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      serviceAccountName: kuma-patch-ns-job
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: pre-install-job
+          image: "registry.k8s.io/kubectl:v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37"
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 65534
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+          command:
+            - 'kubectl'
+            - 'patch'
+            - 'namespace'
+            - "kuma-system"
+            - '--type'
+            - 'merge'
+            - '--patch'
+            - '{ "metadata": { "labels": { "kuma.io/sidecar-injection": "false" } } }'
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-install-crds
+  namespace: kuma-system
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-install-crds
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+    - "apiextensions.k8s.io"
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - create
+      - patch
+      - update
+      - list
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-install-crds
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-install-crds
+subjects:
+  - kind: ServiceAccount
+    name: kuma-install-crds
+    namespace: kuma-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kuma-install-crds-scripts
+  namespace: kuma-system
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  save_crds.sh: |
+    set -e
+
+    crds="$(kumactl install crds --no-config)"
+
+    if [ -n "${crds}" ]; then
+      echo "found crds - saving to /kuma/crds/crds.yaml"
+      echo "${crds}" > /kuma/crds/crds.yaml
+    fi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kuma-install-crds
+  namespace: kuma-system
+  labels:
+  
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+    "helm.sh/hook": "pre-upgrade,pre-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+spec:
+  ttlSecondsAfterFinished: 0
+  template:
+    metadata:
+      name: kuma-install-crds-job
+      labels:
+    
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      serviceAccountName: kuma-install-crds
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: pre-upgrade-job
+          image: "registry.k8s.io/kubectl:v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37"
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 65534
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+          args: ["apply", "--recursive", "--filename", "/kuma/crds"]
+          volumeMounts:
+            - mountPath: /kuma/crds
+              name: crds
+              readOnly: true
+      initContainers:
+        - name: pre-upgrade-job-init
+          image: "docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build"
+          securityContext:
+            readOnlyRootFilesystem: true
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
+          volumeMounts:
+          - mountPath: /kuma/crds
+            name: crds
+          - mountPath: /kuma/scripts
+            name: scripts
+            readOnly: true
+          command: ["sh", "-c"]
+          args: ["/kuma/scripts/save_crds.sh"]
+      volumes:
+        - name: scripts
+          configMap:
+            name: kuma-install-crds-scripts
+            defaultMode: 0755
+        - name: crds
+          emptyDir: {}

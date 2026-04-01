@@ -92,8 +92,13 @@ metadata:
   annotations:
     "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+    {{- with .Values.hooks.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
-  ttlSecondsAfterFinished: 0
+  {{- if not (kindIs "invalid" .Values.hooks.ttlSecondsAfterFinished) }}
+  ttlSecondsAfterFinished: {{ .Values.hooks.ttlSecondsAfterFinished }}
+  {{- end }}
   template:
     metadata:
       name: {{ template "kuma.name" . }}-install-crds-job
