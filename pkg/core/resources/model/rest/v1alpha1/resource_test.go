@@ -7,10 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
 	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	meshtrafficpermissions "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
 )
 
