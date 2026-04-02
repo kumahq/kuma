@@ -9765,6 +9765,8 @@ spec:
     kind: Zone
     listKind: ZoneList
     plural: zones
+    shortNames:
+    - z
     singular: zone
   scope: Cluster
   versions:
