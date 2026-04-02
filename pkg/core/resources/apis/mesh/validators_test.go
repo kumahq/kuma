@@ -913,6 +913,36 @@ violations:
     message: name or labels must be set when kind is MeshService
 `,
 		}),
+		Entry("MeshHTTPRoute should have name or labels", testCase{
+			inputYaml: `
+kind: MeshHTTPRoute
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshHTTPRoute,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef
+    message: name or labels must be set when kind is MeshHTTPRoute
+`,
+		}),
+		Entry("MeshExternalService should have name or labels", testCase{
+			inputYaml: `
+kind: MeshExternalService
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshExternalService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef
+    message: name or labels must be set when kind is MeshExternalService
+`,
+		}),
 		Entry("Mesh should not be used with namespace or labels or sectionName", testCase{
 			inputYaml: `
 kind: Mesh
