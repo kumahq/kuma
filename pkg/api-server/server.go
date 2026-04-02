@@ -180,6 +180,7 @@ func NewApiServer(
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	addWhoamiEndpoints(ws)
+	addLoggingEndpoints(ws, rt.Access().ControlPlaneMetadataAccess)
 
 	ws.SetDynamicRoutes(true)
 	if err := rt.APIWebServiceCustomize()(ws); err != nil {

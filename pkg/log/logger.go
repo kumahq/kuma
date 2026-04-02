@@ -71,7 +71,18 @@ func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBa
 }
 
 func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
-	return zapr.NewLogger(newZapLoggerTo(destWriter, level))
+	return NewLoggerToWithRegistry(destWriter, level, GlobalComponentLevelRegistry())
+}
+
+// NewLoggerToWithRegistry creates a logger writing to destWriter using the
+// given registry for per-component level overrides. The inner zap logger is
+// created at max verbosity — all level filtering is done by the sink.
+func NewLoggerToWithRegistry(destWriter io.Writer, level LogLevel, registry *ComponentLevelRegistry) logr.Logger {
+	baseLevel := newAtomicLogLevel(level)
+	// Inner logger at max verbosity so Info() never filters
+	innerZap := buildZapLogger(destWriter, zap.NewAtomicLevelAt(-10), level == DebugLevel)
+	base := zapr.NewLogger(innerZap)
+	return logr.New(NewComponentAwareSink(base.GetSink(), registry, &baseLevel))
 }
 
 // NewLoggerWithGlobalLevel creates a logger that uses the global atomic level.
@@ -79,7 +90,10 @@ func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
 // replacing the logger instance. This is useful for early initialization
 // (e.g., in init() functions) where the final log level is not yet known.
 func NewLoggerWithGlobalLevel() logr.Logger {
-	return zapr.NewLogger(newZapLoggerWithGlobalLevel(os.Stderr))
+	verbose := defaultAtomicLevel.Level() <= zapcore.Level(-10)
+	innerZap := buildZapLogger(os.Stderr, zap.NewAtomicLevelAt(-10), verbose)
+	base := zapr.NewLogger(innerZap)
+	return logr.New(NewComponentAwareSink(base.GetSink(), GlobalComponentLevelRegistry(), &defaultAtomicLevel))
 }
 
 // SetGlobalLogLevel updates the global atomic log level used by loggers
@@ -101,43 +115,31 @@ func SetGlobalLogLevel(level LogLevel) {
 	}
 }
 
-func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *zap.Logger {
-	if level == OffLevel {
-		return zap.NewNop()
-	}
-
-	// Create a new AtomicLevel for this logger
-	var lvl zap.AtomicLevel
-	var verbose bool
-
-	switch level {
-	case DebugLevel:
-		// The value we pass here is the most verbose level that
-		// will end up being emitted through the `V(level int)`
-		// accessor. Passing -10 ensures that levels up to `V(10)`
-		// will work, which seems like plenty.
-		lvl = zap.NewAtomicLevelAt(-10)
-		verbose = true
+// GetGlobalLogLevel returns the current global log level by reading the
+// atomic level used by loggers created with NewLoggerWithGlobalLevel.
+func GetGlobalLogLevel() LogLevel {
+	lvl := defaultAtomicLevel.Level()
+	switch {
+	case lvl >= zapcore.Level(100):
+		return OffLevel
+	case lvl <= zapcore.Level(-10):
+		return DebugLevel
 	default:
-		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
-		verbose = false
+		return InfoLevel
 	}
-
-	return buildZapLogger(destWriter, lvl, verbose, opts...)
 }
 
-func newZapLoggerWithGlobalLevel(destWriter io.Writer, opts ...zap.Option) *zap.Logger {
-	// defaultAtomicLevel starts at InfoLevel (zap.NewAtomicLevel() default).
-	// The level can be changed via SetGlobalLogLevel() before or after this call.
-
-	// Note: verbose is determined at creation time based on the current level.
-	// If the level changes later via SetGlobalLogLevel(), the verbose flag
-	// (affecting KubeAwareEncoder.Verbose and stacktrace behavior) will NOT
-	// update. For kumactl's use case, this is acceptable since we only call
-	// SetGlobalLogLevel() once during flag parsing, before any logging occurs.
-	verbose := defaultAtomicLevel.Level() <= zapcore.Level(-10)
-
-	return buildZapLogger(destWriter, defaultAtomicLevel, verbose, opts...)
+func newAtomicLogLevel(level LogLevel) zap.AtomicLevel {
+	al := zap.NewAtomicLevel()
+	switch level {
+	case OffLevel:
+		al.SetLevel(zapcore.Level(100))
+	case DebugLevel:
+		al.SetLevel(zapcore.Level(-10))
+	case InfoLevel:
+		al.SetLevel(zapcore.InfoLevel)
+	}
+	return al
 }
 
 // buildZapLogger is the common implementation for creating zap loggers.
