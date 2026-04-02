@@ -23,7 +23,7 @@ func NewDataplaneWatchdogFactory(
 	xdsSyncMetrics *xds_metrics.Metrics,
 	refreshInterval time.Duration,
 	deps DataplaneWatchdogDependencies,
-) (DataplaneWatchdogFactory, error) {
+) (DataplaneWatchdogFactoryWithStreamCtx, error) {
 	return &dataplaneWatchdogFactory{
 		deps:            deps,
 		refreshInterval: refreshInterval,
@@ -32,6 +32,10 @@ func NewDataplaneWatchdogFactory(
 }
 
 func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watchdog {
+	return d.NewWithStreamCtx(dpKey, nil)
+}
+
+func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, streamCtx context.Context) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
 	return &util_watchdog.SimpleWatchdog{
@@ -54,10 +58,11 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watc
 			d.xdsMetrics.XdsGenerationsErrors.Inc()
 			log.Error(err, "OnTick() failed")
 		},
-		OnStop: func() {
-			if err := dataplaneWatchdog.Cleanup(); err != nil {
+		OnStop: func(ctx context.Context) {
+			if err := dataplaneWatchdog.Cleanup(ctx); err != nil {
 				log.Error(err, "OnTick() failed")
 			}
 		},
+		StreamCtx: streamCtx,
 	}
 }

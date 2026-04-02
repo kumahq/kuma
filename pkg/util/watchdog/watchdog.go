@@ -11,7 +11,11 @@ type SimpleWatchdog struct {
 	NewTicker func() *time.Ticker
 	OnTick    func(context.Context) error
 	OnError   func(error)
-	OnStop    func()
+	OnStop    func(context.Context)
+	// StreamCtx is an optional context tied to the gRPC stream.
+	// When set, the watchdog will skip ticks if the stream is closed,
+	// preventing race conditions between stream closure and snapshot updates.
+	StreamCtx context.Context
 }
 
 func (w *SimpleWatchdog) Start(ctx context.Context) {
@@ -19,6 +23,19 @@ func (w *SimpleWatchdog) Start(ctx context.Context) {
 	defer ticker.Stop()
 
 	for {
+		// If stream context is set and closed, skip tick and wait for main context
+		if w.StreamCtx != nil {
+			select {
+			case <-w.StreamCtx.Done():
+				<-ctx.Done()
+				if w.OnStop != nil {
+					w.OnStop(context.WithoutCancel(ctx))
+				}
+				return
+			default:
+			}
+		}
+
 		if err := w.onTick(ctx); err != nil {
 			if !errors.Is(err, context.Canceled) && w.OnError != nil {
 				w.OnError(err)
@@ -32,7 +49,7 @@ func (w *SimpleWatchdog) Start(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			if w.OnStop != nil {
-				w.OnStop()
+				w.OnStop(context.WithoutCancel(ctx))
 			}
 			return
 		default:

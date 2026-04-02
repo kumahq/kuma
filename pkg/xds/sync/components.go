@@ -53,7 +53,7 @@ func DefaultDataplaneWatchdogFactory(
 	xdsMetrics *xds_metrics.Metrics,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion core_xds.APIVersion,
-) (DataplaneWatchdogFactory, error) {
+) (DataplaneWatchdogFactoryWithStreamCtx, error) {
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
