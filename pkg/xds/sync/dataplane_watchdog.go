@@ -84,7 +84,7 @@ func (d *DataplaneWatchdog) Sync(ctx context.Context) (SyncResult, error) {
 	}
 }
 
-func (d *DataplaneWatchdog) Cleanup() error {
+func (d *DataplaneWatchdog) Cleanup(ctx context.Context) error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
@@ -94,7 +94,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 		return d.IngressReconciler.Clear(&proxyID)
 	case mesh_proto.EgressProxyType:
 		aggregatedMeshCtxs, aggregateMeshContextsErr := xds_context.AggregateMeshContexts(
-			context.TODO(),
+			ctx,
 			d.ResManager,
 			d.MeshCache.GetMeshContext,
 		)

@@ -60,8 +60,12 @@ func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, met
 			log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
-			if err := dataplaneWatchdog.Cleanup(); err != nil {
-				log.Error(err, "OnTick() failed")
+			ctx := streamCtx
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			if err := dataplaneWatchdog.Cleanup(ctx); err != nil {
+				log.Error(err, "Cleanup() failed")
 			}
 		},
 		StreamCtx: streamCtx,
