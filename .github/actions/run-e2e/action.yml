@@ -53,6 +53,8 @@ runs:
         sudo service docker restart
     - name: "Run E2E tests"
       shell: bash
+      env:
+        KUMA_DEBUG: ${{ runner.debug == '1' }}
       run: |
         if [[ "${{ inputs.k8s_version }}" == "kindIpv6" ]]; then
           export IPV6=true

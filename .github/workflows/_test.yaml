@@ -113,7 +113,6 @@ jobs:
       CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
       MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
-      KUMA_DEBUG: ${{ runner.debug == '1' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -140,7 +139,6 @@ jobs:
       CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
       MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
       DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
-      KUMA_DEBUG: ${{ runner.debug == '1' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
