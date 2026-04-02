@@ -7,17 +7,15 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
+	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 )
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 
-type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_watchdog.Watchdog
-
-func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) DataplaneCallbacks {
+func NewDataplaneSyncTracker(factory sync.DataplaneWatchdogFactory) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
-		newDataplaneWatchdog: factoryFunc,
-		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
+		watchdogFactory: factory,
+		watchdogs:       map[core_model.ResourceKey]*watchdogState{},
 	}
 }
 
@@ -30,7 +28,7 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 // Node info can be (but does not have to be) carried only on the first XDS request. That's why need streamsAssociation map
 // that indicates that the stream was already associated
 type dataplaneSyncTracker struct {
-	newDataplaneWatchdog NewDataplaneWatchdogFunc
+	watchdogFactory sync.DataplaneWatchdogFactory
 
 	stdsync.RWMutex // protects access to the fields below
 	watchdogs       map[core_model.ResourceKey]*watchdogState
@@ -40,12 +38,7 @@ type watchdogState struct {
 	stopped    chan struct{}
 }
 
-<<<<<<< HEAD
-//nolint:contextcheck // it's not clear how the parent go-control-plane context lives
-func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
-=======
-func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, streamCtx context.Context, meta core_xds.DataplaneMetadata) error {
->>>>>>> 42c3b352ba (fix(xds): prevent panic on send to closed channel during stream closure (#15511))
+func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, streamCtx context.Context, _ core_xds.DataplaneMetadata) error {
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
@@ -61,16 +54,12 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	stoppedDone := state.stopped
 	go func() {
 		defer close(stoppedDone)
-<<<<<<< HEAD
-		t.newDataplaneWatchdog(dpKey).Start(stopCh)
-=======
 		// Use stream context if factory supports it to prevent race between stream closure and snapshot updates
-		if factory, ok := t.newDataplaneWatchdog.(sync.DataplaneWatchdogFactoryWithStreamCtx); ok {
-			factory.NewWithStreamCtx(dpKey, &meta, streamCtx).Start(ctx)
+		if factory, ok := t.watchdogFactory.(sync.DataplaneWatchdogFactoryWithStreamCtx); ok {
+			factory.NewWithStreamCtx(dpKey, streamCtx).Start(stopCh)
 		} else {
-			t.newDataplaneWatchdog.New(dpKey, &meta).Start(ctx)
+			t.watchdogFactory.New(dpKey).Start(stopCh)
 		}
->>>>>>> 42c3b352ba (fix(xds): prevent panic on send to closed channel during stream closure (#15511))
 	}()
 	t.watchdogs[dpKey] = state
 	return nil

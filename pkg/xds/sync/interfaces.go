@@ -25,10 +25,7 @@ type SnapshotReconciler interface {
 
 // DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 type DataplaneWatchdogFactory interface {
-<<<<<<< HEAD
 	New(dpKey core_model.ResourceKey) util_watchdog.Watchdog
-=======
-	New(dpKey core_model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog
 }
 
 // DataplaneWatchdogFactoryWithStreamCtx extends DataplaneWatchdogFactory with stream context support.
@@ -36,12 +33,5 @@ type DataplaneWatchdogFactory interface {
 // race conditions between gRPC stream closure and xDS snapshot updates.
 type DataplaneWatchdogFactoryWithStreamCtx interface {
 	DataplaneWatchdogFactory
-	NewWithStreamCtx(dpKey core_model.ResourceKey, meta *core_xds.DataplaneMetadata, streamCtx context.Context) util_xds_v3.Watchdog
-}
-
-type DataplaneWatchdogFactoryFunc func(dpKey core_model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog
-
-func (f DataplaneWatchdogFactoryFunc) New(dpKey core_model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
-	return f(dpKey, meta)
->>>>>>> 42c3b352ba (fix(xds): prevent panic on send to closed channel during stream closure (#15511))
+	NewWithStreamCtx(dpKey core_model.ResourceKey, streamCtx context.Context) util_watchdog.Watchdog
 }

@@ -15,6 +15,7 @@ import (
 	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
+	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 )
 
 var _ = Describe("Sync", func() {
@@ -77,13 +78,13 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(watchdogFactoryFunc(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					watchdogCh <- key
 					<-stop
 					close(watchdogCh)
 				})
-			})
+			}))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -132,14 +133,14 @@ var _ = Describe("Sync", func() {
 			// setup
 			var activeWatchdogs int32
 			var cleanupDone atomic.Bool
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(watchdogFactoryFunc(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-stop
 					atomic.AddInt32(&activeWatchdogs, -1)
 					cleanupDone.Store(true)
 				})
-			})
+			}))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
@@ -237,31 +238,39 @@ var _ = Describe("Sync", func() {
 	})
 })
 
-<<<<<<< HEAD
-var _ util_watchdog.Watchdog = WatchdogFunc(nil)
-
-type WatchdogFunc func(stop <-chan struct{})
-
-func (f WatchdogFunc) Start(stop <-chan struct{}) {
-	f(stop)
-=======
 // streamCtxCapturingFactory implements DataplaneWatchdogFactoryWithStreamCtx
 type streamCtxCapturingFactory struct {
 	streamCtxCh  chan context.Context
 	watchdogDone chan struct{}
 }
 
-func (f *streamCtxCapturingFactory) New(key core_model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
-	return f.NewWithStreamCtx(key, meta, nil)
+var _ sync.DataplaneWatchdogFactoryWithStreamCtx = &streamCtxCapturingFactory{}
+
+func (f *streamCtxCapturingFactory) New(key core_model.ResourceKey) util_watchdog.Watchdog {
+	return f.NewWithStreamCtx(key, nil)
 }
 
-func (f *streamCtxCapturingFactory) NewWithStreamCtx(key core_model.ResourceKey, meta *core_xds.DataplaneMetadata, streamCtx context.Context) util_xds_v3.Watchdog {
-	return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
+func (f *streamCtxCapturingFactory) NewWithStreamCtx(key core_model.ResourceKey, streamCtx context.Context) util_watchdog.Watchdog {
+	return WatchdogFunc(func(stop <-chan struct{}) {
 		if streamCtx != nil {
 			f.streamCtxCh <- streamCtx
 		}
-		<-ctx.Done()
+		<-stop
 		close(f.watchdogDone)
 	})
->>>>>>> 42c3b352ba (fix(xds): prevent panic on send to closed channel during stream closure (#15511))
+}
+
+// watchdogFactoryFunc adapts a function to the DataplaneWatchdogFactory interface
+type watchdogFactoryFunc func(key core_model.ResourceKey) util_watchdog.Watchdog
+
+func (f watchdogFactoryFunc) New(key core_model.ResourceKey) util_watchdog.Watchdog {
+	return f(key)
+}
+
+var _ util_watchdog.Watchdog = WatchdogFunc(nil)
+
+type WatchdogFunc func(stop <-chan struct{})
+
+func (f WatchdogFunc) Start(stop <-chan struct{}) {
+	f(stop)
 }
