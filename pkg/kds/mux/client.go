@@ -153,7 +153,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
 	log = log.WithValues("rpc", "global-to-zone")
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
+	log.Info("GlobalToZoneSync new session created")
 
 	cfgJson, err := config.ConfigForDisplay(pointer.To(c.rt.Config()))
 	if err != nil {
@@ -186,12 +186,17 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 	)
 
-	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
-		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+	if err := syncClient.Receive(); err != nil {
+		if !errors.Is(err, context.Canceled) {
+			log.Error(err, "GlobalToZoneSync finished with an error")
+			errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+		} else {
+			log.Info("GlobalToZoneSync stopped")
+		}
 		return
 	}
 
-	log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
+	log.Info("GlobalToZoneSync finished gracefully")
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {

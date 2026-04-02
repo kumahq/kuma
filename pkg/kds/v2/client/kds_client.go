@@ -91,7 +91,7 @@ func (s *kdsSyncClient) Receive() error {
 			}
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
-		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
+		s.log.Info("DeltaDiscoveryResponse received", "type", received.Type, "added", len(received.AddedResources.GetItems()), "removed", len(received.RemovedResourcesKey))
 		validationErrors := received.Validate()
 
 		if s.callbacks == nil {
