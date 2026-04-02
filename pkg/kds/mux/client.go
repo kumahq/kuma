@@ -186,13 +186,8 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 	)
 
-	if err := syncClient.Receive(); err != nil {
-		if !errors.Is(err, context.Canceled) {
-			log.Error(err, "GlobalToZoneSync finished with an error")
-			errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
-		} else {
-			log.Info("GlobalToZoneSync stopped")
-		}
+	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
+		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
 		return
 	}
 
