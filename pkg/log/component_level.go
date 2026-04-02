@@ -100,17 +100,6 @@ func (r *ComponentLevelRegistry) ResetAll() map[string]LogLevel {
 	return result
 }
 
-// GetEffectiveLevel returns the effective log level for a component.
-// It checks for an exact match first, then walks up the hierarchy
-// (e.g. "xds.server" → "xds"). Returns the level and true if an
-// override was found, or zero value and false otherwise.
-func (r *ComponentLevelRegistry) GetEffectiveLevel(component string) (LogLevel, bool) {
-	if component == "" {
-		return 0, false
-	}
-	return r.GetEffectiveLevelForNames(splitHierarchy(component))
-}
-
 // GetEffectiveLevelForNames returns the effective log level given a
 // pre-computed name hierarchy (most-specific first). This avoids string
 // splitting on the hot path when called from componentAwareSink.Enabled.
@@ -132,9 +121,9 @@ func (r *ComponentLevelRegistry) ListOverrides() map[string]LogLevel {
 	return result
 }
 
-// splitHierarchy returns the name and all its ancestors, most-specific first.
+// SplitHierarchy returns the name and all its ancestors, most-specific first.
 // e.g. "xds.server" → ["xds.server", "xds"]
-func splitHierarchy(name string) []string {
+func SplitHierarchy(name string) []string {
 	var names []string
 	for {
 		names = append(names, name)

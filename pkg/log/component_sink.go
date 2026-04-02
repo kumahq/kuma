@@ -82,7 +82,7 @@ func (s *componentAwareSink) WithName(name string) logr.LogSink {
 	return &componentAwareSink{
 		inner:     s.inner.WithName(name),
 		name:      fullName,
-		names:     splitHierarchy(fullName),
+		names:     SplitHierarchy(fullName),
 		registry:  s.registry,
 		baseLevel: s.baseLevel,
 	}

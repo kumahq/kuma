@@ -21,12 +21,16 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		level     kuma_log.LogLevel
 	}
 
-	DescribeTable("GetEffectiveLevel",
+	DescribeTable("GetEffectiveLevelForNames",
 		func(overrides []override, query string, expectFound bool, expectLevel kuma_log.LogLevel) {
 			for _, o := range overrides {
 				Expect(registry.SetLevel(o.component, o.level)).To(Succeed())
 			}
-			level, ok := registry.GetEffectiveLevel(query)
+			names := kuma_log.SplitHierarchy(query)
+			if query == "" {
+				names = nil
+			}
+			level, ok := registry.GetEffectiveLevelForNames(names)
 			Expect(ok).To(Equal(expectFound))
 			if expectFound {
 				Expect(level).To(Equal(expectLevel))
@@ -57,7 +61,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 		registry.ResetLevel("xds")
 
-		_, ok := registry.GetEffectiveLevel("xds")
+		_, ok := registry.GetEffectiveLevelForNames(kuma_log.SplitHierarchy("xds"))
 		Expect(ok).To(BeFalse())
 	})
 
@@ -66,9 +70,9 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		Expect(registry.SetLevel("kds", kuma_log.InfoLevel)).To(Succeed())
 		registry.ResetAll()
 
-		_, ok := registry.GetEffectiveLevel("xds")
+		_, ok := registry.GetEffectiveLevelForNames(kuma_log.SplitHierarchy("xds"))
 		Expect(ok).To(BeFalse())
-		_, ok = registry.GetEffectiveLevel("kds")
+		_, ok = registry.GetEffectiveLevelForNames(kuma_log.SplitHierarchy("kds"))
 		Expect(ok).To(BeFalse())
 	})
 
@@ -95,7 +99,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 			}
 		}()
 		for range 1000 {
-			registry.GetEffectiveLevel("xds.server")
+			registry.GetEffectiveLevelForNames(kuma_log.SplitHierarchy("xds.server"))
 			registry.ListOverrides()
 		}
 		<-done
