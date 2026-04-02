@@ -569,8 +569,8 @@ tags:
 violations:
   - field: targetRef.tags
     message: must not be set with kind MeshService
-  - field: targetRef.name
-    message: must be set with kind MeshService
+  - field: targetRef
+    message: name or labels must be set when kind is MeshService
 `,
 		}),
 		Entry("MeshService with invalid name", testCase{
@@ -723,7 +723,7 @@ tags: {}
 			expected: `
 violations:
   - field: targetRef.name
-    message: must be set with kind MeshGateway 
+    message: must be set when kind is MeshGateway
 `,
 		}),
 		Entry("MeshGateway with invalid name", testCase{
@@ -770,7 +770,7 @@ tags: {}
 			expected: `
 violations:
   - field: targetRef.name
-    message: must be set with kind MeshServiceSubset
+    message: must be set when kind is MeshServiceSubset
 `,
 		}),
 		Entry("MeshServiceSubset with invalid name with empty tags", testCase{
@@ -909,8 +909,8 @@ namespace: test-ns
 			},
 			expected: `
 violations:
-  - field: targetRef.name
-    message: must be set with kind MeshService
+  - field: targetRef
+    message: name or labels must be set when kind is MeshService
 `,
 		}),
 		Entry("Mesh should not be used with namespace or labels or sectionName", testCase{
