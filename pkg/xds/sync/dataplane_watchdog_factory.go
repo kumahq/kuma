@@ -33,7 +33,7 @@ func NewDataplaneWatchdogFactory(
 }
 
 func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
-	return d.NewWithStreamCtx(dpKey, meta, nil)
+	return d.NewWithStreamCtx(dpKey, meta, context.Background())
 }
 
 func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, meta *core_xds.DataplaneMetadata, streamCtx context.Context) util_xds_v3.Watchdog {
@@ -60,11 +60,7 @@ func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, met
 			log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
-			ctx := streamCtx
-			if ctx == nil {
-				ctx = context.Background()
-			}
-			if err := dataplaneWatchdog.Cleanup(ctx); err != nil {
+			if err := dataplaneWatchdog.Cleanup(streamCtx); err != nil {
 				log.Error(err, "OnTick() failed")
 			}
 		},
