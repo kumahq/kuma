@@ -142,7 +142,7 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) util_xds_v3.Watchdog {
 			t.metrics.HdsGenerationsErrors.Inc()
 			t.log.Error(err, "OnTick() failed")
 		},
-		OnStop: func() {
+		OnStop: func(_ context.Context) {
 			if err := t.reconciler.Clear(node); err != nil {
 				t.log.Error(err, "OnTick() failed")
 			}

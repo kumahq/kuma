@@ -206,7 +206,7 @@ var _ = Describe("SimpleWatchdog", func() {
 			OnError: func(err error) {
 				onErrorCalls <- err
 			},
-			OnStop: func() {
+			OnStop: func(_ context.Context) {
 				close(onStopCalled)
 			},
 			StreamCtx: streamCtx,
