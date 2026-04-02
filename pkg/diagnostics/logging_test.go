@@ -14,8 +14,10 @@ import (
 )
 
 var _ = Describe("Logging handlers", func() {
-	var registry *kuma_log.ComponentLevelRegistry
-	var mux *http.ServeMux
+	var (
+		registry *kuma_log.ComponentLevelRegistry
+		mux      *http.ServeMux
+	)
 
 	BeforeEach(func() {
 		registry = kuma_log.NewComponentLevelRegistry()
@@ -52,23 +54,18 @@ var _ = Describe("Logging handlers", func() {
 		Expect(components["xds"]).To(Equal("debug"))
 	})
 
-	It("should reject invalid log level", func() {
-		body, err := json.Marshal(map[string]string{"component": "xds", "level": "invalid"})
-		Expect(err).ToNot(HaveOccurred())
-		req := httptest.NewRequest(http.MethodPut, "/logging", bytes.NewReader(body))
-		w := httptest.NewRecorder()
-		mux.ServeHTTP(w, req)
-		Expect(w.Code).To(Equal(http.StatusBadRequest))
-	})
-
-	It("should reject empty component", func() {
-		body, err := json.Marshal(map[string]string{"level": "debug"})
-		Expect(err).ToNot(HaveOccurred())
-		req := httptest.NewRequest(http.MethodPut, "/logging", bytes.NewReader(body))
-		w := httptest.NewRecorder()
-		mux.ServeHTTP(w, req)
-		Expect(w.Code).To(Equal(http.StatusBadRequest))
-	})
+	DescribeTable("should reject invalid PUT requests",
+		func(body string, expectedCode int) {
+			req := httptest.NewRequest(http.MethodPut, "/logging", bytes.NewReader([]byte(body)))
+			w := httptest.NewRecorder()
+			mux.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(expectedCode))
+		},
+		Entry("invalid log level", `{"component":"xds","level":"invalid"}`, http.StatusBadRequest),
+		Entry("empty component", `{"level":"debug"}`, http.StatusBadRequest),
+		Entry("malformed JSON", `{invalid`, http.StatusBadRequest),
+		Entry("invalid component name", `{"component":"../../etc","level":"debug"}`, http.StatusBadRequest),
+	)
 
 	It("should reset single component level", func() {
 		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
@@ -98,33 +95,14 @@ var _ = Describe("Logging handlers", func() {
 		Expect(registry.ListOverrides()).To(BeEmpty())
 	})
 
-	It("should reject malformed JSON body", func() {
-		req := httptest.NewRequest(http.MethodPut, "/logging", bytes.NewReader([]byte("{invalid")))
-		w := httptest.NewRecorder()
-		mux.ServeHTTP(w, req)
-		Expect(w.Code).To(Equal(http.StatusBadRequest))
-	})
-
-	It("should reject invalid component name", func() {
-		body, err := json.Marshal(map[string]string{"component": "../../etc", "level": "debug"})
-		Expect(err).ToNot(HaveOccurred())
-		req := httptest.NewRequest(http.MethodPut, "/logging", bytes.NewReader(body))
-		w := httptest.NewRecorder()
-		mux.ServeHTTP(w, req)
-		Expect(w.Code).To(Equal(http.StatusBadRequest))
-	})
-
-	It("should return method not allowed for GET on /logging/{component}", func() {
-		req := httptest.NewRequest(http.MethodGet, "/logging/xds", http.NoBody)
-		w := httptest.NewRecorder()
-		mux.ServeHTTP(w, req)
-		Expect(w.Code).To(Equal(http.StatusMethodNotAllowed))
-	})
-
-	It("should reject invalid component name on DELETE", func() {
-		req := httptest.NewRequest(http.MethodDelete, "/logging/invalid!name", http.NoBody)
-		w := httptest.NewRecorder()
-		mux.ServeHTTP(w, req)
-		Expect(w.Code).To(Equal(http.StatusBadRequest))
-	})
+	DescribeTable("should reject invalid requests on /logging/{component}",
+		func(method string, path string, expectedCode int) {
+			req := httptest.NewRequest(method, path, http.NoBody)
+			w := httptest.NewRecorder()
+			mux.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(expectedCode))
+		},
+		Entry("GET not allowed", http.MethodGet, "/logging/xds", http.StatusMethodNotAllowed),
+		Entry("invalid component name on DELETE", http.MethodDelete, "/logging/invalid!name", http.StatusBadRequest),
+	)
 })

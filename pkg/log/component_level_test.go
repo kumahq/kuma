@@ -16,50 +16,42 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		registry = kuma_log.NewComponentLevelRegistry()
 	})
 
-	It("should return false when no overrides set", func() {
-		_, ok := registry.GetEffectiveLevel("xds")
-		Expect(ok).To(BeFalse())
-	})
+	type override struct {
+		component string
+		level     kuma_log.LogLevel
+	}
 
-	It("should return exact match", func() {
-		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
-
-		level, ok := registry.GetEffectiveLevel("xds")
-		Expect(ok).To(BeTrue())
-		Expect(level).To(Equal(kuma_log.DebugLevel))
-	})
-
-	It("should walk up hierarchy", func() {
-		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
-
-		level, ok := registry.GetEffectiveLevel("xds.server")
-		Expect(ok).To(BeTrue())
-		Expect(level).To(Equal(kuma_log.DebugLevel))
-	})
-
-	It("should prefer exact match over ancestor", func() {
-		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
-		Expect(registry.SetLevel("xds.server", kuma_log.InfoLevel)).To(Succeed())
-
-		level, ok := registry.GetEffectiveLevel("xds.server")
-		Expect(ok).To(BeTrue())
-		Expect(level).To(Equal(kuma_log.InfoLevel))
-	})
-
-	It("should not match unrelated components", func() {
-		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
-
-		_, ok := registry.GetEffectiveLevel("kds")
-		Expect(ok).To(BeFalse())
-	})
-
-	It("should handle deep hierarchy", func() {
-		Expect(registry.SetLevel("plugins", kuma_log.DebugLevel)).To(Succeed())
-
-		level, ok := registry.GetEffectiveLevel("plugins.authn.api-server.tokens")
-		Expect(ok).To(BeTrue())
-		Expect(level).To(Equal(kuma_log.DebugLevel))
-	})
+	DescribeTable("GetEffectiveLevel",
+		func(overrides []override, query string, expectFound bool, expectLevel kuma_log.LogLevel) {
+			for _, o := range overrides {
+				Expect(registry.SetLevel(o.component, o.level)).To(Succeed())
+			}
+			level, ok := registry.GetEffectiveLevel(query)
+			Expect(ok).To(Equal(expectFound))
+			if expectFound {
+				Expect(level).To(Equal(expectLevel))
+			}
+		},
+		Entry("no overrides set", nil, "xds", false, kuma_log.LogLevel(0)),
+		Entry("exact match",
+			[]override{{"xds", kuma_log.DebugLevel}},
+			"xds", true, kuma_log.DebugLevel),
+		Entry("walks up hierarchy",
+			[]override{{"xds", kuma_log.DebugLevel}},
+			"xds.server", true, kuma_log.DebugLevel),
+		Entry("prefers exact match over ancestor",
+			[]override{{"xds", kuma_log.DebugLevel}, {"xds.server", kuma_log.InfoLevel}},
+			"xds.server", true, kuma_log.InfoLevel),
+		Entry("does not match unrelated components",
+			[]override{{"xds", kuma_log.DebugLevel}},
+			"kds", false, kuma_log.LogLevel(0)),
+		Entry("deep hierarchy",
+			[]override{{"plugins", kuma_log.DebugLevel}},
+			"plugins.authn.api-server.tokens", true, kuma_log.DebugLevel),
+		Entry("empty component name",
+			[]override{{"xds", kuma_log.DebugLevel}},
+			"", false, kuma_log.LogLevel(0)),
+	)
 
 	It("should reset single level", func() {
 		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
@@ -88,13 +80,6 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		Expect(overrides).To(HaveLen(2))
 		Expect(overrides["xds"]).To(Equal(kuma_log.DebugLevel))
 		Expect(overrides["kds"]).To(Equal(kuma_log.InfoLevel))
-	})
-
-	It("should return false for empty component name", func() {
-		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
-
-		_, ok := registry.GetEffectiveLevel("")
-		Expect(ok).To(BeFalse())
 	})
 
 	It("should handle concurrent reads and writes", func() {
@@ -129,7 +114,6 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		for i := range kuma_log.MaxOverrides {
 			Expect(registry.SetLevel(fmt.Sprintf("component-%d", i), kuma_log.DebugLevel)).To(Succeed())
 		}
-		// Updating existing key should succeed
 		Expect(registry.SetLevel("component-0", kuma_log.InfoLevel)).To(Succeed())
 	})
 })
