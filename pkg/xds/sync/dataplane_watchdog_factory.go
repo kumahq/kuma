@@ -31,15 +31,11 @@ func NewDataplaneWatchdogFactory(
 	}, nil
 }
 
-<<<<<<< HEAD
 func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watchdog {
-=======
-func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
-	return d.NewWithStreamCtx(dpKey, meta, nil)
+	return d.NewWithStreamCtx(dpKey, nil)
 }
 
-func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, meta *core_xds.DataplaneMetadata, streamCtx context.Context) util_xds_v3.Watchdog {
->>>>>>> 42c3b352ba (fix(xds): prevent panic on send to closed channel during stream closure (#15511))
+func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, streamCtx context.Context) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
 	return &util_watchdog.SimpleWatchdog{
