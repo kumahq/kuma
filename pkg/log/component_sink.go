@@ -61,12 +61,6 @@ func (s *componentAwareSink) Info(level int, msg string, keysAndValues ...any) {
 }
 
 func (s *componentAwareSink) Error(err error, msg string, keysAndValues ...any) {
-	// OffLevel suppresses all output including errors
-	if len(s.names) > 0 {
-		if override, ok := s.registry.GetEffectiveLevelForNames(s.names); ok && override == OffLevel {
-			return
-		}
-	}
 	s.inner.Error(err, msg, keysAndValues...)
 }
 

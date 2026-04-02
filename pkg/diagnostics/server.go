@@ -108,7 +108,6 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 }
 
 type loggingResponse struct {
-	BaseLevel  string            `json:"baseLevel,omitempty"`
 	Components map[string]string `json:"components"`
 }
 
@@ -140,8 +139,8 @@ func AddLoggingHandlers(mux *http.ServeMux, registry *kuma_log.ComponentLevelReg
 			return
 		}
 		component := r.URL.Path[len("/logging/"):]
-		if component == "" {
-			http.Error(w, "component required", http.StatusBadRequest)
+		if err := kuma_log.ValidateComponentName(component); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		registry.ResetLevel(component)
@@ -166,12 +165,8 @@ func handleLoggingGet(w http.ResponseWriter, registry *kuma_log.ComponentLevelRe
 	for name, level := range overrides {
 		components[name] = level.String()
 	}
-	resp := loggingResponse{
-		BaseLevel:  kuma_log.GetGlobalLogLevel().String(),
-		Components: components,
-	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err := json.NewEncoder(w).Encode(loggingResponse{Components: components}); err != nil {
 		diagnosticsServerLog.Error(err, "could not write logging response")
 	}
 }
@@ -193,7 +188,10 @@ func handleLoggingPut(w http.ResponseWriter, r *http.Request, registry *kuma_log
 		http.Error(w, "invalid log level: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	registry.SetLevel(req.Component, level)
+	if err := registry.SetLevel(req.Component, level); err != nil {
+		http.Error(w, err.Error(), http.StatusTooManyRequests)
+		return
+	}
 	diagnosticsServerLog.Info("component log level override set", "component", req.Component, "level", req.Level)
 	w.WriteHeader(http.StatusOK)
 }

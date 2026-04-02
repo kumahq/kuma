@@ -35,7 +35,7 @@ var _ = Describe("ComponentAwareSink", func() {
 	})
 
 	It("should allow debug logs when component override is debug", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 		logger := newLogger().WithName("xds")
 
 		logger.V(1).Info("debug message")
@@ -43,7 +43,7 @@ var _ = Describe("ComponentAwareSink", func() {
 	})
 
 	It("should block debug logs when component override is info", func() {
-		registry.SetLevel("xds", kuma_log.InfoLevel)
+		Expect(registry.SetLevel("xds", kuma_log.InfoLevel)).To(Succeed())
 		logger := newLogger().WithName("xds")
 
 		logger.V(1).Info("debug message")
@@ -51,7 +51,7 @@ var _ = Describe("ComponentAwareSink", func() {
 	})
 
 	It("should block all logs when component override is off", func() {
-		registry.SetLevel("xds", kuma_log.OffLevel)
+		Expect(registry.SetLevel("xds", kuma_log.OffLevel)).To(Succeed())
 		logger := newLogger().WithName("xds")
 
 		logger.Info("info message")
@@ -59,7 +59,7 @@ var _ = Describe("ComponentAwareSink", func() {
 	})
 
 	It("should apply parent override to child component", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 		logger := newLogger().WithName("xds").WithName("server")
 
 		logger.V(1).Info("debug from child")
@@ -78,23 +78,23 @@ var _ = Describe("ComponentAwareSink", func() {
 	})
 
 	It("should not affect unnamed logger with overrides", func() {
-		registry.SetLevel("xds", kuma_log.OffLevel)
+		Expect(registry.SetLevel("xds", kuma_log.OffLevel)).To(Succeed())
 		logger := newLogger()
 
 		logger.Info("root message")
 		Expect(buf.String()).To(ContainSubstring("root message"))
 	})
 
-	It("should block error logs when component override is off", func() {
-		registry.SetLevel("xds", kuma_log.OffLevel)
+	It("should still emit error logs when component override is off", func() {
+		Expect(registry.SetLevel("xds", kuma_log.OffLevel)).To(Succeed())
 		logger := newLogger().WithName("xds")
 
 		logger.Error(nil, "error message")
-		Expect(buf.String()).To(BeEmpty())
+		Expect(buf.String()).To(ContainSubstring("error message"))
 	})
 
 	It("should allow error logs when component override is info", func() {
-		registry.SetLevel("xds", kuma_log.InfoLevel)
+		Expect(registry.SetLevel("xds", kuma_log.InfoLevel)).To(Succeed())
 		logger := newLogger().WithName("xds")
 
 		logger.Error(nil, "error message")

@@ -11,6 +11,11 @@ import (
 
 const maxComponentNameLen = 256
 
+// MaxOverrides is the maximum number of per-component level overrides
+// allowed in a single registry. This prevents unbounded memory growth
+// from misconfigured or malicious API clients.
+const MaxOverrides = 200
+
 var validComponentName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
 
 var globalRegistry = NewComponentLevelRegistry()
@@ -56,14 +61,19 @@ func ValidateComponentName(name string) error {
 }
 
 // SetLevel sets a log level override for the given component.
-func (r *ComponentLevelRegistry) SetLevel(component string, level LogLevel) {
+// Returns an error if the maximum number of overrides would be exceeded.
+func (r *ComponentLevelRegistry) SetLevel(component string, level LogLevel) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	current := *r.snapshot.Load()
+	if _, exists := current[component]; !exists && len(current) >= MaxOverrides {
+		return fmt.Errorf("maximum number of component overrides (%d) reached", MaxOverrides)
+	}
 	next := make(map[string]LogLevel, len(current)+1)
 	maps.Copy(next, current)
 	next[component] = level
 	r.snapshot.Store(&next)
+	return nil
 }
 
 // ResetLevel removes the log level override for the given component.

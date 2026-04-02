@@ -1,6 +1,8 @@
 package log_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -20,7 +22,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should return exact match", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 
 		level, ok := registry.GetEffectiveLevel("xds")
 		Expect(ok).To(BeTrue())
@@ -28,7 +30,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should walk up hierarchy", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 
 		level, ok := registry.GetEffectiveLevel("xds.server")
 		Expect(ok).To(BeTrue())
@@ -36,8 +38,8 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should prefer exact match over ancestor", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
-		registry.SetLevel("xds.server", kuma_log.InfoLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		Expect(registry.SetLevel("xds.server", kuma_log.InfoLevel)).To(Succeed())
 
 		level, ok := registry.GetEffectiveLevel("xds.server")
 		Expect(ok).To(BeTrue())
@@ -45,14 +47,14 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should not match unrelated components", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 
 		_, ok := registry.GetEffectiveLevel("kds")
 		Expect(ok).To(BeFalse())
 	})
 
 	It("should handle deep hierarchy", func() {
-		registry.SetLevel("plugins", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("plugins", kuma_log.DebugLevel)).To(Succeed())
 
 		level, ok := registry.GetEffectiveLevel("plugins.authn.api-server.tokens")
 		Expect(ok).To(BeTrue())
@@ -60,7 +62,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should reset single level", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 		registry.ResetLevel("xds")
 
 		_, ok := registry.GetEffectiveLevel("xds")
@@ -68,8 +70,8 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should reset all levels", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
-		registry.SetLevel("kds", kuma_log.InfoLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		Expect(registry.SetLevel("kds", kuma_log.InfoLevel)).To(Succeed())
 		registry.ResetAll()
 
 		_, ok := registry.GetEffectiveLevel("xds")
@@ -79,8 +81,8 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should list overrides", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
-		registry.SetLevel("kds", kuma_log.InfoLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		Expect(registry.SetLevel("kds", kuma_log.InfoLevel)).To(Succeed())
 
 		overrides := registry.ListOverrides()
 		Expect(overrides).To(HaveLen(2))
@@ -89,7 +91,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	})
 
 	It("should return false for empty component name", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 
 		_, ok := registry.GetEffectiveLevel("")
 		Expect(ok).To(BeFalse())
@@ -101,8 +103,8 @@ var _ = Describe("ComponentLevelRegistry", func() {
 			defer GinkgoRecover()
 			defer close(done)
 			for range 1000 {
-				registry.SetLevel("xds", kuma_log.DebugLevel)
-				registry.SetLevel("kds", kuma_log.InfoLevel)
+				_ = registry.SetLevel("xds", kuma_log.DebugLevel)
+				_ = registry.SetLevel("kds", kuma_log.InfoLevel)
 				registry.ResetLevel("xds")
 				registry.ResetAll()
 			}
@@ -112,5 +114,22 @@ var _ = Describe("ComponentLevelRegistry", func() {
 			registry.ListOverrides()
 		}
 		<-done
+	})
+
+	It("should reject when max overrides exceeded", func() {
+		for i := range kuma_log.MaxOverrides {
+			Expect(registry.SetLevel(fmt.Sprintf("component-%d", i), kuma_log.DebugLevel)).To(Succeed())
+		}
+		err := registry.SetLevel("one-too-many", kuma_log.DebugLevel)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("maximum"))
+	})
+
+	It("should allow updating existing override when at max", func() {
+		for i := range kuma_log.MaxOverrides {
+			Expect(registry.SetLevel(fmt.Sprintf("component-%d", i), kuma_log.DebugLevel)).To(Succeed())
+		}
+		// Updating existing key should succeed
+		Expect(registry.SetLevel("component-0", kuma_log.InfoLevel)).To(Succeed())
 	})
 })

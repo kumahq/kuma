@@ -71,7 +71,7 @@ var _ = Describe("Logging handlers", func() {
 	})
 
 	It("should reset single component level", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 
 		req := httptest.NewRequest(http.MethodDelete, "/logging/xds", http.NoBody)
 		w := httptest.NewRecorder()
@@ -82,8 +82,8 @@ var _ = Describe("Logging handlers", func() {
 	})
 
 	It("should reset all component levels and return removed overrides", func() {
-		registry.SetLevel("xds", kuma_log.DebugLevel)
-		registry.SetLevel("kds", kuma_log.InfoLevel)
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		Expect(registry.SetLevel("kds", kuma_log.InfoLevel)).To(Succeed())
 
 		req := httptest.NewRequest(http.MethodDelete, "/logging", http.NoBody)
 		w := httptest.NewRecorder()
@@ -121,13 +121,10 @@ var _ = Describe("Logging handlers", func() {
 		Expect(w.Code).To(Equal(http.StatusMethodNotAllowed))
 	})
 
-	It("should include baseLevel in GET response", func() {
-		req := httptest.NewRequest(http.MethodGet, "/logging", http.NoBody)
+	It("should reject invalid component name on DELETE", func() {
+		req := httptest.NewRequest(http.MethodDelete, "/logging/invalid!name", http.NoBody)
 		w := httptest.NewRecorder()
 		mux.ServeHTTP(w, req)
-
-		var result map[string]any
-		Expect(json.Unmarshal(w.Body.Bytes(), &result)).To(Succeed())
-		Expect(result).To(HaveKey("baseLevel"))
+		Expect(w.Code).To(Equal(http.StatusBadRequest))
 	})
 })

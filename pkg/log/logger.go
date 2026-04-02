@@ -83,6 +83,9 @@ func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
 // given registry for per-component level overrides. The inner zap logger is
 // created at max verbosity — all level filtering is done by the sink.
 func NewLoggerToWithRegistry(destWriter io.Writer, level LogLevel, registry *ComponentLevelRegistry) logr.Logger {
+	if level == OffLevel {
+		return logr.Discard()
+	}
 	baseLevel := newAtomicLogLevel(level)
 	// Inner logger at max verbosity so Info() never filters
 	innerZap := buildZapLogger(destWriter, zap.NewAtomicLevelAt(maxVerbosity), level == DebugLevel)
@@ -117,20 +120,6 @@ func SetGlobalLogLevel(level LogLevel) {
 		defaultAtomicLevel.SetLevel(zapcore.Level(maxVerbosity))
 	case InfoLevel:
 		defaultAtomicLevel.SetLevel(zapcore.InfoLevel)
-	}
-}
-
-// GetGlobalLogLevel returns the current global log level by reading the
-// atomic level used by loggers created with NewLoggerWithGlobalLevel.
-func GetGlobalLogLevel() LogLevel {
-	lvl := defaultAtomicLevel.Level()
-	switch {
-	case lvl >= zapcore.Level(100):
-		return OffLevel
-	case lvl <= zapcore.Level(maxVerbosity):
-		return DebugLevel
-	default:
-		return InfoLevel
 	}
 }
 
