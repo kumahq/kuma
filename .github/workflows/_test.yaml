@@ -101,7 +101,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
   test_e2e:
     needs: ["gen_e2e_matrix"]
-    name: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}) #${{ matrix.parallelRunnerId }}"
+    name: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
@@ -127,7 +127,7 @@ jobs:
           parallel_runner_id: ${{ matrix.parallelRunnerId }}
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
-    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', sidecar' || '' }}) #${{ matrix.parallelRunnerId }}"
+    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', sidecar' || '' }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
