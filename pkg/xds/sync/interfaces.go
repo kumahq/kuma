@@ -27,3 +27,11 @@ type SnapshotReconciler interface {
 type DataplaneWatchdogFactory interface {
 	New(dpKey core_model.ResourceKey) util_watchdog.Watchdog
 }
+
+// DataplaneWatchdogFactoryWithStreamCtx extends DataplaneWatchdogFactory with stream context support.
+// When the stream context is closed, the watchdog will skip ticks to prevent
+// race conditions between gRPC stream closure and xDS snapshot updates.
+type DataplaneWatchdogFactoryWithStreamCtx interface {
+	DataplaneWatchdogFactory
+	NewWithStreamCtx(dpKey core_model.ResourceKey, streamCtx context.Context) util_watchdog.Watchdog
+}

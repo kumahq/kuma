@@ -15,6 +15,7 @@ import (
 	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
+	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 )
 
 var _ = Describe("Sync", func() {
@@ -77,13 +78,13 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(watchdogFactoryFunc(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					watchdogCh <- key
 					<-stop
 					close(watchdogCh)
 				})
-			})
+			}))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -132,14 +133,14 @@ var _ = Describe("Sync", func() {
 			// setup
 			var activeWatchdogs int32
 			var cleanupDone atomic.Bool
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(watchdogFactoryFunc(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-stop
 					atomic.AddInt32(&activeWatchdogs, -1)
 					cleanupDone.Store(true)
 				})
-			})
+			}))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
@@ -196,8 +197,75 @@ var _ = Describe("Sync", func() {
 			// then no watchdog is active
 			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
 		})
+
+		It("should pass stream context to watchdog factory when supported", test.Within(5*time.Second, func() {
+			streamCtxCh := make(chan context.Context, 1)
+			watchdogDone := make(chan struct{})
+
+			// setup - factory that captures stream context
+			factory := &streamCtxCapturingFactory{
+				streamCtxCh:  streamCtxCh,
+				watchdogDone: watchdogDone,
+			}
+			tracker := NewDataplaneSyncTracker(factory)
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+
+			// given
+			ctx := context.Background()
+			streamID := int64(1)
+			node := &envoy_core.Node{Id: "demo.example"}
+			req := &envoy_sd.DiscoveryRequest{Node: node}
+
+			By("simulating Envoy connecting to the Control Plane")
+			err := callbacks.OnStreamOpen(ctx, streamID, "")
+			Expect(err).ToNot(HaveOccurred())
+
+			By("simulating DiscoveryRequest")
+			err = callbacks.OnStreamRequest(streamID, req)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying stream context was passed to factory")
+			var capturedStreamCtx context.Context
+			Eventually(streamCtxCh).Should(Receive(&capturedStreamCtx))
+			Expect(capturedStreamCtx).ToNot(BeNil())
+
+			By("simulating Envoy disconnecting from the Control Plane")
+			callbacks.OnStreamClosed(streamID, node)
+
+			By("waiting for Watchdog to stop")
+			Eventually(watchdogDone).Should(BeClosed())
+		}))
 	})
 })
+
+// streamCtxCapturingFactory implements DataplaneWatchdogFactoryWithStreamCtx
+type streamCtxCapturingFactory struct {
+	streamCtxCh  chan context.Context
+	watchdogDone chan struct{}
+}
+
+var _ sync.DataplaneWatchdogFactoryWithStreamCtx = &streamCtxCapturingFactory{}
+
+func (f *streamCtxCapturingFactory) New(key core_model.ResourceKey) util_watchdog.Watchdog {
+	return f.NewWithStreamCtx(key, nil)
+}
+
+func (f *streamCtxCapturingFactory) NewWithStreamCtx(key core_model.ResourceKey, streamCtx context.Context) util_watchdog.Watchdog {
+	return WatchdogFunc(func(stop <-chan struct{}) {
+		if streamCtx != nil {
+			f.streamCtxCh <- streamCtx
+		}
+		<-stop
+		close(f.watchdogDone)
+	})
+}
+
+// watchdogFactoryFunc adapts a function to the DataplaneWatchdogFactory interface
+type watchdogFactoryFunc func(key core_model.ResourceKey) util_watchdog.Watchdog
+
+func (f watchdogFactoryFunc) New(key core_model.ResourceKey) util_watchdog.Watchdog {
+	return f(key)
+}
 
 var _ util_watchdog.Watchdog = WatchdogFunc(nil)
 
