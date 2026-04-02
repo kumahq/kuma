@@ -7,11 +7,14 @@ import (
 )
 
 func (t *MeshFaultInjectionResource) Deprecations() []string {
-	deprecations := validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)
-	for _, f := range pointer.Deref(t.Spec.From) {
-		if f.GetTargetRef().Kind == v1alpha1.MeshService {
-			deprecations = append(deprecations, "MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with 'kuma.io/service' instead")
+	var deprecations []string
+	if len(pointer.Deref(t.Spec.From)) > 0 {
+		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")
+		for _, f := range pointer.Deref(t.Spec.From) {
+			if f.GetTargetRef().Kind == v1alpha1.MeshService {
+				deprecations = append(deprecations, "MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with 'kuma.io/service' instead")
+			}
 		}
 	}
-	return deprecations
+	return append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
 }
