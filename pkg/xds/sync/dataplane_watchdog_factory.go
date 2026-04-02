@@ -58,8 +58,8 @@ func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, str
 			d.xdsMetrics.XdsGenerationsErrors.Inc()
 			log.Error(err, "OnTick() failed")
 		},
-		OnStop: func() {
-			if err := dataplaneWatchdog.Cleanup(); err != nil {
+		OnStop: func(ctx context.Context) {
+			if err := dataplaneWatchdog.Cleanup(ctx); err != nil {
 				log.Error(err, "OnTick() failed")
 			}
 		},
