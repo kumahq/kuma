@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -38,6 +40,7 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watc
 func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, streamCtx context.Context) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
+	stopFn := d.makeOnStop(dataplaneWatchdog, log)
 	return &util_watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(d.refreshInterval)
@@ -58,11 +61,15 @@ func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, str
 			d.xdsMetrics.XdsGenerationsErrors.Inc()
 			log.Error(err, "OnTick() failed")
 		},
-		OnStop: func() {
-			if err := dataplaneWatchdog.Cleanup(); err != nil {
-				log.Error(err, "OnTick() failed")
-			}
-		},
+		OnStop:    stopFn,
 		StreamCtx: streamCtx,
+	}
+}
+
+func (d *dataplaneWatchdogFactory) makeOnStop(dataplaneWatchdog *DataplaneWatchdog, log logr.Logger) func() {
+	return func() {
+		if err := dataplaneWatchdog.Cleanup(); err != nil {
+			log.Error(err, "OnTick() failed")
+		}
 	}
 }
