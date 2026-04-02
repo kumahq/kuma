@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
@@ -17,6 +18,7 @@ import (
 	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 	"github.com/kumahq/kuma/v2/pkg/metrics"
 	kuma_srv "github.com/kumahq/kuma/v2/pkg/util/http/server"
 )
@@ -24,10 +26,11 @@ import (
 var diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")
 
 type diagnosticsServer struct {
-	isReady func() bool
-	config  *diagnostics_config.DiagnosticsConfig
-	metrics metrics.Metrics
-	ready   atomic.Bool
+	isReady  func() bool
+	config   *diagnostics_config.DiagnosticsConfig
+	metrics  metrics.Metrics
+	registry *kuma_log.ComponentLevelRegistry
+	ready    atomic.Bool
 }
 
 func (s *diagnosticsServer) NeedLeaderElection() bool {
@@ -59,6 +62,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	}
+	AddLoggingHandlers(mux, s.registry)
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
@@ -101,4 +105,95 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		s.ready.Store(false)
 		return err
 	}
+}
+
+type loggingResponse struct {
+	BaseLevel  string            `json:"baseLevel,omitempty"`
+	Components map[string]string `json:"components"`
+}
+
+type setLevelRequest struct {
+	Component string `json:"component"`
+	Level     string `json:"level"`
+}
+
+// AddLoggingHandlers registers GET/PUT/DELETE /logging routes on mux.
+func AddLoggingHandlers(mux *http.ServeMux, registry *kuma_log.ComponentLevelRegistry) {
+	mux.HandleFunc("/logging", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleLoggingGet(w, registry)
+		case http.MethodPut:
+			handleLoggingPut(w, r, registry)
+		case http.MethodDelete:
+			overrides := registry.ResetAll()
+			diagnosticsServerLog.Info("all component log level overrides reset", "count", len(overrides))
+			writeOverridesResponse(w, overrides)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	})
+	mux.HandleFunc("/logging/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		component := r.URL.Path[len("/logging/"):]
+		if component == "" {
+			http.Error(w, "component required", http.StatusBadRequest)
+			return
+		}
+		registry.ResetLevel(component)
+		diagnosticsServerLog.Info("component log level override reset", "component", component)
+	})
+}
+
+func writeOverridesResponse(w http.ResponseWriter, overrides map[string]kuma_log.LogLevel) {
+	components := make(map[string]string, len(overrides))
+	for name, level := range overrides {
+		components[name] = level.String()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(loggingResponse{Components: components}); err != nil {
+		diagnosticsServerLog.Error(err, "could not write logging response")
+	}
+}
+
+func handleLoggingGet(w http.ResponseWriter, registry *kuma_log.ComponentLevelRegistry) {
+	overrides := registry.ListOverrides()
+	components := make(map[string]string, len(overrides))
+	for name, level := range overrides {
+		components[name] = level.String()
+	}
+	resp := loggingResponse{
+		BaseLevel:  kuma_log.GetGlobalLogLevel().String(),
+		Components: components,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		diagnosticsServerLog.Error(err, "could not write logging response")
+	}
+}
+
+func handleLoggingPut(w http.ResponseWriter, r *http.Request, registry *kuma_log.ComponentLevelRegistry) {
+	const maxBodySize = 4096 // generous for {"component":"...","level":"..."}
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+	var req setLevelRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := kuma_log.ValidateComponentName(req.Component); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	level, err := kuma_log.ParseLogLevel(req.Level)
+	if err != nil {
+		http.Error(w, "invalid log level: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	registry.SetLevel(req.Component, level)
+	diagnosticsServerLog.Info("component log level override set", "component", req.Component, "level", req.Level)
+	w.WriteHeader(http.StatusOK)
 }
