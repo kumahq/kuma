@@ -187,6 +187,8 @@ jobs:
       IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
     needs: ["build_publish", "check", "test", "provenance"]
+    permissions:
+      id-token: write
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-24.04
@@ -225,12 +227,20 @@ jobs:
           find . -maxdepth 1 -type f \( -name '*sbom.*.json' -o -name '*.intoto.jsonl' \) -print | tar -cvzf ${{ env.SECURITY_ASSETS_PACKAGE_NAME }}.tar.gz -T -
           ls -alR .
         # Publish aggregated zip file of SBOMs and/or Binary Provenance to artifact regstry
+      - name: Get Cloudsmith OIDC token
+        id: cloudsmith_token
+        if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
+        uses: cloudsmith-io/cloudsmith-cli-action@18665afcce9f859312b61989671af9af7402e4fb # v2.0.2
+        with:
+          oidc-namespace: kong
+          oidc-service-slug: ${{ vars.CLOUDSMITH_SERVICE_ACCOUNT }}
+          oidc-auth-only: true
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
         uses: cloudsmith-io/action@7af394e0f8add4867bce109385962dafecad1b8d # v0.6.14
         with:
-          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          api-key: ${{ steps.cloudsmith_token.outputs.oidc-token }}
           command: "push"
           format: "raw"
           owner: "kong"

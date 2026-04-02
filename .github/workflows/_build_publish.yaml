@@ -46,6 +46,9 @@ jobs:
   build-binaries:
     timeout-minutes: 70
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
@@ -76,11 +79,18 @@ jobs:
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+      - name: Get Cloudsmith OIDC token
+        id: cloudsmith_token
+        uses: cloudsmith-io/cloudsmith-cli-action@18665afcce9f859312b61989671af9af7402e4fb # v2.0.2
+        with:
+          oidc-namespace: kong
+          oidc-service-slug: ${{ vars.CLOUDSMITH_SERVICE_ACCOUNT }}
+          oidc-auth-only: true
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
           PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
-          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          CLOUDSMITH_API_KEY: ${{ steps.cloudsmith_token.outputs.oidc-token }}
         run: |
           make publish/pulp
   build-images:
