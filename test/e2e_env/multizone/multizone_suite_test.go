@@ -92,5 +92,5 @@ var (
 	_ = Describe("MeshIdentity", meshidentity.Identity, Ordered)
 	_ = Describe("Unified Resource Naming", unifiednaming.UnifiedNaming, Ordered)
 	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
-	_ = FDescribe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
+	_ = Describe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 )
