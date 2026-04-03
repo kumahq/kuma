@@ -170,7 +170,7 @@ interCp:
 			for _, dpName := range dataplanes {
 				if strings.Contains(dpName, "demo-client") {
 					_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dpName, "--type", "config-dump")
-					Expect(err).ToNot(HaveOccurred())
+					g.Expect(err).ToNot(HaveOccurred())
 				}
 			}
 		}, "30s", "250ms").Should(Succeed())
