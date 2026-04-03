@@ -75,11 +75,11 @@ var File_api_system_v1alpha1_zone_proto protoreflect.FileDescriptor
 
 const file_api_system_v1alpha1_zone_proto_rawDesc = "" +
 	"\n" +
-	"\x1eapi/system/v1alpha1/zone.proto\x12\x14kuma.system.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xa4\x01\n" +
+	"\x1eapi/system/v1alpha1/zone.proto\x12\x14kuma.system.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xa8\x01\n" +
 	"\x04Zone\x124\n" +
-	"\aenabled\x18\x01 \x01(\v2\x1a.google.protobuf.BoolValueR\aenabled:f\xaa\x8c\x89\xa6\x01`\n" +
+	"\aenabled\x18\x01 \x01(\v2\x1a.google.protobuf.BoolValueR\aenabled:j\xaa\x8c\x89\xa6\x01d\n" +
 	"\fZoneResource\x12\x04Zone\x18\x01\"\x06system:\x06\n" +
-	"\x04zoneR5model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag\x90\x01\x01B/Z-github.com/kumahq/kuma/v2/api/system/v1alpha1b\x06proto3"
+	"\x04zoneR5model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag\x90\x01\x01\x9a\x01\x01zB/Z-github.com/kumahq/kuma/v2/api/system/v1alpha1b\x06proto3"
 
 var (
 	file_api_system_v1alpha1_zone_proto_rawDescOnce sync.Once
