@@ -84,7 +84,7 @@ jobs:
         uses: cloudsmith-io/cloudsmith-cli-action@18665afcce9f859312b61989671af9af7402e4fb # v2.0.2
         with:
           oidc-namespace: kong
-          oidc-service-slug: ${{ vars.CLOUDSMITH_SERVICE_ACCOUNT }}
+          oidc-service-slug: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
           oidc-auth-only: true
       - name: publish binaries
         env:
