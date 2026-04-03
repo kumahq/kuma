@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/cni"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/connectivity"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/defaults"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/externalservices"
@@ -91,4 +92,5 @@ var (
 	_ = Describe("MeshIdentity", meshidentity.Identity, Ordered)
 	_ = Describe("Unified Resource Naming", unifiednaming.UnifiedNaming, Ordered)
 	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
+	_ = FDescribe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 )

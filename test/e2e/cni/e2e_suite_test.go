@@ -16,6 +16,5 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Taint controller", Label("job-1"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.AppDeploymentWithCniAndTaintController, Serial)
-	_ = Describe("Connectivity - Exclude Outbound Port", Label("job-0"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), Ordered, cni.ExcludeOutboundPort, Serial)
+	_ = Describe("Taint controller", Label("job-1"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.AppDeploymentWithCniAndTaintController)
 )

@@ -1,21 +1,16 @@
 package cni
 
 import (
-	"fmt"
-	"strings"
-	"time"
-
-	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
 func ExcludeOutboundPort() {
@@ -24,26 +19,12 @@ func ExcludeOutboundPort() {
 	namespace := "exclude-outbound-port"
 	namespaceExternal := "exclude-outbound-port-external"
 
-	var cluster Cluster
-	var k8sCluster *K8sCluster
-
 	BeforeAll(func() {
-		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		cluster = k8sCluster.
-			WithTimeout(6 * time.Second).
-			WithRetries(60)
-
-		releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
+		Expect(NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Setup(multizone.Global)).To(Succeed())
 
 		Expect(NewClusterSetup().
-			Install(E2EKuma(core.Zone,
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmReleaseName(releaseName),
-				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
-				WithHelmOpt("cni.logLevel", "debug"),
-				WithCNI(),
-			)).
-			Install(MTLSMeshKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceExternal)).
 			Install(testserver.Install(
@@ -51,22 +32,21 @@ func ExcludeOutboundPort() {
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespaceExternal),
 			)).
-			Setup(cluster)).To(Succeed())
+			Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(k8sCluster, meshName, namespace, namespaceExternal)
+		DebugKube(multizone.KubeZone2, meshName, namespace, namespaceExternal)
 	})
 
 	E2EAfterAll(func() {
-		Expect(cluster.DeleteNamespace(namespace)).To(Succeed())
-		Expect(cluster.DeleteNamespace(namespaceExternal)).To(Succeed())
-		Expect(cluster.DeleteKuma()).To(Succeed())
-		Expect(cluster.DismissCluster()).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespaceExternal)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should be able to use network from init container if we ignore ports for uid", func() {
-		Expect(cluster.Install(testserver.Install(
+		Expect(NewClusterSetup().Install(testserver.Install(
 			testserver.WithName("test-server"),
 			testserver.WithMesh(meshName),
 			testserver.WithNamespace(namespace),
@@ -89,6 +69,6 @@ func ExcludeOutboundPort() {
 					RunAsUser: pointer.To(int64(1234)),
 				},
 			}),
-		))).To(Succeed())
+		)).Setup(multizone.KubeZone2)).To(Succeed())
 	})
 }
