@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
@@ -9,12 +8,7 @@ import (
 func (t *MeshFaultInjectionResource) Deprecations() []string {
 	var deprecations []string
 	if len(pointer.Deref(t.Spec.From)) > 0 {
-		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")
-		for _, f := range pointer.Deref(t.Spec.From) {
-			if f.GetTargetRef().Kind == v1alpha1.MeshService {
-				deprecations = append(deprecations, "MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with 'kuma.io/service' instead")
-			}
-		}
+		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' with SPIFFE-based 'matches' instead")
 	}
 	return append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
 }
