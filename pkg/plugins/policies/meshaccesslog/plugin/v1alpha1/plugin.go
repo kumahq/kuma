@@ -428,7 +428,11 @@ func applyToRealResource(
 	})) > 0
 
 	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+		base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
+		if base == nil {
+			return nil
+		}
+		return base.
 			Configure(If(core_meta.IsHTTPBased(r.Protocol), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
 				Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 				Configure(bldrs_matcher.NullValue())),
@@ -437,7 +441,11 @@ func applyToRealResource(
 
 	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+			base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
+			if base == nil {
+				return nil
+			}
+			return base.
 				Configure(bldrs_accesslog.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
 					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.ExactValue(routeID.String()))))
