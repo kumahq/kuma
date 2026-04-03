@@ -26,11 +26,11 @@ import (
 var diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")
 
 type diagnosticsServer struct {
-	isReady  func() bool
-	config   *diagnostics_config.DiagnosticsConfig
-	metrics  metrics.Metrics
-	registry *kuma_log.ComponentLevelRegistry
-	ready    atomic.Bool
+	isReady     func() bool
+	config      *diagnostics_config.DiagnosticsConfig
+	metrics     metrics.Metrics
+	logRegistry *kuma_log.ComponentLevelRegistry
+	ready       atomic.Bool
 }
 
 func (s *diagnosticsServer) NeedLeaderElection() bool {
@@ -62,7 +62,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	}
-	AddLoggingHandlers(mux, s.registry)
+	AddLoggingHandlers(mux, s.logRegistry)
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
@@ -133,12 +133,8 @@ func AddLoggingHandlers(mux *http.ServeMux, registry *kuma_log.ComponentLevelReg
 			return
 		}
 	})
-	mux.HandleFunc("/logging/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		component := r.URL.Path[len("/logging/"):]
+	mux.HandleFunc("DELETE /logging/{component}", func(w http.ResponseWriter, r *http.Request) {
+		component := r.PathValue("component")
 		if err := kuma_log.ValidateComponentName(component); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

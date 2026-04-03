@@ -63,9 +63,13 @@ func ValidateComponentName(name string) error {
 // SetLevel sets a log level override for the given component.
 // Returns an error if the maximum number of overrides would be exceeded.
 func (r *ComponentLevelRegistry) SetLevel(component string, level LogLevel) error {
+	current := *r.snapshot.Load()
+	if existing, ok := current[component]; ok && existing == level {
+		return nil
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	current := *r.snapshot.Load()
+	current = *r.snapshot.Load()
 	if _, exists := current[component]; !exists && len(current) >= MaxOverrides {
 		return fmt.Errorf("maximum number of component overrides (%d) reached", MaxOverrides)
 	}
@@ -78,9 +82,16 @@ func (r *ComponentLevelRegistry) SetLevel(component string, level LogLevel) erro
 
 // ResetLevel removes the log level override for the given component.
 func (r *ComponentLevelRegistry) ResetLevel(component string) {
+	current := *r.snapshot.Load()
+	if _, exists := current[component]; !exists {
+		return
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	current := *r.snapshot.Load()
+	current = *r.snapshot.Load()
+	if _, exists := current[component]; !exists {
+		return
+	}
 	next := make(map[string]LogLevel, len(current))
 	maps.Copy(next, current)
 	delete(next, component)
@@ -90,9 +101,16 @@ func (r *ComponentLevelRegistry) ResetLevel(component string) {
 // ResetAll removes all component log level overrides and returns
 // the overrides that were active before the reset.
 func (r *ComponentLevelRegistry) ResetAll() map[string]LogLevel {
+	current := *r.snapshot.Load()
+	if len(current) == 0 {
+		return map[string]LogLevel{}
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	prev := *r.snapshot.Load()
+	if len(prev) == 0 {
+		return map[string]LogLevel{}
+	}
 	m := make(map[string]LogLevel)
 	r.snapshot.Store(&m)
 	result := make(map[string]LogLevel, len(prev))
