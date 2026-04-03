@@ -504,6 +504,7 @@ func (r *resourceEndpoints) createResource(
 		core_model.WithMode(r.mode),
 		core_model.WithK8s(r.isK8s),
 		core_model.WithZone(r.zoneName),
+		core_model.WithDisplayName(name),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
@@ -542,6 +543,8 @@ func (r *resourceEndpoints) updateResource(
 
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
+	currentDisplayName := core_model.GetDisplayName(currentRes.GetMeta())
+
 	// Compute labels for current state BEFORE modifying spec
 	currentLabels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
@@ -552,6 +555,7 @@ func (r *resourceEndpoints) updateResource(
 		core_model.WithMode(r.mode),
 		core_model.WithK8s(r.isK8s),
 		core_model.WithZone(r.zoneName),
+		core_model.WithDisplayName(currentDisplayName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
@@ -570,6 +574,7 @@ func (r *resourceEndpoints) updateResource(
 		core_model.WithMode(r.mode),
 		core_model.WithK8s(r.isK8s),
 		core_model.WithZone(r.zoneName),
+		core_model.WithDisplayName(currentDisplayName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")

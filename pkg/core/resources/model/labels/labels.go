@@ -17,4 +17,5 @@ var AllComputedLabels = map[string]struct{}{
 	mesh_proto.ProxyTypeLabel:      {},
 	metadata.KumaServiceAccount:    {},
 	metadata.KumaWorkload:          {},
+	mesh_proto.DisplayName:         {},
 }

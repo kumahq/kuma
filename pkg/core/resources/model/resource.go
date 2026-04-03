@@ -543,6 +543,7 @@ type LabelsOptions struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
+	DisplayName    string
 }
 
 type LabelsOptionsFunc func(*LabelsOptions)
@@ -588,6 +589,12 @@ func WithZone(name string) LabelsOptionsFunc {
 func WithMode(mode config_core.CpMode) LabelsOptionsFunc {
 	return func(opts *LabelsOptions) {
 		opts.Mode = mode
+	}
+}
+
+func WithDisplayName(name string) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.DisplayName = name
 	}
 }
 
@@ -673,6 +680,10 @@ func ComputeLabels(
 
 	if labelsOpts.Workload != "" {
 		set(metadata.KumaWorkload, labelsOpts.Workload)
+	}
+
+	if labelsOpts.DisplayName != "" {
+		set(mesh_proto.DisplayName, labelsOpts.DisplayName)
 	}
 
 	return labels, nil

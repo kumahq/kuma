@@ -337,20 +337,27 @@ var _ = Describe("ComputeLabels", func() {
 		mode           core.CpMode
 		isK8s          bool
 		localZone      string
+		displayName    string
 		expectedLabels map[string]string
 	}
 
 	DescribeTable("should return correct label map",
 		func(given testCase) {
+			opts := []core_model.LabelsOptionsFunc{
+				core_model.WithNamespace(core_model.GetNamespace(given.r.GetMeta(), "kuma-system")),
+				core_model.WithMode(given.mode),
+				core_model.WithK8s(given.isK8s),
+				core_model.WithZone(given.localZone),
+			}
+			if given.displayName != "" {
+				opts = append(opts, core_model.WithDisplayName(given.displayName))
+			}
 			labels, err := core_model.ComputeLabels(
 				given.r.Descriptor(),
 				given.r.GetSpec(),
 				given.r.GetMeta().GetLabels(),
 				given.r.GetMeta().GetMesh(),
-				core_model.WithNamespace(core_model.GetNamespace(given.r.GetMeta(), "kuma-system")),
-				core_model.WithMode(given.mode),
-				core_model.WithK8s(given.isK8s),
-				core_model.WithZone(given.localZone),
+				opts...,
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(labels).To(Equal(given.expectedLabels))
@@ -462,6 +469,28 @@ var _ = Describe("ComputeLabels", func() {
 				"kuma.io/zone":       "zone-1",
 				"kuma.io/env":        "kubernetes",
 				"kuma.io/proxy-type": "zoneegress",
+			},
+		}),
+		Entry("WithDisplayName overrides user-supplied display-name", testCase{
+			mode:        core.Zone,
+			isK8s:       true,
+			localZone:   "zone-1",
+			displayName: "my-dataplane",
+			r: builders.Dataplane().
+				WithName("my-dataplane").
+				WithMesh("mesh-1").
+				WithServices("backend").
+				WithLabels(map[string]string{
+					mesh_proto.DisplayName: "wrong-display-name",
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/proxy-type":   "sidecar",
+				"kuma.io/display-name": "my-dataplane",
 			},
 		}),
 	)

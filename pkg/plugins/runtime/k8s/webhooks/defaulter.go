@@ -66,15 +66,21 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 
+	opts := []core_model.LabelsOptionsFunc{
+		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
+		core_model.WithMode(h.Mode),
+		core_model.WithK8s(true),
+		core_model.WithZone(h.ZoneName),
+	}
+	if !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
+		opts = append(opts, core_model.WithDisplayName(obj.GetObjectMeta().GetName()))
+	}
 	computed, err := core_model.ComputeLabels(
 		resource.Descriptor(),
 		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
 		resource.GetMeta().GetMesh(),
-		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
-		core_model.WithMode(h.Mode),
-		core_model.WithK8s(true),
-		core_model.WithZone(h.ZoneName),
+		opts...,
 	)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)

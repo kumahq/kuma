@@ -577,5 +577,105 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
+		Entry("should override wrong display-name set by non-privileged user", testCase{
+			checker: zoneChecker(true, true),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "my-policy",
+                "labels": {
+                  "kuma.io/origin": "zone"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "wrong-name"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "my-policy",
+                "labels": {
+                  "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/env": "kubernetes",
+                  "kuma.io/policy-role": "workload-owner",
+                  "k8s.kuma.io/namespace": "example"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "my-policy"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+		}),
+		Entry("should preserve display-name set by privileged user (KDS sync)", testCase{
+			checker:  zoneChecker(true, false),
+			kind:     string(v1alpha1.MeshTrafficPermissionType),
+			username: "system:serviceaccount:kuma-system:kuma-control-plane",
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "kuma-system",
+                "name": "my-policy-abc123",
+                "labels": {
+                  "kuma.io/origin": "global",
+                  "kuma.io/mesh": "default"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "my-policy"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "kuma-system",
+                "name": "my-policy-abc123",
+                "labels": {
+                  "kuma.io/origin": "global",
+                  "kuma.io/mesh": "default"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "my-policy"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+		}),
 	)
 })
