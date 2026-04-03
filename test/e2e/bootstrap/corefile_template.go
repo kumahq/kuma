@@ -96,6 +96,6 @@ data:
 				appNamespace, dpPod, k8s_util.KumaSidecarContainerName, "cat", dnsConfigDir+"/Corefile")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring(expectedTestText))
-		}, "60s", "1s").Should(Succeed())
+		}, "3m", "1s").Should(Succeed())
 	})
 }

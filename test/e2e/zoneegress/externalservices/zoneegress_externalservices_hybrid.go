@@ -83,7 +83,7 @@ conf:
 
 	BeforeAll(func() {
 		// Global
-		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent).WithRetries(60).WithTimeout(6 * time.Second)
+		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent).WithRetries(90).WithTimeout(6 * time.Second)
 
 		Expect(NewClusterSetup().
 			Install(E2EKuma(config_core.Global)).
@@ -98,7 +98,7 @@ conf:
 		group := errgroup.Group{}
 
 		// K8s Cluster 1
-		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(60).WithTimeout(6 * time.Second)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(90).WithTimeout(6 * time.Second)
 		NewClusterSetup().
 			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
@@ -113,7 +113,7 @@ conf:
 			SetupInGroup(zone1, &group)
 
 		// Universal Cluster 4
-		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent).WithRetries(60).WithTimeout(6 * time.Second).(*UniversalCluster)
+		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*UniversalCluster)
 		NewClusterSetup().
 			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).

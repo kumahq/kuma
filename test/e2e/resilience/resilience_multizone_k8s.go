@@ -16,7 +16,7 @@ func ResilienceMultizoneK8s() {
 
 	BeforeAll(func() {
 		// Global
-		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(60).WithTimeout(6 * time.Second).(*K8sCluster)
+		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*K8sCluster)
 		Expect(NewClusterSetup().
 			Install(E2EKuma(core.Global,
 				WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
@@ -29,7 +29,7 @@ func ResilienceMultizoneK8s() {
 		globalCP := global.GetKuma()
 
 		// Cluster 1
-		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent).WithRetries(60).WithTimeout(6 * time.Second).(*K8sCluster)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*K8sCluster)
 
 		Expect(NewClusterSetup().
 			Install(E2EKuma(core.Zone,

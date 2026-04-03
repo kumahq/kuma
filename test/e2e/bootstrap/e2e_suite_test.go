@@ -16,5 +16,5 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Corefile Template", Label("job-0"), Ordered, bootstrap.CorefileTemplate, Serial)
+	_ = Describe("Corefile Template", Label("job-3"), Ordered, bootstrap.CorefileTemplate, Serial)
 )
