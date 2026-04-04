@@ -9,6 +9,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 )
 
@@ -39,6 +41,9 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 	gis.aggregateDataplanes(meshInsights, globalInsights)
 	gis.aggregatePolicies(meshInsights, globalInsights)
 	gis.aggregateResources(meshInsights, globalInsights)
+	if err := gis.aggregateGlobalResources(ctx, globalInsights); err != nil {
+		return nil, err
+	}
 
 	if err := gis.aggregateServices(ctx, globalInsights); err != nil {
 		return nil, err
@@ -114,6 +119,40 @@ func (gis *defaultGlobalInsightService) aggregateResources(
 			globalInsight.Resources[resName] = stats
 		}
 	}
+}
+
+func (gis *defaultGlobalInsightService) aggregateGlobalResources(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsight,
+) error {
+	for _, descriptor := range registry.Global().ObjectDescriptors(
+		core_model.HasScope(core_model.ScopeGlobal),
+		core_model.HasWsEnabled(),
+		core_model.Not(core_model.IsInsight()),
+		core_model.Not(core_model.Named(
+			mesh.MeshType,
+			system.ZoneType,
+			mesh.ZoneIngressType,
+			mesh.ZoneEgressType,
+			system.ConfigType,
+		)),
+	) {
+		list := descriptor.NewList()
+		if err := gis.resourceStore.List(ctx, list); err != nil {
+			return err
+		}
+
+		count := len(list.GetItems())
+		if count == 0 {
+			continue
+		}
+
+		stats := globalInsight.Resources[string(descriptor.Name)]
+		stats.Total += count
+		globalInsight.Resources[string(descriptor.Name)] = stats
+	}
+
+	return nil
 }
 
 func (gis *defaultGlobalInsightService) aggregateServices(
