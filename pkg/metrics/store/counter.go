@@ -128,11 +128,33 @@ func (s *storeCounter) countMeshScopedResources(ctx context.Context, resourceCou
 	if err := s.resManager.List(ctx, insights); err != nil {
 		return err
 	}
+	if len(insights.Items) == 0 {
+		return s.countMeshScopedResourcesWithoutInsights(ctx, resourceCount)
+	}
 	for _, meshInsight := range insights.Items {
 		resourceCount[string(mesh.DataplaneType)] += meshInsight.Spec.GetDataplanes().GetTotal()
 		for policy, stats := range meshInsight.Spec.GetPolicies() {
 			resourceCount[policy] += stats.GetTotal()
 		}
 	}
+	return nil
+}
+
+func (s *storeCounter) countMeshScopedResourcesWithoutInsights(ctx context.Context, resourceCount map[string]uint32) error {
+	for _, resDesc := range registry.Global().ObjectDescriptors() {
+		if resDesc.Scope != model.ScopeMesh {
+			continue
+		}
+		if resDesc.Name != mesh.DataplaneType && !resDesc.IsPolicy {
+			continue
+		}
+
+		list := resDesc.NewList()
+		if err := s.resManager.List(ctx, list); err != nil {
+			return err
+		}
+		resourceCount[string(resDesc.Name)] += uint32(len(list.GetItems()))
+	}
+
 	return nil
 }
