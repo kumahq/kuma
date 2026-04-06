@@ -77,8 +77,8 @@ require (
 	golang.org/x/text v0.35.0
 	golang.org/x/tools v0.43.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260319201613-d00831a3d3e7
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260319201613-d00831a3d3e7
+	google.golang.org/genproto/googleapis/api v0.0.0-20260401024825-9d38bb4040a9
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260401024825-9d38bb4040a9
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
