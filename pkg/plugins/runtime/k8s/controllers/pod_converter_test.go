@@ -56,7 +56,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 		inboundTagsDisabled bool
 		meshServicesMode    *mesh_proto.Mesh_MeshServices_Mode
 		expectedErr         string
-		zoneProxySkipped    bool
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -154,7 +153,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Build()
 
 			// when
-			zoneProxySkipped, err := converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
+			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
 
 			// then
 			if given.expectedErr != "" {
@@ -162,7 +161,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				return
 			}
 			Expect(err).ToNot(HaveOccurred())
-			Expect(zoneProxySkipped).To(Equal(given.zoneProxySkipped))
 
 			actual, err := yaml.Marshal(existingDataplane)
 			Expect(err).ToNot(HaveOccurred())
@@ -420,7 +418,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod:   "44.services-for-pod.yaml",
 			dataplane:        "44.dataplane.yaml",
 			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
-			zoneProxySkipped: true,
 		}),
 	)
 
