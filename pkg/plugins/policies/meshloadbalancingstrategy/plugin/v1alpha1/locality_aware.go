@@ -50,6 +50,13 @@ func NewEndpoints(
 			}
 		}
 	}
+	// Filter each endpoint's Labels to only keys referenced by AffinityTags,
+	// so the rebuilt xDS metadata doesn't carry unrelated pod labels.
+	if conf != nil {
+		for i := range endpointsList {
+			endpointsList[i].Labels = affinityTagPodLabels(endpointsList[i].Labels, *conf)
+		}
+	}
 	return endpoints.ToLocalityLbEndpoints(endpointsList)
 }
 
