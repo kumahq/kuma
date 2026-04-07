@@ -232,8 +232,6 @@ This requires:
 - A format version bump (e.g. `a` → `b`) so old and new SNIs are distinguishable
 - Only new mesh-scoped zone proxies adopting a new format
 
-
-
 ### Pros and Cons
 
 #### Option 1: New SNI format derived from KRI
@@ -276,7 +274,6 @@ This requires:
   from resource attributes
 - Bad, because debugging routing issues still requires looking up the stored SNI
   rather than reasoning about it from the resource name
-
 
 ## Decision
 
