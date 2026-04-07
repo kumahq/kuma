@@ -2,7 +2,7 @@
 
 - Status: accepted
 
-Technical Story: [https://github.com/kumahq/kuma/issues/16041](https://github.com/kumahq/kuma/issues/16041)
+Technical Story: https://github.com/kumahq/kuma/issues/16041
 
 ## Context and Problem Statement
 
@@ -245,7 +245,7 @@ This requires:
   the originating resource KRI can be recovered without a lookup table
 - Good, because SNIs are fully human-readable —
   users can construct and interpret them from known resource attributes
-- Good, because it aligns with the KRI format (MADR 070),
+- Good, because it aligns with the KRI format [MADR 070](070-resource-identifier.md),
   giving a consistent identifier scheme across the system
 - Good, because zone, namespace, and all identifying attributes are explicit segments,
   not hidden in a hash
