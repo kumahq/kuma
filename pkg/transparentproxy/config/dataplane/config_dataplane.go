@@ -53,7 +53,7 @@ type DataplaneRedirect struct {
 	Inbound  DatalpaneTrafficFlow `json:"inbound"`
 	Outbound DatalpaneTrafficFlow `json:"outbound"`
 	DNS      DatalpaneTrafficFlow `json:"dns"`
-	VNet     DataplaneVNet        `json:"vnet,omitempty"`
+	VNet     DataplaneVNet        `json:"vnet"`
 }
 
 type DataplaneConfig struct {
