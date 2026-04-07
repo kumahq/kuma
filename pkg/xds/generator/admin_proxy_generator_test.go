@@ -28,6 +28,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 		dataplaneFile    string
 		expected         string
 		adminAddress     string
+		adminSocketPath  string
 		readinessPort    uint32
 		features         xds_types.Features
 		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
@@ -61,11 +62,12 @@ var _ = Describe("AdminProxyGenerator", func() {
 			proxy := &xds.Proxy{
 				Id: *xds.BuildProxyId("default", "test-admin-dpp"),
 				Metadata: &xds.DataplaneMetadata{
-					AdminPort:     9901,
-					AdminAddress:  given.adminAddress,
-					ReadinessPort: given.readinessPort,
-					Features:      given.features,
-					IPv6Enabled:   true,
+					AdminPort:       9901,
+					AdminAddress:    given.adminAddress,
+					AdminSocketPath: given.adminSocketPath,
+					ReadinessPort:   given.readinessPort,
+					Features:        given.features,
+					IPv6Enabled:     true,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -142,6 +144,18 @@ var _ = Describe("AdminProxyGenerator", func() {
 			dataplaneFile:    "08.dataplane.input.yaml",
 			expected:         "08.envoy-config.golden.yaml",
 			adminAddress:     "127.0.0.1",
+			readinessPort:    9902,
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			features: map[string]bool{
+				xds_types.FeatureUnifiedResourceNaming: true,
+				xds_types.FeatureReadinessUnixSocket:   true,
+			},
+		}),
+		Entry("should generate admin resources, admin with Unix socket", testCase{
+			dataplaneFile:    "09.dataplane.input.yaml",
+			expected:         "09.envoy-config.golden.yaml",
+			adminAddress:     "127.0.0.1",
+			adminSocketPath:  "/tmp/kuma-dp/kuma-envoy-admin.sock",
 			readinessPort:    9902,
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{

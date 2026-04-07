@@ -318,6 +318,7 @@ A Helm chart for the Kuma Control Plane
 | experimental.ebpf.programsSourcePath | string | `"/tmp/kuma-ebpf"` | Path where compiled eBPF programs which will be installed can be found |
 | experimental.sidecarContainers | bool | `false` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
 | experimental.inboundTagsDisabled | bool | `false` | If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching. |
+| experimental.envoyAdminUnixSocket | bool | `true` | If true, Envoy admin API binds to a Unix domain socket instead of TCP. |
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |

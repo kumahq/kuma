@@ -313,6 +313,8 @@ env:
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
   value: "true"
 {{- end }}
+- name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
+  value: {{ .Values.experimental.envoyAdminUnixSocket | quote }}
 {{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"

@@ -220,12 +220,12 @@ func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
 
 			tnl.Close()
 
-			delete(c.portForwards, spec)
+			delete(c.portForwards, fwdSpec)
 		}
 
 		for tnlSpec := range c.adminTunnels {
 			if tnlSpec.Matches(spec) {
-				delete(c.adminTunnels, spec)
+				delete(c.adminTunnels, tnlSpec)
 			}
 		}
 	}
@@ -531,6 +531,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	for k, v := range c.opts.env {
 		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	for k, v := range c.opts.helmOpts {
+		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, k, v))
 	}
 
 	if c.opts.yamlConfig != "" {

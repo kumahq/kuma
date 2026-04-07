@@ -43,7 +43,6 @@ func SetupAndGetState() []byte {
 	if framework.Config.KumaExperimentalSidecarContainers {
 		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
 	}
-
 	Eventually(func() error {
 		return Cluster.Install(framework.E2EKuma(core.Zone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
@@ -51,12 +50,12 @@ func SetupAndGetState() []byte {
 	state := framework.K8sNetworkingState{
 		KumaCp: Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd(),
 		MADS:   Cluster.GetKuma().(*framework.K8sControlPlane).MadsPortFwd(),
-		ZoneEgress: Cluster.GetPortForward(portforward.Spec{
-			AppName:    framework.Config.ZoneEgressApp,
-			Namespace:  framework.Config.KumaNamespace,
-			RemotePort: 9901,
-		}),
 	}
+	state.ZoneEgress = Cluster.GetPortForward(portforward.Spec{
+		AppName:    framework.Config.ZoneEgressApp,
+		Namespace:  framework.Config.KumaNamespace,
+		RemotePort: 9902,
+	})
 
 	bytes, err := json.Marshal(state)
 	Expect(err).ToNot(HaveOccurred())
@@ -92,7 +91,7 @@ func RestoreState(bytes []byte) {
 	Cluster.AddPortForward(state.ZoneEgress, portforward.Spec{
 		AppName:    framework.Config.ZoneEgressApp,
 		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9901,
+		RemotePort: 9902,
 	})
 }
 

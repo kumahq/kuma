@@ -1024,6 +1024,8 @@ experimental:
   sidecarContainers: false
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
+  # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
+  envoyAdminUnixSocket: true
 
 # Postgres' settings for universal control plane on k8s
 postgres:
