@@ -71,14 +71,14 @@ func EndpointMetadataWithLabels(t tags.Tags, labels map[string]string) *envoy_co
 // Labels are stored under the "io.kuma.labels" key (separate from inbound tags)
 // and are available even when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is true.
 func ExtractLbLabels(metadata *envoy_core.Metadata) tags.Tags {
-	result := tags.Tags{}
 	if metadata == nil {
-		return result
+		return nil
 	}
 	structVal, ok := metadata.GetFilterMetadata()[LbLabelsKey]
 	if !ok || structVal == nil {
-		return result
+		return nil
 	}
+	result := tags.Tags{}
 	for key, value := range structVal.GetFields() {
 		result[key] = value.GetStringValue()
 	}
