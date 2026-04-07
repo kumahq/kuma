@@ -43,12 +43,16 @@ if zone `zone-a` and the global CP both have a MeshExternalService named `extern
 their SNIs would be identical,
 causing routing conflicts.
 
-#### 2. Opaque hash makes integration difficult
+#### 2. Opaque hash prevents SNI ↔ KRI conversion
 
 The current format includes a hash (`<format-version><hash>`) which:
-* Makes the SNI opaque to users who cannot easily construct it from known resource attributes
-* Complicates integrations that need to predict or construct SNIs programmatically
+* Makes the SNI opaque — users cannot construct it from known resource attributes
+* Makes it impossible to reverse an SNI back into a KRI, since the hash is a lossy transformation
+* Complicates integrations that need to map between SNIs and resource identifiers programmatically
 * Reduces debuggability when troubleshooting routing issues
+
+A bidirectional SNI ↔ KRI mapping would allow components to resolve a resource
+from an observed SNI (e.g. in Envoy logs or access logs) without needing a lookup table.
 
 The hash was originally introduced to handle uniqueness and tags,
 but with the current resource model where SNI is stored in the resource itself,
@@ -86,9 +90,10 @@ but this inconsistency makes the codebase harder to maintain and reason about.
   SNIs must uniquely identify resources across zones to prevent routing collisions,
   especially for MeshExternalService resources that may exist both globally and locally
 
-* **Human-readability**:
-  Users and integrations should be able to understand and construct SNIs from known resource attributes
-  without needing to compute hashes
+* **SNI ↔ KRI reversibility**:
+  It should be possible to convert between SNI and KRI in both directions —
+  construct an SNI from a KRI, and recover a KRI from an observed SNI —
+  without requiring a lookup table
 
 * **Consistency**:
   The format should handle MeshService, MeshExternalService, and MeshMultiZoneService uniformly
@@ -207,9 +212,11 @@ This resolves the inconsistency described in [limitation 3](#3-inconsistent-hand
 
 #### What this does NOT solve
 
-This option does **not** address [limitation 2](#2-opaque-hash-makes-integration-difficult).
-The SNI remains hash-based and opaque —
-users still cannot construct or predict an SNI from known resource attributes alone.
+This option does **not** address [limitation 2](#2-opaque-hash-prevents-sni--kri-conversion).
+The SNI remains hash-based, so:
+* It is impossible to reverse an SNI back into a KRI — the hash is a lossy transformation
+* Users and integrations still cannot construct an SNI from known resource attributes
+* Mapping between SNIs and resources still requires a lookup against stored SNI values
 
 #### Migration
 
@@ -223,6 +230,7 @@ This requires:
 
 #### Option 1: New SNI format derived from KRI
 
+* Good, because SNI ↔ KRI conversion is bidirectional — given an SNI (e.g. from Envoy logs), the originating resource KRI can be recovered without a lookup table
 * Good, because SNIs are fully human-readable — users can construct and interpret them from known resource attributes
 * Good, because it aligns with the KRI format (MADR 070), giving a consistent identifier scheme across the system
 * Good, because zone, namespace, and all identifying attributes are explicit segments, not hidden in a hash
@@ -238,7 +246,7 @@ This requires:
 * Good, because it solves the zone collision problem (limitation 1) by including zone and namespace in the hash
 * Good, because it removes the `SNIName()` special-casing, unifying resource name computation across all resource types (limitation 3)
 * Good, because SNI length stays bounded by the existing format (no risk of exceeding DNS hostname limits)
-* Bad, because it does **not** address human-readability (limitation 2) — SNIs remain opaque and hash-based
+* Bad, because SNI → KRI reversal is impossible — the hash is lossy, so an observed SNI cannot be mapped back to a resource without a lookup
 * Bad, because users and integrations still cannot construct or predict SNIs from resource attributes
 * Bad, because debugging routing issues still requires looking up the stored SNI rather than reasoning about it from the resource name
 
