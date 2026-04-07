@@ -73,18 +73,20 @@ var _ = Describe("Counter", func() {
 		})
 
 		go func() {
+			defer GinkgoRecover()
 			err := resyncer.Start(stop)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 
 		go func() {
+			defer GinkgoRecover()
 			err = counter.StartWithTicker(stop, counterTicker)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 	})
 
 	AfterEach(func() {
-		stop <- struct{}{}
+		close(stop)
 	})
 
 	findGauge := func(resTypeName string) *io_prometheus_client.Gauge {
