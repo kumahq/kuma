@@ -1756,6 +1756,193 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 			},
 		}),
+		Entry("locality_aware_inbound_tags_disabled", testCase{
+			resources: []core_xds.Resource{
+				{
+					Name:   "backend",
+					Origin: metadata.OriginOutbound,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
+						Configure(clusters.EdsCluster()).
+						MustBuild(),
+				},
+				{
+					Name:   "backend",
+					Origin: metadata.OriginOutbound,
+					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
+						createEndpointWithLabels("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWithLabels("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWithLabels("zone-1", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+						createEndpointWithLabels("zone-1", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
+						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+						createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
+					}),
+				},
+				{
+					Name:   "payment",
+					Origin: metadata.OriginOutbound,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
+						Configure(clusters.ProvidedEndpointCluster(
+							false,
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{"k8s.io/node": "node1"}),
+							createEndpointWith("zone-1", "192.168.0.2", map[string]string{"k8s.io/node": "node2"}),
+							createEndpointWith("zone-2", "192.168.0.3", map[string]string{}),
+						)).MustBuild(),
+				},
+				{
+					Name:     "backend",
+					Origin:   metadata.OriginOutbound,
+					Resource: backendListener(),
+				},
+				{
+					Name:     "payments",
+					Origin:   metadata.OriginOutbound,
+					Resource: paymentsListener(),
+				},
+			},
+			proxy: xds_builders.Proxy().
+				WithZone("zone-1").
+				WithDataplane(
+					builders.Dataplane().
+						WithLabels(map[string]string{
+							"k8s.io/node":   "node1",
+							"k8s.io/az":     "test",
+							"k8s.io/region": "test",
+						}),
+				).
+				WithOutbounds(xds_types.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
+				WithRouting(paymentsAndBackendRouting()).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
+							Rules: []*core_rules.Rule{
+								{
+									Subset: subsetutils.MeshService("backend"),
+									Conf: api.Conf{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RandomType,
+										},
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
+													{
+														Key:    "k8s.io/node",
+														Weight: pointer.To[uint32](9000),
+													},
+													{
+														Key:    "k8s.io/az",
+														Weight: pointer.To[uint32](900),
+													},
+													{
+														Key:    "k8s.io/region",
+														Weight: pointer.To[uint32](90),
+													},
+												},
+											},
+											CrossZone: &api.CrossZone{
+												FailoverThreshold: &api.FailoverThreshold{Percentage: intstr.FromString("99")},
+												Failover: &[]api.Failover{
+													{
+														To: api.ToZone{
+															Type:  api.AnyExcept,
+															Zones: &[]string{"zone-3", "zone-4", "zone-5"},
+														},
+													},
+													{
+														From: &api.FromZone{
+															Zones: []string{"zone-1"},
+														},
+														To: api.ToZone{
+															Type:  api.Only,
+															Zones: &[]string{"zone-3"},
+														},
+													},
+													{
+														To: api.ToZone{
+															Type:  api.Only,
+															Zones: &[]string{"zone-4"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									Subset: subsetutils.MeshService("payment"),
+									Conf: api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.QueryParameterType,
+												QueryParameter: &api.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: api.ConnectionType,
+												Connection: &api.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RingHashType,
+											RingHash: &api.RingHash{
+												MinRingSize:  pointer.To[uint32](100),
+												MaxRingSize:  pointer.To[uint32](1000),
+												HashFunction: pointer.To(api.MurmurHash2Type),
+											},
+										},
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
+													{
+														Key:    "k8s.io/node",
+														Weight: pointer.To[uint32](9000),
+													},
+													{
+														Key:    "k8s.io/az",
+														Weight: pointer.To[uint32](900),
+													},
+													{
+														Key:    "k8s.io/region",
+														Weight: pointer.To[uint32](90),
+													},
+												},
+											},
+											CrossZone: &api.CrossZone{
+												Failover: &[]api.Failover{
+													{
+														To: api.ToZone{
+															Type:  api.Only,
+															Zones: &[]string{"zone-2"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						}),
+				).
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				Build(),
+		}),
 	)
 })
 
@@ -1767,6 +1954,17 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 		AddTagsMap(extraTags).
 		WithZone(zone).
 		Build()
+}
+
+func createEndpointWithLabels(zone string, ip string, labels map[string]string) core_xds.Endpoint {
+	e := xds_builders.Endpoint().
+		WithTarget(ip).
+		WithPort(8080).
+		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, zone).
+		WithZone(zone).
+		Build()
+	e.Labels = labels
+	return *e
 }
 
 func createEndpointBuilderWith(zone string, ip string, extraTags map[string]string) *xds_builders.EndpointBuilder {
