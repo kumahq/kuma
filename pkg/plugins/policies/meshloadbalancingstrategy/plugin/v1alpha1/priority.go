@@ -7,7 +7,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
+
+var log = core.Log.WithName("mesh-load-balancing-strategy")
 
 type LocalLbGroup struct {
 	Key    string
@@ -107,6 +111,7 @@ func resolveAffinityValues(inboundTags mesh_proto.MultiValueTagSet, podLabels ma
 		return values
 	}
 	if v, ok := podLabels[key]; ok {
+		log.V(1).Info("affinity tag absent from inbound tags, using pod label fallback", "key", key, "value", v)
 		return []string{v}
 	}
 	return nil
