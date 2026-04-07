@@ -731,11 +731,10 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		return err
 	}
 
-	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
-	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
-		return errors.Wrap(err, "Kuma control-plane failed to start")
-	}
-
+	// Create ContainerPatch before WaitApp so it exists from the moment the webhook starts serving.
+	// The CP is configured with KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES at deploy time;
+	// if the patch object is missing when any pod triggers the webhook, loadContainerPatches returns
+	// a hard error and injection fails entirely.
 	if c.opts.kumaInitNoCPULimit {
 		const patchName = "kuma-init-no-cpu-limit"
 		patch := fmt.Sprintf(`apiVersion: kuma.io/v1alpha1
@@ -746,10 +745,17 @@ metadata:
 spec:
   initPatch:
     - op: remove
-      path: /resources/limits/cpu`, Config.KumaNamespace, patchName)
+      path: /resources/limits/cpu
+    - op: remove
+      path: /resources/limits/memory`, Config.KumaNamespace, patchName)
 		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), patch); err != nil {
 			return errors.Wrap(err, "failed to apply kuma-init-no-cpu-limit ContainerPatch")
 		}
+	}
+
+	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
+	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
+		return errors.Wrap(err, "Kuma control-plane failed to start")
 	}
 
 	var wg sync.WaitGroup
