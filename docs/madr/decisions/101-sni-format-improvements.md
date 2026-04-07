@@ -9,7 +9,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/16041
 ### Background
 
 SNI (Server Name Indication) is used in Kuma for cross-zone communication to route traffic through zone proxies.
-The current SNI format was introduced in MADR 055 with the following structure:
+The current SNI format was introduced in [MADR 055](055-sni.md) with the following structure:
 
 ```
 <format-version><hash>.<resource-name>.<port>.<mesh-name>.<resource-type>
@@ -25,8 +25,8 @@ This format was designed to:
 * Stay within length limits (max ~157 chars)
 * Support differentiation between resource types via suffixes (`ms`, `mes`, `mzms`)
 
-MADR 065 further decided to store the SNI directly in the resource definition
-rather than computing it dynamically.
+[MADR 065](065-sni-in-the-resource.md) further decided to store the SNI directly in the resource definition
+rather than computing it dynamically, but it was never implemented.
 
 ### Current limitations
 
@@ -43,7 +43,7 @@ if zone `zone-a` and the global CP both have a MeshExternalService named `extern
 their SNIs would be identical,
 causing routing conflicts.
 
-#### 2. Opaque hash prevents SNI ↔ KRI conversion
+#### 2. Opaque hash prevents SNI <-> KRI conversion
 
 The current format includes a hash (`<format-version><hash>`) which:
 * Makes the SNI opaque — users cannot construct it from known resource attributes
@@ -51,7 +51,7 @@ The current format includes a hash (`<format-version><hash>`) which:
 * Complicates integrations that need to map between SNIs and resource identifiers programmatically
 * Reduces debuggability when troubleshooting routing issues
 
-A bidirectional SNI ↔ KRI mapping would allow components to resolve a resource
+A bidirectional SNI <-> KRI mapping would allow components to resolve a resource
 from an observed SNI (e.g. in Envoy logs or access logs) without needing a lookup table.
 
 The hash was originally introduced to handle uniqueness and tags,
@@ -90,7 +90,7 @@ but this inconsistency makes the codebase harder to maintain and reason about.
   SNIs must uniquely identify resources across zones to prevent routing collisions,
   especially for MeshExternalService resources that may exist both globally and locally
 
-* **SNI ↔ KRI reversibility**:
+* **SNI <-> KRI reversibility**:
   It should be possible to convert between SNI and KRI in both directions —
   construct an SNI from a KRI, and recover a KRI from an observed SNI —
   without requiring a lookup table
@@ -100,7 +100,7 @@ but this inconsistency makes the codebase harder to maintain and reason about.
   without special-case code paths
 
 * **Valid DNS hostname**:
-  SNI must remain a valid DNS hostname per RFC 6066
+  SNI must remain a valid DNS hostname per [RFC 6066](https://datatracker.ietf.org/doc/html/rfc6066)
 
 * **Alignment with KRI**:
   Consider how the SNI format can align with or leverage the KRI format adopted in MADR 070
@@ -115,10 +115,12 @@ Creating a mapping of all possible KRIs to SNI is tricky and doesn't make much s
 Main problem is that KRI allows empty segments i.e. `kri_m____default_` is valid KRI,
 however DNS hostnames don't allow empty segments, i.e. `kri.m....default.` is not a valid hostname.
 
-The problem can be solved for a subset of KRIs that satisfy the constraints:
+However, the problem can be solved for a subset of KRIs that satisfy the constraints:
 * resource types are `MeshService`, `MeshExternalService` and `MeshMultiZoneService`
 * `mesh`, `name` and `sectionName` are always non-empty
 * if `namespace` is non-empty then `zone` is non-empty 
+
+These are reasonable constraints that follow naturally from Kuma's resource model.
 
 In that case, the KRI `kri_<type>_<mesh>_<zone>_<namespace>_<name>_<sectionName>` can be unambiguously mapped to
 `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` omitting the empty segment.
@@ -257,7 +259,7 @@ This requires:
 ## Notes
 
 Related MADRs:
-* MADR 055 - Original SNI format for MeshService, MeshExternalService
-* MADR 065 - SNI stored in resource definition
-* MADR 070 - Resource Identifier (KRI) format
+* [MADR 055](055-sni.md) - Original SNI format for MeshService, MeshExternalService
+* [MADR 065](065-sni-in-the-resource.md) - SNI stored in resource definition
+* [MADR 070](070-resource-identifier.md) - Resource Identifier (KRI) format
 
