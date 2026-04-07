@@ -1,0 +1,131 @@
+name: Run E2E
+description: |
+  Build and run E2E tests for a specific configuration.
+  Required env vars from caller: DOCKERHUB_PULL_CREDENTIAL (optional, for Docker Hub rate limit avoidance)
+inputs:
+  k8s_version:
+    required: true
+  cni_network_plugin:
+    required: true
+  arch:
+    required: true
+  sidecar_containers:
+    required: false
+    default: ""
+  target:
+    required: false
+    default: ""
+  parallel_runner_id:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: "Free up disk space for the Runner"
+      uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
+      with:
+        remove_android: true
+        remove_dotnet: true
+        remove_haskell: true
+    - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - run: make build
+      shell: bash
+    - run: make -j build/distributions
+      shell: bash
+    - uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        retry_wait_seconds: 15s
+        timeout_minutes: 30
+        command: make -j images && make -j docker/save
+    - run: make dev/set-kuma-helm-repo
+      shell: bash
+    - name: "Enable ipv6 for docker"
+      if: ${{ inputs.k8s_version == 'kindIpv6' }}
+      shell: bash
+      run: |
+        cat <<'EOF' | sudo tee /etc/docker/daemon.json
+        {
+          "ipv6": true,
+          "fixed-cidr-v6": "2001:db8:1::/64",
+          "dns-search": ["."]
+        }
+        EOF
+        sudo service docker restart
+    - name: "Run E2E tests"
+      shell: bash
+      env:
+        KUMA_DEBUG: ${{ runner.debug == '1' }}
+        E2E_K8S_VERSION: ${{ inputs.k8s_version }}
+        E2E_CNI_NETWORK_PLUGIN: ${{ inputs.cni_network_plugin }}
+        E2E_ARCH: ${{ inputs.arch }}
+        E2E_SIDECAR_CONTAINERS: ${{ inputs.sidecar_containers }}
+        E2E_TARGET: ${{ inputs.target }}
+        E2E_PARALLEL_RUNNER_ID: ${{ inputs.parallel_runner_id }}
+      run: |
+        if [[ "$E2E_K8S_VERSION" == "kindIpv6" ]]; then
+          export IPV6=true
+          export K8S_CLUSTER_TOOL=kind
+          export KUMA_DEFAULT_RETRIES=60
+          export KUMA_DEFAULT_TIMEOUT="6s"
+        fi
+        if [[ "$E2E_K8S_VERSION" != "kind"* ]]; then
+          export K3S_VERSION="$E2E_K8S_VERSION"
+          export K3D_CNI="$E2E_CNI_NETWORK_PLUGIN"
+        fi
+        if [[ "$E2E_ARCH" == "arm64" ]]; then
+          export MAKE_PARAMETERS="-j1"
+        else
+          export MAKE_PARAMETERS="-j2"
+        fi
+
+        if [[ "$E2E_SIDECAR_CONTAINERS" != "" ]]; then
+          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
+        fi
+
+        if [[ "$E2E_TARGET" == "" ]]; then
+          export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
+        fi
+        env
+        if [[ "$E2E_TARGET" == "multizone" ]]; then
+          export KUMA_DEFAULT_RETRIES=60
+        fi
+
+        function on_exit()
+        {
+          docker logout docker.io
+        }
+
+        # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
+        # to prevent this, we support specifying a pull credential here
+        if [[ "$DOCKERHUB_PULL_CREDENTIAL" != "" ]]; then
+          DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
+          DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
+          echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
+          trap "on_exit" EXIT
+        fi
+
+        if [[ "$E2E_TARGET" != "" ]]; then
+          target="test/e2e-$E2E_TARGET"
+        else
+          target="test/e2e"
+        fi
+        make ${MAKE_PARAMETERS} CI=true "${target}"
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      if: always()
+      with:
+        name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        if-no-files-found: ignore
+        path: |
+          build/reports/e2e-debug*
+        retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      if: always()
+      with:
+        name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        if-no-files-found: ignore
+        path: |
+          build/reports
+          !build/reports/e2e-debug*
+        retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}
