@@ -128,7 +128,11 @@ func (s *storeCounter) countMeshScopedResources(ctx context.Context, resourceCou
 	if err := s.resManager.List(ctx, insights); err != nil {
 		return err
 	}
+	// When no MeshInsights exist, fall back to counting resources directly from the store.
+	// This covers zone CPs (which don't have MeshInsight resources) as well as the rare
+	// case of a global CP with zero meshes, where the fallback is harmless.
 	if len(insights.Items) == 0 {
+		log.V(1).Info("no MeshInsight found, counting mesh-scoped resources from store directly")
 		return s.countMeshScopedResourcesWithoutInsights(ctx, resourceCount)
 	}
 	for _, meshInsight := range insights.Items {
