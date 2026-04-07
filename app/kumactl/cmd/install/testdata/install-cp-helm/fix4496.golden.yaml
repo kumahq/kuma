@@ -512,7 +512,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: 91659cabdee0bacf009ed2f1b4688bbdfe73dca11089633d656b4aefd5e9ad93
+        checksum/tls-secrets: 7bcd8bc99086e6b161ed4605c7158fb435eecb21deac5bf32b57ed8fd59d4848
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -562,6 +562,8 @@ spec:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
+            - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
               value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
@@ -765,16 +767,20 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
+            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
+              value: "true"
+            - name: KUMA_READINESS_PORT
+              value: "9902"
           args:
             - run
             - --log-level=info
           ports:
             - containerPort: 10001
-            - containerPort: 9901
+            - containerPort: 9902
           livenessProbe:
             httpGet:
               path: "/ready"
-              port: 9901
+              port: 9902
             failureThreshold: 12
             initialDelaySeconds: 60
             periodSeconds: 5
@@ -783,7 +789,7 @@ spec:
           readinessProbe:
             httpGet:
               path: "/ready"
-              port: 9901
+              port: 9902
             failureThreshold: 12
             initialDelaySeconds: 1
             periodSeconds: 5
@@ -1025,6 +1031,39 @@ webhooks:
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: mesh-zoneproxy-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - kuma-system
+    objectSelector:
+      matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values:
+            - enabled
+        - key: kuma.io/mesh
+          operator: Exists
     clientConfig:
       caBundle: XYZ
       service:

@@ -155,6 +155,12 @@ func FilterChainBuilder(
 	contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 	routeConfigName := getName(contextualName, envoy_names.GetInboundRouteName(service))
 	virtualHostName := getName(contextualName, service)
+	if virtualHostName == "" {
+		// kuma.io/service tag not set; fall back to the listener address
+		listenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
+		routeConfigName = listenerName
+		virtualHostName = listenerName
+	}
 
 	cluster := plugins_xds.NewClusterBuilder().WithName(localClusterName).Build()
 

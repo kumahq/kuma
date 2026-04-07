@@ -61,7 +61,7 @@ to:
 		ErrorCase("invalid backendRefs",
 			validators.Violation{
 				Field:   "spec.to[0].rules[0].default.backendRefs[0].name",
-				Message: "must be set with kind MeshServiceSubset",
+				Message: "must be set when kind is MeshServiceSubset",
 			}, `
 type: MeshTCPRoute
 mesh: mesh-1

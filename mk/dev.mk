@@ -79,6 +79,7 @@ GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
 HELM_DOCS=$(shell $(MISE) which helm-docs)
 KUBE_LINTER=$(shell $(MISE) which kube-linter)
 HADOLINT=$(shell $(MISE) which hadolint)
+DASHBOARD_LINTER=$(shell $(MISE) which dashboard-linter)
 # oapi-codegen: mise go: backend installs to CI_TOOLS_BIN_DIR, mise which doesn't find it
 OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
 

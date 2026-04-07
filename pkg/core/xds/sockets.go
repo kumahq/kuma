@@ -29,6 +29,11 @@ func ReadinessReporterSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-readiness-reporter"))
 }
 
+// AdminSocketName generates a socket path for the Envoy admin API that will fit the Unix socket path limitation of 104 chars
+func AdminSocketName(workdir string) string {
+	return socketName(filepath.Join(workdir, "kuma-envoy-admin"))
+}
+
 func socketName(s string) string {
 	trimLen := min(len(s), 98)
 	return s[:trimLen] + ".sock"
