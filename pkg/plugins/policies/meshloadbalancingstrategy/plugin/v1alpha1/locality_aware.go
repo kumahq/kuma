@@ -149,6 +149,7 @@ func resolveEndpointAffinityValue(tags, labels map[string]string, key string) (s
 		return v, true
 	}
 	if v, ok := labels[key]; ok {
+		log.V(1).Info("affinity tag absent from endpoint tags, using label fallback", "key", key, "value", v)
 		return v, true
 	}
 	return "", false
