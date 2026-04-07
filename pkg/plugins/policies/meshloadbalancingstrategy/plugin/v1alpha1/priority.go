@@ -34,12 +34,7 @@ func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, p
 	if conf.LocalityAwareness.LocalZone != nil {
 		rulesLen := len(pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags))
 		for i, tag := range pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags) {
-			values := inboundTags.Values(tag.Key)
-			if len(values) == 0 {
-				if v, ok := podLabels[tag.Key]; ok {
-					values = []string{v}
-				}
-			}
+			values := resolveAffinityValues(inboundTags, podLabels, tag.Key)
 			// when weights are not provided we are generating weights by ourselves
 			// the first rule has the highest priority which is 9 * 10^(number of rules - rules position -1)
 			// that makes that the highest priority locality gets 90% of the traffic and sum of all weights is a
@@ -102,4 +97,17 @@ func doesRuleApply(rule *api.FromZone, localZone string) bool {
 		return true
 	}
 	return slices.Contains(rule.Zones, localZone)
+}
+
+// resolveAffinityValues returns all values for an affinity tag key.
+// It prefers inbound tags but falls back to pod labels when tags are absent.
+// This is needed when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED=true strips inbound tags.
+func resolveAffinityValues(inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, key string) []string {
+	if values := inboundTags.Values(key); len(values) > 0 {
+		return values
+	}
+	if v, ok := podLabels[key]; ok {
+		return []string{v}
+	}
+	return nil
 }
