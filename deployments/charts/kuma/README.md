@@ -229,7 +229,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].ingress.image.registry | string | `"registry.k8s.io"` | The pause image registry |
 | meshes[0].ingress.image.repository | string | `"pause"` | The pause image repository |
-| meshes[0].ingress.image.tag | string | `"3.10"` | The pause image tag |
+| meshes[0].ingress.image.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
 | meshes[0].ingress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].ingress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
@@ -240,7 +240,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.replicas | int | `1` |  |
 | meshes[0].egress.image.registry | string | `"registry.k8s.io"` | The pause image registry |
 | meshes[0].egress.image.repository | string | `"pause"` | The pause image repository |
-| meshes[0].egress.image.tag | string | `"3.10"` | The pause image tag |
+| meshes[0].egress.image.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
 | meshes[0].egress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].egress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
