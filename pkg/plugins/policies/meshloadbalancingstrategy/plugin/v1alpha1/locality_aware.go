@@ -43,6 +43,9 @@ func NewEndpoints(
 				ed.Locality = egressLocality(crossZonePriorityGroups)
 				endpointsList = append(endpointsList, ed)
 			} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
+	if conf != nil {
+		podLabels = affinityTagPodLabels(podLabels, *conf)
+	}
 				endpointsList = append(endpointsList, ed)
 			}
 		}
