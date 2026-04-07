@@ -160,6 +160,10 @@ We don't need to limit individual segments, however,
 when user creates `MeshService`, `MeshExternalService` or `MeshMultiZoneService`,
 we can validate the length of `mesh`, `zone`, `namespace`, `name` and `port` + 15 (for "sni", "type" and dots) less than 253.
 
+#### Migration
+
+Only new mesh-scoped zone proxies adopting a new format.
+
 ### Option 2: Improve existing SNI format
 
 #### Format
