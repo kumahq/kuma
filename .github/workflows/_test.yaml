@@ -72,7 +72,7 @@ jobs:
             }
           # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)
           OVERRIDE_JQ_CMD: |-
-            .test_e2e.target = []
+            .test_e2e = false
             | .test_e2e_env.include = []
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
           FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
@@ -89,8 +89,8 @@ jobs:
 
           # Expand parallelRunnerId into the matrix based on each suite's parallelism, then remove parallelism
           BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq '
-            if .test_e2e and (.test_e2e | type == "object") then .test_e2e.parallelRunnerId = [range(.test_e2e.parallelism[0])] | del(.test_e2e.parallelism) else . end |
-            if .test_e2e_env and (.test_e2e_env | type == "object") then .test_e2e_env.parallelRunnerId = [range(.test_e2e_env.parallelism[0])] | del(.test_e2e_env.parallelism) else . end
+            if .test_e2e and (.test_e2e | type == "object") then .test_e2e.parallelRunnerId = [range(.test_e2e.parallelism[0] // 1)] | del(.test_e2e.parallelism) else . end |
+            if .test_e2e_env and (.test_e2e_env | type == "object") then .test_e2e_env.parallelRunnerId = [range(.test_e2e_env.parallelism[0] // 1)] | del(.test_e2e_env.parallelism) else . end
           ')
 
           echo "final matrix: $BASE_MATRIX_ALL"
