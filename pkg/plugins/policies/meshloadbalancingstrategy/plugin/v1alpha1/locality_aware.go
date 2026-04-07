@@ -106,10 +106,7 @@ func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGro
 
 func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endpoint *core_xds.Endpoint, localZone string) {
 	for _, localRule := range localPriorityGroups {
-		val, ok := endpoint.Tags[localRule.Key]
-		if !ok {
-			val, ok = endpoint.Labels[localRule.Key]
-		}
+		val, ok := resolveEndpointAffinityValue(endpoint.Tags, endpoint.Labels, localRule.Key)
 		if ok && val == localRule.Value {
 			endpoint.Locality = &core_xds.Locality{
 				Zone:     localZone,
@@ -142,4 +139,17 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 		Zone:     fmt.Sprintf("egress_%s", sha256.Hash(builder.String())[:8]),
 		Priority: 1,
 	}
+}
+
+// resolveEndpointAffinityValue looks up an affinity key first in endpoint tags,
+// then falls back to pod labels. This mirrors resolveAffinityValues in priority.go
+// and ensures consistent "prefer tags, fall back to labels" semantics.
+func resolveEndpointAffinityValue(tags, labels map[string]string, key string) (string, bool) {
+	if v, ok := tags[key]; ok {
+		return v, true
+	}
+	if v, ok := labels[key]; ok {
+		return v, true
+	}
+	return "", false
 }
