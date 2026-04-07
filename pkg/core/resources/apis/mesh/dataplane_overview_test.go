@@ -231,6 +231,162 @@ var _ = Describe("DataplaneOverview", func() {
 					"inbound[port=0,svc=] is not ready",
 				},
 			}),
+			Entry("online when zone proxy listeners ready and no inbounds", testCase{
+				overview: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+								{
+									Type:  mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+									State: mesh_proto.Dataplane_Networking_Listener_Ready,
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ConnectTime: proto.MustTimestampProto(core.Now()),
+							},
+						},
+					},
+				},
+				status: Online,
+			}),
+			Entry("partially degraded when zone listeners ready and only some inbounds are ready", testCase{
+				overview: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: true,
+									},
+								},
+								{
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: false,
+									},
+								},
+							},
+							Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+								{
+									Type:  mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+									State: mesh_proto.Dataplane_Networking_Listener_Ready,
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ConnectTime: proto.MustTimestampProto(core.Now()),
+							},
+						},
+					},
+				},
+				status: PartiallyDegraded,
+				errReasons: []string{
+					"inbound[port=0,svc=] is not ready",
+				},
+			}),
+			Entry("partially degraded when zone listeners ready but all inbounds are not ready", testCase{
+				overview: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: false,
+									},
+								},
+							},
+							Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+								{
+									Type:  mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+									State: mesh_proto.Dataplane_Networking_Listener_Ready,
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ConnectTime: proto.MustTimestampProto(core.Now()),
+							},
+						},
+					},
+				},
+				status: PartiallyDegraded,
+				errReasons: []string{
+					"inbound[port=0,svc=] is not ready",
+				},
+			}),
+			Entry("offline when zone listener not ready and all inbounds not ready", testCase{
+				overview: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: false,
+									},
+								},
+							},
+							Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+								{
+									Port:  10001,
+									Type:  mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+									State: mesh_proto.Dataplane_Networking_Listener_NotReady,
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ConnectTime: proto.MustTimestampProto(core.Now()),
+							},
+						},
+					},
+				},
+				status: Offline,
+				errReasons: []string{
+					"inbound[port=0,svc=] is not ready",
+					"listener[port=10001,type=ZoneIngress] is not ready",
+				},
+			}),
+			Entry("partially degraded when one zone listener ready and another not ready", testCase{
+				overview: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+								{
+									Port:  10001,
+									Type:  mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+									State: mesh_proto.Dataplane_Networking_Listener_Ready,
+								},
+								{
+									Port:  10002,
+									Type:  mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+									State: mesh_proto.Dataplane_Networking_Listener_NotReady,
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ConnectTime: proto.MustTimestampProto(core.Now()),
+							},
+						},
+					},
+				},
+				status: PartiallyDegraded,
+				errReasons: []string{
+					"listener[port=10002,type=ZoneEgress] is not ready",
+				},
+			}),
 		)
 	})
 })
