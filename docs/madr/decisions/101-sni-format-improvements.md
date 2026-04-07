@@ -152,10 +152,95 @@ we can validate the length of `mesh`, `zone`, `namespace`, `name` and `port` + 1
 
 ### Option 2: Improve existing SNI format
 
-Existing format supports `additionalData`.
-It's a `map[string]string` that's going to be added to the hash.
+#### Format
 
-We can systematically add `zone` and `namespace` to the `additionalData`.
+Keep the existing SNI format unchanged:
+
+```
+<format-version><hash>.<resource-name>.<port>.<mesh-name>.<resource-type>
+```
+
+The existing `SNIForResource` function already accepts an `additionalData map[string]string` parameter
+that gets mixed into the FNV hash:
+
+```go
+func SNIForResource(resName string, meshName string, resType model.ResourceType, port int32, additionalData map[string]string) string
+```
+
+Today, all callers pass `nil` for `additionalData`.
+The fix is to systematically pass `zone` and `namespace` (when present) in this map.
+
+#### Solving the zone collision problem
+
+The zone collision described in [limitation 1](#1-zone-is-not-included-in-the-sni) happens because
+resources from different zones with the same name produce identical SNIs.
+By including `zone` (and `namespace` when applicable) in `additionalData`,
+the hash will differ even when resource name, mesh, port, and type are the same.
+
+For example, both global CP and zone `zone-a` having a MeshExternalService named `external-api`
+would currently produce:
+
+```
+ae10a8071b8a8eeb8.external-api.443.default.mes
+```
+
+With zone added to the hash, they produce different SNIs:
+
+```
+ae10a8071b8a8eeb8.external-api.443.default.mes   (global, no zone)
+b72f3a9c1d4e58a01.external-api.443.default.mes   (zone-a)
+```
+
+The visible part of the SNI (resource name, port, mesh, type) stays the same — only the hash prefix changes.
+
+#### Unifying resource name computation
+
+Currently, `MeshService` uses a special `SNIName(systemNamespace)` method
+that encodes namespace and origin information into the resource name segment of the SNI.
+`MeshExternalService` and `MeshMultiZoneService` use `GetDisplayName()`.
+
+With `zone` and `namespace` moved into `additionalData`,
+the `SNIName()` special-casing can be removed.
+All resource types can consistently use `GetDisplayName()` for the resource name segment,
+and differentiation happens via the hash.
+This resolves the inconsistency described in [limitation 3](#3-inconsistent-handling-between-resource-types).
+
+#### What this does NOT solve
+
+This option does **not** address [limitation 2](#2-opaque-hash-makes-integration-difficult).
+The SNI remains hash-based and opaque —
+users still cannot construct or predict an SNI from known resource attributes alone.
+
+#### Migration
+
+Changing what goes into the hash produces different SNIs for existing resources.
+This requires:
+
+* A format version bump (e.g. `a` → `b`) so old and new SNIs are distinguishable
+* Only new mesh-scoped zone proxies adopting a new format
+
+### Pros and Cons
+
+#### Option 1: New SNI format derived from KRI
+
+* Good, because SNIs are fully human-readable — users can construct and interpret them from known resource attributes
+* Good, because it aligns with the KRI format (MADR 070), giving a consistent identifier scheme across the system
+* Good, because zone, namespace, and all identifying attributes are explicit segments, not hidden in a hash
+* Good, because it eliminates the `SNIName()` special-casing — all resource types use the same KRI-to-SNI mapping
+* Bad, because it can exceed the 253-character DNS hostname limit when multiple segments are at their maximum length (up to 330 chars)
+* Bad, because it requires validation at resource creation time to reject combinations whose SNI would exceed 253 characters
+* Bad, because it is a completely new format, requiring more complex migration logic (dual-format support across all zones)
+* Neutral, because the 253-char limit is unlikely to be hit in practice (single-mesh deployments, short port names)
+
+#### Option 2: Improve existing SNI format
+
+* Good, because it is a minimal, low-risk change — the format and generation logic stay the same, only the hash inputs change
+* Good, because it solves the zone collision problem (limitation 1) by including zone and namespace in the hash
+* Good, because it removes the `SNIName()` special-casing, unifying resource name computation across all resource types (limitation 3)
+* Good, because SNI length stays bounded by the existing format (no risk of exceeding DNS hostname limits)
+* Bad, because it does **not** address human-readability (limitation 2) — SNIs remain opaque and hash-based
+* Bad, because users and integrations still cannot construct or predict SNIs from resource attributes
+* Bad, because debugging routing issues still requires looking up the stored SNI rather than reasoning about it from the resource name
 
 ## Decision
 
