@@ -42,6 +42,7 @@ func NewDefaultBootstrapGenerator(
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
 	inboundTagsDisabled bool,
+	envoyAdminUnixSocket bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -62,6 +63,7 @@ func NewDefaultBootstrapGenerator(
 		defaultAdminPort:        defaultAdminPort,
 		deltaXdsEnabled:         deltaXdsEnabled,
 		inboundTagsDisabled:     inboundTagsDisabled,
+		envoyAdminUnixSocket:    envoyAdminUnixSocket,
 	}, nil
 }
 
@@ -77,6 +79,7 @@ type bootstrapGenerator struct {
 	defaultAdminPort        uint32
 	deltaXdsEnabled         bool
 	inboundTagsDisabled     bool
+	envoyAdminUnixSocket    bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -138,6 +141,14 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.AdminPort = adminPortFromResource
 		} else {
 			params.AdminPort = b.defaultAdminPort
+		}
+	}
+
+	if b.envoyAdminUnixSocket {
+		if request.Workdir != "" {
+			params.AdminSocketPath = core_xds.AdminSocketName(request.Workdir)
+		} else {
+			log.Info("[WARNING] admin unix domain socket enabled but workdir is empty, falling back to TCP admin", "proxyId", proxyId.String())
 		}
 	}
 

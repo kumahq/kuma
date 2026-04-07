@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	v1alpha12 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -98,6 +99,7 @@ type ApplicationToScrape struct {
 	Path              string
 	Port              uint32
 	IsIPv6            bool
+	UnixSocketPath    string
 	ExtraAttributes   []attribute.KeyValue
 	QueryModifier     QueryParametersModifier
 	Mutator           MetricsMutator
@@ -108,6 +110,7 @@ type Hijacker struct {
 	socketPath           string
 	httpClientIPv4       http.Client
 	httpClientIPv6       http.Client
+	httpClientsUDS       map[string]http.Client
 	applicationsToScrape []ApplicationToScrape
 	producer             *AggregatedProducer
 	prometheusHandler    http.Handler
@@ -128,14 +131,44 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 	return http.Client{}
 }
 
+func createHTTPClientForUDS(unixSocketPath string) http.Client {
+	return httpclient.NewUDS(unixSocketPath, 5*time.Second, 0)
+}
+
+func buildUDSClients(apps []ApplicationToScrape) map[string]http.Client {
+	clients := make(map[string]http.Client)
+	for _, app := range apps {
+		if app.UnixSocketPath != "" {
+			if _, ok := clients[app.UnixSocketPath]; !ok {
+				clients[app.UnixSocketPath] = createHTTPClientForUDS(app.UnixSocketPath)
+			}
+		}
+	}
+	return clients
+}
+
+func (s *Hijacker) getUDSClient(socketPath string) http.Client {
+	if client, ok := s.httpClientsUDS[socketPath]; ok {
+		return client
+	}
+	// httpClientsUDS is built at construction time from the initial
+	// applicationsToScrape slice. This path is a safety fallback only;
+	// it creates a transient client without storing it to avoid a
+	// concurrent map write (Hijacker.ServeHTTP is called from multiple
+	// goroutines and httpClientsUDS is never updated after construction).
+	return createHTTPClientForUDS(socketPath)
+}
+
 func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, producer *AggregatedProducer) *Hijacker {
-	return &Hijacker{
+	h := &Hijacker{
 		socketPath:           socketPath,
 		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
+		httpClientsUDS:       buildUDSClients(applicationsToScrape),
 		applicationsToScrape: applicationsToScrape,
 		producer:             producer,
 	}
+	return h
 }
 
 func (s *Hijacker) Start(stop <-chan struct{}) error {
@@ -203,6 +236,16 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 	u := url.URL{
 		Scheme:   "http",
 		Host:     net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)),
+		Path:     path,
+		RawQuery: queryModifier(in.Query()).Encode(),
+	}
+	return u.String()
+}
+
+func rewriteMetricsURLForUDS(path string, queryModifier QueryParametersModifier, in *url.URL) string {
+	u := url.URL{
+		Scheme:   "http",
+		Host:     "localhost",
 		Path:     path,
 		RawQuery: queryModifier(in.Query()).Encode(),
 	}
@@ -342,21 +385,31 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 }
 
 func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, expfmt.Format) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), http.NoBody) // #nosec G704 -- operator-configured metrics target
+	targetURL := rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL)
+	if app.UnixSocketPath != "" {
+		targetURL = rewriteMetricsURLForUDS(app.Path, app.QueryModifier, initReq.URL)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, http.NoBody) // #nosec G704 -- operator-configured metrics target
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil, ""
 	}
 	s.passRequestHeaders(req.Header, initReq.Header)
-	req = req.WithContext(ctx)
 	var resp *http.Response
 	logger.V(1).Info("executing get stats request", "address", app.Address, "port", app.Port, "path", app.Path)
-	if app.IsIPv6 {
+	switch {
+	case app.UnixSocketPath != "":
+		client := s.getUDSClient(app.UnixSocketPath)
+		resp, err = client.Do(req) // #nosec G704 -- operator-configured metrics target
+		if err == nil {
+			defer resp.Body.Close()
+		}
+	case app.IsIPv6:
 		resp, err = s.httpClientIPv6.Do(req) // #nosec G704 -- operator-configured metrics target
 		if err == nil {
 			defer resp.Body.Close()
 		}
-	} else {
+	default:
 		resp, err = s.httpClientIPv4.Do(req) // #nosec G704 -- operator-configured metrics target
 		if err == nil {
 			defer resp.Body.Close()
