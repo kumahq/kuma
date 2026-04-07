@@ -191,6 +191,9 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	if len(zoneEgressList) == 0 {
+		// Do not mix legacy zone egresses with dataplane listeners in one pool because
+		// they may carry different TLS identities and break SAN validation.
+		// Fallback to legacy only when no dataplane-based instances were resolved.
 		zoneEgressList = resolveLegacyZoneEgresses(zoneEgresses)
 	}
 	endpointMap := xds_topology.BuildEdsEndpointMap(

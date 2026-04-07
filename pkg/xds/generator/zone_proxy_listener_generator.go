@@ -129,6 +129,9 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 
 	services := zoneproxy.GetServices(dest, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, nil, true)
 	clusters := services.Clusters()
+	if len(clusters) == 0 {
+		return nil, nil
+	}
 
 	cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, true)
 	if err != nil {
@@ -144,10 +147,6 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 
 	for _, cluster := range clusters {
 		listenerBuilder.Configure(envoy_listeners.FilterChain(zoneproxy.CreateFilterChain(proxy, cluster)))
-	}
-
-	if len(clusters) == 0 {
-		return nil, nil
 	}
 
 	resource, err := listenerBuilder.Build()
@@ -191,7 +190,12 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 
 	addedFilterChains := 0
 	for _, dst := range destinations {
-		esPort := dst.GetPorts()[0]
+		ports := dst.GetPorts()
+		if len(ports) == 0 {
+			// there is a validation in API to disallow MeshExternalServices without ports
+			continue
+		}
+		esPort := ports[0]
 		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
 		sni := tls.SNIForResource(id.Name, id.Mesh, id.ResourceType, esPort.GetValue(), nil)
 		clusterName := id.String()
