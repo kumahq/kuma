@@ -27,6 +27,7 @@ type CrossZoneLbGroup struct {
 }
 
 func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
+	podLabels = affinityTagPodLabels(podLabels, *conf)
 	if conf.LocalityAwareness == nil {
 		return nil, nil
 	}
@@ -101,6 +102,24 @@ func doesRuleApply(rule *api.FromZone, localZone string) bool {
 		return true
 	}
 	return slices.Contains(rule.Zones, localZone)
+}
+
+
+// affinityTagPodLabels returns a filtered copy of labels keeping only keys
+// referenced by AffinityTags in the conf. Unrelated pod labels are excluded
+// to avoid propagating unnecessary data through the load-balancing pipeline.
+func affinityTagPodLabels(labels map[string]string, conf api.Conf) map[string]string {
+	la := conf.LocalityAwareness
+	if la == nil || la.LocalZone == nil || la.LocalZone.AffinityTags == nil {
+		return nil
+	}
+	filtered := make(map[string]string)
+	for _, tag := range *la.LocalZone.AffinityTags {
+		if v, ok := labels[tag.Key]; ok {
+			filtered[tag.Key] = v
+		}
+	}
+	return filtered
 }
 
 // resolveAffinityValues returns all values for an affinity tag key.
