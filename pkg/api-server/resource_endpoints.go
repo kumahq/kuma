@@ -44,7 +44,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/ordered"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -1139,7 +1138,15 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 			})
 		}
 
-		originResources := util_slices.Map(rules, func(rule *inbound.Rule) core_model.ResourceMeta { return rule.Origin.Resource })
+		seen := map[core_model.ResourceKey]struct{}{}
+		var originResources []core_model.ResourceMeta
+		for _, rule := range rules {
+			key := core_model.MetaToResourceKey(rule.Origin.Resource)
+			if _, ok := seen[key]; !ok {
+				seen[key] = struct{}{}
+				originResources = append(originResources, rule.Origin.Resource)
+			}
+		}
 
 		conf = append(conf, api_common.InboundPolicyConf{
 			Rules:   policyRules,
