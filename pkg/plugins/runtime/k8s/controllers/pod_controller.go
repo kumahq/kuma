@@ -341,16 +341,6 @@ func (r *PodReconciler) createOrUpdateDataplane(
 			Name:      pod.Name,
 		},
 	}
-	if mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		for _, svc := range services {
-			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
-				r.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
-					"Zone proxy Services found but spec.meshServices.mode is not set to Exclusive; set spec.meshServices.mode: Exclusive on the Mesh to enable zone proxy listener generation")
-				break
-			}
-		}
-	}
-
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
@@ -368,6 +358,16 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		}
 
 		return err
+	}
+	if operationResult != kube_controllerutil.OperationResultNone &&
+		mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+		for _, svc := range services {
+			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
+				r.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
+					"Zone proxy Services found but spec.meshServices.mode is not set to Exclusive; set spec.meshServices.mode: Exclusive on the Mesh to enable zone proxy listener generation")
+				break
+			}
+		}
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
