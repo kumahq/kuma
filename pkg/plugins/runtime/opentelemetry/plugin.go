@@ -69,7 +69,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		}
 	}
 
-	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
+	if rt.Config().Metrics.OpenTelemetry.Enabled && os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
 		metricsLog := core.Log.WithName("otel-metrics-pusher")
 		mp := &metricsPusher{
 			gatherer: rt.Metrics(),

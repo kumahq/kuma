@@ -714,6 +714,8 @@ metrics:
     idleTimeout: 1m
   controlPlane:
     reportResourcesCount: true
+  openTelemetry:
+    enabled: true
 dpServer:
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
@@ -1066,6 +1068,7 @@ meshService:
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT":                                        "true",
+				"KUMA_METRICS_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_TLS_MIN_VERSION":                                                           "TLSv1_3",

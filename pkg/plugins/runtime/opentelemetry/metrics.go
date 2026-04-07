@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	prombridge "go.opentelemetry.io/contrib/bridges/prometheus"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
@@ -30,6 +31,10 @@ func (m *metricsPusher) Start(stop <-chan struct{}) error {
 		return fmt.Errorf("failed to create OTLP metric exporter: %w", err)
 	}
 
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		m.log.Error(err, "OpenTelemetry metrics error")
+	}))
+
 	bridge := prombridge.NewMetricProducer(prombridge.WithGatherer(m.gatherer))
 
 	reader := sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithProducer(bridge))
@@ -44,7 +49,7 @@ func (m *metricsPusher) Start(stop <-chan struct{}) error {
 	defer shutdownCancel()
 
 	if shutdownErr := provider.Shutdown(shutdownCtx); shutdownErr != nil {
-		return fmt.Errorf("shutting down OTLP metrics provider: %w", shutdownErr)
+		m.log.Error(shutdownErr, "shutting down OTLP metrics provider")
 	}
 	return nil
 }
