@@ -115,7 +115,9 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	localMS := &meshservice_api.MeshServiceResourceList{}
 	for _, ms := range meshResources.MeshServices().GetItems() {
 		if lbls := ms.GetMeta().GetLabels(); lbls == nil || lbls[mesh_proto.ZoneTag] == "" || lbls[mesh_proto.ZoneTag] == cp.Zone {
-			_ = localMS.AddItem(ms)
+			if err := localMS.AddItem(ms); err != nil {
+				return nil, err
+			}
 		}
 	}
 
