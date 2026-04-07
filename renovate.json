@@ -44,6 +44,22 @@
     ],
     "managerFilePatterns": ["/app/kumactl/(?:cmd|data)/install/(?:k8s|testdata)/.+\\.ya?ml$/"]
   },
+  "helm-values": {
+    "description": [
+      " Extend the default helm-values file scope to also cover Helm test-input files under",
+      " app/kumactl/cmd/install/testdata/install-cp-helm/. These *.values.yaml files use the",
+      " split registry/repository/tag format for images like registry.k8s.io/pause.",
+      " Without this, Renovate updates *.golden.yaml files (via the kubernetes manager, which",
+      " detects the full 'image: <ref>' format) but leaves the values input files behind,",
+      " causing helm-render test failures because the rendered output no longer matches the",
+      " golden file. The default pattern (^|/)values\\.ya?ml$ is preserved so that existing",
+      " chart values.yaml files continue to be processed"
+    ],
+    "managerFilePatterns": [
+      "(^|/)values\\.ya?ml$",
+      "app/kumactl/cmd/install/testdata/install-cp-helm/.+\\.values\\.ya?ml$"
+    ]
+  },
   "customManagers": [
     {
       "customType": "regex",
