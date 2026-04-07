@@ -199,4 +199,66 @@ var _ = Describe("components", func() {
 			"k8s_kuma_io_namespace": "test-ns",
 		}))
 	})
+
+	It("returns the first listener error when another listener started", func() {
+		occupiedListener, err := net.ListenPacket("udp", "127.0.0.1:0")
+		Expect(err).ToNot(HaveOccurred())
+		defer func() {
+			Expect(occupiedListener.Close()).To(Succeed())
+		}()
+
+		freePort, err := test.FindFreePort("127.0.0.1")
+		Expect(err).ToNot(HaveOccurred())
+
+		f := func(req *dns.Msg) (*dns.Msg, error) {
+			response := new(dns.Msg)
+			response.SetRcode(req, dns.RcodeSuccess)
+			return response, nil
+		}
+		failingServer := dnsproxy.NewServerWithCustomClient([]string{
+			occupiedListener.LocalAddr().String(),
+			net.JoinHostPort("127.0.0.1", strconv.Itoa(int(freePort))),
+		}, f)
+
+		errCh := make(chan error, 1)
+		stop := make(chan struct{})
+		defer close(stop)
+		go func() {
+			defer GinkgoRecover()
+			errCh <- failingServer.Start(stop)
+		}()
+
+		var startErr error
+		Eventually(errCh).Should(Receive(&startErr))
+		Expect(startErr).To(HaveOccurred())
+	})
+
+	It("returns the error when a single listener fails", func() {
+		occupiedListener, err := net.ListenPacket("udp", "127.0.0.1:0")
+		Expect(err).ToNot(HaveOccurred())
+		defer func() {
+			Expect(occupiedListener.Close()).To(Succeed())
+		}()
+
+		f := func(req *dns.Msg) (*dns.Msg, error) {
+			response := new(dns.Msg)
+			response.SetRcode(req, dns.RcodeSuccess)
+			return response, nil
+		}
+		failingServer := dnsproxy.NewServerWithCustomClient([]string{
+			occupiedListener.LocalAddr().String(),
+		}, f)
+
+		errCh := make(chan error, 1)
+		stop := make(chan struct{})
+		defer close(stop)
+		go func() {
+			defer GinkgoRecover()
+			errCh <- failingServer.Start(stop)
+		}()
+
+		var startErr error
+		Eventually(errCh).Should(Receive(&startErr))
+		Expect(startErr).To(HaveOccurred())
+	})
 })

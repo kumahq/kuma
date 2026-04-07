@@ -172,15 +172,14 @@ func (s *Server) Start(stop <-chan struct{}) error {
 	}
 
 	remaining := len(servers)
+	var firstErr error
 
 	select {
 	case <-stop:
 	case err := <-errCh:
 		remaining--
 		log.Info("[WARNING] server stopped with shutdown never called")
-		if err != nil && remaining == 0 {
-			return err
-		}
+		firstErr = err
 	}
 
 	for _, srv := range servers {
@@ -189,7 +188,6 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		}
 	}
 
-	var firstErr error
 	for i := 0; i < remaining; i++ {
 		if err := <-errCh; err != nil && firstErr == nil {
 			firstErr = err
