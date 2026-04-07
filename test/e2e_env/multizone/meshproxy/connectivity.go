@@ -254,15 +254,15 @@ spec:
 
 	It("should route cross-zone traffic via new zone ingress proxies and record metrics on zone-proxy-ingress", func() {
 		uniIngressFilter := fmt.Sprintf(
-			"cluster.kri_msvc_%s_%s__test-server_80.upstream_rq_active",
+			"cluster.kri_msvc_%s_%s__test-server_80.upstream_rq_200",
 			meshName, multizone.UniZone1.ZoneName(),
 		)
 		kubeZone1IngressFilter := fmt.Sprintf(
-			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_active",
+			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_200",
 			meshName, multizone.KubeZone1.ZoneName(), namespace,
 		)
 		kubeZone2IngressFilter := fmt.Sprintf(
-			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_active",
+			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_200",
 			meshName, multizone.KubeZone2.ZoneName(), namespace,
 		)
 

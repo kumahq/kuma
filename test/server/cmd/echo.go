@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/otlptranslator"
 	"github.com/spf13/cobra"
@@ -80,7 +81,9 @@ func newEchoHTTPCmd() *cobra.Command {
 				return err
 			}
 			sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
-			promHandler := promhttp.Handler()
+			promHandler := promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+				ErrorHandling: promhttp.ContinueOnError,
+			})
 
 			http.HandleFunc("/", handleEcho)
 			http.HandleFunc("/metrics", func(writer http.ResponseWriter, request *http.Request) {
