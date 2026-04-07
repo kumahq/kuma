@@ -258,7 +258,23 @@ This requires:
 
 ## Decision
 
-{To be determined}
+Option 1: New SNI format derived from KRI.
+
+The key deciding factor is SNI <-> KRI reversibility.
+Option 2 makes this impossible by design,
+since the hash is a lossy transformation.
+With option 1,
+any component observing an SNI
+(access logs, debugging tools, observability pipelines)
+can resolve the originating resource
+without a lookup table.
+
+The 253-char DNS hostname limit is a theoretical concern
+that is unlikely to matter in practice —
+single mesh is the recommended deployment model,
+and container port names are capped at 15 chars.
+Creation-time validation provides a safety net
+for the rare edge cases.
 
 ## Notes
 
