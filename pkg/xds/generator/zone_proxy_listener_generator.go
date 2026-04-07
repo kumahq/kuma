@@ -114,10 +114,11 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	// Only expose services local to this zone.
 	localMS := &meshservice_api.MeshServiceResourceList{}
 	for _, ms := range meshResources.MeshServices().GetItems() {
-		if lbls := ms.GetMeta().GetLabels(); lbls == nil || lbls[mesh_proto.ZoneTag] == "" || lbls[mesh_proto.ZoneTag] == cp.Zone {
-			if err := localMS.AddItem(ms); err != nil {
-				return nil, err
-			}
+		if !ms.(*meshservice_api.MeshServiceResource).IsLocalMeshService() {
+			continue
+		}
+		if err := localMS.AddItem(ms); err != nil {
+			return nil, err
 		}
 	}
 

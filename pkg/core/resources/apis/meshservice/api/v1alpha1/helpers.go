@@ -31,8 +31,11 @@ func (m *MeshServiceResource) IsLocalMeshService() bool {
 	}
 	origin, ok := m.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 	if !ok {
-		return true // no zone label mean that it's a local resource
+		return true // no origin label mean that it's a local resource
 	}
+	// Origin label is sufficient to detect if a MeshService is local because
+	// MeshServices synced from another zone will have `kuma.io/origin: global`,
+	// since origin always reflects the last place the resource was received from.
 	return origin == string(mesh_proto.ZoneResourceOrigin)
 }
 
