@@ -109,7 +109,7 @@ var _ = Describe("run", func() {
 			}))
 		})
 
-		It("should use a single wildcard bind for dual-stack VNet", func() {
+		It("should bind to both wildcards for dual-stack VNet", func() {
 			cfg := &tproxy_dp.DataplaneConfig{
 				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
 				Redirect: tproxy_dp.DataplaneRedirect{
@@ -119,6 +119,7 @@ var _ = Describe("run", func() {
 				},
 			}
 			Expect(dnsProxyAddresses(cfg, "15053")).To(Equal([]string{
+				net.JoinHostPort("0.0.0.0", "15053"),
 				net.JoinHostPort("::", "15053"),
 			}))
 		})

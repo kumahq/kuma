@@ -53,10 +53,11 @@ var runLog = dataplaneLog.WithName("run")
 // based on the transparent proxy configuration. Without transparent proxy,
 // we fall back to 0.0.0.0 for backward compatibility. With VNet (virtual
 // networks), we bind to all interfaces since PREROUTING REDIRECT sends
-// traffic to the interface IP. On Linux, a single IPv6 wildcard UDP socket
-// also serves IPv4 traffic, so dual-stack VNet binds only once to avoid a
-// wildcard bind conflict. Otherwise, we bind to loopback only since OUTPUT
-// chain REDIRECT sends to 127.0.0.1 (IPv4) and ::1 (IPv6).
+// traffic to the interface IP. We always bind IPv4 and IPv6 separately
+// rather than relying on a single :: socket, because nodes with
+// net.ipv6.bindv6only=1 would silently drop IPv4 traffic. Without VNet,
+// we bind to loopback only since OUTPUT chain REDIRECT sends to 127.0.0.1
+// (IPv4) and ::1 (IPv6).
 func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
 	if tpCfg == nil {
 		return []string{net.JoinHostPort("0.0.0.0", port)}
@@ -67,7 +68,10 @@ func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
 
 	switch {
 	case vnet && dualStack:
-		return []string{net.JoinHostPort("::", port)}
+		return []string{
+			net.JoinHostPort("0.0.0.0", port),
+			net.JoinHostPort("::", port),
+		}
 	case vnet:
 		return []string{net.JoinHostPort("0.0.0.0", port)}
 	case dualStack:

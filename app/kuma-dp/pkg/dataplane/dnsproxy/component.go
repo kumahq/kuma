@@ -159,9 +159,12 @@ func (s *Server) Start(stop <-chan struct{}) error {
 	errCh := make(chan error, len(servers))
 	var readyCount atomic.Int32
 	total := int32(len(servers))
+	started := make([]atomic.Bool, len(servers))
 
-	for _, srv := range servers {
+	for i, srv := range servers {
+		idx := i
 		srv.NotifyStartedFunc = func() {
+			started[idx].Store(true)
 			if readyCount.Add(1) == total {
 				close(s.ready)
 			}
@@ -178,11 +181,22 @@ func (s *Server) Start(stop <-chan struct{}) error {
 	case <-stop:
 	case err := <-errCh:
 		remaining--
-		log.Info("[WARNING] server stopped with shutdown never called")
+		log.Info("[WARNING] server stopped with shutdown never called",
+			"error", err)
 		firstErr = err
 	}
 
-	for _, srv := range servers {
+	// Ensure ready is closed so WaitForReady never blocks after failure.
+	select {
+	case <-s.ready:
+	default:
+		close(s.ready)
+	}
+
+	for i, srv := range servers {
+		if !started[i].Load() {
+			continue
+		}
 		if err := srv.Shutdown(); err != nil {
 			log.Error(err, "server shutdown returned an error")
 		}

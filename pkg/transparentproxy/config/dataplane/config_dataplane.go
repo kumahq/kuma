@@ -45,6 +45,10 @@ func DataplaneTrafficFlowFromPortLike[T PortLike](port T) DatalpaneTrafficFlow {
 	return NewDataplaneTrafficFlow(port > 0, port)
 }
 
+// DataplaneVNet is a serialization-only subset of config.VNet. It is
+// intentionally separate to decouple the dataplane bootstrap payload from
+// the full transparent proxy config (which carries initialization logic
+// and additional fields not needed by kuma-dp).
 type DataplaneVNet struct {
 	Networks []string `json:"networks,omitempty"`
 }
