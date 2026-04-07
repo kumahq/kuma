@@ -63,21 +63,21 @@ func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
 	}
 
 	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4
+	vnet := tpCfg.HasVNet()
 
-	if tpCfg.HasVNet() {
-		if dualStack {
-			return []string{net.JoinHostPort("::", port)}
-		}
+	switch {
+	case vnet && dualStack:
+		return []string{net.JoinHostPort("::", port)}
+	case vnet:
 		return []string{net.JoinHostPort("0.0.0.0", port)}
-	}
-
-	if dualStack {
+	case dualStack:
 		return []string{
 			net.JoinHostPort("127.0.0.1", port),
 			net.JoinHostPort("::1", port),
 		}
+	default:
+		return []string{net.JoinHostPort("127.0.0.1", port)}
 	}
-	return []string{net.JoinHostPort("127.0.0.1", port)}
 }
 
 // PersistentPreRunE in root command sets the logger and initial config
