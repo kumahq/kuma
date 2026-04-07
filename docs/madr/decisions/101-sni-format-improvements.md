@@ -232,29 +232,51 @@ This requires:
 - A format version bump (e.g. `a` → `b`) so old and new SNIs are distinguishable
 - Only new mesh-scoped zone proxies adopting a new format
 
+
+
 ### Pros and Cons
 
 #### Option 1: New SNI format derived from KRI
 
-- Good, because SNI ↔ KRI conversion is bidirectional — given an SNI (e.g. from Envoy logs), the originating resource KRI can be recovered without a lookup table
-- Good, because SNIs are fully human-readable — users can construct and interpret them from known resource attributes
-- Good, because it aligns with the KRI format (MADR 070), giving a consistent identifier scheme across the system
-- Good, because zone, namespace, and all identifying attributes are explicit segments, not hidden in a hash
-- Good, because it eliminates the `SNIName()` special-casing — all resource types use the same KRI-to-SNI mapping
-- Bad, because it can exceed the 253-character DNS hostname limit when multiple segments are at their maximum length (up to 330 chars)
-- Bad, because it requires validation at resource creation time to reject combinations whose SNI would exceed 253 characters
-- Bad, because it is a completely new format, requiring more complex migration logic (dual-format support across all zones)
-- Neutral, because the 253-char limit is unlikely to be hit in practice (single-mesh deployments, short port names)
+- Good, because SNI <-> KRI conversion is bidirectional —
+  given an SNI (e.g. from Envoy logs),
+  the originating resource KRI can be recovered without a lookup table
+- Good, because SNIs are fully human-readable —
+  users can construct and interpret them from known resource attributes
+- Good, because it aligns with the KRI format (MADR 070),
+  giving a consistent identifier scheme across the system
+- Good, because zone, namespace, and all identifying attributes are explicit segments,
+  not hidden in a hash
+- Good, because it eliminates the `SNIName()` special-casing —
+  all resource types use the same KRI-to-SNI mapping
+- Bad, because it can exceed the 253-character DNS hostname limit
+  when multiple segments are at their maximum length (up to 330 chars)
+- Bad, because it requires validation at resource creation time
+  to reject combinations whose SNI would exceed 253 characters
+- Bad, because it is a completely new format,
+  requiring more complex migration logic (dual-format support across all zones)
+- Neutral, because the 253-char limit is unlikely to be hit in practice
+  (single-mesh deployments, short port names)
 
 #### Option 2: Improve existing SNI format
 
-- Good, because it is a minimal, low-risk change — the format and generation logic stay the same, only the hash inputs change
-- Good, because it solves the zone collision problem (limitation 1) by including zone and namespace in the hash
-- Good, because it removes the `SNIName()` special-casing, unifying resource name computation across all resource types (limitation 3)
-- Good, because SNI length stays bounded by the existing format (no risk of exceeding DNS hostname limits)
-- Bad, because SNI → KRI reversal is impossible — the hash is lossy, so an observed SNI cannot be mapped back to a resource without a lookup
-- Bad, because users and integrations still cannot construct or predict SNIs from resource attributes
-- Bad, because debugging routing issues still requires looking up the stored SNI rather than reasoning about it from the resource name
+- Good, because it is a minimal, low-risk change —
+  the format and generation logic stay the same,
+  only the hash inputs change
+- Good, because it solves the zone collision problem (limitation 1)
+  by including zone and namespace in the hash
+- Good, because it removes the `SNIName()` special-casing,
+  unifying resource name computation across all resource types (limitation 3)
+- Good, because SNI length stays bounded by the existing format
+  (no risk of exceeding DNS hostname limits)
+- Bad, because SNI → KRI reversal is impossible —
+  the hash is lossy,
+  so an observed SNI cannot be mapped back to a resource without a lookup
+- Bad, because users and integrations still cannot construct or predict SNIs
+  from resource attributes
+- Bad, because debugging routing issues still requires looking up the stored SNI
+  rather than reasoning about it from the resource name
+
 
 ## Decision
 
