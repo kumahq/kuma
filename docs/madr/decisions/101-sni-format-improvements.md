@@ -161,7 +161,7 @@ In that case instead of 63 the mesh is likely to be 7 ("default").
 
 We don't need to limit individual segments, however,
 when user creates `MeshService`, `MeshExternalService` or `MeshMultiZoneService`,
-we can validate the length of `mesh`, `zone`, `namespace`, `name` and `port` + 15 (for "sni", "type" and dots) less than 253.
+we can validate the length of `mesh`, `zone`, `namespace`, `name` and `sectionName` + 15 (for "sni", "type" and dots) less than 253.
 
 #### Migration
 
