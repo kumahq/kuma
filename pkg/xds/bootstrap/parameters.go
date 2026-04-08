@@ -28,10 +28,12 @@ type AggregateMetricsConfig struct {
 }
 
 type configParameters struct {
-	Id            string
-	Service       string
-	AdminAddress  string
-	AdminPort     uint32
+	Id              string
+	Service         string
+	AdminAddress    string
+	AdminPort       uint32
+	AdminSocketPath string
+
 	ReadinessPort uint32
 	// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 	//

@@ -37,6 +37,7 @@ type Manager struct {
 	defaultAddress        string
 	envoyAdminAddress     string
 	envoyAdminPort        uint32
+	envoyAdminSocketPath  string
 	openTelemetryProducer *metrics.AggregatedProducer
 	pipeBackends          map[string]*runningBackend // pipe targets from otelreceiver
 	directBackends        map[string]*runningBackend // inline OTel backends via Envoy sockets
@@ -52,7 +53,7 @@ var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
 var _ component.GracefulComponent = &Manager{}
 
-func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, drainTime time.Duration) *Manager {
+func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, envoyAdminSocketPath string, drainTime time.Duration) *Manager {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Manager{
 		ctx:                   ctx,
@@ -62,6 +63,7 @@ func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryPr
 		defaultAddress:        address,
 		envoyAdminAddress:     envoyAdminAddress,
 		envoyAdminPort:        envoyAdminPort,
+		envoyAdminSocketPath:  envoyAdminSocketPath,
 		pipeBackends:          map[string]*runningBackend{},
 		directBackends:        map[string]*runningBackend{},
 		drainTime:             drainTime,
@@ -294,6 +296,7 @@ func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Appli
 		Address:           m.envoyAdminAddress,
 		Port:              m.envoyAdminPort,
 		IsIPv6:            false,
+		UnixSocketPath:    m.envoyAdminSocketPath,
 		ExtraAttributes:   extraAttributes,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
 		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar)),
