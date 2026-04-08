@@ -361,11 +361,19 @@ func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpy
 // GetAppEnvoyTunnel returns the Envoy admin tunnel for a named app (e.g. a
 // zone proxy deployed via CreateDataplaneProxy).
 func (c *UniversalCluster) GetAppEnvoyTunnel(name string) envoy_admin.Tunnel {
-	t, ok := c.envoyTunnels[name]
-	if !ok {
-		c.t.Fatalf("no envoy tunnel registered for app %q", name)
+	t, err := c.GetAppEnvoyTunnelE(name)
+	if err != nil {
+		c.t.Fatal(err)
 	}
 	return t
+}
+
+func (c *UniversalCluster) GetAppEnvoyTunnelE(name string) (envoy_admin.Tunnel, error) {
+	t, ok := c.envoyTunnels[name]
+	if !ok {
+		return nil, errors.Errorf("no tunnel with name %+q", name)
+	}
+	return t, nil
 }
 
 func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
@@ -638,39 +646,19 @@ func (c *UniversalCluster) createEnvoyTunnel(name string) {
 }
 
 func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	t, err := c.GetZoneEgressEnvoyTunnelE()
-	if err != nil {
-		c.t.Fatal(err)
-	}
-
-	return t
+	return c.GetAppEnvoyTunnel(Config.ZoneEgressApp)
 }
 
 func (c *UniversalCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	t, err := c.GetZoneIngressEnvoyTunnelE()
-	if err != nil {
-		c.t.Fatal(err)
-	}
-
-	return t
+	return c.GetAppEnvoyTunnel(Config.ZoneIngressApp)
 }
 
 func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
-	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
-	}
-
-	return t, nil
+	return c.GetAppEnvoyTunnelE(Config.ZoneEgressApp)
 }
 
 func (c *UniversalCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
-	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp)
-	}
-
-	return t, nil
+	return c.GetAppEnvoyTunnelE(Config.ZoneIngressApp)
 }
 
 func (c *UniversalCluster) Install(fn InstallFunc) error {
