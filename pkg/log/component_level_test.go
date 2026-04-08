@@ -23,61 +23,51 @@ var _ = Describe("ComponentLevelRegistry", func() {
 	}
 
 	DescribeTable("GetEffectiveLevelForNames",
-		func(overrides []override, query string, expectFound bool, expectLevel kuma_log.LogLevel) {
+		func(overrides []override, names []string, expectFound bool, expectLevel kuma_log.LogLevel) {
 			for _, o := range overrides {
 				Expect(registry.SetLevel(o.component, o.level)).To(Succeed())
 			}
-			names := kuma_log.SplitHierarchy(query)
-			if query == "" {
-				names = nil
-			}
 			level, ok := registry.GetEffectiveLevelForNames(names)
 			Expect(ok).To(Equal(expectFound))
-			if expectFound {
-				Expect(level).To(Equal(expectLevel))
-			}
+			Expect(level).To(Equal(expectLevel))
 		},
-		Entry("no overrides set", nil, "xds", false, kuma_log.LogLevel(0)),
+		Entry("no overrides set", nil, kuma_log.SplitHierarchy("xds"), false, kuma_log.LogLevel(0)),
 		Entry("exact match",
 			[]override{{"xds", kuma_log.DebugLevel}},
-			"xds", true, kuma_log.DebugLevel),
+			kuma_log.SplitHierarchy("xds"), true, kuma_log.DebugLevel),
 		Entry("walks up hierarchy",
 			[]override{{"xds", kuma_log.DebugLevel}},
-			"xds.server", true, kuma_log.DebugLevel),
+			kuma_log.SplitHierarchy("xds.server"), true, kuma_log.DebugLevel),
 		Entry("prefers exact match over ancestor",
 			[]override{{"xds", kuma_log.DebugLevel}, {"xds.server", kuma_log.InfoLevel}},
-			"xds.server", true, kuma_log.InfoLevel),
+			kuma_log.SplitHierarchy("xds.server"), true, kuma_log.InfoLevel),
 		Entry("does not match unrelated components",
 			[]override{{"xds", kuma_log.DebugLevel}},
-			"kds", false, kuma_log.LogLevel(0)),
+			kuma_log.SplitHierarchy("kds"), false, kuma_log.LogLevel(0)),
 		Entry("deep hierarchy",
 			[]override{{"plugins", kuma_log.DebugLevel}},
-			"plugins.authn.api-server.tokens", true, kuma_log.DebugLevel),
-		Entry("empty component name",
+			kuma_log.SplitHierarchy("plugins.authn.api-server.tokens"), true, kuma_log.DebugLevel),
+		Entry("nil names returns not found",
 			[]override{{"xds", kuma_log.DebugLevel}},
-			"", false, kuma_log.LogLevel(0)),
+			nil, false, kuma_log.LogLevel(0)),
 	)
 
-	It("should reset single level", func() {
+	It("resets single level", func() {
 		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 		registry.ResetLevel("xds")
 
-		_, ok := registry.GetEffectiveLevelForNames(kuma_log.SplitHierarchy("xds"))
-		Expect(ok).To(BeFalse())
+		Expect(registry.ListOverrides()).To(BeEmpty())
 	})
 
-	It("should reset all levels", func() {
+	It("resets all levels", func() {
 		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 		Expect(registry.SetLevel("kds", kuma_log.InfoLevel)).To(Succeed())
 		registry.ResetAll()
 
-		_, ok := registry.GetEffectiveLevelForNames(kuma_log.SplitHierarchy("xds"))
-		Expect(ok).To(BeFalse())
-		_, ok = registry.GetEffectiveLevelForNames(kuma_log.SplitHierarchy("kds"))
-		Expect(ok).To(BeFalse())
+		Expect(registry.ListOverrides()).To(BeEmpty())
 	})
 
-	It("should list overrides", func() {
+	It("lists overrides", func() {
 		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
 		Expect(registry.SetLevel("kds", kuma_log.InfoLevel)).To(Succeed())
 
@@ -87,7 +77,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		Expect(overrides["kds"]).To(Equal(kuma_log.InfoLevel))
 	})
 
-	It("should handle concurrent reads and writes", func() {
+	It("handles concurrent reads and writes", func() {
 		done := make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
@@ -106,7 +96,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		<-done
 	})
 
-	It("should reject when max overrides exceeded", func() {
+	It("rejects when max overrides exceeded", func() {
 		for i := range kuma_log.MaxOverrides {
 			Expect(registry.SetLevel(fmt.Sprintf("component-%d", i), kuma_log.DebugLevel)).To(Succeed())
 		}
@@ -115,7 +105,7 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		Expect(err.Error()).To(ContainSubstring("maximum"))
 	})
 
-	It("should allow updating existing override when at max", func() {
+	It("allows updating existing override when at max", func() {
 		for i := range kuma_log.MaxOverrides {
 			Expect(registry.SetLevel(fmt.Sprintf("component-%d", i), kuma_log.DebugLevel)).To(Succeed())
 		}
@@ -165,17 +155,19 @@ var _ = Describe("ValidateComponentName", func() {
 	)
 
 	DescribeTable("invalid names",
-		func(name string) {
-			Expect(kuma_log.ValidateComponentName(name)).To(HaveOccurred())
+		func(name string, expectedMsg string) {
+			err := kuma_log.ValidateComponentName(name)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(expectedMsg))
 		},
-		Entry("empty", ""),
-		Entry("exceeds 256 chars", strings.Repeat("a", 257)),
-		Entry("starts with dot", ".xds"),
-		Entry("starts with dash", "-xds"),
-		Entry("contains exclamation", "xds!server"),
-		Entry("path traversal", "../../etc"),
-		Entry("contains space", "xds server"),
-		Entry("contains slash", "xds/server"),
+		Entry("empty", "", "must not be empty"),
+		Entry("exceeds 256 chars", strings.Repeat("a", 257), "exceeds 256"),
+		Entry("starts with dot", ".xds", "invalid characters"),
+		Entry("starts with dash", "-xds", "invalid characters"),
+		Entry("contains exclamation", "xds!server", "invalid characters"),
+		Entry("path traversal", "../../etc", "invalid characters"),
+		Entry("contains space", "xds server", "invalid characters"),
+		Entry("contains slash", "xds/server", "invalid characters"),
 	)
 })
 
