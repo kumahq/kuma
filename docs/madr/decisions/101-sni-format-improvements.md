@@ -116,7 +116,7 @@ However, the problem can be solved for a subset of KRIs that satisfy the constra
 - `mesh`, `name` and `sectionName` are always non-empty
 - if `namespace` is non-empty then `zone` is non-empty
 
-These are reasonable constraints that follow naturally from Kuma's resource model.
+These constraints follow naturally from Kuma's resource model and are reasonable in the context of SNI matching.
 
 In that case, the KRI `kri_<type>_<mesh>_<zone>_<namespace>_<name>_<sectionName>` can be unambiguously mapped to
 `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` omitting the empty segment.
