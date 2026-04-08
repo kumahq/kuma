@@ -118,22 +118,16 @@ function release {
     --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "${CHARTS_PACKAGE_PATH}"
 
+  pushd "${GH_REPO}" || exit 1
+
   # Then build and upload the index file to github pages
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
-<<<<<<< HEAD
-    --charts-repo "${CHARTS_REPO_URL}" \
-    --package-path "${CHARTS_PACKAGE_PATH}" \
-    --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
-
-  pushd "${GH_REPO}"
-=======
     --token "${GH_TOKEN}" \
     --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "../${CHARTS_PACKAGE_PATH}" \
     --index-path "${CHARTS_INDEX_FILE}"
->>>>>>> 6835da158e (fix(helm): pass token and template to cr index (#16131))
 
   git config user.name "${GH_USER}"
   git config user.email "${GH_EMAIL}"
