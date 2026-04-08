@@ -45,12 +45,12 @@ if zone `zone-a` and the global CP both have a MeshExternalService named `extern
 their SNIs would be identical,
 causing routing conflicts.
 
-#### 2. Opaque hash prevents SNI <-> KRI conversion
+#### 2. Hash-based format prevents straightforward SNI <-> KRI conversion
 
 The current format includes a hash (`<format-version><hash>`) which:
 
-- Makes the SNI opaque — users cannot construct it from known resource attributes
-- Makes it impossible to reverse an SNI back into a KRI, since the hash is a lossy transformation
+- Is a lossy transformation — an SNI cannot be reversed back into a KRI without a lookup table
+- Requires reimplementing the hash logic to construct an SNI from resource attributes
 - Complicates integrations that need to map between SNIs and resource identifiers programmatically
 - Reduces debuggability when troubleshooting routing issues
 
