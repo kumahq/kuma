@@ -7,7 +7,6 @@ source "${SCRIPT_DIR}/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
-CHARTS_REPO_URL="https://$GH_OWNER.github.io/$GH_REPO"
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
@@ -140,7 +139,7 @@ function release {
   git config user.email "${GH_EMAIL}"
 
   git add "${CHARTS_INDEX_FILE}"
-  git commit -m "ci(helm): publish charts"
+  git commit -m "ci(helm): publish chart version ${CHART_VERSION}"
   git push
 
   popd
