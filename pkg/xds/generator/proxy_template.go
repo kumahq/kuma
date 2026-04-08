@@ -86,6 +86,7 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
+		ZoneProxyListenerGenerator{},
 		policies_generator.NewGenerator(),
 		generator_secrets.Generator{},
 		core_generator.NewGenerator(),
