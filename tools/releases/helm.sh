@@ -100,35 +100,41 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
+  local CHART_TAR
+  CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
+  local CHART_FILE
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep -E '^[^/]+/Chart\.yaml$' | head -n 1)
+  local CHART_VERSION
+  CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
+
+  # Determine release name template based on git tag
+  # If current commit has a tag starting with 'v', use v-prefixed template
+  local RELEASE_NAME_TEMPLATE="{{ .Name }}-{{ .Version }}"
+  local exactTag
+  exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "")
+  if [[ ${exactTag} =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+    RELEASE_NAME_TEMPLATE="{{ .Name }}-v{{ .Version }}"
+  fi
+
+  pushd "${GH_REPO}"
+
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
-<<<<<<< HEAD
-    --package-path "${CHARTS_PACKAGE_PATH}"
-=======
     --skip-existing \
     --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "../${CHARTS_PACKAGE_PATH}"
->>>>>>> 6835da158e (fix(helm): pass token and template to cr index (#16131))
 
   # Then build and upload the index file to github pages
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
-<<<<<<< HEAD
-    --charts-repo "${CHARTS_REPO_URL}" \
-    --package-path "${CHARTS_PACKAGE_PATH}" \
-    --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
-
-  pushd ${GH_REPO}
-=======
     --token "${GH_TOKEN}" \
     --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "../${CHARTS_PACKAGE_PATH}" \
     --index-path "${CHARTS_INDEX_FILE}"
->>>>>>> 6835da158e (fix(helm): pass token and template to cr index (#16131))
 
   git config user.name "${GH_USER}"
   git config user.email "${GH_EMAIL}"
