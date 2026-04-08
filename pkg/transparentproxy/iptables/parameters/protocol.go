@@ -103,17 +103,6 @@ func NotDestinationPort[T ~uint16](port T) *TcpUdpParameter {
 	return destinationPort(port, true)
 }
 
-func NotDestinationPortIf[T ~uint16](predicate func() bool, port T) *TcpUdpParameter {
-	return NotDestinationPortIfBool(predicate(), port)
-}
-
-func NotDestinationPortIfBool[T ~uint16](condition bool, port T) *TcpUdpParameter {
-	if condition {
-		return destinationPort(port, true)
-	}
-
-	return nil
-}
 
 func sourcePort[T ~uint16](port T, negative bool) *TcpUdpParameter {
 	return &TcpUdpParameter{

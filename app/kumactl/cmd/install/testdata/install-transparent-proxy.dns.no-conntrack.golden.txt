@@ -12,8 +12,8 @@
 -A OUTPUT -p tcp -j KUMA_MESH_OUTBOUND
 -A KUMA_MESH_INBOUND -p tcp -j KUMA_MESH_INBOUND_REDIRECT
 -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o ifPlaceholder -j RETURN
--A KUMA_MESH_OUTBOUND -p tcp ! --dport 53 -o ifPlaceholder ! -d 127.0.0.1/32 -m owner --uid-owner 0 -j KUMA_MESH_INBOUND_REDIRECT
--A KUMA_MESH_OUTBOUND -p tcp ! --dport 53 -o ifPlaceholder -m owner ! --uid-owner 0 -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp -o ifPlaceholder ! -d 127.0.0.1/32 -m owner --uid-owner 0 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -p tcp -o ifPlaceholder -m owner ! --uid-owner 0 -j RETURN
 -A KUMA_MESH_OUTBOUND -m owner --uid-owner 0 -j RETURN
 -A KUMA_MESH_OUTBOUND -d 127.0.0.1/32 -j RETURN
 -A KUMA_MESH_OUTBOUND -j KUMA_MESH_OUTBOUND_REDIRECT
