@@ -16,6 +16,8 @@ import (
 	mads_v1 "github.com/kumahq/kuma/v2/pkg/mads/v1"
 )
 
+var log = core.Log.WithName("mads.v1.service")
+
 const FetchMonitoringAssignmentsPath = "/v3/discovery:monitoringassignments"
 
 func (s *service) RegisterRoutes(ws *restful.WebService) {
@@ -87,7 +89,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 // Any errors during that process are handled by errors.HandleError
 func writeBadRequestError(res *restful.Response, err rest_error_types.Error) {
 	if writeErr := res.WriteHeaderAndJson(http.StatusBadRequest, err, restful.MIME_JSON); writeErr != nil {
-		core.Log.Error(writeErr, "Could not write the error response")
+		log.Error(writeErr, "Could not write the error response")
 		return
 	}
 }
