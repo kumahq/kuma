@@ -57,10 +57,6 @@ The current format includes a hash (`<format-version><hash>`) which:
 A bidirectional SNI <-> KRI mapping would allow components to resolve a resource
 from an observed SNI (e.g. in Envoy logs or access logs) without needing a lookup table.
 
-The hash was originally introduced to handle uniqueness and tags,
-but with the current resource model where SNI is stored in the resource itself,
-this may no longer be necessary.
-
 #### 3. Inconsistent handling between resource types
 
 The code has special handling for MeshService vs MeshExternalService/MeshMultiZoneService
