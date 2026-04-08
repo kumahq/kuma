@@ -233,9 +233,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
 			}
-			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
-			}
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
@@ -285,7 +282,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
 			adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
-			adminAddress := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
 			adminSocketPath := bootstrap.GetAdmin().GetAddress().GetPipe().GetPath()
 			if adminSocketPath != "" {
 				runLog.Info("received bootstrap configuration", "adminSocketPath", adminSocketPath)
@@ -371,22 +367,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, observabilityComponents...)
 
-			readinessAddr := adminAddress
-			if readinessAddr == "" {
-				// When admin is on UDS, bind readiness reporter so K8s
-				// probes (podIP) and PostStart hooks (localhost) can
-				// reach /ready. Only /ready is served on this listener.
-				readinessAddr = "0.0.0.0"
-				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
-					readinessAddr = "::"
-				}
-			}
 			readinessReporter := readiness.NewReporter(
-				cfg.Dataplane.ReadinessUnixSocketDisabled,
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				cfg.DataplaneRuntime.SocketDir,
-				readinessAddr,
-				cfg.Dataplane.ReadinessPort,
 				adminSocketPath)
 			components = append(components, readinessReporter)
 

@@ -4,7 +4,6 @@ params:
   adminPort: 9901
   corefileTemplatePath: ""
   envoyAdminUnixSocket: true
-  readinessPort: 9902
   xdsConnectTimeout: 1s
   xdsHost: ""
   xdsPort: 0

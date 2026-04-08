@@ -45,7 +45,6 @@ node:
     dataplane.admin.port: "1234"
     dataplane.appProbeProxy.enabled: "true"
     dataplane.proxyType: dataplane
-    dataplane.readinessReporter.port: "15000"
     features: []
     ipv6Enabled: false
     metricsCertPath: ""

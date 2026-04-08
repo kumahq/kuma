@@ -24,7 +24,6 @@ const (
 	FieldDataplaneAdminPort            = "dataplane.admin.port"
 	FieldDataplaneAdminAddress         = "dataplane.admin.address"
 	FieldDataplaneAdminSocketPath      = "dataplane.admin.socketPath"
-	FieldDataplaneReadinessPort        = "dataplane.readinessReporter.port"
 	FieldDataplaneAppProbeProxyEnabled = "dataplane.appProbeProxy.enabled"
 	FieldDataplaneDNSPort              = "dataplane.dns.port"
 	FieldDataplaneDataplaneResource    = "dataplane.resource"
@@ -63,7 +62,6 @@ type DataplaneMetadata struct {
 	AdminPort            uint32
 	AdminAddress         string
 	AdminSocketPath      string
-	ReadinessPort        uint32
 	AppProbeProxyEnabled bool
 	DNSPort              uint32
 	DynamicMetadata      map[string]string
@@ -128,13 +126,6 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 		return 0
 	}
 	return m.AdminPort
-}
-
-func (m *DataplaneMetadata) GetReadinessPort() uint32 {
-	if m == nil {
-		return 0
-	}
-	return m.ReadinessPort
 }
 
 func (m *DataplaneMetadata) GetAppProbeProxyEnabled() bool {
@@ -232,7 +223,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	if field := xdsMetadata.Fields[FieldDataplaneAdminSocketPath]; field != nil {
 		metadata.AdminSocketPath = field.GetStringValue()
 	}
-	metadata.ReadinessPort = uint32Metadata(xdsMetadata, FieldDataplaneReadinessPort)
 	metadata.AppProbeProxyEnabled = boolMetadata(xdsMetadata, FieldDataplaneAppProbeProxyEnabled)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)
 	if value := xdsMetadata.Fields[FieldDataplaneDataplaneResource]; value != nil {

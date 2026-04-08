@@ -19,7 +19,6 @@ type BootstrapRequest struct {
 	DynamicMetadata map[string]string                `json:"dynamicMetadata"`
 	OtelEnv         *core_xds.OtelBootstrapInventory `json:"otelEnv,omitempty"`
 	DNSPort         uint32                           `json:"dnsPort,omitempty"`
-	ReadinessPort   uint32                           `json:"readinessPort,omitempty"`
 	// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 	//
 	// IMPORTANT: Backward compatibility trap

@@ -380,9 +380,6 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	if parameters.DNSPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
 	}
-	if parameters.ReadinessPort != 0 {
-		res.Node.Metadata.Fields[core_xds.FieldDataplaneReadinessPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.ReadinessPort)))
-	}
 	// NOTE: parameters.AppProbeProxyEnabled originates from BootstrapRequest where
 	// the JSON wire key for this setting is "appProbeProxyDisabled" for backward
 	// compatibility. Do not try to auto-invert or post-process this value here
