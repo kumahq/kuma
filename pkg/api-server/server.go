@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
@@ -387,7 +386,10 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	var httpServer, httpsServer *http.Server
 	if a.config.HTTP.Enabled {
 		httpServer = &http.Server{
-			ReadHeaderTimeout: time.Second,
+			ReadHeaderTimeout: a.config.ReadHeaderTimeout.Duration,
+			ReadTimeout:       a.config.ReadTimeout.Duration,
+			WriteTimeout:      a.config.WriteTimeout.Duration,
+			IdleTimeout:       a.config.IdleTimeout.Duration,
 			Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
 			Handler:           a.mux,
 			ErrorLog:          adapter.ToStd(log),
@@ -404,7 +406,10 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			return err
 		}
 		httpsServer = &http.Server{
-			ReadHeaderTimeout: time.Second,
+			ReadHeaderTimeout: a.config.ReadHeaderTimeout.Duration,
+			ReadTimeout:       a.config.ReadTimeout.Duration,
+			WriteTimeout:      a.config.WriteTimeout.Duration,
+			IdleTimeout:       a.config.IdleTimeout.Duration,
 			Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
 			Handler:           a.mux,
 			TLSConfig:         tlsConfig,

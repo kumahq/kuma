@@ -2,6 +2,7 @@ package api_server
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -34,6 +35,14 @@ type ApiServerConfig struct {
 	RootUrl string `json:"rootUrl" envconfig:"kuma_api_server_root_url"`
 	// GUI configuration specific to the GUI
 	GUI ApiServerGUI `json:"gui,omitempty"`
+	// ReadHeaderTimeout is the amount of time allowed to read request headers.
+	ReadHeaderTimeout config_types.Duration `json:"readHeaderTimeout" envconfig:"kuma_api_server_read_header_timeout"`
+	// ReadTimeout is the maximum duration for reading the entire request.
+	ReadTimeout config_types.Duration `json:"readTimeout" envconfig:"kuma_api_server_read_timeout"`
+	// WriteTimeout is the maximum duration before timing out writes of the response.
+	WriteTimeout config_types.Duration `json:"writeTimeout" envconfig:"kuma_api_server_write_timeout"`
+	// IdleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
+	IdleTimeout config_types.Duration `json:"idleTimeout" envconfig:"kuma_api_server_idle_timeout"`
 }
 
 type ApiServerGUI struct {
@@ -257,5 +266,9 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			Enabled:  true,
 			BasePath: "/gui",
 		},
+		ReadHeaderTimeout: config_types.Duration{Duration: time.Second},
+		ReadTimeout:       config_types.Duration{Duration: 10 * time.Second},
+		WriteTimeout:      config_types.Duration{Duration: 30 * time.Second},
+		IdleTimeout:       config_types.Duration{Duration: 120 * time.Second},
 	}
 }
