@@ -56,6 +56,18 @@ networking:
   address: "%s"
 `
 
+	externalService3 := `
+type: ExternalService
+mesh: %s
+name: external-service-in-zone1
+tags:
+  kuma.io/service: external-service-in-zone1
+  kuma.io/protocol: http
+  kuma.io/zone: %s
+networking:
+  address: "%s"
+`
+
 	// Override wait_for_warm_on_init to false because universal zone cannot resolve "es-test-server.default.svc.cluster.local:80"
 	// The default (true) slows down ACK of all warming all the clusters delivered to universal client, even if only one cluster has problem.
 	// This speeds up the test by at least 60s.
@@ -78,7 +90,8 @@ conf:
           wait_for_warm_on_init: false
 `
 
-	var global, zone1 Cluster
+	var global Cluster
+	var zone1 *K8sCluster
 	var zone4 *UniversalCluster
 
 	BeforeAll(func() {
@@ -98,9 +111,14 @@ conf:
 		group := errgroup.Group{}
 
 		// K8s Cluster 1
-		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(90).WithTimeout(6 * time.Second)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*K8sCluster)
 		NewClusterSetup().
-			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+			Install(E2EKuma(config_core.Zone,
+				WithIngress(),
+				WithIngressEnvoyAdminTunnel(),
+				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
+				WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh)),
@@ -117,6 +135,7 @@ conf:
 		NewClusterSetup().
 			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
+			Install(EgressUniversal(global.GetKuma().GenerateZoneEgressToken)).
 			Install(Parallel(
 				DemoClientUniversal(
 					"zone4-demo-client",
@@ -130,6 +149,7 @@ conf:
 						WithoutDataplane(),
 						WithVerbose())
 				},
+				TestServerExternalServiceUniversal("external-service-in-zone1", 8080, false),
 				TestServerUniversal("test-server", nonDefaultMesh,
 					WithArgs([]string{"echo", "--instance", "test-server"}),
 					WithTransparentProxy(true),
@@ -139,10 +159,18 @@ conf:
 
 		Expect(group.Wait()).To(Succeed())
 
-		Expect(global.GetKumactlOptions().
-			KumactlApplyFromString(
-				fmt.Sprintf(externalService2, nonDefaultMesh, net.JoinHostPort(zone4.GetApp("es-test-server").GetIP(), "8080"))),
+		Expect(NewClusterSetup().
+			Install(YamlUniversal(fmt.Sprintf(externalService2, nonDefaultMesh, net.JoinHostPort(zone4.GetApp("es-test-server").GetIP(), "8080")))).
+			Install(YamlUniversal(fmt.Sprintf(externalService3, nonDefaultMesh, Kuma1, net.JoinHostPort(zone4.GetApp("external-service-in-zone1").GetIP(), "8080")))).
+			Setup(global),
 		).To(Succeed())
+	})
+
+	BeforeEach(func() {
+		Expect(zone1.StartZoneEgress()).To(Succeed())
+		Expect(zone1.StartZoneIngress()).To(Succeed())
+		Expect(zone4.GetApp(AppEgress).StartMainApp()).To(Succeed())
+		Expect(zone4.GetApp(AppIngress).StartMainApp()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -195,6 +223,9 @@ conf:
 	It("passthrough false with zoneegress true", func() {
 		Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "true"))(global)).To(Succeed())
 
+		Expect(zone1.StopZoneEgress()).To(Succeed())
+		Expect(zone4.GetApp(AppEgress).KillMainApp()).To(Succeed())
+
 		By("not reaching external service from k8s when zone egress is down")
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
@@ -224,4 +255,32 @@ conf:
 			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
 		}, "30s", "1s").Should(Succeed())
 	})
+
+	DescribeTable("should fail request when zone proxy is down",
+		func(fn func(c *K8sCluster) func() error) {
+			Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "true"))(global)).To(Succeed())
+
+			Expect(zone1.StartZoneEgress()).To(Succeed())
+			Expect(zone1.StartZoneIngress()).To(Succeed())
+			// when
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "30s", "1s").Should(Succeed())
+
+			// when ingress is down
+			Expect(fn(zone1)()).To(Succeed())
+
+			// then service is unreachable
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "30s").ShouldNot(HaveOccurred())
+		},
+		Entry("egress", func(c *K8sCluster) func() error { return c.StopZoneEgress }),
+		Entry("ingress", func(c *K8sCluster) func() error { return c.StopZoneIngress }),
+	)
 }
