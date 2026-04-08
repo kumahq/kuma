@@ -146,11 +146,17 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 		}()),
 		Entry("ingress: non-local MeshService filtered out", func() testCase {
 			msLocal := samples.MeshServiceBackendBuilder().
-				WithLabels(map[string]string{mesh_proto.ZoneTag: cpZone}).
+				WithLabels(map[string]string{
+					mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+					mesh_proto.ZoneTag:             cpZone,
+				}).
 				Build()
 			msRemote := samples.MeshServiceBackendBuilder().
 				WithName("backend-remote").
-				WithLabels(map[string]string{mesh_proto.ZoneTag: "west"}).
+				WithLabels(map[string]string{
+					mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					mesh_proto.ZoneTag:             "west",
+				}).
 				Build()
 			svcName := kri.From(msLocal).String()
 
