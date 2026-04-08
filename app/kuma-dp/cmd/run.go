@@ -186,6 +186,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
+			if cfg.DataplaneRuntime.SocketDir != "" && cfg.DataplaneRuntime.SocketDir != tmpDir {
+				if err := os.MkdirAll(cfg.DataplaneRuntime.SocketDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to create socket directory")
+					return err
+				}
+			}
+
 			if cfg.DataplaneRuntime.SystemCaPath == "" {
 				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath()
 			}
