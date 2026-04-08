@@ -155,7 +155,7 @@ Total: 3 + 6 + 63*5 + 6 = 330
 So why even consider this option even though it exceeds the DNS hostname limit?
 I think there are few reasons to that:
 
-- Single mesh future. We've discussed multiple times that single mesh should the way to run Kuma. 
+- Single mesh future. We've discussed multiple times that single mesh should be the way to run Kuma. 
 In that case instead of 63 the mesh is likely to be 7 ("default").
 - 63 char for port name is way too much (even though Service allows port names upto 63, port name on Container is only 15 chars max)
 
