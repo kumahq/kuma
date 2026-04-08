@@ -127,6 +127,13 @@ It's unambiguous because different cases have different number of segments:
 - zone-originated resource in system namespace - `sni.<type>.<mesh>.<zone>.<name>.<sectionName>` (6 segments)
 - zone-originated resource in custom namespace - `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` (7 segments)
 
+Additionally, this format requires that `name`, `sectionName`, `mesh`, `zone`, and `namespace`
+do not contain `.` characters, since dots are used as segment delimiters.
+Today, [`NameCharacterSet`](https://github.com/kumahq/kuma/blob/9aaa11197b92261a9df49ddce15b1a2a1a0df265/pkg/core/resources/apis/mesh/validators.go#L26) technically allows dots,
+but [#13047](https://github.com/kumahq/kuma/issues/13047) enforces DNS 1035-compliant names
+for Mesh*Service resources, which restricts names to `[a-z0-9]([a-z0-9-]*[a-z0-9])?` (no dots).
+This SNI format depends on that validation being fully enforced.
+
 #### DNS hostname limitation
 
 [RFC 1035](https://datatracker.ietf.org/doc/html/rfc1035) enforces limitations:
