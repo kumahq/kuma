@@ -192,6 +192,71 @@ var _ = Describe("Sync", func() {
 			Expect(activeWatchdogs.Load()).To(Equal(int32(0)))
 		})
 
+		It("should not delete new watchdog when old disconnect races with new connect (TOCTOU)", test.Within(10*time.Second, func() {
+			// afterCancel is signalled when a watchdog's ctx is cancelled but before it finishes.
+			// barrier controls when the watchdog goroutine is actually allowed to complete.
+			// This lets us force the interleaving: OnProxyConnected for stream 2 runs while
+			// stream 1's OnProxyDisconnected has already released the lock (delete done) but
+			// is still blocking on <-dpData.stopped — exactly the original TOCTOU window.
+			//
+			// Note: this test calls the tracker directly (not through xdsCallbacks) because
+			// xdsCallbacks.activeStreams serialises connect/disconnect and would prevent the
+			// concurrent calls needed to reproduce the race.
+			afterCancel := make(chan struct{}, 1)
+			barrier := make(chan struct{})
+			var activeWatchdogs atomic.Int32
+
+			tracker := NewDataplaneSyncTracker(sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, _ *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
+				return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
+					activeWatchdogs.Add(1)
+					<-ctx.Done()
+					select {
+					case afterCancel <- struct{}{}:
+					default:
+					}
+					<-barrier
+					activeWatchdogs.Add(-1)
+				})
+			}))
+
+			dpKey := core_model.ResourceKey{Mesh: "default", Name: "backend-01"}
+			streamCtx := context.Background()
+			meta := core_xds.DataplaneMetadata{}
+
+			// Connect stream 1 and wait for its watchdog to start.
+			Expect(tracker.OnProxyConnected(1, dpKey, streamCtx, meta)).To(Succeed())
+			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
+
+			// Start disconnect in background; it blocks on <-dpData.stopped until we release barrier.
+			disconnectDone := make(chan struct{})
+			go func() {
+				defer close(disconnectDone)
+				tracker.OnProxyDisconnected(streamCtx, 1, dpKey)
+			}()
+
+			// Wait until watchdog 1 is past ctx.Done() and blocked on barrier.
+			// At this point OnProxyDisconnected has released the lock (delete already performed).
+			Eventually(afterCancel, "5s", "10ms").Should(Receive())
+
+			// Connect stream 2 for the same dpKey while the old disconnect is still in flight.
+			// Pre-fix code read the entry under RLock then deleted under a separate Lock, so
+			// OnProxyConnected could insert state2 in the gap and OnProxyDisconnected would
+			// then delete it. The fix atomically captures-and-deletes under a single Lock, so
+			// OnProxyConnected's state2 is safe.
+			Expect(tracker.OnProxyConnected(2, dpKey, streamCtx, meta)).To(Succeed())
+
+			// Unblock watchdog 1 so the first disconnect can complete.
+			close(barrier)
+			Eventually(disconnectDone, "5s", "10ms").Should(BeClosed())
+
+			// Stream 2's watchdog must still be running; it must not have been leaked or deleted.
+			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
+
+			// Disconnect stream 2 — must properly cancel watchdog 2 with no goroutine leak.
+			tracker.OnProxyDisconnected(streamCtx, 2, dpKey)
+			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(0)))
+		}))
+
 		It("should pass stream context to watchdog factory when supported", test.Within(5*time.Second, func() {
 			streamCtxCh := make(chan context.Context, 1)
 			watchdogDone := make(chan struct{})
