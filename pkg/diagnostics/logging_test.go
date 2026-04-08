@@ -44,7 +44,7 @@ var _ = Describe("Logging handlers", func() {
 	parseComponents := func(w *httptest.ResponseRecorder) map[string]any {
 		var result map[string]any
 		Expect(json.Unmarshal(w.Body.Bytes(), &result)).To(Succeed())
-		Expect(result).To(HaveKey("components"))
+		Expect(result["components"]).To(BeAssignableToTypeOf(map[string]any{}))
 		return result["components"].(map[string]any)
 	}
 
@@ -103,9 +103,9 @@ var _ = Describe("Logging handlers", func() {
 			w := doRequest(http.MethodPut, "/logging", `{"component":"xds","level":"off"}`)
 			Expect(w.Code).To(Equal(http.StatusOK))
 
-			overrides := registry.ListOverrides()
-			Expect(overrides).To(HaveLen(1))
-			Expect(overrides["xds"]).To(Equal(kuma_log.OffLevel))
+			components := parseComponents(doRequest(http.MethodGet, "/logging", ""))
+			Expect(components).To(HaveLen(1))
+			Expect(components["xds"]).To(Equal("off"))
 		})
 
 		It("returns 429 when max overrides exceeded", func() {
@@ -256,9 +256,8 @@ var _ = Describe("Logging handlers", func() {
 				}(i)
 			}
 			wg.Wait()
-			// After all goroutines finish, registry should be consistent
-			overrides := registry.ListOverrides()
-			Expect(len(overrides)).To(BeNumerically("<=", goroutines))
+			// Every goroutine deleted its own component before wg.Done()
+			Expect(registry.ListOverrides()).To(BeEmpty())
 		})
 	})
 })
