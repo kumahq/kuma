@@ -193,14 +193,14 @@ var _ = Describe("Sync", func() {
 		})
 
 		It("should not delete new watchdog when old disconnect races with new connect (TOCTOU)", test.Within(10*time.Second, func() {
-			// afterCancel is signalled when a watchdog's ctx is cancelled but before it finishes.
+			// afterCancel is signaled when a watchdog's ctx is cancelled but before it finishes.
 			// barrier controls when the watchdog goroutine is actually allowed to complete.
 			// This lets us force the interleaving: OnProxyConnected for stream 2 runs while
 			// stream 1's OnProxyDisconnected has already released the lock (delete done) but
 			// is still blocking on <-dpData.stopped — exactly the original TOCTOU window.
 			//
 			// Note: this test calls the tracker directly (not through xdsCallbacks) because
-			// xdsCallbacks.activeStreams serialises connect/disconnect and would prevent the
+			// xdsCallbacks.activeStreams serializes connect/disconnect and would prevent the
 			// concurrent calls needed to reproduce the race.
 			afterCancel := make(chan struct{}, 1)
 			barrier := make(chan struct{})
