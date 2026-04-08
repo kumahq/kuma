@@ -182,12 +182,14 @@ spec:
 			}, "60s", "1s").Should(Succeed())
 
 			// Wait for zone ingresses to settle after upgrade before checking consistency.
-			// On slow CI the old zone ingress may not be cleaned up immediately.
+			// After Helm upgrade returns, the old zone ingress pod may still be in Terminating
+			// state (K8s graceful period up to 30s) plus the CP deregistration delay (default 10s),
+			// so the old ingress remains visible to global for up to ~40s after the upgrade completes.
 			Eventually(func(g Gomega) {
 				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(zoneIngressesGlobal).To(Equal(2))
-			}, "60s", "1s").Should(Succeed())
+			}, "2m", "1s").Should(Succeed())
 
 			// then
 			Consistently(func(g Gomega) {
