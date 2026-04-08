@@ -79,7 +79,6 @@ runs:
         if [[ "${{ inputs.target }}" == "" ]]; then
           export GINKGO_E2E_LABEL_FILTERS="job-${{ inputs.parallel_runner_id }}"
         fi
-        env
         if [[ "${{ inputs.target }}" == "multizone" ]]; then
           export KUMA_DEFAULT_RETRIES=60
         fi
