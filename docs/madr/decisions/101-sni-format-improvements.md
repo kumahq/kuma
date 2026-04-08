@@ -146,7 +146,7 @@ There is no issue with each segment being 63 or less, however, total length is t
 The max length of the SNI would be:
 
 - sni (3 chars)
-- type (6 chars because of the "extsvc")
+- type (6 chars, uses `shortName` of the resource, i.e. `ms`, `mmzs` and `extsvc`)
 - mesh, zone, namespace, name, section name (63 chars each)
 - dots (6 chars)
 
