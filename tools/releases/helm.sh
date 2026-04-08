@@ -131,6 +131,7 @@ function release {
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
+    --charts-repo "https://${GH_OWNER}.github.io/${GH_REPO}" \
     --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "../${CHARTS_PACKAGE_PATH}" \
     --index-path "${CHARTS_INDEX_FILE}"
