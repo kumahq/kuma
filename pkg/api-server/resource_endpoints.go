@@ -1224,9 +1224,17 @@ func matchedPoliciesToRouteConfig(matchedPolicies []core_xds.TypedMatchingPolici
 }
 
 func policyOriginsToKRIOrigins(policyType core_model.ResourceType, origins []core_model.ResourceMeta) []api_common.PolicyOrigin {
-	return util_slices.Map(origins, func(origin core_model.ResourceMeta) api_common.PolicyOrigin {
-		return originToKRI(origin, policyType)
-	})
+	seen := map[string]struct{}{}
+	var result []api_common.PolicyOrigin
+	for _, origin := range origins {
+		o := originToKRI(origin, policyType)
+		if _, exists := seen[o.Kri]; exists {
+			continue
+		}
+		seen[o.Kri] = struct{}{}
+		result = append(result, o)
+	}
+	return result
 }
 
 func originToKRI(origin core_model.ResourceMeta, policyType core_model.ResourceType) api_common.PolicyOrigin {

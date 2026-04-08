@@ -1,0 +1,34 @@
+#/meshes/default/dataplanes/dp-1/_inbounds/kri_dp_default_test-zone__dp-1_main-port/_policies 200
+type: Mesh
+name: default
+meshServices:
+  mode: Exclusive
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      name: main-port
+      tags:
+        kuma.io/service: foo
+---
+type: MeshTrafficPermission
+name: allow
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default.local.mesh.local/ns/kuma-demo
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default.local.mesh.local/ns/foo/sa/bar

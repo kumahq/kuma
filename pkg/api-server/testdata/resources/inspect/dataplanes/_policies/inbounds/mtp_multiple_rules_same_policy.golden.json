@@ -1,0 +1,40 @@
+{
+ "policies": [
+  {
+   "kind": "MeshTrafficPermission",
+   "origins": [
+    {
+     "kri": "kri_mtp_default___allow_"
+    }
+   ],
+   "rules": [
+    {
+     "conf": {
+      "allow": [
+       {
+        "spiffeID": {
+         "type": "Prefix",
+         "value": "spiffe://default.local.mesh.local/ns/kuma-demo"
+        }
+       }
+      ]
+     },
+     "kri": "kri_mtp_default___allow_"
+    },
+    {
+     "conf": {
+      "allow": [
+       {
+        "spiffeID": {
+         "type": "Prefix",
+         "value": "spiffe://default.local.mesh.local/ns/foo/sa/bar"
+        }
+       }
+      ]
+     },
+     "kri": "kri_mtp_default___allow_"
+    }
+   ]
+  }
+ ]
+}
