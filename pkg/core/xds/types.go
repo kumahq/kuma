@@ -32,6 +32,15 @@ type APIVersion string
 // StreamID represents a stream opened by XDS
 type StreamID = int64
 
+// ZoneEgressInstance holds the resolved bind address, port and workload-identity SAN
+// of a zone egress proxy. SAN is the SPIFFE ID when WorkloadIdentity is
+// enabled: empty for legacy mTLS deployments.
+type ZoneEgressInstance struct {
+	Address string
+	Port    uint32
+	SAN     string
+}
+
 type ProxyId struct {
 	mesh string
 	name string
@@ -136,6 +145,19 @@ type EndpointList []Endpoint
 
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
+
+// EgressEndpointGroup holds group-level metadata alongside the actual endpoints for a single
+// external service destination. Protocol and OwnerResource are the same for every endpoint in
+// the group, so they live here rather than being read from endpoints[0].
+type EgressEndpointGroup struct {
+	Protocol      core_meta.Protocol
+	OwnerResource kri.Identifier
+	Endpoints     []Endpoint
+}
+
+// EgressEndpointMap groups endpoints by service name with group-level metadata.
+// Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
+type EgressEndpointMap map[ServiceName]EgressEndpointGroup
 
 // TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
 type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
@@ -327,7 +349,7 @@ type ZoneEgressProxy struct {
 	MeshResourcesList  []*MeshResources
 }
 
-type MeshIngressResources struct {
+type MeshProxyResources struct {
 	Mesh        *core_mesh.MeshResource
 	EndpointMap EndpointMap
 	Resources   map[core_model.ResourceType]core_model.ResourceList
@@ -335,7 +357,7 @@ type MeshIngressResources struct {
 
 type ZoneIngressProxy struct {
 	ZoneIngressResource *core_mesh.ZoneIngressResource
-	MeshResourceList    []*MeshIngressResources
+	MeshResourceList    []*MeshProxyResources
 }
 
 type Routing struct {

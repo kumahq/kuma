@@ -31,7 +31,7 @@ var _ = Describe("IngressGenerator", func() {
 		ingress          string
 		expected         string
 		proxyZone        string
-		meshResourceList []*core_xds.MeshIngressResources
+		meshResourceList []*core_xds.MeshProxyResources
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -97,7 +97,7 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "01.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -156,7 +156,7 @@ var _ = Describe("IngressGenerator", func() {
 `,
 			proxyZone:        "zone-main",
 			expected:         "02.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{},
+			meshResourceList: []*core_xds.MeshProxyResources{},
 		}),
 		Entry("03. trafficroute with many destinations", testCase{
 			ingress: `
@@ -176,7 +176,7 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "03.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -294,7 +294,7 @@ var _ = Describe("IngressGenerator", func() {
                   version: v2
 `,
 			expected: "04.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -503,7 +503,7 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "05.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -559,7 +559,7 @@ var _ = Describe("IngressGenerator", func() {
                   kuma.io/service: mesh-gateway
 `,
 			expected: "meshgateway.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -654,7 +654,7 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "with-meshhttproute.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -746,7 +746,7 @@ var _ = Describe("IngressGenerator", func() {
                   kuma.io/zone: zone
 `,
 			expected: "with-meshhttproute-subset.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -841,7 +841,7 @@ var _ = Describe("IngressGenerator", func() {
                   kuma.io/zone: zone
 `,
 			expected: "with-meshtcproute-subset.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -926,7 +926,7 @@ var _ = Describe("IngressGenerator", func() {
                   kuma.io/instance: ins-1
 `,
 			expected: "virtual-outbound.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -1014,7 +1014,7 @@ var _ = Describe("IngressGenerator", func() {
               port: 10001
 `,
 			expected: "mesh-service.envoy.golden.yaml",
-			meshResourceList: []*core_xds.MeshIngressResources{
+			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{

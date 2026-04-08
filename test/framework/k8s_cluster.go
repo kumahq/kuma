@@ -232,21 +232,19 @@ func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
 }
 
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneEgressApp,
-		Namespace: Config.KumaNamespace,
-	})
-	if err != nil {
-		c.t.Fatal(err)
-	}
-
-	return tnl
+	return c.GetEnvoyAdminTunnel(Config.ZoneEgressApp, Config.KumaNamespace)
 }
 
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	return c.GetEnvoyAdminTunnel(Config.ZoneIngressApp, Config.KumaNamespace)
+}
+
+// GetEnvoyAdminTunnel creates or returns an Envoy admin tunnel for any named
+// app in a given namespace.
+func (c *K8sCluster) GetEnvoyAdminTunnel(appName, namespace string) envoy_admin.Tunnel {
 	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneIngressApp,
-		Namespace: Config.KumaNamespace,
+		AppName:   appName,
+		Namespace: namespace,
 	})
 	if err != nil {
 		c.t.Fatal(err)
