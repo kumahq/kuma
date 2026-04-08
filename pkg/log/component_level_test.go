@@ -2,6 +2,7 @@ package log_test
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -120,4 +121,72 @@ var _ = Describe("ComponentLevelRegistry", func() {
 		}
 		Expect(registry.SetLevel("component-0", kuma_log.InfoLevel)).To(Succeed())
 	})
+
+	It("SetLevel with same value is a no-op", func() {
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		Expect(registry.ListOverrides()).To(HaveLen(1))
+	})
+
+	It("ResetLevel of nonexistent component is idempotent", func() {
+		registry.ResetLevel("nonexistent")
+		Expect(registry.ListOverrides()).To(BeEmpty())
+	})
+
+	It("ResetAll returns exact overrides that were active", func() {
+		Expect(registry.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		Expect(registry.SetLevel("kds", kuma_log.InfoLevel)).To(Succeed())
+
+		removed := registry.ResetAll()
+		Expect(removed).To(HaveLen(2))
+		Expect(removed["xds"]).To(Equal(kuma_log.DebugLevel))
+		Expect(removed["kds"]).To(Equal(kuma_log.InfoLevel))
+	})
+
+	It("ResetAll when empty returns empty map", func() {
+		removed := registry.ResetAll()
+		Expect(removed).To(BeEmpty())
+	})
+})
+
+var _ = Describe("ValidateComponentName", func() {
+	DescribeTable("valid names",
+		func(name string) {
+			Expect(kuma_log.ValidateComponentName(name)).To(Succeed())
+		},
+		Entry("simple", "xds"),
+		Entry("dot-separated", "xds.server"),
+		Entry("deep hierarchy", "plugins.authn.api-server.tokens"),
+		Entry("with dash", "kds-mux"),
+		Entry("with underscore", "xds_server"),
+		Entry("starts with digit", "1xds"),
+		Entry("all digits", "123"),
+		Entry("max length (256)", strings.Repeat("a", 256)),
+	)
+
+	DescribeTable("invalid names",
+		func(name string) {
+			Expect(kuma_log.ValidateComponentName(name)).To(HaveOccurred())
+		},
+		Entry("empty", ""),
+		Entry("exceeds 256 chars", strings.Repeat("a", 257)),
+		Entry("starts with dot", ".xds"),
+		Entry("starts with dash", "-xds"),
+		Entry("contains exclamation", "xds!server"),
+		Entry("path traversal", "../../etc"),
+		Entry("contains space", "xds server"),
+		Entry("contains slash", "xds/server"),
+	)
+})
+
+var _ = Describe("SplitHierarchy", func() {
+	DescribeTable("splits component name into ancestors",
+		func(name string, expected []string) {
+			Expect(kuma_log.SplitHierarchy(name)).To(Equal(expected))
+		},
+		Entry("single segment", "xds", []string{"xds"}),
+		Entry("two segments", "xds.server", []string{"xds.server", "xds"}),
+		Entry("three segments", "plugins.authn.tokens", []string{"plugins.authn.tokens", "plugins.authn", "plugins"}),
+		Entry("four segments", "a.b.c.d", []string{"a.b.c.d", "a.b.c", "a.b", "a"}),
+	)
 })

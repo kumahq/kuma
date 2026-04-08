@@ -91,4 +91,33 @@ var _ = Describe("ComponentAwareSink", func() {
 		logger.Info("info message")
 		Expect(buf.String()).To(ContainSubstring("info message"))
 	})
+
+	It("should return to base level after override is reset", func() {
+		Expect(registry.SetLevel("xds", kuma_log.OffLevel)).To(Succeed())
+		logger := newLogger().WithName("xds")
+
+		logger.Info("suppressed")
+		Expect(buf.String()).To(BeEmpty())
+
+		registry.ResetLevel("xds")
+		logger.Info("visible after reset")
+		Expect(buf.String()).To(ContainSubstring("visible after reset"))
+	})
+
+	It("child-level override overrides parent", func() {
+		Expect(registry.SetLevel("xds", kuma_log.OffLevel)).To(Succeed())
+		Expect(registry.SetLevel("xds.server", kuma_log.DebugLevel)).To(Succeed())
+
+		child := newLogger().WithName("xds").WithName("server")
+		child.V(1).Info("child debug visible")
+		Expect(buf.String()).To(ContainSubstring("child debug visible"))
+	})
+
+	It("deep 3-level hierarchy inherits from top ancestor", func() {
+		Expect(registry.SetLevel("plugins", kuma_log.DebugLevel)).To(Succeed())
+
+		logger := newLogger().WithName("plugins").WithName("authn").WithName("tokens")
+		logger.V(1).Info("deep debug")
+		Expect(buf.String()).To(ContainSubstring("deep debug"))
+	})
 })
