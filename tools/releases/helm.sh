@@ -7,7 +7,6 @@ source "${SCRIPT_DIR}/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
-CHARTS_REPO_URL="https://$GH_OWNER.github.io/$GH_REPO"
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
@@ -114,18 +113,20 @@ function release {
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
+    --skip-existing \
     --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "${CHARTS_PACKAGE_PATH}"
+
+  pushd "${GH_REPO}" || exit 1
 
   # Then build and upload the index file to github pages
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
-    --charts-repo "${CHARTS_REPO_URL}" \
-    --package-path "${CHARTS_PACKAGE_PATH}" \
-    --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
-
-  pushd "${GH_REPO}"
+    --token "${GH_TOKEN}" \
+    --release-name-template "${RELEASE_NAME_TEMPLATE}" \
+    --package-path "../${CHARTS_PACKAGE_PATH}" \
+    --index-path "${CHARTS_INDEX_FILE}"
 
   git config user.name "${GH_USER}"
   git config user.email "${GH_EMAIL}"
