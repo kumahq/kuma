@@ -214,6 +214,14 @@ apiServer:
     rootUrl: "" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
     # The path to serve the GUI from
     basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
+  # The amount of time allowed to read request headers
+  readHeaderTimeout: 1s # ENV: KUMA_API_SERVER_READ_HEADER_TIMEOUT
+  # The maximum duration for reading the entire request
+  readTimeout: 10s # ENV: KUMA_API_SERVER_READ_TIMEOUT
+  # The maximum duration before timing out writes of the response
+  writeTimeout: 30s # ENV: KUMA_API_SERVER_WRITE_TIMEOUT
+  # The maximum amount of time to wait for the next request when keep-alives are enabled
+  idleTimeout: 2m0s # ENV: KUMA_API_SERVER_IDLE_TIMEOUT
 # Environment-specific configuration
 runtime:
   # Kubernetes-specific configuration
