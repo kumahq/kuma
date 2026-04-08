@@ -37,6 +37,27 @@ experimental:
 KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET=false kuma-cp run
 ```
 
+### Observability: CP metrics OTLP push enabled by default
+
+When `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the control plane now automatically pushes all CP Prometheus metrics to the configured OTLP collector. This is enabled by default.
+
+**What changed:**
+- A new config field `metrics.openTelemetry.enabled` (default `true`) gates CP metrics OTLP push.
+- If you already set `OTEL_EXPORTER_OTLP_ENDPOINT` for tracing, metrics will now also be pushed to that endpoint.
+
+**Action required:**
+
+If you use `OTEL_EXPORTER_OTLP_ENDPOINT` for tracing only and do not want CP metrics pushed via OTLP, disable it:
+
+```yaml
+# kuma-cp config
+metrics:
+  openTelemetry:
+    enabled: false
+```
+
+Or via environment variable: `KUMA_METRICS_OPENTELEMETRY_ENABLED=false`
+
 ### Observability: Prometheus metrics migration from Summary to Histogram
 
 Internal Kuma Prometheus metrics changed from `Summary` to `Histogram` types to fix stale values that accumulated over long windows.

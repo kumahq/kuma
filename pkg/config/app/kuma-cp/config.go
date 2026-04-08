@@ -50,10 +50,17 @@ type Defaults struct {
 type Metrics struct {
 	config.BaseConfig
 
-	Dataplane    *DataplaneMetrics    `json:"dataplane"`
-	Zone         *ZoneMetrics         `json:"zone"`
-	Mesh         *MeshMetrics         `json:"mesh"`
-	ControlPlane *ControlPlaneMetrics `json:"controlPlane"`
+	Dataplane     *DataplaneMetrics     `json:"dataplane"`
+	Zone          *ZoneMetrics          `json:"zone"`
+	Mesh          *MeshMetrics          `json:"mesh"`
+	ControlPlane  *ControlPlaneMetrics  `json:"controlPlane"`
+	OpenTelemetry *MetricsOpenTelemetry `json:"openTelemetry"`
+}
+
+// MetricsOpenTelemetry configures CP metrics push via OTLP.
+type MetricsOpenTelemetry struct {
+	// If true, CP metrics will be pushed via OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set.
+	Enabled bool `json:"enabled" envconfig:"kuma_metrics_opentelemetry_enabled"`
 }
 
 func (m *Metrics) Validate() error {
@@ -263,6 +270,9 @@ var DefaultConfig = func() Config {
 			},
 			ControlPlane: &ControlPlaneMetrics{
 				ReportResourcesCount: true,
+			},
+			OpenTelemetry: &MetricsOpenTelemetry{
+				Enabled: true,
 			},
 		},
 		Reports: &Reports{
