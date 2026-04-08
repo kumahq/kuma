@@ -9765,6 +9765,8 @@ spec:
     kind: Zone
     listKind: ZoneList
     plural: zones
+    shortNames:
+    - z
     singular: zone
   scope: Cluster
   versions:
@@ -12331,6 +12333,8 @@ spec:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
+            - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
               value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"

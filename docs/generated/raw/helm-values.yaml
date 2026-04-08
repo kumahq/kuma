@@ -782,7 +782,7 @@ meshes:
         # -- The pause image repository
         repository: pause
         # -- The pause image tag
-        tag: "3.10"
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
@@ -819,7 +819,7 @@ meshes:
         # -- The pause image repository
         repository: pause
         # -- The pause image tag
-        tag: "3.10"
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
@@ -1024,6 +1024,8 @@ experimental:
   sidecarContainers: false
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
+  # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
+  envoyAdminUnixSocket: true
 
 # Postgres' settings for universal control plane on k8s
 postgres:

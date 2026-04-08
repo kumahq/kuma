@@ -651,6 +651,8 @@ spec:
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
+              value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED
@@ -804,7 +806,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: pause
-          image: registry.k8s.io/pause:3.10
+          image: registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true
@@ -863,7 +865,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: pause
-          image: registry.k8s.io/pause:3.10
+          image: registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true
@@ -922,7 +924,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: pause
-          image: registry.k8s.io/pause:3.10
+          image: registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true
@@ -981,7 +983,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: pause
-          image: registry.k8s.io/pause:3.10
+          image: registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true

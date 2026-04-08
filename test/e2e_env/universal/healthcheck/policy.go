@@ -9,6 +9,7 @@ import (
 
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
@@ -78,7 +79,7 @@ conf:
 
 			// wait cluster 'test-server' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
@@ -167,7 +168,7 @@ conf:
 
 			// wait cluster 'test-server' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
@@ -269,7 +270,7 @@ conf:
 
 			// wait cluster 'test-server-mtls' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server-mtls\""}
+				cmd := tunnel.AdminCurlCmd("/clusters")
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))

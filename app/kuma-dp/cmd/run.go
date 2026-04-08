@@ -160,6 +160,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
 				}
+				// MkdirTemp creates 0700 dirs owned by the running user.
+				// Other processes (health probes, admin curl) need to
+				// traverse the dir to reach Unix sockets inside.
+				// 0711 = owner rwx, group/other execute-only (traverse).
+				if err := os.Chmod(tmpDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to chmod temporary directory")
+					return err
+				}
 
 				if cfg.DataplaneRuntime.WorkDir == "" {
 					cfg.DataplaneRuntime.WorkDir = tmpDir
@@ -276,13 +284,21 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
-			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+			adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			adminAddress := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
+			adminSocketPath := bootstrap.GetAdmin().GetAddress().GetPipe().GetPath()
+			if adminSocketPath != "" {
+				runLog.Info("received bootstrap configuration", "adminSocketPath", adminSocketPath)
+			} else {
+				runLog.Info("received bootstrap configuration", "adminPort", adminPort)
+			}
 
 			opts.BootstrapConfig, err = proto.ToYAML(bootstrap)
 			if err != nil {
 				return errors.Errorf("could not convert to yaml. %v", err)
 			}
-			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			opts.AdminPort = adminPort
+			opts.AdminSocketPath = adminSocketPath
 
 			confFetcher := configfetcher.NewConfigFetcher(
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
@@ -355,12 +371,23 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, observabilityComponents...)
 
+			readinessAddr := adminAddress
+			if readinessAddr == "" {
+				// When admin is on UDS, bind readiness reporter so K8s
+				// probes (podIP) and PostStart hooks (localhost) can
+				// reach /ready. Only /ready is served on this listener.
+				readinessAddr = "0.0.0.0"
+				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+					readinessAddr = "::"
+				}
+			}
 			readinessReporter := readiness.NewReporter(
 				cfg.Dataplane.ReadinessUnixSocketDisabled,
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				cfg.DataplaneRuntime.SocketDir,
-				bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
-				cfg.Dataplane.ReadinessPort)
+				readinessAddr,
+				cfg.Dataplane.ReadinessPort,
+				adminSocketPath)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
@@ -478,7 +505,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	return cmd
 }
 
-func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []metrics.ApplicationToScrape {
+func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32, envoyAdminSocketPath string) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
@@ -500,6 +527,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		Address:           "127.0.0.1",
 		Port:              envoyAdminPort,
 		IsIPv6:            false,
+		UnixSocketPath:    envoyAdminSocketPath,
 		QueryModifier:     metrics.AddPrometheusFormat,
 		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
 		MeshMetricMutator: metrics.AggregatedOtelMutator(),
@@ -522,7 +550,10 @@ func setupObservability(
 	fetcher *configfetcher.ConfigFetcher,
 	discoveredOtelEnv otelenv.Config,
 ) ([]component.Component, error) {
-	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+	adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+	adminAddr := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
+	adminSocketPath := bootstrap.GetAdmin().GetAddress().GetPipe().GetPath()
+	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, adminPort, adminSocketPath)
 
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
@@ -554,8 +585,9 @@ func setupObservability(
 		metricsServer,
 		openTelemetryProducer,
 		kumaSidecarConfiguration.Networking.Address,
-		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
-		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+		adminPort,
+		adminAddr,
+		adminSocketPath,
 		cfg.Dataplane.DrainTime.Duration,
 	)
 	err := fetcher.AddHandler(meshmetric_dpapi.PATH, mm.OnChange)

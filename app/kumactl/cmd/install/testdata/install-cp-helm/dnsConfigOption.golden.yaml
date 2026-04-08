@@ -588,6 +588,8 @@ spec:
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
+              value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED
@@ -786,16 +788,20 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "egress"
+            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
+              value: "true"
+            - name: KUMA_READINESS_PORT
+              value: "9902"
           args:
             - run
             - --log-level=info
           ports:
             - containerPort: 10002
-            - containerPort: 9901
+            - containerPort: 9902
           livenessProbe:
             httpGet:
               path: "/ready"
-              port: 9901
+              port: 9902
             failureThreshold: 12
             initialDelaySeconds: 60
             periodSeconds: 5
@@ -804,7 +810,7 @@ spec:
           readinessProbe:
             httpGet:
               path: "/ready"
-              port: 9901
+              port: 9902
             failureThreshold: 12
             initialDelaySeconds: 1
             periodSeconds: 5
@@ -922,16 +928,20 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
+            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
+              value: "true"
+            - name: KUMA_READINESS_PORT
+              value: "9902"
           args:
             - run
             - --log-level=info
           ports:
             - containerPort: 10001
-            - containerPort: 9901
+            - containerPort: 9902
           livenessProbe:
             httpGet:
               path: "/ready"
-              port: 9901
+              port: 9902
             failureThreshold: 12
             initialDelaySeconds: 60
             periodSeconds: 5
@@ -940,7 +950,7 @@ spec:
           readinessProbe:
             httpGet:
               path: "/ready"
-              port: 9901
+              port: 9902
             failureThreshold: 12
             initialDelaySeconds: 1
             periodSeconds: 5
