@@ -86,7 +86,7 @@ var _ = Describe("Logging handlers", func() {
 
 		DescribeTable("accepts all valid log levels",
 			func(level string) {
-				w := doRequest(http.MethodPut, "/logging", fmt.Sprintf(`{"component":"xds","level":"%s"}`, level))
+				w := doRequest(http.MethodPut, "/logging", fmt.Sprintf(`{"component":"xds","level":%q}`, level))
 				Expect(w.Code).To(Equal(http.StatusOK))
 				Expect(parseComponents(doRequest(http.MethodGet, "/logging", ""))).To(
 					HaveKeyWithValue("xds", level),
@@ -125,7 +125,7 @@ var _ = Describe("Logging handlers", func() {
 		})
 
 		It("rejects oversized body (>4096 bytes)", func() {
-			oversized := fmt.Sprintf(`{"component":"xds","level":"debug","extra":"%s"}`, strings.Repeat("x", 5000))
+			oversized := fmt.Sprintf(`{"component":"xds","level":"debug","extra":%q}`, strings.Repeat("x", 5000))
 			w := doRequest(http.MethodPut, "/logging", oversized)
 			Expect(w.Code).To(Equal(http.StatusBadRequest))
 		})
