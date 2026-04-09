@@ -49,6 +49,7 @@ type: MeshTimeout
 ---
 creationTime: "0001-01-01T00:00:00Z"
 enabled: true
+kri: kri_z____zone-1_
 modificationTime: "0001-01-01T00:00:00Z"
 name: zone-1
 type: Zone
@@ -56,6 +57,7 @@ type: Zone
 ---
 creationTime: "0001-01-01T00:00:00Z"
 enabled: true
+kri: kri_z____zone-2_
 modificationTime: "0001-01-01T00:00:00Z"
 name: zone-2
 type: Zone

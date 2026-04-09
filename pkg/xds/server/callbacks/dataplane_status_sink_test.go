@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/xds"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 	"github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
 )
 
@@ -87,6 +88,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				},
 				accessor,
 				&xds.TestSecrets{},
+				nil,
 				func() *time.Ticker { return ticker },
 				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
 				1*time.Millisecond,
@@ -200,6 +202,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				},
 				accessor,
 				&xds.TestSecrets{NoSecrets: true}, // let's use events
+				nil,
 				func() *time.Ticker { return ticker },
 				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
 				1*time.Millisecond,
@@ -296,6 +299,97 @@ var _ = Describe("DataplaneInsightSink", func() {
 			Expect(latestOperation.DataplaneInsight_MTLS.LastCertificateRegeneration).To(BeNil())
 			Expect(latestOperation.DataplaneInsight_MTLS.SupportedBackends).To(BeEmpty())
 		})
+
+		It("should flush OTel status changes and dedup unchanged status", func() {
+			// setup
+			key := core_model.ResourceKey{Mesh: "default", Name: "example-001"}
+			subscription := &mesh_proto.DiscoverySubscription{
+				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
+				ControlPlaneInstanceId: "control-plane-01",
+				ConnectTime:            util_proto.MustTimestampProto(t0),
+				Status:                 mesh_proto.NewSubscriptionStatus(t0),
+			}
+			accessor := &SubscriptionStatusHolder{key, subscription}
+			ticks := make(chan time.Time)
+			ticker := &time.Ticker{C: ticks}
+			metrics, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			eventBus, err := events.NewEventBus(10, metrics)
+			Expect(err).ToNot(HaveOccurred())
+
+			otelCache := otelstatus.NewCache()
+
+			var latestOperation *DataplaneInsightOperation
+
+			// given
+			sink := callbacks.NewDataplaneInsightSink(
+				&structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						core_xds.FieldDataplaneProxyType: {
+							Kind: &structpb.Value_StringValue{
+								StringValue: string(mesh_proto.DataplaneProxyType),
+							},
+						},
+					},
+				},
+				accessor,
+				&xds.TestSecrets{},
+				otelCache,
+				func() *time.Ticker { return ticker },
+				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
+				1*time.Millisecond,
+				store,
+				eventBus,
+				recorder.ResourceManager,
+			)
+
+			// when
+			go sink.Start(stop)
+
+			// then - initial create without OTel
+			create, ok := <-recorder.Creates
+			Expect(ok).To(BeTrue())
+			latestOperation = &create
+			Expect(latestOperation.OpenTelemetry).To(BeNil())
+
+			// when - OTel status is set in the cache
+			otelCache.Set(key, &mesh_proto.DataplaneInsight_OpenTelemetry{
+				Backends: []*mesh_proto.DataplaneInsight_OpenTelemetry_Backend{
+					{Name: "otel-main", Traces: &mesh_proto.DataplaneInsight_OpenTelemetry_Signal{
+						Enabled: true,
+						State:   "ready",
+					}},
+				},
+			})
+			ticks <- t0.Add(2 * time.Second)
+
+			// then - update with OTel status
+			Eventually(func() bool {
+				select {
+				case update, ok := <-recorder.Updates:
+					latestOperation = &update
+					return ok
+				default:
+					return false
+				}
+			}, "1s", "1ms").Should(BeTrue())
+			Expect(latestOperation.OpenTelemetry).ToNot(BeNil())
+			Expect(latestOperation.OpenTelemetry.Backends).To(HaveLen(1))
+			Expect(latestOperation.OpenTelemetry.Backends[0].Name).To(Equal("otel-main"))
+			Expect(latestOperation.OpenTelemetry.Backends[0].Traces.State).To(Equal("ready"))
+
+			// when - tick without changes (dedup)
+			ticks <- t0.Add(3 * time.Second)
+			// then - no update
+			select {
+			case <-recorder.Creates:
+				Fail("unchanged OTel status should not trigger update")
+			case <-recorder.Updates:
+				Fail("unchanged OTel status should not trigger update")
+			case <-time.After(100 * time.Millisecond):
+				// no update is good
+			}
+		})
 	})
 
 	Describe("DataplaneInsightStore", func() {
@@ -326,7 +420,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			statusStore := callbacks.NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
-			err := statusStore.Upsert(ctx, nil, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
+			err := statusStore.Upsert(ctx, nil, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil, nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -361,7 +455,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription.Status.Lds.ResponsesSent += 1
 			subscription.Status.Total.ResponsesSent += 1
 			// and
-			err = statusStore.Upsert(ctx, nil, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
+			err = statusStore.Upsert(ctx, nil, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil, nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -412,6 +506,7 @@ var _ manager.ResourceManager = &DataplaneInsightStoreRecorder{}
 type DataplaneInsightOperation struct {
 	core_model.ResourceKey
 	*mesh_proto.DataplaneInsight_MTLS
+	OpenTelemetry *mesh_proto.DataplaneInsight_OpenTelemetry
 	Subscriptions []*mesh_proto.DiscoverySubscription
 }
 
@@ -430,6 +525,7 @@ func (d *DataplaneInsightStoreRecorder) Create(ctx context.Context, resource cor
 		ResourceKey:           core_model.ResourceKey{Mesh: opts.Mesh, Name: opts.Name},
 		Subscriptions:         resource.GetSpec().(*mesh_proto.DataplaneInsight).Subscriptions,
 		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
+		OpenTelemetry:         resource.GetSpec().(*mesh_proto.DataplaneInsight).OpenTelemetry,
 	}
 	return nil
 }
@@ -442,6 +538,7 @@ func (d *DataplaneInsightStoreRecorder) Update(ctx context.Context, resource cor
 		ResourceKey:           core_model.ResourceKey{Mesh: resource.GetMeta().GetMesh(), Name: resource.GetMeta().GetName()},
 		Subscriptions:         resource.GetSpec().(*mesh_proto.DataplaneInsight).Subscriptions,
 		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
+		OpenTelemetry:         resource.GetSpec().(*mesh_proto.DataplaneInsight).OpenTelemetry,
 	}
 	return nil
 }

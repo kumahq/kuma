@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"net"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelreceiver"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/probes"
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/readiness"
 	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
@@ -157,6 +160,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
 				}
+				// MkdirTemp creates 0700 dirs owned by the running user.
+				// Other processes (health probes, admin curl) need to
+				// traverse the dir to reach Unix sockets inside.
+				// 0711 = owner rwx, group/other execute-only (traverse).
+				if err := os.Chmod(tmpDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to chmod temporary directory")
+					return err
+				}
 
 				if cfg.DataplaneRuntime.WorkDir == "" {
 					cfg.DataplaneRuntime.WorkDir = tmpDir
@@ -197,6 +208,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			rootCtx.Features = []string{
 				xds_types.FeatureTCPAccessLogViaNamedPipe,
 			}
+			if cfg.DataplaneRuntime.OtelPipeEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
+			}
 
 			if cfg.DNS.ProxyPort != 0 {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)
@@ -225,6 +239,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
+
+			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
+				rootCtx.BootstrapDynamicMetadata[core_xds.FieldDynamicHostIP] = hostIP
+			}
+			discoveredEnv := otelenv.Discover(cfg.DataplaneRuntime.OtelPipeEnabled)
+			rootCtx.DiscoveredOtelEnv = discoveredEnv
+			rootCtx.BootstrapOtelEnv = &discoveredEnv.Inventory
 
 			return nil
 		},
@@ -259,17 +280,25 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			runLog.Info("fetching bootstrap configuration")
-			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.Features)
+			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata, rootCtx.BootstrapOtelEnv, rootCtx.Features)
 			if err != nil {
 				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
-			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+			adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			adminAddress := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
+			adminSocketPath := bootstrap.GetAdmin().GetAddress().GetPipe().GetPath()
+			if adminSocketPath != "" {
+				runLog.Info("received bootstrap configuration", "adminSocketPath", adminSocketPath)
+			} else {
+				runLog.Info("received bootstrap configuration", "adminPort", adminPort)
+			}
 
 			opts.BootstrapConfig, err = proto.ToYAML(bootstrap)
 			if err != nil {
 				return errors.Errorf("could not convert to yaml. %v", err)
 			}
-			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+			opts.AdminPort = adminPort
+			opts.AdminSocketPath = adminSocketPath
 
 			confFetcher := configfetcher.NewConfigFetcher(
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
@@ -336,18 +365,29 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				),
 			)
 
-			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
+			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher, rootCtx.DiscoveredOtelEnv)
 			if err != nil {
 				return err
 			}
 			components = append(components, observabilityComponents...)
 
+			readinessAddr := adminAddress
+			if readinessAddr == "" {
+				// When admin is on UDS, bind readiness reporter so K8s
+				// probes (podIP) and PostStart hooks (localhost) can
+				// reach /ready. Only /ready is served on this listener.
+				readinessAddr = "0.0.0.0"
+				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+					readinessAddr = "::"
+				}
+			}
 			readinessReporter := readiness.NewReporter(
 				cfg.Dataplane.ReadinessUnixSocketDisabled,
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				cfg.DataplaneRuntime.SocketDir,
-				bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
-				cfg.Dataplane.ReadinessPort)
+				readinessAddr,
+				cfg.Dataplane.ReadinessPort,
+				adminSocketPath)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
@@ -465,7 +505,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	return cmd
 }
 
-func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []metrics.ApplicationToScrape {
+func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32, envoyAdminSocketPath string) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
@@ -487,6 +527,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		Address:           "127.0.0.1",
 		Port:              envoyAdminPort,
 		IsIPv6:            false,
+		UnixSocketPath:    envoyAdminSocketPath,
 		QueryModifier:     metrics.AddPrometheusFormat,
 		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
 		MeshMetricMutator: metrics.AggregatedOtelMutator(),
@@ -501,8 +542,18 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
-func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
-	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+func setupObservability(
+	ctx context.Context,
+	kumaSidecarConfiguration *types.KumaSidecarConfiguration,
+	bootstrap *envoy_bootstrap_v3.Bootstrap,
+	cfg *kumadp.Config,
+	fetcher *configfetcher.ConfigFetcher,
+	discoveredOtelEnv otelenv.Config,
+) ([]component.Component, error) {
+	adminPort := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+	adminAddr := bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress()
+	adminSocketPath := bootstrap.GetAdmin().GetAddress().GetPipe().GetPath()
+	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, adminPort, adminSocketPath)
 
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
@@ -534,13 +585,63 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		metricsServer,
 		openTelemetryProducer,
 		kumaSidecarConfiguration.Networking.Address,
-		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
-		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+		adminPort,
+		adminAddr,
+		adminSocketPath,
 		cfg.Dataplane.DrainTime.Duration,
 	)
 	err := fetcher.AddHandler(meshmetric_dpapi.PATH, mm.OnChange)
 	if err != nil {
 		return nil, err
 	}
-	return []component.Component{accessLogStreamer, metricsServer, mm}, nil
+
+	otelManager := otelreceiver.NewManager(discoveredOtelEnv)
+	otelManager.SetOnReconcile(func(backends []core_xds.OtelPipeBackend) {
+		mm.OnOtelTargetsChange(metricsTargetsForBackends(backends, discoveredOtelEnv))
+	})
+	if err := fetcher.AddHandler(core_xds.OtelDynconfPath, otelManager.OnOtelChange); err != nil {
+		return nil, err
+	}
+
+	return []component.Component{accessLogStreamer, metricsServer, mm, otelManager}, nil
+}
+
+// metricsTargetsForBackends converts OtelPipeBackends into meshmetrics export
+// targets. The env-resolved runtime gates whether a backend is usable (e.g. an
+// env variable blocking the signal suppresses it), while the socket path and
+// refresh interval come from the CP-provided backend config.
+func metricsTargetsForBackends(
+	backends []core_xds.OtelPipeBackend,
+	discoveredOtelEnv otelenv.Config,
+) []meshmetrics.OtelExportTarget {
+	var targets []meshmetrics.OtelExportTarget
+	for _, backend := range backends {
+		runtime := discoveredOtelEnv.ResolveBackend(backend).Metrics
+		if !metricsRuntimeUsable(runtime) || backend.Metrics == nil {
+			continue
+		}
+
+		refreshInterval, err := time.ParseDuration(backend.Metrics.RefreshInterval)
+		if err != nil {
+			runLog.V(1).Info("invalid metrics refresh interval from CP, using default",
+				"backend", backend.Name, "value", backend.Metrics.RefreshInterval, "error", err)
+		}
+		refreshInterval = cmp.Or(refreshInterval, time.Minute)
+		targets = append(targets, meshmetrics.OtelExportTarget{
+			Name:            backend.Name,
+			SocketPath:      backend.SocketPath,
+			RefreshInterval: refreshInterval,
+		})
+	}
+	return targets
+}
+
+func metricsRuntimeUsable(runtime otelenv.SignalRuntime) bool {
+	if !runtime.Enabled || runtime.HasHardBlock() {
+		return false
+	}
+	if runtime.Transport.Protocol == "" || runtime.Transport.Endpoint == "" {
+		return false
+	}
+	return runtime.Transport.Protocol != core_xds.OtelProtocolHTTPProtobuf || runtime.HTTPPath != ""
 }

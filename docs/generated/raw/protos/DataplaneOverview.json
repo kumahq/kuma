@@ -509,6 +509,11 @@
                 "metadata": {
                     "additionalProperties": true,
                     "type": "object"
+                },
+                "openTelemetry": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry",
+                    "additionalProperties": true,
+                    "description": "Insights about OTel runtime resolution for this Dataplane."
                 }
             },
             "additionalProperties": true,
@@ -548,6 +553,78 @@
             "type": "object",
             "title": "MTLS",
             "description": "MTLS defines insights for mTLS"
+        },
+        "kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry": {
+            "properties": {
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.Backend"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Open Telemetry"
+        },
+        "kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.Backend": {
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "traces": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.Signal",
+                    "additionalProperties": true
+                },
+                "logs": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.Signal",
+                    "additionalProperties": true
+                },
+                "metrics": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.Signal",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Backend"
+        },
+        "kuma.mesh.v1alpha1.DataplaneInsight.OpenTelemetry.Signal": {
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "envAllowed": {
+                    "type": "boolean"
+                },
+                "envInputPresent": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "overrideKinds": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "missingFields": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "blockedReasons": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Signal"
         },
         "kuma.mesh.v1alpha1.DiscoveryServiceStats": {
             "properties": {

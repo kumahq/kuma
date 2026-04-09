@@ -18,6 +18,7 @@ dataplaneRuntime:
   dynamicConfiguration:
     refreshInterval: 1s
   metrics: {}
+  otelPipeEnabled: true
   resources: {}
   spire: {}
   strictInboundPortsEnabled: true

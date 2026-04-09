@@ -4,6 +4,7 @@ import (
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
@@ -27,10 +28,12 @@ type AggregateMetricsConfig struct {
 }
 
 type configParameters struct {
-	Id            string
-	Service       string
-	AdminAddress  string
-	AdminPort     uint32
+	Id              string
+	Service         string
+	AdminAddress    string
+	AdminPort       uint32
+	AdminSocketPath string
+
 	ReadinessPort uint32
 	// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 	//
@@ -91,4 +94,5 @@ type configParameters struct {
 	TransparentProxy     *tproxy_config.DataplaneConfig
 	IPv6Enabled          bool
 	SpireSocketPath      string
+	OtelEnvInventory     *core_xds.OtelBootstrapInventory
 }

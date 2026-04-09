@@ -3,6 +3,7 @@ package xds
 type OtelSignal string
 
 const (
+	OtelSignalShared  OtelSignal = "shared"
 	OtelSignalTraces  OtelSignal = "traces"
 	OtelSignalLogs    OtelSignal = "logs"
 	OtelSignalMetrics OtelSignal = "metrics"
@@ -35,6 +36,7 @@ type OtelBootstrapInventory struct {
 }
 
 type OtelSignalEnvInventory struct {
+	Signal                   OtelSignal   `json:"signal,omitempty"`
 	EndpointPresent          bool         `json:"endpointPresent,omitempty"`
 	EndpointParsedAsURL      bool         `json:"endpointParsedAsURL,omitempty"`
 	EndpointHasPath          bool         `json:"endpointHasPath,omitempty"`
@@ -49,6 +51,7 @@ type OtelSignalEnvInventory struct {
 	EffectiveProtocol        OtelProtocol `json:"effectiveProtocol,omitempty"`
 	EffectiveAuthMode        OtelAuthMode `json:"effectiveAuthMode,omitempty"`
 	OverrideKinds            []string     `json:"overrideKinds,omitempty"`
+	ValidationErrors         []string     `json:"validationErrors,omitempty"`
 }
 
 func (i *OtelBootstrapInventory) GetSignal(signal OtelSignal) *OtelSignalEnvInventory {
@@ -57,6 +60,8 @@ func (i *OtelBootstrapInventory) GetSignal(signal OtelSignal) *OtelSignalEnvInve
 	}
 
 	switch signal {
+	case OtelSignalShared:
+		return i.Shared
 	case OtelSignalTraces:
 		return i.Traces
 	case OtelSignalLogs:
@@ -66,6 +71,13 @@ func (i *OtelBootstrapInventory) GetSignal(signal OtelSignal) *OtelSignalEnvInve
 	default:
 		return nil
 	}
+}
+
+func (i *OtelSignalEnvInventory) GetValidationErrors() []string {
+	if i == nil {
+		return nil
+	}
+	return i.ValidationErrors
 }
 
 func (i *OtelSignalEnvInventory) HasAnyInput() bool {

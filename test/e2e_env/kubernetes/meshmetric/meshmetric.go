@@ -418,8 +418,8 @@ func MeshMetric() {
 			// metric from envoy and the sidecar
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
-			// check if workload attribute was added (KRI format with workload name from ServiceAccount)
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("kuma_workload=\"kri_wl_%s_default_%s_default_\"", mainMesh, namespace)))
+			// check if workload attribute was added (plain workload name from ServiceAccount)
+			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"default\""))
 		}).Should(Succeed())
 	})
 
@@ -439,9 +439,9 @@ func MeshMetric() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
-			g.Expect(stdout).To(ContainSubstring("envoy_cluster_upstream_cx_active"))        // from basic
-			g.Expect(stdout).To(ContainSubstring("envoy_cluster_default_total_match_count")) // from include
-			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_lb_healthy_panic")))     // from exclude
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_circuit_breakers_default_remaining_cx")) // from basic
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_default_total_match_count"))             // from include
+			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_lb_healthy_panic")))                 // from exclude
 		}).Should(Succeed())
 	})
 

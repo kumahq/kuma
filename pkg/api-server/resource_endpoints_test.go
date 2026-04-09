@@ -31,6 +31,20 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
+// errOnGetStore wraps a real store but returns getErr for Gets of the specified resource type.
+type errOnGetStore struct {
+	core_store.ResourceStore
+	getErr     error
+	getErrType model.ResourceType
+}
+
+func (s *errOnGetStore) Get(ctx context.Context, res model.Resource, opts ...core_store.GetOptionsFunc) error {
+	if s.getErr != nil && res.Descriptor().Name == s.getErrType {
+		return s.getErr
+	}
+	return s.ResourceStore.Get(ctx, res, opts...)
+}
+
 var _ = Describe("Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore core_store.ResourceStore
@@ -297,6 +311,44 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.EnvTag:              "universal",
 			mesh_proto.ProxyTypeLabel:      string(mesh_proto.SidecarLabel),
 		}))
+	})
+
+	It("should return 500 and not panic when store returns non-NotFound error on GET during PUT", func() {
+		// given: store that fails Gets for MeshTrafficPermission with a non-NotFound error
+		realStore := core_store.NewPaginationStore(memory.NewStore())
+		failingStore := &errOnGetStore{
+			ResourceStore: realStore,
+			getErr:        fmt.Errorf("connection refused"),
+			getErrType:    v1alpha1.MeshTrafficPermissionType,
+		}
+		apiServerWithErr, _, stopErr := StartApiServer(
+			NewTestApiServerConfigurer().
+				WithStore(failingStore).
+				WithDisableOriginLabelValidation(true),
+		)
+		defer stopErr()
+
+		// pre-create the mesh (Create goes to real store, Mesh Gets go to real store)
+		err := realStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when: PUT a MeshTrafficPermission - Get will fail with non-NotFound error
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-err",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err := put(apiServerWithErr.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-err", res)
+
+		// then: returns an error response, does not panic
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
 
 	It("should compute labels on update of the resource", func() {

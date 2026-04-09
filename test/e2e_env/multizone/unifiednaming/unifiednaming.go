@@ -173,9 +173,8 @@ func assertUnifiedNamingFlag(zone *K8sCluster, unifiedNaming bool, apps ...strin
 		app := apps[i]
 
 		spec := portforward.Spec{
-			AppName:    app,
-			Namespace:  namespace,
-			RemotePort: 9901,
+			AppName:   app,
+			Namespace: namespace,
 		}
 
 		wg.Go(func() {

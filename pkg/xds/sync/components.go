@@ -7,6 +7,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
+	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 )
 
 var xdsServerLog = core.Log.WithName("xds").WithName("server")
@@ -52,6 +53,7 @@ func DefaultDataplaneWatchdogFactory(
 	egressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
 	envoyCpCtx *xds_context.ControlPlaneContext,
+	otelStatusCache *otelstatus.Cache,
 	apiVersion core_xds.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
 	config := rt.Config()
@@ -78,6 +80,7 @@ func DefaultDataplaneWatchdogFactory(
 		EnvoyCpCtx:            envoyCpCtx,
 		MeshCache:             rt.MeshCache(),
 		ResManager:            rt.ReadOnlyResourceManager(),
+		OtelStatusCache:       otelStatusCache,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

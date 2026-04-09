@@ -31,12 +31,12 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 89bcddd53f040cae9ccc6dcb3878ee69524f674bc086e828f8a4ab0fc13ee3c1
+                      exact: f84e17aa54f894d3b7107011370e30863f4c3dde56bce64ef24df1c713f92a33
                   path: /meshmetric
                 name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma.workload":"kri_wl_default_zone-1_kuma-demo_backend_"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma.workload":"backend","mesh":"default","zone":"zone-1"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -44,7 +44,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 89bcddd53f040cae9ccc6dcb3878ee69524f674bc086e828f8a4ab0fc13ee3c1
+                    value: f84e17aa54f894d3b7107011370e30863f4c3dde56bce64ef24df1c713f92a33
           statPrefix: system_dynamicconfig
     name: system_dynamicconfig
     statPrefix: system_dynamicconfig

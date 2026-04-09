@@ -20,6 +20,7 @@ import (
 	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 )
 
 type DataplaneWatchdogDependencies struct {
@@ -32,6 +33,7 @@ type DataplaneWatchdogDependencies struct {
 	EnvoyCpCtx            *xds_context.ControlPlaneContext
 	MeshCache             *mesh.Cache
 	ResManager            core_manager.ReadOnlyResourceManager
+	OtelStatusCache       *otelstatus.Cache
 }
 
 type Status string
@@ -96,6 +98,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
 		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
+		d.OtelStatusCache.Set(d.key, nil)
 		return d.DataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.IngressReconciler.Clear(&proxyID)
@@ -199,6 +202,14 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	}
 	d.lastHash = meshCtx.Hash
 	d.lastIdentityHash = identityHash
+
+	if d.OtelStatusCache != nil {
+		if proxy.OtelPipeBackends == nil || proxy.OtelPipeBackends.Empty() {
+			d.OtelStatusCache.Set(d.key, nil)
+		} else {
+			d.OtelStatusCache.Set(d.key, otelstatus.Build(proxy.OtelPipeBackends.All()))
+		}
+	}
 
 	if changed {
 		result.Status = ChangedStatus

@@ -220,33 +220,31 @@ func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
 
 			tnl.Close()
 
-			delete(c.portForwards, spec)
+			delete(c.portForwards, fwdSpec)
 		}
 
 		for tnlSpec := range c.adminTunnels {
 			if tnlSpec.Matches(spec) {
-				delete(c.adminTunnels, spec)
+				delete(c.adminTunnels, tnlSpec)
 			}
 		}
 	}
 }
 
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneEgressApp,
-		Namespace: Config.KumaNamespace,
-	})
-	if err != nil {
-		c.t.Fatal(err)
-	}
-
-	return tnl
+	return c.GetEnvoyAdminTunnel(Config.ZoneEgressApp, Config.KumaNamespace)
 }
 
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	return c.GetEnvoyAdminTunnel(Config.ZoneIngressApp, Config.KumaNamespace)
+}
+
+// GetEnvoyAdminTunnel creates or returns an Envoy admin tunnel for any named
+// app in a given namespace.
+func (c *K8sCluster) GetEnvoyAdminTunnel(appName, namespace string) envoy_admin.Tunnel {
 	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneIngressApp,
-		Namespace: Config.KumaNamespace,
+		AppName:   appName,
+		Namespace: namespace,
 	})
 	if err != nil {
 		c.t.Fatal(err)
@@ -523,6 +521,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	for k, v := range c.opts.env {
 		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	for k, v := range c.opts.helmOpts {
+		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, k, v))
 	}
 
 	if c.opts.yamlConfig != "" {

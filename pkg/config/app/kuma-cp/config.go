@@ -50,10 +50,17 @@ type Defaults struct {
 type Metrics struct {
 	config.BaseConfig
 
-	Dataplane    *DataplaneMetrics    `json:"dataplane"`
-	Zone         *ZoneMetrics         `json:"zone"`
-	Mesh         *MeshMetrics         `json:"mesh"`
-	ControlPlane *ControlPlaneMetrics `json:"controlPlane"`
+	Dataplane     *DataplaneMetrics     `json:"dataplane"`
+	Zone          *ZoneMetrics          `json:"zone"`
+	Mesh          *MeshMetrics          `json:"mesh"`
+	ControlPlane  *ControlPlaneMetrics  `json:"controlPlane"`
+	OpenTelemetry *MetricsOpenTelemetry `json:"openTelemetry"`
+}
+
+// MetricsOpenTelemetry configures CP metrics push via OTLP.
+type MetricsOpenTelemetry struct {
+	// If true, CP metrics will be pushed via OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set.
+	Enabled bool `json:"enabled" envconfig:"kuma_metrics_opentelemetry_enabled"`
 }
 
 func (m *Metrics) Validate() error {
@@ -211,7 +218,7 @@ func (c *Config) Sanitize() {
 }
 
 func (c *Config) PostProcess() error {
-	return multierr.Combine(
+	if err := multierr.Combine(
 		c.General.PostProcess(),
 		c.Store.PostProcess(),
 		c.BootstrapServer.PostProcess(),
@@ -225,7 +232,14 @@ func (c *Config) PostProcess() error {
 		c.Multizone.PostProcess(),
 		c.Diagnostics.PostProcess(),
 		c.Policies.PostProcess(),
-	)
+		c.DpServer.PostProcess(),
+	); err != nil {
+		return err
+	}
+	if c.Store.Type == store.KubernetesStore {
+		c.DpServer.Authn.EnableReloadableTokens = true
+	}
+	return nil
 }
 
 var DefaultConfig = func() Config {
@@ -256,6 +270,9 @@ var DefaultConfig = func() Config {
 			},
 			ControlPlane: &ControlPlaneMetrics{
 				ReportResourcesCount: true,
+			},
+			OpenTelemetry: &MetricsOpenTelemetry{
+				Enabled: true,
 			},
 		},
 		Reports: &Reports{
@@ -549,6 +566,13 @@ func (c Config) GetEnvoyAdminPort() uint32 {
 		return 0
 	}
 	return c.BootstrapServer.Params.AdminPort
+}
+
+func (c Config) GetEnvoyReadinessPort() uint32 {
+	if c.BootstrapServer == nil || c.BootstrapServer.Params == nil {
+		return 0
+	}
+	return c.BootstrapServer.Params.ReadinessPort
 }
 
 type MeshMultiZoneServiceIPAM struct {

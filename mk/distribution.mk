@@ -1,5 +1,7 @@
 DISTRIBUTION_LICENSE_PATH ?= tools/releases/templates
 DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
+DISTRIBUTION_EXTRA_DIRS ?= dashboards
+DISTRIBUTION_EXTRA_FILES ?= UPGRADE.md
 # A list of all distributions
 # OS:ARCH:COREDNS:ENVOY_FLAVOUR
 # COREDNS is always coredns(CORDNS_EXT)
@@ -31,7 +33,8 @@ build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-
 	command cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
 	command cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
 	command cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
-	command cp -r dashboards $$@/
+	$(foreach dir,$(DISTRIBUTION_EXTRA_DIRS),command cp -r $(dir) $$@/ &&) true
+	$(foreach file,$(DISTRIBUTION_EXTRA_FILES),command cp $(file) $$@/ &&) true
 # CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly just coredns)
 ifneq ($(3),skip)
 	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))

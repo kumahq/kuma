@@ -88,6 +88,10 @@ bootstrapServer:
     adminAddress: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS
     # Port of Envoy Admin
     adminPort: 9901 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
+    # If true, Envoy admin API binds to a Unix domain socket instead of TCP
+    envoyAdminUnixSocket: true # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
+    # Port for the readiness reporter when admin uses Unix domain socket
+    readinessPort: 9902 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
     # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
@@ -98,6 +102,8 @@ bootstrapServer:
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
+  # Whether the MADS server is enabled
+  enabled: true # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
   port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT
   # Which MADS API versions to serve
@@ -481,6 +487,9 @@ metrics:
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
+  openTelemetry:
+    # If true, CP metrics will be pushed via OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set
+    enabled: true # ENV: KUMA_METRICS_OPENTELEMETRY_ENABLED
 # Reports configuration
 reports:
   # If true then usage stats will be reported

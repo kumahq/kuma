@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -109,5 +110,17 @@ var _ = Describe("Detect mergable clusters", func() {
 		name, ok := isMergeableClusterName("foo-service")
 		Expect(ok).To(BeFalse())
 		Expect(name).To(BeEmpty())
+	})
+})
+
+var _ = Describe("UTF-8 metrics validation", func() {
+	const utf8Input = `# HELP "http.server.duration" HTTP server request duration
+# TYPE "http.server.duration" gauge
+{"http.server.duration"} 1.0
+`
+	It("should parse UTF-8 metric names", func() {
+		actual := new(bytes.Buffer)
+		err := AggregatedMetricsMutator()(strings.NewReader(utf8Input), actual)
+		Expect(err).ToNot(HaveOccurred())
 	})
 })

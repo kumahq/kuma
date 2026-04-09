@@ -17,10 +17,12 @@ import (
 	"github.com/pkg/errors"
 
 	command_utils "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/command"
+	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/util/files"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
@@ -28,13 +30,14 @@ import (
 var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 
 type BootstrapClient interface {
-	Fetch(ctx context.Context, opts Opts, metadata map[string]string, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
+	Fetch(ctx context.Context, opts Opts, metadata map[string]string, otelEnv *core_xds.OtelBootstrapInventory, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
 }
 
 type Opts struct {
 	Config          kuma_dp.Config
 	BootstrapConfig []byte
 	AdminPort       uint32
+	AdminSocketPath string
 	Dataplane       rest.Resource
 	Stdout          io.Writer
 	Stderr          io.Writer
@@ -161,36 +164,34 @@ func (e *Envoy) WaitForDone() {
 	e.wg.Wait()
 }
 
-func (e *Envoy) FailHealthchecks() error {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), http.NoBody)
+func (e *Envoy) adminPost(path string) error {
+	client := httpclient.NewTCPOrUDS(e.opts.AdminSocketPath, 5*time.Second, 10*time.Second)
+	baseURL := fmt.Sprintf("http://127.0.0.1:%d", e.opts.AdminPort)
+	if e.opts.AdminSocketPath != "" {
+		baseURL = "http://localhost"
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, baseURL+path, http.NoBody)
 	if err != nil {
 		return err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return errors.Errorf("expected 200 status code, got %d", resp.StatusCode)
 	}
 	return nil
 }
 
+func (e *Envoy) FailHealthchecks() error {
+	return e.adminPost("/healthcheck/fail")
+}
+
 func (e *Envoy) DrainForever() error {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/drain_listeners?inboundonly&graceful&skip_exit", e.opts.AdminPort), http.NoBody)
-	if err != nil {
-		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return errors.Errorf("expected 200 status code, got %d", resp.StatusCode)
-	}
-	return nil
+	return e.adminPost("/drain_listeners?inboundonly&graceful&skip_exit")
 }
 
 func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {

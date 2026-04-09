@@ -106,7 +106,7 @@ function release {
   local CHART_TAR
   CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
   local CHART_FILE
-  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep -E '^[^/]+/Chart\.yaml$' | head -n 1)
   local CHART_VERSION
   CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
@@ -126,6 +126,7 @@ function release {
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
+    --skip-existing \
     --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "../${CHARTS_PACKAGE_PATH}"
 
@@ -133,6 +134,8 @@ function release {
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
+    --token "${GH_TOKEN}" \
+    --release-name-template "${RELEASE_NAME_TEMPLATE}" \
     --package-path "../${CHARTS_PACKAGE_PATH}" \
     --index-path "${CHARTS_INDEX_FILE}"
 

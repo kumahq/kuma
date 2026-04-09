@@ -58,10 +58,11 @@ var _ = Describe("Token issuer", func() {
 	var store core_store.ResourceStore
 	var signingKeyManager tokens.SigningKeyManager
 
-	now := time.Now()
+	var now time.Time
 	var ctx context.Context
 
 	BeforeEach(func() {
+		now = time.Now()
 		ctx = context.Background()
 		core.Now = func() time.Time {
 			return now
@@ -130,6 +131,21 @@ var _ = Describe("Token issuer", func() {
 			// and new token is valid because new signing key is present
 			err = validator.ParseWithValidation(ctx, token2, id)
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return clear error when valid_from is in the future", func() {
+			// given
+			id := &TestClaims{}
+			token, err := issuer.Generate(ctx, id, time.Minute)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when time is moved back so the token's nbf is in the future
+			now = now.Add(-time.Hour)
+			err = validator.ParseWithValidation(ctx, token, id)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("valid_from"))
 		})
 
 		It("should validate out expired tokens", func() {

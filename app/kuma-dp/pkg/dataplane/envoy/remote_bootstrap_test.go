@@ -18,6 +18,7 @@ import (
 	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
@@ -72,6 +73,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			context.Background(),
 			given.optsBuilder.cpURL(server.URL).build(),
 			given.metadata,
+			nil,
 			given.features,
 		)
 
@@ -166,7 +168,8 @@ var _ = Describe("Remote Bootstrap", func() {
 		// when
 		bootstrap, kumaSidecarConfiguration, err := bootstrapClient.Fetch(
 			context.Background(),
-			newOptsBuilder().token("").cpURL(server.URL).build(),
+			newOptsBuilder().token().cpURL(server.URL).build(),
+			nil,
 			nil,
 			nil,
 		)
@@ -186,6 +189,59 @@ var _ = Describe("Remote Bootstrap", func() {
 			Port:    12345,
 			Path:    "/stats/2",
 		}))
+	})
+
+	It("should include OTEL env inventory in bootstrap request", func() {
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+		defer server.Close()
+
+		inventory := &core_xds.OtelBootstrapInventory{
+			PipeEnabled: true,
+			Shared: &core_xds.OtelSignalEnvInventory{
+				EndpointPresent:   true,
+				HeadersPresent:    true,
+				EffectiveProtocol: core_xds.OtelProtocolHTTPProtobuf,
+				EffectiveAuthMode: core_xds.OtelAuthModeHeaders,
+			},
+			Traces: &core_xds.OtelSignalEnvInventory{
+				OverrideKinds: []string{"endpoint"},
+			},
+		}
+
+		mux.HandleFunc("/bootstrap", func(writer http.ResponseWriter, req *http.Request) {
+			defer GinkgoRecover()
+
+			var request types.BootstrapRequest
+			Expect(json.NewDecoder(req.Body).Decode(&request)).To(Succeed())
+			Expect(request.OtelEnv).ToNot(BeNil())
+			Expect(request.OtelEnv.PipeEnabled).To(BeTrue())
+			Expect(request.OtelEnv.Shared).ToNot(BeNil())
+			Expect(request.OtelEnv.Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
+			Expect(request.OtelEnv.Traces).ToNot(BeNil())
+			Expect(request.OtelEnv.Traces.OverrideKinds).To(ConsistOf("endpoint"))
+
+			bootstrap, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.response.yaml"))
+			Expect(err).ToNot(HaveOccurred())
+			response := &types.BootstrapResponse{Bootstrap: bootstrap}
+			responseBytes, err := json.Marshal(response)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = writer.Write(responseBytes)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		bootstrapClient := NewRemoteBootstrapClient("linux")
+
+		bootstrap, _, err := bootstrapClient.Fetch(
+			context.Background(),
+			newOptsBuilder().token().cpURL(server.URL).build(),
+			nil,
+			inventory,
+			nil,
+		)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bootstrap).ToNot(BeNil())
 	})
 
 	It("should retry when DP is not found", func() {
@@ -221,10 +277,11 @@ var _ = Describe("Remote Bootstrap", func() {
 			newOptsBuilder().
 				mesh("default").
 				name("dp-1").
-				token("").
+				token().
 				retryBackoff(10*time.Millisecond).
 				cpURL(server.URL).
 				build(),
+			nil,
 			nil,
 			nil,
 		)
@@ -253,10 +310,11 @@ var _ = Describe("Remote Bootstrap", func() {
 			newOptsBuilder().
 				mesh("default").
 				name("dp-1").
-				token("").
+				token().
 				retryBackoff(10*time.Millisecond).
 				maxDuration(100*time.Millisecond).
 				cpURL(server.URL).build(),
+			nil,
 			nil,
 			nil,
 		)
@@ -278,8 +336,8 @@ func (b optsBuilder) name(name string) optsBuilder {
 	return b
 }
 
-func (b optsBuilder) token(token string) optsBuilder {
-	b.Config.DataplaneRuntime.Token = token
+func (b optsBuilder) token() optsBuilder {
+	b.Config.DataplaneRuntime.Token = ""
 	return b
 }
 
