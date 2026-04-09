@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/modifications"
 	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/v2/pkg/xds/template"
 )
@@ -29,6 +30,7 @@ type reconciler struct {
 	generator      snapshotGenerator
 	cacher         snapshotCacher
 	statsCallbacks util_xds.StatsCallbacks
+	metrics        *xds_metrics.Metrics
 }
 
 func (r *reconciler) Clear(proxyId *model.ProxyId) error {
@@ -98,6 +100,28 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 
 	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
 		return false, errors.Wrap(err, "failed to store snapshot")
+	}
+
+	if r.metrics != nil {
+		resourceTypeNames := [envoy_types.UnknownType]string{
+			envoy_types.Endpoint:        "Endpoint",
+			envoy_types.Cluster:         "Cluster",
+			envoy_types.Route:           "Route",
+			envoy_types.ScopedRoute:     "ScopedRoute",
+			envoy_types.VirtualHost:     "VirtualHost",
+			envoy_types.Listener:        "Listener",
+			envoy_types.Secret:          "Secret",
+			envoy_types.Runtime:         "Runtime",
+			envoy_types.ExtensionConfig: "ExtensionConfig",
+			envoy_types.RateLimitConfig: "RateLimitConfig",
+		}
+		for i, resources := range snapshot.Resources {
+			name := resourceTypeNames[i]
+			if name == "" || len(resources.Items) == 0 {
+				continue
+			}
+			r.metrics.SnapshotResourcesTotal.WithLabelValues(name).Observe(float64(len(resources.Items)))
+		}
 	}
 
 	for _, version := range changed {

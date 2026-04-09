@@ -14,8 +14,10 @@ const (
 )
 
 type Metrics struct {
-	KdsGenerations      *prometheus.HistogramVec
-	KdsGenerationErrors prometheus.Counter
+	KdsGenerations           *prometheus.HistogramVec
+	KdsGenerationErrors      prometheus.Counter
+	KdsZoneActiveConnections *prometheus.GaugeVec
+	KdsNackTotal             *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -29,12 +31,24 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Name: "kds_delta_generation_errors",
 	})
 
-	if err := metrics.BulkRegister(kdsGenerations, kdsGenerationsErrors); err != nil {
+	kdsZoneActiveConnections := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "kds_zone_active_connections",
+		Help: "Number of active KDS streams per zone.",
+	}, []string{"zone_name"})
+
+	kdsNackTotal := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "kds_nack_total",
+		Help: "Total KDS NACKs sent by zone and resource type.",
+	}, []string{"zone_name", "resource_type"})
+
+	if err := metrics.BulkRegister(kdsGenerations, kdsGenerationsErrors, kdsZoneActiveConnections, kdsNackTotal); err != nil {
 		return nil, err
 	}
 
 	return &Metrics{
-		KdsGenerations:      kdsGenerations,
-		KdsGenerationErrors: kdsGenerationsErrors,
+		KdsGenerations:           kdsGenerations,
+		KdsGenerationErrors:      kdsGenerationsErrors,
+		KdsZoneActiveConnections: kdsZoneActiveConnections,
+		KdsNackTotal:             kdsNackTotal,
 	}, nil
 }
