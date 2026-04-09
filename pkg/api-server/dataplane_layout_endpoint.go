@@ -131,6 +131,7 @@ func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, me
 	ctx := request.Request.Context()
 	identities := &meshidentity_api.MeshIdentityResourceList{}
 	if err := dle.resManager.List(ctx, identities, store.ListByMesh(meshName)); err != nil {
+		log.V(1).Info("could not list MeshIdentity resources", "mesh", meshName, "err", err)
 		return nil
 	}
 	identity, ok := meshidentity_api.BestMatched(dataplane.GetMeta().GetLabels(), identities.Items)
@@ -139,10 +140,12 @@ func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, me
 	}
 	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), dle.zone)
 	if err != nil {
+		log.V(1).Info("could not get trust domain", "mesh", meshName, "dataplane", dataplane.GetMeta().GetName(), "err", err)
 		return nil
 	}
 	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, dataplane.GetMeta(), dle.environment)
 	if err != nil {
+		log.V(1).Info("could not compute SPIFFE ID", "mesh", meshName, "dataplane", dataplane.GetMeta().GetName(), "err", err)
 		return nil
 	}
 	return &spiffeID
