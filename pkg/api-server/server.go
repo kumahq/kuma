@@ -272,7 +272,7 @@ func addResourcesEndpoints(
 	}
 	globalInsightEndpoint.addEndpoint(ws)
 
-	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess).addEndpoint(ws)
+	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc

@@ -165,7 +165,7 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 	if ok := kubeCache.WaitForCacheSync(appCtx); !ok {
 		// ControllerManager ignores case when WaitForCacheSync returns false.
 		// It might be a better idea to return an error and stop the Control Plane altogether, but sticking to return error for now.
-		core.Log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
+		log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
 	}
 
 	return kube_client.New(config, kube_client.Options{
