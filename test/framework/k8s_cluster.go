@@ -424,7 +424,15 @@ func (c *K8sCluster) installCRDs() error {
 	if err != nil {
 		return err
 	}
-	if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), crds); err != nil {
+	crdFile, err := k8s.StoreConfigToTempFileE(c.t, crds)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(crdFile)
+	// --server-side --force-conflicts handles CRDs left over from a previous
+	// suite that were created without the last-applied-configuration annotation.
+	if err := k8s.RunKubectlE(c.t, c.GetKubectlOptions(),
+		"apply", "--server-side", "--force-conflicts", "-f", crdFile); err != nil {
 		return err
 	}
 
@@ -698,6 +706,15 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
+	if c.opts.kumaInitNoCPULimit {
+		const patchName = "kuma-init-no-cpu-limit"
+		if existing, ok := c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"]; ok {
+			c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"] = existing + "," + patchName
+		} else {
+			c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"] = patchName
+		}
+	}
+
 	var err error
 	switch c.opts.installationMode {
 	case KumactlInstallationMode:
@@ -719,6 +736,24 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
 		return errors.Wrap(err, "Kuma control-plane failed to start")
+	}
+
+	if c.opts.kumaInitNoCPULimit {
+		const patchName = "kuma-init-no-cpu-limit"
+		patch := fmt.Sprintf(`apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  namespace: %s
+  name: %s
+spec:
+  initPatch:
+    - op: remove
+      path: /resources/limits/cpu
+    - op: remove
+      path: /resources/limits/memory`, Config.KumaNamespace, patchName)
+		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), patch); err != nil {
+			return errors.Wrap(err, "failed to apply kuma-init-no-cpu-limit ContainerPatch")
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -1088,13 +1123,31 @@ func (c *K8sCluster) deleteCRDs() error {
 	if err != nil {
 		return err
 	}
-	deleteCmd := []string{"delete"}
+
+	var kumaCRDs []string
 	for l := range strings.SplitSeq(out, "\n") {
 		if strings.Contains(l, "kuma.io") {
-			deleteCmd = append(deleteCmd, l)
+			kumaCRDs = append(kumaCRDs, l)
 		}
 	}
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), deleteCmd...)
+	if len(kumaCRDs) == 0 {
+		return nil
+	}
+
+	if err := k8s.RunKubectlE(
+		c.GetTesting(),
+		c.GetKubectlOptions(),
+		slices.Concat([]string{"delete"}, kumaCRDs)...,
+	); err != nil {
+		return err
+	}
+
+	// Wait for CRDs to be fully removed so the next suite can install cleanly
+	return k8s.RunKubectlE(
+		c.GetTesting(),
+		c.GetKubectlOptions(),
+		slices.Concat([]string{"wait", "--for=delete", "--timeout=60s"}, kumaCRDs)...,
+	)
 }
 
 func (c *K8sCluster) deleteKumaViaHelm() error {
@@ -1144,7 +1197,11 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 
 	_ = k8s.KubectlDeleteFromStringE(c.t, c.GetKubectlOptions(), yaml)
 
-	return WaitNamespaceDelete(c, Config.KumaNamespace)
+	if err := WaitNamespaceDelete(c, Config.KumaNamespace); err != nil {
+		return err
+	}
+
+	return c.deleteCRDs()
 }
 
 func (c *K8sCluster) DeleteKuma() error {

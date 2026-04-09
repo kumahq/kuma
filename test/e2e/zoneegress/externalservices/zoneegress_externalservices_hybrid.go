@@ -3,6 +3,7 @@ package externalservices
 import (
 	"fmt"
 	"net"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -77,15 +78,16 @@ conf:
           wait_for_warm_on_init: false
 `
 
-	var global, zone1 Cluster
+	var global Cluster
+	var zone1 *K8sCluster
 	var zone4 *UniversalCluster
 
 	BeforeAll(func() {
 		// Global
-		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
+		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent).WithRetries(90).WithTimeout(6 * time.Second)
 
 		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Global)).
+			Install(E2EKuma(config_core.Global)).
 			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "true", "true"))).
 			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
 			Install(YamlUniversal(ptWaitForWarmOnInit)).
@@ -97,9 +99,9 @@ conf:
 		group := errgroup.Group{}
 
 		// K8s Cluster 1
-		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*K8sCluster)
 		NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh)),
@@ -112,9 +114,9 @@ conf:
 			SetupInGroup(zone1, &group)
 
 		// Universal Cluster 4
-		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
+		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*UniversalCluster)
 		NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
 			Install(Parallel(
 				DemoClientUniversal(
@@ -129,6 +131,7 @@ conf:
 						WithoutDataplane(),
 						WithVerbose())
 				},
+				TestServerExternalServiceUniversal("external-service-in-zone1", 8080, false),
 				TestServerUniversal("test-server", nonDefaultMesh,
 					WithArgs([]string{"echo", "--instance", "test-server"}),
 					WithTransparentProxy(true),

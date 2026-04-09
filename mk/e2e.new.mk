@@ -24,7 +24,7 @@ endif
 
 # We don't use `go list` here because Ginkgo requires disk path names,
 # not Go packages names.
-TEST_NAMES = $(shell ls -1 ./test/e2e)
+TEST_NAMES = $(patsubst ./test/e2e/%/,%,$(wildcard ./test/e2e/*/))
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
 KUBE_E2E_PKG_LIST ?= ./test/e2e_env/kubernetes
@@ -87,6 +87,7 @@ E2E_ENV_VARS += K8SCLUSTERS="$(K8SCLUSTERS)"
 endif
 E2E_ENV_VARS += KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl
 E2E_ENV_VARS += PATH=$(CI_TOOLS_BIN_DIR):$$PATH
+E2E_ENV_VARS += KUMA_DUMP_DIR=$(abspath $(REPORTS_DIR)/e2e-debug)
 .PHONY: test/e2e/list
 test/e2e/list:
 	@echo $(ALL_TESTS)
@@ -123,12 +124,17 @@ test/e2e/debug-universal:
 
 .PHONY: test/e2e
 test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slower as they start and stop Kuma for each tests). Use DEBUG=1 to more easily find issues
+	@# Can't use --fail-on-empty here: test/e2e runs multiple suites with
+	@# --label-filter and suites that have no specs for a given label (e.g.
+	@# skipinboundtags on job-0) would fail even though that's expected.
+	@# Instead, validate the package list so we don't accidentally run the
+	@# wrong packages (like KUBE_E2E_PKG_LIST) for another year.
+	@echo '$(E2E_PKG_LIST)' | grep -q '\./test/e2e/' || \
+		{ echo "ERROR: E2E_PKG_LIST does not contain ./test/e2e/ packages: $(E2E_PKG_LIST)"; exit 1; }
 	$(MAKE) docker/tag
-	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
-	$(MAKE) test/e2e/k8s/wait/kuma-1
-	$(MAKE) test/e2e/k8s/load/images/kuma-1
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
-	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
+	$(MAKE) test/e2e/k8s/start
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-kubernetes
 test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e2e tests. Use DEBUG=1 to more easily find issues

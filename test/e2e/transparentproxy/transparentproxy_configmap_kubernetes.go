@@ -30,7 +30,7 @@ func TransparentProxyConfigMap() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		Eventually(func() error {
-			return cluster.Install(Kuma(
+			return cluster.Install(E2EKuma(
 				config_core.Zone,
 				WithCtlOpts(map[string]string{
 					"--set": fmt.Sprintf("%stransparentProxy.configMap.enabled=true", Config.HelmSubChartPrefix),
