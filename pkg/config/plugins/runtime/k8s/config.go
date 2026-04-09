@@ -57,7 +57,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 							Memory: "64Mi",
 						},
 						Limits: SidecarResourceLimits{
-							CPU:    "1000m",
+							CPU:    "0",
 							Memory: "512Mi",
 						},
 					},
@@ -66,6 +66,16 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			ContainerPatches: []string{},
 			InitContainer: InitContainer{
 				Image: "kuma/kuma-init:latest",
+				Resources: InitContainerResources{
+					Requests: InitContainerResourceRequests{
+						CPU:    "20m",
+						Memory: "20Mi",
+					},
+					Limits: InitContainerResourceLimits{
+						CPU:    "0",
+						Memory: "50Mi",
+					},
+				},
 			},
 			SidecarTraffic: SidecarTraffic{
 				ExcludeInboundPorts:  []uint32{},
@@ -395,6 +405,36 @@ type InitContainer struct {
 
 	// Image name.
 	Image string `json:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
+	// Compute resource requirements.
+	Resources InitContainerResources `json:"resources,omitempty"`
+}
+
+// InitContainerResources defines compute resource requirements for the init container.
+type InitContainerResources struct {
+	// Minimum amount of compute resources required.
+	Requests InitContainerResourceRequests `json:"requests,omitempty"`
+	// Maximum amount of compute resources allowed.
+	Limits InitContainerResourceLimits `json:"limits,omitempty"`
+}
+
+// InitContainerResourceRequests defines the minimum amount of compute resources required.
+type InitContainerResourceRequests struct {
+	config.BaseConfig
+
+	// CPU, in cores. (500m = .5 cores)
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_init_container_resources_requests_cpu"`
+	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_init_container_resources_requests_memory"`
+}
+
+// InitContainerResourceLimits defines the maximum amount of compute resources allowed.
+type InitContainerResourceLimits struct {
+	config.BaseConfig
+
+	// CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_init_container_resources_limits_cpu"`
+	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_init_container_resources_limits_memory"`
 }
 
 type BuiltinDNS struct {
@@ -555,10 +595,92 @@ func (c *SidecarContainer) Validate() error {
 
 var _ config.Config = &InitContainer{}
 
+func (c *InitContainer) Sanitize() {
+	c.Resources.Sanitize()
+}
+
+func (c *InitContainer) PostProcess() error {
+	return c.Resources.PostProcess()
+}
+
 func (c *InitContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+	}
+	if err := c.Resources.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Resources is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &InitContainerResources{}
+
+func (c *InitContainerResources) Sanitize() {
+	c.Limits.Sanitize()
+	c.Requests.Sanitize()
+}
+
+func (c *InitContainerResources) PostProcess() error {
+	return multierr.Combine(
+		c.Limits.PostProcess(),
+		c.Requests.PostProcess(),
+	)
+}
+
+func (c *InitContainerResources) Validate() error {
+	var errs error
+	if err := c.Requests.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Requests is not valid"))
+	}
+	if err := c.Limits.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Limits is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &InitContainerResourceRequests{}
+
+func (c *InitContainerResourceRequests) PostProcess() error {
+	if c.CPU == "" {
+		c.CPU = "20m"
+	}
+	if c.Memory == "" {
+		c.Memory = "20Mi"
+	}
+	return c.BaseConfig.PostProcess()
+}
+
+func (c *InitContainerResourceRequests) Validate() error {
+	var errs error
+	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+	}
+	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &InitContainerResourceLimits{}
+
+func (c *InitContainerResourceLimits) PostProcess() error {
+	if c.CPU == "" {
+		c.CPU = "0"
+	}
+	if c.Memory == "" {
+		c.Memory = "50Mi"
+	}
+	return c.BaseConfig.PostProcess()
+}
+
+func (c *InitContainerResourceLimits) Validate() error {
+	var errs error
+	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+	}
+	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
 	}
 	return errs
 }

@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma
+  name: kuma-system
   labels:
     kuma.io/sidecar-injection: "false"
 ---
@@ -11,7 +11,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -21,7 +21,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -292,7 +292,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma
+    namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -309,13 +309,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma
+    namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -389,7 +389,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -401,13 +401,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma
+    namespace: kuma-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-ctrl-plane
-  namespace: kuma
+  name: kuma-control-plane
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -446,7 +446,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -468,8 +468,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: e89d26010d35fe840d1d25797c72b5a89d520dec24a8e9ce5ab9ff7c60b67193
+        checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
+        checksum/tls-secrets: f682bf0be13a5363a8fe433d046be85b64bbd62026cabcead33f236e51de8fa0
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -510,19 +510,13 @@ spec:
       
       containers:
         - name: control-plane
-          image: "kuma-ci/kuma-cp:greatest"
-          imagePullPolicy: Never
+          image: "docker.io/kumahq/kuma-cp:0.0.1"
+          imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
-            - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-              value: "/var/run/secrets/kuma.io/api-server-client-certs/"
-            - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
-              value: "/var/run/secrets/kuma.io/api-server-tls-cert/tls.crt"
-            - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
-              value: "/var/run/secrets/kuma.io/api-server-tls-cert/tls.key"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
@@ -538,33 +532,27 @@ spec:
             - name: KUMA_GENERAL_TLS_KEY_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: "kuma-ci/kuma-init:greatest"
+              value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
-              value: "0"
+              value: "200m"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
-              value: "50Mi"
-            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
-              value: "20m"
-            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
-              value: "20Mi"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
-              value: "0"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
-              value: "512Mi"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
-              value: "50m"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
               value: "64Mi"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "50m"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "32Mi"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
+              value: "500m"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
+              value: "256Mi"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "100m"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "128Mi"
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
               value: "true"
-            - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
-              value: "grpc://192.168.0.1:5685"
-            - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
-              value: "/var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt"
-            - name: KUMA_MULTIZONE_ZONE_NAME
-              value: "zone-1"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
@@ -572,17 +560,17 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
-              value: "system:serviceaccount:kuma:kuma-control-plane"
+              value: "system:serviceaccount:kuma-system:kuma-control-plane"
             - name: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
-              value: "kuma-ctrl-plane"
+              value: "kuma-control-plane"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: "kuma-ci/kuma-dp:greatest"
+              value: "docker.io/kumahq/kuma-dp:0.0.1"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-              value: "kuma"
+              value: "kuma-system"
             - name: KUMA_STORE_TYPE
               value: "kubernetes"
             - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
@@ -640,21 +628,12 @@ spec:
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.key
               subPath: tls.key
               readOnly: true
-            - name: general-tls-cert-ca
+            - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
               subPath: ca.crt
               readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
-              readOnly: true
-            - name: api-server-tls-cert
-              mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
-              readOnly: true
-            - name: api-server-client-certs
-              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
-              readOnly: true
-            - name: kds-client-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
             - name: tmp
               mountPath: /tmp
@@ -662,18 +641,6 @@ spec:
         - name: general-tls-cert
           secret:
             secretName: general-tls-secret
-        - name: general-tls-cert-ca
-          secret:
-            secretName: general-tls-secret-ca
-        - name: api-server-tls-cert
-          secret:
-            secretName: api-server-secret
-        - name: api-server-client-certs
-          secret:
-            secretName: api-server-client-secret
-        - name: kds-client-tls-cert
-          secret:
-            secretName: kds-ca-secret
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
@@ -684,7 +651,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -704,8 +671,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /default-kuma-io-v1alpha1-mesh
     rules:
       - apiGroups:
@@ -767,8 +734,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /owner-reference-kuma-io-v1alpha1
     rules:
       - apiGroups:
@@ -823,7 +790,7 @@ webhooks:
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
-    failurePolicy: Crash
+    failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
         - key: kuma.io/sidecar-injection
@@ -835,12 +802,12 @@ webhooks:
           operator: NotIn
           values:
           - kube-system
-          - kuma
+          - kuma-system
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /inject-sidecar
     rules:
       - apiGroups:
@@ -854,7 +821,7 @@ webhooks:
     sideEffects: None
   - name: pods-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
-    failurePolicy: Crash
+    failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
         - key: kuma.io/sidecar-injection
@@ -863,15 +830,15 @@ webhooks:
           operator: NotIn
           values:
           - kube-system
-          - kuma
+          - kuma-system
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /inject-sidecar
     rules:
       - apiGroups:
@@ -885,13 +852,13 @@ webhooks:
     sideEffects: None
   - name: mesh-zoneproxy-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
-    failurePolicy: Crash
+    failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: In
           values:
-            - kuma
+            - kuma-system
     objectSelector:
       matchExpressions:
         - key: kuma.io/sidecar-injection
@@ -903,8 +870,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /inject-sidecar
     rules:
       - apiGroups:
@@ -921,7 +888,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -941,8 +908,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-kuma-io-v1alpha1
     rules:
       - apiGroups:
@@ -1008,13 +975,13 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: In
           values:
-          - kuma
+          - kuma-system
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-v1-secret
     rules:
       - apiGroups:
@@ -1038,13 +1005,13 @@ webhooks:
           operator: NotIn
           values:
           - kube-system
-          - kuma
+          - kuma-system
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-v1-pod
     rules:
       - apiGroups:

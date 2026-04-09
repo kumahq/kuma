@@ -605,6 +605,23 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 	return nil
 }
 
+func initContainerLimits(limits runtime_k8s.InitContainerResourceLimits) kube_core.ResourceList {
+	result := kube_core.ResourceList{
+		kube_core.ResourceMemory: kube_api.MustParse(limits.Memory),
+	}
+	if cpu := kube_api.MustParse(limits.CPU); !cpu.IsZero() {
+		result[kube_core.ResourceCPU] = cpu
+	}
+	return result
+}
+
+func initContainerRequests(requests runtime_k8s.InitContainerResourceRequests) kube_core.ResourceList {
+	return kube_core.ResourceList{
+		kube_core.ResourceCPU:    kube_api.MustParse(requests.CPU),
+		kube_core.ResourceMemory: kube_api.MustParse(requests.Memory),
+	}
+}
+
 func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]string) kube_core.Container {
 	mounts := []kube_core.VolumeMount{mountInitTmp}
 
@@ -646,14 +663,8 @@ func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]st
 			ReadOnlyRootFilesystem: pointer.To(true),
 		},
 		Resources: kube_core.ResourceRequirements{
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
-			},
-			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
-			},
+			Limits:   initContainerLimits(i.cfg.InitContainer.Resources.Limits),
+			Requests: initContainerRequests(i.cfg.InitContainer.Resources.Requests),
 		},
 		VolumeMounts: mounts,
 	}
@@ -675,10 +686,14 @@ func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]st
 			},
 		}
 
-		container.Resources.Limits = kube_core.ResourceList{
-			kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
+		// EBPF mode needs more memory; keep CPU limit from config
+		ebpfLimits := kube_core.ResourceList{
 			kube_core.ResourceMemory: *kube_api.NewScaledQuantity(80, kube_api.Mega),
 		}
+		if cpuLimit := kube_api.MustParse(i.cfg.InitContainer.Resources.Limits.CPU); !cpuLimit.IsZero() {
+			ebpfLimits[kube_core.ResourceCPU] = cpuLimit
+		}
+		container.Resources.Limits = ebpfLimits
 
 		container.VolumeMounts = append(container.VolumeMounts,
 			kube_core.VolumeMount{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
