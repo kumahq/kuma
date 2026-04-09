@@ -14,6 +14,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/user"
 	"github.com/kumahq/kuma/v2/pkg/kds/hash"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 type kriEndpoint struct {
@@ -85,7 +87,7 @@ func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
 		namespace = k.systemNamespace
 	}
 	if id.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
-		if k.environment == config_core.UniversalEnvironment {
+		if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(id.ResourceType) {
 			return id.Name
 		}
 		return id.Name + "." + namespace
@@ -100,10 +102,25 @@ func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
 		values = append(values, id.Namespace)
 	}
 	hashedName := hash.HashedName(id.Mesh, id.Name, values...)
-	if k.environment == config_core.UniversalEnvironment {
+	if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(id.ResourceType) {
 		return hashedName
 	}
 	return hashedName + "." + k.systemNamespace
+}
+
+func (k *kriEndpoint) isClusterScoped(resourceType core_model.ResourceType) bool {
+	if k.environment != config_core.KubernetesEnvironment {
+		return false
+	}
+	desc, err := registry.Global().DescriptorFor(resourceType)
+	if err != nil {
+		return false
+	}
+	obj, err := k8s_registry.Global().NewObject(desc.NewObject().GetSpec())
+	if err != nil {
+		return false
+	}
+	return obj.Scope() == k8s_model.ScopeCluster
 }
 
 func getDescriptor(resourceType core_model.ResourceType) (*core_model.ResourceTypeDescriptor, error) {

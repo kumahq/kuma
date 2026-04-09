@@ -133,4 +133,36 @@ var _ = Describe("KRI endpoint", func() {
 		// then: locally originated, uses plain name
 		Expect(coreName).To(Equal("local-mesh-service-1.kuma-system"))
 	})
+
+	It("should resolve Zone resource on Global CP (cluster-scoped, no namespace in core name)", func() {
+		// given: Global CP, Zone resource is cluster-scoped in K8s
+		endpoint := kriEndpoint{
+			cpMode:          core.Global,
+			cpZone:          "",
+			environment:     core.KubernetesEnvironment,
+			systemNamespace: "kuma-system",
+		}
+
+		// when: Zone KRI has no mesh, no zone, no namespace
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_z____zone-1_"))
+
+		// then: Zone is cluster-scoped, core name should NOT include namespace
+		Expect(coreName).To(Equal("zone-1"))
+	})
+
+	It("should resolve Mesh resource on Global CP (cluster-scoped, no namespace in core name)", func() {
+		// given: Global CP, Mesh resource is cluster-scoped in K8s
+		endpoint := kriEndpoint{
+			cpMode:          core.Global,
+			cpZone:          "",
+			environment:     core.KubernetesEnvironment,
+			systemNamespace: "kuma-system",
+		}
+
+		// when: Mesh KRI has no zone, no namespace
+		coreName := endpoint.getCoreName(kri.MustFromString("kri_m____default_"))
+
+		// then: Mesh is cluster-scoped, core name should NOT include namespace
+		Expect(coreName).To(Equal("default"))
+	})
 })
