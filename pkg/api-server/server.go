@@ -24,6 +24,7 @@ import (
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
 	"github.com/kumahq/kuma/v2/pkg/api-server/filters"
@@ -426,16 +427,21 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		log.Info("stopping down API Server")
 		a.httpReady.Store(false)
 		a.httpsReady.Store(false)
+		var errs error
 		if httpServer != nil {
-			return httpServer.Shutdown(context.Background())
+			if err := httpServer.Shutdown(context.Background()); err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
 		if httpsServer != nil {
-			return httpsServer.Shutdown(context.Background())
+			if err := httpsServer.Shutdown(context.Background()); err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
+		return errs
 	case err := <-errChan:
 		return err
 	}
-	return nil
 }
 
 func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {

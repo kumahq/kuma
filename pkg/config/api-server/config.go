@@ -225,6 +225,18 @@ func (a *ApiServerConfig) Validate() error {
 	if err := a.Authn.Validate(); err != nil {
 		errs = multierr.Append(err, errors.Wrap(err, ".Authn is not valid"))
 	}
+	if a.ReadHeaderTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".ReadHeaderTimeout must be greater or equal 0s"))
+	}
+	if a.ReadTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".ReadTimeout must be greater or equal 0s"))
+	}
+	if a.WriteTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".WriteTimeout must be greater or equal 0s"))
+	}
+	if a.IdleTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".IdleTimeout must be greater or equal 0s"))
+	}
 	return errs
 }
 
