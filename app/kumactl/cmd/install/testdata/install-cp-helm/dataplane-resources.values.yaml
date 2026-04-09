@@ -7,7 +7,7 @@ dataPlane:
       limits:
         cpu: 500m
         memory: 256Mi
-  initImage:
+  initContainer:
     resources:
       requests:
         cpu: 50m

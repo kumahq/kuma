@@ -272,13 +272,13 @@ env:
 - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
-  value: {{ .Values.dataPlane.initImage.resources.requests.cpu | default "20m" | quote }}
+  value: {{ .Values.dataPlane.initContainer.resources.requests.cpu | default "20m" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
-  value: {{ .Values.dataPlane.initImage.resources.requests.memory | default "20Mi" | quote }}
+  value: {{ .Values.dataPlane.initContainer.resources.requests.memory | default "20Mi" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
-  value: {{ .Values.dataPlane.initImage.resources.limits.cpu | default "0" | quote }}
+  value: {{ .Values.dataPlane.initContainer.resources.limits.cpu | default "0" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
-  value: {{ .Values.dataPlane.initImage.resources.limits.memory | default "50Mi" | quote }}
+  value: {{ .Values.dataPlane.initContainer.resources.limits.memory | default "50Mi" | quote }}
 {{- if .Values.dataPlane.dnsLogging }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
   value: "true"

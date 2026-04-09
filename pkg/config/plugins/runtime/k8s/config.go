@@ -641,16 +641,6 @@ func (c *InitContainerResources) Validate() error {
 
 var _ config.Config = &InitContainerResourceRequests{}
 
-func (c *InitContainerResourceRequests) PostProcess() error {
-	if c.CPU == "" {
-		c.CPU = "20m"
-	}
-	if c.Memory == "" {
-		c.Memory = "20Mi"
-	}
-	return c.BaseConfig.PostProcess()
-}
-
 func (c *InitContainerResourceRequests) Validate() error {
 	var errs error
 	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
@@ -663,16 +653,6 @@ func (c *InitContainerResourceRequests) Validate() error {
 }
 
 var _ config.Config = &InitContainerResourceLimits{}
-
-func (c *InitContainerResourceLimits) PostProcess() error {
-	if c.CPU == "" {
-		c.CPU = "0"
-	}
-	if c.Memory == "" {
-		c.Memory = "50Mi"
-	}
-	return c.BaseConfig.PostProcess()
-}
 
 func (c *InitContainerResourceLimits) Validate() error {
 	var errs error

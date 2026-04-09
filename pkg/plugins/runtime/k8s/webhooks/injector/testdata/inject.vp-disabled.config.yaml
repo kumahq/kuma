@@ -32,6 +32,13 @@ sidecarContainer:
 initContainer:
   enabled: true
   image: kuma/kuma-init:latest
+  resources:
+    requests:
+      cpu: 20m
+      memory: 20Mi
+    limits:
+      cpu: "0"
+      memory: 50Mi
 virtualProbesEnabled: false
 virtualProbesPort: 9000
 applicationProbeProxyPort: 0
