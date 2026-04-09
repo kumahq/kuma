@@ -1,0 +1,16 @@
+{
+ "inbounds": [
+  {
+   "kri": "kri_dp_default_test-zone__dp-1_main-port",
+   "port": 8080,
+   "protocol": "http",
+   "proxyResourceName": "self_inbound_dp_main-port"
+  }
+ ],
+ "kri": "kri_dp_default_test-zone__dp-1_",
+ "labels": {
+  "kuma.io/workload": "my-app",
+  "kuma.io/zone": "test-zone"
+ },
+ "outbounds": []
+}
