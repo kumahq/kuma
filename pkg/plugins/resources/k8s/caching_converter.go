@@ -21,6 +21,18 @@ type cachingConverter struct {
 	cache *cache.Cache
 }
 
+// cachedEntry is the value type stored in cachingConverter.cache. It bundles
+// the two version-stable results of converting a Kubernetes object:
+//   - spec: the unmarshaled protobuf spec
+//   - labels: the precomputed KubernetesMetaAdapter.GetLabels() output
+//
+// Status is intentionally excluded: existing tests assert that mutations to
+// status surface on subsequent cache hits, so it is fetched fresh every call.
+type cachedEntry struct {
+	spec   core_model.ResourceSpec
+	labels map[string]string
+}
+
 func NewCachingConverter(expirationTime time.Duration) k8s_common.Converter {
 	return &cachingConverter{
 		SimpleConverter: SimpleConverter{
@@ -33,7 +45,6 @@ func NewCachingConverter(expirationTime time.Duration) k8s_common.Converter {
 }
 
 func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
-	out.SetMeta(&KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()})
 	key := strings.Join([]string{
 		obj.GetNamespace(),
 		obj.GetName(),
@@ -41,10 +52,18 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		obj.GetObjectKind().GroupVersionKind().String(),
 	}, ":")
 	if v, ok := c.cache.Get(key); ok {
-		if err := out.SetSpec(v.(core_model.ResourceSpec)); err != nil {
+		entry := v.(cachedEntry)
+		// Pre-populate cachedLabels so the adapter's GetLabels skips the
+		// maps.Clone + annotation-merge work for the lifetime of the entry.
+		out.SetMeta(&KubernetesMetaAdapter{
+			ObjectMeta:   *obj.GetObjectMeta(),
+			Mesh:         obj.GetMesh(),
+			cachedLabels: entry.labels,
+		})
+		if err := out.SetSpec(entry.spec); err != nil {
 			return err
 		}
-		// Status is not cached (changes frequently), fetch from obj
+		// Status is not cached (see cachedEntry comment); fetch from obj.
 		if out.Descriptor().HasStatus {
 			status, err := obj.GetStatus()
 			if err != nil {
@@ -56,6 +75,8 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		}
 		return nil
 	}
+	adapter := &KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()}
+	out.SetMeta(adapter)
 	spec, err := obj.GetSpec()
 	if err != nil {
 		return err
@@ -75,7 +96,10 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	if obj.GetResourceVersion() != "" {
 		// an absence of the ResourceVersion means we decode 'obj' from webhook request,
 		// all webhooks use SimpleConverter, so this is not supposed to happen
-		c.cache.SetDefault(key, out.GetSpec())
+		c.cache.SetDefault(key, cachedEntry{
+			spec:   out.GetSpec(),
+			labels: adapter.GetLabels(), // materialize labels so future hits reuse them
+		})
 	}
 	return nil
 }
