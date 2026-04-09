@@ -74,9 +74,6 @@ jobs:
             ./build/distributions/out/*.tar.gz
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
-<<<<<<< HEAD
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-=======
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       - name: Get Cloudsmith OIDC token
         id: cloudsmith_token
@@ -85,7 +82,6 @@ jobs:
           oidc-namespace: kong
           oidc-service-slug: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
           oidc-auth-only: true
->>>>>>> 2379fad9e6 (chore(build): migrate to use oidc token (#16105))
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
