@@ -51,7 +51,7 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 
-		name := k.getCoreName(identifier)
+		name := k.getCoreName(identifier, *descriptor)
 		if err := k.resourceAccess.ValidateGet(
 			request.Request.Context(),
 			core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
@@ -81,13 +81,13 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
+func (k *kriEndpoint) getCoreName(id kri.Identifier, desc core_model.ResourceTypeDescriptor) string {
 	namespace := id.Namespace
 	if id.Namespace == "" {
 		namespace = k.systemNamespace
 	}
 	if id.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
-		if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(id.ResourceType) {
+		if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(desc) {
 			return id.Name
 		}
 		return id.Name + "." + namespace
@@ -102,18 +102,14 @@ func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
 		values = append(values, id.Namespace)
 	}
 	hashedName := hash.HashedName(id.Mesh, id.Name, values...)
-	if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(id.ResourceType) {
+	if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(desc) {
 		return hashedName
 	}
 	return hashedName + "." + k.systemNamespace
 }
 
-func (k *kriEndpoint) isClusterScoped(resourceType core_model.ResourceType) bool {
+func (k *kriEndpoint) isClusterScoped(desc core_model.ResourceTypeDescriptor) bool {
 	if k.environment != config_core.KubernetesEnvironment {
-		return false
-	}
-	desc, err := registry.Global().DescriptorFor(resourceType)
-	if err != nil {
 		return false
 	}
 	obj, err := k8s_registry.Global().NewObject(desc.NewObject().GetSpec())
