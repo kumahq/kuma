@@ -9,7 +9,7 @@ import (
 func (t *MeshTrafficPermissionResource) Deprecations() []string {
 	var deprecations []string
 	if len(pointer.Deref(t.Spec.From)) > 0 {
-		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")
+		deprecations = append(deprecations, "'from' field is deprecated and will be removed in 3.0, use 'rules' with MeshIdentity (spiffeId) instead")
 	}
 	for _, f := range pointer.Deref(t.Spec.From) {
 		if f.GetTargetRef().Kind == v1alpha1.MeshService {
