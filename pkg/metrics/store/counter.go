@@ -128,12 +128,11 @@ func (s *storeCounter) countMeshScopedResources(ctx context.Context, resourceCou
 	if err := s.resManager.List(ctx, insights); err != nil {
 		return err
 	}
-	// When no MeshInsights exist, fall back to counting resources directly from the store.
-	// This covers zone CPs (which don't have MeshInsight resources) as well as the rare
-	// case of a global CP with zero meshes, where the fallback is harmless.
+	// Zone CPs do not create MeshInsight resources, so count dataplanes directly
+	// from the store to keep the Dataplane metric available there as well.
 	if len(insights.Items) == 0 {
-		log.V(1).Info("no MeshInsight found, counting mesh-scoped resources from store directly")
-		return s.countMeshScopedResourcesWithoutInsights(ctx, resourceCount)
+		log.V(1).Info("no MeshInsight found, counting dataplanes from store directly")
+		return s.countDataplanesWithoutInsights(ctx, resourceCount)
 	}
 	for _, meshInsight := range insights.Items {
 		resourceCount[string(mesh.DataplaneType)] += meshInsight.Spec.GetDataplanes().GetTotal()
@@ -144,21 +143,11 @@ func (s *storeCounter) countMeshScopedResources(ctx context.Context, resourceCou
 	return nil
 }
 
-func (s *storeCounter) countMeshScopedResourcesWithoutInsights(ctx context.Context, resourceCount map[string]uint32) error {
-	for _, resDesc := range registry.Global().ObjectDescriptors() {
-		if resDesc.Scope != model.ScopeMesh {
-			continue
-		}
-		if resDesc.Name != mesh.DataplaneType && !resDesc.IsPolicy {
-			continue
-		}
-
-		list := resDesc.NewList()
-		if err := s.resManager.List(ctx, list); err != nil {
-			return err
-		}
-		resourceCount[string(resDesc.Name)] += uint32(len(list.GetItems()))
+func (s *storeCounter) countDataplanesWithoutInsights(ctx context.Context, resourceCount map[string]uint32) error {
+	dataplanes := &mesh.DataplaneResourceList{}
+	if err := s.resManager.List(ctx, dataplanes); err != nil {
+		return err
 	}
-
+	resourceCount[string(mesh.DataplaneType)] += uint32(len(dataplanes.GetItems()))
 	return nil
 }

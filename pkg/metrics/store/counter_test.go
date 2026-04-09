@@ -138,7 +138,7 @@ var _ = Describe("Counter", func() {
 		}).Should(Succeed())
 	})
 
-	It("should count dataplanes and policies without mesh insights", func() {
+	It("should count dataplanes without mesh insights", func() {
 		// given
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -150,18 +150,10 @@ var _ = Describe("Counter", func() {
 		)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = resManager.Create(
-			context.Background(),
-			&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
-			core_store.CreateByKey("tp-1", "mesh-1"),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
 		// then
 		Eventually(func(g Gomega) {
 			g.Expect(findGauge("Mesh").GetValue()).To(Equal(float64(1)))
 			g.Expect(findGauge("Dataplane").GetValue()).To(Equal(float64(1)))
-			g.Expect(findGauge("TrafficPermission").GetValue()).To(Equal(float64(1)))
 		}).Should(Succeed())
 	})
 })
