@@ -49,7 +49,8 @@
    "dns": {
     "enabled": false,
     "port": 3456
-   }
+   },
+   "vnet": {}
   }
  },
  "ipv6Enabled": true,

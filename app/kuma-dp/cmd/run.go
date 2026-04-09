@@ -49,6 +49,41 @@ import (
 
 var runLog = dataplaneLog.WithName("run")
 
+// dnsProxyAddresses returns the bind addresses for the embedded DNS proxy
+// based on the transparent proxy configuration. Without transparent proxy,
+// we fall back to 0.0.0.0 for backward compatibility. With VNet (virtual
+// networks), we bind to all interfaces since PREROUTING REDIRECT sends
+// traffic to the interface IP. We always bind IPv4 and IPv6 separately
+// rather than relying on a single :: socket, because nodes with
+// net.ipv6.bindv6only=1 would silently drop IPv4 traffic. Without VNet,
+// we bind to loopback only since OUTPUT chain REDIRECT sends to 127.0.0.1
+// (IPv4) and ::1 (IPv6).
+func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
+	if tpCfg == nil {
+		return []string{net.JoinHostPort("0.0.0.0", port)}
+	}
+
+	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4
+	vnet := tpCfg.HasVNet()
+
+	switch {
+	case vnet && dualStack:
+		return []string{
+			net.JoinHostPort("0.0.0.0", port),
+			net.JoinHostPort("::", port),
+		}
+	case vnet:
+		return []string{net.JoinHostPort("0.0.0.0", port)}
+	case dualStack:
+		return []string{
+			net.JoinHostPort("127.0.0.1", port),
+			net.JoinHostPort("::1", port),
+		}
+	default:
+		return []string{net.JoinHostPort("127.0.0.1", port)}
+	}
+}
+
 // PersistentPreRunE in root command sets the logger and initial config
 // PreRunE loads the Kuma DP config
 // PostRunE actually runs all the components with loaded config
@@ -325,9 +360,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
 				if dnsOpts.Config.DNS.ProxyPort != 0 {
-					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
-					// Using embedded DNS
-					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort("0.0.0.0", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
+					portStr := strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))
+					addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
+					runLog.Info("Running with embedded DNS proxy", "port", dnsOpts.Config.DNS.ProxyPort, "addresses", addresses)
+					dnsproxyServer, err := dnsproxy.NewServer(addresses)
 					if err != nil {
 						return err
 					}
