@@ -46,6 +46,7 @@ func (d *universalDeployment) deployProxy(uniCluster *framework.UniversalCluster
 		mode,
 		framework.UniversalAppRunOptions{
 			DockerBackend: uniCluster.GetDockerBackend(),
+			EnableIPv6:    framework.Config.IPV6,
 		},
 	)
 	if err != nil {
