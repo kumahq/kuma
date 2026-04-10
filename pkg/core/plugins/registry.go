@@ -1,7 +1,8 @@
 package plugins
 
 import (
-	"fmt"
+	"cmp"
+	"slices"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -46,7 +47,7 @@ type Registry interface {
 	RuntimePlugins() map[PluginName]RuntimePlugin
 	CaPlugins() map[PluginName]CaPlugin
 	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
-	PolicyPlugins([]PluginName) []RegisteredPolicyPlugin
+	PolicyPlugins() []RegisteredPolicyPlugin
 	ProxyPlugins() map[PluginName]ProxyPlugin
 	CoreResourcePlugins() map[PluginName]CoreResourcePlugin
 	IdentityProviders() map[PluginName]IdentityProviderPlugin
@@ -129,19 +130,23 @@ func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
 	return r.proxy
 }
 
-func (r *registry) PolicyPlugins(ordered []PluginName) []RegisteredPolicyPlugin {
-	var plugins []RegisteredPolicyPlugin
-	for _, policy := range ordered {
-		plugin, ok := r.registeredPolicies[policy]
-		if !ok {
-			panic(fmt.Sprintf("Couldn't find plugin %s", policy))
-		}
-		plugins = append(plugins, RegisteredPolicyPlugin{
-			Plugin: plugin,
-			Name:   policy,
-		})
+func (r *registry) PolicyPlugins() []RegisteredPolicyPlugin {
+	type namedEntry struct {
+		name  PluginName
+		order int
 	}
-	return plugins
+	all := make([]namedEntry, 0, len(r.registeredPolicies))
+	for name, plugin := range r.registeredPolicies {
+		all = append(all, namedEntry{name: name, order: plugin.Order()})
+	}
+	slices.SortFunc(all, func(a, b namedEntry) int {
+		return cmp.Compare(a.order, b.order)
+	})
+	result := make([]RegisteredPolicyPlugin, len(all))
+	for i, e := range all {
+		result[i] = RegisteredPolicyPlugin{Plugin: r.registeredPolicies[e.name], Name: e.name}
+	}
+	return result
 }
 
 func (r *registry) CoreResourcePlugins() map[PluginName]CoreResourcePlugin {

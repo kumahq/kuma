@@ -210,6 +210,9 @@ type ResourceTypeDescriptor struct {
 	// IsFromAsRules if true, the entries in the spec.from field should be interpreted as rules.
 	// It's true for policies that allow only kind 'Mesh' in the spec.from.targetRef.
 	IsFromAsRules bool
+	// Order defines the execution order of this policy plugin relative to others.
+	// Lower values run first. Used by PolicyPlugins() to return a sorted list.
+	Order int
 }
 
 func newObject(baseResource Resource) Resource {

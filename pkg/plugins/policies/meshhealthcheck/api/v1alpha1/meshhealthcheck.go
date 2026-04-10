@@ -9,6 +9,7 @@ import (
 )
 
 // MeshHealthCheck enables active health checking of services in the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC health checks to detect and remove unhealthy instances from the load balancing pool, improving overall service reliability.
+// +kuma:policy:order=1200
 type MeshHealthCheck struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
