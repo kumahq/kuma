@@ -72,7 +72,6 @@ func NewRegistry() MutableRegistry {
 		ca:                          make(map[PluginName]CaPlugin),
 		authnAPIServer:              make(map[PluginName]AuthnAPIServerPlugin),
 		proxy:                       make(map[PluginName]ProxyPlugin),
-		registeredPolicies:          make(map[PluginName]PolicyPlugin),
 		registeredResources:         make(map[PluginName]CoreResourcePlugin),
 		registeredIdentityProviders: make(map[PluginName]IdentityProviderPlugin),
 	}
@@ -89,7 +88,7 @@ type registry struct {
 	proxy                       map[PluginName]ProxyPlugin
 	ca                          map[PluginName]CaPlugin
 	authnAPIServer              map[PluginName]AuthnAPIServerPlugin
-	registeredPolicies          map[PluginName]PolicyPlugin
+	registeredPolicies          []RegisteredPolicyPlugin
 	registeredResources         map[PluginName]CoreResourcePlugin
 	registeredIdentityProviders map[PluginName]IdentityProviderPlugin
 }
@@ -131,22 +130,7 @@ func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
 }
 
 func (r *registry) PolicyPlugins() []RegisteredPolicyPlugin {
-	type namedEntry struct {
-		name  PluginName
-		order int
-	}
-	all := make([]namedEntry, 0, len(r.registeredPolicies))
-	for name, plugin := range r.registeredPolicies {
-		all = append(all, namedEntry{name: name, order: plugin.Order()})
-	}
-	slices.SortFunc(all, func(a, b namedEntry) int {
-		return cmp.Compare(a.order, b.order)
-	})
-	result := make([]RegisteredPolicyPlugin, len(all))
-	for i, e := range all {
-		result[i] = RegisteredPolicyPlugin{Plugin: r.registeredPolicies[e.name], Name: e.name}
-	}
-	return result
+	return r.registeredPolicies
 }
 
 func (r *registry) CoreResourcePlugins() map[PluginName]CoreResourcePlugin {
@@ -221,10 +205,16 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 		r.authnAPIServer[name] = authn
 	}
 	if policy, ok := plugin.(PolicyPlugin); ok {
-		if old, exists := r.registeredPolicies[name]; exists {
-			return pluginAlreadyRegisteredError(policyPlugin, name, old, policy)
+		for _, existing := range r.registeredPolicies {
+			if existing.Name == name {
+				return pluginAlreadyRegisteredError(policyPlugin, name, existing.Plugin, policy)
+			}
 		}
-		r.registeredPolicies[name] = policy
+		entry := RegisteredPolicyPlugin{Plugin: policy, Name: name}
+		pos, _ := slices.BinarySearchFunc(r.registeredPolicies, entry, func(a, b RegisteredPolicyPlugin) int {
+			return cmp.Compare(a.Plugin.Order(), b.Plugin.Order())
+		})
+		r.registeredPolicies = slices.Insert(r.registeredPolicies, pos, entry)
 	}
 	if proxy, ok := plugin.(ProxyPlugin); ok {
 		if old, exists := r.proxy[name]; exists {
