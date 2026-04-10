@@ -120,7 +120,7 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 			if name == "" || len(resources.Items) == 0 {
 				continue
 			}
-			r.metrics.SnapshotResourcesTotal.WithLabelValues(name).Observe(float64(len(resources.Items)))
+			r.metrics.SnapshotResources.WithLabelValues(name).Observe(float64(len(resources.Items)))
 		}
 	}
 

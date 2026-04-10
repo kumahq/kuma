@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	std_errors "errors"
 	"hash/fnv"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -192,9 +191,9 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 		}
 		d.workloadIdentity = identity
 		if d.XdsMetrics != nil && identity != nil && identity.ExpirationTime != nil {
-			d.XdsMetrics.CertExpirationRemaining.
+			d.XdsMetrics.CertExpirationTimestamp.
 				WithLabelValues(d.key.Mesh).
-				Set(time.Until(*identity.ExpirationTime).Seconds())
+				Set(float64(identity.ExpirationTime.Unix()))
 		}
 	}
 	if d.workloadIdentity != nil {

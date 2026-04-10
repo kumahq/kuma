@@ -11,8 +11,8 @@ type Metrics struct {
 	XdsGenerations          *prometheus.HistogramVec
 	XdsGenerationsErrors    prometheus.Counter
 	KubeAuthCache           *prometheus.CounterVec
-	CertExpirationRemaining *prometheus.GaugeVec
-	SnapshotResourcesTotal  *prometheus.HistogramVec
+	CertExpirationTimestamp *prometheus.GaugeVec
+	SnapshotResources       *prometheus.HistogramVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -28,16 +28,16 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		"kube_auth_cache",
 		"Number of cache operations for Kubernetes authentication on XDS connection",
 	)
-	certExpirationRemaining := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cert_expiration_remaining_seconds",
-		Help: "Seconds until the MeshIdentity workload certificate expires.",
+	certExpirationTimestamp := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "xds_cert_expiration_timestamp_seconds",
+		Help: "Unix timestamp (seconds) when the MeshIdentity workload certificate expires. Compute remaining lifetime in PromQL as `xds_cert_expiration_timestamp_seconds - time()`.",
 	}, []string{"mesh"})
-	snapshotResourcesTotal := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "xds_snapshot_resources_total",
+	snapshotResources := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "xds_snapshot_resources",
 		Help:    "Distribution of resource counts per xDS snapshot by resource type.",
 		Buckets: prometheus.ExponentialBuckets(1, 2, 12),
 	}, []string{"resource_type"})
-	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationRemaining, snapshotResourcesTotal); err != nil {
+	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources); err != nil {
 		return nil, err
 	}
 
@@ -45,7 +45,7 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		XdsGenerations:          xdsGenerations,
 		XdsGenerationsErrors:    xdsGenerationsErrors,
 		KubeAuthCache:           kubeAuthCache,
-		CertExpirationRemaining: certExpirationRemaining,
-		SnapshotResourcesTotal:  snapshotResourcesTotal,
+		CertExpirationTimestamp: certExpirationTimestamp,
+		SnapshotResources:       snapshotResources,
 	}, nil
 }

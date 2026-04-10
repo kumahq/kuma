@@ -163,18 +163,30 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	meshName, err := i.preCheck(ctx, pod, logger)
 	if err != nil {
-		if i.metrics != nil {
-			i.metrics.InjectionTotal.WithLabelValues("failed", classifyInjectionError(err)).Inc()
-		}
+		i.recordInjection("failed", classifyInjectionError(err))
 		return err
 	}
 	if meshName == "" {
-		if i.metrics != nil {
-			i.metrics.InjectionTotal.WithLabelValues("skipped", "not_needed").Inc()
-		}
+		i.recordInjection("skipped", "not_needed")
 		return nil
 	}
 
+	if err := i.injectKuma(ctx, pod, meshName, logger); err != nil {
+		i.recordInjection("failed", classifyInjectionError(err))
+		return err
+	}
+	i.recordInjection("success", "")
+	return nil
+}
+
+func (i *KumaInjector) recordInjection(result, reason string) {
+	if i.metrics == nil {
+		return
+	}
+	i.metrics.InjectionTotal.WithLabelValues(result, reason).Inc()
+}
+
+func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshName string, logger logr.Logger) error {
 	logger.Info("injecting Kuma")
 
 	// annotations
@@ -384,9 +396,6 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		}
 	}
 
-	if i.metrics != nil {
-		i.metrics.InjectionTotal.WithLabelValues("success", "").Inc()
-	}
 	return nil
 }
 
