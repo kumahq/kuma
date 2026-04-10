@@ -7,6 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v2/test/framework/portforward"
+
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
@@ -206,6 +209,23 @@ spec:
 		Expect(kubernetes.Cluster.KillAppPod("demo-client", waitingClientNamespace)).To(Succeed())
 
 		go keepConnectionOpen()
+
+		// Wait until the holder connection is actually established on the gateway
+		// before asserting that new requests are rejected. Without this sync point
+		// the verifier races the holder: if ncat hasn't exec'd yet, the gateway
+		// sees 0 active connections, curl succeeds, and the assertion fails.
+		gatewayAdmin, err := kubernetes.Cluster.GetOrCreateAdminTunnel(portforward.Spec{
+			AppName:   gatewayName,
+			Namespace: namespace,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			s, err := gatewayAdmin.GetStats(
+				fmt.Sprintf("http.%s_%s_svc.downstream_cx_active", gatewayName, namespace),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(s).To(stats.BeGreaterThanZero())
+		}, "1m", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(

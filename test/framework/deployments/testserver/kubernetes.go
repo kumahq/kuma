@@ -333,7 +333,7 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	}
 	if k.opts.WaitingToBeReady {
 		funcs = append(funcs,
-			framework.WaitNumPods(k.opts.Namespace, 1, k.Name()),
+			framework.WaitNumPods(k.opts.Namespace, int(k.opts.Replicas), k.Name()),
 			framework.WaitPodsAvailable(k.opts.Namespace, k.Name()),
 		)
 		if k.opts.EnableService {
