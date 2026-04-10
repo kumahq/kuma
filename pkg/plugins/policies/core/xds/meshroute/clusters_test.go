@@ -1,8 +1,6 @@
 package meshroute_test
 
 import (
-	"testing"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -12,14 +10,9 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
-	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
-
-func TestMeshRoute(t *testing.T) {
-	test.RunSpecs(t, "MeshRoute Suite")
-}
 
 func meshCtxWith(ms *meshservice_api.MeshServiceResource) xds_context.MeshContext {
 	return xds_context.MeshContext{
