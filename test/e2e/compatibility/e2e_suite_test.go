@@ -16,5 +16,5 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Test Kubernetes Multizone Compatibility", Label("job-1"), compatibility.CpCompatibilityMultizoneKubernetes)
+	_ = Describe("Test Kubernetes Multizone Compatibility", Label("job-1"), compatibility.CpCompatibilityMultizoneKubernetes, Serial)
 )

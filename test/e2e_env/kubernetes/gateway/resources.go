@@ -14,6 +14,29 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
+// httpKeepAliveReader sends a complete HTTP/1.1 GET request on first reads,
+// then blocks forever. This keeps the TCP connection alive as HTTP keep-alive
+// without triggering the gateway's request_headers_timeout (which would drop
+// a raw telnet/TCP connection that never sends HTTP headers).
+type httpKeepAliveReader struct {
+	headers []byte
+	pos     int
+}
+
+func newHTTPKeepAliveReader(host string) *httpKeepAliveReader {
+	h := fmt.Sprintf("GET / HTTP/1.1\r\nHost: %s\r\nConnection: keep-alive\r\n\r\n", host)
+	return &httpKeepAliveReader{headers: []byte(h)}
+}
+
+func (r *httpKeepAliveReader) Read(p []byte) (int, error) {
+	if r.pos < len(r.headers) {
+		n := copy(p, r.headers[r.pos:])
+		r.pos += n
+		return n, nil
+	}
+	select {} // block forever after headers are sent
+}
+
 func Resources() {
 	meshName := "gateway-resources"
 	gatewayName := "resources-edge-gateway"
@@ -132,15 +155,17 @@ spec:
 			demoClientPod = pod
 		}, "30s", "1s").Should(Succeed())
 
-		cmd := []string{"telnet", gatewayHost, "8080"}
-		// We pass in a stdin that blocks so that telnet will keep the
-		// connection open
+		// Use ncat with a proper HTTP/1.1 request so the gateway's
+		// request_headers_timeout (500ms) doesn't close the connection.
+		// After the server responds the TCP connection stays in HTTP
+		// keep-alive mode (idle_timeout: 300s), keeping the slot occupied.
+		cmd := []string{"ncat", gatewayHost, "8080"}
 		_, _, _ = kubernetes.Cluster.ExecWithOptions(ExecOptions{
 			Command:            cmd,
 			Namespace:          waitingClientNamespace,
 			PodName:            demoClientPod,
 			ContainerName:      "demo-client",
-			Stdin:              &BlockingReader{},
+			Stdin:              newHTTPKeepAliveReader(gatewayHost),
 			CaptureStdout:      true,
 			CaptureStderr:      true,
 			PreserveWhitespace: false,

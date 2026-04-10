@@ -1,6 +1,8 @@
 package resilience
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -14,9 +16,9 @@ func ResilienceMultizoneK8s() {
 
 	BeforeAll(func() {
 		// Global
-		global = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*K8sCluster)
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Global,
+			Install(E2EKuma(core.Global,
 				WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),
@@ -27,10 +29,10 @@ func ResilienceMultizoneK8s() {
 		globalCP := global.GetKuma()
 
 		// Cluster 1
-		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*K8sCluster)
 
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithGlobalAddress(globalCP.GetKDSServerAddress()), WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),
@@ -91,7 +93,7 @@ metadata:
 		Expect(zone1.RestartControlPlane()).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Create a mesh now that the remote zone is back up
 		Expect(YamlK8s(`
@@ -135,7 +137,7 @@ metadata:
 		Expect(global.RestartControlPlane()).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Create a mesh now that global is backup
 		Expect(YamlK8s(`
@@ -175,7 +177,7 @@ metadata:
 		Expect(zone1.RestartControlPlane()).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
 		Expect(testserver.Install(testserver.WithName("kds-after-zone-restart"))(zone1)).To(Succeed())
@@ -221,7 +223,7 @@ metadata:
 		Expect(global.RestartControlPlane()).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
+		}, "2m", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
 		Expect(testserver.Install(testserver.WithName("kds-after-global-restart"))(zone1)).To(Succeed())

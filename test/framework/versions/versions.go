@@ -83,3 +83,14 @@ func UpgradableVersionsFromBuild(versions []Version) []string {
 	v := semver.MustParse(version.Build.Version)
 	return UpgradableVersions(versions, *v)
 }
+
+// OldestSupportedVersionFromBuild returns the oldest version still within the
+// compatibility window for the current build, derived from versions.yml.
+func OldestSupportedVersionFromBuild(vers []Version) string {
+	return UpgradableVersionsFromBuild(vers)[0]
+}
+
+// IsVersionLessThan reports whether version is strictly less than threshold.
+func IsVersionLessThan(version, threshold string) bool {
+	return semver.MustParse(version).LessThan(semver.MustParse(threshold))
+}

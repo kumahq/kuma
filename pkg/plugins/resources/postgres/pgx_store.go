@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"maps"
 	"math/rand"
@@ -16,6 +17,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sethvargo/go-retry"
 
 	config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -249,25 +251,27 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 
 	statement := `SELECT spec, version, creation_time, modification_time, labels, status FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
 	args := []any{opts.Name, opts.Mesh, resource.Descriptor().Name}
-	tx, exist := store.TxFromCtx(ctx)
-	var row pgx.Row
-	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
-		row = pgxTx.QueryRow(ctx, statement, args...)
-	} else {
-		pool := r.pickRoPool()
-		if opts.Consistent {
-			pool = r.pool
-		}
-		row = pool.QueryRow(ctx, statement, args...)
-	}
+	tx, txExist := store.TxFromCtx(ctx)
 
 	var spec string
 	var version int
 	var creationTime, modificationTime time.Time
 	var labels string
 	var status string
-	err := row.Scan(&spec, &version, &creationTime, &modificationTime, &labels, &status)
-	if err == pgx.ErrNoRows {
+	err := retryOnSafeToRetry(ctx, txExist, func() error {
+		var row pgx.Row
+		if pgxTx, ok := tx.(pgx.Tx); txExist && ok {
+			row = pgxTx.QueryRow(ctx, statement, args...)
+		} else {
+			pool := r.pickRoPool()
+			if opts.Consistent {
+				pool = r.pool
+			}
+			row = pool.QueryRow(ctx, statement, args...)
+		}
+		return row.Scan(&spec, &version, &creationTime, &modificationTime, &labels, &status)
+	})
+	if stderrors.Is(err, pgx.ErrNoRows) {
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if err != nil {
@@ -302,6 +306,31 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 		return store.ErrorResourceConflict(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return nil
+}
+
+// retryOnSafeToRetry retries op when pgx returns an error that implements
+// SafeToRetry() == true (no bytes were sent on the wire, so the operation
+// is safe to replay). This closes the race where pgx's statement cache
+// deallocation fails on a connection that died between pool acquire and
+// first use, surfacing as "failed to deallocate cached statement(s): conn
+// closed". Retrying inside an existing transaction is skipped because the
+// transaction is already broken and must be aborted by the caller.
+func retryOnSafeToRetry(ctx context.Context, inTx bool, op func() error) error {
+	if inTx {
+		return op()
+	}
+	backoff := retry.WithMaxRetries(3, retry.NewConstant(10*time.Millisecond))
+	return retry.Do(ctx, backoff, func(ctx context.Context) error {
+		err := op()
+		if err == nil {
+			return nil
+		}
+		var safeToRetry interface{ SafeToRetry() bool }
+		if stderrors.As(err, &safeToRetry) && safeToRetry.SafeToRetry() {
+			return retry.RetryableError(err)
+		}
+		return err
+	})
 }
 
 func (r *pgxResourceStore) pickRoPool() *pgxpool.Pool {
@@ -364,15 +393,17 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	}
 	statement.WriteString(" ORDER BY name, mesh")
 
-	tx, exist := store.TxFromCtx(ctx)
+	tx, txExist := store.TxFromCtx(ctx)
 	var rows pgx.Rows
-	var err error
-	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
-		rows, err = pgxTx.Query(ctx, statement.String(), statementArgs...)
-	} else {
-		rows, err = r.pickRoPool().Query(ctx, statement.String(), statementArgs...)
-	}
-
+	err := retryOnSafeToRetry(ctx, txExist, func() error {
+		var qerr error
+		if pgxTx, ok := tx.(pgx.Tx); txExist && ok {
+			rows, qerr = pgxTx.Query(ctx, statement.String(), statementArgs...)
+		} else {
+			rows, qerr = r.pickRoPool().Query(ctx, statement.String(), statementArgs...)
+		}
+		return qerr
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement.String())
 	}
