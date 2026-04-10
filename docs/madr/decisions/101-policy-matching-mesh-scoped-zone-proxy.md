@@ -9,7 +9,7 @@ Technical Story: https://github.com/Kong/kong-mesh/issues/9029
 Zone Ingress and Zone Egress were originally dedicated global-scoped resource types.
 Being global-scoped meant they lived outside any mesh context, which created two fundamental blockers:
 
-1. **No mesh identity** — `ZoneIngress`/`ZoneEgress` could not participate in mTLS with a
+1. **No mesh identity** — `ZoneEgress` could not participate in mTLS with a
    proper SPIFFE identity. The trust domain is mesh-scoped, so a global resource has no mesh
    to derive an identity from. As a result, source-identity-based access control
    (MeshTrafficPermission) could not be enforced at zone proxy boundaries.
@@ -28,8 +28,6 @@ by [MADR-062](062-meshexternalservice-and-zoneegress.md).
 
 ## User Stories
 
-* As a mesh operator I want to deny access to external resources by default and grant it only to
-  specific services so that compromised workloads cannot pivot to external systems.
 * As a mesh operator I want to give access to service owners to a specific external resource
   (e.g. AWS Aurora) or to a single HTTP endpoint of that resource so that the system follows
   the least privilege principle.
