@@ -49,6 +49,44 @@ var _ = Describe("DataplaneOverview", func() {
 			Expect(overviews.Items[1].Spec.Dataplane).To(MatchProto(dataplanes.Items[1].Spec))
 			Expect(overviews.Items[1].Spec.DataplaneInsight).To(BeNil())
 		})
+
+		DescribeTable("should populate spiffe_id from service tag",
+			func(dp *mesh_proto.Dataplane, mesh string, expectedSpiffeID string) {
+				dataplanes := DataplaneResourceList{Items: []*DataplaneResource{
+					{
+						Meta: &model.ResourceMeta{Name: "dp1", Mesh: mesh},
+						Spec: dp,
+					},
+				}}
+				overviews := NewDataplaneOverviews(dataplanes, DataplaneInsightResourceList{})
+				Expect(overviews.Items).To(HaveLen(1))
+				Expect(overviews.Items[0].Spec.SpiffeId).To(Equal(expectedSpiffeID))
+			},
+			Entry("inbound with service tag", &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{Tags: map[string]string{mesh_proto.ServiceTag: "backend"}},
+					},
+				},
+			}, "default", "spiffe://default/backend"),
+			Entry("gateway with service tag", &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+						Tags: map[string]string{mesh_proto.ServiceTag: "my-gateway"},
+					},
+				},
+			}, "prod", "spiffe://prod/my-gateway"),
+			Entry("no inbounds and no gateway", &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{},
+			}, "default", ""),
+			Entry("inbound without service tag", &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{Tags: map[string]string{"version": "v1"}},
+					},
+				},
+			}, "default", ""),
+		)
 	})
 
 	Context("GetStatus", func() {

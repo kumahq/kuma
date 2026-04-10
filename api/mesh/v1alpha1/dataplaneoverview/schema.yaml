@@ -698,6 +698,11 @@ components:
                 type: object
               type: array
           type: object
+        spiffeId:
+          description: |-
+            SPIFFE ID of the dataplane in the format spiffe://<mesh>/<service>.
+            Populated only when the dataplane has inbound services.
+          type: string
       type: object
 info:
   x-ref-schema-name: DataplaneOverview

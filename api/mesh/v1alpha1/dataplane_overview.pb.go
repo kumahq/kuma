@@ -28,8 +28,11 @@ type DataplaneOverview struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Dataplane        *Dataplane             `protobuf:"bytes,1,opt,name=dataplane,proto3" json:"dataplane,omitempty"`
 	DataplaneInsight *DataplaneInsight      `protobuf:"bytes,2,opt,name=dataplane_insight,json=dataplaneInsight,proto3" json:"dataplane_insight,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// SPIFFE ID of the dataplane in the format spiffe://<mesh>/<service>.
+	// Populated only when the dataplane has inbound services.
+	SpiffeId      string `protobuf:"bytes,3,opt,name=spiffe_id,json=spiffeId,proto3" json:"spiffe_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DataplaneOverview) Reset() {
@@ -76,14 +79,22 @@ func (x *DataplaneOverview) GetDataplaneInsight() *DataplaneInsight {
 	return nil
 }
 
+func (x *DataplaneOverview) GetSpiffeId() string {
+	if x != nil {
+		return x.SpiffeId
+	}
+	return ""
+}
+
 var File_api_mesh_v1alpha1_dataplane_overview_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_overview_proto_rawDesc = "" +
 	"\n" +
-	"*api/mesh/v1alpha1/dataplane_overview.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a!api/mesh/v1alpha1/dataplane.proto\x1a)api/mesh/v1alpha1/dataplane_insight.proto\x1a\x17validate/validate.proto\"\xed\x01\n" +
+	"*api/mesh/v1alpha1/dataplane_overview.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a!api/mesh/v1alpha1/dataplane.proto\x1a)api/mesh/v1alpha1/dataplane_insight.proto\x1a\x17validate/validate.proto\"\x8a\x02\n" +
 	"\x11DataplaneOverview\x12E\n" +
 	"\tdataplane\x18\x01 \x01(\v2\x1d.kuma.mesh.v1alpha1.DataplaneB\b\xfaB\x05\x8a\x01\x02\x10\x01R\tdataplane\x12Q\n" +
-	"\x11dataplane_insight\x18\x02 \x01(\v2$.kuma.mesh.v1alpha1.DataplaneInsightR\x10dataplaneInsight:>\xaa\x8c\x89\xa6\x018\n" +
+	"\x11dataplane_insight\x18\x02 \x01(\v2$.kuma.mesh.v1alpha1.DataplaneInsightR\x10dataplaneInsight\x12\x1b\n" +
+	"\tspiffe_id\x18\x03 \x01(\tR\bspiffeId:>\xaa\x8c\x89\xa6\x018\n" +
 	"\x19DataplaneOverviewResource\x12\x11DataplaneOverview\"\x04mesh0\x01`\x01B-Z+github.com/kumahq/kuma/v2/api/mesh/v1alpha1b\x06proto3"
 
 var (

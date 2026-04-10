@@ -305,6 +305,20 @@ func (t *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight mod
 		}
 		overview.{{$baseType}}Insight = ins
 	}
+{{- if eq $baseType "Dataplane" }}
+	if dp := overview.Dataplane; dp != nil {
+		mesh := resource.GetMeta().GetMesh()
+		var svc string
+		if inbounds := dp.GetNetworking().GetInbound(); len(inbounds) > 0 {
+			svc = inbounds[0].Tags[{{$pkg}}.ServiceTag]
+		} else if gw := dp.GetNetworking().GetGateway(); gw != nil {
+			svc = gw.Tags[{{$pkg}}.ServiceTag]
+		}
+		if svc != "" {
+			overview.SpiffeId = fmt.Sprintf("spiffe://%s/%s", mesh, svc)
+		}
+	}
+{{- end }}
 	return t.SetSpec(overview)
 }
 {{- end }}

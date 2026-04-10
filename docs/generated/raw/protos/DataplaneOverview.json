@@ -11,6 +11,10 @@
                 "dataplane_insight": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight",
                     "additionalProperties": true
+                },
+                "spiffe_id": {
+                    "type": "string",
+                    "description": "SPIFFE ID of the dataplane in the format spiffe://\u003cmesh\u003e/\u003cservice\u003e. Populated only when the dataplane has inbound services."
                 }
             },
             "additionalProperties": true,

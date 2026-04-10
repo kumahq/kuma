@@ -20,4 +20,8 @@ message DataplaneOverview {
   Dataplane dataplane = 1 [(validate.rules).message.required = true];
 
   DataplaneInsight dataplane_insight = 2;
+
+  // SPIFFE ID of the dataplane in the format spiffe://<mesh>/<service>.
+  // Populated only when the dataplane has inbound services.
+  string spiffe_id = 3;
 }

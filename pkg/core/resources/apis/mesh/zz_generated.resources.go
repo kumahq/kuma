@@ -444,6 +444,18 @@ func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, ins
 		}
 		overview.DataplaneInsight = ins
 	}
+	if dp := overview.Dataplane; dp != nil {
+		mesh := resource.GetMeta().GetMesh()
+		var svc string
+		if inbounds := dp.GetNetworking().GetInbound(); len(inbounds) > 0 {
+			svc = inbounds[0].Tags[mesh_proto.ServiceTag]
+		} else if gw := dp.GetNetworking().GetGateway(); gw != nil {
+			svc = gw.Tags[mesh_proto.ServiceTag]
+		}
+		if svc != "" {
+			overview.SpiffeId = fmt.Sprintf("spiffe://%s/%s", mesh, svc)
+		}
+	}
 	return t.SetSpec(overview)
 }
 
