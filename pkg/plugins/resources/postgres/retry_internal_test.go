@@ -8,8 +8,8 @@ import (
 
 type safeToRetryErr struct{ safe bool }
 
-func (e *safeToRetryErr) Error() string      { return "conn closed" }
-func (e *safeToRetryErr) SafeToRetry() bool  { return e.safe }
+func (e *safeToRetryErr) Error() string     { return "conn closed" }
+func (e *safeToRetryErr) SafeToRetry() bool { return e.safe }
 
 type wrappedErr struct{ inner error }
 
