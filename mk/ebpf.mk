@@ -29,26 +29,29 @@ COMPILE_IN_PATH ?= ./pkg/transparentproxy/ebpf/programs
 # if the tag changes, we will re-fetch programs
 
 define make_ebpf_targets
-$(1)/mb_*: | $(1)
-	curl --progress-bar --location $(TARBALL_URL)/all-$(3).tar.gz | tar -C $$(@D) -xz
+$(1)/.fetched: | $(1)/
+	curl --progress-bar --location $(TARBALL_URL)/all-$(3).tar.gz | tar -C $(1) -xz
+	touch $$@
 
-$(2)/mb_*: | $(2) $(1)/mb_*
+$(2)/.copied: $(1)/.fetched | $(2)/
 	command cp $(1)/mb_* $(2)
+	touch $$@
 
 # Make $(2) $(1) directories if they don't
 # exist
-$(1) $(2):
+$(1)/ $(2)/:
 	mkdir -p $$@
 endef
 
-EBF_ARCH:=amd64 arm64
-$(foreach elt,$(EBF_ARCH),$(eval $(call make_ebpf_targets,$(BASE_BUILD_OUTPUT)/$(elt),$(COMPILE_IN_PATH)/$(elt),$(elt))))
+EBPF_ARCH:=amd64 arm64
+$(foreach elt,$(EBPF_ARCH),$(eval $(call make_ebpf_targets,$(BASE_BUILD_OUTPUT)/$(elt),$(COMPILE_IN_PATH)/$(elt),$(elt))))
 
-EBF_TARGETS:=$(foreach elt,$(EBF_ARCH),$(BASE_BUILD_OUTPUT)/$(elt)/mb_* $(COMPILE_IN_PATH)/$(elt)/mb_*)
+EBPF_TARGETS:=$(foreach elt,$(EBPF_ARCH),$(COMPILE_IN_PATH)/$(elt)/.copied)
 .PHONY: build/ebpf
-build/ebpf: $(EBF_TARGETS)
+build/ebpf: $(EBPF_TARGETS)
 
 .PHONY: clean/ebpf
 clean/ebpf :
 	-rm -rf $(BUILD_DIR)/ebpf
+	rm -f $(foreach elt,$(EBPF_ARCH),$(COMPILE_IN_PATH)/$(elt)/.copied)
 	find $(COMPILE_IN_PATH) -type f -name 'mb_*' -exec rm {} \;

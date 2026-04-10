@@ -67,20 +67,20 @@ define gen-k8sclusters
 test/e2e/k8s/start/cluster/$1:
 	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/start
 
-.PHONY: test/e2e/k8s/load/images/$1
-test/e2e/k8s/load/images/$1:
-	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/load/images
-
 .PHONY: test/e2e/k8s/wait/$1
 test/e2e/k8s/wait/$1:
 	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/wait
+
+.PHONY: test/e2e/k8s/load/images/$1
+test/e2e/k8s/load/images/$1:
+	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/load/images
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:
 	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/stop
 endef
 
-$(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
+$(foreach cluster,$(K8SCLUSTERS),$(eval $(call gen-k8sclusters,$(cluster))))
 
 ifdef K8SCLUSTERS
 E2E_ENV_VARS += K8SCLUSTERS="$(K8SCLUSTERS)"

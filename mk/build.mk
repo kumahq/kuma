@@ -92,48 +92,76 @@ endef
 $(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call LOCAL_BUILD_TARGET,$(target))))
 
 # Build_Go_Application is a build command for the Kuma Go applications.
-Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) $(GO) build -v $$(GOFLAGS) $(call LD_FLAGS,$(1),$(2)) -o $$@/$$(notdir $$@)
+Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) $(GO) build -v $$(GOFLAGS) $(call LD_FLAGS,$(1),$(2)) -o $$@
+
+artifact_dir = build/artifacts-$(1)-$(2)/$(3)
+artifact_dir_ready = $(call artifact_dir,$(1),$(2),$(3))/
+artifact_bin = $(call artifact_dir,$(1),$(2),$(3))/$(3)
 
 # create targets to build binaries for each OS/ARCH combination
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
 define BUILD_TARGET
 ENVOY_VERSION_$(1)_$(2)=$(if $(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION))
-.PHONY: build/artifacts-$(1)-$(2)/kuma-cp
-build/artifacts-$(1)-$(2)/kuma-cp:
+$(call artifact_dir_ready,$(1),$(2),kuma-cp) \
+$(call artifact_dir_ready,$(1),$(2),kuma-dp) \
+$(call artifact_dir_ready,$(1),$(2),kumactl) \
+$(call artifact_dir_ready,$(1),$(2),kuma-cni) \
+$(call artifact_dir_ready,$(1),$(2),install-cni) \
+$(call artifact_dir_ready,$(1),$(2),coredns) \
+$(call artifact_dir_ready,$(1),$(2),envoy) \
+$(call artifact_dir_ready,$(1),$(2),test-server):
+	mkdir -p $$@
+
+$(call artifact_bin,$(1),$(2),kuma-cp): | $(call artifact_dir_ready,$(1),$(2),kuma-cp)
 	$(Build_Go_Application) ./app/kuma-cp
 
-.PHONY: build/artifacts-$(1)-$(2)/kuma-dp
-build/artifacts-$(1)-$(2)/kuma-dp:
+$(call artifact_bin,$(1),$(2),kuma-dp): | $(call artifact_dir_ready,$(1),$(2),kuma-dp)
 	$(Build_Go_Application) ./app/kuma-dp
 
-.PHONY: build/artifacts-$(1)-$(2)/kumactl
-build/artifacts-$(1)-$(2)/kumactl: build/ebpf
+$(call artifact_bin,$(1),$(2),kumactl): build/ebpf | $(call artifact_dir_ready,$(1),$(2),kumactl)
 	$(Build_Go_Application) ./app/kumactl
 
-.PHONY: build/artifacts-$(1)-$(2)/kuma-cni
-build/artifacts-$(1)-$(2)/kuma-cni:
+$(call artifact_bin,$(1),$(2),kuma-cni): | $(call artifact_dir_ready,$(1),$(2),kuma-cni)
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/kuma-cni
 
-.PHONY: build/artifacts-$(1)-$(2)/install-cni
-build/artifacts-$(1)-$(2)/install-cni:
+$(call artifact_bin,$(1),$(2),install-cni): | $(call artifact_dir_ready,$(1),$(2),install-cni)
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
 
-.PHONY: build/artifacts-$(1)-$(2)/coredns
-build/artifacts-$(1)-$(2)/coredns:
-	mkdir -p $$(@) && \
-	[ -f $$(@)/coredns ] || \
-	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
+$(call artifact_bin,$(1),$(2),coredns): | $(call artifact_dir_ready,$(1),$(2),coredns)
+	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@D) -xz
+	test -f $$@
 
-.PHONY: build/artifacts-$(1)-$(2)/envoy
-build/artifacts-$(1)-$(2)/envoy:
-	mkdir -p $$(@) && \
-	[ -f $$(@)/envoy ] || \
-	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$$(ENVOY_VERSION_$(1)_$(2))/envoy-$(1)-$(2)-v$$(ENVOY_VERSION_$(1)_$(2))$(ENVOY_EXT_$(1)_$(2)).tar.gz | tar -C $$(@) -xz
+$(call artifact_bin,$(1),$(2),envoy): | $(call artifact_dir_ready,$(1),$(2),envoy)
+	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$$(ENVOY_VERSION_$(1)_$(2))/envoy-$(1)-$(2)-v$$(ENVOY_VERSION_$(1)_$(2))$(ENVOY_EXT_$(1)_$(2)).tar.gz | tar -C $$(@D) -xz
+	test -f $$@
 
-.PHONY: build/artifacts-$(1)-$(2)/test-server
-build/artifacts-$(1)-$(2)/test-server:
+$(call artifact_bin,$(1),$(2),test-server): | $(call artifact_dir_ready,$(1),$(2),test-server)
 	$(Build_Go_Application) ./test/server
+
+build/artifacts-$(1)-$(2)/kuma-cp: $(call artifact_bin,$(1),$(2),kuma-cp)
+	touch $$@
+
+build/artifacts-$(1)-$(2)/kuma-dp: $(call artifact_bin,$(1),$(2),kuma-dp)
+	touch $$@
+
+build/artifacts-$(1)-$(2)/kumactl: $(call artifact_bin,$(1),$(2),kumactl)
+	touch $$@
+
+build/artifacts-$(1)-$(2)/kuma-cni: $(call artifact_bin,$(1),$(2),kuma-cni)
+	touch $$@
+
+build/artifacts-$(1)-$(2)/install-cni: $(call artifact_bin,$(1),$(2),install-cni)
+	touch $$@
+
+build/artifacts-$(1)-$(2)/coredns: $(call artifact_bin,$(1),$(2),coredns)
+	touch $$@
+
+build/artifacts-$(1)-$(2)/envoy: $(call artifact_bin,$(1),$(2),envoy)
+	touch $$@
+
+build/artifacts-$(1)-$(2)/test-server: $(call artifact_bin,$(1),$(2),test-server)
+	touch $$@
 
 endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))

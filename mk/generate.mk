@@ -17,14 +17,14 @@ EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools
 
 .PHONY: generate/protos
-generate/protos:
+generate/protos: $(PROTO_DEPS)
 	find $(PROTO_DIRS) -name '*.proto' -exec $(PROTOC_GO) {} \;
 
 .PHONY: clean/tools
 clean/tools:
 	rm -rf $(KUMA_DIR)/build/tools-*
 
-.PHONY: clean/proto
+.PHONY: clean/protos
 clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
@@ -79,7 +79,7 @@ clean/policies: $(addprefix clean/policy/,$(policies))
 
 # deletes all files in policy directory except *.proto and validator.go
 clean/policy/%:
-	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
+	find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*' \) -not -path '*/testdata/*' -type f -delete
 	@rm -fr $(POLICIES_DIR)/$*/k8s
 
 generate/deep-copy/common:

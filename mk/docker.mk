@@ -75,14 +75,15 @@ $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goa
 # $(2) - GOARCH to build for
 # (TODO): Support image platform in output file names
 define DOCKER_TARGETS_BY_ARCH
-.PHONY: docker/save/$(1)/$(2)
-docker/save/$(1)/$(2):
-	@mkdir -p build/docker
-	docker save --output build/docker/$(1)-$(2).tar $$(call build_image,$(1),$(2))
+build/docker/$(1)-$(2).tar: image/$(1)/$(2) | build/docker/
+	docker save --output $$@ $$(call build_image,$(1),$(2))
 
-.PHONY: docker/$(1)/$(2)
-docker/load/$(1)/$(2):
-	@docker load --quiet --input build/docker/$(1)-$(2).tar
+.PHONY: docker/save/$(1)/$(2)
+docker/save/$(1)/$(2): build/docker/$(1)-$(2).tar
+
+.PHONY: docker/load/$(1)/$(2)
+docker/load/$(1)/$(2): build/docker/$(1)-$(2).tar
+	@docker load --quiet --input $$<
 
 # we only tag the image that has the same arch than the HOST (tag is meant to use the image just after so having the same arch makes sense)
 .PHONY: docker/tag/$(1)/$(2)
@@ -94,6 +95,9 @@ docker/push/$(1)/$(2):
 	$$(call GATE_PUSH,docker push $$(call build_image,$(1),$(2)))
 endef
 $(foreach goarch, $(SUPPORTED_GOARCHES),$(foreach image, $(IMAGES_RELEASE) $(IMAGES_TEST),$(eval $(call DOCKER_TARGETS_BY_ARCH,$(image),$(goarch)))))
+
+build/docker/:
+	@mkdir -p $@
 
 # add targets to generate docker/{save,load,tag,push} for all supported ARCH
 # $(1) - image name
