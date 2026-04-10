@@ -2,6 +2,7 @@ package api_server
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -34,6 +35,14 @@ type ApiServerConfig struct {
 	RootUrl string `json:"rootUrl" envconfig:"kuma_api_server_root_url"`
 	// GUI configuration specific to the GUI
 	GUI ApiServerGUI `json:"gui,omitempty"`
+	// ReadHeaderTimeout is the amount of time allowed to read request headers.
+	ReadHeaderTimeout config_types.Duration `json:"readHeaderTimeout" envconfig:"kuma_api_server_read_header_timeout"`
+	// ReadTimeout is the maximum duration for reading the entire request.
+	ReadTimeout config_types.Duration `json:"readTimeout" envconfig:"kuma_api_server_read_timeout"`
+	// WriteTimeout is the maximum duration before timing out writes of the response.
+	WriteTimeout config_types.Duration `json:"writeTimeout" envconfig:"kuma_api_server_write_timeout"`
+	// IdleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
+	IdleTimeout config_types.Duration `json:"idleTimeout" envconfig:"kuma_api_server_idle_timeout"`
 }
 
 type ApiServerGUI struct {
@@ -216,6 +225,18 @@ func (a *ApiServerConfig) Validate() error {
 	if err := a.Authn.Validate(); err != nil {
 		errs = multierr.Append(err, errors.Wrap(err, ".Authn is not valid"))
 	}
+	if a.ReadHeaderTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".ReadHeaderTimeout must be greater or equal 0s"))
+	}
+	if a.ReadTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".ReadTimeout must be greater or equal 0s"))
+	}
+	if a.WriteTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".WriteTimeout must be greater or equal 0s"))
+	}
+	if a.IdleTimeout.Duration < 0 {
+		errs = multierr.Append(errs, errors.New(".IdleTimeout must be greater or equal 0s"))
+	}
 	return errs
 }
 
@@ -257,5 +278,9 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			Enabled:  true,
 			BasePath: "/gui",
 		},
+		ReadHeaderTimeout: config_types.Duration{Duration: time.Second},
+		ReadTimeout:       config_types.Duration{Duration: 10 * time.Second},
+		WriteTimeout:      config_types.Duration{Duration: 30 * time.Second},
+		IdleTimeout:       config_types.Duration{Duration: 120 * time.Second},
 	}
 }
