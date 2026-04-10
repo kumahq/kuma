@@ -62,6 +62,11 @@ resources:
                 route:
                   cluster: system_probe_readiness
                   prefixRewrite: /ready
+              - match:
+                  prefix: /
+                route:
+                  cluster: system_probe_readiness
+                  prefixRewrite: /
           statPrefix: system_envoy_admin
     - filterChainMatch:
         transportProtocol: tls

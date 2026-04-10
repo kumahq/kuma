@@ -110,8 +110,20 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, err
 	}
 
-	for _, se := range staticEndpointPaths {
-		se.ClusterName = dppReadinessClusterName
+	// When Envoy admin is on a Unix domain socket, expose all read-only admin
+	// endpoints on the plain HTTP filter chain via the readiness reporter proxy.
+	// This allows operators and tests to access /stats, /config_dump, etc. via
+	// plain HTTP on the admin port (e.g. via kubectl port-forward).
+	endpointPaths := staticEndpointPaths
+	if proxy.Metadata.GetAdminSocketPath() != "" {
+		endpointPaths = []*envoy_common.StaticEndpointPath{
+			{Path: "/ready", RewritePath: "/ready", ClusterName: dppReadinessClusterName},
+			{Path: "/", RewritePath: "/", ClusterName: dppReadinessClusterName},
+		}
+	} else {
+		for _, se := range staticEndpointPaths {
+			se.ClusterName = dppReadinessClusterName
+		}
 	}
 	for _, se := range staticTlsEndpointPaths {
 		switch se.Path {
@@ -132,7 +144,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, staticEndpointPaths)),
+				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, endpointPaths)),
 			),
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
