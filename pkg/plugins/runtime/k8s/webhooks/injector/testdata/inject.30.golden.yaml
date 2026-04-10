@@ -150,7 +150,7 @@ spec:
         memory: 80M
       requests:
         cpu: 20m
-        memory: 20Mi
+        memory: 20M
     securityContext:
       capabilities: {}
       privileged: true

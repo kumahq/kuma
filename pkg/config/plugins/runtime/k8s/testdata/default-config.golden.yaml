@@ -34,10 +34,10 @@ injector:
     resources:
       limits:
         cpu: "0"
-        memory: 50Mi
+        memory: 50M
       requests:
         cpu: 20m
-        memory: 20Mi
+        memory: 20M
   nodeLabelsToCopy:
   - topology.kubernetes.io/zone
   - topology.kubernetes.io/region

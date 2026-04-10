@@ -336,13 +336,13 @@ runtime:
             # CPU, in cores. (500m = .5 cores)
             cpu: 20m # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
             # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
-            memory: 20Mi # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
+            memory: 20M # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
           # Maximum amount of compute resources allowed.
           limits:
             # CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
             cpu: "0" # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
             # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
-            memory: 50Mi # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
+            memory: 50M # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
       # ContainerPatches is an optional list of ContainerPatch names which will be applied
       # to init and sidecar containers if workload is not annotated with a patch list.
       containerPatches: [] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES

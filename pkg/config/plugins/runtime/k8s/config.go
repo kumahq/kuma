@@ -69,11 +69,11 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				Resources: InitContainerResources{
 					Requests: InitContainerResourceRequests{
 						CPU:    "20m",
-						Memory: "20Mi",
+						Memory: "20M",
 					},
 					Limits: InitContainerResourceLimits{
 						CPU:    "0",
-						Memory: "50Mi",
+						Memory: "50M",
 					},
 				},
 			},

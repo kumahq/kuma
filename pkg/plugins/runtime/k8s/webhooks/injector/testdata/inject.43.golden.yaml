@@ -147,10 +147,10 @@ spec:
     name: kuma-init
     resources:
       limits:
-        memory: 50Mi
+        memory: 50M
       requests:
         cpu: 20m
-        memory: 20Mi
+        memory: 20M
     securityContext:
       capabilities:
         add:

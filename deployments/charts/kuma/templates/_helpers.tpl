@@ -274,11 +274,11 @@ env:
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
   value: {{ .Values.dataPlane.initContainer.resources.requests.cpu | default "20m" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
-  value: {{ .Values.dataPlane.initContainer.resources.requests.memory | default "20Mi" | quote }}
+  value: {{ .Values.dataPlane.initContainer.resources.requests.memory | default "20M" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
   value: {{ .Values.dataPlane.initContainer.resources.limits.cpu | default "0" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
-  value: {{ .Values.dataPlane.initContainer.resources.limits.memory | default "50Mi" | quote }}
+  value: {{ .Values.dataPlane.initContainer.resources.limits.memory | default "50M" | quote }}
 {{- if .Values.dataPlane.dnsLogging }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
   value: "true"

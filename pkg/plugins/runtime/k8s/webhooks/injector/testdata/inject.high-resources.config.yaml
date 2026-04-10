@@ -33,10 +33,10 @@ initContainer:
   resources:
     requests:
       cpu: 20m
-      memory: 20Mi
+      memory: 20M
     limits:
       cpu: "0"
-      memory: 50Mi
+      memory: 50M
 builtinDNS:
   enabled: true
   port: 25053

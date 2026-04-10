@@ -536,11 +536,11 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
               value: "0"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
-              value: "50Mi"
+              value: "50M"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
               value: "20m"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
-              value: "20Mi"
+              value: "20M"
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
               value: "0"
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
