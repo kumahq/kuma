@@ -142,6 +142,18 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 			m.UpstreamRequestDuration.Observe(time.Since(proxyStart).Seconds())
 		}
 	}
+	if m := s.metrics.Load(); m != nil {
+		qtype := "other"
+		source := "upstream"
+		if len(req.Question) > 0 {
+			qtype = qtypeLabel(req.Question[0].Qtype)
+			if dnsEntry != nil {
+				source = "local"
+			}
+		}
+		m.QueriesTotal.WithLabelValues(qtype, source).Inc()
+		m.ResponseCodesTotal.WithLabelValues(rcodeLabel(response.Rcode)).Inc()
+	}
 	err := res.WriteMsg(response)
 	if err != nil {
 		log.Error(err, "failed to write upstreamResponse")
@@ -275,6 +287,9 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	}
 	log.V(1).Info("DNS proxy configured", "config", res)
 	s.dnsMap.Store(&res)
+	if m := s.metrics.Load(); m != nil {
+		m.EntriesTotal.Set(float64(len(res.ARecords)))
+	}
 
 	return nil
 }
