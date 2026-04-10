@@ -4,7 +4,7 @@
 # Usage: collect-profiles.sh <label> [endpoint_url]
 #
 # Env:
-#   OUT_DIR     — base directory for profiles (default: ./profiles)
+#   OUT_DIR     — base directory for profiles (default: <script dir>/profiles)
 #   ENDPOINTS   — space-separated list of "<name>=<url>" pairs.
 #                 If set, overrides the positional endpoint argument and
 #                 collects from every endpoint in parallel. Each profile is
@@ -21,9 +21,10 @@
 #     collect-profiles.sh wave1
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LABEL=${1:-manual}
 SINGLE_EP=${2:-http://localhost:5680}
-OUT_DIR=${OUT_DIR:-./profiles}
+OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/profiles"}
 CPU_SECS=${CPU_SECS:-30}
 TRACE_SECS=${TRACE_SECS:-5}
 
@@ -35,7 +36,7 @@ collect_one() {
   echo "  [$name] metrics snapshot..."
   curl -sf "$ep/metrics" \
     | grep -E 'xds_generation|kds_delta|store_bucket|go_goroutines|go_memstats_heap|resources_count|process_cpu' \
-    > "$OUT/${prefix}metrics.txt"
+    > "$OUT/${prefix}metrics.txt" || true
 
   echo "  [$name] CPU profile (${CPU_SECS}s)..."
   go tool pprof -proto "$ep/debug/pprof/profile?seconds=${CPU_SECS}" > "$OUT/${prefix}cpu.pb.gz"

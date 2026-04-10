@@ -95,8 +95,15 @@ for i in $(seq 1 "$NS_COUNT"); do
 done
 
 echo "Wave $WAVE deployed. Waiting for pods to be ready..."
+FAILED_NAMESPACES=()
 for i in $(seq 1 "$NS_COUNT"); do
   NS="${NS_PREFIX}${WAVE}-${i}"
-  kubectl "${CTX_ARG[@]}" -n "$NS" wait --for=condition=available deployment --all --timeout=300s 2>/dev/null || true
+  if ! kubectl "${CTX_ARG[@]}" -n "$NS" wait --for=condition=available deployment --all --timeout=300s; then
+    FAILED_NAMESPACES+=("$NS")
+  fi
 done
+if [[ ${#FAILED_NAMESPACES[@]} -gt 0 ]]; then
+  echo "Wave $WAVE failed: deployments not available in: ${FAILED_NAMESPACES[*]}" >&2
+  exit 1
+fi
 echo "Wave $WAVE ready."

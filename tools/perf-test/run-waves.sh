@@ -6,7 +6,7 @@
 #
 # Env:
 #   KUBE_CONTEXT     — kubectl context (required if not default)
-#   OUT_DIR          — profile output directory (default: ./profiles)
+#   OUT_DIR          — profile output directory (default: <script dir>/profiles)
 #   ENDPOINTS        — space-separated "<name>=<url>" pairs (e.g.
 #                      "zone=http://localhost:5680 global=http://34.10.179.32:5680")
 #                      Defaults to "cp=http://localhost:5680".
@@ -22,7 +22,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-OUT_DIR=${OUT_DIR:-./profiles}
+OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/profiles"}
 STABILIZE_SECS=${STABILIZE_SECS:-300}
 ENDPOINTS=${ENDPOINTS:-"cp=http://localhost:5680"}
 WAVES=${WAVES:-"1:5:5:2 2:10:5:2 3:20:5:3 4:30:10:3 5:20:10:5"}

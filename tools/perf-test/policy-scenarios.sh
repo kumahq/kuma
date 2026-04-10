@@ -17,7 +17,7 @@
 #
 # Env:
 #   KUBE_CONTEXT   — kubectl context (required if not default)
-#   OUT_DIR        — profile output dir (default: ./profiles)
+#   OUT_DIR        — profile output dir (default: <script dir>/profiles)
 #   ENDPOINTS      — space-separated "<name>=<url>" pairs (same format as run-waves.sh)
 #   N              — policies per scenario (default: 50)
 #   APP_LABELS     — distinct app label values for the SPREAD scenario
@@ -26,7 +26,8 @@
 #   CPU_SECS       — CPU profile duration (default: 60)
 set -e
 
-OUT_DIR=${OUT_DIR:-./profiles}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/profiles"}
 ENDPOINTS=${ENDPOINTS:-"cp=http://localhost:5680"}
 N=${N:-50}
 APP_LABELS=${APP_LABELS:-"svc-1 svc-2 svc-3 svc-4 svc-5 svc-6 svc-7 svc-8 svc-9 svc-10"}
@@ -63,7 +64,7 @@ collect_heap_metrics() {
     local ep=${pair#*=}
     curl -sf "$ep/metrics" \
       | grep -E 'kds_delta|resources_count|xds_generation|go_goroutines|go_memstats_heap' \
-      > "$OUT_DIR/$label/${name}-metrics.txt"
+      > "$OUT_DIR/$label/${name}-metrics.txt" || true
     go tool pprof -proto "$ep/debug/pprof/heap" > "$OUT_DIR/$label/${name}-heap.pb.gz"
   done
   echo "  collected $label"

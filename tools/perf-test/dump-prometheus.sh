@@ -7,14 +7,15 @@
 #
 # Env:
 #   PROM_URL       — Prometheus base URL (default: http://localhost:9090)
-#   OUT_DIR        — output dir (default: ./profiles/prometheus)
+#   OUT_DIR        — output dir (default: <script dir>/profiles/prometheus)
 #   WINDOW_MINUTES — how far back to query (default: 150)
 #   STEP           — range query step in seconds (default: 15)
 #   NAMESPACE      — Kuma CP namespace for container/pod metrics (default: kuma-system)
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROM_URL=${PROM_URL:-http://localhost:9090}
-OUT_DIR=${OUT_DIR:-./profiles/prometheus}
+OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/profiles/prometheus"}
 WINDOW_MINUTES=${WINDOW_MINUTES:-150}
 STEP=${STEP:-15}
 NAMESPACE=${NAMESPACE:-kuma-system}
