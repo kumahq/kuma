@@ -497,6 +497,10 @@ apiServer:
     enabled: false
     rootUrl: https://bar.com
     basePath: /ui
+  readHeaderTimeout: 2s
+  readTimeout: 20s
+  writeTimeout: 60s
+  idleTimeout: 240s
 monitoringAssignmentServer:
   enabled: false
   port: 2222
@@ -915,6 +919,10 @@ meshService:
 				"KUMA_API_SERVER_GUI_ENABLED":                                                              "false",
 				"KUMA_API_SERVER_GUI_ROOT_URL":                                                             "https://bar.com",
 				"KUMA_API_SERVER_GUI_BASE_PATH":                                                            "/ui",
+				"KUMA_API_SERVER_READ_HEADER_TIMEOUT":                                                      "2s",
+				"KUMA_API_SERVER_READ_TIMEOUT":                                                             "20s",
+				"KUMA_API_SERVER_WRITE_TIMEOUT":                                                            "60s",
+				"KUMA_API_SERVER_IDLE_TIMEOUT":                                                             "240s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED":                                                "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",

@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/versions"
 )
 
 // Ensure that the upstream Kuma help repository is configured
@@ -79,25 +78,27 @@ func CpCompatibilityMultizoneKubernetes() {
 		DebugKube(zoneCluster, "default", TestNamespace)
 	})
 
-	DescribeTable("Cross version check", func(globalConf, zoneConf []KumaDeploymentOption) {
-		// Start a global
+	DescribeTable("Cross version check", func(version string) {
+		// Start a global (new version, local chart)
 		err := NewClusterSetup().
 			Install(Kuma(core.Global,
-				append(globalConf,
-					WithInstallationMode(HelmInstallationMode),
-					WithHelmReleaseName(globalReleaseName))...,
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmReleaseName(globalReleaseName),
+				WithHelmChartPath(Config.HelmChartPath),
 			)).
 			SetupWithRetries(globalCluster, 3)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Start a zone
+		// Start a zone (old version, from helm repo)
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
-				append(zoneConf,
-					WithInstallationMode(HelmInstallationMode),
-					WithHelmReleaseName(zoneReleaseName),
-					WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),
-					WithHelmOpt("ingress.enabled", "true"))...,
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmReleaseName(zoneReleaseName),
+				WithHelmChartPath(Config.HelmChartName),
+				WithoutHelmOpt("global.image.tag"),
+				WithHelmChartVersion(version),
+				WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),
+				WithHelmOpt("ingress.enabled", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			SetupWithRetries(zoneCluster, 3)
@@ -120,21 +121,13 @@ metadata:
 		// when new resources is created on Zone
 		err = democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))(zoneCluster)
 
-		// then resource is synchronized to Global (The namespace here will need to be updated as soon as the minimum version is 2.5.x
+		// then resource is synchronized to Global
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
 			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("kuma-system"), "get", "dataplanes")
 		}, "30s", "1s").Should(ContainSubstring("demo-client"))
-	}, Entry(
-		"Sync new global and old zone",
-		[]KumaDeploymentOption{
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmChartPath(Config.HelmChartPath),
-		},
-		[]KumaDeploymentOption{
-			WithHelmChartPath(Config.HelmChartName),
-			WithoutHelmOpt("global.image.tag"),
-			WithHelmChartVersion(versions.OldestSupportedVersionFromBuild(Config.SupportedVersions())),
-		},
-	))
+	},
+		EntryDescription("from version: %s"),
+		SupportedVersionEntries(),
+	)
 }
