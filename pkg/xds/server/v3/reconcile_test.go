@@ -134,12 +134,12 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			r := &reconciler{
-				snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+				generator: snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
 					snap := <-snapshots
 					return &snap, nil
 				}),
-				&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
-				statsCallbacks,
+				cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
+				statsCallbacks: statsCallbacks,
 			}
 
 			// given

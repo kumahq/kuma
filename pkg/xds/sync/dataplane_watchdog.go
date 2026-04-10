@@ -21,6 +21,7 @@ import (
 	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 )
 
@@ -35,6 +36,7 @@ type DataplaneWatchdogDependencies struct {
 	MeshCache             *mesh.Cache
 	ResManager            core_manager.ReadOnlyResourceManager
 	OtelStatusCache       *otelstatus.Cache
+	XdsMetrics            *xds_metrics.Metrics
 }
 
 type Status string
@@ -188,6 +190,11 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 			return SyncResult{}, errors.Wrap(err, "could not get identity")
 		}
 		d.workloadIdentity = identity
+		if d.XdsMetrics != nil && identity != nil && identity.ExpirationTime != nil {
+			d.XdsMetrics.CertExpirationTimestamp.
+				WithLabelValues(d.key.Mesh).
+				Set(float64(identity.ExpirationTime.Unix()))
+		}
 	}
 	if d.workloadIdentity != nil {
 		proxy.WorkloadIdentity = d.workloadIdentity
