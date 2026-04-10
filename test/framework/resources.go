@@ -1,9 +1,12 @@
 package framework
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -144,6 +147,33 @@ func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (i
 		Total int `json:"total"`
 	}{}
 	if err := json.Unmarshal([]byte(output), &t); err != nil {
+		return 0, err
+	}
+	return t.Total, nil
+}
+
+// NumberOfResourcesByPath counts resources by querying the cluster's REST API
+// directly at the given path (e.g. "/zone-ingresses"). Use this instead of
+// NumberOfResources when the cluster runs an old CP that may not support the
+// current kumactl endpoint names.
+func NumberOfResourcesByPath(c Cluster, path string) (int, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.GetKuma().GetAPIServerAddress()+path, http.NoBody)
+	if err != nil {
+		return 0, err
+	}
+	r, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = r.Body.Close() }()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return 0, err
+	}
+	t := struct {
+		Total int `json:"total"`
+	}{}
+	if err := json.Unmarshal(body, &t); err != nil {
 		return 0, err
 	}
 	return t.Total, nil

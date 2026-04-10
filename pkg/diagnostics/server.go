@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"runtime"
 	"sync/atomic"
 	"time"
 
@@ -56,6 +57,8 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	})
 	mux.Handle("/metrics", promhttp.InstrumentMetricHandler(s.metrics, promhttp.HandlerFor(s.metrics, promhttp.HandlerOpts{})))
 	if s.config.DebugEndpoints {
+		runtime.SetMutexProfileFraction(5)
+		runtime.SetBlockProfileRate(int(time.Microsecond))
 		mux.HandleFunc("/debug/pprof/", pprof.Index)
 		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)

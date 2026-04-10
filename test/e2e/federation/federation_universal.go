@@ -31,12 +31,12 @@ func FederateKubeZoneCPToUniversalGlobal() {
 		releaseName = fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Global, WithEnv("KUMA_DEFAULTS_SKIP_MESH_CREATION", "true"))).
+			Install(E2EKuma(core.Global, WithEnv("KUMA_DEFAULTS_SKIP_MESH_CREATION", "true"))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 			)).

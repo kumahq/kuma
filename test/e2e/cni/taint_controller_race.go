@@ -43,7 +43,7 @@ metadata:
 		)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default

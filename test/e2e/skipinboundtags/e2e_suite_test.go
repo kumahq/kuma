@@ -17,24 +17,31 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Skip Inbound Tags Kubernetes Suite")
 }
 
-var _ = framework.E2EBeforeSuite(func() {
-	skipinboundtags.KubeCluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Silent)
+var _ = framework.E2ESynchronizedBeforeSuite(
+	func() []byte {
+		skipinboundtags.KubeCluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Silent)
 
-	err := framework.NewClusterSetup().
-		Install(framework.Kuma(config_core.Zone,
-			framework.WithEnv("KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED", "true"),
-		)).
-		Setup(skipinboundtags.KubeCluster)
+		err := framework.NewClusterSetup().
+			Install(framework.E2EKuma(config_core.Zone,
+				framework.WithEnv("KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED", "true"),
+			)).
+			Setup(skipinboundtags.KubeCluster)
 
-	Expect(err).ToNot(HaveOccurred())
-})
+		Expect(err).ToNot(HaveOccurred())
+		return nil
+	},
+	func(_ []byte) {},
+)
 
 var _ = framework.E2EAfterSuite(func() {
+	if skipinboundtags.KubeCluster == nil {
+		return
+	}
 	Expect(skipinboundtags.KubeCluster.DeleteKuma()).To(Succeed())
 	Expect(skipinboundtags.KubeCluster.DismissCluster()).To(Succeed())
 })
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Skip Inbound Tags on Kubernetes", Label("job-3"), skipinboundtags.SkipInboundTags, Ordered)
+	_ = Describe("Skip Inbound Tags on Kubernetes", Label("job-3"), Ordered, skipinboundtags.SkipInboundTags, Serial)
 )

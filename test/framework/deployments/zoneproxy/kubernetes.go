@@ -110,7 +110,7 @@ func (d *k8sDeployment) ingressService() *corev1.Service {
 			},
 		},
 		Spec: corev1.ServiceSpec{
-			Type:     corev1.ServiceTypeLoadBalancer,
+			Type:     corev1.ServiceTypeNodePort,
 			Selector: map[string]string{"app": name},
 			Ports: []corev1.ServicePort{
 				{

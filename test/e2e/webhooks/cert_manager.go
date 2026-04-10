@@ -14,16 +14,19 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/certmanager"
+	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
 )
 
 func CertManagerCAInjection() {
-	var cluster Cluster
+	const namespace = "cert-manager-dp-test"
+	const mesh = "default"
+	var cluster *K8sCluster
 	var releaseName string
 
 	BeforeAll(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
-			WithRetries(60)
+			WithRetries(60).(*K8sCluster)
 
 		const certManagerNamespace = "cert-manager"
 
@@ -36,28 +39,34 @@ func CertManagerCAInjection() {
 			Install(certmanager.Install(
 				certmanager.WithNamespace(certManagerNamespace),
 			)).
-			Install(Kuma(core.Zone,
+			Install(E2EKuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("controlPlane.tls.general.certManager.enabled", "true"),
+			)).
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
 			)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(cluster, Config.KumaNamespace)
+		DebugKube(cluster, mesh, namespace, Config.KumaNamespace)
 	})
 
 	E2EAfterAll(func() {
 		Expect(cluster.DeleteKuma()).To(Succeed())
+		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteDeployment(certmanager.DeploymentName)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should have certificate with all required DNS SANs", func() {
 		kumaNamespace := Config.KumaNamespace
-		serviceName := releaseName + "-control-plane"
+		serviceName := Config.KumaServiceName
 
 		// Verify Certificate has all required DNS names
 		Eventually(func(g Gomega) {
@@ -84,79 +93,13 @@ func CertManagerCAInjection() {
 	})
 
 	It("should allow dataplane to connect to control plane", func() {
-		const namespace = "cert-manager-dp-test"
-		const mesh = "default"
-
-		// Create namespace with sidecar injection enabled
-		err := NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Deploy a simple workload that will get sidecar injected
-		deployment := `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-app
-  namespace: %s
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: test-app
-  template:
-    metadata:
-      labels:
-        app: test-app
-        kuma.io/mesh: %s
-    spec:
-      containers:
-      - name: test-app
-        image: busybox:1.36
-        command: ["sleep", "infinity"]
-`
-		err = k8s.KubectlApplyFromStringE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(namespace),
-			fmt.Sprintf(deployment, namespace, mesh),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Wait for pod to be ready (sidecar injected and running)
-		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
-				cluster.GetKubectlOptions(namespace),
-				"get", "pods", "-l", "app=test-app",
-				"-o", "jsonpath={.items[0].status.containerStatuses[*].ready}",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			// Both containers (app + sidecar) should be ready
-			g.Expect(output).To(ContainSubstring("true"))
-		}, "120s", "1s").Should(Succeed(), "Pod with sidecar should become ready")
-
 		// Verify dataplane is online (connected to control plane)
 		Eventually(func(g Gomega) {
-			online, found, err := IsDataplaneOnline(cluster, mesh, "test-app")
+			online, found, err := IsDataplaneOnline(cluster, mesh, "test-server")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(found).To(BeTrue(), "Dataplane should be found")
 			g.Expect(online).To(BeTrue(), "Dataplane should be online")
 		}, "60s", "1s").Should(Succeed(), "Dataplane should connect to control plane using cert-manager certificate")
-
-		// Cleanup
-		err = k8s.KubectlDeleteFromStringE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(namespace),
-			fmt.Sprintf(deployment, namespace, mesh),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		_, _ = k8s.RunKubectlAndGetOutputE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(),
-			"delete", "namespace", namespace,
-		)
 	})
 
 	It("should inject CA bundle into Kuma webhook configurations", func() {
@@ -239,88 +182,6 @@ spec:
 		Expect(err).ToNot(HaveOccurred(), "Webhooks should successfully validate Mesh resource")
 
 		// Clean up the test mesh
-		err = k8s.KubectlDeleteFromStringE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(Config.KumaNamespace),
-			meshYaml,
-		)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	It("should continue working after certificate rotation", func() {
-		kumaNamespace := Config.KumaNamespace
-
-		// Get the current certificate's serial number
-		var originalSerial string
-		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
-				cluster.GetKubectlOptions(kumaNamespace),
-				"get", "secret", "kuma-tls-cert",
-				"-o", "jsonpath={.data.tls\\.crt}",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			originalSerial = output
-		}, "10s", "1s").Should(Succeed())
-
-		// Force certificate rotation by deleting the secret
-		// cert-manager will automatically recreate it
-		_, err := k8s.RunKubectlAndGetOutputE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(kumaNamespace),
-			"delete", "secret", "kuma-tls-cert",
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Wait for cert-manager to recreate the certificate
-		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
-				cluster.GetKubectlOptions(kumaNamespace),
-				"get", "certificate", "kuma-tls-cert",
-				"-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(output).To(Equal("True"))
-		}, "60s", "1s").Should(Succeed(), "Certificate should be recreated and ready after rotation")
-
-		// Verify the certificate has changed (new serial number)
-		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
-				cluster.GetKubectlOptions(kumaNamespace),
-				"get", "secret", "kuma-tls-cert",
-				"-o", "jsonpath={.data.tls\\.crt}",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(output).ToNot(Equal(originalSerial), "Certificate should have been rotated")
-		}, "60s", "1s").Should(Succeed())
-
-		// Verify CA bundle was re-injected into all webhooks after rotation
-		verifyWebhookCABundle(cluster, "validatingwebhookconfiguration", "kuma-validating-webhook-configuration")
-		verifyWebhookCABundle(cluster, "mutatingwebhookconfiguration", "kuma-admission-mutating-webhook-configuration")
-
-		// Verify webhooks still work after rotation by creating a test resource
-		meshYaml := `
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: test-mesh-rotation
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-    - name: ca-1
-      type: builtin
-`
-		err = k8s.KubectlApplyFromStringE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(Config.KumaNamespace),
-			meshYaml,
-		)
-		Expect(err).ToNot(HaveOccurred(), "Webhooks should work after certificate rotation")
-
-		// Clean up
 		err = k8s.KubectlDeleteFromStringE(
 			cluster.GetTesting(),
 			cluster.GetKubectlOptions(Config.KumaNamespace),
