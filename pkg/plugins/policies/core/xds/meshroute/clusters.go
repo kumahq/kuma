@@ -54,7 +54,10 @@ func GenerateClusters(
 			if meshCtx.IsExternalService(serviceName) {
 				switch {
 				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
-					sni := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
+					sni, ok := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
+					if !ok {
+						continue
+					}
 					if proxy.WorkloadIdentity != nil {
 						// MeshExternalService is only routable through zone egress in workload-identity mode.
 						// Skip cluster generation if no zone egress SANs are available.
@@ -143,7 +146,10 @@ func GenerateClusters(
 								}
 							}
 						}
-						sni := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
+						sni, ok := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
+						if !ok {
+							continue
+						}
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
@@ -233,11 +239,14 @@ func SniForBackendRef(
 	backendRef *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
 	systemNamespace string,
-) string {
-	var port int32
+) (string, bool) {
 	dest := meshCtx.GetServiceByKRI(backendRef.Resource)
-	if p, ok := dest.FindPortByName(backendRef.Resource.SectionName); ok {
-		port = p.GetValue()
+	if dest == nil {
+		return "", false
+	}
+	p, ok := dest.FindPortByName(backendRef.Resource.SectionName)
+	if !ok {
+		return "", false
 	}
 	resource := dest.(core_model.Resource)
 	name := core_model.GetDisplayName(resource.GetMeta())
@@ -245,7 +254,7 @@ func SniForBackendRef(
 		name = resource.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
 	}
 
-	return tls.SNIForResource(name, resource.GetMeta().GetMesh(), resource.Descriptor().Name, port, nil)
+	return tls.SNIForResource(name, resource.GetMeta().GetMesh(), resource.Descriptor().Name, p.GetValue(), nil), true
 }
 
 func Identities(
