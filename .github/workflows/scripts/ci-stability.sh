@@ -75,9 +75,12 @@ extract_state() {
 }
 
 render_comment() {
+  # Returns non-zero if any rendering jq fails so the caller can refuse to
+  # upsert a half-rendered comment over a previously good one. (Without this,
+  # silent jq compile errors would clobber the sticky with a blank table.)
   local state=$1
   local run_count flaky history encoded
-  run_count=$(jq '.runs | length' <<<"$state")
+  run_count=$(jq '.runs | length' <<<"$state") || return 1
   flaky=$(jq -r --argjson total "$run_count" '
     [.runs[] | select(.result == "fail") | .failed_jobs[]?]
     | sort
@@ -86,15 +89,15 @@ render_comment() {
     | sort_by(-.count)
     | .[] | select(.count >= 2)
     | "- `\(.job)` — failed \(.count) of \($total) run(s)"
-  ' <<<"$state")
+  ' <<<"$state") || return 1
   history=$(jq -r --argjson max "$MAX_HISTORY" '
     .runs | .[-$max:] | reverse | .[] |
     "| \(.number) | \(.observed_at) | [`\(.sha[0:7])`](\(.commit_url)) | " +
     (if   .result == "pass" then "✅ pass"
      elif .result == "fail" then "❌ fail"
      else .result end) +
-    " | \((.failed_jobs // []) | join(\"<br>\")) | [logs](\(.observed_run_url)) |"
-  ' <<<"$state")
+    " | \((.failed_jobs // []) | join("<br>")) | [logs](\(.observed_run_url)) |"
+  ' <<<"$state") || return 1
   encoded=$(encode_state "$state")
 
   {
@@ -262,7 +265,11 @@ process_pr() {
     gh pr edit "$pr" --remove-label "ci/verify-stability"              >/dev/null 2>&1 || true
     gh pr edit "$pr" --remove-label "ci/verify-stability-merge-master" >/dev/null 2>&1 || true
     local body
-    body=$(render_comment "$state")
+    if ! body=$(render_comment "$state"); then
+      err "PR #${pr}: render_comment failed, skipping comment update"
+      summary "- ⚠️ PR #${pr}: comment render failed"
+      return
+    fi
     body="${body}
 
 ---
@@ -329,7 +336,13 @@ Workflow run: ${RUN_URL}"
     return
   fi
 
-  upsert_sticky_comment "$pr" "$(render_comment "$state")" "$sticky_id"
+  local rendered
+  if ! rendered=$(render_comment "$state"); then
+    err "PR #${pr}: render_comment failed, skipping comment update"
+    summary "- ⚠️ PR #${pr}: comment render failed (CI was still triggered)"
+  else
+    upsert_sticky_comment "$pr" "$rendered" "$sticky_id"
+  fi
 
   log "PR #${pr}: observed=${result}, triggered run #${new_run_number}${merge_note}"
   summary "- 🔁 PR #${pr}: observed \`${result}\` on \`${head_sha:0:7}\`, triggered run #${new_run_number}${merge_note}"
