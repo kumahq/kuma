@@ -185,10 +185,17 @@ spec:
 			// After Helm upgrade returns, the old zone ingress pod may still be in Terminating
 			// state (K8s graceful period up to 30s) plus the CP deregistration delay (default 10s),
 			// so the old ingress remains visible to global for up to ~40s after the upgrade completes.
+			// Wait for all three views (global + both zones) to agree on 2; previously we only
+			// waited on global's view, which made Consistently race with reverse KDS push from
+			// global to the zone CPs and occasionally observe a stale count of 3 on a zone.
 			Eventually(func(g Gomega) {
 				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(zoneIngressesGlobal).To(Equal(2))
+				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesGlobal).To(And(Equal(2), Equal(zoneIngressesK8sZone), Equal(zoneIngressesUniversalZone)))
 			}, "2m", "1s").Should(Succeed())
 
 			// then
