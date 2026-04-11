@@ -23,7 +23,13 @@ const (
 	pathPrefixReady  = "/ready"
 	stateReady       = "READY"
 	stateTerminating = "TERMINATING"
+	stateNotReady    = "NOT_READY"
 )
+
+// ReadyChannel is closed once the corresponding component is ready to
+// serve. The readiness probe blocks (returns 503) until every channel
+// passed to NewReporter is closed.
+type ReadyChannel <-chan struct{}
 
 // Reporter reports the health status of this Kuma Dataplane Proxy.
 // When adminSocketPath is set, it also reverse-proxies Envoy admin
@@ -38,17 +44,19 @@ type Reporter struct {
 	adminSocketPath    string
 	adminClient        *http.Client
 	isTerminating      atomic.Bool
+	readyChannels      []ReadyChannel
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string) *Reporter {
+func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, readyChannels ...ReadyChannel) *Reporter {
 	r := &Reporter{
 		unixSocketDisabled: unixSocketDisabled,
 		socketDir:          socketDir,
 		localListenPort:    localListenPort,
 		localListenAddr:    localIPAddr,
 		adminSocketPath:    adminSocketPath,
+		readyChannels:      readyChannels,
 	}
 	if adminSocketPath != "" {
 		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
@@ -124,6 +132,20 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	if r.isTerminating.Load() {
 		r.writeState(writer, req, stateTerminating, http.StatusServiceUnavailable)
 		return
+	}
+
+	// Block until every dependency (e.g. the embedded DNS proxy) has
+	// signalled it's ready. Otherwise the wait-for-dataplane-ready
+	// PostStart hook releases the application container before the
+	// proxy can answer mesh DNS lookups, and the first request that
+	// hits a *.mesh hostname will fail with NXDOMAIN (see #16219).
+	for _, ch := range r.readyChannels {
+		select {
+		case <-ch:
+		default:
+			r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
+			return
+		}
 	}
 
 	// When admin is on UDS, proxy /ready to Envoy admin so that
