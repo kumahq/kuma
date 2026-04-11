@@ -88,13 +88,13 @@ var _ = Describe("Readiness Reporter", func() {
 	})
 
 	Context("with extra ready channels", func() {
-		It("returns 503 NOT_READY until every channel is closed, then 200 READY", func() {
+		It("/wait-deps returns 503 NOT_READY until every channel is closed, then 200 READY", func() {
 			depA := make(chan struct{})
 			depB := make(chan struct{})
 			startReporter("", readiness.ReadyChannel(depA), readiness.ReadyChannel(depB))
 
-			get := func() (int, string) {
-				resp, err := http.Get(baseURL + "/ready")
+			get := func(path string) (int, string) {
+				resp, err := http.Get(baseURL + path)
 				Expect(err).ToNot(HaveOccurred())
 				defer resp.Body.Close()
 				body, err := io.ReadAll(resp.Body)
@@ -102,17 +102,23 @@ var _ = Describe("Readiness Reporter", func() {
 				return resp.StatusCode, string(body)
 			}
 
-			code, body := get()
+			// /ready is unaffected — it must stay 200 from the start so
+			// kubelet probes don't slow down pod readiness.
+			code, body := get("/ready")
+			Expect(code).To(Equal(http.StatusOK))
+			Expect(body).To(Equal("READY"))
+
+			code, body = get("/wait-deps")
 			Expect(code).To(Equal(http.StatusServiceUnavailable))
 			Expect(body).To(Equal("NOT_READY"))
 
 			close(depA)
-			code, body = get()
+			code, body = get("/wait-deps")
 			Expect(code).To(Equal(http.StatusServiceUnavailable))
 			Expect(body).To(Equal("NOT_READY"))
 
 			close(depB)
-			code, body = get()
+			code, body = get("/wait-deps")
 			Expect(code).To(Equal(http.StatusOK))
 			Expect(body).To(Equal("READY"))
 		})
