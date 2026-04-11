@@ -21,6 +21,10 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   STABILITY_CONSECUTIVE_GREEN_THRESHOLD: "5"
   STABILITY_MAX_HISTORY: "20"
+  # Deterministic jobs (build/lint/distribution-packaging) that cannot be
+  # flaky by nature; excluded from the "Likely flaky jobs" rollup. Comma-
+  # separated, edit here to add/remove without script changes.
+  STABILITY_FLAKE_EXCLUDE: "check,distributions"
 
 jobs:
   trigger-ci:

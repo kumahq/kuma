@@ -26,6 +26,11 @@ readonly STATE_PREFIX="<!-- ci-stability-state: "
 readonly STATE_SUFFIX=" -->"
 readonly GREEN_THRESHOLD="${STABILITY_CONSECUTIVE_GREEN_THRESHOLD:-5}"
 readonly MAX_HISTORY="${STABILITY_MAX_HISTORY:-20}"
+# Comma-separated list of job names that are deterministic (build/lint/etc.)
+# and should never be reported as flaky. They still appear in the per-run
+# History column when they fail — only the rollup "Likely flaky jobs"
+# section filters them out.
+readonly FLAKE_EXCLUDE="${STABILITY_FLAKE_EXCLUDE:-check,distributions}"
 
 log()  { printf '::notice::%s\n' "$*"; }
 warn() { printf '::warning::%s\n' "$*"; }
@@ -81,8 +86,12 @@ render_comment() {
   local state=$1
   local run_count flaky history encoded
   run_count=$(jq '.runs | length' <<<"$state") || return 1
-  flaky=$(jq -r --argjson total "$run_count" '
+  local exclude_json
+  exclude_json=$(printf '%s' "$FLAKE_EXCLUDE" |
+    jq -R 'split(",") | map(select(length > 0))') || return 1
+  flaky=$(jq -r --argjson total "$run_count" --argjson exclude "$exclude_json" '
     [.runs[] | select(.result == "fail") | .failed_jobs[]?]
+    | map(select(. as $j | $exclude | index($j) | not))
     | sort
     | group_by(.)
     | map({job: .[0], count: length})
