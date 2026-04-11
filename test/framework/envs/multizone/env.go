@@ -189,7 +189,7 @@ func SetupAndGetState() []byte {
 		for _, z := range wantZones {
 			g.Expect(out).To(ContainSubstring(z), "zone %s missing from global zones list:\n%s", z, out)
 			// Match an "Online" row for the zone — fail if it shows Offline.
-			for _, line := range strings.Split(out, "\n") {
+			for line := range strings.SplitSeq(out, "\n") {
 				if strings.HasPrefix(line, z+" ") || strings.Contains(line, " "+z+" ") {
 					g.Expect(line).To(ContainSubstring("Online"), "zone %s is not Online: %s", z, line)
 				}
