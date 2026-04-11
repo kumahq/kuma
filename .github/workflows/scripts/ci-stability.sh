@@ -45,12 +45,17 @@ decode_state() { printf '%s' "$1" | base64 -d 2>/dev/null; }
 # ---- sticky comment helpers -------------------------------------------------
 
 fetch_sticky_comment() {
-  # Prints the sticky comment JSON ({id, body}) or empty.
-  local pr=$1
-  gh api "repos/${OWNER}/${REPO}/issues/${pr}/comments" --paginate 2>/dev/null |
-    jq -c --arg marker "$STICKY_MARKER" '
-      [.[] | select(.body | contains($marker))] | first // empty
-    '
+  # Prints the sticky comment JSON ({id, body}) on stdout, or empty if no
+  # matching comment exists. Returns non-zero on API failure so callers can
+  # distinguish "no such comment" from "couldn't reach GitHub" — important
+  # to avoid creating duplicate sticky comments on transient errors.
+  local pr=$1 json
+  if ! json=$(gh api "repos/${OWNER}/${REPO}/issues/${pr}/comments" --paginate 2>/dev/null); then
+    return 1
+  fi
+  printf '%s' "$json" | jq -c --arg marker "$STICKY_MARKER" '
+    [.[] | select(.body | contains($marker))] | first // empty
+  '
 }
 
 extract_state() {
@@ -75,6 +80,7 @@ render_comment() {
   run_count=$(jq '.runs | length' <<<"$state")
   flaky=$(jq -r --argjson total "$run_count" '
     [.runs[] | select(.result == "fail") | .failed_jobs[]?]
+    | sort
     | group_by(.)
     | map({job: .[0], count: length})
     | sort_by(-.count)
@@ -110,10 +116,11 @@ render_comment() {
 }
 
 upsert_sticky_comment() {
-  local pr=$1 body=$2 existing comment_id
-  existing=$(fetch_sticky_comment "$pr")
-  if [[ -n "$existing" ]]; then
-    comment_id=$(jq -r '.id' <<<"$existing")
+  # Create or patch the sticky comment. `$3` is the known comment id (from an
+  # earlier successful fetch) or empty. Passing it in avoids a redundant API
+  # call that could fail mid-iteration and produce a duplicate sticky comment.
+  local pr=$1 body=$2 comment_id=${3:-}
+  if [[ -n "$comment_id" ]]; then
     gh api "repos/${OWNER}/${REPO}/issues/comments/${comment_id}" \
       --method PATCH -f body="$body" >/dev/null
   else
@@ -124,10 +131,16 @@ upsert_sticky_comment() {
 # ---- check-run inspection ---------------------------------------------------
 
 fetch_checks() {
-  # Emits "bucket name" lines for the PR's current HEAD checks.
-  local pr=$1
-  gh pr checks "$pr" --json name,bucket 2>/dev/null |
-    jq -r '.[] | "\(.bucket) \(.name)"'
+  # Emits "bucket name" lines for the PR's current HEAD checks on stdout.
+  # Returns non-zero on API failure. Note: `gh pr checks` exits non-zero
+  # when any check is failing/pending, so we can't rely on its exit code
+  # alone — we treat empty/invalid output as the failure signal.
+  local pr=$1 json
+  json=$(gh pr checks "$pr" --json name,bucket 2>/dev/null) || true
+  if [[ -z "$json" ]] || ! printf '%s' "$json" | jq empty 2>/dev/null; then
+    return 1
+  fi
+  printf '%s' "$json" | jq -r '.[] | "\(.bucket) \(.name)"'
 }
 
 # ---- per-PR pipeline --------------------------------------------------------
@@ -163,9 +176,15 @@ process_pr() {
   head_sha=$(jq -r '.headRefOid'  <<<"$pr_json")
 
   # --- observe current check status ---
+  # fetch_checks returns non-zero on API failure; skip this PR rather than
+  # silently proceeding and bypassing the pending-check guard.
   local checks has_pending=0 has_failed=0
   local -a failed_jobs=()
-  checks=$(fetch_checks "$pr")
+  if ! checks=$(fetch_checks "$pr"); then
+    warn "PR #${pr}: could not fetch check status"
+    summary "- ⚠️ PR #${pr}: checks fetch failed"
+    return
+  fi
   if [[ -n "$checks" ]]; then
     while read -r bucket name; do
       [[ -z "$bucket" ]] && continue
@@ -185,9 +204,17 @@ process_pr() {
   fi
 
   # --- load prior state ---
-  local sticky_json state
-  sticky_json=$(fetch_sticky_comment "$pr")
+  # Skip the PR entirely on comment-fetch failure rather than proceeding with
+  # empty state (which would overwrite an existing sticky with blank history
+  # once the upsert re-resolves the comment).
+  local sticky_json sticky_id="" state
+  if ! sticky_json=$(fetch_sticky_comment "$pr"); then
+    warn "PR #${pr}: could not fetch existing comments"
+    summary "- ⚠️ PR #${pr}: comment fetch failed"
+    return
+  fi
   if [[ -n "$sticky_json" ]]; then
+    sticky_id=$(jq -r '.id' <<<"$sticky_json")
     state=$(extract_state "$(jq -r '.body' <<<"$sticky_json")")
   else
     state='{"runs":[]}'
@@ -240,7 +267,7 @@ process_pr() {
 
 ---
 ✅ **Auto-stopped** after ${consec_green} consecutive green stability runs. Removed \`ci/verify-stability\` label."
-    upsert_sticky_comment "$pr" "$body"
+    upsert_sticky_comment "$pr" "$body" "$sticky_id"
     summary "- ✅ PR #${pr}: auto-stopped (${consec_green} consecutive greens)"
     return
   fi
@@ -261,12 +288,19 @@ process_pr() {
   git config user.email "${GH_EMAIL}"
 
   # --- optional master merge ---
+  # `git merge --no-ff --no-commit` exits 0 when the PR is already up-to-date
+  # with master, leaving nothing staged. Guard the commit on actual staged
+  # changes so we don't produce a spurious "Merge master" empty commit.
   local merge_note=""
   if (( do_merge )); then
     git fetch --quiet origin master
     if git merge origin/master --no-ff --no-commit --quiet 2>/dev/null; then
-      git commit --quiet --allow-empty -m "Merge master into PR #${pr}"
-      merge_note=" (merged master)"
+      if ! git diff --cached --quiet; then
+        git commit --quiet -m "Merge master into PR #${pr}"
+        merge_note=" (merged master)"
+      else
+        merge_note=" (master already merged)"
+      fi
     else
       warn "PR #${pr}: merge conflict with master"
       git merge --abort 2>/dev/null || true
@@ -295,7 +329,7 @@ Workflow run: ${RUN_URL}"
     return
   fi
 
-  upsert_sticky_comment "$pr" "$(render_comment "$state")"
+  upsert_sticky_comment "$pr" "$(render_comment "$state")" "$sticky_id"
 
   log "PR #${pr}: observed=${result}, triggered run #${new_run_number}${merge_note}"
   summary "- 🔁 PR #${pr}: observed \`${result}\` on \`${head_sha:0:7}\`, triggered run #${new_run_number}${merge_note}"

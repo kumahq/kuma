@@ -6,7 +6,7 @@ on:
     # in ci-stability.sh skips ticks where CI is still in flight, so idle
     # ticks are cheap and tighter cadence = faster flake detection.
     - cron: "*/30 18-23 * * 1-5"   # Mon-Fri evenings
-    - cron: "*/30 0-6 * * 2-6"     # Mon-Fri nights (UTC day rolls over)
+    - cron: "*/30 0-6 * * 1-5"     # Mon-Fri early mornings (00:00-06:59 UTC)
     - cron: "*/30 * * * 0,6"       # Weekends, all day
   workflow_dispatch:
 
