@@ -135,7 +135,7 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	}
 
 	// Block until every dependency (e.g. the embedded DNS proxy) has
-	// signalled it's ready. Otherwise the wait-for-dataplane-ready
+	// signaled it's ready. Otherwise the wait-for-dataplane-ready
 	// PostStart hook releases the application container before the
 	// proxy can answer mesh DNS lookups, and the first request that
 	// hits a *.mesh hostname will fail with NXDOMAIN (see #16219).
