@@ -20,10 +20,11 @@ import (
 )
 
 const (
-	pathPrefixReady  = "/ready"
-	stateReady       = "READY"
-	stateTerminating = "TERMINATING"
-	stateNotReady    = "NOT_READY"
+	pathPrefixReady    = "/ready"
+	pathPrefixWaitDeps = "/wait-deps"
+	stateReady         = "READY"
+	stateTerminating   = "TERMINATING"
+	stateNotReady      = "NOT_READY"
 )
 
 // ReadyChannel is closed once the corresponding component is ready to
@@ -93,6 +94,13 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
+	// /wait-deps is a separate endpoint used only by the
+	// wait-for-dataplane-ready PostStart hook (`kuma-dp wait`). It
+	// returns 503 until every dependency channel passed to NewReporter
+	// is closed. The k8s readiness probe still hits /ready and is not
+	// gated on those dependencies — gating /ready would delay every
+	// pod's "Ready" transition and break tests / rolling updates.
+	mux.HandleFunc(pathPrefixWaitDeps, r.handleWaitDeps)
 	// When admin is on UDS, reverse-proxy read-only admin endpoints so
 	// that operators can still reach /stats, /config_dump, etc.
 	// Mutating endpoints are blocked by path denylist.
@@ -134,11 +142,29 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 		return
 	}
 
-	// Block until every dependency (e.g. the embedded DNS proxy) has
-	// signaled it's ready. Otherwise the wait-for-dataplane-ready
-	// PostStart hook releases the application container before the
-	// proxy can answer mesh DNS lookups, and the first request that
-	// hits a *.mesh hostname will fail with NXDOMAIN (see #16219).
+	// When admin is on UDS, proxy /ready to Envoy admin so that
+	// the pod is only marked ready after Envoy receives its config.
+	if r.adminSocketPath != "" {
+		r.proxyAdminReady(writer)
+		return
+	}
+
+	r.writeState(writer, req, stateReady, http.StatusOK)
+}
+
+// handleWaitDeps is the dependency-gated readiness endpoint used by the
+// kuma-dp wait command (run from the wait-for-dataplane-ready PostStart
+// hook). It returns 503 NOT_READY until every readyChannel passed to
+// NewReporter has been closed — typically that's the configfetcher
+// having loaded mesh DNS records from envoy admin /dns. Until then a
+// curl to a *.mesh hostname from the application container would race
+// the populate and fail with NXDOMAIN (#16219).
+func (r *Reporter) handleWaitDeps(writer http.ResponseWriter, req *http.Request) {
+	if r.isTerminating.Load() {
+		r.writeState(writer, req, stateTerminating, http.StatusServiceUnavailable)
+		return
+	}
+
 	for _, ch := range r.readyChannels {
 		select {
 		case <-ch:
@@ -146,13 +172,6 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 			r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
 			return
 		}
-	}
-
-	// When admin is on UDS, proxy /ready to Envoy admin so that
-	// the pod is only marked ready after Envoy receives its config.
-	if r.adminSocketPath != "" {
-		r.proxyAdminReady(writer)
-		return
 	}
 
 	r.writeState(writer, req, stateReady, http.StatusOK)
