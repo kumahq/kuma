@@ -94,8 +94,8 @@ render_comment() {
   {
     printf '%s\n' "$STICKY_MARKER"
     printf '## 🔁 CI Stability Monitor\n\n'
-    printf 'This PR has `ci/verify-stability` enabled — CI is re-triggered outside business hours to surface flaky tests.\n\n'
-    printf -- '- **Stop:** remove the `ci/verify-stability` label\n'
+    printf "This PR has \`ci/verify-stability\` enabled — CI is re-triggered outside business hours to surface flaky tests.\n\n"
+    printf -- "- **Stop:** remove the \`ci/verify-stability\` label\n"
     printf -- '- **Auto-stop:** after %s consecutive green runs\n' "$GREEN_THRESHOLD"
     printf -- '- **Observations recorded:** %s\n\n' "$run_count"
     if [[ -n "$flaky" ]]; then
