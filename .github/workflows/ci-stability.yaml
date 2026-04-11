@@ -2,12 +2,13 @@ name: Check CI stability for PRs with "ci/verify-stability" label
 
 on:
   schedule:
-    # Outside business hours, UTC. Every 30 min — the pending-check guard
-    # in ci-stability.sh skips ticks where CI is still in flight, so idle
-    # ticks are cheap and tighter cadence = faster flake detection.
-    - cron: "*/30 18-23 * * 1-5"   # Mon-Fri evenings
-    - cron: "*/30 0-6 * * 1-5"     # Mon-Fri early mornings (00:00-06:59 UTC)
-    - cron: "*/30 * * * 0,6"       # Weekends, all day
+    # Outside business hours, UTC. Every 10 min — the pending-check guard
+    # and fresh-commit grace in ci-stability.sh make idle ticks cheap (a few
+    # API calls, no push), so tighter cadence buys faster flake detection
+    # without spamming PRs with extra trigger commits.
+    - cron: "*/10 18-23 * * 1-5"   # Mon-Fri evenings
+    - cron: "*/10 0-6 * * 1-5"     # Mon-Fri early mornings (00:00-06:59 UTC)
+    - cron: "*/10 * * * 0,6"       # Weekends, all day
   workflow_dispatch:
 
 permissions: {}
