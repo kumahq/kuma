@@ -126,7 +126,7 @@ func SetupSidecarCluster() {
 }
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(meshName, policies...)
+	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, policies...)
 }
 
 func CleanupAfterSidecarSuite() {

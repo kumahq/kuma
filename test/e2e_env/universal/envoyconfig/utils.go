@@ -223,7 +223,7 @@ func normalizeClusterAddress(cluster map[string]any) {
 	}
 }
 
-func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {
+func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
 	return func() {
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
 		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
@@ -233,8 +233,9 @@ func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor
 		// test) lingers in the snapshot for a few seconds after its parent
 		// policy was deleted, which makes the next golden-file comparison
 		// flake.
-		waitConfigStable(mesh, "demo-client")
-		waitConfigStable(mesh, "test-server")
+		for _, dpp := range dpps {
+			waitConfigStable(mesh, dpp)
+		}
 	}
 }
 
