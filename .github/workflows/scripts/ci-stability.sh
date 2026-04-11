@@ -31,6 +31,12 @@ readonly MAX_HISTORY="${STABILITY_MAX_HISTORY:-20}"
 # History column when they fail — only the rollup "Likely flaky jobs"
 # section filters them out.
 readonly FLAKE_EXCLUDE="${STABILITY_FLAKE_EXCLUDE:-check,distributions}"
+# Minimum age (seconds) of HEAD commit before we trust check status. There
+# is a race window between `git push` and GitHub registering all check_runs
+# for the new commit; during that window `gh pr checks` may report only the
+# instant checks (e.g. DCO) and miss the slow ones, leading us to record a
+# false "pass" and push another trigger commit on top of unfinished CI.
+readonly FRESH_COMMIT_GRACE_SECS="${STABILITY_FRESH_COMMIT_GRACE_SECS:-300}"
 
 log()  { printf '::notice::%s\n' "$*"; }
 warn() { printf '::warning::%s\n' "$*"; }
@@ -155,6 +161,23 @@ fetch_checks() {
   printf '%s' "$json" | jq -r '.[] | "\(.bucket) \(.name)"'
 }
 
+# Returns the age (in seconds) of a commit on stdout, or non-zero on failure.
+commit_age_secs() {
+  local sha=$1 committed_at committed_epoch now_epoch
+  if ! committed_at=$(gh api "repos/${OWNER}/${REPO}/commits/${sha}" \
+      --jq '.commit.committer.date' 2>/dev/null); then
+    return 1
+  fi
+  if [[ -z "$committed_at" ]]; then
+    return 1
+  fi
+  if ! committed_epoch=$(date -u -d "$committed_at" +%s 2>/dev/null); then
+    return 1
+  fi
+  now_epoch=$(date -u +%s)
+  printf '%s' "$(( now_epoch - committed_epoch ))"
+}
+
 # ---- per-PR pipeline --------------------------------------------------------
 
 process_pr() {
@@ -186,6 +209,23 @@ process_pr() {
   local branch head_sha
   branch=$(jq   -r '.headRefName' <<<"$pr_json")
   head_sha=$(jq -r '.headRefOid'  <<<"$pr_json")
+
+  # --- fresh-commit grace period ---
+  # Skip if HEAD was committed less than FRESH_COMMIT_GRACE_SECS ago. Without
+  # this guard the gh pr checks rollup may not yet include all the slow
+  # check_runs (only the instant ones like DCO), leading us to misread a
+  # half-registered state as "all pass" and push a trigger over unfinished
+  # CI. Better to wait one tick.
+  local age_secs
+  if age_secs=$(commit_age_secs "$head_sha"); then
+    if (( age_secs < FRESH_COMMIT_GRACE_SECS )); then
+      log "PR #${pr}: HEAD ${head_sha:0:7} too fresh (${age_secs}s < ${FRESH_COMMIT_GRACE_SECS}s)"
+      summary "- ⏳ PR #${pr}: HEAD too fresh (\`${head_sha:0:7}\`, ${age_secs}s old)"
+      return
+    fi
+  else
+    warn "PR #${pr}: could not fetch commit age, proceeding anyway"
+  fi
 
   # --- observe current check status ---
   # fetch_checks returns non-zero on API failure; skip this PR rather than
