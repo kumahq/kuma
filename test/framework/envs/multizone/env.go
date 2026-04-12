@@ -2,7 +2,6 @@ package multizone
 
 import (
 	"encoding/json"
-	"strings"
 	"sync"
 
 	"github.com/onsi/ginkgo/v2"
@@ -177,25 +176,14 @@ func SetupAndGetState() []byte {
 	// have its zone-to-global stream up, which leaves Global without the
 	// zone's DPs/policies and produces transient 503s on cross-zone
 	// requests during the first ~30s of the suite.
-	wantZones := []string{
+	for _, z := range []string{
 		KubeZone1.ZoneName(),
 		KubeZone2.ZoneName(),
 		UniZone1.ZoneName(),
 		UniZone2.ZoneName(),
+	} {
+		Expect(WaitForZoneOnline(Global, z)).To(Succeed())
 	}
-	Eventually(func(g Gomega) {
-		out, err := Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		g.Expect(err).ToNot(HaveOccurred())
-		for _, z := range wantZones {
-			g.Expect(out).To(ContainSubstring(z), "zone %s missing from global zones list:\n%s", z, out)
-			// Match an "Online" row for the zone — fail if it shows Offline.
-			for line := range strings.SplitSeq(out, "\n") {
-				if strings.HasPrefix(line, z+" ") || strings.Contains(line, " "+z+" ") {
-					g.Expect(line).To(ContainSubstring("Online"), "zone %s is not Online: %s", z, line)
-				}
-			}
-		}
-	}, "2m", "2s").Should(Succeed())
 
 	zeSpec := portforward.Spec{
 		AppName:    Config.ZoneEgressApp,

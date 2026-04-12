@@ -218,6 +218,10 @@ spec:
 
 		Expect(group.Wait()).To(Succeed())
 
+		// Wait for the dynamically-created zone to connect to Global
+		// and appear Online before running cross-zone assertions.
+		Expect(WaitForZoneOnline(multizone.Global, autoGenerateUniversalClusterName)).To(Succeed())
+
 		Expect(multizone.KubeZone1.WaitApp("statefulset-test-server", namespace, 1)).To(Succeed())
 		for _, pod := range k8s.ListPods(multizone.KubeZone1.GetTesting(),
 			multizone.KubeZone1.GetKubectlOptions(namespace),
