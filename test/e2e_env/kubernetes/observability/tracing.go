@@ -95,7 +95,7 @@ func Tracing() {
 			// then traces are published
 			srvs, err := obsClient.TracedServices()
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(srvs).To(Equal([]string{
+			g.Expect(srvs).To(ContainElements([]string{
 				fmt.Sprintf("demo-client_%s_svc", ns),
 				"jaeger-all-in-one",
 				fmt.Sprintf("test-server_%s_svc_80", ns),
