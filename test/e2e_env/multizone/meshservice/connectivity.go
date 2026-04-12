@@ -222,25 +222,6 @@ spec:
 		// and appear Online before running cross-zone assertions.
 		Expect(WaitForZoneOnline(multizone.Global, autoGenerateUniversalClusterName)).To(Succeed())
 
-		// Wait for the auto-generated MeshService for test-server in
-		// autogenerate-universal to propagate to KubeZone1 (where the
-		// cross-zone test runs from). The MeshService generator on
-		// the universal zone CP runs every 2s, then KDS syncs the
-		// resource to Global → KubeZone1. Without this gate the test
-		// races KDS propagation and the first cross-zone curl gets
-		// 503 because KubeZone1's demo-client envoy has no upstream
-		// endpoint for the autogenerate-universal MeshService.
-		// Match by zone label to distinguish from other zones'
-		// test-server MeshServices that share the same display name.
-		Eventually(func(g Gomega) {
-			out, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput(
-				"get", "meshservices", "-m", meshName, "-ojson",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).To(MatchRegexp(`"kuma\.io/zone":\s*"`+autoGenerateUniversalClusterName+`"`),
-				"test-server MeshService from %s not yet propagated to KubeZone1", autoGenerateUniversalClusterName)
-		}, "60s", "2s").Should(Succeed())
-
 		Expect(multizone.KubeZone1.WaitApp("statefulset-test-server", namespace, 1)).To(Succeed())
 		for _, pod := range k8s.ListPods(multizone.KubeZone1.GetTesting(),
 			multizone.KubeZone1.GetKubectlOptions(namespace),
@@ -251,6 +232,21 @@ spec:
 			testServerPodNames = append(testServerPodNames, pod.Name)
 		}
 		Expect(testServerPodNames).To(HaveLen(1))
+
+		// Smoke-test cross-zone connectivity from KubeZone1 → autogenerate-universal
+		// before the entry table runs. This is the only definitive sync
+		// point: it exercises the full path the test entries will use
+		// (MeshService propagation + envoy CDS/EDS push). Without this,
+		// the entry-level Eventually's 30s budget can race envoy
+		// cluster updates and return 503.
+		Eventually(func(g Gomega) {
+			response, err := client.CollectEchoResponse(multizone.KubeZone1, "demo-client",
+				"http://test-server.svc.autogenerate-universal.mesh.local:80",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("auto-uni-test-server"))
+		}, "120s", "2s").Should(Succeed())
 	})
 
 	AfterEachFailure(func() {
