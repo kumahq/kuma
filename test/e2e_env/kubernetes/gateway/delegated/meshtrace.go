@@ -71,11 +71,11 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				srvs, err := observabilityClient.TracedServices()
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(srvs).To(ContainElements(
+				g.Expect(srvs).To(Equal([]string{
 					fmt.Sprintf("%[1]s-gateway-admin_%[1]s_svc_8444", config.Mesh),
 					"jaeger-all-in-one",
 					fmt.Sprintf("test-server_%s_svc_80", config.Mesh),
-				))
+				}))
 			}, "30s", "1s").Should(Succeed())
 		})
 	}
