@@ -1,6 +1,7 @@
 package dnsproxy
 
 import (
+	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -8,6 +9,9 @@ type metrics struct {
 	RequestDuration             prometheus.Histogram
 	UpstreamRequestDuration     prometheus.Histogram
 	UpstreamRequestFailureCount prometheus.Counter
+	QueriesTotal                *prometheus.CounterVec
+	ResponseCodesTotal          *prometheus.CounterVec
+	EntriesTotal                prometheus.Gauge
 }
 
 func newMetrics(registerer prometheus.Registerer, constLabels prometheus.Labels) *metrics {
@@ -29,9 +33,54 @@ func newMetrics(registerer prometheus.Registerer, constLabels prometheus.Labels)
 		ConstLabels: constLabels,
 	})
 	registerer.MustRegister(upstreamRequestFailureCount)
+	queriesTotal := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name:        "kuma_dp_dns_queries_total",
+		Help:        "Total DNS queries handled, by query type and source (local map or upstream).",
+		ConstLabels: constLabels,
+	}, []string{"qtype", "source"})
+	registerer.MustRegister(queriesTotal)
+	responseCodesTotal := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name:        "kuma_dp_dns_response_codes_total",
+		Help:        "Total DNS responses by response code.",
+		ConstLabels: constLabels,
+	}, []string{"rcode"})
+	registerer.MustRegister(responseCodesTotal)
+	entriesTotal := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name:        "kuma_dp_dns_entries_total",
+		Help:        "Current number of hostnames in the DNS proxy map.",
+		ConstLabels: constLabels,
+	})
+	registerer.MustRegister(entriesTotal)
 	return &metrics{
 		RequestDuration:             requestDuration,
 		UpstreamRequestDuration:     upstreamRequestDuration,
 		UpstreamRequestFailureCount: upstreamRequestFailureCount,
+		QueriesTotal:                queriesTotal,
+		ResponseCodesTotal:          responseCodesTotal,
+		EntriesTotal:                entriesTotal,
+	}
+}
+
+func qtypeLabel(qtype uint16) string {
+	switch qtype {
+	case dns.TypeA:
+		return "A"
+	case dns.TypeAAAA:
+		return "AAAA"
+	default:
+		return "other"
+	}
+}
+
+func rcodeLabel(rcode int) string {
+	switch rcode {
+	case dns.RcodeSuccess:
+		return "noerror"
+	case dns.RcodeNameError:
+		return "nxdomain"
+	case dns.RcodeServerFailure:
+		return "servfail"
+	default:
+		return "other"
 	}
 }

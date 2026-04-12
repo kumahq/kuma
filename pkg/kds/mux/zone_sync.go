@@ -28,6 +28,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/kds/service"
 	"github.com/kumahq/kuma/v2/pkg/kds/util"
 	kds_client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
+	kds_server_metrics "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
 	kds_sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/v2/pkg/log"
 	"github.com/kumahq/kuma/v2/pkg/multitenant"
@@ -52,12 +53,14 @@ type KDSSyncServiceServer struct {
 	k8sStore        bool
 	systemNamespace string
 	responseBackoff time.Duration
+	metrics         *kds_server_metrics.Metrics
 }
 
 func NewKDSSyncServiceServer(
 	rt runtime.Runtime,
 	deltaServer delta.Server,
 	resourceSyncer kds_sync_store_v2.ResourceSyncer,
+	metrics *kds_server_metrics.Metrics,
 ) *KDSSyncServiceServer {
 	return &KDSSyncServiceServer{
 		context:         rt.AppContext(),
@@ -73,6 +76,7 @@ func NewKDSSyncServiceServer(
 		k8sStore:        rt.Config().Store.Type == config_store.KubernetesStore,
 		systemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		responseBackoff: rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
+		metrics:         metrics,
 	}
 }
 
@@ -157,6 +161,8 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		return status.Error(codes.Internal, "could not store stream connection")
 	}
 	logger.Info("stored stream connection")
+	g.metrics.KdsZoneActiveConnections.WithLabelValues(zone).Inc()
+	defer g.metrics.KdsZoneActiveConnections.WithLabelValues(zone).Dec()
 
 	select {
 	case <-shouldDisconnectStream.Recv():
@@ -204,17 +210,22 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			return
 		}
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
+		cb := kds_sync_store_v2.GlobalSyncCallback(
+			stream.Context(),
+			g.resourceSyncer,
+			g.k8sStore,
+			k8s.NewSimpleKubeFactory(),
+			g.systemNamespace,
+		)
+		zoneName := zone
+		cb.OnNACK = func(resourceType core_model.ResourceType) {
+			g.metrics.KdsNackTotal.WithLabelValues(zoneName, string(resourceType)).Inc()
+		}
 		sink := kds_client_v2.NewKDSSyncClient(
 			logger,
 			g.typesSentByZone,
 			kdsStream,
-			kds_sync_store_v2.GlobalSyncCallback(
-				stream.Context(),
-				g.resourceSyncer,
-				g.k8sStore,
-				k8s.NewSimpleKubeFactory(),
-				g.systemNamespace,
-			),
+			cb,
 			g.responseBackoff,
 		)
 		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
@@ -234,6 +245,8 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		return status.Error(codes.Internal, "could not store stream connection")
 	}
 	logger.Info("stored stream connection")
+	g.metrics.KdsZoneActiveConnections.WithLabelValues(zone).Inc()
+	defer g.metrics.KdsZoneActiveConnections.WithLabelValues(zone).Dec()
 
 	select {
 	case <-shouldDisconnectStream.Recv():

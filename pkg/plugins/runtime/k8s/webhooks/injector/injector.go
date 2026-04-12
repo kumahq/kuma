@@ -22,6 +22,7 @@ import (
 	core_config "github.com/kumahq/kuma/v2/pkg/config"
 	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/containers"
@@ -104,6 +105,7 @@ func New(
 	envoyAdminPort uint32,
 	envoyAdminUnixSocket bool,
 	systemNamespace string,
+	metrics core_metrics.Metrics,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -112,6 +114,14 @@ func New(
 			return nil, errors.Wrapf(err, "could not read provided CA cert file %s", cfg.CaCertFile)
 		}
 		caCert = string(bytes)
+	}
+	var im *injectionMetrics
+	if metrics != nil {
+		var err error
+		im, err = newInjectionMetrics(metrics)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not create injection metrics")
+		}
 	}
 	return &KumaInjector{
 		cfg:                      cfg,
@@ -129,6 +139,7 @@ func New(
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
+		metrics:         im,
 	}, nil
 }
 
@@ -141,16 +152,38 @@ type KumaInjector struct {
 	defaultAdminPort         uint32
 	envoyAdminUnixSocket     bool
 	systemNamespace          string
+	metrics                  *injectionMetrics
 }
 
 func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error {
 	logger := log.WithValues("pod", pod.GenerateName, "namespace", pod.Namespace)
 
 	meshName, err := i.preCheck(ctx, pod, logger)
-	if meshName == "" || err != nil {
+	if err != nil {
+		i.recordInjection("failed", classifyInjectionError(err))
 		return err
 	}
+	if meshName == "" {
+		i.recordInjection("skipped", "not_needed")
+		return nil
+	}
 
+	if err := i.injectKuma(ctx, pod, meshName, logger); err != nil {
+		i.recordInjection("failed", classifyInjectionError(err))
+		return err
+	}
+	i.recordInjection("success", "")
+	return nil
+}
+
+func (i *KumaInjector) recordInjection(result, reason string) {
+	if i.metrics == nil {
+		return
+	}
+	i.metrics.InjectionTotal.WithLabelValues(result, reason).Inc()
+}
+
+func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshName string, logger logr.Logger) error {
 	logger.Info("injecting Kuma")
 
 	// annotations
