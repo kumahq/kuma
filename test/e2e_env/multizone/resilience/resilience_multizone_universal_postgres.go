@@ -176,9 +176,12 @@ func ResilienceMultizoneUniversalPostgres() {
 		// when Zone CP is killed
 		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
-		// then zone is offline immediately
+		// then zone is offline within ~3 ZoneInsightFlushInterval cycles
+		// (default 10s, so allow up to 30s for the status to flip).
+		// Using only 10s here is racy: if the test starts polling right
+		// after a flush, the next flush is exactly at the deadline.
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "10s", "1s").Should(ContainSubstring("Offline"))
+		}, "30s", "1s").Should(ContainSubstring("Offline"))
 	})
 }
