@@ -31,6 +31,13 @@ injector:
   ignoredServiceSelectorLabels: []
   initContainer:
     image: kuma/kuma-init:latest
+    resources:
+      limits:
+        cpu: "0"
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
   nodeLabelsToCopy:
   - topology.kubernetes.io/zone
   - topology.kubernetes.io/region
@@ -57,7 +64,7 @@ injector:
     redirectPortOutbound: 15001
     resources:
       limits:
-        cpu: 1000m
+        cpu: "0"
         memory: 512Mi
       requests:
         cpu: 50m

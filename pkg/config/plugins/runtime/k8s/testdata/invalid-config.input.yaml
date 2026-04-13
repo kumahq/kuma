@@ -13,4 +13,11 @@ injector:
     drainTime: 0s
   initContainer:
     image:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 20Mi
+      limits:
+        cpu: "0"
+        memory: 50Mi
 marshalingCacheExpirationTime: -2
