@@ -28,6 +28,8 @@ var (
 
 type plugin struct{}
 
+func (p plugin) Order() int { return 900 }
+
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }

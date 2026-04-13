@@ -29,6 +29,8 @@ var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
 
+func (p plugin) Order() int { return 1300 }
+
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }

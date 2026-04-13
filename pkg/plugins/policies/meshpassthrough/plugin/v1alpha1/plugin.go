@@ -25,6 +25,8 @@ var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
+func (p plugin) Order() int { return 500 }
+
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
