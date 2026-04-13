@@ -30,6 +30,13 @@ sidecarContainer:
       memory: 1512Mi
 initContainer:
   image: kuma/kuma-init:latest
+  resources:
+    requests:
+      cpu: 20m
+      memory: 20M
+    limits:
+      cpu: "0"
+      memory: 50M
 builtinDNS:
   enabled: true
   port: 25053

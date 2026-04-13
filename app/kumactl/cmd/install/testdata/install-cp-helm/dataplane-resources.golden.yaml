@@ -10,46 +10,12 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kuma-cni
-  namespace: kube-system
-  labels: 
-    app: kuma-cni
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
   name: kuma-control-plane
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kuma-cni-config
-  namespace: kube-system
-  labels: 
-    app: kuma-cni
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-data:
-  # The CNI network configuration to add to the plugin chain on each node.
-  cni_network_config: |-
-    {
-      "cniVersion": "0.3.1",
-      "name": "kuma-cni",
-      "type": "kuma-cni",
-      "log_level": "info",
-      "kubernetes": {
-          "kubeconfig": "__KUBECONFIG_FILEPATH__",
-          "cni_bin_dir": "/var/lib/cni/bin",
-          "exclude_namespaces": [ "kube-system" ]
-      }
-    }
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -65,22 +31,6 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kuma-cni
-  labels:
-  
-    app: kuma-cni
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-rules:
-  - apiGroups: [""]
-    resources:
-      - pods
-    verbs:
-      - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -234,28 +184,6 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - apiextensions.k8s.io
-    resources:
-      - customresourcedefinitions
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups: # required for taint controller
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - update
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -348,31 +276,6 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - create
-      - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kuma-cni
-  labels:
-  
-    app: kuma-cni
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kuma-cni
-subjects:
-  - kind: ServiceAccount
-    name: kuma-cni
-    namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -481,16 +384,6 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -548,120 +441,6 @@ spec:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
----
-kind: DaemonSet
-apiVersion: apps/v1
-metadata:
-  name: kuma-cni-node
-  namespace: kube-system
-  annotations:
-    ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
-  labels:
-    app: kuma-cni
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  selector:
-    matchLabels:
-      app: kuma-cni
-      app.kubernetes.io/name: kuma
-      app.kubernetes.io/instance: kuma
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-  template:
-    metadata:
-      labels:
-        app: kuma-cni
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
-      annotations:
-        checksum/config: 44d3893921ccaa4dd818a16ee3e2de3ddea9331c8f2857dd83bca030a5d2c5be
-    spec:
-      # This, along with the CriticalAddonsOnly toleration below,
-      # marks the pod as a critical add-on, ensuring it gets
-      # priority scheduling and that its resources are reserved
-      # if it ever gets evicted.
-      priorityClassName: system-node-critical
-      nodeSelector:
-      
-        kubernetes.io/os: linux
-      tolerations:
-        # Make sure kuma-cni-node gets scheduled on all nodes.
-        - effect: NoSchedule
-          operator: Exists
-        # Mark the pod as a critical add-on for rescheduling.
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - effect: NoExecute
-          operator: Exists
-        - effect: NoSchedule
-          operator: Exists
-      serviceAccountName: kuma-cni
-      # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
-      # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
-      terminationGracePeriodSeconds: 5
-      restartPolicy: Always
-      securityContext:
-        {}
-      containers:
-        - name: install-cni
-          imagePullPolicy: IfNotPresent
-          image: "docker.io/kumahq/kuma-cni:0.0.1"
-          readinessProbe:
-            initialDelaySeconds: 0
-            exec:
-              command:
-                - cat
-                - /tmp/ready
-          command: [ "sh", "-c", "--" ]
-          args: [ "sleep 0 && exec /install-cni" ]
-          securityContext:
-            readOnlyRootFilesystem: true
-            runAsGroup: 0
-            runAsNonRoot: false
-            runAsUser: 0
-          env:
-            # Name of the CNI config file to create.
-            - name: CNI_CONF_NAME
-              value: "kuma-cni.conf"
-            # The CNI network config to install on each node.
-            - name: CNI_NETWORK_CONFIG
-              valueFrom:
-                configMapKeyRef:
-                  name: kuma-cni-config
-                  key: cni_network_config
-            - name: CNI_NET_DIR
-              value: "/etc/cni/multus/net.d"
-            # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
-            - name: CHAINED_CNI_PLUGIN
-              value: "false"
-            - name: CNI_LOG_LEVEL
-              value: "info"
-          resources:
-            limits:
-              memory: 100Mi
-            requests:
-              cpu: 100m
-              memory: 100Mi
-          volumeMounts:
-            - mountPath: /host/opt/cni/bin
-              name: cni-bin-dir
-            - mountPath: /host/etc/cni/net.d
-              name: cni-net-dir
-            - name: tmp
-              mountPath: /tmp
-      volumes:
-        # Used to install CNI.
-        - name: cni-bin-dir
-          hostPath:
-            path: /var/lib/cni/bin
-        - name: cni-net-dir
-          hostPath:
-            path: /etc/cni/multus/net.d
-        - name: tmp
-          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -755,21 +534,21 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
-              value: "0"
+              value: "200m"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
-              value: "50M"
-            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
-              value: "20m"
-            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
-              value: "20M"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
-              value: "0"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
-              value: "512Mi"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
-              value: "50m"
-            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
               value: "64Mi"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "50m"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "32Mi"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
+              value: "500m"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
+              value: "256Mi"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "100m"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "128Mi"
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
@@ -787,15 +566,9 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
-              value: "true"
+              value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
-              value: "kuma-cni"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE
-              value: "kube-system"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
-              value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
