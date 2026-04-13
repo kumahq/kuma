@@ -190,9 +190,16 @@ to:
       kind: Mesh
     default:
       http:
-        retryOn: 
+        retryOn:
           - 500
           - 409
+`),
+			Entry("empty 'to' allowed as override to disable inherited rules", `
+targetRef:
+  kind: Dataplane
+  labels:
+    app: web
+to: []
 `),
 		)
 
@@ -217,18 +224,6 @@ to:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'to' array", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to: []
-`,
-				expected: `
-violations:
-  - field: spec.to
-    message: needs at least one item`,
-			}),
 			Entry("unsupported targetRef kinds in 'to'", testCase{
 				inputYaml: `
 targetRef:
