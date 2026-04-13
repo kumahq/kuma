@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -169,9 +170,14 @@ func (s *Server) Start(stop <-chan struct{}) error {
 	}
 
 	errCh := make(chan error, len(servers))
+	dones := make([]chan struct{}, len(servers))
 	var readyCount atomic.Int32
 	total := int32(len(servers))
 	started := make([]atomic.Bool, len(servers))
+
+	for i := range dones {
+		dones[i] = make(chan struct{})
+	}
 
 	for i, srv := range servers {
 		idx := i
@@ -182,7 +188,11 @@ func (s *Server) Start(stop <-chan struct{}) error {
 			}
 		}
 		go func() {
-			errCh <- srv.ListenAndServe()
+			err := srv.ListenAndServe()
+			// Close done before sending to errCh so that shutdown goroutines
+			// can detect a failed/exited server before draining errCh.
+			close(dones[idx])
+			errCh <- err
 		}()
 	}
 
@@ -205,14 +215,31 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		close(s.ready)
 	}
 
+	// Shut down all servers. For servers not yet started when we enter this
+	// loop, retry until they start (making Shutdown effective) or their
+	// goroutine exits (meaning they failed to start and are already done).
+	var shutdownWg sync.WaitGroup
 	for i, srv := range servers {
-		if !started[i].Load() {
-			continue
-		}
-		if err := srv.Shutdown(); err != nil {
-			log.Error(err, "server shutdown returned an error")
-		}
+		shutdownWg.Add(1)
+		go func(s *dns.Server, startedFlag *atomic.Bool, done <-chan struct{}) {
+			defer shutdownWg.Done()
+			for {
+				if startedFlag.Load() {
+					if err := s.Shutdown(); err != nil {
+						log.Error(err, "server shutdown returned an error")
+					}
+					return
+				}
+				select {
+				case <-done:
+					return // goroutine already exited without starting
+				default:
+					runtime.Gosched()
+				}
+			}
+		}(srv, &started[i], dones[i])
 	}
+	shutdownWg.Wait()
 
 	for i := 0; i < remaining; i++ {
 		if err := <-errCh; err != nil && firstErr == nil {
