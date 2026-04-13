@@ -10,6 +10,7 @@ import (
 
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
@@ -21,7 +22,6 @@ import (
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
@@ -47,14 +47,8 @@ var _ = Describe("MeshPassthrough", func() {
 			if given.meshPassthroughDisabled {
 				mesh.WithoutPassthrough()
 			}
-			ctxBuilder := xds_builders.Context().WithMeshBuilder(mesh)
-			if given.matcherAPI {
-				ctxBuilder.With(func(ctx *xds_context.Context) {
-					ctx.ControlPlane.MeshPassthroughMatcherAPI = true
-				})
-			}
-			context := *ctxBuilder.Build()
-			proxy := xds_builders.Proxy().
+			context := *xds_builders.Context().WithMeshBuilder(mesh).Build()
+			proxyBuilder := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
 				WithDataplane(
 					builders.Dataplane().
@@ -71,8 +65,13 @@ var _ = Describe("MeshPassthrough", func() {
 				).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshPassthroughType, given.singleItemRules),
-				).
-				Build()
+				)
+			if given.matcherAPI {
+				proxyBuilder = proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
+					Features: map[string]bool{xds_types.FeatureMeshPassthroughMatcherAPI: true},
+				})
+			}
+			proxy := proxyBuilder.Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			// when

@@ -41,6 +41,7 @@ func NewDefaultBootstrapGenerator(
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
 	inboundTagsDisabled bool,
+	meshPassthroughMatcherAPI bool,
 	envoyAdminUnixSocket bool,
 ) (BootstrapGenerator, error) {
 	dpServerCert, err := parseCertFromFile(dpServerCertFile)
@@ -53,34 +54,36 @@ func NewDefaultBootstrapGenerator(
 		}
 	}
 	return &bootstrapGenerator{
-		resManager:              resManager,
-		config:                  serverConfig,
-		proxyConfig:             proxyConfig,
-		xdsCertFile:             dpServerCertFile,
-		authEnabledForProxyType: authEnabledForProxyType,
-		enableReloadableTokens:  enableReloadableTokens,
-		dpServerCert:            dpServerCert,
-		hdsEnabled:              hdsEnabled,
-		defaultAdminPort:        defaultAdminPort,
-		deltaXdsEnabled:         deltaXdsEnabled,
-		inboundTagsDisabled:     inboundTagsDisabled,
-		envoyAdminUnixSocket:    envoyAdminUnixSocket,
+		resManager:                resManager,
+		config:                    serverConfig,
+		proxyConfig:               proxyConfig,
+		xdsCertFile:               dpServerCertFile,
+		authEnabledForProxyType:   authEnabledForProxyType,
+		enableReloadableTokens:    enableReloadableTokens,
+		dpServerCert:              dpServerCert,
+		hdsEnabled:                hdsEnabled,
+		defaultAdminPort:          defaultAdminPort,
+		deltaXdsEnabled:           deltaXdsEnabled,
+		inboundTagsDisabled:       inboundTagsDisabled,
+		meshPassthroughMatcherAPI: meshPassthroughMatcherAPI,
+		envoyAdminUnixSocket:      envoyAdminUnixSocket,
 	}, nil
 }
 
 type bootstrapGenerator struct {
-	resManager              core_manager.ResourceManager
-	config                  *bootstrap_config.BootstrapServerConfig
-	proxyConfig             xds_config.Proxy
-	authEnabledForProxyType map[string]bool
-	enableReloadableTokens  bool
-	xdsCertFile             string
-	dpServerCert            *x509.Certificate
-	hdsEnabled              bool
-	defaultAdminPort        uint32
-	deltaXdsEnabled         bool
-	inboundTagsDisabled     bool
-	envoyAdminUnixSocket    bool
+	resManager                core_manager.ResourceManager
+	config                    *bootstrap_config.BootstrapServerConfig
+	proxyConfig               xds_config.Proxy
+	authEnabledForProxyType   map[string]bool
+	enableReloadableTokens    bool
+	xdsCertFile               string
+	dpServerCert              *x509.Certificate
+	hdsEnabled                bool
+	defaultAdminPort          uint32
+	deltaXdsEnabled           bool
+	inboundTagsDisabled       bool
+	meshPassthroughMatcherAPI bool
+	envoyAdminUnixSocket      bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -94,6 +97,9 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	features := make(xds_types.Features, len(request.Features))
 	for _, feature := range request.Features {
 		features[feature] = true
+	}
+	if b.meshPassthroughMatcherAPI {
+		features[xds_types.FeatureMeshPassthroughMatcherAPI] = true
 	}
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
