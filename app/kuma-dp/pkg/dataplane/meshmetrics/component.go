@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	prombridge "go.opentelemetry.io/contrib/bridges/prometheus"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -255,8 +257,14 @@ func startExporter(ctx context.Context, target OtelExportTarget, producer *metri
 	if err != nil {
 		return nil, err
 	}
+	// Surface kuma-dp's own Prometheus metrics (DNS proxy, config fetcher, etc.)
+	// through the OTel pipeline. In the Prometheus backend path the hijacker
+	// HTTP handler already serves these via DefaultGatherer; the OTel path
+	// bypasses that handler, so without this bridge the metrics are lost.
+	selfMetricsBridge := prombridge.NewMetricProducer(prombridge.WithGatherer(prometheus.DefaultGatherer))
 	readerOpts := []sdkmetric.PeriodicReaderOption{
 		sdkmetric.WithInterval(target.RefreshInterval),
+		sdkmetric.WithProducer(selfMetricsBridge),
 	}
 	if producer != nil {
 		readerOpts = append(readerOpts, sdkmetric.WithProducer(producer))
