@@ -21,6 +21,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
@@ -32,6 +33,7 @@ var _ = Describe("MeshPassthrough", func() {
 		resources               []*core_xds.Resource
 		singleItemRules         core_rules.SingleItemRules
 		meshPassthroughDisabled bool
+		matcherAPI              bool
 		listenersGolden         string
 		clustersGolden          string
 	}
@@ -45,9 +47,13 @@ var _ = Describe("MeshPassthrough", func() {
 			if given.meshPassthroughDisabled {
 				mesh.WithoutPassthrough()
 			}
-			context := *xds_builders.Context().
-				WithMeshBuilder(mesh).
-				Build()
+			ctxBuilder := xds_builders.Context().WithMeshBuilder(mesh)
+			if given.matcherAPI {
+				ctxBuilder.With(func(ctx *xds_context.Context) {
+					ctx.ControlPlane.MeshPassthroughMatcherAPI = true
+				})
+			}
+			context := *ctxBuilder.Build()
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
 				WithDataplane(
@@ -656,6 +662,482 @@ var _ = Describe("MeshPassthrough", func() {
 			meshPassthroughDisabled: false,
 			listenersGolden:         "enabled_on_policy_and_mesh.listeners.golden.yaml",
 			clustersGolden:          "enabled_on_policy_and_mesh.clusters.golden.yaml",
+		}),
+		Entry("basic listener (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "api.example.com",
+									Port:     pointer.To[uint32](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "example.com",
+									Port:     pointer.To[uint32](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "*.example.com",
+									Port:     pointer.To[uint32](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "example.com",
+									Port:     pointer.To[uint32](8080),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "other.com",
+									Port:     pointer.To[uint32](8080),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "192.168.0.0/16",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To[uint32](8126),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "240.0.0.0/4",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To[uint32](8126),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "www.google.com",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To[uint32](80),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "10.42.0.8",
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
+									Port:     pointer.To[uint32](9091),
+									Protocol: api.ProtocolType("tcp"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "basic.listener.matcher-api.golden.yaml",
+			clustersGolden:  "basic.clusters.golden.yaml",
+		}),
+		Entry("only ipv4 rules (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "192.168.0.0",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("tcp"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "only-ipv4-rules.listener.matcher-api.golden.yaml",
+			clustersGolden:  "only-ipv4-rules.clusters.golden.yaml",
+		}),
+		Entry("simple policy (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "api.example.com",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "192.168.0.0",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("tcp"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "simple.listener.matcher-api.golden.yaml",
+			clustersGolden:  "simple.clusters.golden.yaml",
+		}),
+		Entry("cidr and http policy (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "10.10.0.0/16",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "192.168.0.0/24",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "192.168.0.0",
+									Protocol: api.ProtocolType("http"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "cidr-http.listener.matcher-api.golden.yaml",
+			clustersGolden:  "cidr-http.clusters.golden.yaml",
+		}),
+		Entry("http domain aggregated policy (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "example1.com",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "anotherexample.com",
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "example2.com",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "*.example.com",
+									Protocol: api.ProtocolType("http"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "http-domains-aggregated.listener.matcher-api.golden.yaml",
+			clustersGolden:  "http-domains-aggregated.clusters.golden.yaml",
+		}),
+		Entry("http domains (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "www.example.com",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "www.anotherexample.com",
+									Protocol: api.ProtocolType("http"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "http-domains.listener.matcher-api.golden.yaml",
+			clustersGolden:  "http-domains.clusters.golden.yaml",
+		}),
+		Entry("the same protocol but different type match (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "www.gmail.com",
+									Port:     pointer.To[uint32](80),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "10.42.0.8",
+									Protocol: api.ProtocolType("http"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "same-protocol.listener.matcher-api.golden.yaml",
+			clustersGolden:  "same-protocol.clusters.golden.yaml",
+		}),
+		Entry("mysql protocol (matcher API)", testCase{
+			matcherAPI: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "172.12.2.2",
+									Port:     pointer.To[uint32](3306),
+									Protocol: api.ProtocolType("mysql"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "172.12.2.2/24",
+									Port:     pointer.To[uint32](3307),
+									Protocol: api.ProtocolType("mysql"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "mysql-protocol.listener.matcher-api.golden.yaml",
+			clustersGolden:  "mysql-protocol.clusters.golden.yaml",
 		}),
 	)
 })

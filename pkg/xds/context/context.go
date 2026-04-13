@@ -33,12 +33,13 @@ type ConnectionInfo struct {
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
-	CLACache            envoy.CLACache
-	Secrets             secrets.Secrets
-	IdentityManager     providers.IdentityProviderManager
-	Zone                string
-	SystemNamespace     string
-	InboundTagsDisabled bool
+	CLACache                  envoy.CLACache
+	Secrets                   secrets.Secrets
+	IdentityManager           providers.IdentityProviderManager
+	Zone                      string
+	SystemNamespace           string
+	InboundTagsDisabled       bool
+	MeshPassthroughMatcherAPI bool
 }
 
 // GlobalContext holds resources that are Global

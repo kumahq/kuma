@@ -483,6 +483,10 @@ type ExperimentalConfig struct {
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
+	// If true, MeshPassthrough uses the Envoy Matching API (filter_chain_matcher)
+	// instead of FilterChainMatch for filter chain selection.
+	// This provides sublinear matching performance for large passthrough configs.
+	MeshPassthroughMatcherAPI bool `json:"meshPassthroughMatcherAPI" envconfig:"KUMA_EXPERIMENTAL_MESH_PASSTHROUGH_MATCHER_API"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
