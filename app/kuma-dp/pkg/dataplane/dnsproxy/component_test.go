@@ -229,7 +229,9 @@ var _ = Describe("components", func() {
 		}()
 
 		var startErr error
-		Eventually(errCh).Should(Receive(&startErr))
+		// 10s budget — on CI runners the goroutines can take over 1s
+		// to schedule and return the bind error.
+		Eventually(errCh, "10s", "20ms").Should(Receive(&startErr))
 		Expect(startErr).To(HaveOccurred())
 	})
 
@@ -258,7 +260,9 @@ var _ = Describe("components", func() {
 		}()
 
 		var startErr error
-		Eventually(errCh).Should(Receive(&startErr))
+		// 10s budget — on CI runners the goroutines can take over 1s
+		// to schedule and return the bind error.
+		Eventually(errCh, "10s", "20ms").Should(Receive(&startErr))
 		Expect(startErr).To(HaveOccurred())
 	})
 })
