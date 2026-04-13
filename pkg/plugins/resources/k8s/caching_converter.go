@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"maps"
 	"strings"
 	"time"
 
@@ -53,12 +54,14 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	}, ":")
 	if v, ok := c.cache.Get(key); ok {
 		entry := v.(cachedEntry)
-		// Pre-populate cachedLabels so the adapter's GetLabels skips the
-		// maps.Clone + annotation-merge work for the lifetime of the entry.
+		// Pre-populate cachedLabels with a fresh clone so the adapter's
+		// GetLabels skips the annotation-merge work, while keeping the cached
+		// map isolated from downstream consumers that mutate labels in place
+		// (e.g. removeDisplayNameLabel in the ServiceInsight endpoints).
 		out.SetMeta(&KubernetesMetaAdapter{
 			ObjectMeta:   *obj.GetObjectMeta(),
 			Mesh:         obj.GetMesh(),
-			cachedLabels: entry.labels,
+			cachedLabels: maps.Clone(entry.labels),
 		})
 		if err := out.SetSpec(entry.spec); err != nil {
 			return err
@@ -96,10 +99,31 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	if obj.GetResourceVersion() != "" {
 		// an absence of the ResourceVersion means we decode 'obj' from webhook request,
 		// all webhooks use SimpleConverter, so this is not supposed to happen
+		// Clone the materialized labels so the cache holds a copy that is not
+		// shared with the adapter we just handed back to the caller. Without
+		// this, downstream in-place mutations (e.g. removeDisplayNameLabel)
+		// would corrupt the cached entry on the very first access.
 		c.cache.SetDefault(key, cachedEntry{
 			spec:   out.GetSpec(),
-			labels: adapter.GetLabels(), // materialize labels so future hits reuse them
+			labels: maps.Clone(adapter.GetLabels()),
 		})
+	}
+	return nil
+}
+
+// ToCoreList overrides SimpleConverter.ToCoreList so the per-item conversion
+// dispatches to cachingConverter.ToCoreResource. Without this override, Go
+// method resolution on the embedded SimpleConverter binds c.ToCoreResource to
+// the inner type, bypassing the cache for every list read.
+func (c *cachingConverter) ToCoreList(in k8s_model.KubernetesList, out core_model.ResourceList, predicate k8s_common.ConverterPredicate) error {
+	for _, o := range in.GetItems() {
+		r := out.NewItem()
+		if err := c.ToCoreResource(o, r); err != nil {
+			return err
+		}
+		if predicate(r) {
+			_ = out.AddItem(r)
+		}
 	}
 	return nil
 }
