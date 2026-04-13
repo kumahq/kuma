@@ -142,7 +142,6 @@ spec:
     name: kuma-validation
     resources:
       limits:
-        cpu: 100m
         memory: 50M
       requests:
         cpu: 20m
