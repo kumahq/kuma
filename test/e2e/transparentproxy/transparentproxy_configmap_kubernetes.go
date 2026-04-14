@@ -160,7 +160,6 @@ redirect:
 					},
 					Resources: kube_core.ResourceRequirements{
 						Limits: kube_core.ResourceList{
-							"cpu":    resource.MustParse("50m"),
 							"memory": resource.MustParse("64Mi"),
 						},
 					},
