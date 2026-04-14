@@ -22,6 +22,7 @@ import (
 const (
 	pathPrefixReady  = "/ready"
 	stateReady       = "READY"
+	stateNotReady    = "NOT_READY"
 	stateTerminating = "TERMINATING"
 )
 
@@ -38,17 +39,22 @@ type Reporter struct {
 	adminSocketPath    string
 	adminClient        *http.Client
 	isTerminating      atomic.Bool
+	// dnsConfigReady, when non-nil, blocks /ready until the DNS proxy has
+	// loaded its first configuration from Envoy. Closed by the DNS proxy
+	// server after the first successful ReloadMap call.
+	dnsConfigReady <-chan struct{}
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string) *Reporter {
+func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}) *Reporter {
 	r := &Reporter{
 		unixSocketDisabled: unixSocketDisabled,
 		socketDir:          socketDir,
 		localListenPort:    localListenPort,
 		localListenAddr:    localIPAddr,
 		adminSocketPath:    adminSocketPath,
+		dnsConfigReady:     dnsConfigReady,
 	}
 	if adminSocketPath != "" {
 		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
@@ -124,6 +130,18 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	if r.isTerminating.Load() {
 		r.writeState(writer, req, stateTerminating, http.StatusServiceUnavailable)
 		return
+	}
+
+	// When DNS proxy is enabled, block readiness until it has loaded its
+	// first configuration from Envoy. This ensures that .mesh DNS names
+	// resolve correctly before any application container starts.
+	if r.dnsConfigReady != nil {
+		select {
+		case <-r.dnsConfigReady:
+		default:
+			r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
+			return
+		}
 	}
 
 	// When admin is on UDS, proxy /ready to Envoy admin so that

@@ -30,8 +30,10 @@ type Server struct {
 	registerer    prometheus.Registerer
 	metricsOnce   sync.Once
 	// upstreamClient is used for testing purposes
-	upstreamClient func(msg *dns.Msg) (*dns.Msg, error)
-	ready          chan struct{}
+	upstreamClient  func(msg *dns.Msg) (*dns.Msg, error)
+	ready           chan struct{}
+	configReady     chan struct{}
+	configReadyOnce sync.Once
 }
 
 func NewServer(addresses []string) (*Server, error) {
@@ -69,6 +71,7 @@ func NewServerWithCustomClient(addresses []string, upstreamClient func(msg *dns.
 		componentDone:  make(chan struct{}),
 		dnsMap:         atomic.Pointer[dnsMap]{},
 		ready:          make(chan struct{}),
+		configReady:    make(chan struct{}),
 		registerer:     prometheus.DefaultRegisterer,
 		upstreamClient: upstreamClient,
 	}
@@ -263,6 +266,13 @@ func (s *Server) WaitForReady() {
 	<-s.ready
 }
 
+// ConfigReady returns a channel that is closed once the first DNS configuration
+// has been successfully loaded from Envoy. Use this to gate readiness on DNS
+// proxy being fully initialized, not just the UDP servers being up.
+func (s *Server) ConfigReady() <-chan struct{} {
+	return s.configReady
+}
+
 // ReloadMap replaces the current map in memory so that future calls to the proxy.
 // Because this is called inside the configfetcher there's no need to check if it changed or not.
 func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
@@ -314,6 +324,9 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	}
 	log.V(1).Info("DNS proxy configured", "config", res)
 	s.dnsMap.Store(&res)
+	s.configReadyOnce.Do(func() {
+		close(s.configReady)
+	})
 	if m := s.metrics.Load(); m != nil {
 		m.EntriesTotal.Set(float64(len(res.ARecords)))
 	}
