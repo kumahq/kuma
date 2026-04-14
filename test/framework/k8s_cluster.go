@@ -1497,7 +1497,11 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 }
 
 func (c *K8sCluster) LoadImages(names ...string) error {
-	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 3, 0, func() (string, error) {
+	// 3 retries with 0 backoff was too tight: a single transient docker
+	// daemon hiccup blew through all attempts before recovery. Bumped to
+	// 5 attempts with 5s backoff so a brief image-import failure does
+	// not fail the whole test suite.
+	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 5, 5*time.Second, func() (string, error) {
 		err := c.loadImages(names...)
 		return "Loaded images " + strings.Join(names, ", "), err
 	})
