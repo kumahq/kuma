@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### CPU limits removed from `kuma-init` and `kuma-sidecar` containers
 
-The default CPU limit for injected `kuma-init` and `kuma-sidecar` containers has been removed (set to `0`, meaning no limit). Previously the defaults were `100m` and `1000m` respectively.
+The default CPU limit for injected `kuma-init`, `kuma-sidecar` and `kuma-validation` containers has been removed (set to `0`, meaning no limit). Previously the defaults were `100m` and `1000m` respectively.
 
 **Why:** 
 
@@ -23,7 +23,7 @@ None for most users. If your cluster enforces CPU limits, either relax those pol
 **Kubernetes (Helm)**
 ```yaml
 dataPlane:
-  initImage:
+  initContainer:
     resources:
       limits:
         cpu: 100m
@@ -31,12 +31,17 @@ dataPlane:
     resources:
       limits:
         cpu: 1000m
+  validationContainer:
+    resources:
+      limits:
+        cpu: 100m
 ```
 
 **Control plane environment variables**
 ```sh
 KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU=100m
 KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU=1000m
+KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU=100m
 ```
 
 ### Envoy admin API now uses Unix domain socket by default

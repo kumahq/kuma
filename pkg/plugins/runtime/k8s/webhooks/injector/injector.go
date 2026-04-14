@@ -655,6 +655,23 @@ func initContainerRequests(requests runtime_k8s.InitContainerResourceRequests) k
 	}
 }
 
+func validationContainerLimits(limits runtime_k8s.ValidationContainerResourceLimits) kube_core.ResourceList {
+	result := kube_core.ResourceList{
+		kube_core.ResourceMemory: kube_api.MustParse(limits.Memory),
+	}
+	if cpu := kube_api.MustParse(limits.CPU); !cpu.IsZero() {
+		result[kube_core.ResourceCPU] = cpu
+	}
+	return result
+}
+
+func validationContainerRequests(requests runtime_k8s.ValidationContainerResourceRequests) kube_core.ResourceList {
+	return kube_core.ResourceList{
+		kube_core.ResourceCPU:    kube_api.MustParse(requests.CPU),
+		kube_core.ResourceMemory: kube_api.MustParse(requests.Memory),
+	}
+}
+
 func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]string) kube_core.Container {
 	mounts := []kube_core.VolumeMount{mountInitTmp}
 
@@ -785,14 +802,8 @@ func (i *KumaInjector) NewValidationContainer(pod *kube_core.Pod) kube_core.Cont
 			AllowPrivilegeEscalation: pointer.To(false),
 		},
 		Resources: kube_core.ResourceRequirements{
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
-			},
-			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
-			},
+			Limits:   validationContainerLimits(i.cfg.ValidationContainer.Resources.Limits),
+			Requests: validationContainerRequests(i.cfg.ValidationContainer.Resources.Requests),
 		},
 		VolumeMounts: mounts,
 	}
