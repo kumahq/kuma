@@ -109,6 +109,16 @@ K3D_CLUSTER_CREATE_OPTS += \
 	--k3s-arg "--kube-controller-manager-arg=concurrent-replicaset-syncs=20@server:0" \
 	--k3s-arg "--kube-controller-manager-arg=concurrent-deployment-syncs=20@server:0"
 
+# --- Kubelet image pull parallelism ---
+# k3d image import pre-loads kuma images directly into containerd, bypassing
+# the kubelet. However, third-party images (MetalLB, Calico, test workloads)
+# are still pulled by the kubelet from their registries. Disabling serial pulls
+# and allowing up to 6 concurrent pulls reduces cluster setup time when multiple
+# such pods start simultaneously.
+K3D_CLUSTER_CREATE_OPTS += \
+	--k3s-arg "--kubelet-arg=serialize-image-pulls=false@server:0" \
+	--k3s-arg "--kubelet-arg=max-parallel-image-pulls=6@server:0"
+
 # --- eBPF ---
 # Mount bpffs inside k3d containers for eBPF-based transparent proxy.
 # On macOS Docker Desktop the mount must happen post-create; on Linux
