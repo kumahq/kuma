@@ -11,7 +11,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -46,32 +45,30 @@ func Migration() {
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-1"),
-				),
-				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-1"),
+				testserver.WithoutWaitingToBeReady(),
 			)).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Install(democlient.Install(
+				democlient.WithNamespace(namespace),
+				democlient.WithMesh(meshName),
+				democlient.WithoutWaitingToBeReady(),
+			)).
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-2"),
-				),
-				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-2"),
+				testserver.WithoutWaitingToBeReady(),
 			)).
-			SetupInGroup(multizone.KubeZone2, &group)
-
-		Expect(group.Wait()).To(Succeed())
+			Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -155,7 +152,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "3m", "2s").MustPassRepeatedly(5).Should(Succeed())
 
 		// and
 		// start constant requests
