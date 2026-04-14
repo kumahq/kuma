@@ -6,9 +6,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-
 	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var log = core.Log.WithName("mesh-load-balancing-strategy")
@@ -103,7 +102,6 @@ func doesRuleApply(rule *api.FromZone, localZone string) bool {
 	}
 	return slices.Contains(rule.Zones, localZone)
 }
-
 
 // affinityTagPodLabels returns a filtered copy of labels keeping only keys
 // referenced by AffinityTags in the conf. Unrelated pod labels are excluded
