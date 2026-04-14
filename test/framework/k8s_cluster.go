@@ -487,10 +487,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	if c.opts.zoneIngress {
 		argsMap["--ingress-enabled"] = ""
 		argsMap["--ingress-use-node-port"] = ""
+		args = append(args, "--set", fmt.Sprintf("%singress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
 	}
 
 	if c.opts.zoneEgress {
 		argsMap["--egress-enabled"] = ""
+		args = append(args, "--set", fmt.Sprintf("%segress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
 		if Config.Debug {
 			args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
 		}
@@ -556,6 +558,8 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"dataPlane.image.repository":             Config.KumaDPImageRepo,
 		"dataPlane.initImage.repository":         Config.KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
+		"ingress.resources.limits.cpu":           "null",
+		"egress.resources.limits.cpu":            "null",
 	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry

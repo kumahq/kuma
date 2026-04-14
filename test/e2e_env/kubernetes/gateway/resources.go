@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	"net"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,10 +15,12 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
-// httpKeepAliveReader sends a complete HTTP/1.1 GET request on first reads,
-// then blocks forever. This keeps the TCP connection alive as HTTP keep-alive
-// without triggering the gateway's request_headers_timeout (which would drop
-// a raw telnet/TCP connection that never sends HTTP headers).
+// httpKeepAliveReader sends HTTP/1.1 GET requests in a loop with a short
+// interval. This prevents the gateway's request_headers_timeout (500ms) from
+// closing the connection: after each completed request/response cycle, Envoy
+// resets that timer and waits for the next request; if no bytes arrive within
+// 500ms the connection is dropped. Resending every 300ms keeps the slot
+// continuously occupied.
 type httpKeepAliveReader struct {
 	headers []byte
 	pos     int
@@ -29,12 +32,16 @@ func newHTTPKeepAliveReader(host string) *httpKeepAliveReader {
 }
 
 func (r *httpKeepAliveReader) Read(p []byte) (int, error) {
-	if r.pos < len(r.headers) {
-		n := copy(p, r.headers[r.pos:])
-		r.pos += n
-		return n, nil
+	if r.pos >= len(r.headers) {
+		// After the previous request is fully sent, wait briefly then
+		// resend to prevent request_headers_timeout from closing the
+		// connection.
+		time.Sleep(300 * time.Millisecond)
+		r.pos = 0
 	}
-	select {} // block forever after headers are sent
+	n := copy(p, r.headers[r.pos:])
+	r.pos += n
+	return n, nil
 }
 
 func Resources() {
