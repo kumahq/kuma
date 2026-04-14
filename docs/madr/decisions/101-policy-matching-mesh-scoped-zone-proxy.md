@@ -53,7 +53,7 @@ It is a transit proxy for outbound MeshExternalService traffic with policy enfor
 Zone egress is responsible for:
 - Forwarding mTLS-terminated traffic to MeshExternalService endpoints
 - Enforcing inbound access control (MeshTrafficPermission) and rate limits per source/destination
-- Applying outbound policies (timeouts, circuit breakers, health checks) to external endpoints
+- Applying outbound policies (timeouts, circuit breakers, health checks) to external endpoints (see policy matrix for prioritization — some are deferred)
 Zone egress is NOT responsible for:
 - Intra-mesh traffic routing (that is the sidecar's job)
 - Acting as a shared API gateway with complex routing logic
@@ -92,8 +92,8 @@ type Match struct {
 ```
 
 With the KRI-based SNI format ([MADR-101](101-sni-format-improvements.md)), SNIs follow the
-pattern `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` and are human-readable,
-predictable, and bidirectionally convertible to KRI.
+pattern `sni.<type>.<mesh>.<zone>.<namespace>.<name>[.<sectionName>]` and are human-readable,
+predictable, and bidirectionally convertible to KRI. `sectionName` is omitted when not applicable.
 
 ```yaml
 type: MeshTrafficPermission
@@ -105,11 +105,11 @@ spec:
     sectionName: ze-port
   default:
     allow:
-      - spiffeId:
+      - spiffeID:
           type: Exact
           value: "spiffe://default/ns/backend-ns/sa/backend"
         sni:
-          value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora."
+          value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora"
 ```
 
 * Good, because it maps directly to Envoy's filter chain match on `server_names`.
@@ -148,13 +148,13 @@ spec:
     sectionName: ze-port
   default:
     allow:
-      - spiffeId:
+      - spiffeID:
           type: Exact
           value: "spiffe://default/ns/backend-ns/sa/backend"
         targetRef:
           kind: MeshExternalService
           name: aws-aurora
-      - spiffeId:
+      - spiffeID:
           type: Exact
           value: "spiffe://default/ns/backend-ns/sa/backend"
         targetRef:
@@ -186,7 +186,7 @@ spec:
     sectionName: ze-port
   rules:
     - matches:
-        - spiffeId:
+        - spiffeID:
             type: Exact
             value: "spiffe://default/ns/backend-ns/sa/backend"
   to:
@@ -221,7 +221,7 @@ type Match struct {
   For zone ingress, only `kind: MeshService` and `kind: MeshMultiZoneService`.
 - `targetRef` is optional. When absent, the match applies to all destinations (same as today).
   When present, the match applies only to the filter chain for the referenced resource.
-- When a `Match` contains both `spiffeId` and `targetRef`, both conditions must hold.
+- When a `Match` contains both `spiffeID` and `targetRef`, both conditions must hold.
 - `targetRef` in `Match` is valid only when the policy targets a zone proxy Dataplane.
 
 `sni` is deferred to a follow-up. The `Match` struct can be extended with an `sni` field
@@ -242,7 +242,7 @@ spec:
     sectionName: ze-port
   default:
     allow:
-      - spiffeId:
+      - spiffeID:
           type: Exact
           value: "spiffe://default/ns/backend-ns/sa/backend"
         targetRef:
@@ -254,7 +254,7 @@ No other service can reach `aws-aurora` through zone egress because no other `al
 
 #### Access control: deny specific source from all external resources
 
-Combines SpiffeID and destination matching (AND semantics). Only `spiffeId` + `targetRef` in the same entry are AND-ed; separate entries are OR-ed.
+Combines SpiffeID and destination matching (AND semantics). Only `spiffeID` + `targetRef` in the same entry are AND-ed; separate entries are OR-ed.
 
 ```yaml
 type: MeshTrafficPermission
@@ -266,7 +266,7 @@ spec:
     sectionName: ze-port
   default:
     deny:
-      - spiffeId:
+      - spiffeID:
           type: Exact
           value: "spiffe://default/ns/backend-ns/sa/compromised-worker"
         targetRef:
@@ -358,12 +358,12 @@ Priority column indicates planned release milestone.
 ### MeshTrafficPermission Default Behaviour
 
 Zone egress is a security boundary — it is the sole exit path for MeshExternalService traffic.
-The default behaviour when no MeshTrafficPermission targets zone egress must be **deny-all**:
-`mesh.spec.routing.defaultForbidMeshExternalServiceAccess` defaults to `true`.
-
-This is a change from MADR-062, which set the default to `false` (permissive) because egress
-targeting was not yet available. Now that MeshTrafficPermission can target zone egress with
-per-destination granularity, the fail-closed default is both safe and practical.
+The default behaviour when no MeshTrafficPermission targets zone egress must be **deny-all**.
+This MADR proposes changing `mesh.spec.routing.defaultForbidMeshExternalServiceAccess` from its
+current default of `false` (permissive, set in MADR-062 when egress targeting was not yet available)
+to `true` (deny-all). Now that MeshTrafficPermission can target zone egress with per-destination
+granularity, the fail-closed default is both safe and practical. This requires an explicit
+implementation change to the API default value.
 
 Operators must create explicit `allow` entries in MeshTrafficPermission to grant access.
 
@@ -404,9 +404,9 @@ validated against the new filter chain architecture.
 * `targetRef` in `Match` is valid only when the policy targets a zone proxy Dataplane.
 * `sni` in `Match` is deferred to a follow-up; the struct can be extended without breaking
   existing policies.
-* Zone ingress inbound `rules` with `targetRef: kind: MeshService` is only required for `MeshAccessLog`
+* Zone ingress inbound `rules` with `targetRef: kind: MeshService` is only required for `MeshAccessLog`, because it is the only zone ingress policy that needs per-destination log filtering; other zone ingress policies (MeshMetric, MeshTrace) apply uniformly to all inbound traffic without destination discrimination.
 * MeshRetry on zone egress outbound remains out of scope — squared retry amplification.
-* `MeshTrafficPermission` places `targetRef` in allow/deny entries (alongside `spiffeId`)
+* `MeshTrafficPermission` places `targetRef` in allow/deny entries (alongside `spiffeID`)
   rather than in `rules[].matches[]` — this is a consequence of the MADR-081 API design and
   must be documented prominently for contributors.
 
