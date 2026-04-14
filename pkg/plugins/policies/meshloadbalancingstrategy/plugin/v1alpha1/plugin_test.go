@@ -1769,10 +1769,10 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "backend",
 					Origin: metadata.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
-						createEndpointWithLabels("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
-						createEndpointWithLabels("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
-						createEndpointWithLabels("zone-1", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
-						createEndpointWithLabels("zone-1", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+						createEndpointWithLabels("192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWithLabels("192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWithLabels("192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+						createEndpointWithLabels("192.168.1.4", map[string]string{"k8s.io/region": "test"}),
 						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
 						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
 						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
@@ -1956,12 +1956,12 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 		Build()
 }
 
-func createEndpointWithLabels(zone string, ip string, labels map[string]string) core_xds.Endpoint {
+func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endpoint {
 	e := xds_builders.Endpoint().
 		WithTarget(ip).
 		WithPort(8080).
-		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, zone).
-		WithZone(zone).
+		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, "zone-1").
+		WithZone("zone-1").
 		Build()
 	e.Labels = labels
 	return *e
