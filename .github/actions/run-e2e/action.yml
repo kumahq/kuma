@@ -90,6 +90,7 @@ runs:
         env
         if [[ "$E2E_TARGET" == "multizone" ]]; then
           export KUMA_DEFAULT_RETRIES=60
+          export KUMA_DEFAULT_TIMEOUT="6s"
         fi
 
         function on_exit()
