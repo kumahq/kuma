@@ -19,14 +19,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/transparentproxy/firewalld"
 )
 
-// setupDeadline bounds the total time spent in transparent-proxy setup.
-// iptables-nft-restore can hang indefinitely under nf_tables contention
-// (observed in kuma-init when running alongside calico). Without a hard
-// deadline the kuma-init container hangs until the e2e wait timeout, which
-// looks like a flaky test. Exiting non-zero lets kubernetes restart the
-// init container and retry.
-const setupDeadline = 90 * time.Second
-
 const (
 	flagHelp                       = "help"
 	flagDryRun                     = "dry-run"
@@ -195,15 +187,18 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			ctx, cancel := context.WithTimeout(cmd.Context(), setupDeadline)
-			defer cancel()
+			// Bound the total setup time so that a hung iptables binary
+			// causes a clean failure (and pod restart) instead of a
+			// permanent hang that blocks the pod in init phase forever.
+			setupCtx, setupCancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
+			defer setupCancel()
 
-			initializedConfig, err := cfg.Initialize(ctx)
+			initializedConfig, err := cfg.Initialize(setupCtx)
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize config")
 			}
 
-			output, err := transparentproxy.Setup(ctx, initializedConfig)
+			output, err := transparentproxy.Setup(setupCtx, initializedConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}

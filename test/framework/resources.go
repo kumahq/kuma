@@ -129,10 +129,10 @@ func WaitForZoneOnline(global Cluster, zoneName string) error {
 	_, err := retry.DoWithRetryE(
 		global.GetTesting(),
 		fmt.Sprintf("wait for zone %s online", zoneName),
-		// 120 retries * 2s = 4 min. Cold-start KDS connection on
+		// 120 retries * 3s = 6 min. Cold-start KDS connection on
 		// IPv6 kindIpv6 clusters can take 60-90s; the previous 60s
 		// budget was not enough.
-		120, 2*time.Second,
+		4*DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			out, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 			if err != nil {

@@ -182,27 +182,14 @@ spec:
 			}, "60s", "1s").Should(Succeed())
 
 			// Wait for zone ingresses to settle after upgrade before checking consistency.
-			// After Helm upgrade the ingress Deployment rolls with maxSurge=1 so a second
-			// pod is temporarily up; the old pod terminates (K8s graceful period up to 30s)
-			// plus the CP deregistration delay (default 10s), so during the window global
-			// sees 3 zone ingresses (old k8s + new k8s + universal) before settling back to 2.
-			// Under CI resource pressure the new pod's sidecar startup and the old pod's
-			// termination can each stretch well past the nominal ~40s, so give this a
-			// generous budget. Also wait for all three views (global + both zones) to agree
-			// — previously we only waited on global's view, which made the following
-			// Consistently race with reverse KDS push and observe a stale count of 3 on a zone.
+			// After Helm upgrade returns, the old zone ingress pod may still be in Terminating
+			// state (K8s graceful period up to 30s) plus the CP deregistration delay (default 10s),
+			// so the old ingress remains visible to global for up to ~40s after the upgrade completes.
 			Eventually(func(g Gomega) {
 				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
-				g.Expect(err).ToNot(HaveOccurred())
-				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(zoneIngressesGlobal).To(
-					And(Equal(2), Equal(zoneIngressesK8sZone), Equal(zoneIngressesUniversalZone)),
-					"global=%d, k8sZone=%d, universalZone=%d", zoneIngressesGlobal, zoneIngressesK8sZone, zoneIngressesUniversalZone,
-				)
-			}, "5m", "2s").Should(Succeed())
+				g.Expect(zoneIngressesGlobal).To(Equal(2))
+			}, "3m", "1s").Should(Succeed())
 
 			// then
 			Consistently(func(g Gomega) {

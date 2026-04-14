@@ -50,7 +50,6 @@ spec:
     - "while true; do cat /usr/bin/* ; done"
     resources:
       limits:
-        cpu: 50m
         ephemeral-storage: 10Ki
         memory: 64Mi`
 

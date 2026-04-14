@@ -242,7 +242,6 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Args:    args,
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
-							"cpu":    resource.MustParse("50m"),
 							"memory": resource.MustParse("64Mi"),
 						},
 					},

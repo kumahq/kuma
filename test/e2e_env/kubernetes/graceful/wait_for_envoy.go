@@ -68,7 +68,6 @@ spec:
       successThreshold: 1
     resources:
       limits:
-        cpu: 50m
         memory: 64Mi`, namespace, meshName, Config.GetUniversalImage()))).
 			Install(WaitNumPods(namespace, 1, "wait-for-envoy")).
 			Install(WaitPodsAvailable(namespace, "wait-for-envoy")).
