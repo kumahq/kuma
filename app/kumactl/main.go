@@ -1,11 +1,6 @@
 package main
 
 import (
-	// Imported first so the watchdog goroutine is scheduled before the
-	// heavy controller-runtime init chain runs. See the package doc for
-	// why this matters for the kuma-init container.
-	_ "github.com/kumahq/kuma/v2/app/kumactl/internal/watchdog"
-
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
