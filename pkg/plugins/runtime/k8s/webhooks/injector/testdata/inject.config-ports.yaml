@@ -38,6 +38,14 @@ initContainer:
     limits:
       cpu: "0"
       memory: 50M
+validationContainer:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 20M
+    limits:
+      cpu: "0"
+      memory: 50M
 virtualProbesEnabled: false
 virtualProbesPort: 9000
 applicationProbeProxyPort: 0
