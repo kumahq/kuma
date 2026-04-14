@@ -553,6 +553,14 @@ spec:
               value: "50m"
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
               value: "64Mi"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU
+              value: "0"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
+              value: "50M"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "20m"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "20M"
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
