@@ -90,6 +90,7 @@ runs:
         env
         if [[ "$E2E_TARGET" == "multizone" ]]; then
           export KUMA_DEFAULT_RETRIES=60
+          export KUMA_DEFAULT_TIMEOUT="6s"
         fi
 
         function on_exit()
@@ -112,7 +113,7 @@ runs:
           target="test/e2e"
         fi
         make ${MAKE_PARAMETERS} CI=true "${target}"
-    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
         name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
@@ -120,7 +121,7 @@ runs:
         path: |
           build/reports/e2e-debug*
         retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}
-    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
         name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}

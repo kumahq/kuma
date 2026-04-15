@@ -8,6 +8,42 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### CPU limits removed from `kuma-init` and `kuma-sidecar` containers
+
+The default CPU limit for injected `kuma-init`, `kuma-sidecar` and `kuma-validation` containers has been removed (set to `0`, meaning no limit). Previously the defaults were `100m` and `1000m` respectively.
+
+**Why:** 
+
+CPU limits cause throttling even when CPU is available, which increases latency under load. Removing the limit allows the containers to burst during startup and high-traffic periods.
+
+**Action required:** 
+
+None for most users. If your cluster enforces CPU limits, either relax those policies or set explicit limits:
+
+**Kubernetes (Helm)**
+```yaml
+dataPlane:
+  initContainer:
+    resources:
+      limits:
+        cpu: 100m
+  sidecarContainer:
+    resources:
+      limits:
+        cpu: 1000m
+  validationContainer:
+    resources:
+      limits:
+        cpu: 100m
+```
+
+**Control plane environment variables**
+```sh
+KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU=100m
+KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU=1000m
+KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU=100m
+```
+
 ### Envoy admin API now uses Unix domain socket by default
 
 The Envoy admin API (`localhost:9901`) now binds to a Unix domain socket instead of TCP by default. This eliminates the shared-network-namespace attack vector where a compromised app container could reach the admin API to kill the sidecar, dump config, or modify runtime behavior.
