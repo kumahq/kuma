@@ -388,6 +388,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
 			Expect(cfg.Experimental.DeltaXds).To(BeTrue())
+			Expect(cfg.Experimental.MeshPassthroughMatcherAPI).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -815,6 +816,7 @@ experimental:
   generateMeshServices: true
   skipPersistedVIPs: true
   deltaXds: true
+  meshPassthroughMatcherAPI: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -1153,6 +1155,7 @@ meshService:
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
 				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
+				"KUMA_EXPERIMENTAL_MESH_PASSTHROUGH_MATCHER_API":                                           "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":                                              "9903",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
