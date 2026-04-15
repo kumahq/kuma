@@ -12,103 +12,146 @@ resources:
           map:
             raw_buffer:
               matcher:
-                matcherTree:
-                  exactMatchMap:
-                    map:
-                      h2c:
-                        matcher:
-                          matcherTree:
-                            exactMatchMap:
-                              map:
-                                "80":
-                                  action:
-                                    name: meshpassthrough_http_80
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_80
-                                "443":
-                                  action:
-                                    name: meshpassthrough_http_443
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_443
-                                "8080":
-                                  action:
-                                    name: meshpassthrough_http_8080
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_8080
-                                "8126":
-                                  action:
-                                    name: meshpassthrough_http_8126
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_8126
-                                "9091":
-                                  action:
-                                    name: meshpassthrough_http_9091
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_9091
-                            input:
-                              name: envoy.matching.inputs.destination_port
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                          onNoMatch:
+                matcherList:
+                  matchers:
+                  - onMatch:
+                      matcher:
+                        matcherTree:
+                          exactMatchMap:
+                            map:
+                              "80":
+                                action:
+                                  name: meshpassthrough_http_10.42.0.8_80
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_10.42.0.8_80
+                              "443":
+                                action:
+                                  name: meshpassthrough_http_10.42.0.8_443
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_10.42.0.8_443
+                              "8080":
+                                action:
+                                  name: meshpassthrough_http_10.42.0.8_8080
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_10.42.0.8_8080
+                              "8126":
+                                action:
+                                  name: meshpassthrough_http_10.42.0.8_8126
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_10.42.0.8_8126
+                              "9091":
+                                action:
+                                  name: meshpassthrough_http_10.42.0.8_9091
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_10.42.0.8_9091
+                          input:
+                            name: envoy.matching.inputs.destination_port
+                            typedConfig:
+                              '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+                        onNoMatch:
+                          action:
+                            name: meshpassthrough_http_10.42.0.8_*
+                            typedConfig:
+                              '@type': type.googleapis.com/google.protobuf.StringValue
+                              value: meshpassthrough_http_10.42.0.8_*
+                    predicate:
+                      singlePredicate:
+                        customMatch:
+                          name: envoy.matching.matchers.ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
+                            cidrRanges:
+                            - addressPrefix: 10.42.0.8
+                              prefixLen: 32
+                            statPrefix: 10.42.0.8
+                        input:
+                          name: envoy.matching.inputs.destination_ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
+                  - onMatch:
+                      matcher:
+                        matcherTree:
+                          exactMatchMap:
+                            map:
+                              "8126":
+                                action:
+                                  name: meshpassthrough_http_192.168.0.0/16_8126
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_192.168.0.0/16_8126
+                          input:
+                            name: envoy.matching.inputs.destination_port
+                            typedConfig:
+                              '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+                    predicate:
+                      singlePredicate:
+                        customMatch:
+                          name: envoy.matching.matchers.ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
+                            cidrRanges:
+                            - addressPrefix: 192.168.0.0
+                              prefixLen: 16
+                            statPrefix: 192.168.0.0/16
+                        input:
+                          name: envoy.matching.inputs.destination_ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
+                  - onMatch:
+                      matcher:
+                        matcherTree:
+                          exactMatchMap:
+                            map:
+                              "8126":
+                                action:
+                                  name: meshpassthrough_http_240.0.0.0/4_8126
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_240.0.0.0/4_8126
+                          input:
+                            name: envoy.matching.inputs.destination_port
+                            typedConfig:
+                              '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+                    predicate:
+                      singlePredicate:
+                        customMatch:
+                          name: envoy.matching.matchers.ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
+                            cidrRanges:
+                            - addressPrefix: 240.0.0.0
+                              prefixLen: 4
+                            statPrefix: 240.0.0.0/4
+                        input:
+                          name: envoy.matching.inputs.destination_ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
+                onNoMatch:
+                  matcher:
+                    matcherTree:
+                      exactMatchMap:
+                        map:
+                          "80":
                             action:
-                              name: meshpassthrough_http_*
+                              name: meshpassthrough_http_80
                               typedConfig:
                                 '@type': type.googleapis.com/google.protobuf.StringValue
-                                value: meshpassthrough_http_*
-                      http/1.1:
-                        matcher:
-                          matcherTree:
-                            exactMatchMap:
-                              map:
-                                "80":
-                                  action:
-                                    name: meshpassthrough_http_80
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_80
-                                "443":
-                                  action:
-                                    name: meshpassthrough_http_443
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_443
-                                "8080":
-                                  action:
-                                    name: meshpassthrough_http_8080
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_8080
-                                "8126":
-                                  action:
-                                    name: meshpassthrough_http_8126
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_8126
-                                "9091":
-                                  action:
-                                    name: meshpassthrough_http_9091
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_9091
-                            input:
-                              name: envoy.matching.inputs.destination_port
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                          onNoMatch:
+                                value: meshpassthrough_http_80
+                          "8080":
                             action:
-                              name: meshpassthrough_http_*
+                              name: meshpassthrough_http_8080
                               typedConfig:
                                 '@type': type.googleapis.com/google.protobuf.StringValue
-                                value: meshpassthrough_http_*
-                  input:
-                    name: envoy.matching.inputs.application_protocol
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
+                                value: meshpassthrough_http_8080
+                      input:
+                        name: envoy.matching.inputs.destination_port
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
             tls:
               matcher:
                 matcherTree:
@@ -506,88 +549,58 @@ resources:
           map:
             raw_buffer:
               matcher:
-                matcherTree:
-                  exactMatchMap:
-                    map:
-                      h2c:
-                        matcher:
-                          matcherTree:
-                            exactMatchMap:
-                              map:
-                                "80":
-                                  action:
-                                    name: meshpassthrough_http_80
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_80
-                                "8080":
-                                  action:
-                                    name: meshpassthrough_http_8080
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_8080
-                            input:
-                              name: envoy.matching.inputs.destination_port
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                      http/1.1:
-                        matcher:
-                          matcherTree:
-                            exactMatchMap:
-                              map:
-                                "80":
-                                  action:
-                                    name: meshpassthrough_http_80
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_80
-                                "8080":
-                                  action:
-                                    name: meshpassthrough_http_8080
-                                    typedConfig:
-                                      '@type': type.googleapis.com/google.protobuf.StringValue
-                                      value: meshpassthrough_http_8080
-                            input:
-                              name: envoy.matching.inputs.destination_port
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                  input:
-                    name: envoy.matching.inputs.application_protocol
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
+                matcherList:
+                  matchers:
+                  - onMatch:
+                      matcher:
+                        matcherTree:
+                          exactMatchMap:
+                            map:
+                              "9091":
+                                action:
+                                  name: meshpassthrough_tcp_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_tcp_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
+                          input:
+                            name: envoy.matching.inputs.destination_port
+                            typedConfig:
+                              '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+                    predicate:
+                      singlePredicate:
+                        customMatch:
+                          name: envoy.matching.matchers.ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
+                            cidrRanges:
+                            - addressPrefix: 9942:9abf:d0e0:f2da:2290:333b:e590:f497
+                              prefixLen: 128
+                            statPrefix: 9942:9abf:d0e0:f2da:2290:333b:e590:f497
+                        input:
+                          name: envoy.matching.inputs.destination_ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
                 onNoMatch:
                   matcher:
-                    matcherList:
-                      matchers:
-                      - onMatch:
-                          matcher:
-                            matcherTree:
-                              exactMatchMap:
-                                map:
-                                  "9091":
-                                    action:
-                                      name: meshpassthrough_tcp_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
-                                      typedConfig:
-                                        '@type': type.googleapis.com/google.protobuf.StringValue
-                                        value: meshpassthrough_tcp_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
-                              input:
-                                name: envoy.matching.inputs.destination_port
-                                typedConfig:
-                                  '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                        predicate:
-                          singlePredicate:
-                            customMatch:
-                              name: envoy.matching.matchers.ip
+                    matcherTree:
+                      exactMatchMap:
+                        map:
+                          "80":
+                            action:
+                              name: meshpassthrough_http_80
                               typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
-                                cidrRanges:
-                                - addressPrefix: 9942:9abf:d0e0:f2da:2290:333b:e590:f497
-                                  prefixLen: 128
-                                statPrefix: meshpassthrough_tcp_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
-                            input:
-                              name: envoy.matching.inputs.destination_ip
+                                '@type': type.googleapis.com/google.protobuf.StringValue
+                                value: meshpassthrough_http_80
+                          "8080":
+                            action:
+                              name: meshpassthrough_http_8080
                               typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
+                                '@type': type.googleapis.com/google.protobuf.StringValue
+                                value: meshpassthrough_http_8080
+                      input:
+                        name: envoy.matching.inputs.destination_port
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
             tls:
               matcher:
                 matcherTree:
@@ -660,6 +673,30 @@ resources:
                                 matcherTree:
                                   exactMatchMap:
                                     map:
+                                      "80":
+                                        action:
+                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_80
+                                          typedConfig:
+                                            '@type': type.googleapis.com/google.protobuf.StringValue
+                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_80
+                                      "443":
+                                        action:
+                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_443
+                                          typedConfig:
+                                            '@type': type.googleapis.com/google.protobuf.StringValue
+                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_443
+                                      "8080":
+                                        action:
+                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8080
+                                          typedConfig:
+                                            '@type': type.googleapis.com/google.protobuf.StringValue
+                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8080
+                                      "8126":
+                                        action:
+                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8126
+                                          typedConfig:
+                                            '@type': type.googleapis.com/google.protobuf.StringValue
+                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8126
                                       "9091":
                                         action:
                                           name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_9091
@@ -670,35 +707,12 @@ resources:
                                     name: envoy.matching.inputs.destination_port
                                     typedConfig:
                                       '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                            predicate:
-                              singlePredicate:
-                                customMatch:
-                                  name: envoy.matching.matchers.ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
-                                    cidrRanges:
-                                    - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
-                                      prefixLen: 128
-                                    statPrefix: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_9091
-                                input:
-                                  name: envoy.matching.inputs.destination_ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
-                          - onMatch:
-                              matcher:
-                                matcherTree:
-                                  exactMatchMap:
-                                    map:
-                                      "8126":
-                                        action:
-                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8126
-                                          typedConfig:
-                                            '@type': type.googleapis.com/google.protobuf.StringValue
-                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8126
-                                  input:
-                                    name: envoy.matching.inputs.destination_port
+                                onNoMatch:
+                                  action:
+                                    name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
                                     typedConfig:
-                                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+                                      '@type': type.googleapis.com/google.protobuf.StringValue
+                                      value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
                             predicate:
                               singlePredicate:
                                 customMatch:
@@ -708,114 +722,7 @@ resources:
                                     cidrRanges:
                                     - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
                                       prefixLen: 128
-                                    statPrefix: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8126
-                                input:
-                                  name: envoy.matching.inputs.destination_ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
-                          - onMatch:
-                              matcher:
-                                matcherTree:
-                                  exactMatchMap:
-                                    map:
-                                      "8080":
-                                        action:
-                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8080
-                                          typedConfig:
-                                            '@type': type.googleapis.com/google.protobuf.StringValue
-                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8080
-                                  input:
-                                    name: envoy.matching.inputs.destination_port
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                            predicate:
-                              singlePredicate:
-                                customMatch:
-                                  name: envoy.matching.matchers.ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
-                                    cidrRanges:
-                                    - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
-                                      prefixLen: 128
-                                    statPrefix: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8080
-                                input:
-                                  name: envoy.matching.inputs.destination_ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
-                          - onMatch:
-                              matcher:
-                                matcherTree:
-                                  exactMatchMap:
-                                    map:
-                                      "443":
-                                        action:
-                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_443
-                                          typedConfig:
-                                            '@type': type.googleapis.com/google.protobuf.StringValue
-                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_443
-                                  input:
-                                    name: envoy.matching.inputs.destination_port
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                            predicate:
-                              singlePredicate:
-                                customMatch:
-                                  name: envoy.matching.matchers.ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
-                                    cidrRanges:
-                                    - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
-                                      prefixLen: 128
-                                    statPrefix: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_443
-                                input:
-                                  name: envoy.matching.inputs.destination_ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
-                          - onMatch:
-                              matcher:
-                                matcherTree:
-                                  exactMatchMap:
-                                    map:
-                                      "80":
-                                        action:
-                                          name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_80
-                                          typedConfig:
-                                            '@type': type.googleapis.com/google.protobuf.StringValue
-                                            value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_80
-                                  input:
-                                    name: envoy.matching.inputs.destination_port
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-                            predicate:
-                              singlePredicate:
-                                customMatch:
-                                  name: envoy.matching.matchers.ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
-                                    cidrRanges:
-                                    - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
-                                      prefixLen: 128
-                                    statPrefix: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_80
-                                input:
-                                  name: envoy.matching.inputs.destination_ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
-                          - onMatch:
-                              action:
-                                name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
-                                typedConfig:
-                                  '@type': type.googleapis.com/google.protobuf.StringValue
-                                  value: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
-                            predicate:
-                              singlePredicate:
-                                customMatch:
-                                  name: envoy.matching.matchers.ip
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
-                                    cidrRanges:
-                                    - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
-                                      prefixLen: 128
-                                    statPrefix: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
+                                    statPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
                                 input:
                                   name: envoy.matching.inputs.destination_ip
                                   typedConfig:

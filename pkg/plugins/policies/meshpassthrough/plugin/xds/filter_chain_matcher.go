@@ -143,10 +143,13 @@ func buildSNITree(
 }
 
 // buildRawBufferMatcher builds the "raw_buffer" transport protocol branch.
-// Splits on application protocol: HTTP → HTTP filter chains, fallback → TCP filter chains.
+// Domain/WildcardDomain HTTP matches use port-based selection (filter chain names derived from protocol+port).
+// IP/CIDR matches for any protocol use destination IP matching (filter chain names derived from IP value).
+// ApplicationProtocolInput is intentionally avoided: it does not reliably populate in Envoy 1.37.x
+// when used in the filter_chain_matcher context (listener stat no_filter_chain_match fires instead).
 func buildRawBufferMatcher(matches []FilterChainMatch, isIPv6 bool) (*matcher_config.Matcher_OnMatch, error) {
-	var httpMatches []FilterChainMatch
-	var tcpMatches []FilterChainMatch
+	var httpDomainMatches []FilterChainMatch // Domain/WildcardDomain + HTTP/HTTP2/GRPC
+	var ipBasedMatches []FilterChainMatch    // IP/CIDR + any non-TLS protocol
 
 	for _, m := range matches {
 		if !matchesIPVersion(m, isIPv6) {
@@ -154,54 +157,48 @@ func buildRawBufferMatcher(matches []FilterChainMatch, isIPv6 bool) (*matcher_co
 		}
 		switch m.Protocol {
 		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-			httpMatches = append(httpMatches, m)
+			switch m.MatchType {
+			case Domain, WildcardDomain:
+				httpDomainMatches = append(httpDomainMatches, m)
+			case IP, IPV6, CIDR, CIDRV6:
+				ipBasedMatches = append(ipBasedMatches, m)
+			}
 		case core_meta.ProtocolTCP, core_meta.Protocol(api.MysqlProtocol):
-			tcpMatches = append(tcpMatches, m)
+			switch m.MatchType {
+			case IP, IPV6, CIDR, CIDRV6:
+				ipBasedMatches = append(ipBasedMatches, m)
+			}
 		}
 	}
 
-	if len(httpMatches) == 0 && len(tcpMatches) == 0 {
+	if len(httpDomainMatches) == 0 && len(ipBasedMatches) == 0 {
 		return nil, nil
 	}
 
-	var tcpOnMatch *matcher_config.Matcher_OnMatch
-	if len(tcpMatches) > 0 {
-		tcpOnMatch = buildIPCIDRMatcherList(tcpMatches, core_meta.ProtocolTCP)
+	// Domain HTTP port matcher acts as the fallback when no IP/CIDR matches.
+	var domainHTTPOnMatch *matcher_config.Matcher_OnMatch
+	if len(httpDomainMatches) > 0 {
+		var err error
+		domainHTTPOnMatch, err = buildHTTPPortMatcher(httpDomainMatches)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if len(httpMatches) == 0 {
-		return tcpOnMatch, nil
+	if len(ipBasedMatches) == 0 {
+		return domainHTTPOnMatch, nil
 	}
 
-	return buildHTTPAppProtocolMatcher(httpMatches, tcpOnMatch)
+	return buildMixedIPCIDRMatcherList(ipBasedMatches, domainHTTPOnMatch), nil
 }
 
-// buildHTTPAppProtocolMatcher maps "http/1.1" and "h2c" to HTTP filter chain port matchers.
-func buildHTTPAppProtocolMatcher(httpMatches []FilterChainMatch, tcpFallback *matcher_config.Matcher_OnMatch) (*matcher_config.Matcher_OnMatch, error) {
-	httpPortOnMatch, err := buildHTTPPortMatcher(httpMatches)
-	if err != nil {
-		return nil, err
-	}
-
-	entries := map[string]*matcher_config.Matcher_OnMatch{
-		"http/1.1": httpPortOnMatch,
-		"h2c":      httpPortOnMatch,
-	}
-
-	m := &matcher_config.Matcher{OnNoMatch: tcpFallback}
-	if err := bldrs_matchers.MatcherTreeExactMap(bldrs_matchers.NetworkInputApplicationProtocol(), entries)(m); err != nil {
-		return nil, err
-	}
-	return bldrs_matchers.OnMatchMatcher(m), nil
-}
-
-// buildHTTPPortMatcher builds port-based matchers for HTTP filter chains.
-// For HTTP protocols the filter chain name is derived from protocol+port (not value).
-func buildHTTPPortMatcher(httpMatches []FilterChainMatch) (*matcher_config.Matcher_OnMatch, error) {
+// buildHTTPPortMatcher builds port-based matchers for Domain/WildcardDomain HTTP filter chains.
+// Filter chain names are derived from protocol+port (e.g. meshpassthrough_http_80).
+func buildHTTPPortMatcher(httpDomainMatches []FilterChainMatch) (*matcher_config.Matcher_OnMatch, error) {
 	portEntries := map[string]*matcher_config.Matcher_OnMatch{}
 	var wildcard *matcher_config.Matcher_OnMatch
 
-	for _, m := range httpMatches {
+	for _, m := range httpDomainMatches {
 		chainName := FilterChainName(string(m.Protocol), m.Protocol, m.Port)
 		action := bldrs_matchers.FilterChainNameOnMatch(chainName)
 		if m.Port == 0 {
@@ -220,6 +217,94 @@ func buildHTTPPortMatcher(httpMatches []FilterChainMatch) (*matcher_config.Match
 		return nil, err
 	}
 	return bldrs_matchers.OnMatchMatcher(m), nil
+}
+
+// buildMixedIPCIDRMatcherList builds a MatcherList for IP/CIDR destination matching across
+// multiple protocols (HTTP, TCP, MySQL). All port variants for the same IP/CIDR are collapsed
+// into a single FieldMatcher to avoid the MatcherList "first predicate match wins" problem:
+// if two FieldMatchers share the same IP predicate, only the first is ever evaluated.
+// Domain HTTP matches are used as the OnNoMatch fallback.
+func buildMixedIPCIDRMatcherList(ipMatches []FilterChainMatch, fallback *matcher_config.Matcher_OnMatch) *matcher_config.Matcher_OnMatch {
+	type ipGroup struct {
+		cidr  *corev3.CidrRange
+		ports []portChain
+	}
+
+	groups := map[string]*ipGroup{}
+	var orderedKeys []string
+
+	for _, m := range ipMatches {
+		var cidr *corev3.CidrRange
+		switch m.MatchType {
+		case IP, IPV6:
+			cidr = ipToCIDR(m.Value, m.MatchType == IPV6)
+		case CIDR, CIDRV6:
+			ip, mask := getIpAndMask(m.Value)
+			cidr = &corev3.CidrRange{AddressPrefix: ip, PrefixLen: util_proto.UInt32(mask)}
+		default:
+			continue
+		}
+
+		// MySQL filter chains are created by configureTcpFilterChain which uses ProtocolTCP for naming.
+		chainProtocol := m.Protocol
+		if m.Protocol == core_meta.Protocol(api.MysqlProtocol) {
+			chainProtocol = core_meta.ProtocolTCP
+		}
+		chainName := FilterChainName(m.Value, chainProtocol, m.Port)
+
+		if _, exists := groups[m.Value]; !exists {
+			groups[m.Value] = &ipGroup{cidr: cidr}
+			orderedKeys = append(orderedKeys, m.Value)
+		}
+		groups[m.Value].ports = append(groups[m.Value].ports, portChain{m.Port, chainName})
+	}
+
+	if len(groups) == 0 {
+		return fallback
+	}
+
+	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
+	for _, key := range orderedKeys {
+		group := groups[key]
+		onMatch := buildPortOnMatchForGroup(group.ports)
+		fieldMatchers = append(fieldMatchers, buildIPFieldMatcher([]*corev3.CidrRange{group.cidr}, key, onMatch))
+	}
+
+	nested := &matcher_config.Matcher{
+		MatcherType: &matcher_config.Matcher_MatcherList_{
+			MatcherList: &matcher_config.Matcher_MatcherList{Matchers: fieldMatchers},
+		},
+		OnNoMatch: fallback,
+	}
+	return bldrs_matchers.OnMatchMatcher(nested)
+}
+
+type portChain struct {
+	port      uint32
+	chainName string
+}
+
+// buildPortOnMatchForGroup builds a port ExactMap (with optional wildcard OnNoMatch) from a set
+// of (port, chainName) entries sharing the same IP/CIDR predicate.
+func buildPortOnMatchForGroup(ports []portChain) *matcher_config.Matcher_OnMatch {
+	portMap := map[string]*matcher_config.Matcher_OnMatch{}
+	var wildcardAction *matcher_config.Matcher_OnMatch
+	for _, p := range ports {
+		action := bldrs_matchers.FilterChainNameOnMatch(p.chainName)
+		if p.port == 0 {
+			wildcardAction = action
+		} else {
+			portMap[fmt.Sprintf("%d", p.port)] = action
+		}
+	}
+	if len(portMap) == 0 {
+		return wildcardAction
+	}
+	m := &matcher_config.Matcher{OnNoMatch: wildcardAction}
+	if err := bldrs_matchers.MatcherTreeExactMap(bldrs_matchers.NetworkInputDestinationPort(), portMap)(m); err != nil {
+		panic(err)
+	}
+	return bldrs_matchers.OnMatchMatcher(m)
 }
 
 // buildPortMatcher builds a destination-port matcher for filter chains sharing the same SNI/address.
@@ -248,9 +333,17 @@ func buildPortMatcher(chainMatches []FilterChainMatch) (*matcher_config.Matcher_
 	return bldrs_matchers.OnMatchMatcher(m), nil
 }
 
-// buildIPCIDRMatcherList builds a MatcherList for IP/CIDR-based filter chain selection.
+// buildIPCIDRMatcherList builds a MatcherList for IP/CIDR-based filter chain selection (TLS branch).
+// All port variants for the same IP/CIDR are collapsed into a single FieldMatcher — see
+// buildMixedIPCIDRMatcherList for the rationale.
 func buildIPCIDRMatcherList(ipMatches []FilterChainMatch, protocol core_meta.Protocol) *matcher_config.Matcher_OnMatch {
-	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
+	type ipGroup struct {
+		cidr  *corev3.CidrRange
+		ports []portChain
+	}
+
+	groups := map[string]*ipGroup{}
+	var orderedKeys []string
 
 	for _, m := range ipMatches {
 		var cidr *corev3.CidrRange
@@ -265,14 +358,23 @@ func buildIPCIDRMatcherList(ipMatches []FilterChainMatch, protocol core_meta.Pro
 		}
 
 		chainName := FilterChainName(m.Value, protocol, m.Port)
-		action := bldrs_matchers.FilterChainNameOnMatch(chainName)
-		portedAction := wrapWithPortMatch(action, m.Port)
 
-		fieldMatchers = append(fieldMatchers, buildIPFieldMatcher([]*corev3.CidrRange{cidr}, chainName, portedAction))
+		if _, exists := groups[m.Value]; !exists {
+			groups[m.Value] = &ipGroup{cidr: cidr}
+			orderedKeys = append(orderedKeys, m.Value)
+		}
+		groups[m.Value].ports = append(groups[m.Value].ports, portChain{m.Port, chainName})
 	}
 
-	if len(fieldMatchers) == 0 {
+	if len(groups) == 0 {
 		return nil
+	}
+
+	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
+	for _, key := range orderedKeys {
+		group := groups[key]
+		onMatch := buildPortOnMatchForGroup(group.ports)
+		fieldMatchers = append(fieldMatchers, buildIPFieldMatcher([]*corev3.CidrRange{group.cidr}, key, onMatch))
 	}
 
 	nested := &matcher_config.Matcher{
@@ -307,21 +409,6 @@ func buildIPFieldMatcher(cidrRanges []*corev3.CidrRange, statPrefix string, acti
 		},
 		OnMatch: action,
 	}
-}
-
-// wrapWithPortMatch wraps an action in a port-exact matcher when port != 0.
-func wrapWithPortMatch(action *matcher_config.Matcher_OnMatch, port uint32) *matcher_config.Matcher_OnMatch {
-	if port == 0 {
-		return action
-	}
-	portMatcher := &matcher_config.Matcher{}
-	entries := map[string]*matcher_config.Matcher_OnMatch{
-		fmt.Sprintf("%d", port): action,
-	}
-	if err := bldrs_matchers.MatcherTreeExactMap(bldrs_matchers.NetworkInputDestinationPort(), entries)(portMatcher); err != nil {
-		panic(err)
-	}
-	return bldrs_matchers.OnMatchMatcher(portMatcher)
 }
 
 func ipToCIDR(ip string, isIPv6 bool) *corev3.CidrRange {

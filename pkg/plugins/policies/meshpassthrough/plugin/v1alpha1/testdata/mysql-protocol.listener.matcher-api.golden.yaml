@@ -38,7 +38,7 @@ resources:
                             cidrRanges:
                             - addressPrefix: 172.12.2.2
                               prefixLen: 32
-                            statPrefix: meshpassthrough_tcp_172.12.2.2_3306
+                            statPrefix: 172.12.2.2
                         input:
                           name: envoy.matching.inputs.destination_ip
                           typedConfig:
@@ -67,7 +67,7 @@ resources:
                             cidrRanges:
                             - addressPrefix: 172.12.2.0
                               prefixLen: 24
-                            statPrefix: meshpassthrough_tcp_172.12.2.2/24_3307
+                            statPrefix: 172.12.2.2/24
                         input:
                           name: envoy.matching.inputs.destination_ip
                           typedConfig:

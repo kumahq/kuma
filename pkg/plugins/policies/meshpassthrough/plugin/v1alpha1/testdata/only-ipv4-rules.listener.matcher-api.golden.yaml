@@ -38,7 +38,7 @@ resources:
                             cidrRanges:
                             - addressPrefix: 192.168.0.0
                               prefixLen: 32
-                            statPrefix: meshpassthrough_tcp_192.168.0.0_80
+                            statPrefix: 192.168.0.0
                         input:
                           name: envoy.matching.inputs.destination_ip
                           typedConfig:
