@@ -189,7 +189,7 @@ spec:
 				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(zoneIngressesGlobal).To(Equal(2))
-			}, "2m", "1s").Should(Succeed())
+			}, "3m", "1s").Should(Succeed())
 
 			// then
 			Consistently(func(g Gomega) {

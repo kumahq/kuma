@@ -315,6 +315,10 @@ k3d/cluster/metallb/setup: $(METALLB_RESOURCES)
 	$(Q)$(KUBECTL) apply \
 	  --filename $(METALLB_MANIFESTS)
 
+	$(Q)$(KUBECTL) rollout status deployment \
+	  --namespace $(METALLB_NAMESPACE) \
+	  --timeout 120s
+
 	$(Q)$(KUBECTL) wait \
 	  --namespace $(METALLB_NAMESPACE) \
 	  --for condition=Ready \
