@@ -1,10 +1,12 @@
 package install
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
 	"slices"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -185,12 +187,18 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			initializedConfig, err := cfg.Initialize(cmd.Context())
+			// Bound the total setup time so that a hung iptables binary
+			// causes a clean failure (and pod restart) instead of a
+			// permanent hang that blocks the pod in init phase forever.
+			setupCtx, setupCancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
+			defer setupCancel()
+
+			initializedConfig, err := cfg.Initialize(setupCtx)
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize config")
 			}
 
-			output, err := transparentproxy.Setup(cmd.Context(), initializedConfig)
+			output, err := transparentproxy.Setup(setupCtx, initializedConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}

@@ -120,6 +120,41 @@ func WaitForMesh(mesh string, clusters []Cluster) error {
 	return WaitForResource(core_mesh.MeshResourceTypeDescriptor, core_model.ResourceKey{Name: mesh}, clusters...)
 }
 
+// WaitForZoneOnline polls `kumactl inspect zones` on the given Global CP
+// cluster until the named zone appears with status Online. Use this after
+// starting a new zone CP dynamically (e.g. NewUniversalCluster + Kuma(core.Zone))
+// to ensure KDS registration and MeshService propagation have completed
+// before running cross-zone assertions.
+func WaitForZoneOnline(global Cluster, zoneName string) error {
+	_, err := retry.DoWithRetryE(
+		global.GetTesting(),
+		fmt.Sprintf("wait for zone %s online", zoneName),
+		// 120 retries * 3s = 6 min. Cold-start KDS connection on
+		// IPv6 kindIpv6 clusters can take 60-90s; the previous 60s
+		// budget was not enough.
+		4*DefaultRetries, DefaultTimeout,
+		func() (string, error) {
+			out, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+			if err != nil {
+				return "", err
+			}
+			if !strings.Contains(out, zoneName) {
+				return "", fmt.Errorf("zone %s not found in zones list:\n%s", zoneName, out)
+			}
+			for line := range strings.SplitSeq(out, "\n") {
+				if strings.Contains(line, zoneName) {
+					if !strings.Contains(line, "Online") {
+						return "", fmt.Errorf("zone %s not Online: %s", zoneName, line)
+					}
+					return "", nil
+				}
+			}
+			return "", fmt.Errorf("zone %s not found in zones output", zoneName)
+		},
+	)
+	return err
+}
+
 func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_model.ResourceKey, clusters ...Cluster) error {
 	for _, c := range clusters {
 		_, err := retry.DoWithRetryE(c.GetTesting(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
