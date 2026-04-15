@@ -343,9 +343,6 @@ spec:
 			),
 		)
 
-		// clean stats
-		Expect(resetCounter(multizone.KubeZone2, "demo-client-mesh-route", namespace)).To(Succeed())
-
 		// when load balancing policy created
 		meshLoadBalancingStrategyDemoClientMeshRoute := utils.FromTemplate(Default, `
 type: MeshLoadBalancingStrategy
