@@ -25,9 +25,13 @@ metadata:
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
   isCA: true
+  {{- $dnsNames := .Values.controlPlane.tls.general.certManager.dnsNames }}
+  {{- if not $dnsNames }}
+    {{- fail "controlPlane.tls.general.certManager.dnsNames must not be empty" }}
+  {{- end }}
   dnsNames:
-    {{- range .Values.controlPlane.tls.general.certManager.dnsNames }}
-    - {{ tpl . $ }}
+    {{- range $dnsNames }}
+    - {{ tpl . $ | quote }}
     {{- end }}
   issuerRef:
     kind: {{ $issuerKind }}

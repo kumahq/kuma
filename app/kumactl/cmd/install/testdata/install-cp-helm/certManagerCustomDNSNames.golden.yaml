@@ -1049,11 +1049,11 @@ metadata:
 spec:
   isCA: true
   dnsNames:
-    - kuma-control-plane.kuma-system
-    - kuma-control-plane.kuma-system.svc
-    - kuma-control-plane.kuma-system.svc.cluster.local
-    - my-custom-domain.example.com
-    - another-custom-domain.example.com
+    - "kuma-control-plane.kuma-system"
+    - "kuma-control-plane.kuma-system.svc"
+    - "kuma-control-plane.kuma-system.svc.cluster.local"
+    - "my-custom-domain.example.com"
+    - "another-custom-domain.example.com"
   issuerRef:
     kind: Issuer
     name: kuma-selfsigned-issuer
