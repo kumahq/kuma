@@ -47,8 +47,8 @@ func AvailableServices() {
 				WithPostgres(postgres.From(statefulCluster, statefulClusterName).GetEnvVars()),
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 			)).
-			Install(MultipleIngressUniversal(ingress1Port, multizone.Global.GetKuma().GenerateZoneIngressToken)).
-			Install(MultipleIngressUniversal(ingress2Port, multizone.Global.GetKuma().GenerateZoneIngressToken)).
+			Install(MultipleIngressUniversal(ingress1Port, fmt.Sprintf(fmt.Sprintf("%s-%d", AppIngress, ingress1Port)), multizone.Global.GetKuma().GenerateZoneIngressToken)).
+			Install(MultipleIngressUniversal(ingress2Port, fmt.Sprintf(fmt.Sprintf("%s-%d", AppIngress, ingress2Port)), multizone.Global.GetKuma().GenerateZoneIngressToken)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
 			Setup(statefulCluster)
 		Expect(err).ToNot(HaveOccurred())

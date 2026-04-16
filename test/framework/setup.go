@@ -650,11 +650,10 @@ func AllocateIngressPort() int {
 }
 
 func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	return MultipleIngressUniversal(AllocateIngressPort(), tokenProvider, opt...)
+	return MultipleIngressUniversal(AllocateIngressPort(), AppIngress, tokenProvider, opt...)
 }
 
-func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	name := fmt.Sprintf("%s-%d", AppIngress, advertisedPort)
+func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
 	manifestFunc := func(address string, port int) (string, error) {
 		zi := ZoneIngressTemplateData{
 			Name:              name,
@@ -668,7 +667,7 @@ func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string
 	var opts appDeploymentOptions
 	opts.apply(opt...)
 
-	return universalZoneProxyRelatedResource(tokenProvider, name, AppIngress, manifestFunc, opts.concurrency)
+	return universalZoneProxyRelatedResource(tokenProvider, AppIngress, AppIngress, manifestFunc, opts.concurrency)
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
