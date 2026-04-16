@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -633,21 +634,23 @@ func universalZoneProxyRelatedResource(
 	}
 }
 
+// ingressPortAllocator hands out unique advertised ports for universal ZoneIngress
+// instances so that no two ingresses share the same IP:port when running in a
+// Docker/k3d environment where all zones resolve to the same host address.
+var ingressPortAllocator atomic.Int32
+
+func init() {
+	ingressPortAllocator.Store(int32(UniversalZoneIngressPort) - 1)
+}
+
+// AllocateIngressPort returns the next unique advertised port for a universal
+// ZoneIngress. It is safe to call from multiple goroutines.
+func AllocateIngressPort() int {
+	return int(ingressPortAllocator.Add(1))
+}
+
 func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, port int) (string, error) {
-		zi := ZoneIngressTemplateData{
-			Name:              AppIngress,
-			AdvertisedAddress: address,
-			AdvertisedPort:    UniversalZoneIngressPort,
-			Port:              port,
-		}
-		return RenderZoneIngressTemplate(zi)
-	}
-
-	var opts appDeploymentOptions
-	opts.apply(opt...)
-
-	return universalZoneProxyRelatedResource(tokenProvider, AppIngress, AppIngress, manifestFunc, opts.concurrency)
+	return MultipleIngressUniversal(AllocateIngressPort(), tokenProvider, opt...)
 }
 
 func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {

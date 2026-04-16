@@ -265,9 +265,6 @@ func fillRemoteMeshServices(
 	}
 
 	// Fall back to legacy ZoneIngress for zones without a MeshZoneAddress.
-	// ziInstances is keyed by "zone::coordinates" to deduplicate multiple ZoneIngress
-	// instances behind the same load balancer within the same zone, without
-	// accidentally dropping ingresses from different zones that share the same IP:port.
 	ziInstances := map[string]struct{}{}
 	for _, zi := range zoneIngress {
 		if !zi.IsRemoteIngress(localZone) {
@@ -287,9 +284,8 @@ func fillRemoteMeshServices(
 		ziAddress := zi.Spec.GetNetworking().GetAdvertisedAddress()
 		ziPort := zi.Spec.GetNetworking().GetAdvertisedPort()
 		ziCoordinates := buildCoordinates(ziAddress, ziPort)
-		ziKey := zi.Spec.Zone + "::" + ziCoordinates
 
-		if _, ok := ziInstances[ziKey]; ok {
+		if _, ok := ziInstances[ziCoordinates]; ok {
 			// many Ingress instances can be placed in front of one load
 			// balancer (all instances can have the same public address and
 			// port).
@@ -297,7 +293,7 @@ func fillRemoteMeshServices(
 			// unnecessary duplicated endpoints
 			continue
 		}
-		ziInstances[ziKey] = struct{}{}
+		ziInstances[ziCoordinates] = struct{}{}
 
 		zoneToEndpoints[zi.Spec.Zone] = append(zoneToEndpoints[zi.Spec.Zone], core_xds.Endpoint{
 			Target:   ziAddress,
