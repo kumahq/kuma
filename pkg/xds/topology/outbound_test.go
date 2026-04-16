@@ -1308,6 +1308,77 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("two remote zones sharing the same ZoneIngress IP:port both get endpoints via MeshService", testCase{
+				// Regression test: fillRemoteMeshServices was keying ziInstances by IP:port only.
+				// When two zones share the same advertised address/port (e.g. in a test environment
+				// where multiple k3d nodes land on the same Docker node), the second zone's ingress
+				// was skipped, leaving its MeshService cluster with zero endpoints (503s).
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
+					{
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.2",
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.100",
+								AdvertisedPort:    12345,
+							},
+						},
+					},
+					{
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-3",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.3",
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.100", // same as zone-2
+								AdvertisedPort:    12345,           // same as zone-2
+							},
+						},
+					},
+				},
+				meshServices: []*meshservice_api.MeshServiceResource{
+					builders.MeshService().
+						WithName("svc-a").
+						WithZone("zone-2").
+						WithLabels(map[string]string{
+							mesh_proto.ZoneTag:             "zone-2",
+							mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+						}).
+						AddIntPort(80, 8080, "http").
+						Build(),
+					builders.MeshService().
+						WithName("svc-b").
+						WithZone("zone-3").
+						WithLabels(map[string]string{
+							mesh_proto.ZoneTag:             "zone-3",
+							mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+						}).
+						AddIntPort(80, 8080, "http").
+						Build(),
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"default_svc-a__zone-2_msvc_80": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.100",
+							Port:     12345,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "default_svc-a__zone-2_msvc_80", mesh_proto.ZoneTag: "zone-2"},
+							Weight:   1,
+							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 1},
+						},
+					},
+					"default_svc-b__zone-3_msvc_80": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.100",
+							Port:     12345,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "default_svc-b__zone-3_msvc_80", mesh_proto.ZoneTag: "zone-3"},
+							Weight:   1,
+							Locality: &core_xds.Locality{Zone: "zone-3", Priority: 1},
+						},
+					},
+				},
+			}),
 			Entry("uses MeshExternalService with egress", testCase{
 				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
 					{
