@@ -265,6 +265,12 @@ controlPlane:
           name: ""
           # -- Kind of the issuer: "Issuer" or "ClusterIssuer"
           kind: "Issuer"
+        # -- DNS names to include in the certificate SANs.
+        # Supports Helm template strings (evaluated via tpl).
+        dnsNames:
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local'
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
