@@ -68,13 +68,14 @@ func WithRegisterer(r prometheus.Registerer) ServerOption {
 // NewServerWithCustomClient is used for testing purposes
 func NewServerWithCustomClient(addresses []string, upstreamClient func(msg *dns.Msg) (*dns.Msg, error), opts ...ServerOption) *Server {
 	s := Server{
-		addresses:      addresses,
-		componentDone:  make(chan struct{}),
-		dnsMap:         atomic.Pointer[dnsMap]{},
-		ready:          make(chan struct{}),
-		configReady:    make(chan struct{}),
-		registerer:     prometheus.DefaultRegisterer,
-		upstreamClient: upstreamClient,
+		addresses:       addresses,
+		componentDone:   make(chan struct{}),
+		dnsMap:          atomic.Pointer[dnsMap]{},
+		ready:           make(chan struct{}),
+		configReady:     make(chan struct{}),
+		registerer:      prometheus.DefaultRegisterer,
+		upstreamClient:  upstreamClient,
+		configReadyTime: time.Now(),
 	}
 	for _, opt := range opts {
 		opt(&s)
@@ -167,7 +168,6 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 
 func (s *Server) Start(stop <-chan struct{}) error {
 	defer close(s.componentDone)
-	s.configReadyTime = time.Now()
 
 	servers := make([]*dns.Server, len(s.addresses))
 	for i, addr := range s.addresses {
@@ -332,10 +332,8 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	log.V(1).Info("DNS proxy configured", "config", res)
 	s.dnsMap.Store(&res)
 	s.configReadyOnce.Do(func() {
-		if !s.configReadyTime.IsZero() {
-			if m := s.metrics.Load(); m != nil {
-				m.ConfigReadyWaitSeconds.Observe(time.Since(s.configReadyTime).Seconds())
-			}
+		if m := s.metrics.Load(); m != nil {
+			m.ConfigReadyWaitSeconds.Observe(time.Since(s.configReadyTime).Seconds())
 		}
 		log.Info("DNS proxy received first configuration", "records", len(res.ARecords))
 		close(s.configReady)

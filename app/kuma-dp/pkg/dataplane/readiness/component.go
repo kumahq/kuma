@@ -2,6 +2,7 @@ package readiness
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -55,12 +56,10 @@ func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, 
 	if dnsConfigReady != nil {
 		deadline = time.Now().Add(dnsConfigGateTimeout)
 	}
-	return NewReporterWithDeadline(unixSocketDisabled, socketDir, localIPAddr, localListenPort, adminSocketPath, dnsConfigReady, deadline)
+	return newReporterWithDeadline(unixSocketDisabled, socketDir, localIPAddr, localListenPort, adminSocketPath, dnsConfigReady, deadline)
 }
 
-// NewReporterWithDeadline is like NewReporter but accepts an explicit DNS gate
-// deadline. Used in tests to exercise the timeout bypass path.
-func NewReporterWithDeadline(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}, dnsConfigDeadline time.Time) *Reporter {
+func newReporterWithDeadline(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}, dnsConfigDeadline time.Time) *Reporter {
 	r := &Reporter{
 		unixSocketDisabled: unixSocketDisabled,
 		socketDir:          socketDir,
@@ -120,9 +119,9 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 		ErrorLog:          adapter.ToStd(logger),
 	}
 
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 	go func() {
-		if err := server.Serve(lis); err != nil {
+		if err := server.Serve(lis); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 	}()

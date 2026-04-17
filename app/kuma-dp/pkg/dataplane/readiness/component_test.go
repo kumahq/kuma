@@ -36,8 +36,12 @@ var _ = Describe("Readiness Reporter", func() {
 			_ = reporter.Start(stopCh)
 		}()
 		Eventually(func() error {
-			_, err := http.Get(baseURL + "/ready")
-			return err
+			resp, err := http.Get(baseURL + "/ready")
+			if err != nil {
+				return err
+			}
+			resp.Body.Close()
+			return nil
 		}, 5*time.Second, 50*time.Millisecond).Should(Succeed())
 	}
 
