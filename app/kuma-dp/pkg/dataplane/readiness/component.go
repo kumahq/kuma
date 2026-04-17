@@ -147,7 +147,7 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	}
 
 	// Gate readiness on DNS proxy receiving its first config from Envoy.
-	// This ensures .mesh DNS names resolve before app containers start.
+	// This ensures mesh-generated DNS names, resolve before app containers start.
 	// After dnsConfigGateTimeout we bypass the gate and log a warning to
 	// avoid blocking deploys when misconfigured.
 	if r.dnsConfigReady != nil && !r.dnsBypassed.Load() {
