@@ -31,7 +31,11 @@ spec:
   {{- end }}
   dnsNames:
     {{- range $dnsNames }}
-    - {{ tpl . $ | quote }}
+    {{- $rendered := tpl . $ }}
+    {{- if eq $rendered "" }}
+      {{- fail "controlPlane.tls.general.certManager.dnsNames must not contain empty strings" }}
+    {{- end }}
+    - {{ $rendered | quote }}
     {{- end }}
   issuerRef:
     kind: {{ $issuerKind }}
