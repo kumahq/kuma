@@ -348,6 +348,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 			}
 
+			var dnsConfigReady <-chan struct{}
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
@@ -370,6 +371,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
 						return err
 					}
+					dnsConfigReady = dnsproxyServer.ConfigReady()
 					components = append(components, dnsproxyServer)
 				} else {
 					dnsServer, err := dnsserver.New(dnsOpts)
@@ -423,7 +425,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort,
-				adminSocketPath)
+				adminSocketPath,
+				dnsConfigReady)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

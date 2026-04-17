@@ -30,8 +30,11 @@ type Server struct {
 	registerer    prometheus.Registerer
 	metricsOnce   sync.Once
 	// upstreamClient is used for testing purposes
-	upstreamClient func(msg *dns.Msg) (*dns.Msg, error)
-	ready          chan struct{}
+	upstreamClient  func(msg *dns.Msg) (*dns.Msg, error)
+	ready           chan struct{}
+	configReady     chan struct{}
+	configReadyOnce sync.Once
+	configReadyTime time.Time
 }
 
 func NewServer(addresses []string) (*Server, error) {
@@ -69,6 +72,7 @@ func NewServerWithCustomClient(addresses []string, upstreamClient func(msg *dns.
 		componentDone:  make(chan struct{}),
 		dnsMap:         atomic.Pointer[dnsMap]{},
 		ready:          make(chan struct{}),
+		configReady:    make(chan struct{}),
 		registerer:     prometheus.DefaultRegisterer,
 		upstreamClient: upstreamClient,
 	}
@@ -163,6 +167,7 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 
 func (s *Server) Start(stop <-chan struct{}) error {
 	defer close(s.componentDone)
+	s.configReadyTime = time.Now()
 
 	servers := make([]*dns.Server, len(s.addresses))
 	for i, addr := range s.addresses {
@@ -215,6 +220,11 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		close(s.ready)
 	}
 
+	// Ensure configReady is closed so ConfigReady callers don't block forever.
+	s.configReadyOnce.Do(func() {
+		close(s.configReady)
+	})
+
 	// Shut down all servers. For servers not yet started when we enter this
 	// loop, retry until they start (making Shutdown effective) or their
 	// goroutine exits (meaning they failed to start and are already done).
@@ -261,6 +271,13 @@ func (s *Server) WaitForDone() {
 
 func (s *Server) WaitForReady() {
 	<-s.ready
+}
+
+// ConfigReady returns a channel that is closed once the first DNS configuration
+// has been successfully loaded from Envoy. Use this to gate readiness on DNS
+// proxy being fully initialized, not just the UDP servers being up.
+func (s *Server) ConfigReady() <-chan struct{} {
+	return s.configReady
 }
 
 // ReloadMap replaces the current map in memory so that future calls to the proxy.
@@ -314,6 +331,15 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	}
 	log.V(1).Info("DNS proxy configured", "config", res)
 	s.dnsMap.Store(&res)
+	s.configReadyOnce.Do(func() {
+		if !s.configReadyTime.IsZero() {
+			if m := s.metrics.Load(); m != nil {
+				m.ConfigReadyWaitSeconds.Observe(time.Since(s.configReadyTime).Seconds())
+			}
+		}
+		log.Info("DNS proxy received first configuration", "records", len(res.ARecords))
+		close(s.configReady)
+	})
 	if m := s.metrics.Load(); m != nil {
 		m.EntriesTotal.Set(float64(len(res.ARecords)))
 	}

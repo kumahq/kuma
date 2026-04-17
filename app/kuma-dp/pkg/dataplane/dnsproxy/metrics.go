@@ -12,6 +12,8 @@ type metrics struct {
 	QueriesTotal                *prometheus.CounterVec
 	ResponseCodesTotal          *prometheus.CounterVec
 	EntriesTotal                prometheus.Gauge
+	ConfigReadyWaitSeconds      prometheus.Histogram
+	ConfigReadyGateBypassed     prometheus.Counter
 }
 
 func newMetrics(registerer prometheus.Registerer, constLabels prometheus.Labels) *metrics {
@@ -51,6 +53,19 @@ func newMetrics(registerer prometheus.Registerer, constLabels prometheus.Labels)
 		ConstLabels: constLabels,
 	})
 	registerer.MustRegister(entriesTotal)
+	configReadyWaitSeconds := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name:        "kuma_dp_dns_config_ready_wait_seconds",
+		Help:        "Time between DNS proxy start and first configuration received from Envoy.",
+		ConstLabels: constLabels,
+		Buckets:     []float64{0.1, 0.5, 1, 2, 5, 10, 30},
+	})
+	registerer.MustRegister(configReadyWaitSeconds)
+	configReadyGateBypassed := prometheus.NewCounter(prometheus.CounterOpts{
+		Name:        "kuma_dp_dns_config_ready_gate_bypassed_total",
+		Help:        "Total times the DNS config readiness gate was bypassed due to timeout.",
+		ConstLabels: constLabels,
+	})
+	registerer.MustRegister(configReadyGateBypassed)
 	return &metrics{
 		RequestDuration:             requestDuration,
 		UpstreamRequestDuration:     upstreamRequestDuration,
@@ -58,6 +73,8 @@ func newMetrics(registerer prometheus.Registerer, constLabels prometheus.Labels)
 		QueriesTotal:                queriesTotal,
 		ResponseCodesTotal:          responseCodesTotal,
 		EntriesTotal:                entriesTotal,
+		ConfigReadyWaitSeconds:      configReadyWaitSeconds,
+		ConfigReadyGateBypassed:     configReadyGateBypassed,
 	}
 }
 
