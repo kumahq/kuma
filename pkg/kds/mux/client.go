@@ -186,11 +186,19 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 	)
 
-	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
-		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+	if err := syncClient.Receive(); err != nil {
+		if !errors.Is(err, context.Canceled) {
+			errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+		}
 		return
 	}
 
+	// syncClient.Receive() returns nil when the stream is closed with io.EOF
+	// (e.g. connection to upstream dropped via load balancer). Trigger a reconnect.
+	select {
+	case errorCh <- errors.New("GlobalToZoneSync stream closed by server"):
+	case <-ctx.Done():
+	}
 	log.Info("GlobalToZoneSync finished gracefully")
 }
 

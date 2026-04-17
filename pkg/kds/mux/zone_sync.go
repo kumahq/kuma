@@ -175,6 +175,9 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		logger.Info("app context done")
 		return status.Error(codes.Unavailable, "stream unavailable")
 	case err := <-processingErrorsCh:
+		if err == nil {
+			return status.Error(codes.Canceled, "stream canceled")
+		}
 		if status.Code(err) == codes.Unimplemented {
 			return errors.Wrap(err, "GlobalToZoneSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 		}
@@ -234,7 +237,6 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		}
 
 		logger.V(1).Info("KDSSyncClient finished gracefully")
-		processingErrorsCh <- nil
 	}()
 
 	if err := g.storeStreamConnection(stream.Context(), zone, service.ZoneToGlobal, connectTime); err != nil {
@@ -259,6 +261,9 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		logger.Info("app context done")
 		return status.Error(codes.Unavailable, "stream unavailable")
 	case err := <-processingErrorsCh:
+		if err == nil {
+			return status.Error(codes.Canceled, "stream canceled")
+		}
 		if status.Code(err) == codes.Unimplemented {
 			return errors.Wrap(err, "ZoneToGlobalSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 		}
