@@ -22,6 +22,7 @@ func AvailableServices() {
 	meshName := "available-services"
 
 	var statefulCluster *UniversalCluster
+	var ingress1Port, ingress2Port int
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
@@ -35,6 +36,8 @@ func AvailableServices() {
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
+		ingress1Port = AllocateIngressPort()
+		ingress2Port = AllocateIngressPort()
 		statefulCluster = NewUniversalCluster(NewTestingT(), statefulClusterName, Silent)
 		Expect(postgres.Install(statefulClusterName)(statefulCluster)).To(Succeed())
 		err = NewClusterSetup().
@@ -44,8 +47,8 @@ func AvailableServices() {
 				WithPostgres(postgres.From(statefulCluster, statefulClusterName).GetEnvVars()),
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 			)).
-			Install(MultipleIngressUniversal(UniversalZoneIngressPort, multizone.Global.GetKuma().GenerateZoneIngressToken)).
-			Install(MultipleIngressUniversal(UniversalZoneIngressPort+1, multizone.Global.GetKuma().GenerateZoneIngressToken)).
+			Install(MultipleIngressUniversal(ingress1Port, fmt.Sprintf("%s-%d", AppIngress, ingress1Port), multizone.Global.GetKuma().GenerateZoneIngressToken)).
+			Install(MultipleIngressUniversal(ingress2Port, fmt.Sprintf("%s-%d", AppIngress, ingress2Port), multizone.Global.GetKuma().GenerateZoneIngressToken)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
 			Setup(statefulCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -75,19 +78,19 @@ func AvailableServices() {
 		kumactl := statefulCluster.GetKumactlOptions()
 
 		Consistently(func(g Gomega) {
-			ingress := getIngress(g, kumactl, UniversalZoneIngressPort)
+			ingress := getIngress(g, kumactl, ingress1Port)
 			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
 		}).Should(Succeed())
 
 		Consistently(func(g Gomega) {
-			ingress := getIngress(g, kumactl, UniversalZoneIngressPort+1)
+			ingress := getIngress(g, kumactl, ingress2Port)
 			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
 		}).Should(Succeed())
 
 		// Kill ingress
 		Expect(statefulCluster.GetApp(AppModeCP).KillMainApp()).To(Succeed())
 		// Kill CP
-		Expect(statefulCluster.DeleteApp(fmt.Sprintf("%s-%d", AppIngress, UniversalZoneIngressPort))).To(Succeed())
+		Expect(statefulCluster.DeleteApp(fmt.Sprintf("%s-%d", AppIngress, ingress1Port))).To(Succeed())
 		// Bring back CP
 		Expect(statefulCluster.GetApp(AppModeCP).StartMainApp()).To(Succeed())
 		// Kill app
@@ -97,12 +100,12 @@ func AvailableServices() {
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			ingress := getIngress(g, kumactl, UniversalZoneIngressPort+1)
+			ingress := getIngress(g, kumactl, ingress2Port)
 			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}, "30s", "3s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			ingress := getIngress(g, kumactl, UniversalZoneIngressPort)
+			ingress := getIngress(g, kumactl, ingress1Port)
 			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}, "30s", "3s").Should(Succeed())
 	})
