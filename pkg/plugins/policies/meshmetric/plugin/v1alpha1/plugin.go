@@ -51,7 +51,7 @@ const (
 
 type plugin struct{}
 
-func (p plugin) Order() int { return 1500 }
+func (p plugin) Order() int { return api.MeshMetricResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

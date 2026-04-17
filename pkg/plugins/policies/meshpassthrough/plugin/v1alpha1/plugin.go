@@ -25,7 +25,7 @@ var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
-func (p plugin) Order() int { return 500 }
+func (p plugin) Order() int { return api.MeshPassthroughResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

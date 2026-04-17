@@ -19,7 +19,7 @@ type modificator interface {
 
 type plugin struct{}
 
-func (p plugin) Order() int { return 9999 }
+func (p plugin) Order() int { return api.MeshProxyPatchResourceTypeDescriptor.Order }
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 

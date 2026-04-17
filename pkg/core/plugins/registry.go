@@ -211,9 +211,12 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			}
 		}
 		entry := RegisteredPolicyPlugin{Plugin: policy, Name: name}
-		pos, _ := slices.BinarySearchFunc(r.registeredPolicies, entry, func(a, b RegisteredPolicyPlugin) int {
+		pos, found := slices.BinarySearchFunc(r.registeredPolicies, entry, func(a, b RegisteredPolicyPlugin) int {
 			return cmp.Compare(a.Plugin.Order(), b.Plugin.Order())
 		})
+		if found {
+			return errors.Errorf("policy plugin %q has the same order (%d) as plugin %q; each plugin must declare a unique order", name, policy.Order(), r.registeredPolicies[pos].Name)
+		}
 		r.registeredPolicies = slices.Insert(r.registeredPolicies, pos, entry)
 	}
 	if proxy, ok := plugin.(ProxyPlugin); ok {

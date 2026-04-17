@@ -30,7 +30,7 @@ var (
 
 type plugin struct{}
 
-func (p plugin) Order() int { return 1100 }
+func (p plugin) Order() int { return api.MeshTrafficPermissionResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

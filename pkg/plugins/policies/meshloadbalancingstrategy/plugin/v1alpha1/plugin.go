@@ -48,7 +48,7 @@ var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
 
-func (p plugin) Order() int { return 400 }
+func (p plugin) Order() int { return api.MeshLoadBalancingStrategyResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

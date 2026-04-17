@@ -3,7 +3,7 @@
 Use the tool:
 
 ```shell
-go run ./tools/policy-gen/bootstrap/... --name CaseNameOfPolicy --is-policy true --order 899
+go run ./tools/policy-gen/bootstrap/... --name CaseNameOfPolicy --is-policy true --order 750
 ```
 
 The output of the tool will tell you where the important files are!
@@ -12,7 +12,7 @@ The output of the tool will tell you where the important files are!
 
 To enable policy you need to adjust configuration of two places:
 * Remove `+kuma:policy:skip_registration=true` from your policy schema.
-* Also, define the order of the policy as it is important in configuration generation
+* Also, define the order of the policy using the `+kuma:policy:order=N` marker on the policy spec struct, as it determines the configuration generation order.
 
 ## Linter
 
