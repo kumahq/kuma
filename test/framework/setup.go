@@ -654,12 +654,12 @@ func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...Ap
 }
 
 func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, port int) (string, error) {
+	manifestFunc := func(address string, _ int) (string, error) {
 		zi := ZoneIngressTemplateData{
 			Name:              name,
 			AdvertisedAddress: address,
 			AdvertisedPort:    advertisedPort,
-			Port:              port,
+			Port:              advertisedPort,
 		}
 		return RenderZoneIngressTemplate(zi)
 	}
@@ -667,7 +667,7 @@ func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider fun
 	var opts appDeploymentOptions
 	opts.apply(opt...)
 
-	return universalZoneProxyRelatedResource(tokenProvider, AppIngress, AppIngress, manifestFunc, opts.concurrency)
+	return universalZoneProxyRelatedResource(tokenProvider, name, AppIngress, manifestFunc, opts.concurrency)
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
