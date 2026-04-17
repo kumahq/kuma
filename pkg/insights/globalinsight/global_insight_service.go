@@ -40,8 +40,7 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 
 	gis.aggregateDataplanes(meshInsights, globalInsights)
 	gis.aggregatePolicies(meshInsights, globalInsights)
-	gis.aggregateResources(meshInsights, globalInsights)
-	if err := gis.aggregateGlobalResources(ctx, globalInsights); err != nil {
+	if err := gis.aggregateResources(ctx, meshInsights, globalInsights); err != nil {
 		return nil, err
 	}
 
@@ -105,26 +104,17 @@ func (gis *defaultGlobalInsightService) aggregatePolicies(
 }
 
 func (gis *defaultGlobalInsightService) aggregateResources(
+	ctx context.Context,
 	meshInsights *mesh.MeshInsightResourceList,
 	globalInsight *api_types.GlobalInsight,
-) {
+) error {
 	globalInsight.Resources = map[string]api_types.ResourceStats{}
 	for _, meshInsight := range meshInsights.GetItems() {
 		for resName, resStat := range meshInsight.GetSpec().(*mesh_proto.MeshInsight).Resources {
-			stats, ok := globalInsight.Resources[resName]
-			if !ok {
-				stats = api_types.ResourceStats{}
-			}
-			stats.Total += int(resStat.Total)
-			globalInsight.Resources[resName] = stats
+			addResourceTotal(globalInsight.Resources, resName, int(resStat.Total))
 		}
 	}
-}
 
-func (gis *defaultGlobalInsightService) aggregateGlobalResources(
-	ctx context.Context,
-	globalInsight *api_types.GlobalInsight,
-) error {
 	for _, descriptor := range registry.Global().ObjectDescriptors(
 		core_model.HasScope(core_model.ScopeGlobal),
 		core_model.HasWsEnabled(),
@@ -147,12 +137,16 @@ func (gis *defaultGlobalInsightService) aggregateGlobalResources(
 			continue
 		}
 
-		stats := globalInsight.Resources[string(descriptor.Name)]
-		stats.Total += count
-		globalInsight.Resources[string(descriptor.Name)] = stats
+		addResourceTotal(globalInsight.Resources, string(descriptor.Name), count)
 	}
 
 	return nil
+}
+
+func addResourceTotal(resources map[string]api_types.ResourceStats, resourceName string, total int) {
+	stats := resources[resourceName]
+	stats.Total += total
+	resources[resourceName] = stats
 }
 
 func (gis *defaultGlobalInsightService) aggregateServices(
