@@ -17,15 +17,16 @@ import (
 const NoMatchMsg = "This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.\n"
 
 type FilterChainConfigurer struct {
-	APIVersion        core_xds.APIVersion
-	InternalAddresses []core_xds.InternalAddress
-	Protocol          core_meta.Protocol
-	Port              uint32
-	MatchType         MatchType
-	MatchValue        string
-	Routes            []Route // should be set only for http and domains/wildcard
-	IsIPv6            bool
-	IPv6Enabled       bool
+	APIVersion           core_xds.APIVersion
+	InternalAddresses    []core_xds.InternalAddress
+	Protocol             core_meta.Protocol
+	Port                 uint32
+	MatchType            MatchType
+	MatchValue           string
+	Routes               []Route // should be set only for http and domains/wildcard
+	IsIPv6               bool
+	IPv6Enabled          bool
+	SkipFilterChainMatch bool
 }
 
 func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
@@ -126,14 +127,16 @@ func (c FilterChainConfigurer) configureHttpFilterChain(
 	routeBuilder := xds_routes.NewRouteConfigurationBuilder(c.APIVersion, filterChainName)
 	routeFn(routeBuilder, clustersAccumulator)
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, filterChainName).
-		Configure(xds_listeners.MatchApplicationProtocols("http/1.1", "h2c")).
-		Configure(xds_listeners.MatchTransportProtocol("raw_buffer")).
 		Configure(xds_listeners.HttpConnectionManager(filterChainName, false, c.InternalAddresses, c.IPv6Enabled)).
 		Configure(xds_listeners.HttpStaticRoute(routeBuilder))
-	c.configureAddressMatch(filterChainBuilder)
-	if c.Port != 0 {
+	if !c.SkipFilterChainMatch {
 		filterChainBuilder.
-			Configure(xds_listeners.MatchDestiantionPort(c.Port))
+			Configure(xds_listeners.MatchApplicationProtocols("http/1.1", "h2c")).
+			Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
+		c.configureAddressMatch(filterChainBuilder)
+		if c.Port != 0 {
+			filterChainBuilder.Configure(xds_listeners.MatchDestiantionPort(c.Port))
+		}
 	}
 
 	filterChain, err := filterChainBuilder.Build()
@@ -157,12 +160,13 @@ func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.
 		WithClusterName(clusterName).
 		Build()
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
-		Configure(xds_listeners.TCPProxy(clusterName, split)).
-		Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
-	c.configureAddressMatch(filterChainBuilder)
-	if c.Port != 0 {
-		filterChainBuilder.
-			Configure(xds_listeners.MatchDestiantionPort(c.Port))
+		Configure(xds_listeners.TCPProxy(clusterName, split))
+	if !c.SkipFilterChainMatch {
+		filterChainBuilder.Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
+		c.configureAddressMatch(filterChainBuilder)
+		if c.Port != 0 {
+			filterChainBuilder.Configure(xds_listeners.MatchDestiantionPort(c.Port))
+		}
 	}
 
 	filterChain, err := filterChainBuilder.Build()
@@ -187,17 +191,17 @@ func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.
 		WithClusterName(clusterName).
 		Build()
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
-		Configure(xds_listeners.TCPProxy(clusterName, split)).
-		Configure(xds_listeners.MatchTransportProtocol("tls"))
-	c.configureAddressMatch(filterChainBuilder)
-	switch c.MatchType {
-	case WildcardDomain, Domain:
-		filterChainBuilder.
-			Configure(xds_listeners.MatchServerNames(c.MatchValue))
-	}
-	if c.Port != 0 {
-		filterChainBuilder.
-			Configure(xds_listeners.MatchDestiantionPort(c.Port))
+		Configure(xds_listeners.TCPProxy(clusterName, split))
+	if !c.SkipFilterChainMatch {
+		filterChainBuilder.Configure(xds_listeners.MatchTransportProtocol("tls"))
+		c.configureAddressMatch(filterChainBuilder)
+		switch c.MatchType {
+		case WildcardDomain, Domain:
+			filterChainBuilder.Configure(xds_listeners.MatchServerNames(c.MatchValue))
+		}
+		if c.Port != 0 {
+			filterChainBuilder.Configure(xds_listeners.MatchDestiantionPort(c.Port))
+		}
 	}
 
 	filterChain, err := filterChainBuilder.Build()

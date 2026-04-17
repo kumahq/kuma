@@ -49,3 +49,9 @@ const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
 // traces and access logs. When present, the CP routes the OTel cluster to a Unix
 // socket instead of connecting directly to the collector.
 const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
+
+// FeatureMeshPassthroughMatcherAPI indicates that the CP should generate MeshPassthrough
+// listener configuration using the Envoy Matching API (Listener.FilterChainMatcher) instead
+// of per-filter-chain FilterChainMatch fields. Can be set per-dataplane or enabled globally
+// via the MeshPassthroughMatcherAPI experimental config flag.
+const FeatureMeshPassthroughMatcherAPI = "feature-meshpassthrough-matcher-api"

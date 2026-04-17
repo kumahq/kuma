@@ -7,8 +7,12 @@ import (
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	matcher_extension "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	actionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/matcher/action/v3"
+	networkv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
 	sslv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/ssl/v3"
+	ipv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/ip/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
@@ -222,5 +226,140 @@ func Filter(name string, filter *anypb.Any) Configurer[matcher_extension.Extensi
 			TypedConfig: filter,
 		}
 		return nil
+	}
+}
+
+// MatcherTreeExactMap sets the matcher to a MatcherTree with an exact-match map.
+func MatcherTreeExactMap(input *xds_config.TypedExtensionConfig, entries map[string]*matcher_config.Matcher_OnMatch) Configurer[matcher_config.Matcher] {
+	return func(m *matcher_config.Matcher) error {
+		m.MatcherType = &matcher_config.Matcher_MatcherTree_{
+			MatcherTree: &matcher_config.Matcher_MatcherTree{
+				Input: input,
+				TreeType: &matcher_config.Matcher_MatcherTree_ExactMatchMap{
+					ExactMatchMap: &matcher_config.Matcher_MatcherTree_MatchMap{
+						Map: entries,
+					},
+				},
+			},
+		}
+		return nil
+	}
+}
+
+// MatcherTreePrefixMap sets the matcher to a MatcherTree with a prefix-match map (trie).
+func MatcherTreePrefixMap(input *xds_config.TypedExtensionConfig, entries map[string]*matcher_config.Matcher_OnMatch) Configurer[matcher_config.Matcher] {
+	return func(m *matcher_config.Matcher) error {
+		m.MatcherType = &matcher_config.Matcher_MatcherTree_{
+			MatcherTree: &matcher_config.Matcher_MatcherTree{
+				Input: input,
+				TreeType: &matcher_config.Matcher_MatcherTree_PrefixMatchMap{
+					PrefixMatchMap: &matcher_config.Matcher_MatcherTree_MatchMap{
+						Map: entries,
+					},
+				},
+			},
+		}
+		return nil
+	}
+}
+
+// OnMatchMatcher wraps a nested Matcher as an OnMatch continuation.
+func OnMatchMatcher(nested *matcher_config.Matcher) *matcher_config.Matcher_OnMatch {
+	return &matcher_config.Matcher_OnMatch{
+		OnMatch: &matcher_config.Matcher_OnMatch_Matcher{
+			Matcher: nested,
+		},
+	}
+}
+
+// FilterChainNameOnMatch creates an OnMatch that selects a filter chain by name.
+// The action type is google.protobuf.StringValue containing the filter chain name,
+// as expected by Envoy's filter chain matcher.
+func FilterChainNameOnMatch(chainName string) *matcher_config.Matcher_OnMatch {
+	a, err := util_proto.MarshalAnyDeterministic(wrapperspb.String(chainName))
+	if err != nil {
+		panic(err)
+	}
+	return &matcher_config.Matcher_OnMatch{
+		OnMatch: &matcher_config.Matcher_OnMatch_Action{
+			Action: &xds_config.TypedExtensionConfig{
+				Name:        chainName,
+				TypedConfig: a,
+			},
+		},
+	}
+}
+
+// NetworkInputTransportProtocol returns a TypedExtensionConfig for matching on transport protocol.
+func NetworkInputTransportProtocol() *xds_config.TypedExtensionConfig {
+	return mustNetworkInput("envoy.matching.inputs.transport_protocol", &networkv3.TransportProtocolInput{})
+}
+
+// NetworkInputApplicationProtocol returns a TypedExtensionConfig for matching on application protocol.
+func NetworkInputApplicationProtocol() *xds_config.TypedExtensionConfig {
+	return mustNetworkInput("envoy.matching.inputs.application_protocol", &networkv3.ApplicationProtocolInput{})
+}
+
+// NetworkInputServerName returns a TypedExtensionConfig for matching on server name (SNI).
+func NetworkInputServerName() *xds_config.TypedExtensionConfig {
+	return mustNetworkInput("envoy.matching.inputs.server_name", &networkv3.ServerNameInput{})
+}
+
+// NetworkInputDestinationPort returns a TypedExtensionConfig for matching on destination port.
+func NetworkInputDestinationPort() *xds_config.TypedExtensionConfig {
+	return mustNetworkInput("envoy.matching.inputs.destination_port", &networkv3.DestinationPortInput{})
+}
+
+// NetworkInputDestinationIP returns a TypedExtensionConfig for matching on destination IP.
+func NetworkInputDestinationIP() *xds_config.TypedExtensionConfig {
+	return mustNetworkInput("envoy.matching.inputs.destination_ip", &networkv3.DestinationIPInput{})
+}
+
+// IPRangeOnMatch returns an OnMatch whose nested matcher selects action when the destination IP
+// matches any of cidrRanges. Uses MatcherList with a SinglePredicate backed by the IP input matcher.
+func IPRangeOnMatch(cidrRanges []*corev3.CidrRange, statPrefix string, action *matcher_config.Matcher_OnMatch) *matcher_config.Matcher_OnMatch {
+	ipMatcher := &ipv3.Ip{
+		CidrRanges: cidrRanges,
+		StatPrefix: statPrefix,
+	}
+	ipMatcherProto, err := util_proto.MarshalAnyDeterministic(ipMatcher)
+	if err != nil {
+		panic(err)
+	}
+	nested := &matcher_config.Matcher{
+		MatcherType: &matcher_config.Matcher_MatcherList_{
+			MatcherList: &matcher_config.Matcher_MatcherList{
+				Matchers: []*matcher_config.Matcher_MatcherList_FieldMatcher{
+					{
+						Predicate: &matcher_config.Matcher_MatcherList_Predicate{
+							MatchType: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate_{
+								SinglePredicate: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate{
+									Input: NetworkInputDestinationIP(),
+									Matcher: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
+										CustomMatch: &xds_config.TypedExtensionConfig{
+											Name:        "envoy.matching.matchers.ip",
+											TypedConfig: ipMatcherProto,
+										},
+									},
+								},
+							},
+						},
+						OnMatch: action,
+					},
+				},
+			},
+		},
+	}
+	return OnMatchMatcher(nested)
+}
+
+func mustNetworkInput(name string, msg proto.Message) *xds_config.TypedExtensionConfig {
+	a, err := util_proto.MarshalAnyDeterministic(msg)
+	if err != nil {
+		panic(err)
+	}
+	return &xds_config.TypedExtensionConfig{
+		Name:        name,
+		TypedConfig: a,
 	}
 }

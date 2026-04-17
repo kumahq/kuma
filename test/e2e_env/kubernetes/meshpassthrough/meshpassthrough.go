@@ -33,6 +33,14 @@ func MeshPassthrough() {
 					democlient.WithNamespace(namespace),
 					democlient.WithMesh(meshName),
 				),
+				democlient.Install(
+					democlient.WithNamespace(namespace),
+					democlient.WithMesh(meshName),
+					democlient.WithName("demo-client-matcher"),
+					democlient.WithPodAnnotations(map[string]string{
+						"kuma.io/sidecar-env-vars": "KUMA_DATAPLANE_RUNTIME_MESH_PASSTHROUGH_MATCHER_API_ENABLED=true",
+					}),
+				),
 				testserver.Install(
 					testserver.WithNamespace(mesNamespace),
 					testserver.WithName("external-service"),
@@ -215,6 +223,109 @@ spec:
 			resp, err := client.CollectFailure(
 				kubernetes.Cluster, "demo-client", "not-accessible-external-service.mesh-passthrough-mes.svc.cluster.local:80",
 				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.ResponseCode).To(Equal(503))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should control traffic to domains and IPs with matcher API sidecar env", func() {
+		// given
+		meshPassthrough := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshPassthrough
+metadata:
+  name: disable-passthrough
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshSubset
+    proxyTypes: ["Sidecar"]
+    tags:
+      kuma.io/service: demo-client-matcher_mesh-passthrough_svc
+  default:
+    passthroughMode: None
+`, Config.KumaNamespace, meshName)
+
+		// when
+		err := kubernetes.Cluster.Install(YamlK8s(meshPassthrough))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectFailure(
+				kubernetes.Cluster, "demo-client-matcher", "external-service.mesh-passthrough-mes.svc.cluster.local:80",
+				client.FromKubernetesPod(namespace, "demo-client-matcher"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Exitcode).To(Equal(curlRecvError))
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+
+		meshPassthrough = fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshPassthrough
+metadata:
+  name: allow-specified
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshSubset
+    proxyTypes: ["Sidecar"]
+    tags:
+      kuma.io/service: demo-client-matcher_mesh-passthrough_svc
+  default:
+    passthroughMode: Matched
+    appendMatch:
+    - type: Domain
+      value: external-service.mesh-passthrough-mes.svc.cluster.local
+      port: 80
+      protocol: http
+    - type: IP
+      value: %s
+      port: 80
+      protocol: http
+`, Config.KumaNamespace, meshName, anotherEsIP)
+
+		// when
+		err = kubernetes.Cluster.Install(YamlK8s(meshPassthrough))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				kubernetes.Cluster, "demo-client-matcher", "external-service.mesh-passthrough-mes.svc.cluster.local:80",
+				client.FromKubernetesPod(namespace, "demo-client-matcher"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		// and ip address
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				kubernetes.Cluster, "demo-client-matcher", curlAddress(anotherEsIP),
+				client.FromKubernetesPod(namespace, "demo-client-matcher"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		// and shouldn't access not-accessible-external-service
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectFailure(
+				kubernetes.Cluster, "demo-client-matcher", curlAddress(notAccessibleEsIP),
+				client.FromKubernetesPod(namespace, "demo-client-matcher"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.ResponseCode).To(Equal(503))
+		}, "30s", "1s").Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectFailure(
+				kubernetes.Cluster, "demo-client-matcher", "not-accessible-external-service.mesh-passthrough-mes.svc.cluster.local:80",
+				client.FromKubernetesPod(namespace, "demo-client-matcher"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.ResponseCode).To(Equal(503))

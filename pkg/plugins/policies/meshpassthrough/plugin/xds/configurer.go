@@ -17,6 +17,7 @@ type Configurer struct {
 	InternalAddresses []core_xds.InternalAddress
 	Conf              api.Conf
 	IPv6Enabled       bool
+	UseMatcherAPI     bool
 }
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
@@ -66,15 +67,16 @@ func (c Configurer) configureListener(
 	listener.FilterChains = []*envoy_listener.FilterChain{}
 	for _, matcher := range orderedFilterChainMatches {
 		configurer := FilterChainConfigurer{
-			APIVersion:        c.APIVersion,
-			InternalAddresses: c.InternalAddresses,
-			Protocol:          matcher.Protocol,
-			Port:              matcher.Port,
-			MatchType:         matcher.MatchType,
-			MatchValue:        matcher.Value,
-			Routes:            matcher.Routes,
-			IsIPv6:            isIPv6,
-			IPv6Enabled:       ipv6Enabled,
+			APIVersion:           c.APIVersion,
+			InternalAddresses:    c.InternalAddresses,
+			Protocol:             matcher.Protocol,
+			Port:                 matcher.Port,
+			MatchType:            matcher.MatchType,
+			MatchValue:           matcher.Value,
+			Routes:               matcher.Routes,
+			IsIPv6:               isIPv6,
+			IPv6Enabled:          ipv6Enabled,
+			SkipFilterChainMatch: c.UseMatcherAPI,
 		}
 		if matcher.Protocol == core_meta.Protocol(api.MysqlProtocol) {
 			listenerFiltersExcludedOnPorts = append(listenerFiltersExcludedOnPorts, matcher.Port)
@@ -83,6 +85,13 @@ func (c Configurer) configureListener(
 		if err != nil {
 			return err
 		}
+	}
+	if c.UseMatcherAPI {
+		matcherTree, err := BuildFilterChainMatcher(orderedFilterChainMatches, isIPv6)
+		if err != nil {
+			return err
+		}
+		listener.FilterChainMatcher = matcherTree
 	}
 	if err := c.configureListenerFilter(listener, listenerFiltersExcludedOnPorts); err != nil {
 		return err

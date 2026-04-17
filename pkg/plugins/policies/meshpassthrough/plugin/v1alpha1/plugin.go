@@ -97,6 +97,7 @@ func applyToOutboundPassthrough(
 				InternalAddresses: proxy.InternalAddresses,
 				Conf:              conf,
 				IPv6Enabled:       proxy.Metadata.IPv6Enabled,
+				UseMatcherAPI:     proxy.Metadata.HasFeature(xds_types.FeatureMeshPassthroughMatcherAPI),
 			}
 			err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 			if err != nil {

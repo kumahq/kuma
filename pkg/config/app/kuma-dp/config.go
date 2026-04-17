@@ -262,6 +262,10 @@ type DataplaneRuntime struct {
 	// When false, observability policy backendRefs (MeshTrace, MeshAccessLog, MeshMetric)
 	// use direct Envoy clusters instead of routing through kuma-dp Unix sockets. Default: true.
 	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_dataplane_runtime_otel_pipe_enabled"`
+	// MeshPassthroughMatcherAPIEnabled enables the Envoy Matching API for MeshPassthrough
+	// listener configuration on this specific dataplane. When set, the CP generates
+	// Listener.FilterChainMatcher instead of per-filter-chain FilterChainMatch fields.
+	MeshPassthroughMatcherAPIEnabled bool `json:"meshPassthroughMatcherAPIEnabled,omitempty" envconfig:"kuma_dataplane_runtime_mesh_passthrough_matcher_api_enabled"`
 }
 
 type Spire struct {
