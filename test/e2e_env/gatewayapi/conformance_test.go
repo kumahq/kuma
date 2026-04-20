@@ -67,11 +67,7 @@ func TestConformance(t *testing.T) {
 
 		if t.Failed() {
 			if len(meshNamespaces) > 0 {
-				g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
-					RegisterFailHandler(g.Fail)
-					DebugKube(cluster, "default", meshNamespaces...)
-					return nil
-				}()).To(Succeed())
+				DebugKube(cluster, "default", meshNamespaces...)
 			}
 		}
 

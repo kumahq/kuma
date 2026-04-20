@@ -34,7 +34,6 @@ func AddFileToReportEntry(name string, content any) {
 		logf("[WARNING]: could not create temporary report %v", err)
 		return
 	}
-	defer tmp.Close()
 
 	fName := tmp.Name()
 	switch c := content.(type) {
@@ -50,11 +49,27 @@ func AddFileToReportEntry(name string, content any) {
 	default:
 		_, err = fmt.Fprintf(tmp, "%v", c)
 	}
+	tmp.Close()
 	if err != nil {
 		logf("[WARNING]: could not write to temporary report %v", err)
 		return
 	}
-	ginkgo.AddReportEntry(name, fName, ginkgo.ReportEntryVisibilityNever)
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logf("[WARNING]: AddReportEntry called outside Ginkgo spec, writing directly to %q", BaseDir)
+				destPath := path.Join(BaseDir, name)
+				if mkdirErr := os.MkdirAll(path.Dir(destPath), 0o755); mkdirErr != nil {
+					logf("[WARNING]: failed to create directory for direct write: %v", mkdirErr)
+					return
+				}
+				if copyErr := files.CopyFile(fName, destPath); copyErr != nil {
+					logf("[WARNING]: failed to write file directly to %q: %v", destPath, copyErr)
+				}
+			}
+		}()
+		ginkgo.AddReportEntry(name, fName, ginkgo.ReportEntryVisibilityNever)
+	}()
 }
 
 // DumpReport dumps the report to the disk.
