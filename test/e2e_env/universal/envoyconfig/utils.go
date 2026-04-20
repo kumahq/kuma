@@ -224,7 +224,9 @@ func normalizeClusterAddress(cluster map[string]any) {
 }
 
 func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
+	GinkgoHelper()
 	return func() {
+		GinkgoHelper()
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
 		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
 		// Wait for the dataplane xDS configs to settle before letting the next
@@ -244,6 +246,7 @@ func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.Resourc
 // checks pass), with a generous total budget. This is a cheap way to make
 // sure no async push is in flight before the next test captures its baseline.
 func waitConfigStable(mesh, dpp string) {
+	GinkgoHelper()
 	var prev string
 	stable := 0
 	Eventually(func(g Gomega) {
