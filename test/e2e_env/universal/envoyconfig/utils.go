@@ -239,10 +239,10 @@ func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.Resourc
 	}
 }
 
-// waitConfigStable polls the dataplane xDS config until two consecutive
-// snapshots taken 1s apart are identical, with a generous total budget. This
-// is a cheap way to make sure no async push is in flight before the next test
-// captures its baseline.
+// waitConfigStable polls the dataplane xDS config until three consecutive
+// snapshots taken 1s apart are identical (that is, two consecutive equality
+// checks pass), with a generous total budget. This is a cheap way to make
+// sure no async push is in flight before the next test captures its baseline.
 func waitConfigStable(mesh, dpp string) {
 	var prev string
 	stable := 0
