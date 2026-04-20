@@ -33,13 +33,14 @@ func newWaitCmd() *cobra.Command {
 			// the injector sets KUMA_READINESS_UNIX_SOCKET_DISABLED=true
 			// and KUMA_READINESS_PORT. Derive the URL from those env vars
 			// so zero-argument "kuma-dp wait" works out of the box.
+			// Use /wait-deps so we block until the DNS proxy has populated.
 			if !cmd.Flags().Changed("url") && args.unixSocket == "" {
 				if os.Getenv("KUMA_READINESS_UNIX_SOCKET_DISABLED") == "true" {
 					port := os.Getenv("KUMA_READINESS_PORT")
 					if port == "" {
 						port = "9902"
 					}
-					args.url = fmt.Sprintf("http://localhost:%s/ready", port)
+					args.url = fmt.Sprintf("http://localhost:%s/wait-deps", port)
 				}
 			}
 

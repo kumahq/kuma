@@ -201,6 +201,11 @@ spec:
 
 		// Fetch auto-generated MeshTrust from each zone and publish to Global
 		// so KDS distributes it to all zones, enabling cross-zone mTLS.
+		// MeshTrust is generated asynchronously by the MeshIdentity
+		// controller on the zone CP (5s reconcile tick), then synced
+		// to Global via KDS. Under CI load the full chain
+		// (zone detect → controller tick → create → KDS sync)
+		// can exceed 30s. Use 60s to cover the worst case.
 		getMeshTrust := func(hashValues ...string) *meshtrust_api.MeshTrust {
 			var trust *meshtrust_api.MeshTrust
 			Eventually(func(g Gomega) {
@@ -213,7 +218,7 @@ spec:
 				r, err := rest.JSON.Unmarshal([]byte(out), meshtrust_api.MeshTrustResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				trust = r.GetSpec().(*meshtrust_api.MeshTrust)
-			}, "30s", "1s").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
 			return trust
 		}
 

@@ -20,10 +20,17 @@ import (
 )
 
 const (
-	pathPrefixReady  = "/ready"
-	stateReady       = "READY"
-	stateTerminating = "TERMINATING"
+	pathPrefixReady    = "/ready"
+	pathPrefixWaitDeps = "/wait-deps"
+	stateReady         = "READY"
+	stateTerminating   = "TERMINATING"
+	stateNotReady      = "NOT_READY"
 )
+
+// ReadyChannel is closed once the corresponding component is ready to
+// serve. The readiness probe blocks (returns 503) until every channel
+// passed to NewReporter is closed.
+type ReadyChannel <-chan struct{}
 
 // Reporter reports the health status of this Kuma Dataplane Proxy.
 // When adminSocketPath is set, it also reverse-proxies Envoy admin
@@ -38,17 +45,19 @@ type Reporter struct {
 	adminSocketPath    string
 	adminClient        *http.Client
 	isTerminating      atomic.Bool
+	readyChannels      []ReadyChannel
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string) *Reporter {
+func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, readyChannels ...ReadyChannel) *Reporter {
 	r := &Reporter{
 		unixSocketDisabled: unixSocketDisabled,
 		socketDir:          socketDir,
 		localListenPort:    localListenPort,
 		localListenAddr:    localIPAddr,
 		adminSocketPath:    adminSocketPath,
+		readyChannels:      readyChannels,
 	}
 	if adminSocketPath != "" {
 		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
@@ -85,6 +94,13 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
+	// /wait-deps is a separate endpoint used only by the
+	// wait-for-dataplane-ready PostStart hook (`kuma-dp wait`). It
+	// returns 503 until every dependency channel passed to NewReporter
+	// is closed. The k8s readiness probe still hits /ready and is not
+	// gated on those dependencies — gating /ready would delay every
+	// pod's "Ready" transition and break tests / rolling updates.
+	mux.HandleFunc(pathPrefixWaitDeps, r.handleWaitDeps)
 	// When admin is on UDS, reverse-proxy read-only admin endpoints so
 	// that operators can still reach /stats, /config_dump, etc.
 	// Mutating endpoints are blocked by path denylist.
@@ -131,6 +147,31 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	if r.adminSocketPath != "" {
 		r.proxyAdminReady(writer)
 		return
+	}
+
+	r.writeState(writer, req, stateReady, http.StatusOK)
+}
+
+// handleWaitDeps is the dependency-gated readiness endpoint used by the
+// kuma-dp wait command (run from the wait-for-dataplane-ready PostStart
+// hook). It returns 503 NOT_READY until every readyChannel passed to
+// NewReporter has been closed — typically that's the configfetcher
+// having loaded mesh DNS records from envoy admin /dns. Until then a
+// curl to a *.mesh hostname from the application container would race
+// the populate and fail with NXDOMAIN (#16219).
+func (r *Reporter) handleWaitDeps(writer http.ResponseWriter, req *http.Request) {
+	if r.isTerminating.Load() {
+		r.writeState(writer, req, stateTerminating, http.StatusServiceUnavailable)
+		return
+	}
+
+	for _, ch := range r.readyChannels {
+		select {
+		case <-ch:
+		default:
+			r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
+			return
+		}
 	}
 
 	r.writeState(writer, req, stateReady, http.StatusOK)

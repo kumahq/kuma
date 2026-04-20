@@ -4,6 +4,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v2/app/kumactl/internal/watchdog"
 	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
 )
 
@@ -17,5 +18,6 @@ func init() {
 }
 
 func main() {
+	defer watchdog.Disarm()
 	cmd.Execute()
 }

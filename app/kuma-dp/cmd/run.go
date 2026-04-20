@@ -348,7 +348,16 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 			}
 
+			var readinessReadyChannels []readiness.ReadyChannel
+			// Block /ready until the configfetcher has run its first tick
+			// against envoy admin. That ensures the embedded DNS proxy has
+			// had a chance to load mesh records before the
+			// wait-for-dataplane-ready PostStart hook releases the
+			// application container — otherwise the very first request to
+			// a *.mesh hostname can race the DNS map populate and fail
+			// with NXDOMAIN.
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
+				readinessReadyChannels = append(readinessReadyChannels, confFetcher.FirstStepDone())
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
 					Stdout:   cmd.OutOrStdout(),
@@ -423,7 +432,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort,
-				adminSocketPath)
+				adminSocketPath,
+				readinessReadyChannels...)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

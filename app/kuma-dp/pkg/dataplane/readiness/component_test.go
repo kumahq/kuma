@@ -21,7 +21,7 @@ var _ = Describe("Readiness Reporter", func() {
 		stopCh   chan struct{}
 	)
 
-	startReporter := func(adminSocketPath string) {
+	startReporter := func(adminSocketPath string, readyChans ...readiness.ReadyChannel) {
 		stopCh = make(chan struct{})
 		// Find a free port
 		lis, err := net.Listen("tcp", "127.0.0.1:0")
@@ -30,7 +30,7 @@ var _ = Describe("Readiness Reporter", func() {
 		Expect(lis.Close()).To(Succeed())
 
 		baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
-		reporter = readiness.NewReporter(true, "", "127.0.0.1", port, adminSocketPath)
+		reporter = readiness.NewReporter(true, "", "127.0.0.1", port, adminSocketPath, readyChans...)
 		go func() {
 			defer GinkgoRecover()
 			_ = reporter.Start(stopCh)
@@ -84,6 +84,43 @@ var _ = Describe("Readiness Reporter", func() {
 				resp.Body.Close()
 				Expect(resp.StatusCode).To(Equal(http.StatusNotFound), "path %s should return 404", path)
 			}
+		})
+	})
+
+	Context("with extra ready channels", func() {
+		It("/wait-deps returns 503 NOT_READY until every channel is closed, then 200 READY", func() {
+			depA := make(chan struct{})
+			depB := make(chan struct{})
+			startReporter("", readiness.ReadyChannel(depA), readiness.ReadyChannel(depB))
+
+			get := func(path string) (int, string) {
+				resp, err := http.Get(baseURL + path)
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				body, err := io.ReadAll(resp.Body)
+				Expect(err).ToNot(HaveOccurred())
+				return resp.StatusCode, string(body)
+			}
+
+			// /ready is unaffected — it must stay 200 from the start so
+			// kubelet probes don't slow down pod readiness.
+			code, body := get("/ready")
+			Expect(code).To(Equal(http.StatusOK))
+			Expect(body).To(Equal("READY"))
+
+			code, body = get("/wait-deps")
+			Expect(code).To(Equal(http.StatusServiceUnavailable))
+			Expect(body).To(Equal("NOT_READY"))
+
+			close(depA)
+			code, body = get("/wait-deps")
+			Expect(code).To(Equal(http.StatusServiceUnavailable))
+			Expect(body).To(Equal("NOT_READY"))
+
+			close(depB)
+			code, body = get("/wait-deps")
+			Expect(code).To(Equal(http.StatusOK))
+			Expect(body).To(Equal("READY"))
 		})
 	})
 

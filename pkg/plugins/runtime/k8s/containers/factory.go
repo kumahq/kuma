@@ -233,10 +233,14 @@ func (i *DataplaneProxyFactory) NewContainer(
 	}
 
 	if waitForDataplaneReady {
+		// Use /wait-deps (not /ready) so the PostStart hook blocks
+		// until the embedded DNS proxy has been populated. /ready is
+		// kept simple/immediate so kubelet probes don't slow down
+		// pod readiness for everyone — see #16219.
 		container.Lifecycle = &kube_core.Lifecycle{
 			PostStart: &kube_core.LifecycleHandler{
 				Exec: &kube_core.ExecAction{
-					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", probePort)},
+					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/wait-deps", probePort)},
 				},
 			},
 		}

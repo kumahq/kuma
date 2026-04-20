@@ -98,6 +98,11 @@ func Identity() {
 	}
 
 	waitForMeshTrust := func(hashValues ...string) *meshtrust_api.MeshTrust {
+		// MeshTrust is generated asynchronously by the MeshIdentity
+		// controller on the zone CP (5s reconcile tick), then synced
+		// to Global via KDS. Under CI load the full chain
+		// (zone detect → controller tick → create → KDS sync)
+		// can exceed 30s. Use 60s to cover the worst case.
 		var trust *meshtrust_api.MeshTrust
 		Eventually(func(g Gomega) {
 			var err error

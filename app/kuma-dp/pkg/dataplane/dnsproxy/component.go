@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -170,29 +169,35 @@ func (s *Server) Start(stop <-chan struct{}) error {
 	}
 
 	errCh := make(chan error, len(servers))
-	dones := make([]chan struct{}, len(servers))
 	var readyCount atomic.Int32
 	total := int32(len(servers))
-	started := make([]atomic.Bool, len(servers))
-
-	for i := range dones {
-		dones[i] = make(chan struct{})
+	// startedCh is closed for each server once NotifyStartedFunc fires
+	// (or left open if the server errored before starting). Shutdown on
+	// a miekg/dns Server that hasn't flipped its internal `started` flag
+	// yet returns "server not started" without actually stopping the
+	// server — so we MUST wait for the started signal before shutting
+	// down. Otherwise a sibling server's fast bind error can leave a
+	// still-starting server running forever and block the drain loop.
+	startedCh := make([]chan struct{}, len(servers))
+	for i := range startedCh {
+		startedCh[i] = make(chan struct{})
+	}
+	serverDone := make([]chan struct{}, len(servers))
+	for i := range serverDone {
+		serverDone[i] = make(chan struct{})
 	}
 
 	for i, srv := range servers {
 		idx := i
 		srv.NotifyStartedFunc = func() {
-			started[idx].Store(true)
+			close(startedCh[idx])
 			if readyCount.Add(1) == total {
 				close(s.ready)
 			}
 		}
 		go func() {
-			err := srv.ListenAndServe()
-			// Close done before sending to errCh so that shutdown goroutines
-			// can detect a failed/exited server before draining errCh.
-			close(dones[idx])
-			errCh <- err
+			errCh <- srv.ListenAndServe()
+			close(serverDone[idx])
 		}()
 	}
 
@@ -215,31 +220,22 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		close(s.ready)
 	}
 
-	// Shut down all servers. For servers not yet started when we enter this
-	// loop, retry until they start (making Shutdown effective) or their
-	// goroutine exits (meaning they failed to start and are already done).
-	var shutdownWg sync.WaitGroup
+	// Shutdown every server that might still be running. For each one
+	// we have to wait until it has either fully started or already
+	// exited; otherwise Shutdown is a no-op and the server keeps
+	// running forever.
 	for i, srv := range servers {
-		shutdownWg.Add(1)
-		go func(s *dns.Server, startedFlag *atomic.Bool, done <-chan struct{}) {
-			defer shutdownWg.Done()
-			for {
-				if startedFlag.Load() {
-					if err := s.Shutdown(); err != nil {
-						log.Error(err, "server shutdown returned an error")
-					}
-					return
-				}
-				select {
-				case <-done:
-					return // goroutine already exited without starting
-				default:
-					runtime.Gosched()
-				}
+		select {
+		case <-serverDone[i]:
+			// Server already returned from ListenAndServe (either
+			// it errored out or was previously shut down). Nothing
+			// to do.
+		case <-startedCh[i]:
+			if err := srv.Shutdown(); err != nil {
+				log.Error(err, "server shutdown returned an error")
 			}
-		}(srv, &started[i], dones[i])
+		}
 	}
-	shutdownWg.Wait()
 
 	for i := 0; i < remaining; i++ {
 		if err := <-errCh; err != nil && firstErr == nil {

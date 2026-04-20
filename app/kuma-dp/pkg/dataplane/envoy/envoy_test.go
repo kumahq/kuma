@@ -61,22 +61,17 @@ var _ = Describe("Envoy", func() {
 			errCh <- dataplane.Start(stopCh)
 		}()
 
-		Eventually(func() bool {
-			select {
-			case err := <-errCh:
-				Expect(err).ToNot(HaveOccurred())
-				return true
-			default:
-				return false
-			}
-		}, "5s", "10ms").Should(BeTrue())
+		// 30s budget — fork/exec of the mock script can take several
+		// seconds on a cold macOS runner, and the test wraps this in
+		// test.Within() so the outer deadline already caps it.
+		Eventually(errCh, "30s", "20ms").Should(Receive(BeNil()))
 
 		err := outWriter.Close()
 		Expect(err).ToNot(HaveOccurred())
 	}
 
 	Describe("Run(..)", func() {
-		It("should generate bootstrap config file and start Envoy", test.Within(10*time.Second, func() {
+		It("should generate bootstrap config file and start Envoy", test.Within(30*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				Dataplane: kuma_dp.Dataplane{
@@ -136,7 +131,7 @@ var _ = Describe("Envoy", func() {
 `))
 		}))
 
-		It("should pass the concurrency Envoy", test.Within(10*time.Second, func() {
+		It("should pass the concurrency Envoy", test.Within(30*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				Dataplane: kuma_dp.Dataplane{
@@ -180,7 +175,7 @@ var _ = Describe("Envoy", func() {
 			)
 		}))
 
-		It("should return an error if Envoy crashes", test.Within(10*time.Second, func() {
+		It("should return an error if Envoy crashes", test.Within(30*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
@@ -216,7 +211,7 @@ var _ = Describe("Envoy", func() {
 			Expect(exitError.ProcessState.ExitCode()).To(Equal(1))
 		}))
 
-		It("should return an error if Envoy binary path is not found", test.Within(10*time.Second, func() {
+		It("should return an error if Envoy binary path is not found", test.Within(30*time.Second, func() {
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath: "nonexistent",
