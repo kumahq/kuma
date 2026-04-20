@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v2/api/openapi/types"
