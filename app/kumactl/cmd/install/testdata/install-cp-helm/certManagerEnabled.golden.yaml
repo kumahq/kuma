@@ -1049,9 +1049,9 @@ metadata:
 spec:
   isCA: true
   dnsNames:
-    - kuma-control-plane.kuma-system
-    - kuma-control-plane.kuma-system.svc
-    - kuma-control-plane.kuma-system.svc.cluster.local
+    - "kuma-control-plane.kuma-system"
+    - "kuma-control-plane.kuma-system.svc"
+    - "kuma-control-plane.kuma-system.svc.cluster.local"
   issuerRef:
     kind: Issuer
     name: kuma-selfsigned-issuer

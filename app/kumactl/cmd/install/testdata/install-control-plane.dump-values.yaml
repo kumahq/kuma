@@ -265,6 +265,12 @@ controlPlane:
           name: ""
           # -- Kind of the issuer: "Issuer" or "ClusterIssuer"
           kind: "Issuer"
+        # -- DNS names to include in the certificate SANs.
+        # Supports Helm template strings (evaluated via tpl).
+        dnsNames:
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local'
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
@@ -889,7 +895,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37
+    tag: v1.35.4@sha256:e8bc9c71a813d90d5f7689fa57516b2aacd7a02bb9d70d3ab6664ed6d202fc10
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
