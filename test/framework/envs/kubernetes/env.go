@@ -54,7 +54,7 @@ func SetupAndGetState() []byte {
 	state.ZoneEgress = Cluster.GetPortForward(portforward.Spec{
 		AppName:    framework.Config.ZoneEgressApp,
 		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9902,
+		RemotePort: 9901,
 	})
 
 	bytes, err := json.Marshal(state)
@@ -91,7 +91,7 @@ func RestoreState(bytes []byte) {
 	Cluster.AddPortForward(state.ZoneEgress, portforward.Spec{
 		AppName:    framework.Config.ZoneEgressApp,
 		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9902,
+		RemotePort: 9901,
 	})
 }
 

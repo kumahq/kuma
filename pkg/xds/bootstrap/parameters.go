@@ -33,8 +33,6 @@ type configParameters struct {
 	AdminAddress    string
 	AdminPort       uint32
 	AdminSocketPath string
-
-	ReadinessPort uint32
 	// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 	//
 	// IMPORTANT: Backward compatibility trap

@@ -26,11 +26,12 @@ func (a EnvVarsByName) Less(i, j int) bool {
 	return a[i].Name < a[j].Name
 }
 
+const defaultKumaDPSocketDir = "/tmp/kuma-dp"
+
 type DataplaneProxyFactory struct {
 	ControlPlaneURL              string
 	ControlPlaneCACert           string
 	DefaultAdminPort             uint32
-	DefaultReadinessPort         uint32
 	ContainerConfig              runtime_k8s.DataplaneContainer
 	BuiltinDNS                   runtime_k8s.BuiltinDNS
 	WaitForDataplane             bool
@@ -47,7 +48,6 @@ func NewDataplaneProxyFactory(
 	controlPlaneURL string,
 	controlPlaneCACert string,
 	defaultAdminPort uint32,
-	defaultReadinessPort uint32,
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
@@ -63,7 +63,6 @@ func NewDataplaneProxyFactory(
 		ControlPlaneURL:              controlPlaneURL,
 		ControlPlaneCACert:           controlPlaneCACert,
 		DefaultAdminPort:             defaultAdminPort,
-		DefaultReadinessPort:         defaultReadinessPort,
 		ContainerConfig:              containerConfig,
 		BuiltinDNS:                   builtinDNS,
 		WaitForDataplane:             waitForDataplane,
@@ -138,13 +137,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 		adminPort = i.DefaultAdminPort
 	}
 
-	// When admin UDS is enabled, Envoy admin listens on a Unix socket
-	// instead of TCP. Use the dedicated readiness port for probes since
-	// K8s probes only support TCP/HTTP.
 	probePort := adminPort
-	if i.envoyAdminUnixSocket {
-		probePort = i.DefaultReadinessPort
-	}
 
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
 	if err != nil {
@@ -233,10 +226,17 @@ func (i *DataplaneProxyFactory) NewContainer(
 	}
 
 	if waitForDataplaneReady {
+		var waitCmd []string
+		if i.envoyAdminUnixSocket {
+			socketPath := fmt.Sprintf("%s/kuma-readiness-reporter.sock", defaultKumaDPSocketDir)
+			waitCmd = []string{"kuma-dp", "wait", "--unix-socket", socketPath}
+		} else {
+			waitCmd = []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", probePort)}
+		}
 		container.Lifecycle = &kube_core.Lifecycle{
 			PostStart: &kube_core.LifecycleHandler{
 				Exec: &kube_core.ExecAction{
-					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", probePort)},
+					Command: waitCmd,
 				},
 			},
 		}
@@ -300,11 +300,11 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		},
 	}
 	if i.envoyAdminUnixSocket {
-		// When admin is on UDS, force readiness reporter to use TCP so
-		// K8s probes (which only support TCP/HTTP) can reach it.
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
+		// When admin is on UDS, set a fixed socket dir so the readiness unix socket
+		// path is predictable for the PostStart wait hook.
+		envVars["KUMA_DATAPLANE_RUNTIME_SOCKET_DIR"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_SOCKET_DIR",
+			Value: defaultKumaDPSocketDir,
 		}
 	}
 	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
@@ -428,15 +428,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars[envName] = kube_core.EnvVar{
 			Name:  envName,
 			Value: envVal,
-		}
-	}
-
-	// Re-assert readiness env var after user overrides — overriding this
-	// would desync kuma-dp from the injected probes and break readiness.
-	if i.envoyAdminUnixSocket {
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
 		}
 	}
 

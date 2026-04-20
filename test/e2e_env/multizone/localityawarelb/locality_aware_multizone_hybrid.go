@@ -391,13 +391,19 @@ spec:
 }
 
 func collectMetric(cluster Cluster, name string, namespace string, metricName string) (int, error) {
-	resp, _, err := client.CollectResponse(cluster, name, fmt.Sprintf("http://localhost:9902/stats?filter=%s", metricName), client.FromKubernetesPod(namespace, name))
+	podName, err := PodNameOfApp(cluster, name, namespace)
+	if err != nil {
+		return -1, err
+	}
+	// Admin listener is on podIP:9901; use hostname -i to resolve it from within the pod.
+	cmd := fmt.Sprintf(`curl -sf "http://$(hostname -i | tr -d ' \n'):9901/stats?filter=%s"`, metricName)
+	resp, _, err := cluster.Exec(namespace, podName, name, "sh", "-c", cmd)
 	if err != nil {
 		return -1, err
 	}
 	split := strings.Split(resp, ": ")
 	if len(split) == 2 {
-		i, err := strconv.Atoi(split[1])
+		i, err := strconv.Atoi(strings.TrimSpace(split[1]))
 		if err != nil {
 			return -1, err
 		}
@@ -408,11 +414,12 @@ func collectMetric(cluster Cluster, name string, namespace string, metricName st
 }
 
 func resetCounter(cluster Cluster, name string, namespace string) error {
-	_, _, err := client.CollectResponse(
-		cluster, name, "http://localhost:9902/reset_counters",
-		client.FromKubernetesPod(namespace, name),
-		client.WithMethod("POST"),
-	)
+	podName, err := PodNameOfApp(cluster, name, namespace)
+	if err != nil {
+		return err
+	}
+	cmd := `curl -sf -XPOST "http://$(hostname -i | tr -d ' \n'):9901/reset_counters"`
+	_, _, err = cluster.Exec(namespace, podName, name, "sh", "-c", cmd)
 	return err
 }
 

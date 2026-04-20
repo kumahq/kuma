@@ -575,7 +575,6 @@ var _ = Describe("bootstrapGenerator", func() {
 				DataplaneToken:       "token",
 				Version:              defaultVersion,
 				Workdir:              "/tmp",
-				ReadinessPort:        15000,
 				AppProbeProxyEnabled: true,
 			},
 			expectedConfigFile: "generator.probes.kubernetes.golden.yaml",

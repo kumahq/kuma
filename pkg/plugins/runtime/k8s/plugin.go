@@ -401,7 +401,6 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			sidecarContainersEnabled,
 			converter,
 			rt.Config().GetEnvoyAdminPort(),
-			rt.Config().GetEnvoyReadinessPort(),
 			rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,
 			rt.Config().Store.Kubernetes.SystemNamespace,
 			rt.Metrics(),

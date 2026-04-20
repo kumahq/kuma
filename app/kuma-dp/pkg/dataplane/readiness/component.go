@@ -7,10 +7,10 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"sync/atomic"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/bakito/go-log-logr-adapter/adapter"
 
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
@@ -31,24 +31,18 @@ const (
 // Envoy admin listens on a Unix domain socket. Mutating endpoints
 // (/quitquitquit, /drain_listeners, /runtime_modify) are blocked.
 type Reporter struct {
-	unixSocketDisabled bool
-	socketDir          string
-	localListenAddr    string
-	localListenPort    uint32
-	adminSocketPath    string
-	adminClient        *http.Client
-	isTerminating      atomic.Bool
+	socketDir       string
+	adminSocketPath string
+	adminClient     *http.Client
+	isTerminating   atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string) *Reporter {
+func NewReporter(socketDir string, adminSocketPath string) *Reporter {
 	r := &Reporter{
-		unixSocketDisabled: unixSocketDisabled,
-		socketDir:          socketDir,
-		localListenPort:    localListenPort,
-		localListenAddr:    localIPAddr,
-		adminSocketPath:    adminSocketPath,
+		socketDir:       socketDir,
+		adminSocketPath: adminSocketPath,
 	}
 	if adminSocketPath != "" {
 		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
@@ -58,21 +52,13 @@ func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, 
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
-	var lis net.Listener
-	var protocol, addr string
-	if r.unixSocketDisabled {
-		if govalidator.IsIPv6(r.localListenAddr) {
-			protocol = "tcp6"
-			addr = fmt.Sprintf("[%s]:%d", r.localListenAddr, r.localListenPort)
-		} else {
-			protocol = "tcp"
-			addr = fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
+	addr := core_xds.ReadinessReporterSocketName(r.socketDir)
+	if r.socketDir != "" {
+		if err := os.MkdirAll(r.socketDir, 0o711); err != nil {
+			return err
 		}
-	} else {
-		protocol = "unix"
-		addr = core_xds.ReadinessReporterSocketName(r.socketDir)
 	}
-	lis, err := (&net.ListenConfig{}).Listen(context.Background(), protocol, addr)
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", addr)
 	if err != nil {
 		return err
 	}

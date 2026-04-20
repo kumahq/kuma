@@ -12621,20 +12621,18 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "egress"
-            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
-              value: "true"
-            - name: KUMA_READINESS_PORT
-              value: "9902"
+            - name: KUMA_DATAPLANE_RUNTIME_SOCKET_DIR
+              value: /tmp/kuma-dp
           args:
             - run
             - --log-level=info
           ports:
             - containerPort: 10002
-            - containerPort: 9902
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
-              port: 9902
+              port: 9901
             failureThreshold: 12
             initialDelaySeconds: 60
             periodSeconds: 5
@@ -12643,7 +12641,7 @@ spec:
           readinessProbe:
             httpGet:
               path: "/ready"
-              port: 9902
+              port: 9901
             failureThreshold: 12
             initialDelaySeconds: 1
             periodSeconds: 5
@@ -12758,20 +12756,18 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
-            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
-              value: "true"
-            - name: KUMA_READINESS_PORT
-              value: "9902"
+            - name: KUMA_DATAPLANE_RUNTIME_SOCKET_DIR
+              value: /tmp/kuma-dp
           args:
             - run
             - --log-level=info
           ports:
             - containerPort: 10001
-            - containerPort: 9902
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
-              port: 9902
+              port: 9901
             failureThreshold: 12
             initialDelaySeconds: 60
             periodSeconds: 5
@@ -12780,7 +12776,7 @@ spec:
           readinessProbe:
             httpGet:
               path: "/ready"
-              port: 9902
+              port: 9901
             failureThreshold: 12
             initialDelaySeconds: 1
             periodSeconds: 5
