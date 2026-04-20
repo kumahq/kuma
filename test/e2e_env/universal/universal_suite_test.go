@@ -68,6 +68,7 @@ var (
 	_ = Describe("Offline Auth", auth.OfflineAuth, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
+	_ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 	_ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 	_ = Describe("HealthCheck", healthcheck.Policy)
 	_ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)

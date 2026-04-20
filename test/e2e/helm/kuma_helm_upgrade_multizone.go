@@ -189,7 +189,17 @@ spec:
 				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(zoneIngressesGlobal).To(Equal(2))
-			}, "2m", "1s").Should(Succeed())
+			}, "3m", "1s").Should(Succeed())
+
+			// Wait for zone ingresses to sync from global to individual zones.
+			Eventually(func(g Gomega) {
+				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesK8sZone).To(Equal(2))
+				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesUniversalZone).To(Equal(2))
+			}, "3m", "1s").Should(Succeed())
 
 			// then
 			Consistently(func(g Gomega) {
