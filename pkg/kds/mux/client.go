@@ -186,12 +186,23 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 	)
 
-	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
-		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+	err = syncClient.Receive()
+	if errors.Is(err, context.Canceled) {
+		log.V(1).Info("GlobalToZoneSync finished gracefully")
 		return
 	}
-
-	log.Info("GlobalToZoneSync finished gracefully")
+	if err != nil {
+		err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+	} else {
+		// err == nil means the stream was closed by the server (io.EOF).
+		// Trigger a reconnect so ResilientComponent restarts all streams.
+		err = errors.New("GlobalToZoneSync stream closed by server")
+	}
+	log.Info("GlobalToZoneSync ended, triggering reconnect", "reason", err)
+	select {
+	case errorCh <- err:
+	case <-ctx.Done():
+	}
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
@@ -216,12 +227,20 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		err = errorStream.Err()
 	}
 
-	if err != nil && !errors.Is(err, context.Canceled) {
-		errorCh <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+	if errors.Is(err, context.Canceled) {
+		log.V(1).Info("ZoneToGlobalSync finished gracefully")
 		return
 	}
-
-	log.V(1).Info("ZoneToGlobalSync finished gracefully")
+	if err != nil {
+		err = errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+	} else {
+		err = errors.New("ZoneToGlobalSync stream closed by server")
+	}
+	log.Info("ZoneToGlobalSync ended, triggering reconnect", "reason", err)
+	select {
+	case errorCh <- err:
+	case <-ctx.Done():
+	}
 }
 
 func (c *client) startXDSConfigs(
