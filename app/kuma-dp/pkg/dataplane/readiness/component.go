@@ -121,6 +121,9 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 
 	errCh := make(chan error, 1)
 	go func() {
+		// ErrServerClosed is returned after Shutdown is called; it is not an
+		// actual error and must not be forwarded to avoid blocking the goroutine
+		// on an already-abandoned errCh.
 		if err := server.Serve(lis); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
@@ -146,7 +149,7 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	}
 
 	// Gate readiness on DNS proxy receiving its first config from Envoy.
-	// This ensures mesh-generated DNS names, resolve before app containers start.
+	// This ensures mesh-generated DNS names resolve before app containers start.
 	// After dnsConfigGateTimeout we bypass the gate and log a warning to
 	// avoid blocking deploys when misconfigured.
 	if r.dnsConfigReady != nil && !r.dnsBypassed.Load() {
