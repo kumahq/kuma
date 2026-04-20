@@ -10,7 +10,6 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	rest_unversioned "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
@@ -52,13 +51,13 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 			}
 		}
 		s.fillStaticInfo(service, stat)
-		out := rest.From.ResourceWithKRIDefaults(serviceInsight, s.zoneName, s.systemNamespace)
+		out := rest.From.Resource(serviceInsight)
 		res := out.(*rest_unversioned.Resource)
 		res.Meta.Name = service
 		res.Spec = stat
 		removeDisplayNameLabel(res)
 		if err := response.WriteAsJson(res); err != nil {
-			core.Log.Error(err, "Could not write the response")
+			log.Error(err, "Could not write the response")
 		}
 	}
 }
@@ -145,7 +144,7 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 				continue
 			}
 			s.fillStaticInfo(serviceName, service)
-			out := rest.From.ResourceWithKRIDefaults(insight, s.zoneName, s.systemNamespace)
+			out := rest.From.Resource(insight)
 			res := out.(*rest_unversioned.Resource)
 			res.Meta.Name = serviceName
 			res.Spec = service

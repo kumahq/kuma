@@ -62,7 +62,6 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Args:    []string{"-lk", "-p", "3000"},
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
-							"cpu":    resource.MustParse("50m"),
 							"memory": resource.MustParse("64Mi"),
 						},
 					},

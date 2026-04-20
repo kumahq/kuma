@@ -58,7 +58,6 @@ func ExcludeOutboundPort() {
 				Args:            []string{"-v", "-m", "3", "--fail", "test-server.exclude-outbound-port-external.svc.cluster.local:80"},
 				Resources: corev1.ResourceRequirements{
 					Limits: corev1.ResourceList{
-						"cpu":    resource.MustParse("50m"),
 						"memory": resource.MustParse("64Mi"),
 					},
 				},

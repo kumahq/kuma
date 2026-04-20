@@ -7,7 +7,7 @@
  "labels": {
   "kuma.io/mesh": "default"
  },
- "kri": "kri_mzsvc_default_default_kuma-system_redis_",
+ "kri": "kri_mzsvc_default___redis_",
  "spec": {
   "selector": {
    "meshService": {

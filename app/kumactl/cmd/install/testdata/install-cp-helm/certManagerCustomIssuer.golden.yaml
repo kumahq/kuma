@@ -469,7 +469,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: f5e21643e8f964a519dff2176d01a63c6f38de12ef47a01584bfc5239d12026a
+        checksum/tls-secrets: b81e1b37e2b17fe3c61bef0167ccfe3f0a262ad43734a49a9e73d4fe8efd1593
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -519,6 +519,8 @@ spec:
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
+              value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED
@@ -531,8 +533,34 @@ spec:
               value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
+              value: "0"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
+              value: "50M"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "20m"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "20M"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
+              value: "0"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
+              value: "512Mi"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "50m"
+            - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "64Mi"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU
+              value: "0"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
+              value: "50M"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_CPU
+              value: "20m"
+            - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_MEMORY
+              value: "20M"
             - name: KUMA_MODE
               value: "zone"
+            - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+              value: "true"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
@@ -832,6 +860,39 @@ webhooks:
         resources:
           - pods
     sideEffects: None
+  - name: mesh-zoneproxy-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - kuma-system
+    objectSelector:
+      matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values:
+            - enabled
+        - key: kuma.io/mesh
+          operator: Exists
+    clientConfig:
+      
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -986,10 +1047,11 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
+  isCA: true
   dnsNames:
-    - kuma-control-plane.kuma-system
-    - kuma-control-plane.kuma-system.svc
-    - kuma-control-plane.kuma-system.svc.cluster.local
+    - "kuma-control-plane.kuma-system"
+    - "kuma-control-plane.kuma-system.svc"
+    - "kuma-control-plane.kuma-system.svc.cluster.local"
   issuerRef:
     kind: ClusterIssuer
     name: my-custom-ca-issuer

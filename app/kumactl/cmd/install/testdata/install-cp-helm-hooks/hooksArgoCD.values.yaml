@@ -1,0 +1,4 @@
+hooks:
+  ttlSecondsAfterFinished: null
+  annotations:
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation

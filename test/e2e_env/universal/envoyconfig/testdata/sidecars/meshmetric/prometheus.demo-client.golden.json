@@ -336,8 +336,8 @@
                   "endpoint": {
                     "address": {
                       "socketAddress": {
-                        "address": "IP_REDACTED",
-                        "portValue": 9901
+                        "address": "ADMIN_REDACTED",
+                        "portValue": 0
                       }
                     }
                   }
@@ -360,8 +360,9 @@
                 {
                   "endpoint": {
                     "address": {
-                      "pipe": {
-                        "path": "/tmp/kuma-readiness-reporter.sock"
+                      "socketAddress": {
+                        "address": "ADMIN_REDACTED",
+                        "portValue": 0
                       }
                     }
                   }
@@ -723,8 +724,8 @@
       "kuma:envoy:admin": {
         "address": {
           "socketAddress": {
-            "address": "IP_REDACTED",
-            "portValue": 9901
+            "address": "ADMIN_REDACTED",
+            "portValue": 0
           }
         },
         "enableReusePort": false,

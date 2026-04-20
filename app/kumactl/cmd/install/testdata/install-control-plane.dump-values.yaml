@@ -78,9 +78,7 @@ controlPlane:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -135,6 +133,10 @@ controlPlane:
 
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Fail
+
+  madsServer:
+    # -- Whether the Monitoring Assignment Discovery Service (MADS) server is enabled
+    enabled: true
 
   service:
     apiServer:
@@ -263,6 +265,12 @@ controlPlane:
           name: ""
           # -- Kind of the issuer: "Issuer" or "ClusterIssuer"
           kind: "Issuer"
+        # -- DNS names to include in the certificate SANs.
+        # Supports Helm template strings (evaluated via tpl).
+        dnsNames:
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local'
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
@@ -479,6 +487,39 @@ dataPlane:
     # -- Kuma DP init image tag When not specified, the value is copied from global.tag
     tag:
 
+  # -- Resource limits and requests for the kuma-init container.
+  # Set cpu limit to "0" to disable the CPU limit (default).
+  initContainer:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 20M
+      limits:
+        cpu: "0"
+        memory: 50M
+
+  # -- Resource limits and requests for the kuma-validation init container.
+  # Set cpu limit to "0" to disable the CPU limit (default).
+  validationContainer:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 20M
+      limits:
+        cpu: "0"
+        memory: 50M
+
+  # -- Resource limits and requests for the kuma-sidecar container.
+  # Set cpu limit to "0" to disable the CPU limit (default).
+  sidecarContainer:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: "0"
+        memory: 512Mi
+
   features:
     # -- Enables automatic injection of the unified naming for Envoy resources and stats feature flag.
     # When set to true, it sets the environment variable
@@ -538,9 +579,7 @@ ingress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -663,9 +702,7 @@ egress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
-    targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- Target metrics for the HPA to scale on
     metrics:
       - type: Resource
         resource:
@@ -766,6 +803,84 @@ egress:
       # -- A list of DNS search domains for hostname lookup in the Pod.
       searches: []
 
+# List of meshes to deploy zone proxies for.
+meshes:
+  - # -- The mesh must already exist or be created separately; this Helm chart will not create it.
+    name: default
+
+    ingress:
+      # -- Deploy a zone ingress for this mesh.
+      enabled: false
+      # -- Number of replicas. Ignored when hpa.enabled is true.
+      replicas: 1
+      # Pause container image (dummy main container for sidecar injection).
+      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
+      image:
+        # -- The pause image registry
+        registry: registry.k8s.io
+        # -- The pause image repository
+        repository: pause
+        # -- The pause image tag
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      service:
+        # -- Override the auto-generated Service name (max 63 chars).
+        # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
+        name: ""
+      # -- Resource requests and limits for the pod (pod-level resources).
+      # Applied to all containers in the pod (pause + injected kuma-sidecar).
+      resources: {}
+      # -- Subset of Kubernetes PodSpec fields applied to the pod template
+      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+      #  priorityClassName, securityContext, containerSecurityContext).
+      podSpec: {}
+      # -- Resource requests and limits for the pause container.
+      containerResources: {}
+      # -- Horizontal Pod Autoscaler settings.
+      hpa:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 80
+      # -- Pod Disruption Budget settings.
+      pdb:
+        enabled: false
+        maxUnavailable: 1
+
+    egress:
+      # -- Deploy a zone egress for this mesh.
+      enabled: false
+      replicas: 1
+      # Pause container image (dummy main container for sidecar injection).
+      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
+      image:
+        # -- The pause image registry
+        registry: registry.k8s.io
+        # -- The pause image repository
+        repository: pause
+        # -- The pause image tag
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      service:
+        # -- Override the auto-generated Service name (max 63 chars).
+        # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
+        name: ""
+      # -- Resource requests and limits for the pod (pod-level resources).
+      # Applied to all containers in the pod (pause + injected kuma-sidecar).
+      resources: {}
+      # -- Subset of Kubernetes PodSpec fields applied to the pod template
+      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+      #  priorityClassName, securityContext, containerSecurityContext).
+      podSpec: {}
+      # -- Resource requests and limits for the pause container.
+      containerResources: {}
+      hpa:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 5
+        targetCPUUtilizationPercentage: 80
+      pdb:
+        enabled: false
+        maxUnavailable: 1
+
 kumactl:
   image:
     # -- The kumactl image repository
@@ -780,13 +895,20 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37
+    tag: v1.35.4@sha256:e8bc9c71a813d90d5f7689fa57516b2aacd7a02bb9d70d3ab6664ed6d202fc10
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
     kubernetes.io/os: linux
   # -- Tolerations for the HELM hooks
   tolerations: []
+  # -- Extra annotations to add to hook Job resources. Useful for tools like ArgoCD
+  # that need to control job lifecycle (e.g. argocd.argoproj.io/hook-delete-policy).
+  annotations: {}
+  # -- TTL in seconds for hook Jobs after they finish. Set to null to disable automatic
+  # TTL-based deletion (recommended when using ArgoCD, which needs to read job status
+  # before deletion).
+  ttlSecondsAfterFinished: 0
   # -- Security context at the pod level for crd/webhook/ns
   podSecurityContext:
     runAsNonRoot: true
@@ -941,6 +1063,8 @@ experimental:
   sidecarContainers: false
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
+  # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
+  envoyAdminUnixSocket: true
 
 # Postgres' settings for universal control plane on k8s
 postgres:

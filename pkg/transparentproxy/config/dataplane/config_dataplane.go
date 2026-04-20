@@ -45,10 +45,19 @@ func DataplaneTrafficFlowFromPortLike[T PortLike](port T) DatalpaneTrafficFlow {
 	return NewDataplaneTrafficFlow(port > 0, port)
 }
 
+// DataplaneVNet is a serialization-only subset of config.VNet. It is
+// intentionally separate to decouple the dataplane bootstrap payload from
+// the full transparent proxy config (which carries initialization logic
+// and additional fields not needed by kuma-dp).
+type DataplaneVNet struct {
+	Networks []string `json:"networks,omitempty"`
+}
+
 type DataplaneRedirect struct {
 	Inbound  DatalpaneTrafficFlow `json:"inbound"`
 	Outbound DatalpaneTrafficFlow `json:"outbound"`
 	DNS      DatalpaneTrafficFlow `json:"dns"`
+	VNet     DataplaneVNet        `json:"vnet"`
 }
 
 type DataplaneConfig struct {
@@ -81,6 +90,13 @@ func (c *DataplaneConfig) Enabled() bool {
 		return false
 	}
 	return c.IPFamilyMode != tproxy_config.IPFamilyModeIPv4 || govalidator.IsIPv4(c.address)
+}
+
+func (c *DataplaneConfig) HasVNet() bool {
+	if c == nil {
+		return false
+	}
+	return len(c.Redirect.VNet.Networks) > 0
 }
 
 func (c *DataplaneConfig) EnabledIPv6() bool {

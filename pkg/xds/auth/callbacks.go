@@ -22,6 +22,8 @@ import (
 
 // The same logic also resides in pkg/hds/authn/callbacks.go
 
+var log = core.Log.WithName("xds.auth")
+
 const authorization = "authorization"
 
 // DPNotFoundRetry if callbacks are used in xDS other than ADS.
@@ -84,7 +86,7 @@ func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.Stre
 		ctx:      ctx,
 		resource: nil,
 	}
-	core.Log.V(1).Info("OnStreamOpen", "streamID", streamID)
+	log.V(1).Info("OnStreamOpen", "streamID", streamID)
 	return nil
 }
 
@@ -95,7 +97,7 @@ func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 }
 
 func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
-	core.Log.V(1).Info("OnStreamRequest auth", "req", req)
+	log.V(1).Info("OnStreamRequest auth", "req", req)
 	return a.onStreamRequest(streamID, req, a.getStreams)
 }
 
@@ -108,7 +110,7 @@ func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds
 		resource: nil,
 	}
 
-	core.Log.V(1).Info("OnDeltaStreamOpen", "streamID", streamID)
+	log.V(1).Info("OnDeltaStreamOpen", "streamID", streamID)
 	return nil
 }
 
@@ -119,7 +121,7 @@ func (a *authCallbacks) OnDeltaStreamClosed(streamID int64) {
 }
 
 func (a *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) error {
-	core.Log.V(1).Info("OnStreamDeltaRequest auth", "req", req)
+	log.V(1).Info("OnStreamDeltaRequest auth", "req", req)
 	return a.onStreamRequest(streamID, req, a.getDeltaStreams)
 }
 

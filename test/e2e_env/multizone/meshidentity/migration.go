@@ -163,6 +163,7 @@ spec:
 		stopCh := make(chan struct{})
 		defer close(stopCh)
 		go func() {
+			defer GinkgoRecover()
 			for {
 				if channels.IsClosed(stopCh) {
 					return

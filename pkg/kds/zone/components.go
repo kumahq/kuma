@@ -23,7 +23,7 @@ func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Zone.Name
 	kdsCtx := rt.KDSContext()
 
-	deltaServer, err := kds_server.New(
+	deltaServer, _, err := kds_server.New(
 		kdsZoneLog,
 		rt,
 		kdsCtx.TypesSentByZone,

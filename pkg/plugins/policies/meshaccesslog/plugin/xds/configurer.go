@@ -48,6 +48,18 @@ func BaseAccessLogBuilder(
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) *Builder[envoy_accesslog.AccessLog] {
+	// Pre-resolve OTel endpoint so we can skip the entire access log entry
+	// when the backendRef is dangling. Without this, the builder produces an
+	// empty AccessLog that downstream configurers (MetadataFilter) still
+	// write to, causing Envoy to reject the listener.
+	var otelEndpoint *LoggingEndpoint
+	if backend.OpenTelemetry != nil {
+		otelEndpoint = resolveOtelLoggingEndpoint(backend.OpenTelemetry, backendsAcc)
+		if otelEndpoint == nil && backend.Tcp == nil && backend.File == nil {
+			return nil
+		}
+	}
+
 	return bldrs_accesslog.NewBuilder().
 		Configure(IfNotNil(backend.Tcp, func(tcpBackend api.TCPBackend) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
@@ -59,18 +71,14 @@ func BaseAccessLogBuilder(
 				Configure(FileBackendSFS(&fileBackend, defaultFormat, values)).
 				Configure(bldrs_accesslog.Path(fileBackend.Path)))
 		})).
-		Configure(IfNotNil(backend.OpenTelemetry, func(otelBackend api.OtelBackend) Configurer[envoy_accesslog.AccessLog] {
-			endpoint := resolveOtelLoggingEndpoint(&otelBackend, backendsAcc)
-			if endpoint == nil {
-				return func(*envoy_accesslog.AccessLog) error { return nil }
-			}
+		Configure(IfNotNil(otelEndpoint, func(endpoint LoggingEndpoint) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
-				Configure(OtelBody(&otelBackend, defaultFormat, values)).
-				Configure(OtelAttributes(&otelBackend, values)).
+				Configure(OtelBody(backend.OpenTelemetry, defaultFormat, values)).
+				Configure(OtelAttributes(backend.OpenTelemetry, values)).
 				Configure(OtelResourceAttributes(values)).
 				Configure(bldrs_accesslog.CommonConfig(
 					"MeshAccessLog",
-					string(backendsAcc.ClusterForEndpoint(*endpoint)),
+					string(backendsAcc.ClusterForEndpoint(endpoint)),
 				)))
 		}))
 }

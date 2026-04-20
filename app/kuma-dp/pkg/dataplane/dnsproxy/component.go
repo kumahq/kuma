@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -22,19 +23,21 @@ import (
 var log = core.Log.WithName("dnsproxy")
 
 type Server struct {
-	// HostPort or unix domain socket for tests
-	address       string
+	addresses     []string
 	componentDone chan struct{}
 	dnsMap        atomic.Pointer[dnsMap]
 	metrics       atomic.Pointer[metrics]
 	registerer    prometheus.Registerer
 	metricsOnce   sync.Once
 	// upstreamClient is used for testing purposes
-	upstreamClient func(msg *dns.Msg) (*dns.Msg, error)
-	ready          chan struct{}
+	upstreamClient  func(msg *dns.Msg) (*dns.Msg, error)
+	ready           chan struct{}
+	configReady     chan struct{}
+	configReadyOnce sync.Once
+	configReadyTime time.Time
 }
 
-func NewServer(address string) (*Server, error) {
+func NewServer(addresses []string) (*Server, error) {
 	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read DNS for /etc/resolv.conf %w", err)
@@ -51,7 +54,7 @@ func NewServer(address string) (*Server, error) {
 		}
 		return response, nil
 	}
-	return NewServerWithCustomClient(address, handler), nil
+	return NewServerWithCustomClient(addresses, handler), nil
 }
 
 type ServerOption func(*Server)
@@ -63,14 +66,16 @@ func WithRegisterer(r prometheus.Registerer) ServerOption {
 }
 
 // NewServerWithCustomClient is used for testing purposes
-func NewServerWithCustomClient(address string, upstreamClient func(msg *dns.Msg) (*dns.Msg, error), opts ...ServerOption) *Server {
+func NewServerWithCustomClient(addresses []string, upstreamClient func(msg *dns.Msg) (*dns.Msg, error), opts ...ServerOption) *Server {
 	s := Server{
-		address:        address,
-		componentDone:  make(chan struct{}),
-		dnsMap:         atomic.Pointer[dnsMap]{},
-		ready:          make(chan struct{}),
-		registerer:     prometheus.DefaultRegisterer,
-		upstreamClient: upstreamClient,
+		addresses:       addresses,
+		componentDone:   make(chan struct{}),
+		dnsMap:          atomic.Pointer[dnsMap]{},
+		ready:           make(chan struct{}),
+		configReady:     make(chan struct{}),
+		registerer:      prometheus.DefaultRegisterer,
+		upstreamClient:  upstreamClient,
+		configReadyTime: time.Now(),
 	}
 	for _, opt := range opts {
 		opt(&s)
@@ -143,6 +148,18 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 			m.UpstreamRequestDuration.Observe(time.Since(proxyStart).Seconds())
 		}
 	}
+	if m := s.metrics.Load(); m != nil {
+		qtype := "other"
+		source := "upstream"
+		if len(req.Question) > 0 {
+			qtype = qtypeLabel(req.Question[0].Qtype)
+			if dnsEntry != nil {
+				source = "local"
+			}
+		}
+		m.QueriesTotal.WithLabelValues(qtype, source).Inc()
+		m.ResponseCodesTotal.WithLabelValues(rcodeLabel(response.Rcode)).Inc()
+	}
 	err := res.WriteMsg(response)
 	if err != nil {
 		log.Error(err, "failed to write upstreamResponse")
@@ -151,31 +168,97 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 
 func (s *Server) Start(stop <-chan struct{}) error {
 	defer close(s.componentDone)
-	srv := &dns.Server{Addr: s.address, Handler: dns.HandlerFunc(s.Handler), Net: "udp"}
 
-	serverDone := make(chan error)
-	srv.NotifyStartedFunc = func() {
-		close(s.ready)
+	servers := make([]*dns.Server, len(s.addresses))
+	for i, addr := range s.addresses {
+		servers[i] = &dns.Server{Addr: addr, Handler: dns.HandlerFunc(s.Handler), Net: "udp"}
 	}
-	go func() {
-		err := srv.ListenAndServe()
-		serverDone <- err
-	}()
+
+	errCh := make(chan error, len(servers))
+	dones := make([]chan struct{}, len(servers))
+	var readyCount atomic.Int32
+	total := int32(len(servers))
+	started := make([]atomic.Bool, len(servers))
+
+	for i := range dones {
+		dones[i] = make(chan struct{})
+	}
+
+	for i, srv := range servers {
+		idx := i
+		srv.NotifyStartedFunc = func() {
+			started[idx].Store(true)
+			if readyCount.Add(1) == total {
+				close(s.ready)
+			}
+		}
+		go func() {
+			err := srv.ListenAndServe()
+			// Close done before sending to errCh so that shutdown goroutines
+			// can detect a failed/exited server before draining errCh.
+			close(dones[idx])
+			errCh <- err
+		}()
+	}
+
+	remaining := len(servers)
+	var firstErr error
+
 	select {
 	case <-stop:
-		err := srv.Shutdown()
-		if err != nil {
-			log.Error(err, "server shutdown returned an error")
-		}
-	case err := <-serverDone:
-		log.Info("[WARNING] server stopped with shutdown never called")
-		if err != nil {
-			return err
+	case err := <-errCh:
+		remaining--
+		log.Info("[WARNING] server stopped with shutdown never called",
+			"error", err)
+		firstErr = err
+	}
+
+	// Ensure ready is closed so WaitForReady never blocks after failure.
+	select {
+	case <-s.ready:
+	default:
+		close(s.ready)
+	}
+
+	// Ensure configReady is closed so ConfigReady callers don't block forever.
+	s.configReadyOnce.Do(func() {
+		close(s.configReady)
+	})
+
+	// Shut down all servers. For servers not yet started when we enter this
+	// loop, retry until they start (making Shutdown effective) or their
+	// goroutine exits (meaning they failed to start and are already done).
+	var shutdownWg sync.WaitGroup
+	for i, srv := range servers {
+		shutdownWg.Add(1)
+		go func(s *dns.Server, startedFlag *atomic.Bool, done <-chan struct{}) {
+			defer shutdownWg.Done()
+			for {
+				if startedFlag.Load() {
+					if err := s.Shutdown(); err != nil {
+						log.Error(err, "server shutdown returned an error")
+					}
+					return
+				}
+				select {
+				case <-done:
+					return // goroutine already exited without starting
+				default:
+					runtime.Gosched()
+				}
+			}
+		}(srv, &started[i], dones[i])
+	}
+	shutdownWg.Wait()
+
+	for i := 0; i < remaining; i++ {
+		if err := <-errCh; err != nil && firstErr == nil {
+			firstErr = err
 		}
 	}
-	err := <-serverDone
+
 	log.Info("server shutdown complete")
-	return err
+	return firstErr
 }
 
 func (s *Server) NeedLeaderElection() bool {
@@ -190,6 +273,13 @@ func (s *Server) WaitForReady() {
 	<-s.ready
 }
 
+// ConfigReady returns a channel that is closed once the first DNS configuration
+// has been successfully loaded from Envoy. Use this to gate readiness on DNS
+// proxy being fully initialized, not just the UDP servers being up.
+func (s *Server) ConfigReady() <-chan struct{} {
+	return s.configReady
+}
+
 // ReloadMap replaces the current map in memory so that future calls to the proxy.
 // Because this is called inside the configfetcher there's no need to check if it changed or not.
 func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
@@ -198,12 +288,10 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if configuration.ExtraLabels != nil {
-		s.metricsOnce.Do(func() {
-			m := newMetrics(s.registerer, configuration.ExtraLabels)
-			s.metrics.Store(m)
-		})
-	}
+	s.metricsOnce.Do(func() {
+		m := newMetrics(s.registerer, configuration.ExtraLabels)
+		s.metrics.Store(m)
+	})
 	res := dnsMap{
 		ARecords:    make(map[string]*dnsEntry),
 		AAAARecords: make(map[string]*dnsEntry),
@@ -241,6 +329,16 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 	}
 	log.V(1).Info("DNS proxy configured", "config", res)
 	s.dnsMap.Store(&res)
+	s.configReadyOnce.Do(func() {
+		if m := s.metrics.Load(); m != nil {
+			m.ConfigReadyWaitSeconds.Observe(time.Since(s.configReadyTime).Seconds())
+		}
+		log.Info("DNS proxy received first configuration", "records", len(res.ARecords))
+		close(s.configReady)
+	})
+	if m := s.metrics.Load(); m != nil {
+		m.EntriesTotal.Set(float64(len(res.ARecords)))
+	}
 
 	return nil
 }

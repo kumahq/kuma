@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/v2/pkg/config"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 )
 
 var deprecations = []config.Deprecation{
@@ -43,6 +44,26 @@ var deprecations = []config.Deprecation{
 			return "Metrics.Mesh.MaxResyncTimeout", true
 		},
 		ConfigValueMsg: "Use Metrics.Mesh.FullResyncInterval instead.",
+	},
+	{
+		Env:    "",
+		EnvMsg: "",
+		ConfigValuePath: func(cfg config.Config) (string, bool) {
+			kumaCPConfig, ok := cfg.(*Config)
+			if !ok {
+				panic("wrong config type")
+			}
+			if kumaCPConfig.MonitoringAssignmentServer == nil {
+				return "", false
+			}
+			if kumaCPConfig.MonitoringAssignmentServer.Enabled &&
+				kumaCPConfig.Environment == config_core.KubernetesEnvironment {
+				return "MonitoringAssignmentServer", true
+			}
+			return "", false
+		},
+		ConfigValueMsg: "MADS is enabled on Kubernetes. It will be removed on Kubernetes in Kuma 3.0. " +
+			"Set KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED=false to disable it.",
 	},
 }
 

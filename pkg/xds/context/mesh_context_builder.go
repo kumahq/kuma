@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/datasource"
 	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
@@ -188,6 +189,13 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
+	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
+	if len(zoneEgressList) == 0 {
+		// Do not mix legacy zone egresses with dataplane listeners in one pool because
+		// they may carry different TLS identities and break SAN validation.
+		// Fallback to legacy only when no dataplane-based instances were resolved.
+		zoneEgressList = resolveLegacyZoneEgresses(zoneEgresses)
+	}
 	endpointMap := xds_topology.BuildEdsEndpointMap(
 		ctx,
 		mesh,
@@ -197,10 +205,12 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshExternalServices,
 		dataplanes,
 		zoneIngresses,
+		resources.MeshZoneAddresses().Items,
 		zoneEgresses,
 		externalServices,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
+		zoneEgressList,
 	)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
@@ -214,6 +224,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		externalServices,
 		resources.Gateways().Items,
 		zoneEgresses,
+		zoneEgressList,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 	)
@@ -231,22 +242,39 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		)
 	}
 
+	dpZoneIngressEndpointMap := xds_topology.BuildDataplaneZoneIngressEndpointMap(
+		mesh,
+		m.zone,
+		meshServices,
+		meshMultiZoneServices,
+		dataplanes,
+	)
+	dpZoneEgressEndpointMap := xds_topology.BuildDataplaneZoneEgressEndpointMap(
+		ctx,
+		mesh,
+		meshExternalServices,
+		loader,
+	)
+
 	return &MeshContext{
-		Hash:                        newHash,
-		Resource:                    mesh,
-		Resources:                   resources,
-		BaseMeshContext:             baseMeshContext,
-		DataplanesByName:            dataplanesByName,
-		EndpointMap:                 endpointMap,
-		ExternalServicesEndpointMap: esEndpointMap,
-		IngressEndpointMap:          ingressEndpointMap,
-		CrossMeshEndpoints:          crossMeshEndpointMap,
-		VIPDomains:                  domains,
-		VIPOutbounds:                outbounds,
-		ServicesInformation:         m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
-		DataSourceLoader:            loader,
-		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
-		CAsByTrustDomain:            casByTrustDomain,
+		Hash:                            newHash,
+		Resource:                        mesh,
+		Resources:                       resources,
+		BaseMeshContext:                 baseMeshContext,
+		DataplanesByName:                dataplanesByName,
+		EndpointMap:                     endpointMap,
+		ExternalServicesEndpointMap:     esEndpointMap,
+		IngressEndpointMap:              ingressEndpointMap,
+		CrossMeshEndpoints:              crossMeshEndpointMap,
+		VIPDomains:                      domains,
+		VIPOutbounds:                    outbounds,
+		ServicesInformation:             m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
+		DataSourceLoader:                loader,
+		ReachableServicesGraph:          m.rsGraphBuilder(meshName, resources),
+		CAsByTrustDomain:                casByTrustDomain,
+		ZoneEgresses:                    zoneEgressList,
+		DataplaneZoneIngressEndpointMap: dpZoneIngressEndpointMap,
+		DataplaneZoneEgressEndpointMap:  dpZoneEgressEndpointMap,
 	}, nil
 }
 
@@ -592,6 +620,47 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_meta.Protocol {
 		serviceProtocol = core_meta.GetCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol
+}
+
+func resolveZoneEgresses(
+	dataplanes []*core_mesh.DataplaneResource,
+	identities []*meshidentity_api.MeshIdentityResource,
+	zone string,
+) []xds.ZoneEgressInstance {
+	var dpEgresses []xds.ZoneEgressInstance
+	for _, dp := range dataplanes {
+		listeners := dp.Spec.GetNetworking().GetReadyZoneEgressListeners()
+		if len(listeners) == 0 {
+			continue
+		}
+		var san string
+		if identity, ok := meshidentity_api.BestMatched(dp.GetMeta().GetLabels(), identities); ok {
+			env := config_core.UniversalEnvironment
+			if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
+				env = config_core.KubernetesEnvironment
+			}
+			if trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), zone); err != nil {
+				logger.Error(err, "failed to compute trust domain for zone egress", "dataplane", dp.GetMeta().GetName())
+			} else if spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, dp.GetMeta(), env); err != nil {
+				logger.Error(err, "failed to compute SPIFFE ID for zone egress", "dataplane", dp.GetMeta().GetName())
+			} else {
+				san = spiffeID
+			}
+		}
+		for _, l := range listeners {
+			dpEgresses = append(dpEgresses, xds.ZoneEgressInstance{Address: l.GetAddress(), Port: l.GetPort(), SAN: san})
+		}
+	}
+	return dpEgresses
+}
+
+func resolveLegacyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []xds.ZoneEgressInstance {
+	var legacyEgresses []xds.ZoneEgressInstance
+	for _, ze := range zoneEgresses {
+		n := ze.Spec.GetNetworking()
+		legacyEgresses = append(legacyEgresses, xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
+	}
+	return legacyEgresses
 }
 
 func getCAsByTrustDomain(trusts []*meshtrust_api.MeshTrustResource) map[string][]PEMBytes {
