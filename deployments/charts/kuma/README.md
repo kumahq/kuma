@@ -83,6 +83,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.general.certManager.issuerRef | object | `{"kind":"Issuer","name":""}` | Reference to an existing issuer. If not specified, a self-signed issuer is created. |
 | controlPlane.tls.general.certManager.issuerRef.name | string | `""` | Name of an existing cert-manager Issuer or ClusterIssuer. If empty, a self-signed issuer will be created automatically. |
 | controlPlane.tls.general.certManager.issuerRef.kind | string | `"Issuer"` | Kind of the issuer: "Issuer" or "ClusterIssuer" |
+| controlPlane.tls.general.certManager.dnsNames | list | `["{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc.cluster.local"]` | DNS names to include in the certificate SANs. Supports Helm template strings (evaluated via tpl). |
 | controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS |
 | controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
 | controlPlane.tls.kdsGlobalServer.secretName | string | `""` | Name of the K8s TLS Secret resource. If you set this and don't set create=true, you have to create the secret manually. |
