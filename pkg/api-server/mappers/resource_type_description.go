@@ -9,25 +9,8 @@ import (
 )
 
 func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bool, federatedZone bool) api_types.ResourceTypeDescriptionList {
-	sorted := make([]model.ResourceTypeDescriptor, len(defs))
-	copy(sorted, defs)
-	sort.SliceStable(sorted, func(i, j int) bool {
-		di, dj := sorted[i], sorted[j]
-		iOrdered, jOrdered := di.Order > 0, dj.Order > 0
-		switch {
-		case iOrdered && jOrdered:
-			return di.Order < dj.Order
-		case iOrdered:
-			return false
-		case jOrdered:
-			return true
-		default:
-			return di.Name < dj.Name
-		}
-	})
-
 	response := api_types.ResourceTypeDescriptionList{}
-	for _, def := range sorted {
+	for _, def := range defs {
 		td := api_common.ResourceTypeDescription{
 			Name:                string(def.Name),
 			ReadOnly:            readOnly || federatedZone || def.ReadOnly,
@@ -52,5 +35,8 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 		}
 		response.Resources = append(response.Resources, td)
 	}
+	sort.SliceStable(response.Resources, func(i, j int) bool {
+		return response.Resources[i].Name < response.Resources[j].Name
+	})
 	return response
 }

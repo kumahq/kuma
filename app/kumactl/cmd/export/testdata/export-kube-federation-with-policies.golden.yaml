@@ -11,29 +11,6 @@ spec:
   - '*'
 ---
 apiVersion: kuma.io/v1alpha1
-kind: Retry
-mesh: default
-metadata:
-  creationTimestamp: "2024-01-24T09:32:02Z"
-  name: retry-all-default
-spec:
-  conf:
-    http:
-      backOff:
-        baseInterval: 0.025s
-        maxInterval: 0.250s
-      numRetries: 5
-      perTryTimeout: 16s
-    tcp:
-      maxConnectAttempts: 5
-  destinations:
-  - match:
-      kuma.io/service: '*'
-  sources:
-  - match:
-      kuma.io/service: '*'
----
-apiVersion: kuma.io/v1alpha1
 kind: MeshAccessLog
 metadata:
   annotations:
@@ -63,6 +40,29 @@ spec:
         type: File
     targetRef:
       kind: Mesh
+---
+apiVersion: kuma.io/v1alpha1
+kind: Retry
+mesh: default
+metadata:
+  creationTimestamp: "2024-01-24T09:32:02Z"
+  name: retry-all-default
+spec:
+  conf:
+    http:
+      backOff:
+        baseInterval: 0.025s
+        maxInterval: 0.250s
+      numRetries: 5
+      perTryTimeout: 16s
+    tcp:
+      maxConnectAttempts: 5
+  destinations:
+  - match:
+      kuma.io/service: '*'
+  sources:
+  - match:
+      kuma.io/service: '*'
 ---
 apiVersion: v1
 data:
