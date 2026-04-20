@@ -1672,8 +1672,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 		Entry("unresolvable-backend", func() outboundsTestCase {
 			// alias-backend is intentionally NOT registered in mesh context, simulating a race
 			// where the VIP is not yet allocated when the MeshHTTPRoute xDS snapshot is generated.
-			// The route referencing alias-backend must be skipped; the route referencing backend
-			// (which IS resolvable) must still be present in the generated config.
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoints("backend",
 					xds_builders.Endpoint().
@@ -1711,8 +1709,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 									test_policies.NewRule(nil, api.PolicyDefault{
 										Rules: []api.Rule{
 											{
-												// unresolvable: alias-backend has no VIP/protocol in mesh context
-												// this rule must be skipped entirely
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
 														Type:  api.PathPrefix,
@@ -1727,8 +1723,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											},
 											{
-												// resolvable: backend is present in mesh context
-												// this rule must appear in the generated config
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
 														Type:  api.PathPrefix,
