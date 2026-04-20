@@ -188,7 +188,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 
 	err = syncClient.Receive()
 	if errors.Is(err, context.Canceled) {
-		log.V(1).Info("GlobalToZoneSync finished gracefully")
+		log.Info("GlobalToZoneSync finished gracefully")
 		return
 	}
 	if err != nil {
@@ -228,7 +228,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	}
 
 	if errors.Is(err, context.Canceled) {
-		log.V(1).Info("ZoneToGlobalSync finished gracefully")
+		log.Info("ZoneToGlobalSync finished gracefully")
 		return
 	}
 	if err != nil {
