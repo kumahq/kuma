@@ -253,8 +253,8 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	{{- if .generateTargetRef }}
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	api "{{ .package }}"
 	{{- end}}
+	api "{{ .package }}"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
@@ -263,7 +263,7 @@ var log = core.Log.WithName("{{.name}}")
 
 type plugin struct{}
 
-func (p plugin) Order() int { return {{.order}} }
+func (p plugin) Order() int { return api.{{.name}}ResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

@@ -113,40 +113,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "MeshAccessLog",
-   "path": "meshaccesslogs",
-   "pluralDisplayName": "Mesh Access Logs",
-   "policy": {
-    "hasFromTargetRef": true,
-    "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": true,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mal",
-   "singularDisplayName": "Mesh Access Log"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshCircuitBreaker",
-   "path": "meshcircuitbreakers",
-   "pluralDisplayName": "Mesh Circuit Breakers",
-   "policy": {
-    "hasFromTargetRef": true,
-    "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": true,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mcb",
-   "singularDisplayName": "Mesh Circuit Breaker"
-  },
-  {
-   "includeInFederation": true,
    "name": "MeshExternalService",
    "path": "meshexternalservices",
    "pluralDisplayName": "Mesh External Services",
@@ -154,23 +120,6 @@
    "scope": "Mesh",
    "shortName": "extsvc",
    "singularDisplayName": "Mesh External Service"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshFaultInjection",
-   "path": "meshfaultinjections",
-   "pluralDisplayName": "Mesh Fault Injections",
-   "policy": {
-    "hasFromTargetRef": true,
-    "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mfi",
-   "singularDisplayName": "Mesh Fault Injection"
   },
   {
    "includeInFederation": true,
@@ -201,40 +150,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "MeshHTTPRoute",
-   "path": "meshhttproutes",
-   "pluralDisplayName": "Mesh HTTP Routes",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mhttpr",
-   "singularDisplayName": "Mesh HTTP Route"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshHealthCheck",
-   "path": "meshhealthchecks",
-   "pluralDisplayName": "Mesh Health Checks",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mhc",
-   "singularDisplayName": "Mesh Health Check"
-  },
-  {
-   "includeInFederation": true,
    "name": "MeshIdentity",
    "path": "meshidentities",
    "pluralDisplayName": "Mesh Identities",
@@ -252,40 +167,6 @@
    "scope": "Global",
    "shortName": "",
    "singularDisplayName": "Mesh Insight"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshLoadBalancingStrategy",
-   "path": "meshloadbalancingstrategies",
-   "pluralDisplayName": "Mesh Load Balancing Strategies",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mlbs",
-   "singularDisplayName": "Mesh Load Balancing Strategy"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshMetric",
-   "path": "meshmetrics",
-   "pluralDisplayName": "Mesh Metrics",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mm",
-   "singularDisplayName": "Mesh Metric"
   },
   {
    "includeInFederation": true,
@@ -308,74 +189,6 @@
    "singularDisplayName": "Mesh OpenTelemetry Backend"
   },
   {
-   "includeInFederation": true,
-   "name": "MeshPassthrough",
-   "path": "meshpassthroughs",
-   "pluralDisplayName": "Mesh Passthroughs",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mp",
-   "singularDisplayName": "Mesh Passthrough"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshProxyPatch",
-   "path": "meshproxypatches",
-   "pluralDisplayName": "Mesh Proxy Patches",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mpp",
-   "singularDisplayName": "Mesh Proxy Patch"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshRateLimit",
-   "path": "meshratelimits",
-   "pluralDisplayName": "Mesh Rate Limits",
-   "policy": {
-    "hasFromTargetRef": true,
-    "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": true,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mrl",
-   "singularDisplayName": "Mesh Rate Limit"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshRetry",
-   "path": "meshretries",
-   "pluralDisplayName": "Mesh Retries",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mr",
-   "singularDisplayName": "Mesh Retry"
-  },
-  {
    "includeInFederation": false,
    "name": "MeshService",
    "path": "meshservices",
@@ -384,91 +197,6 @@
    "scope": "Mesh",
    "shortName": "msvc",
    "singularDisplayName": "Mesh Service"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshTCPRoute",
-   "path": "meshtcproutes",
-   "pluralDisplayName": "Mesh TCP Routes",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mtcpr",
-   "singularDisplayName": "Mesh TCP Route"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshTLS",
-   "path": "meshtlses",
-   "pluralDisplayName": "Mesh TLSes",
-   "policy": {
-    "hasFromTargetRef": true,
-    "hasRulesTargetRef": true,
-    "hasToTargetRef": false,
-    "isFromAsRules": true,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mtls",
-   "singularDisplayName": "Mesh TLS"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshTimeout",
-   "path": "meshtimeouts",
-   "pluralDisplayName": "Mesh Timeouts",
-   "policy": {
-    "hasFromTargetRef": true,
-    "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": true,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mt",
-   "singularDisplayName": "Mesh Timeout"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshTrace",
-   "path": "meshtraces",
-   "pluralDisplayName": "Mesh Traces",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mtr",
-   "singularDisplayName": "Mesh Trace"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshTrafficPermission",
-   "path": "meshtrafficpermissions",
-   "pluralDisplayName": "Mesh Traffic Permissions",
-   "policy": {
-    "hasFromTargetRef": true,
-    "hasRulesTargetRef": true,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mtp",
-   "singularDisplayName": "Mesh Traffic Permission"
   },
   {
    "includeInFederation": true,
@@ -732,6 +460,278 @@
    "scope": "Global",
    "shortName": "",
    "singularDisplayName": "Zone Insight"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshHTTPRoute",
+   "path": "meshhttproutes",
+   "pluralDisplayName": "Mesh HTTP Routes",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": true,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mhttpr",
+   "singularDisplayName": "Mesh HTTP Route"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshTCPRoute",
+   "path": "meshtcproutes",
+   "pluralDisplayName": "Mesh TCP Routes",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": true,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mtcpr",
+   "singularDisplayName": "Mesh TCP Route"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshTLS",
+   "path": "meshtlses",
+   "pluralDisplayName": "Mesh TLSes",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
+    "hasToTargetRef": false,
+    "isFromAsRules": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mtls",
+   "singularDisplayName": "Mesh TLS"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshLoadBalancingStrategy",
+   "path": "meshloadbalancingstrategies",
+   "pluralDisplayName": "Mesh Load Balancing Strategies",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": true,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mlbs",
+   "singularDisplayName": "Mesh Load Balancing Strategy"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshPassthrough",
+   "path": "meshpassthroughs",
+   "pluralDisplayName": "Mesh Passthroughs",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": false,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mp",
+   "singularDisplayName": "Mesh Passthrough"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshAccessLog",
+   "path": "meshaccesslogs",
+   "pluralDisplayName": "Mesh Access Logs",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
+    "hasToTargetRef": true,
+    "isFromAsRules": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mal",
+   "singularDisplayName": "Mesh Access Log"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshTrace",
+   "path": "meshtraces",
+   "pluralDisplayName": "Mesh Traces",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": false,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mtr",
+   "singularDisplayName": "Mesh Trace"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshFaultInjection",
+   "path": "meshfaultinjections",
+   "pluralDisplayName": "Mesh Fault Injections",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
+    "hasToTargetRef": true,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mfi",
+   "singularDisplayName": "Mesh Fault Injection"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshRateLimit",
+   "path": "meshratelimits",
+   "pluralDisplayName": "Mesh Rate Limits",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
+    "hasToTargetRef": true,
+    "isFromAsRules": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mrl",
+   "singularDisplayName": "Mesh Rate Limit"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshTimeout",
+   "path": "meshtimeouts",
+   "pluralDisplayName": "Mesh Timeouts",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
+    "hasToTargetRef": true,
+    "isFromAsRules": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mt",
+   "singularDisplayName": "Mesh Timeout"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshTrafficPermission",
+   "path": "meshtrafficpermissions",
+   "pluralDisplayName": "Mesh Traffic Permissions",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
+    "hasToTargetRef": false,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mtp",
+   "singularDisplayName": "Mesh Traffic Permission"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshHealthCheck",
+   "path": "meshhealthchecks",
+   "pluralDisplayName": "Mesh Health Checks",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": true,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mhc",
+   "singularDisplayName": "Mesh Health Check"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshCircuitBreaker",
+   "path": "meshcircuitbreakers",
+   "pluralDisplayName": "Mesh Circuit Breakers",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasRulesTargetRef": true,
+    "hasToTargetRef": true,
+    "isFromAsRules": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mcb",
+   "singularDisplayName": "Mesh Circuit Breaker"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshRetry",
+   "path": "meshretries",
+   "pluralDisplayName": "Mesh Retries",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": true,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mr",
+   "singularDisplayName": "Mesh Retry"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshMetric",
+   "path": "meshmetrics",
+   "pluralDisplayName": "Mesh Metrics",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": false,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mm",
+   "singularDisplayName": "Mesh Metric"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshProxyPatch",
+   "path": "meshproxypatches",
+   "pluralDisplayName": "Mesh Proxy Patches",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasRulesTargetRef": false,
+    "hasToTargetRef": false,
+    "isFromAsRules": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "shortName": "mpp",
+   "singularDisplayName": "Mesh Proxy Patch"
   }
  ]
 }

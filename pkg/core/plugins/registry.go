@@ -129,6 +129,7 @@ func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
 	return r.proxy
 }
 
+// PolicyPlugins returns policy plugins sorted by their order.
 func (r *registry) PolicyPlugins() []RegisteredPolicyPlugin {
 	return r.registeredPolicies
 }
