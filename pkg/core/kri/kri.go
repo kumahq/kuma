@@ -63,25 +63,7 @@ func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.Resour
 	return id
 }
 
-type Option func(*Identifier)
-
-func WithDefaultZone(z string) Option {
-	return func(id *Identifier) {
-		if id.Zone == "" {
-			id.Zone = z
-		}
-	}
-}
-
-func WithDefaultNamespace(ns string) Option {
-	return func(id *Identifier) {
-		if id.Namespace == "" {
-			id.Namespace = ns
-		}
-	}
-}
-
-func FromResourceMetaE[T ~string](rm core_model.ResourceMeta, resourceType T, opts ...Option) (Identifier, error) {
+func FromResourceMetaE[T ~string](rm core_model.ResourceMeta, resourceType T) (Identifier, error) {
 	if rm == nil {
 		return Identifier{}, nil
 	}
@@ -94,17 +76,13 @@ func FromResourceMetaE[T ~string](rm core_model.ResourceMeta, resourceType T, op
 		return Identifier{}, nil
 	}
 
-	id := Identifier{
+	return Identifier{
 		ResourceType: rType,
 		Mesh:         rm.GetMesh(),
 		Zone:         rm.GetLabels()[mesh_proto.ZoneTag],
 		Namespace:    rm.GetLabels()[mesh_proto.KubeNamespaceTag],
 		Name:         core_model.GetDisplayName(rm),
-	}
-	for _, opt := range opts {
-		opt(&id)
-	}
-	return id, nil
+	}, nil
 }
 
 func FromString(s string) (Identifier, error) {

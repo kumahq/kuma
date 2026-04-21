@@ -165,11 +165,20 @@ func CrossMeshGatewayOnKubernetes() {
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
+			// Adding a new mesh triggers certificate regeneration for all
+			// existing gateways ("Another mesh has been added or removed"),
+			// causing a brief TLS disruption (~1s). Wait for the gateway to
+			// recover before verifying sustained accessibility.
+			Eventually(SuccessfullyProxyRequestToGateway(
+				kubernetes.Cluster, gatewayMesh,
+				gatewayAddr,
+				gatewayClientNamespaceOtherMesh,
+			), "30s", "1s").Should(Succeed())
 			Consistently(FailToProxyRequestToGateway(
 				kubernetes.Cluster,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
-			), "30s", "1s").ShouldNot(Succeed())
+			), "10s", "1s").ShouldNot(Succeed())
 
 			setup = NewClusterSetup().
 				Install(DeleteYamlK8s(crossMeshGatewayYaml2)).

@@ -220,33 +220,31 @@ func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
 
 			tnl.Close()
 
-			delete(c.portForwards, spec)
+			delete(c.portForwards, fwdSpec)
 		}
 
 		for tnlSpec := range c.adminTunnels {
 			if tnlSpec.Matches(spec) {
-				delete(c.adminTunnels, spec)
+				delete(c.adminTunnels, tnlSpec)
 			}
 		}
 	}
 }
 
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneEgressApp,
-		Namespace: Config.KumaNamespace,
-	})
-	if err != nil {
-		c.t.Fatal(err)
-	}
-
-	return tnl
+	return c.GetEnvoyAdminTunnel(Config.ZoneEgressApp, Config.KumaNamespace)
 }
 
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	return c.GetEnvoyAdminTunnel(Config.ZoneIngressApp, Config.KumaNamespace)
+}
+
+// GetEnvoyAdminTunnel creates or returns an Envoy admin tunnel for any named
+// app in a given namespace.
+func (c *K8sCluster) GetEnvoyAdminTunnel(appName, namespace string) envoy_admin.Tunnel {
 	tnl, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneIngressApp,
-		Namespace: Config.KumaNamespace,
+		AppName:   appName,
+		Namespace: namespace,
 	})
 	if err != nil {
 		c.t.Fatal(err)
@@ -426,7 +424,15 @@ func (c *K8sCluster) installCRDs() error {
 	if err != nil {
 		return err
 	}
-	if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), crds); err != nil {
+	crdFile, err := k8s.StoreConfigToTempFileE(c.t, crds)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(crdFile)
+	// --server-side --force-conflicts handles CRDs left over from a previous
+	// suite that were created without the last-applied-configuration annotation.
+	if err := k8s.RunKubectlE(c.t, c.GetKubectlOptions(),
+		"apply", "--server-side", "--force-conflicts", "-f", crdFile); err != nil {
 		return err
 	}
 
@@ -481,10 +487,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	if c.opts.zoneIngress {
 		argsMap["--ingress-enabled"] = ""
 		argsMap["--ingress-use-node-port"] = ""
+		args = append(args, "--set", fmt.Sprintf("%singress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
 	}
 
 	if c.opts.zoneEgress {
 		argsMap["--egress-enabled"] = ""
+		args = append(args, "--set", fmt.Sprintf("%segress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
 		if Config.Debug {
 			args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
 		}
@@ -525,6 +533,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
 	}
 
+	for k, v := range c.opts.helmOpts {
+		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, k, v))
+	}
+
 	if c.opts.yamlConfig != "" {
 		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, "controlPlane.config", c.opts.yamlConfig))
 	}
@@ -546,6 +558,8 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"dataPlane.image.repository":             Config.KumaDPImageRepo,
 		"dataPlane.initImage.repository":         Config.KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
+		"ingress.resources.limits.cpu":           "null",
+		"egress.resources.limits.cpu":            "null",
 	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry
@@ -1086,13 +1100,31 @@ func (c *K8sCluster) deleteCRDs() error {
 	if err != nil {
 		return err
 	}
-	deleteCmd := []string{"delete"}
+
+	var kumaCRDs []string
 	for l := range strings.SplitSeq(out, "\n") {
 		if strings.Contains(l, "kuma.io") {
-			deleteCmd = append(deleteCmd, l)
+			kumaCRDs = append(kumaCRDs, l)
 		}
 	}
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), deleteCmd...)
+	if len(kumaCRDs) == 0 {
+		return nil
+	}
+
+	if err := k8s.RunKubectlE(
+		c.GetTesting(),
+		c.GetKubectlOptions(),
+		slices.Concat([]string{"delete"}, kumaCRDs)...,
+	); err != nil {
+		return err
+	}
+
+	// Wait for CRDs to be fully removed so the next suite can install cleanly
+	return k8s.RunKubectlE(
+		c.GetTesting(),
+		c.GetKubectlOptions(),
+		slices.Concat([]string{"wait", "--for=delete", "--timeout=60s"}, kumaCRDs)...,
+	)
 }
 
 func (c *K8sCluster) deleteKumaViaHelm() error {
@@ -1142,7 +1174,11 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 
 	_ = k8s.KubectlDeleteFromStringE(c.t, c.GetKubectlOptions(), yaml)
 
-	return WaitNamespaceDelete(c, Config.KumaNamespace)
+	if err := WaitNamespaceDelete(c, Config.KumaNamespace); err != nil {
+		return err
+	}
+
+	return c.deleteCRDs()
 }
 
 func (c *K8sCluster) DeleteKuma() error {
@@ -1461,7 +1497,11 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 }
 
 func (c *K8sCluster) LoadImages(names ...string) error {
-	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 3, 0, func() (string, error) {
+	// 3 retries with 0 backoff was too tight: a single transient docker
+	// daemon hiccup blew through all attempts before recovery. Bumped to
+	// 5 attempts with 5s backoff so a brief image-import failure does
+	// not fail the whole test suite.
+	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 5, 5*time.Second, func() (string, error) {
 		err := c.loadImages(names...)
 		return "Loaded images " + strings.Join(names, ", "), err
 	})

@@ -17,9 +17,6 @@ func (r *MeshRetryResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	if len(pointer.Deref(r.Spec.To)) == 0 {
-		verr.AddViolationAt(path.Field("to"), "needs at least one item")
-	}
 	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To), pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})))
 	return verr.OrNil()
 }

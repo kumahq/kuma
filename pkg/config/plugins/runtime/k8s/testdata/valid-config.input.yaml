@@ -39,6 +39,21 @@ injector:
         memory: 1512Mi
   initContainer:
     image: kuma-init:latest
+    resources:
+      requests:
+        cpu: 20m
+        memory: 20Mi
+      limits:
+        cpu: "0"
+        memory: 50Mi
+  validationContainer:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 20Mi
+      limits:
+        cpu: "0"
+        memory: 50Mi
   builtinDNS:
     enabled: true
     port: 1253

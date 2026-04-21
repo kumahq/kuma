@@ -1,0 +1,41 @@
+{{- range $meshEntry := .Values.meshes }}
+{{- $meshName := $meshEntry.name }}
+
+{{- /* Build list of enabled roles with their defaults */ -}}
+{{- $roles := list }}
+{{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
+{{- $roles = append $roles (dict "role" "ingress" "cfg" $meshEntry.ingress "defaultType" "LoadBalancer" "defaultPort" 10001) }}
+{{- end }}
+{{- if and $meshEntry.egress $meshEntry.egress.enabled }}
+{{- $roles = append $roles (dict "role" "egress" "cfg" $meshEntry.egress "defaultType" "ClusterIP" "defaultPort" 10002) }}
+{{- end }}
+
+{{- range $roleEntry := $roles }}
+{{- $role := $roleEntry.role }}
+{{- $cfg := $roleEntry.cfg }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.serviceName" (dict "root" $ "meshName" $meshName "role" $role "nameOverride" (and $cfg.service $cfg.service.name)) }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+    k8s.kuma.io/zone-proxy-type: {{ $role }}
+  {{- if and $cfg.service $cfg.service.annotations }}
+  annotations:
+    {{- range $key, $value := $cfg.service.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  type: {{ default $roleEntry.defaultType (and $cfg.service $cfg.service.type) }}
+  ports:
+    - port: {{ default $roleEntry.defaultPort (and $cfg.service $cfg.service.port) }}
+      protocol: TCP
+      targetPort: {{ $roleEntry.defaultPort }}
+  selector:
+    {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+{{- end }}
+
+{{- end }}

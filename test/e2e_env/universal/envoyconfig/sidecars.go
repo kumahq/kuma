@@ -127,7 +127,7 @@ func SetupSidecarCluster() {
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
 	return func() {
-		cleanupAfterTest(meshName, policies...)()
+		cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, policies...)()
 		// Wait for xDS to reconcile after resource deletion so that
 		// leftover clusters from the previous test (e.g. OTel from
 		// meshmetric/otel) don't leak into the next golden comparison.

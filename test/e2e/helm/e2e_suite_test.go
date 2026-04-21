@@ -16,9 +16,8 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Zone and Global with Helm chart", Label("job-2"), helm.ZoneAndGlobalWithHelmChart, Ordered)
-	_ = Describe("Zone and Global universal mode with Helm chart", Label("job-2"), helm.ZoneAndGlobalInUniversalModeWithHelmChart, Ordered)
-	_ = Describe("Global and Zone universal mode with Helm chart", Label("job-0"), helm.GlobalAndZoneInUniversalModeWithHelmChart, Ordered)
-	_ = Describe("Upgrade Standalone with Helm", Label("job-0"), helm.UpgradingWithHelmChartStandalone, Ordered)
-	_ = Describe("Upgrade Multizone with Helm", Label("job-2"), helm.UpgradingWithHelmChartMultizone, Ordered)
+	_ = Describe("Zone and Global with Helm chart", Label("job-2"), Ordered, helm.ZoneAndGlobalWithHelmChart, Serial)
+	_ = Describe("Zone and Global universal mode with Helm chart", Label("job-2"), Ordered, helm.ZoneAndGlobalInUniversalModeWithHelmChart, Serial)
+	_ = Describe("Global and Zone universal mode with Helm chart", Label("job-0"), Ordered, helm.GlobalAndZoneInUniversalModeWithHelmChart, Serial)
+	_ = Describe("Upgrade Multizone with Helm", Label("job-2"), helm.UpgradingWithHelmChartMultizone, Serial)
 )

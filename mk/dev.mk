@@ -8,7 +8,7 @@ GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
 CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
 # renovate: datasource=github-tags depName=envoy packageName=kumahq/envoy-builds versioning=semver
-ENVOY_VERSION ?= 1.37.1
+ENVOY_VERSION ?= 1.37.2
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
@@ -27,8 +27,8 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Change here and `make check` ensures these are used for CI
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
-K8S_MIN_VERSION=v1.31.12-k3s1
-K8S_MAX_VERSION=v1.34.1-k3s1
+K8S_MIN_VERSION=v1.32.13-k3s1
+K8S_MAX_VERSION=v1.35.3-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.33
 
@@ -79,6 +79,7 @@ GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
 HELM_DOCS=$(shell $(MISE) which helm-docs)
 KUBE_LINTER=$(shell $(MISE) which kube-linter)
 HADOLINT=$(shell $(MISE) which hadolint)
+DASHBOARD_LINTER=$(shell $(MISE) which dashboard-linter)
 # oapi-codegen: mise go: backend installs to CI_TOOLS_BIN_DIR, mise which doesn't find it
 OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
 
