@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
@@ -68,6 +69,27 @@ func (s *reconnectTrackingServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncServ
 	return nil
 }
 
+func (s *reconnectTrackingServer) HealthCheck(_ context.Context, _ *mesh_proto.ZoneHealthCheckRequest) (*mesh_proto.ZoneHealthCheckResponse, error) {
+	return &mesh_proto.ZoneHealthCheckResponse{
+		Interval: durationpb.New(time.Minute),
+	}, nil
+}
+
+func (s *reconnectTrackingServer) StreamXDSConfigs(stream mesh_proto.GlobalKDSService_StreamXDSConfigsServer) error {
+	<-stream.Context().Done()
+	return nil
+}
+
+func (s *reconnectTrackingServer) StreamStats(stream mesh_proto.GlobalKDSService_StreamStatsServer) error {
+	<-stream.Context().Done()
+	return nil
+}
+
+func (s *reconnectTrackingServer) StreamClusters(stream mesh_proto.GlobalKDSService_StreamClustersServer) error {
+	<-stream.Context().Done()
+	return nil
+}
+
 // testZoneDeltaServer is a no-op delta server for the zone-to-global
 // direction. It blocks until the stream context is canceled.
 type testZoneDeltaServer struct{}
@@ -100,6 +122,7 @@ var _ = Describe("Client", func() {
 		}
 		lis, err := net.Listen("tcp", "127.0.0.1:0")
 		Expect(err).ToNot(HaveOccurred())
+		defer lis.Close()
 
 		grpcSrv := grpc.NewServer()
 		mesh_proto.RegisterKDSSyncServiceServer(grpcSrv, svc)

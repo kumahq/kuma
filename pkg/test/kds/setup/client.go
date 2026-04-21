@@ -13,9 +13,11 @@ func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes
 	for i := range clientStreams {
 		clientID := fmt.Sprintf("client-%d", i)
 		item := clientStreams[i]
-		comp := kds_client_v2.NewKDSSyncClient(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client_v2.NewDeltaKDSStream(item, clientID, fmt.Sprintf("cp-%d", i), "", len(resourceTypes)), cb, 0)
+		kdsStream, sendDone := kds_client_v2.NewDeltaKDSStream(item, clientID, fmt.Sprintf("cp-%d", i), "", len(resourceTypes))
+		comp := kds_client_v2.NewKDSSyncClient(core.Log.WithName("kds").WithName(clientID), resourceTypes, kdsStream, cb, 0)
 		go func() {
 			_ = comp.Receive()
+			<-sendDone
 			_ = item.CloseSend()
 		}()
 	}

@@ -34,10 +34,11 @@ type stream struct {
 	cpConfig           string
 	instanceID         string
 
-	sendCh chan *envoy_sd.DeltaDiscoveryRequest
-	recvCh chan *envoy_sd.DeltaDiscoveryResponse
-	ctx    context.Context
-	cancel context.CancelCauseFunc
+	sendCh   chan *envoy_sd.DeltaDiscoveryRequest
+	recvCh   chan *envoy_sd.DeltaDiscoveryResponse
+	ctx      context.Context
+	cancel   context.CancelCauseFunc
+	sendDone chan struct{}
 }
 
 type KDSSyncServiceStream interface {
@@ -46,13 +47,18 @@ type KDSSyncServiceStream interface {
 	Context() context.Context
 }
 
+// NewDeltaKDSStream creates a new DeltaKDSStream and starts background
+// send/recv goroutines. The returned channel is closed when the send
+// goroutine exits. Callers must wait on this channel before calling
+// CloseSend on the underlying gRPC stream to avoid a data race between
+// Send and CloseSend.
 func NewDeltaKDSStream(
 	s KDSSyncServiceStream,
 	clientID string,
 	instanceID string,
 	cpConfig string,
 	numberOfDistinctTypes int,
-) DeltaKDSStream {
+) (DeltaKDSStream, <-chan struct{}) {
 	ctx, cancel := context.WithCancelCause(s.Context())
 
 	// In theory capacity == numberOfDistinctTypes would be enough:
@@ -77,12 +83,16 @@ func NewDeltaKDSStream(
 		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, capacity),
 		ctx:                ctx,
 		cancel:             cancel,
+		sendDone:           make(chan struct{}),
 	}
 
-	go stream.sendLoop()
+	go func() {
+		defer close(stream.sendDone)
+		stream.sendLoop()
+	}()
 	go stream.recvLoop()
 
-	return stream
+	return stream, stream.sendDone
 }
 
 func (s *stream) sendLoop() {

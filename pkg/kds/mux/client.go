@@ -166,7 +166,9 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
+	kdsStream, sendDone := kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
 	defer func() {
+		<-sendDone // wait for sendLoop to exit before CloseSend to avoid data race
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
@@ -175,7 +177,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	syncClient := kds_client_v2.NewKDSSyncClient(
 		log,
 		c.typesSentByGlobal,
-		kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal)),
+		kdsStream,
 		kds_sync_store.ZoneSyncCallback(
 			stream.Context(),
 			c.resourceSyncer,
@@ -187,7 +189,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	)
 
 	err = syncClient.Receive()
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
 		log.Info("GlobalToZoneSync finished gracefully")
 		return
 	}
@@ -227,7 +229,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		err = errorStream.Err()
 	}
 
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
 		log.Info("ZoneToGlobalSync finished gracefully")
 		return
 	}
