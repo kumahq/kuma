@@ -340,9 +340,13 @@ components:
           type: integer
           description: Number of meshes
           example: 3
+<<<<<<< HEAD
     GlobalInsight:
+=======
+    GlobalInsightBase:
+>>>>>>> d9db25dd25 (refactor(oapi): rename GlobalInsight base (#16327))
       type: object
-      title: GlobalInsight
+      title: GlobalInsightBase
       description: Global Insight contains statistics for all main resources
       required:
         - createdAt
@@ -377,6 +381,82 @@ components:
           description: Mesh statistics
           allOf:
             - $ref: "#/components/schemas/MeshesStats"
+<<<<<<< HEAD
+=======
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ResourceStats'
+          description: A map of resource names to their corresponding statistics
+    GlobalInsight:
+      allOf:
+        - $ref: '#/components/schemas/GlobalInsightBase'
+    InspectHostnames:
+      type: object
+      title: InspectHostnames
+      description: A list of hostnames
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+          example: 200
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostname'
+    InspectHostname:
+      type: object
+      title: InspectHostname
+      description: An supported hostname along with the zones it exists in
+      required: [hostname, zones]
+      properties:
+        hostname:
+          type: string
+          description: Generated hostname
+          example: redis.redis-system.svc.east.mesh.local
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostnameZone'
+    InspectHostnameZone:
+      type: object
+      title: InspectHostnameZone
+      description: A name of the zone in which the hostname is available
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: east
+    DataplaneNetworkingLayout:
+      type: object
+      title: DataplaneLayout
+      description: Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+      required: [ kri, labels, inbounds, outbounds ]
+      properties:
+        kri:
+          type: string
+          example: kri_dp_default_default_kuma-demo_demo-app-75ff54499c-ttwd7_http-port
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "k8s.kuma.io/namespace": "kuma-demo"
+            "kuma.io/display-name": "demo-app"
+            "kuma.io/mesh": "default"
+            "kuma.io/origin": "zone"
+        inbounds:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneInbound'
+        outbounds:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneOutbound'
+        spiffeId:
+          type: string
+          description: SPIFFE ID of the dataplane's workload identity certificate
+>>>>>>> d9db25dd25 (refactor(oapi): rename GlobalInsight base (#16327))
   responses:
     ResourceTypeDescriptionListResponse:
       description: A response containing a list of all resources installed in Kuma
