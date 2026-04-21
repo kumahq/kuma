@@ -19236,7 +19236,6 @@ components:
       required:
         - type
         - name
-        - spec
       properties:
         type:
           description: the type of the resource

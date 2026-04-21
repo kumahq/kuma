@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
 )
 
@@ -98,6 +99,49 @@ var _ = Describe("Rest Resource", func() {
 }
 `
 				Expect(string(bytes)).To(MatchJSON(expected))
+			})
+
+			It("should omit spec when nil", func() {
+				// given - spec is nil (set by converter for optional-spec resources)
+				res := &v1alpha1.Resource{
+					ResourceMeta: v1alpha1.ResourceMeta{
+						Type:             "MeshTrafficPermission",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
+					},
+					Spec: nil,
+				}
+
+				// when
+				bytes, err := json.Marshal(res)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).ToNot(ContainSubstring(`"spec"`))
+			})
+
+			It("should omit status when set to non-nil empty struct", func() {
+				// given
+				res := &v1alpha1.Resource{
+					ResourceMeta: v1alpha1.ResourceMeta{
+						Type:             "MeshTrafficPermission",
+						Mesh:             "default",
+						Name:             "one",
+						CreationTime:     t1,
+						ModificationTime: t2,
+					},
+					Spec:   samples.MeshTrafficPermission,
+					Status: &meshmetric.MeshMetricStatus{},
+				}
+
+				// when
+				bytes, err := json.Marshal(res)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).ToNot(ContainSubstring(`"status"`))
 			})
 		})
 	})

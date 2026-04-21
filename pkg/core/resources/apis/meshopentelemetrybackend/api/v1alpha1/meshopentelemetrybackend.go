@@ -13,6 +13,7 @@ import (
 // +kuma:policy:has_status=true
 // +kuma:policy:short_name=motb
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
+// +kuma:policy:optional_spec=true
 // +kuma:policy:singular_display_name=Mesh OpenTelemetry Backend
 type MeshOpenTelemetryBackend struct {
 	// Endpoint optionally defines the OTel collector address and port.

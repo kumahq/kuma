@@ -32,7 +32,6 @@ spec:
         type: File
     targetRef:
       kind: Mesh
-status: {}
 type: MeshAccessLog
 ---
 creationTime: "0001-01-01T00:00:00Z"

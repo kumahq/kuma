@@ -127,7 +127,7 @@ components:
     MeshOpenTelemetryBackendItem:
       type: object
       description: "MeshOpenTelemetryBackend defines a shared OTel collector endpoint for observability policies.\nAn empty spec is valid and represents the node-local default flow\n(kuma-dp resolves the address at runtime using HOST_IP or 127.0.0.1)."
-      required: [type, name, spec]
+      required: [type, name]
       properties:
         type:
           description: 'the type of the resource'

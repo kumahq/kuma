@@ -208,6 +208,7 @@ var MeshOpenTelemetryBackendResourceTypeDescriptor = model.ResourceTypeDescripto
 	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    true,
+	OptionalSpec:                 true,
 	AllowedOnSystemNamespaceOnly: true,
 	ShortName:                    "motb",
 	IsFromAsRules:                false,

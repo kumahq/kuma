@@ -41,9 +41,13 @@ func (f *from) Resource(r core_model.Resource) Resource {
 
 	meta := f.Meta(r)
 	if r.Descriptor().IsPluginOriginated {
+		spec := r.GetSpec()
+		if r.Descriptor().OptionalSpec && core_model.IsEmpty(spec) {
+			spec = nil
+		}
 		res := &v1alpha1.Resource{
 			ResourceMeta: meta,
-			Spec:         r.GetSpec(),
+			Spec:         spec,
 		}
 		if r.Descriptor().HasStatus {
 			res.Status = r.GetStatus()
