@@ -17,6 +17,10 @@ var (
 
 type plugin struct{}
 
+func (p *plugin) Order() int {
+	panic("unimplemented")
+}
+
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }

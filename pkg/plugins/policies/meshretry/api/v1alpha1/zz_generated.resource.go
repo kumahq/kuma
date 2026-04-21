@@ -200,4 +200,5 @@ var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mr",
 	IsFromAsRules:                false,
+	Order:                        1400,
 }

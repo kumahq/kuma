@@ -2,6 +2,7 @@ package readiness
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -20,9 +21,11 @@ import (
 )
 
 const (
-	pathPrefixReady  = "/ready"
-	stateReady       = "READY"
-	stateTerminating = "TERMINATING"
+	pathPrefixReady      = "/ready"
+	stateReady           = "READY"
+	stateNotReady        = "NOT_READY"
+	stateTerminating     = "TERMINATING"
+	dnsConfigGateTimeout = 15 * time.Second
 )
 
 // Reporter reports the health status of this Kuma Dataplane Proxy.
@@ -38,17 +41,33 @@ type Reporter struct {
 	adminSocketPath    string
 	adminClient        *http.Client
 	isTerminating      atomic.Bool
+	// dnsConfigReady, when non-nil, blocks /ready until the DNS proxy has
+	// loaded its first configuration from Envoy. Closed by the DNS proxy
+	// server after the first successful ReloadMap call.
+	dnsConfigReady    <-chan struct{}
+	dnsConfigDeadline time.Time
+	dnsBypassed       atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string) *Reporter {
+func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}) *Reporter {
+	var deadline time.Time
+	if dnsConfigReady != nil {
+		deadline = time.Now().Add(dnsConfigGateTimeout)
+	}
+	return newReporterWithDeadline(unixSocketDisabled, socketDir, localIPAddr, localListenPort, adminSocketPath, dnsConfigReady, deadline)
+}
+
+func newReporterWithDeadline(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}, dnsConfigDeadline time.Time) *Reporter {
 	r := &Reporter{
 		unixSocketDisabled: unixSocketDisabled,
 		socketDir:          socketDir,
 		localListenPort:    localListenPort,
 		localListenAddr:    localIPAddr,
 		adminSocketPath:    adminSocketPath,
+		dnsConfigReady:     dnsConfigReady,
+		dnsConfigDeadline:  dnsConfigDeadline,
 	}
 	if adminSocketPath != "" {
 		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
@@ -100,9 +119,12 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 		ErrorLog:          adapter.ToStd(logger),
 	}
 
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 	go func() {
-		if err := server.Serve(lis); err != nil {
+		// ErrServerClosed is returned after Shutdown is called; it is not an
+		// actual error and must not be forwarded to avoid blocking the goroutine
+		// on an already-abandoned errCh.
+		if err := server.Serve(lis); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 	}()
@@ -124,6 +146,26 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	if r.isTerminating.Load() {
 		r.writeState(writer, req, stateTerminating, http.StatusServiceUnavailable)
 		return
+	}
+
+	// Gate readiness on DNS proxy receiving its first config from Envoy.
+	// This ensures mesh-generated DNS names resolve before app containers start.
+	// After dnsConfigGateTimeout we bypass the gate and log a warning to
+	// avoid blocking deploys when misconfigured.
+	if r.dnsConfigReady != nil && !r.dnsBypassed.Load() {
+		select {
+		case <-r.dnsConfigReady:
+		default:
+			if time.Now().After(r.dnsConfigDeadline) {
+				if r.dnsBypassed.CompareAndSwap(false, true) {
+					logger.Info("[WARNING] DNS proxy config not received within timeout, bypassing readiness gate",
+						"timeout", dnsConfigGateTimeout)
+				}
+			} else {
+				r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
+				return
+			}
+		}
 	}
 
 	// When admin is on UDS, proxy /ready to Envoy admin so that

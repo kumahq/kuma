@@ -1,7 +1,8 @@
 package plugins
 
 import (
-	"fmt"
+	"cmp"
+	"slices"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -46,7 +47,7 @@ type Registry interface {
 	RuntimePlugins() map[PluginName]RuntimePlugin
 	CaPlugins() map[PluginName]CaPlugin
 	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
-	PolicyPlugins([]PluginName) []RegisteredPolicyPlugin
+	PolicyPlugins() []RegisteredPolicyPlugin
 	ProxyPlugins() map[PluginName]ProxyPlugin
 	CoreResourcePlugins() map[PluginName]CoreResourcePlugin
 	IdentityProviders() map[PluginName]IdentityProviderPlugin
@@ -71,7 +72,6 @@ func NewRegistry() MutableRegistry {
 		ca:                          make(map[PluginName]CaPlugin),
 		authnAPIServer:              make(map[PluginName]AuthnAPIServerPlugin),
 		proxy:                       make(map[PluginName]ProxyPlugin),
-		registeredPolicies:          make(map[PluginName]PolicyPlugin),
 		registeredResources:         make(map[PluginName]CoreResourcePlugin),
 		registeredIdentityProviders: make(map[PluginName]IdentityProviderPlugin),
 	}
@@ -88,7 +88,7 @@ type registry struct {
 	proxy                       map[PluginName]ProxyPlugin
 	ca                          map[PluginName]CaPlugin
 	authnAPIServer              map[PluginName]AuthnAPIServerPlugin
-	registeredPolicies          map[PluginName]PolicyPlugin
+	registeredPolicies          []RegisteredPolicyPlugin
 	registeredResources         map[PluginName]CoreResourcePlugin
 	registeredIdentityProviders map[PluginName]IdentityProviderPlugin
 }
@@ -129,19 +129,9 @@ func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
 	return r.proxy
 }
 
-func (r *registry) PolicyPlugins(ordered []PluginName) []RegisteredPolicyPlugin {
-	var plugins []RegisteredPolicyPlugin
-	for _, policy := range ordered {
-		plugin, ok := r.registeredPolicies[policy]
-		if !ok {
-			panic(fmt.Sprintf("Couldn't find plugin %s", policy))
-		}
-		plugins = append(plugins, RegisteredPolicyPlugin{
-			Plugin: plugin,
-			Name:   policy,
-		})
-	}
-	return plugins
+// PolicyPlugins returns policy plugins sorted by their order.
+func (r *registry) PolicyPlugins() []RegisteredPolicyPlugin {
+	return r.registeredPolicies
 }
 
 func (r *registry) CoreResourcePlugins() map[PluginName]CoreResourcePlugin {
@@ -216,10 +206,19 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 		r.authnAPIServer[name] = authn
 	}
 	if policy, ok := plugin.(PolicyPlugin); ok {
-		if old, exists := r.registeredPolicies[name]; exists {
-			return pluginAlreadyRegisteredError(policyPlugin, name, old, policy)
+		for _, existing := range r.registeredPolicies {
+			if existing.Name == name {
+				return pluginAlreadyRegisteredError(policyPlugin, name, existing.Plugin, policy)
+			}
 		}
-		r.registeredPolicies[name] = policy
+		entry := RegisteredPolicyPlugin{Plugin: policy, Name: name}
+		pos, found := slices.BinarySearchFunc(r.registeredPolicies, entry, func(a, b RegisteredPolicyPlugin) int {
+			return cmp.Compare(a.Plugin.Order(), b.Plugin.Order())
+		})
+		if found {
+			return errors.Errorf("policy plugin %q has the same order (%d) as plugin %q; each plugin must declare a unique order", name, policy.Order(), r.registeredPolicies[pos].Name)
+		}
+		r.registeredPolicies = slices.Insert(r.registeredPolicies, pos, entry)
 	}
 	if proxy, ok := plugin.(ProxyPlugin); ok {
 		if old, exists := r.proxy[name]; exists {
