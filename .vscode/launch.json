@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Remote Debug kuma-cp (Skaffold)",
+      "type": "go",
+      "request": "attach",
+      "mode": "remote",
+      "host": "localhost",
+      "port": 56268,
+      "substitutePath": [
+        {
+          "from": "${workspaceFolder}",
+          "to": "/app"
+        }
+      ]
+    },
+    {
+      "name": "Debug E2E Tests (Kubernetes)",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/test/e2e_env/kubernetes",
+      "buildFlags": "-ldflags='-X github.com/kumahq/kuma/v2/pkg/version.Envoy=${env:ENVOY_VERSION} -X github.com/kumahq/kuma/v2/pkg/version.version=${env:KUMA_PRODUCT_VERSION}'",
+      "env": {
+        "KUMACTLBIN": "${input:kumactlBin}",
+        "KUMA_K8S_TYPE": "k3d",
+        "K3D_CNI": "flannel"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "kumactlBin",
+      "type": "promptString",
+      "description": "Path to the local kumactl binary for your OS/architecture",
+      "default": "${workspaceFolder}/build/artifacts-linux-amd64/kumactl/kumactl"
+    }
+  ]
+}

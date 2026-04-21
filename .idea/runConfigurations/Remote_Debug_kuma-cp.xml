@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Remote Debug kuma-cp (Skaffold)" type="GoRemoteRunConfiguration" factoryName="Go Remote">
+    <option name="disconnectOption" value="STOP" />
+    <option name="host" value="localhost" />
+    <option name="port" value="56268" />
+    <option name="mapping" value="$PROJECT_DIR$:/app" />
+    <method v="2" />
+  </configuration>
+</component>
