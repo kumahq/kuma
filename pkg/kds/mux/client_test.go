@@ -48,8 +48,7 @@ func (s *reconnectTrackingServer) GlobalToZoneSync(stream mesh_proto.KDSSyncServ
 		// First connection: return nil after a short delay to let the zone
 		// client finish sending its DeltaDiscoveryRequests. Returning nil
 		// from the server handler closes the gRPC stream cleanly — the zone
-		// client receives io.EOF on Recv(), which KDSSyncClient.Receive()
-		// translates to a nil error return.
+		// client receives io.EOF on Recv(), which triggers a reconnect.
 		select {
 		case <-time.After(300 * time.Millisecond):
 			return nil

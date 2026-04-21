@@ -189,20 +189,9 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	)
 
 	err = syncClient.Receive()
-	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
-		log.Info("GlobalToZoneSync finished gracefully")
-		return
-	}
-	if err != nil {
-		err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
-	} else {
-		// err == nil means the stream was closed by the server (io.EOF).
-		// Trigger a reconnect so ResilientComponent restarts all streams.
-		err = errors.New("GlobalToZoneSync stream closed by server")
-	}
-	log.Info("GlobalToZoneSync ended, triggering reconnect", "reason", err)
+	log.Info("GlobalToZoneSync ended", "reason", err)
 	select {
-	case errorCh <- err:
+	case errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error"):
 	case <-ctx.Done():
 	}
 }
@@ -229,18 +218,9 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		err = errorStream.Err()
 	}
 
-	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
-		log.Info("ZoneToGlobalSync finished gracefully")
-		return
-	}
-	if err != nil {
-		err = errors.Wrap(err, "ZoneToGlobalSync finished with an error")
-	} else {
-		err = errors.New("ZoneToGlobalSync stream closed by server")
-	}
-	log.Info("ZoneToGlobalSync ended, triggering reconnect", "reason", err)
+	log.Info("ZoneToGlobalSync ended", "reason", err)
 	select {
-	case errorCh <- err:
+	case errorCh <- errors.Wrap(err, "ZoneToGlobalSync finished with an error"):
 	case <-ctx.Done():
 	}
 }
@@ -358,7 +338,7 @@ func (c *client) handleProcessingErrors(
 		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
 		log.Info("rpc stream shutting down")
 		// Let's not propagate this error further as we've already cancelled the context
 		err = nil
