@@ -47,7 +47,14 @@ type FullStatus struct {
 }
 
 // GlobalInsight Global Insight contains statistics for all main resources
+<<<<<<< HEAD
 type GlobalInsight struct {
+=======
+type GlobalInsight = GlobalInsightBase
+
+// GlobalInsightBase Global Insight contains statistics for all main resources
+type GlobalInsightBase struct {
+>>>>>>> d9db25dd25 (refactor(oapi): rename GlobalInsight base (#16327))
 	// CreatedAt Time of Global Insight creation
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -168,10 +175,20 @@ type ZonesStats struct {
 	ZoneIngresses BaseStatus `json:"zoneIngresses"`
 }
 
+<<<<<<< HEAD
 // BadRequest standard error
 type BadRequest = externalRef0.Error
 
 // GlobalInsightResponse Global Insight contains statistics for all main resources
+=======
+// DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
+
+// GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
+type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
+
+// GlobalInsightResponse defines model for GlobalInsightResponse.
+>>>>>>> d9db25dd25 (refactor(oapi): rename GlobalInsight base (#16327))
 type GlobalInsightResponse = GlobalInsight
 
 // IndexResponse Some metadata about the service
