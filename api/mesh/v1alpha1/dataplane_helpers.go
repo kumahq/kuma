@@ -288,6 +288,21 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 	return nil
 }
 
+<<<<<<< HEAD
+=======
+// InboundsSelectedBySectionName returns the list of inbound interfaces selected by sectionName. It returns all inbounds if
+// sectionName is empty
+func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
+	var selectedInbounds []InboundInterface
+	for _, inbound := range n.Inbound {
+		if sectionName == "" || inbound.GetSectionName() == sectionName {
+			selectedInbounds = append(selectedInbounds, n.ToInboundInterface(inbound))
+		}
+	}
+	return selectedInbounds
+}
+
+>>>>>>> 39e18340da (fix(policy): race condition when listener state is switched from `Ignored` to `Ready` (#16323))
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
 	iface := InboundInterface{
 		DataplanePort: inbound.Port,
