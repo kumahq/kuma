@@ -4510,9 +4510,9 @@ components:
           type: integer
           description: Number of meshes
           example: 3
-    schemas-GlobalInsight:
+    GlobalInsightBase:
       type: object
-      title: GlobalInsight
+      title: GlobalInsightBase
       description: Global Insight contains statistics for all main resources
       required:
         - createdAt
@@ -4555,7 +4555,7 @@ components:
           description: A map of resource names to their corresponding statistics
     GlobalInsight:
       allOf:
-        - $ref: '#/components/schemas/schemas-GlobalInsight'
+        - $ref: '#/components/schemas/GlobalInsightBase'
     InspectHostnames:
       type: object
       title: InspectHostnames
