@@ -17,6 +17,7 @@ import (
 // MeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints.
 // +kuma:policy:singular_display_name=Mesh HTTP Route
 // +kuma:policy:skip_get_default=true
+// +kuma:policy:order=100
 type MeshHTTPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

@@ -10,6 +10,7 @@ import (
 
 // MeshCircuitBreaker protects services from cascading failures by limiting connections and detecting unhealthy instances. It provides connection limits to prevent overload and outlier detection to temporarily remove failing endpoints from the load balancing pool.
 // +kuma:policy:is_from_as_rules=true
+// +kuma:policy:order=1300
 type MeshCircuitBreaker struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

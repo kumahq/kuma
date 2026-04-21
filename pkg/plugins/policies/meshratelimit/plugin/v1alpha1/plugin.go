@@ -28,6 +28,8 @@ var (
 
 type plugin struct{}
 
+func (p plugin) Order() int { return api.MeshRateLimitResourceTypeDescriptor.Order }
+
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
