@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v2/api/openapi/types"
@@ -223,9 +224,40 @@ func normalizeClusterAddress(cluster map[string]any) {
 	}
 }
 
-func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {
+func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
+	GinkgoHelper()
 	return func() {
+		GinkgoHelper()
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
 		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
+		// Wait for the dataplane xDS configs to settle before letting the next
+		// spec start. Without this the next test races envoy convergence: a
+		// resource (e.g. an OpenTelemetry cluster from the previous meshmetric
+		// test) lingers in the snapshot for a few seconds after its parent
+		// policy was deleted, which makes the next golden-file comparison
+		// flake.
+		for _, dpp := range dpps {
+			waitConfigStable(mesh, dpp)
+		}
 	}
+}
+
+// waitConfigStable polls the dataplane xDS config until three consecutive
+// snapshots taken 1s apart are identical (that is, two consecutive equality
+// checks pass), with a generous total budget. This is a cheap way to make
+// sure no async push is in flight before the next test captures its baseline.
+func waitConfigStable(mesh, dpp string) {
+	GinkgoHelper()
+	var prev string
+	stable := 0
+	Eventually(func(g Gomega) {
+		cur := getConfig(mesh, dpp)
+		if cur == prev {
+			stable++
+		} else {
+			stable = 0
+		}
+		prev = cur
+		g.Expect(stable).To(BeNumerically(">=", 2), "dataplane %s xDS not yet stable", dpp)
+	}, "30s", "1s").Should(Succeed())
 }
