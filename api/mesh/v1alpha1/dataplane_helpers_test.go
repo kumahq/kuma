@@ -138,6 +138,74 @@ var _ = Describe("Dataplane_Networking", func() {
 		})
 	})
 
+	Describe("InboundsSelectedBySectionName()", func() {
+		type testCase struct {
+			sectionName string
+			expected    []InboundInterface
+		}
+
+		DescribeTable("should select inbounds regardless of their state",
+			func(given testCase) {
+				networking := &Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*Dataplane_Networking_Inbound{
+						{
+							Name:  "main-port",
+							Port:  80,
+							State: Dataplane_Networking_Inbound_Ignored,
+						},
+						{
+							Name:  "secondary-port",
+							Port:  443,
+							State: Dataplane_Networking_Inbound_Ready,
+						},
+					},
+				}
+
+				selectedInbounds := networking.InboundsSelectedBySectionName(given.sectionName)
+
+				Expect(selectedInbounds).To(ConsistOf(given.expected))
+			},
+			Entry("empty sectionName selects all inbounds", testCase{
+				expected: []InboundInterface{
+					{
+						DataplaneAdvertisedIP: "192.168.0.1",
+						DataplaneIP:           "192.168.0.1",
+						DataplanePort:         80,
+						WorkloadIP:            "192.168.0.1",
+						WorkloadPort:          80,
+						InboundName:           "main-port",
+					},
+					{
+						DataplaneAdvertisedIP: "192.168.0.1",
+						DataplaneIP:           "192.168.0.1",
+						DataplanePort:         443,
+						WorkloadIP:            "192.168.0.1",
+						WorkloadPort:          443,
+						InboundName:           "secondary-port",
+					},
+				},
+			}),
+			Entry("matching sectionName selects ignored inbound", testCase{
+				sectionName: "main-port",
+				expected: []InboundInterface{
+					{
+						DataplaneAdvertisedIP: "192.168.0.1",
+						DataplaneIP:           "192.168.0.1",
+						DataplanePort:         80,
+						WorkloadIP:            "192.168.0.1",
+						WorkloadPort:          80,
+						InboundName:           "main-port",
+					},
+				},
+			}),
+			Entry("non-matching sectionName selects no inbounds", testCase{
+				sectionName: "unknown-port",
+				expected:    []InboundInterface{},
+			}),
+		)
+	})
+
 	Describe("GetHealthyInbounds()", func() {
 		It("should return only healty inbounds", func() {
 			networking := &Dataplane_Networking{
