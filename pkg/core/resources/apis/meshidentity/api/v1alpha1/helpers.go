@@ -59,6 +59,7 @@ func Matched(
 	return matches[0].policy, true
 }
 
+<<<<<<< HEAD
 func (i *MeshIdentity) getSpiffeIDTemplate() string {
 	builder := strings.Builder{}
 	builder.WriteString("spiffe://")
@@ -68,6 +69,31 @@ func (i *MeshIdentity) getSpiffeIDTemplate() string {
 	} else {
 		builder.WriteString(defaultPathTemplate)
 	}
+=======
+// SpiffeIDPathTemplate returns the path portion of the SPIFFE ID template that
+// will be used when rendering the SPIFFE ID for a dataplane. It falls back to
+// an environment-specific default when the MeshIdentity does not specify a
+// custom path.
+func (i *MeshIdentity) SpiffeIDPathTemplate(env config_core.EnvironmentType) string {
+	var defaultSpiffeIDPathTemplate string
+	switch env {
+	case config_core.KubernetesEnvironment:
+		defaultSpiffeIDPathTemplate = defaultK8sSpiffeIDPathTemplate
+	case config_core.UniversalEnvironment:
+		defaultSpiffeIDPathTemplate = defaultUniversalSpiffeIDPathTemplate
+	}
+	if i.SpiffeID == nil {
+		return defaultSpiffeIDPathTemplate
+	}
+	return pointer.DerefOr(i.SpiffeID.Path, defaultSpiffeIDPathTemplate)
+}
+
+func (i *MeshIdentity) getSpiffeIDTemplate(env config_core.EnvironmentType) string {
+	builder := strings.Builder{}
+	builder.WriteString("spiffe://")
+	builder.WriteString("{{ .TrustDomain }}")
+	builder.WriteString(i.SpiffeIDPathTemplate(env))
+>>>>>>> 149a59a47d (fix(meshidentity): env-aware UsesWorkloadLabel (#16356))
 	return builder.String()
 }
 
@@ -140,3 +166,29 @@ func (s *MeshIdentityStatus) IsInitialized() bool {
 	}
 	return false
 }
+<<<<<<< HEAD
+=======
+
+func (s *MeshIdentityStatus) IsPartiallyReady() bool {
+	for _, condition := range s.Conditions {
+		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionFalse && condition.Reason == "PartiallyReady" {
+			return true
+		}
+	}
+	return false
+}
+
+var (
+	workloadLabelRegex       = regexp.MustCompile(`\{\{\s*label\s+"kuma\.io/workload"\s*\}\}`)
+	workloadPlaceholderRegex = regexp.MustCompile(`\{\{\s*\.Workload\s*\}\}`)
+)
+
+// UsesWorkloadLabel checks if this MeshIdentity's SPIFFE ID path template contains
+// the workload reference in the form of {{ label "kuma.io/workload" }} or {{ .Workload }}.
+// The environment is taken into account because the default Universal path template
+// references .Workload even when no custom path is configured.
+func (i *MeshIdentity) UsesWorkloadLabel(env config_core.EnvironmentType) bool {
+	path := i.SpiffeIDPathTemplate(env)
+	return workloadLabelRegex.MatchString(path) || workloadPlaceholderRegex.MatchString(path)
+}
+>>>>>>> 149a59a47d (fix(meshidentity): env-aware UsesWorkloadLabel (#16356))
