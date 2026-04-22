@@ -38,7 +38,7 @@ type reconnectTrackingServer struct {
 	globalToZoneConns int
 	reconnectedOnce   sync.Once
 	reconnectedCh     chan struct{} // closed on second GlobalToZoneSync call
-	firstConnErrCode  codes.Code   // if non-zero, return this status code on first connection instead of nil
+	firstConnErrCode  codes.Code    // if non-zero, return this status code on first connection instead of nil
 }
 
 func (s *reconnectTrackingServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
@@ -128,7 +128,7 @@ var _ = Describe("Client", func() {
 	DescribeTable("reconnects when globalToZone stream is terminated by server",
 		func(tc testCase) {
 			svc := &reconnectTrackingServer{
-				reconnectedCh:   make(chan struct{}),
+				reconnectedCh:    make(chan struct{}),
 				firstConnErrCode: tc.errCode,
 			}
 			lis, err := net.Listen("tcp", "127.0.0.1:0")
