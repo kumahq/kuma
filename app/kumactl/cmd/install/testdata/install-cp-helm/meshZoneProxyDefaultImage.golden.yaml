@@ -20,44 +20,22 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kuma-mesh-1-ingress
+  name: kuma-default-ingress
   namespace: kuma-system
   labels: 
-    app: kuma-mesh-1-ingress
-    kuma.io/mesh: mesh-1
+    app: kuma-default-ingress
+    kuma.io/mesh: default
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kuma-mesh-1-egress
+  name: kuma-default-egress
   namespace: kuma-system
   labels: 
-    app: kuma-mesh-1-egress
-    kuma.io/mesh: mesh-1
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-mesh-2-ingress
-  namespace: kuma-system
-  labels: 
-    app: kuma-mesh-2-ingress
-    kuma.io/mesh: mesh-2
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-mesh-2-egress
-  namespace: kuma-system
-  labels: 
-    app: kuma-mesh-2-egress
-    kuma.io/mesh: mesh-2
+    app: kuma-default-egress
+    kuma.io/mesh: default
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -489,11 +467,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-mesh-1-ingress
+  name: kuma-default-ingress
   namespace: kuma-system
   labels:
-    app: kuma-mesh-1-ingress
-    kuma.io/mesh: mesh-1
+    app: kuma-default-ingress
+    kuma.io/mesh: default
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
     k8s.kuma.io/zone-proxy-type: ingress
@@ -504,18 +482,18 @@ spec:
       protocol: TCP
       targetPort: 10001
   selector:
-    app: kuma-mesh-1-ingress
+    app: kuma-default-ingress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-mesh-1-egress
+  name: kuma-default-egress
   namespace: kuma-system
   labels:
-    app: kuma-mesh-1-egress
-    kuma.io/mesh: mesh-1
+    app: kuma-default-egress
+    kuma.io/mesh: default
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
     k8s.kuma.io/zone-proxy-type: egress
@@ -526,51 +504,7 @@ spec:
       protocol: TCP
       targetPort: 10002
   selector:
-    app: kuma-mesh-1-egress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kuma-mesh-2-ingress
-  namespace: kuma-system
-  labels:
-    app: kuma-mesh-2-ingress
-    kuma.io/mesh: mesh-2
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-    k8s.kuma.io/zone-proxy-type: ingress
-spec:
-  type: LoadBalancer
-  ports:
-    - port: 10001
-      protocol: TCP
-      targetPort: 10001
-  selector:
-    app: kuma-mesh-2-ingress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kuma-mesh-2-egress
-  namespace: kuma-system
-  labels:
-    app: kuma-mesh-2-egress
-    kuma.io/mesh: mesh-2
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-    k8s.kuma.io/zone-proxy-type: egress
-spec:
-  type: ClusterIP
-  ports:
-    - port: 10002
-      protocol: TCP
-      targetPort: 10002
-  selector:
-    app: kuma-mesh-2-egress
+    app: kuma-default-egress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -790,11 +724,11 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kuma-mesh-1-ingress
+  name: kuma-default-ingress
   namespace: kuma-system
   labels: 
-    app: kuma-mesh-1-ingress
-    kuma.io/mesh: mesh-1
+    app: kuma-default-ingress
+    kuma.io/mesh: default
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -805,7 +739,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kuma-mesh-1-ingress
+      app: kuma-default-ingress
       app.kubernetes.io/name: kuma
       app.kubernetes.io/instance: kuma
   template:
@@ -813,8 +747,8 @@ spec:
       annotations:
         kuma.io/reachable-backends: '{"refs":[]}'
       labels:
-        app: kuma-mesh-1-ingress
-        kuma.io/mesh: mesh-1
+        app: kuma-default-ingress
+        kuma.io/mesh: default
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
@@ -824,7 +758,7 @@ spec:
         runAsGroup: 5678
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: kuma-mesh-1-ingress
+      serviceAccountName: kuma-default-ingress
       automountServiceAccountToken: true
       restartPolicy: Always
       terminationGracePeriodSeconds: 40
@@ -849,11 +783,11 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kuma-mesh-1-egress
+  name: kuma-default-egress
   namespace: kuma-system
   labels: 
-    app: kuma-mesh-1-egress
-    kuma.io/mesh: mesh-1
+    app: kuma-default-egress
+    kuma.io/mesh: default
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -864,7 +798,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kuma-mesh-1-egress
+      app: kuma-default-egress
       app.kubernetes.io/name: kuma
       app.kubernetes.io/instance: kuma
   template:
@@ -872,8 +806,8 @@ spec:
       annotations:
         kuma.io/reachable-backends: '{"refs":[]}'
       labels:
-        app: kuma-mesh-1-egress
-        kuma.io/mesh: mesh-1
+        app: kuma-default-egress
+        kuma.io/mesh: default
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
@@ -883,125 +817,7 @@ spec:
         runAsGroup: 5678
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: kuma-mesh-1-egress
-      automountServiceAccountToken: true
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 40
-      containers:
-        - name: pause
-          image: "registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-          resources:
-            requests:
-              cpu: 10m
-              memory: 16Mi
-            limits:
-              memory: 16Mi
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kuma-mesh-2-ingress
-  namespace: kuma-system
-  labels: 
-    app: kuma-mesh-2-ingress
-    kuma.io/mesh: mesh-2
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kuma-mesh-2-ingress
-      app.kubernetes.io/name: kuma
-      app.kubernetes.io/instance: kuma
-  template:
-    metadata:
-      annotations:
-        kuma.io/reachable-backends: '{"refs":[]}'
-      labels:
-        app: kuma-mesh-2-ingress
-        kuma.io/mesh: mesh-2
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
-        kuma.io/sidecar-injection: enabled
-    spec:
-      securityContext:
-        runAsUser: 5678
-        runAsGroup: 5678
-        seccompProfile:
-          type: RuntimeDefault
-      serviceAccountName: kuma-mesh-2-ingress
-      automountServiceAccountToken: true
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 40
-      containers:
-        - name: pause
-          image: "registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-          resources:
-            requests:
-              cpu: 10m
-              memory: 16Mi
-            limits:
-              memory: 16Mi
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kuma-mesh-2-egress
-  namespace: kuma-system
-  labels: 
-    app: kuma-mesh-2-egress
-    kuma.io/mesh: mesh-2
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kuma-mesh-2-egress
-      app.kubernetes.io/name: kuma
-      app.kubernetes.io/instance: kuma
-  template:
-    metadata:
-      annotations:
-        kuma.io/reachable-backends: '{"refs":[]}'
-      labels:
-        app: kuma-mesh-2-egress
-        kuma.io/mesh: mesh-2
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
-        kuma.io/sidecar-injection: enabled
-    spec:
-      securityContext:
-        runAsUser: 5678
-        runAsGroup: 5678
-        seccompProfile:
-          type: RuntimeDefault
-      serviceAccountName: kuma-mesh-2-egress
+      serviceAccountName: kuma-default-egress
       automountServiceAccountToken: true
       restartPolicy: Always
       terminationGracePeriodSeconds: 40
