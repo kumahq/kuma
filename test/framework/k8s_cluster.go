@@ -560,6 +560,12 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
 		"ingress.resources.limits.cpu":           "null",
 		"egress.resources.limits.cpu":            "null",
+		// Bumped well above the production defaults (20m / 50m) so kuma-init,
+		// kuma-validator, and kuma-sidecar aren't CPU-starved when the CI runner
+		// launches multiple injected pods concurrently on a shared-vCPU host.
+		"dataPlane.initContainer.resources.requests.cpu":       "100m",
+		"dataPlane.validationContainer.resources.requests.cpu": "100m",
+		"dataPlane.sidecarContainer.resources.requests.cpu":    "100m",
 	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry
