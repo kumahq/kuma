@@ -76,9 +76,6 @@ type FullStatus struct {
 	Total             int `json:"total"`
 }
 
-// GlobalInsight Global Insight contains statistics for all main resources
-type GlobalInsight = GlobalInsightBase
-
 // GlobalInsightBase Global Insight contains statistics for all main resources
 type GlobalInsightBase struct {
 	// CreatedAt Time of Global Insight creation
@@ -215,8 +212,8 @@ type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
 // GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
 type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 
-// GlobalInsightResponse defines model for GlobalInsightResponse.
-type GlobalInsightResponse = GlobalInsight
+// GlobalInsightResponse Global Insight contains statistics for all main resources
+type GlobalInsightResponse = GlobalInsightBase
 
 // InboundPolicyConfResponse defines model for InboundPolicyConfResponse.
 type InboundPolicyConfResponse = externalRef0.InboundPoliciesList
