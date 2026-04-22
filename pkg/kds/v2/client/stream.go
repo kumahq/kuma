@@ -59,7 +59,14 @@ func NewDeltaKDSStream(
 	cpConfig string,
 	numberOfDistinctTypes int,
 ) (DeltaKDSStream, <-chan struct{}) {
-	ctx, cancel := context.WithCancelCause(s.Context())
+	// Use Background instead of s.Context() to decouple from the gRPC
+	// stream's context. When the server closes the stream, gRPC cancels
+	// the stream context with context.Canceled. If that propagated to our
+	// context, it would race with recvLoop's cancel(io.EOF) — whichever
+	// runs first sets the cause. By using Background, the cause is always
+	// determined by sendLoop/recvLoop errors (io.EOF, transport errors),
+	// never by gRPC's internal context cancellation.
+	ctx, cancel := context.WithCancelCause(context.Background())
 
 	// In theory capacity == numberOfDistinctTypes would be enough:
 	//

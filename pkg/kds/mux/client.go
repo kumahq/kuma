@@ -157,13 +157,13 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 
 	cfgJson, err := config.ConfigForDisplay(pointer.To(c.rt.Config()))
 	if err != nil {
-		errorCh <- errors.Wrap(err, "could not marshall config to json")
+		nonBlockingSend(ctx, errorCh, errors.Wrap(err, "could not marshall config to json"))
 		return
 	}
 
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
-		errorCh <- err
+		nonBlockingSend(ctx, errorCh, err)
 		return
 	}
 	kdsStream, sendDone := kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
@@ -188,12 +188,10 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 	)
 
-	err = syncClient.Receive()
-	log.Info("GlobalToZoneSync ended", "reason", err)
-	select {
-	case errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error"):
-	case <-ctx.Done():
+	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
+		nonBlockingSend(ctx, errorCh, errors.Wrap(err, "GlobalToZoneSyncClient finished with an error"))
 	}
+	log.Info("GlobalToZoneSync finished gracefully")
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
@@ -202,7 +200,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
 	stream, err := kdsClient.ZoneToGlobalSync(ctx)
 	if err != nil {
-		errorCh <- err
+		nonBlockingSend(ctx, errorCh, err)
 		return
 	}
 	defer func() {
@@ -218,9 +216,18 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		err = errorStream.Err()
 	}
 
-	log.Info("ZoneToGlobalSync ended", "reason", err)
+	if err != nil && !errors.Is(err, context.Canceled) {
+		nonBlockingSend(ctx, errorCh, errors.Wrap(err, "ZoneToGlobalSync finished with an error"))
+	}
+	log.Info("ZoneToGlobalSync finished gracefully")
+}
+
+// nonBlockingSend sends err to errorCh without blocking. If the parent context
+// is already canceled (another stream triggered a restart, or stop was
+// called), the send is skipped to avoid goroutine leaks.
+func nonBlockingSend(ctx context.Context, errorCh chan error, err error) {
 	select {
-	case errorCh <- errors.Wrap(err, "ZoneToGlobalSync finished with an error"):
+	case errorCh <- err:
 	case <-ctx.Done():
 	}
 }
@@ -236,13 +243,13 @@ func (c *client) startXDSConfigs(
 	log.Info("initializing rpc stream for executing config dump on data plane proxies")
 	stream, err := client.StreamXDSConfigs(ctx)
 	if err != nil {
-		errorCh <- err
+		nonBlockingSend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startStats(
@@ -256,13 +263,13 @@ func (c *client) startStats(
 	log.Info("initializing rpc stream for executing stats on data plane proxies")
 	stream, err := client.StreamStats(ctx)
 	if err != nil {
-		errorCh <- err
+		nonBlockingSend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startClusters(
@@ -276,13 +283,13 @@ func (c *client) startClusters(
 	log.Info("initializing rpc stream for executing clusters on data plane proxies")
 	stream, err := client.StreamClusters(ctx)
 	if err != nil {
-		errorCh <- err
+		nonBlockingSend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startHealthCheck(
@@ -307,7 +314,7 @@ func (c *client) startHealthCheck(
 				return
 			}
 			log.Error(err, "health check failed")
-			errorCh <- errors.Wrap(err, "zone health check request failed")
+			nonBlockingSend(ctx, errorCh, errors.Wrap(err, "zone health check request failed"))
 		} else if interval := resp.Interval.AsDuration(); interval > 0 {
 			if prevInterval != interval {
 				prevInterval = interval
@@ -327,6 +334,7 @@ func (c *client) startHealthCheck(
 }
 
 func (c *client) handleProcessingErrors(
+	ctx context.Context,
 	stream grpc.ClientStream,
 	log logr.Logger,
 	processingErrorsCh chan error,
@@ -349,7 +357,7 @@ func (c *client) handleProcessingErrors(
 		log.Error(err, "CloseSend returned an error")
 	}
 	if err != nil {
-		errorCh <- err
+		nonBlockingSend(ctx, errorCh, err)
 	}
 }
 

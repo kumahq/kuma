@@ -11,6 +11,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -36,6 +38,7 @@ type reconnectTrackingServer struct {
 	globalToZoneConns int
 	reconnectedOnce   sync.Once
 	reconnectedCh     chan struct{} // closed on second GlobalToZoneSync call
+	firstConnErrCode  codes.Code    // if non-zero, return this status code on first connection instead of nil
 }
 
 func (s *reconnectTrackingServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
@@ -45,16 +48,19 @@ func (s *reconnectTrackingServer) GlobalToZoneSync(stream mesh_proto.KDSSyncServ
 	s.mu.Unlock()
 
 	if count == 1 {
-		// First connection: return nil after a short delay to let the zone
-		// client finish sending its DeltaDiscoveryRequests. Returning nil
-		// from the server handler closes the gRPC stream cleanly — the zone
-		// client receives io.EOF on Recv(), which triggers a reconnect.
+		// First connection: close the stream after a short delay.
+		// Returning nil closes the stream cleanly (zone gets io.EOF).
+		// Returning a status error simulates the global CP explicitly
+		// canceling the stream.
 		select {
 		case <-time.After(300 * time.Millisecond):
-			return nil
 		case <-stream.Context().Done():
 			return nil
 		}
+		if s.firstConnErrCode != codes.OK {
+			return status.Error(s.firstConnErrCode, "stream terminated by global")
+		}
+		return nil
 	}
 
 	// Second (or later) connection: zone successfully reconnected.
@@ -118,6 +124,66 @@ var _ = Describe("Client", func() {
 	It("reconnects when globalToZone stream is closed by server (io.EOF)", func() {
 		svc := &reconnectTrackingServer{
 			reconnectedCh: make(chan struct{}),
+		}
+		lis, err := net.Listen("tcp", "127.0.0.1:0")
+		Expect(err).ToNot(HaveOccurred())
+		defer lis.Close()
+
+		grpcSrv := grpc.NewServer()
+		mesh_proto.RegisterKDSSyncServiceServer(grpcSrv, svc)
+		mesh_proto.RegisterGlobalKDSServiceServer(grpcSrv, svc)
+		go func() { _ = grpcSrv.Serve(lis) }()
+		defer grpcSrv.Stop()
+
+		globalStore := memory.NewStore()
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Multizone.Zone.Name = "zone-1"
+		rt := kds_setup.NewTestRuntime(context.Background(), cfg, globalStore)
+
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		zoneStore := memory.NewStore()
+		resourceSyncer, err := sync_store_v2.NewResourceSyncer(
+			core.Log.WithName("syncer"),
+			zoneStore,
+			store.NoTransactions{},
+			metrics,
+			context.Background(),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		muxClient := mux.NewClient(
+			context.Background(),
+			"grpc://"+lis.Addr().String(),
+			"zone-1",
+			*rt.Config().Multizone.Zone.KDS,
+			rt.Config().Experimental,
+			metrics,
+			service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
+			resourceSyncer,
+			rt,
+			&testZoneDeltaServer{},
+		)
+
+		resilient := component.NewResilientComponent(
+			core.Log.WithName("test-resilient"),
+			muxClient,
+			1*time.Millisecond,
+			10*time.Millisecond,
+		)
+
+		stop := make(chan struct{})
+		go func() { _ = resilient.Start(stop) }()
+		defer close(stop)
+
+		Eventually(svc.reconnectedCh, "10s", "100ms").Should(BeClosed())
+	})
+
+	It("reconnects when globalToZone stream is canceled by server", func() {
+		svc := &reconnectTrackingServer{
+			reconnectedCh:    make(chan struct{}),
+			firstConnErrCode: codes.Canceled,
 		}
 		lis, err := net.Listen("tcp", "127.0.0.1:0")
 		Expect(err).ToNot(HaveOccurred())
