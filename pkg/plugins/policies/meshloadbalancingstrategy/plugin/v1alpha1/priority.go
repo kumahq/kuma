@@ -5,8 +5,8 @@ import (
 	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
