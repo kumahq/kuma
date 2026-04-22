@@ -29,8 +29,8 @@ import (
 )
 
 // reconnectTrackingServer simulates a Global CP that closes the
-// GlobalToZoneSync stream cleanly on the first connection and then
-// tracks whether the zone mux client re-establishes it.
+// GlobalToZoneSync stream on the first connection and then tracks
+// whether the zone mux client re-establishes it.
 type reconnectTrackingServer struct {
 	mesh_proto.UnimplementedKDSSyncServiceServer
 	mesh_proto.UnimplementedGlobalKDSServiceServer
@@ -38,7 +38,7 @@ type reconnectTrackingServer struct {
 	globalToZoneConns int
 	reconnectedOnce   sync.Once
 	reconnectedCh     chan struct{} // closed on second GlobalToZoneSync call
-	firstConnErrCode  codes.Code    // if non-zero, return this status code on first connection instead of nil
+	firstConnErrCode  codes.Code   // if non-zero, return this status code on first connection instead of nil
 }
 
 func (s *reconnectTrackingServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
@@ -107,136 +107,91 @@ func (s *testZoneDeltaServer) DeltaStreamHandler(str stream_v3.DeltaStream, _ st
 var _ delta.Server = &testZoneDeltaServer{}
 
 var _ = Describe("Client", func() {
-	// Regression test: when a GlobalToZoneSync gRPC stream is closed cleanly
-	// by the server (the zone receives io.EOF), the mux client must treat
-	// this as an error and trigger a full reconnect via ResilientComponent.
+	// Regression test: when a GlobalToZoneSync gRPC stream is terminated by
+	// the server, the mux client must trigger a full reconnect via
+	// ResilientComponent.
 	//
 	// Before the fix, startGlobalToZoneSync silently exited on nil error
-	// without sending to errorCh. Because Start() only returns when it
-	// receives from errorCh (or stop), the mux client stayed alive —
-	// healthchecks and ZoneToGlobal kept working — but GlobalToZone was
-	// permanently dead. No new resources from the global CP would ever
-	// reach the zone.
+	// (io.EOF) without sending to errorCh. Because Start() only returns
+	// when it receives from errorCh (or stop), the mux client stayed alive
+	// — healthchecks and ZoneToGlobal kept working — but GlobalToZone was
+	// permanently dead.
 	//
-	// In production this was triggered by a global CP restart behind a
-	// load balancer: the LB closed the GlobalToZone HTTP/2 stream with a
-	// clean TCP FIN (io.EOF) instead of a gRPC error.
-	It("reconnects when globalToZone stream is closed by server (io.EOF)", func() {
-		svc := &reconnectTrackingServer{
-			reconnectedCh: make(chan struct{}),
-		}
-		lis, err := net.Listen("tcp", "127.0.0.1:0")
-		Expect(err).ToNot(HaveOccurred())
-		defer lis.Close()
+	// In production this was triggered by a global CP restart behind a load
+	// balancer: the LB closed the GlobalToZone HTTP/2 stream with a clean
+	// TCP FIN (io.EOF) instead of a gRPC error.
+	type testCase struct {
+		description string
+		errCode     codes.Code
+	}
 
-		grpcSrv := grpc.NewServer()
-		mesh_proto.RegisterKDSSyncServiceServer(grpcSrv, svc)
-		mesh_proto.RegisterGlobalKDSServiceServer(grpcSrv, svc)
-		go func() { _ = grpcSrv.Serve(lis) }()
-		defer grpcSrv.Stop()
+	DescribeTable("reconnects when globalToZone stream is terminated by server",
+		func(tc testCase) {
+			svc := &reconnectTrackingServer{
+				reconnectedCh:   make(chan struct{}),
+				firstConnErrCode: tc.errCode,
+			}
+			lis, err := net.Listen("tcp", "127.0.0.1:0")
+			Expect(err).ToNot(HaveOccurred())
+			defer lis.Close()
 
-		globalStore := memory.NewStore()
-		cfg := kuma_cp.DefaultConfig()
-		cfg.Multizone.Zone.Name = "zone-1"
-		rt := kds_setup.NewTestRuntime(context.Background(), cfg, globalStore)
+			grpcSrv := grpc.NewServer()
+			mesh_proto.RegisterKDSSyncServiceServer(grpcSrv, svc)
+			mesh_proto.RegisterGlobalKDSServiceServer(grpcSrv, svc)
+			go func() { _ = grpcSrv.Serve(lis) }()
+			defer grpcSrv.Stop()
 
-		metrics, err := core_metrics.NewMetrics("")
-		Expect(err).ToNot(HaveOccurred())
+			globalStore := memory.NewStore()
+			cfg := kuma_cp.DefaultConfig()
+			cfg.Multizone.Zone.Name = "zone-1"
+			rt := kds_setup.NewTestRuntime(context.Background(), cfg, globalStore)
 
-		zoneStore := memory.NewStore()
-		resourceSyncer, err := sync_store_v2.NewResourceSyncer(
-			core.Log.WithName("syncer"),
-			zoneStore,
-			store.NoTransactions{},
-			metrics,
-			context.Background(),
-		)
-		Expect(err).ToNot(HaveOccurred())
+			metrics, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
 
-		muxClient := mux.NewClient(
-			context.Background(),
-			"grpc://"+lis.Addr().String(),
-			"zone-1",
-			*rt.Config().Multizone.Zone.KDS,
-			rt.Config().Experimental,
-			metrics,
-			service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
-			resourceSyncer,
-			rt,
-			&testZoneDeltaServer{},
-		)
+			zoneStore := memory.NewStore()
+			resourceSyncer, err := sync_store_v2.NewResourceSyncer(
+				core.Log.WithName("syncer"),
+				zoneStore,
+				store.NoTransactions{},
+				metrics,
+				context.Background(),
+			)
+			Expect(err).ToNot(HaveOccurred())
 
-		resilient := component.NewResilientComponent(
-			core.Log.WithName("test-resilient"),
-			muxClient,
-			1*time.Millisecond,
-			10*time.Millisecond,
-		)
+			muxClient := mux.NewClient(
+				context.Background(),
+				"grpc://"+lis.Addr().String(),
+				"zone-1",
+				*rt.Config().Multizone.Zone.KDS,
+				rt.Config().Experimental,
+				metrics,
+				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
+				resourceSyncer,
+				rt,
+				&testZoneDeltaServer{},
+			)
 
-		stop := make(chan struct{})
-		go func() { _ = resilient.Start(stop) }()
-		defer close(stop)
+			resilient := component.NewResilientComponent(
+				core.Log.WithName("test-resilient"),
+				muxClient,
+				1*time.Millisecond,
+				10*time.Millisecond,
+			)
 
-		Eventually(svc.reconnectedCh, "10s", "100ms").Should(BeClosed())
-	})
+			stop := make(chan struct{})
+			go func() { _ = resilient.Start(stop) }()
+			defer close(stop)
 
-	It("reconnects when globalToZone stream is canceled by server", func() {
-		svc := &reconnectTrackingServer{
-			reconnectedCh:    make(chan struct{}),
-			firstConnErrCode: codes.Canceled,
-		}
-		lis, err := net.Listen("tcp", "127.0.0.1:0")
-		Expect(err).ToNot(HaveOccurred())
-		defer lis.Close()
-
-		grpcSrv := grpc.NewServer()
-		mesh_proto.RegisterKDSSyncServiceServer(grpcSrv, svc)
-		mesh_proto.RegisterGlobalKDSServiceServer(grpcSrv, svc)
-		go func() { _ = grpcSrv.Serve(lis) }()
-		defer grpcSrv.Stop()
-
-		globalStore := memory.NewStore()
-		cfg := kuma_cp.DefaultConfig()
-		cfg.Multizone.Zone.Name = "zone-1"
-		rt := kds_setup.NewTestRuntime(context.Background(), cfg, globalStore)
-
-		metrics, err := core_metrics.NewMetrics("")
-		Expect(err).ToNot(HaveOccurred())
-
-		zoneStore := memory.NewStore()
-		resourceSyncer, err := sync_store_v2.NewResourceSyncer(
-			core.Log.WithName("syncer"),
-			zoneStore,
-			store.NoTransactions{},
-			metrics,
-			context.Background(),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		muxClient := mux.NewClient(
-			context.Background(),
-			"grpc://"+lis.Addr().String(),
-			"zone-1",
-			*rt.Config().Multizone.Zone.KDS,
-			rt.Config().Experimental,
-			metrics,
-			service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
-			resourceSyncer,
-			rt,
-			&testZoneDeltaServer{},
-		)
-
-		resilient := component.NewResilientComponent(
-			core.Log.WithName("test-resilient"),
-			muxClient,
-			1*time.Millisecond,
-			10*time.Millisecond,
-		)
-
-		stop := make(chan struct{})
-		go func() { _ = resilient.Start(stop) }()
-		defer close(stop)
-
-		Eventually(svc.reconnectedCh, "10s", "100ms").Should(BeClosed())
-	})
+			Eventually(svc.reconnectedCh, "10s", "100ms").Should(BeClosed())
+		},
+		Entry("server returns nil (io.EOF)", testCase{
+			description: "LB or global CP closes stream cleanly",
+			errCode:     codes.OK, // handler returns nil
+		}),
+		Entry("server returns Canceled", testCase{
+			description: "global CP explicitly cancels the stream",
+			errCode:     codes.Canceled,
+		}),
+	)
 })
