@@ -664,9 +664,6 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/ResourceStats'
           description: A map of resource names to their corresponding statistics
-    GlobalInsight:
-      allOf:
-        - $ref: '#/components/schemas/GlobalInsightBase'
     InspectHostnames:
       type: object
       title: InspectHostnames
@@ -747,7 +744,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/GlobalInsight'
+            $ref: '#/components/schemas/GlobalInsightBase'
           examples:
             Single control plane response:
               $ref: '#/components/examples/GlobalInsightExample'
