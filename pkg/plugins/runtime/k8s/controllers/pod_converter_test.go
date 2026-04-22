@@ -42,20 +42,21 @@ func Parse[T any](values []string) ([]T, error) {
 
 var _ = Describe("PodToDataplane(..)", func() {
 	type testCase struct {
-		pod                 string
-		servicesForPod      string
-		otherDataplanes     string
-		otherServices       string
-		otherReplicaSets    string
-		otherJobs           string
-		node                string
-		dataplane           string
-		existingDataplane   string
-		nodeLabelsToCopy    []string
-		workloadLabels      []string
-		inboundTagsDisabled bool
-		meshServicesMode    *mesh_proto.Mesh_MeshServices_Mode
-		expectedErr         string
+		pod                          string
+		servicesForPod               string
+		otherDataplanes              string
+		otherServices                string
+		otherReplicaSets             string
+		otherJobs                    string
+		node                         string
+		dataplane                    string
+		existingDataplane            string
+		nodeLabelsToCopy             []string
+		workloadLabels               []string
+		inboundTagsDisabled          bool
+		ignoredServiceSelectorLabels []string
+		meshServicesMode             *mesh_proto.Mesh_MeshServices_Mode
+		expectedErr                  string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -135,9 +136,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 						ReplicaSetGetter: replicaSetGetter,
 						JobGetter:        jobGetter,
 					},
-					NodeGetter:          nodeGetter,
-					NodeLabelsToCopy:    given.nodeLabelsToCopy,
-					InboundTagsDisabled: given.inboundTagsDisabled,
+					NodeGetter:                   nodeGetter,
+					NodeLabelsToCopy:             given.nodeLabelsToCopy,
+					InboundTagsDisabled:          given.inboundTagsDisabled,
+					IgnoredServiceSelectorLabels: given.ignoredServiceSelectorLabels,
 				},
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
@@ -418,6 +420,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod:   "44.services-for-pod.yaml",
 			dataplane:        "44.dataplane.yaml",
 			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
+		}),
+		Entry("45. Pod with service selector containing ignored label", testCase{
+			pod:                          "45.pod.yaml",
+			servicesForPod:               "45.services-for-pod.yaml",
+			dataplane:                    "45.dataplane.yaml",
+			ignoredServiceSelectorLabels: []string{"rollouts-pod-template-hash"},
 		}),
 	)
 

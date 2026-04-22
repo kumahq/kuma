@@ -703,4 +703,52 @@ var _ = Describe("Util", func() {
 			Expect(util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svc.Spec.Ports[0].Port)).To(Equal("example_demo_svc_80"))
 		})
 	})
+
+	Describe("StripIgnoredSelectorLabels", func() {
+		It("should return nil for nil selector", func() {
+			result := util.StripIgnoredSelectorLabels(nil, []string{"foo"})
+			Expect(result).To(BeNil())
+		})
+
+		It("should return clone when ignoredLabels is empty", func() {
+			selector := map[string]string{"app": "demo", "version": "v1"}
+			result := util.StripIgnoredSelectorLabels(selector, nil)
+			Expect(result).To(Equal(selector))
+			result["app"] = "modified"
+			Expect(selector["app"]).To(Equal("demo"))
+		})
+
+		It("should strip matching labels", func() {
+			selector := map[string]string{
+				"app":                        "demo",
+				"rollouts-pod-template-hash": "abc123",
+				"version":                    "v1",
+			}
+			result := util.StripIgnoredSelectorLabels(selector, []string{"rollouts-pod-template-hash"})
+			Expect(result).To(Equal(map[string]string{
+				"app":     "demo",
+				"version": "v1",
+			}))
+		})
+
+		It("should preserve non-matching labels", func() {
+			selector := map[string]string{"app": "demo", "version": "v1"}
+			result := util.StripIgnoredSelectorLabels(selector, []string{"nonexistent"})
+			Expect(result).To(Equal(selector))
+		})
+
+		It("should strip multiple ignored labels", func() {
+			selector := map[string]string{
+				"app":     "demo",
+				"label1":  "val1",
+				"label2":  "val2",
+				"version": "v1",
+			}
+			result := util.StripIgnoredSelectorLabels(selector, []string{"label1", "label2"})
+			Expect(result).To(Equal(map[string]string{
+				"app":     "demo",
+				"version": "v1",
+			}))
+		})
+	})
 })

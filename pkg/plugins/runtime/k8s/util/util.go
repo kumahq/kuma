@@ -20,12 +20,20 @@ type ServicePredicate func(*kube_core.Service) bool
 
 func MatchServiceThatSelectsPod(pod *kube_core.Pod, ignoredLabels []string) ServicePredicate {
 	return func(svc *kube_core.Service) bool {
-		selector := maps.Clone(svc.Spec.Selector)
-		for _, ignoredLabel := range ignoredLabels {
-			delete(selector, ignoredLabel)
-		}
+		selector := StripIgnoredSelectorLabels(svc.Spec.Selector, ignoredLabels)
 		return kube_labels.SelectorFromSet(selector).Matches(kube_labels.Set(pod.Labels))
 	}
+}
+
+func StripIgnoredSelectorLabels(selector map[string]string, ignoredLabels []string) map[string]string {
+	if selector == nil {
+		return nil
+	}
+	result := maps.Clone(selector)
+	for _, label := range ignoredLabels {
+		delete(result, label)
+	}
+	return result
 }
 
 // According to K8S docs about Service#selector:

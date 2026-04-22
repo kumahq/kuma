@@ -43,10 +43,11 @@ func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 }
 
 type InboundConverter struct {
-	NameExtractor       NameExtractor
-	NodeGetter          kube_client.Reader
-	NodeLabelsToCopy    []string
-	InboundTagsDisabled bool
+	NameExtractor                NameExtractor
+	NodeGetter                   kube_client.Reader
+	NodeLabelsToCopy             []string
+	InboundTagsDisabled          bool
+	IgnoredServiceSelectorLabels []string
 }
 
 func (ic *InboundConverter) tagsOrEmpty(tagsFn func() map[string]string) map[string]string {
@@ -84,7 +85,8 @@ func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, s
 			health.Ready = false
 		}
 
-		if !kube_labels.SelectorFromSet(service.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
+		strippedSelector := util_k8s.StripIgnoredSelectorLabels(service.Spec.Selector, ic.IgnoredServiceSelectorLabels)
+		if !kube_labels.SelectorFromSet(strippedSelector).Matches(kube_labels.Set(pod.Labels)) {
 			state = mesh_proto.Dataplane_Networking_Inbound_Ignored
 			health.Ready = false
 		}

@@ -58,10 +58,11 @@ const (
 type MeshServiceReconciler struct {
 	kube_client.Client
 	kube_event.EventRecorder
-	Log                 logr.Logger
-	Scheme              *kube_runtime.Scheme
-	ResourceConverter   k8s_common.Converter
-	InboundTagsDisabled bool
+	Log                          logr.Logger
+	Scheme                       *kube_runtime.Scheme
+	ResourceConverter            k8s_common.Converter
+	InboundTagsDisabled          bool
+	IgnoredServiceSelectorLabels []string
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -372,7 +373,7 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 	}
 	ms.Labels[metadata.HeadlessService] = "false"
 	if r.InboundTagsDisabled {
-		matchLabels := maps.Clone(svc.Spec.Selector)
+		matchLabels := util.StripIgnoredSelectorLabels(svc.Spec.Selector, r.IgnoredServiceSelectorLabels)
 		if matchLabels == nil {
 			matchLabels = map[string]string{}
 		}
@@ -383,7 +384,7 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 			},
 		}
 	} else {
-		dpTags := maps.Clone(svc.Spec.Selector)
+		dpTags := util.StripIgnoredSelectorLabels(svc.Spec.Selector, r.IgnoredServiceSelectorLabels)
 		if dpTags == nil {
 			dpTags = map[string]string{}
 		}

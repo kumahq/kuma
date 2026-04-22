@@ -32,9 +32,10 @@ var _ = Describe("MeshServiceController", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	type testCase struct {
-		inputFile           string
-		outputFile          string
-		inboundTagsDisabled bool
+		inputFile                    string
+		outputFile                   string
+		inboundTagsDisabled          bool
+		ignoredServiceSelectorLabels []string
 	}
 
 	DescribeTable("should reconcile service",
@@ -69,12 +70,13 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
-				Client:              kubeClient,
-				Log:                 logr.Discard(),
-				Scheme:              k8sClientScheme,
-				EventRecorder:       kube_events.NewFakeRecorder(10),
-				ResourceConverter:   k8s.NewSimpleConverter(),
-				InboundTagsDisabled: given.inboundTagsDisabled,
+				Client:                       kubeClient,
+				Log:                          logr.Discard(),
+				Scheme:                       k8sClientScheme,
+				EventRecorder:                kube_events.NewFakeRecorder(10),
+				ResourceConverter:            k8s.NewSimpleConverter(),
+				InboundTagsDisabled:          given.inboundTagsDisabled,
+				IgnoredServiceSelectorLabels: given.ignoredServiceSelectorLabels,
 			}
 
 			key := kube_types.NamespacedName{
@@ -132,6 +134,11 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:           "skip-inbound-tags.resources.yaml",
 			outputFile:          "skip-inbound-tags.meshservice.yaml",
 			inboundTagsDisabled: true,
+		}),
+		Entry("with ignored service selector labels", testCase{
+			inputFile:                    "ignored-selector-labels.resources.yaml",
+			outputFile:                   "ignored-selector-labels.meshservice.yaml",
+			ignoredServiceSelectorLabels: []string{"rollouts-pod-template-hash"},
 		}),
 	)
 })
