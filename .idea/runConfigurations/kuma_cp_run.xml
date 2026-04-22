@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run kuma-cp (Universal)" type="GoRunFileConfiguration" factoryName="Go Run File">
+    <module name="kuma" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="run --log-level=info" />
+    <envs>
+      <env name="KUMA_ENVIRONMENT" value="universal" />
+      <env name="KUMA_MULTIZONE_ZONE_NAME" value="zone-1" />
+    </envs>
+    <filePath value="$PROJECT_DIR$/app/kuma-cp/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

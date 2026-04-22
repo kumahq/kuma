@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Attach to kuma-cp (K8s via Skaffold)" type="GoRemoteRunConfiguration" factoryName="Go Remote">
+    <option name="HOST" value="localhost" />
+    <option name="PORT" value="56268" />
+    <option name="MODE" value="ATTACH_TO_PROCESS" />
+    <method v="2" />
+  </configuration>
+</component>

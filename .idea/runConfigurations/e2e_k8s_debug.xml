@@ -1,0 +1,19 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug E2E Tests (K8s / k3d)" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="kuma" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-ldflags=&apos;-X github.com/kumahq/kuma/v2/pkg/version.version=dev&apos;" />
+    <envs>
+      <!-- Set KUMACTLBIN to your local kumactl binary, e.g.:
+           $PROJECT_DIR$/build/artifacts-<goos>-<goarch>/kumactl/kumactl
+           Run 'make build/kumactl' first to produce it. -->
+      <env name="KUMA_K8S_TYPE" value="k3d" />
+      <env name="K3D_CNI" value="flannel" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="github.com/kumahq/kuma/v2/test/e2e_env/kubernetes" />
+    <directory value="$PROJECT_DIR$/test/e2e_env/kubernetes" />
+    <filePath value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>
