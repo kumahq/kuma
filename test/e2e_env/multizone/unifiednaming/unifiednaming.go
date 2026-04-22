@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -53,36 +52,28 @@ spec:
 
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		wg := &errgroup.Group{}
-
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			SetupInGroup(multizone.KubeZone1, wg)
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(YamlK8s(containerPatch)).
-			SetupInGroup(multizone.KubeZone2, wg)
-
-		Expect(wg.Wait()).To(Succeed())
+			Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
 	BeforeEach(func() {
-		wg := &errgroup.Group{}
-
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(appsKube(multizone.KubeZone1, false, "test-server")).
-			SetupInGroup(multizone.KubeZone1, wg)
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(appsKube(multizone.KubeZone2, false)).
-			SetupInGroup(multizone.KubeZone2, wg)
+			Setup(multizone.KubeZone2)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(appsUni(multizone.UniZone1)).
-			SetupInGroup(multizone.UniZone1, wg)
-
-		Expect(wg.Wait()).To(Succeed())
+			Setup(multizone.UniZone1)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -273,7 +264,7 @@ func appsKube(c *K8sCluster, unifiedNaming bool, apps ...string) InstallFunc {
 		}
 	}
 
-	return Parallel(install...)
+	return Combine(install...)
 }
 
 func appsUni(c *UniversalCluster, apps ...string) InstallFunc {
@@ -293,5 +284,5 @@ func appsUni(c *UniversalCluster, apps ...string) InstallFunc {
 		}
 	}
 
-	return Parallel(fns...)
+	return Combine(fns...)
 }

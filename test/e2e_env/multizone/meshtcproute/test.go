@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -26,34 +25,27 @@ func Test() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
-		NewClusterSetup().
-			Install(Parallel(
-				DemoClientUniversal(AppModeDemoClient, meshName,
-					WithTransparentProxy(true),
-				),
-				TestServerUniversal("test-server-echo-1", meshName,
-					WithArgs([]string{"echo", "--instance", "zone1"}),
-					WithServiceVersion("v1"),
-				),
+		Expect(NewClusterSetup().
+			Install(DemoClientUniversal(AppModeDemoClient, meshName,
+				WithTransparentProxy(true),
 			)).
-			SetupInGroup(multizone.UniZone1, &group)
-
-		NewClusterSetup().
-			Install(Parallel(
-				TestServerUniversal("test-server-echo-2", meshName,
-					WithArgs([]string{"echo", "--instance", "zone2"}),
-					WithServiceVersion("v2"),
-				),
-				TestServerUniversal("test-server-echo-3", meshName,
-					WithArgs([]string{"echo", "--instance", "alias-zone2"}),
-					WithServiceName("alias-test-server"),
-					WithServiceVersion("v2"),
-				),
+			Install(TestServerUniversal("test-server-echo-1", meshName,
+				WithArgs([]string{"echo", "--instance", "zone1"}),
+				WithServiceVersion("v1"),
 			)).
-			SetupInGroup(multizone.UniZone2, &group)
+			Setup(multizone.UniZone1)).To(Succeed())
 
-		Expect(group.Wait()).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(TestServerUniversal("test-server-echo-2", meshName,
+				WithArgs([]string{"echo", "--instance", "zone2"}),
+				WithServiceVersion("v2"),
+			)).
+			Install(TestServerUniversal("test-server-echo-3", meshName,
+				WithArgs([]string{"echo", "--instance", "alias-zone2"}),
+				WithServiceName("alias-test-server"),
+				WithServiceVersion("v2"),
+			)).
+			Setup(multizone.UniZone2)).To(Succeed())
 
 		Expect(DeleteMeshResources(
 			multizone.Global,

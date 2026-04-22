@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
@@ -52,9 +51,8 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		globalCP := global.GetKuma()
 
 		// K8s Cluster 1
-		group := errgroup.Group{}
 		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithIngress(),
 				WithIngressEnvoyAdminTunnel(),
@@ -63,12 +61,12 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			SetupInGroup(zone1, &group)
+			Setup(zone1)).To(Succeed())
 
 		// Universal Cluster 4
 		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal(
 				"zone4-demo-client",
@@ -78,9 +76,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 			Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 			Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
 			Install(TestServerExternalServiceUniversal("external-service-in-zone1", 8080, false)).
-			SetupInGroup(zone4, &group)
-
-		Expect(group.Wait()).To(Succeed())
+			Setup(zone4)).To(Succeed())
 
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(zoneExternalService(defaultMesh, zone4.GetApp("external-service-in-zone1").GetIP(), "external-service-in-zone1", "kuma-1"))).

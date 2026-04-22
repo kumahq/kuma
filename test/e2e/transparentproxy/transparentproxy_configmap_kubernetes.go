@@ -43,18 +43,16 @@ func TransparentProxyConfigMap() {
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceExternal)).
-			Install(Parallel(
-				democlient.Install(
-					democlient.WithMesh(meshName),
-					democlient.WithNamespace(namespace),
-				),
-				testserver.Install(
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-				),
-				testserver.Install(
-					testserver.WithNamespace(namespaceExternal),
-				),
+			Install(democlient.Install(
+				democlient.WithMesh(meshName),
+				democlient.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespaceExternal),
 			)).
 			Setup(cluster)).To(Succeed())
 

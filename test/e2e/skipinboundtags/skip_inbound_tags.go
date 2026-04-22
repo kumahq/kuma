@@ -58,17 +58,15 @@ spec:
 			)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(YamlK8s(meshIdentity)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithName("test-server"),
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-				),
-				democlient.Install(
-					democlient.WithName("demo-client"),
-					democlient.WithMesh(meshName),
-					democlient.WithNamespace(namespace),
-				),
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(democlient.Install(
+				democlient.WithName("demo-client"),
+				democlient.WithMesh(meshName),
+				democlient.WithNamespace(namespace),
 			)).
 			Setup(KubeCluster)
 		Expect(err).ToNot(HaveOccurred())

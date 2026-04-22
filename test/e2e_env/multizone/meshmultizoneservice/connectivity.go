@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway"
 	. "github.com/kumahq/kuma/v2/test/framework"
@@ -90,43 +89,37 @@ spec:
                 weight: 1
 `, Config.KumaNamespace, meshName)
 
-		group := errgroup.Group{}
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(clientNamespace)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-				),
-				testserver.Install(
-					testserver.WithName("demo-client"),
-					testserver.WithNamespace(clientNamespace),
-				),
-				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
 			)).
+			Install(testserver.Install(
+				testserver.WithName("demo-client"),
+				testserver.WithNamespace(clientNamespace),
+			)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Install(YamlK8s(meshGateway)).
 			Install(YamlK8s(gatewayRoute)).
 			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-mmzs", namespace, meshName))).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			SetupInGroup(multizone.KubeZone2, &group)
+			Setup(multizone.KubeZone2)).To(Succeed())
 
-		NewClusterSetup().
-			Install(Parallel(
-				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true)),
-				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"})),
-			)).
-			SetupInGroup(multizone.UniZone1, &group)
-		Expect(group.Wait()).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
+			Setup(multizone.UniZone1)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -82,10 +82,8 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 				WithHelmOpt("ingress.enabled", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
-				testserver.Install(),
-			)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
+			Install(testserver.Install()).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 

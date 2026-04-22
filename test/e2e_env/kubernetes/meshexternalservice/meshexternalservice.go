@@ -325,18 +325,18 @@ spec:
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(Parallel(
-					testserver.Install(
+				Install(testserver.Install(
 						testserver.WithNamespace(namespace),
 						testserver.WithEchoArgs("--tls", "--crt=/kuma/server.crt", "--key=/kuma/server.key"),
 						testserver.WithName("tls-external-service"),
-						testserver.WithoutProbes()), // not compatible with TLS
+						testserver.WithoutProbes())).
+				Install( // not compatible with TLS
 					testserver.Install(
 						testserver.WithNamespace(namespace),
 						testserver.WithEchoArgs("--tls", "--crt=/kuma/server.crt", "--key=/kuma/server.key", "--tls13", "--instance", "tls13-server"),
 						testserver.WithName("tls13-external-service"),
 						testserver.WithoutProbes(), // not compatible with TLS
-					))).
+					)).
 				Install(YamlK8s(tlsExternalService)).
 				Install(YamlK8s(tlsVersionExternalService("TLS12"))).
 				Setup(kubernetes.Cluster)

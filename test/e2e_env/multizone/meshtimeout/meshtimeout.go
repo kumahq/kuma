@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -55,26 +54,23 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
 		// Kube Zone 1
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithName("test-client"),
-					testserver.WithMesh(mesh),
-					testserver.WithNamespace(k8sZoneNamespace),
-				),
-				testserver.Install(
-					testserver.WithName("test-server"),
-					testserver.WithMesh(mesh),
-					testserver.WithNamespace(k8sZoneNamespace),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-				),
+			Install(testserver.Install(
+				testserver.WithName("test-client"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(k8sZoneNamespace),
 			)).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(k8sZoneNamespace),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+			)).
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
@@ -82,8 +78,7 @@ spec:
 				testserver.WithNamespace(k8sZoneNamespace),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			SetupInGroup(multizone.KubeZone2, &group)
-		Expect(group.Wait()).To(Succeed())
+			Setup(multizone.KubeZone2)).To(Succeed())
 
 		Expect(DeleteMeshResources(multizone.Global, mesh, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.Global, mesh, meshtimeout_api.MeshTimeoutResourceTypeDescriptor)).To(Succeed())

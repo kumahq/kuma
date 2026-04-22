@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	meshtls_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
 	. "github.com/kumahq/kuma/v2/test/framework"
@@ -27,9 +26,8 @@ func MeshTLS() {
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
 		// Kube Zone 1
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
@@ -37,17 +35,16 @@ func MeshTLS() {
 				testserver.WithNamespace(k8sZoneNamespace),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
 			)).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
 			Install(democlient.Install(
 				democlient.WithName("demo-client"),
 				democlient.WithMesh(meshName),
 				democlient.WithNamespace(k8sZoneNamespace),
 			)).
-			SetupInGroup(multizone.KubeZone2, &group)
-		Expect(group.Wait()).To(Succeed())
+			Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

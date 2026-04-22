@@ -44,14 +44,12 @@ func GatewayHybrid() {
 
 		group.Go(func() error {
 			err := NewClusterSetup().
-				Install(Parallel(
-					GatewayProxyUniversal(meshName, "edge-gateway"),
-					TestServerUniversal("test-server", meshName,
-						WithArgs([]string{"echo", "--instance", UniResponse}),
-						WithServiceName("test-server_gateway-hybrid_svc_80"),
-					),
-					TestServerUniversal("gateway-client", meshName, WithoutDataplane()),
+				Install(GatewayProxyUniversal(meshName, "edge-gateway")).
+				Install(TestServerUniversal("test-server", meshName,
+					WithArgs([]string{"echo", "--instance", UniResponse}),
+					WithServiceName("test-server_gateway-hybrid_svc_80"),
 				)).
+				Install(TestServerUniversal("gateway-client", meshName, WithoutDataplane())).
 				Setup(multizone.UniZone1)
 			return errors.Wrap(err, multizone.UniZone1.Name())
 		})

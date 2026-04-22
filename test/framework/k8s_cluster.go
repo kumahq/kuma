@@ -484,6 +484,16 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--use-node-port"] = ""
 	}
 
+	// Bumped well above the production defaults (20m / 50m) so kuma-init,
+	// kuma-validator, and kuma-sidecar aren't CPU-starved when the CI runner
+	// launches multiple injected pods concurrently on a shared-vCPU host.
+	// Mirrors the overrides set in genValues for the Helm install path.
+	args = append(args,
+		"--set", fmt.Sprintf("%sdataPlane.initContainer.resources.requests.cpu=100m", Config.HelmSubChartPrefix),
+		"--set", fmt.Sprintf("%sdataPlane.validationContainer.resources.requests.cpu=100m", Config.HelmSubChartPrefix),
+		"--set", fmt.Sprintf("%sdataPlane.sidecarContainer.resources.requests.cpu=100m", Config.HelmSubChartPrefix),
+	)
+
 	if c.opts.zoneIngress {
 		argsMap["--ingress-enabled"] = ""
 		argsMap["--ingress-use-node-port"] = ""

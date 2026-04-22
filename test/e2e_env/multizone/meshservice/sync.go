@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -42,9 +41,7 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
-
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(YamlUniversal(`
 type: MeshService
 name: backend
@@ -65,9 +62,9 @@ spec:
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceVersion("v1"),
 			)).
-			SetupInGroup(multizone.UniZone1, &group)
+			Setup(multizone.UniZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(YamlUniversal(`
 type: MeshService
 name: backend
@@ -85,7 +82,7 @@ spec:
     appProtocol: http
 `)).
 			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
-			SetupInGroup(multizone.UniZone2, &group)
+			Setup(multizone.UniZone2)).To(Succeed())
 
 		veryLongNamedService := `
 kind: MeshService
@@ -105,13 +102,11 @@ spec:
     appProtocol: http
 `
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(YamlK8s(veryLongNamedService)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			SetupInGroup(multizone.KubeZone2, &group)
-
-		Expect(group.Wait()).To(Succeed())
+			Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -39,74 +38,66 @@ func Connectivity() {
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(externalNamespace)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-				),
-				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
-				testserver.Install(
-					testserver.WithNamespace(externalNamespace),
-					testserver.WithName("external-service"),
-					testserver.WithEchoArgs("echo", "--instance", "kube-external-service"),
-				),
-				zoneproxy.Install(
-					zoneproxy.WithNamespace(namespace),
-					zoneproxy.WithMesh(meshName),
-					zoneproxy.WithIngressPort(11001),
-				),
-				zoneproxy.Install(
-					zoneproxy.WithNamespace(namespace),
-					zoneproxy.WithMesh(meshName),
-					zoneproxy.WithEgressPort(11002),
-				),
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
 			)).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(testserver.Install(
+				testserver.WithNamespace(externalNamespace),
+				testserver.WithName("external-service"),
+				testserver.WithEchoArgs("echo", "--instance", "kube-external-service"),
+			)).
+			Install(zoneproxy.Install(
+				zoneproxy.WithNamespace(namespace),
+				zoneproxy.WithMesh(meshName),
+				zoneproxy.WithIngressPort(11001),
+			)).
+			Install(zoneproxy.Install(
+				zoneproxy.WithNamespace(namespace),
+				zoneproxy.WithMesh(meshName),
+				zoneproxy.WithEgressPort(11002),
+			)).
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-				),
-				zoneproxy.Install(
-					zoneproxy.WithNamespace(namespace),
-					zoneproxy.WithMesh(meshName),
-					zoneproxy.WithIngressPort(11001),
-				),
-				zoneproxy.Install(
-					zoneproxy.WithNamespace(namespace),
-					zoneproxy.WithMesh(meshName),
-					zoneproxy.WithEgressPort(11002),
-				),
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			SetupInGroup(multizone.KubeZone2, &group)
+			Install(zoneproxy.Install(
+				zoneproxy.WithNamespace(namespace),
+				zoneproxy.WithMesh(meshName),
+				zoneproxy.WithIngressPort(11001),
+			)).
+			Install(zoneproxy.Install(
+				zoneproxy.WithNamespace(namespace),
+				zoneproxy.WithMesh(meshName),
+				zoneproxy.WithEgressPort(11002),
+			)).
+			Setup(multizone.KubeZone2)).To(Succeed())
 
-		NewClusterSetup().
-			Install(Parallel(
-				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client")),
-				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithWorkload("test-server")),
-				TestServerExternalServiceUniversal(fmt.Sprintf("external-service-%s", meshName), 8080, false, WithDockerContainerName("kuma-es-4_external-service-meshproxy")),
-				zoneproxy.Install(
-					zoneproxy.WithMesh(meshName),
-					zoneproxy.WithIngressPort(11001),
-					zoneproxy.WithWorkload("zone-proxy-ingress"),
-				),
-				zoneproxy.Install(
-					zoneproxy.WithMesh(meshName),
-					zoneproxy.WithEgressPort(11002),
-					zoneproxy.WithWorkload("zone-proxy-egress"),
-				),
+		Expect(NewClusterSetup().
+			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client"))).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithWorkload("test-server"))).
+			Install(TestServerExternalServiceUniversal(fmt.Sprintf("external-service-%s", meshName), 8080, false, WithDockerContainerName("kuma-es-4_external-service-meshproxy"))).
+			Install(zoneproxy.Install(
+				zoneproxy.WithMesh(meshName),
+				zoneproxy.WithIngressPort(11001),
+				zoneproxy.WithWorkload("zone-proxy-ingress"),
 			)).
-			SetupInGroup(multizone.UniZone1, &group)
-		Expect(group.Wait()).To(Succeed())
+			Install(zoneproxy.Install(
+				zoneproxy.WithMesh(meshName),
+				zoneproxy.WithEgressPort(11002),
+				zoneproxy.WithWorkload("zone-proxy-egress"),
+			)).
+			Setup(multizone.UniZone1)).To(Succeed())
 
 		// MeshZoneAddress must be created manually for Universal zones.
 		// On Kubernetes it is auto-generated by the meshzoneaddress controller.

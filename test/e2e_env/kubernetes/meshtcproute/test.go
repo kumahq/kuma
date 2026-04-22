@@ -22,36 +22,34 @@ func Test() {
 		Expect(NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(
-				testserver.Install(
-					testserver.WithName("test-client"),
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-				),
-				testserver.Install(
-					testserver.WithName("test-http-server"),
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-				),
-				testserver.Install(
-					testserver.WithName("test-http-server-2"),
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-				),
-				testserver.Install(
-					testserver.WithName("test-tcp-server"),
-					testserver.WithServicePortAppProtocol("tcp"),
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-				),
-				testserver.Install(
-					testserver.WithName("external-http-service"),
-					testserver.WithNamespace(namespace),
-				),
-				testserver.Install(
-					testserver.WithName("external-tcp-service"),
-					testserver.WithNamespace(namespace),
-				),
+			Install(testserver.Install(
+				testserver.WithName("test-client"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
+				testserver.WithName("test-http-server"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
+				testserver.WithName("test-http-server-2"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
+				testserver.WithName("test-tcp-server"),
+				testserver.WithServicePortAppProtocol("tcp"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
+				testserver.WithName("external-http-service"),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
+				testserver.WithName("external-tcp-service"),
+				testserver.WithNamespace(namespace),
 			)).
 			Setup(kubernetes.Cluster),
 		).To(Succeed())

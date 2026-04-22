@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
@@ -40,40 +39,38 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
 		// Universal Zone 1
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
 				"zone3-demo-client",
 				meshName,
 				WithTransparentProxy(true),
 			)).
-			SetupInGroup(multizone.UniZone1, &group)
+			Setup(multizone.UniZone1)).To(Succeed())
 
 		// Universal Zone 2
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(TestServerUniversal("zone4-dp-echo", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("zone4-test-server"),
 			)).
-			SetupInGroup(multizone.UniZone2, &group)
+			Setup(multizone.UniZone2)).To(Succeed())
 
 		// Kubernetes Zone 1
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Setup(multizone.KubeZone1)).To(Succeed())
 
 		// Kubernetes Zone 2
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
 			)).
-			SetupInGroup(multizone.KubeZone2, &group)
-		Expect(group.Wait()).To(Succeed())
+			Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

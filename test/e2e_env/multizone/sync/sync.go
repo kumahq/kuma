@@ -8,7 +8,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -48,16 +47,14 @@ spec:
 			)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Setup(multizone.KubeZone1)).To(Succeed())
 
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(TestServerUniversal("test-server", meshName)).
-			SetupInGroup(multizone.UniZone1, &group)
-		Expect(group.Wait()).To(Succeed())
+			Setup(multizone.UniZone1)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

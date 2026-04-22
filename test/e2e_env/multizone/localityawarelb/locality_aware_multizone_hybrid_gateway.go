@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v2/test/framework"
@@ -92,50 +91,41 @@ conf:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
-		group := errgroup.Group{}
 		// Universal Zone 4
-		NewClusterSetup().
-			Install(Parallel(
-				GatewayProxyUniversal(mesh, "lb-edge-gateway", WithConcurrency(1)),
-				TestServerUniversal("gateway-client", mesh, WithoutDataplane()),
-				TestServerUniversal("test-server-zone-4", mesh,
-					WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
-					WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
-				),
+		Expect(NewClusterSetup().
+			Install(GatewayProxyUniversal(mesh, "lb-edge-gateway", WithConcurrency(1))).
+			Install(TestServerUniversal("gateway-client", mesh, WithoutDataplane())).
+			Install(TestServerUniversal("test-server-zone-4", mesh,
+				WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
+				WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
 			)).
-			SetupInGroup(multizone.UniZone1, &group)
+			Setup(multizone.UniZone1)).To(Succeed())
 
 		// Kubernetes Zone 1
-		NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(
-				democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace)),
-				testserver.Install(
-					testserver.WithName("test-server"),
-					testserver.WithMesh(mesh),
-					testserver.WithNamespace(namespace),
-					testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
-				),
+			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(namespace),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
 			)).
-			SetupInGroup(multizone.KubeZone1, &group)
+			Setup(multizone.KubeZone1)).To(Succeed())
 
 		// Universal Zone 5
-		NewClusterSetup().
-			Install(Parallel(
-				DemoClientUniversal(
-					"demo-client-locality-aware-lb-gateway-svc",
-					mesh,
-					WithTransparentProxy(true),
-					WithServiceName("demo-client_locality-aware-lb_svc"),
-				),
-				TestServerUniversal("test-server-zone-5", mesh,
-					WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
-					WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
-				),
+		Expect(NewClusterSetup().
+			Install(DemoClientUniversal(
+				"demo-client-locality-aware-lb-gateway-svc",
+				mesh,
+				WithTransparentProxy(true),
+				WithServiceName("demo-client_locality-aware-lb_svc"),
 			)).
-			SetupInGroup(multizone.UniZone2, &group)
-
-		Expect(group.Wait()).To(Succeed())
+			Install(TestServerUniversal("test-server-zone-5", mesh,
+				WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
+				WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
+			)).
+			Setup(multizone.UniZone2)).To(Succeed())
 
 		Expect(multizone.Global.Install(meshGateway)).To(Succeed())
 		Expect(multizone.Global.Install(meshGatewayRoute)).To(Succeed())

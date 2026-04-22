@@ -22,15 +22,13 @@ func AutoReachableServices() {
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(esNamespace)).
 			Install(MTLSMeshKubernetes(meshName)).
-			Install(Parallel(
-				testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),
-				testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),
-				testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),
-				testserver.Install(
-					testserver.WithName("external-http-service"),
-					testserver.WithNamespace(esNamespace),
-					testserver.WithEchoArgs("echo", "--instance", "external-http-service"),
-				),
+			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
+			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
+			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
+			Install(testserver.Install(
+				testserver.WithName("external-http-service"),
+				testserver.WithNamespace(esNamespace),
+				testserver.WithEchoArgs("echo", "--instance", "external-http-service"),
 			)).
 			Setup(KubeCluster)
 		Expect(err).ToNot(HaveOccurred())

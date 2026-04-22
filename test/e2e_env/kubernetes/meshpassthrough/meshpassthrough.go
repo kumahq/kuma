@@ -28,23 +28,21 @@ func MeshPassthrough() {
 			Install(MeshKubernetes(meshName)).
 			Install(Namespace(mesNamespace)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(
-				democlient.Install(
-					democlient.WithNamespace(namespace),
-					democlient.WithMesh(meshName),
-				),
-				testserver.Install(
-					testserver.WithNamespace(mesNamespace),
-					testserver.WithName("external-service"),
-				),
-				testserver.Install(
-					testserver.WithNamespace(mesNamespace),
-					testserver.WithName("another-external-service"),
-				),
-				testserver.Install(
-					testserver.WithNamespace(mesNamespace),
-					testserver.WithName("not-accessible-external-service"),
-				),
+			Install(democlient.Install(
+				democlient.WithNamespace(namespace),
+				democlient.WithMesh(meshName),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(mesNamespace),
+				testserver.WithName("external-service"),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(mesNamespace),
+				testserver.WithName("another-external-service"),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(mesNamespace),
+				testserver.WithName("not-accessible-external-service"),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

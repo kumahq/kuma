@@ -64,10 +64,8 @@ interCp:
 				WithHelmOpt("ingress.enabled", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
-				testserver.Install(),
-			)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
+			Install(testserver.Install()).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 

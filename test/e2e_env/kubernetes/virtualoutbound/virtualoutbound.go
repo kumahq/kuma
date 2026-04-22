@@ -20,14 +20,12 @@ func VirtualOutbound() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
-				testserver.Install(
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-					testserver.WithStatefulSet(),
-					testserver.WithReplicas(2),
-				),
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(testserver.Install(
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+				testserver.WithStatefulSet(),
+				testserver.WithReplicas(2),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

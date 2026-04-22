@@ -71,10 +71,8 @@ spec:
 				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(YamlK8s(mtp)).
-			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),
-				testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace)),
-			)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
+			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
 			Install(YamlK8s(meshIdentity)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
