@@ -825,22 +825,23 @@ type InitializedConfig struct {
 }
 
 func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
-	var kumaDPUser string
-	var err error
-
-	if kumaDPUser, err = c.InitializeKumaDPUser(); err != nil {
-		return InitializedConfig{}, err
-	}
-
 	l := Logger{stdout: c.RuntimeStdout, stderr: c.RuntimeStderr}
 	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv4])
 	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv6])
+
+	l.Info("initializing transparent proxy configuration")
+
+	kumaDPUser, err := c.InitializeKumaDPUser()
+	if err != nil {
+		return InitializedConfig{}, err
+	}
 
 	loopbackInterfaceName, err := getLoopbackInterfaceName()
 	if err != nil {
 		return InitializedConfig{}, errors.Wrap(err, "unable to initialize loopback interface name")
 	}
 
+	loggerIPv4.Info("initializing IPv4 executables")
 	executablesIPv4, err := c.Executables.InitializeIPv4(ctx, loggerIPv4, c)
 	if err != nil {
 		return InitializedConfig{}, errors.Wrap(err, "unable to initialize IPv4 executables")
@@ -889,6 +890,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		return initialized, nil
 	}
 
+	loggerIPv6.Info("initializing IPv6 executables")
 	executablesIPv6, err := c.Executables.InitializeIPv6(ctx, loggerIPv6, c, executablesIPv4.mode)
 	if err != nil {
 		loggerIPv6.Warn("failed to initialize IPv6 executables:", err)
