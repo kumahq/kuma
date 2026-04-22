@@ -28,7 +28,7 @@ func pagination(request *restful.Request) (page, error) {
 		}
 		pageSize = p
 		if pageSize <= 0 {
-			return page{}, types.InvalidPageSize
+			return page{}, &types.InvalidPageSizeError{Reason: "must be greater than 0"}
 		}
 		if pageSize > maxPageSize {
 			return page{}, types.NewMaxPageSizeExceeded(pageSize, maxPageSize)

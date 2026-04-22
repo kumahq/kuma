@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 
@@ -94,6 +95,9 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 			}
 			if o < 0 {
 				return ErrorInvalid("invalid offset: must be non-negative")
+			}
+			if o > math.MaxInt-pageSize {
+				return ErrorInvalid("invalid offset: exceeds maximum value")
 			}
 			offset = o
 		}
