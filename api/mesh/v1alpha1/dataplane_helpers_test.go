@@ -174,7 +174,6 @@ var _ = Describe("Dataplane_Networking", func() {
 						DataplanePort:         80,
 						WorkloadIP:            "192.168.0.1",
 						WorkloadPort:          80,
-						InboundName:           "main-port",
 					},
 					{
 						DataplaneAdvertisedIP: "192.168.0.1",
@@ -182,7 +181,6 @@ var _ = Describe("Dataplane_Networking", func() {
 						DataplanePort:         443,
 						WorkloadIP:            "192.168.0.1",
 						WorkloadPort:          443,
-						InboundName:           "secondary-port",
 					},
 				},
 			}),
@@ -195,7 +193,6 @@ var _ = Describe("Dataplane_Networking", func() {
 						DataplanePort:         80,
 						WorkloadIP:            "192.168.0.1",
 						WorkloadPort:          80,
-						InboundName:           "main-port",
 					},
 				},
 			}),
