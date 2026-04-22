@@ -255,6 +255,9 @@ This requires:
   not hidden in a hash
 - Good, because it eliminates the `SNIName()` special-casing —
   all resource types use the same KRI-to-SNI mapping
+- Good, because it makes it easy for external clients to integrate with the mesh
+  by using Zone Ingress as an entry point (i.e. gateway) —
+  they can construct the SNI from known resource attributes without a lookup
 - Bad, because it can exceed the 253-character DNS hostname limit
   when multiple segments are at their maximum length (up to 330 chars)
 - Bad, because it requires validation at resource creation time
