@@ -160,8 +160,9 @@ In that case instead of 63 the mesh is likely to be 7 ("default").
 - 63 char for port name is way too much (even though Service allows port names upto 63, port name on Container is only 15 chars max)
 
 We don't need to limit individual segments, however,
-when user creates `MeshService`, `MeshExternalService` or `MeshMultiZoneService`,
 we can validate the length of `mesh`, `zone`, `namespace`, `name` and `sectionName` + 15 (for "sni", "type" and dots) less than 253.
+This validation runs on Kubernetes via the validation webhook when a `Service` is created,
+and on Universal when a `MeshService` is created.
 
 #### Migration
 
