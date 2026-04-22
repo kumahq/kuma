@@ -85,7 +85,7 @@ spec:
       terminationGracePeriodSeconds: {{ default 40 $cfg.terminationGracePeriodSeconds }}
       containers:
         - name: pause
-          image: {{ include "kuma.mesh.zoneproxy.image" (dict "root" $ "cfg" $cfg) }}
+          image: {{ include "kuma.mesh.zoneproxy.image" (dict "root" $ "cfg" $cfg "meshName" $meshName "role" $role) | quote }}
           imagePullPolicy: {{ default "IfNotPresent" $cfg.imagePullPolicy }}
           {{- if and $cfg.podSpec $cfg.podSpec.containerSecurityContext }}
           securityContext:

@@ -764,7 +764,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: pause
-          image: override.example.com/pause:3.10
+          image: "override.example.com/pause:3.10"
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true
@@ -823,7 +823,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: pause
-          image: my-registry.example.com/pause:3.10
+          image: "my-registry.example.com/pause:3.10"
           imagePullPolicy: IfNotPresent
           securityContext:
             readOnlyRootFilesystem: true

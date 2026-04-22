@@ -48,7 +48,7 @@ Resolve the pause container image for a per-mesh zone proxy component.
 Per-field override on meshes[].ingress.image / meshes[].egress.image falls
 back to the chart-level default at .Values.zoneProxyImage so users enabling
 a zone proxy on the default mesh do not need to re-specify registry/repo/tag.
-params: { root: $, cfg: <meshes[].ingress or meshes[].egress> }
+params: { root: $, cfg: <meshes[].ingress or meshes[].egress>, meshName: string, role: string }
 */}}
 {{- define "kuma.mesh.zoneproxy.image" -}}
 {{- $default := .root.Values.zoneProxyImage | default dict -}}
@@ -57,7 +57,7 @@ params: { root: $, cfg: <meshes[].ingress or meshes[].egress> }
 {{- $repository := default $default.repository $override.repository -}}
 {{- $tag := default $default.tag $override.tag -}}
 {{- if or (not $registry) (not $repository) (not $tag) -}}
-{{- fail "zone proxy image is missing: set .Values.zoneProxyImage or meshes[].{ingress,egress}.image" -}}
+{{- fail (printf "meshes[%s].%s.image is missing: set .Values.zoneProxyImage or meshes[].%s.image (registry/repository/tag)" .meshName .role .role) -}}
 {{- end -}}
 {{- printf "%s/%s:%s" $registry $repository $tag -}}
 {{- end -}}

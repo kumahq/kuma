@@ -851,7 +851,8 @@ meshes:
       enabled: false
       replicas: 1
       # -- Per-mesh override for the pause container image. Falls back to
-      # .Values.zoneProxyImage when unset.
+      # .Values.zoneProxyImage when unset. Partial overrides inherit the
+      # remaining registry/repository/tag fields from the chart-level default.
       image: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
