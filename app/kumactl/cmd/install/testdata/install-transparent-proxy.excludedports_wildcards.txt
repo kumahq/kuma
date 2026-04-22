@@ -1,3 +1,5 @@
+# initializing transparent proxy configuration
+# [iptables] initializing IPv4 executables
 ### IPv4 ###
 
 * nat
