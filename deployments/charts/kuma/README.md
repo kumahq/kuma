@@ -227,12 +227,13 @@ A Helm chart for the Kuma Control Plane
 | egress.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
 | egress.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
 | egress.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
+| zoneProxyImage.registry | string | `"registry.k8s.io"` | The pause image registry |
+| zoneProxyImage.repository | string | `"pause"` | The pause image repository |
+| zoneProxyImage.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
 | meshes[0].name | string | `"default"` | The mesh must already exist or be created separately; this Helm chart will not create it. |
 | meshes[0].ingress.enabled | bool | `false` | Deploy a zone ingress for this mesh. |
 | meshes[0].ingress.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
-| meshes[0].ingress.image.registry | string | `"registry.k8s.io"` | The pause image registry |
-| meshes[0].ingress.image.repository | string | `"pause"` | The pause image repository |
-| meshes[0].ingress.image.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
+| meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
 | meshes[0].ingress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].ingress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
@@ -241,9 +242,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
 | meshes[0].egress.enabled | bool | `false` | Deploy a zone egress for this mesh. |
 | meshes[0].egress.replicas | int | `1` |  |
-| meshes[0].egress.image.registry | string | `"registry.k8s.io"` | The pause image registry |
-| meshes[0].egress.image.repository | string | `"pause"` | The pause image repository |
-| meshes[0].egress.image.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
+| meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
 | meshes[0].egress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].egress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
