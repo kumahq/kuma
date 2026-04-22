@@ -38,6 +38,10 @@ func RegisterXDS(
 
 	authenticator := rt.XDS().PerProxyTypeAuthenticator()
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
+<<<<<<< HEAD
+=======
+	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager(), rt.Config().Environment))
+>>>>>>> 149a59a47d (fix(meshidentity): env-aware UsesWorkloadLabel (#16356))
 
 	metadataTracker := xds_callbacks.NewDataplaneMetadataTracker()
 	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks)
