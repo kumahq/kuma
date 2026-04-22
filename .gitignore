@@ -1,8 +1,11 @@
-# IDE: Goland
-.idea/
+# IDE: Goland (run configs committed; ignore everything else)
+.idea/*
+!.idea/runConfigurations/
+!.idea/runConfigurations/*.xml
 
-# IDE: VS Code
-.vscode/
+# IDE: VS Code (launch.json committed; ignore everything else)
+.vscode/*
+!.vscode/launch.json
 
 .ci_tools/
 
