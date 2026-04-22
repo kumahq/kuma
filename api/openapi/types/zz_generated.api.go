@@ -46,8 +46,13 @@ type FullStatus struct {
 	Total             int `json:"total"`
 }
 
+<<<<<<< HEAD
 // GlobalInsight Global Insight contains statistics for all main resources
 type GlobalInsight struct {
+=======
+// GlobalInsightBase Global Insight contains statistics for all main resources
+type GlobalInsightBase struct {
+>>>>>>> 84ada43c9b (refactor(oapi): remove GlobalInsight schema alias (#16345))
 	// CreatedAt Time of Global Insight creation
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -171,8 +176,16 @@ type ZonesStats struct {
 // BadRequest standard error
 type BadRequest = externalRef0.Error
 
+<<<<<<< HEAD
 // GlobalInsightResponse Global Insight contains statistics for all main resources
 type GlobalInsightResponse = GlobalInsight
+=======
+// GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
+type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
+
+// GlobalInsightResponse Global Insight contains statistics for all main resources
+type GlobalInsightResponse = GlobalInsightBase
+>>>>>>> 84ada43c9b (refactor(oapi): remove GlobalInsight schema alias (#16345))
 
 // IndexResponse Some metadata about the service
 type IndexResponse = Index
