@@ -92,6 +92,9 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 			if err != nil {
 				return ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
 			}
+			if o < 0 {
+				return ErrorInvalid("invalid offset: must be non-negative")
+			}
 			offset = o
 		}
 	}
