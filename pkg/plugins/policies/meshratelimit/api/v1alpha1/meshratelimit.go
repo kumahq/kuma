@@ -9,6 +9,7 @@ import (
 
 // MeshRateLimit protects services from being overwhelmed by limiting the rate of incoming requests or connections. It supports local rate limiting for both HTTP (requests per interval) and TCP (connections per interval) traffic with customizable response codes and headers for rate-limited requests.
 // +kuma:policy:is_from_as_rules=true
+// +kuma:policy:order=900
 type MeshRateLimit struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

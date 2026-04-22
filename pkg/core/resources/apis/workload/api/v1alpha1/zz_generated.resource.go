@@ -211,4 +211,5 @@ var WorkloadResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "wl",
 	IsFromAsRules:                false,
+	Order:                        0,
 }

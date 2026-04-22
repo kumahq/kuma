@@ -90,7 +90,7 @@ jobs:
           echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
       - name: Cache Go build
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/go-build
@@ -150,7 +150,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}' }}
+      RUNNERS_BY_ARCH: '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}'
     secrets: inherit
   build_publish:
     permissions:

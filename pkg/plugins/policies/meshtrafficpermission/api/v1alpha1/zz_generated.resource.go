@@ -200,4 +200,5 @@ var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mtp",
 	IsFromAsRules:                false,
+	Order:                        1100,
 }
