@@ -286,6 +286,10 @@ This requires:
 - Bad, because debugging routing issues still requires looking up the stored SNI
   rather than reasoning about it from the resource name
 
+## Implications for Kong Mesh
+
+None
+
 ## Decision
 
 Option 1: New SNI format derived from KRI.
