@@ -106,7 +106,7 @@ func generateFromService(
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx, unifiedNaming) {
 		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx, unifiedNaming)
-		if split == nil {
+		if len(split) == 0 {
 			continue
 		}
 		for _, filter := range route.Filters {

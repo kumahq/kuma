@@ -1669,6 +1669,81 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("unresolvable-backend", func() outboundsTestCase {
+			// alias-backend is intentionally NOT registered in mesh context, simulating a race
+			// where the VIP is not yet allocated when the MeshHTTPRoute xDS snapshot is generated.
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoints("backend",
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.4").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.5").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+					WithOutbounds(xds_types.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+					}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									test_policies.NewRule(nil, api.PolicyDefault{
+										Rules: []api.Rule{
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/v2",
+													},
+												}},
+												Default: api.RuleConf{
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: builders.TargetRefServiceSubset("alias-backend", mesh_proto.ZoneTag, "zone-2"),
+														Weight:    pointer.To(uint(100)),
+													}},
+												},
+											},
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/v1",
+													},
+												}},
+												Default: api.RuleConf{
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: builders.TargetRefService("backend"),
+														Weight:    pointer.To(uint(100)),
+													}},
+												},
+											},
+										},
+									}),
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("request-header-modifiers", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend", xds_builders.Endpoint().
