@@ -23,7 +23,7 @@ METALLB_NAMESPACE ?= metallb-system
 # --- Calico ---
 
 # renovate: datasource=github-releases depName=projectcalico/tigera-operator packageName=projectcalico/calico versioning=semver
-CALICO_VERSION ?= v3.31.4
+CALICO_VERSION ?= v3.31.5
 CALICO_NAMESPACE ?= tigera-operator
 CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
 CALICO_HELM_REPO_NAME ?= projectcalico
@@ -314,6 +314,10 @@ $(METALLB_RESOURCES): $(METALLB_RENDER_POOL) k3d/docker/network/create
 k3d/cluster/metallb/setup: $(METALLB_RESOURCES)
 	$(Q)$(KUBECTL) apply \
 	  --filename $(METALLB_MANIFESTS)
+
+	$(Q)$(KUBECTL) rollout status deployment \
+	  --namespace $(METALLB_NAMESPACE) \
+	  --timeout 120s
 
 	$(Q)$(KUBECTL) wait \
 	  --namespace $(METALLB_NAMESPACE) \

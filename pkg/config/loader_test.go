@@ -189,6 +189,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.CNIEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.ContainerPatches).To(Equal([]string{"patch1", "patch2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Image).To(Equal("test-image:test"))
+			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Resources.Requests.CPU).To(Equal("30m"))
+			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Resources.Requests.Memory).To(Equal("30Mi"))
+			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Resources.Limits.CPU).To(Equal("200m"))
+			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Resources.Limits.Memory).To(Equal("60Mi"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.EnvVars).To(Equal(map[string]string{"a": "b", "c": "d"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.IpFamilyMode).To(Equal("dualstack"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(2020)))
@@ -493,6 +497,10 @@ apiServer:
     enabled: false
     rootUrl: https://bar.com
     basePath: /ui
+  readHeaderTimeout: 2s
+  readTimeout: 20s
+  writeTimeout: 60s
+  idleTimeout: 240s
 monitoringAssignmentServer:
   enabled: false
   port: 2222
@@ -541,6 +549,13 @@ runtime:
       containerPatches: ["patch1", "patch2"]
       initContainer:
         image: test-image:test
+        resources:
+          requests:
+            cpu: 30m
+            memory: 30Mi
+          limits:
+            cpu: 200m
+            memory: 60Mi
       sidecarContainer:
         waitForDataplaneReady: true
         image: image:test
@@ -904,6 +919,10 @@ meshService:
 				"KUMA_API_SERVER_GUI_ENABLED":                                                              "false",
 				"KUMA_API_SERVER_GUI_ROOT_URL":                                                             "https://bar.com",
 				"KUMA_API_SERVER_GUI_BASE_PATH":                                                            "/ui",
+				"KUMA_API_SERVER_READ_HEADER_TIMEOUT":                                                      "2s",
+				"KUMA_API_SERVER_READ_TIMEOUT":                                                             "20s",
+				"KUMA_API_SERVER_WRITE_TIMEOUT":                                                            "60s",
+				"KUMA_API_SERVER_IDLE_TIMEOUT":                                                             "240s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED":                                                "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
@@ -932,6 +951,14 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE":                                            "/tmp/ca.crt",
 				"KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME":                                 "28s",
 				"KUMA_INJECTOR_INIT_CONTAINER_IMAGE":                                                       "test-image:test",
+				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU":                                      "30m",
+				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY":                                   "30Mi",
+				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU":                                        "200m",
+				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY":                                     "60Mi",
+				"KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_CPU":                                "30m",
+				"KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_MEMORY":                             "30Mi",
+				"KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU":                                  "200m",
+				"KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY":                               "60Mi",
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY":                                "4Gi",
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU":                                   "123m",
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY":                                  "8Gi",

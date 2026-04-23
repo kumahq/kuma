@@ -14,6 +14,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/user"
 	"github.com/kumahq/kuma/v2/pkg/kds/hash"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 type kriEndpoint struct {
@@ -49,7 +51,7 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 
-		name := k.getCoreName(identifier)
+		name := k.getCoreName(identifier, *descriptor)
 		if err := k.resourceAccess.ValidateGet(
 			request.Request.Context(),
 			core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
@@ -79,13 +81,13 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
+func (k *kriEndpoint) getCoreName(id kri.Identifier, desc core_model.ResourceTypeDescriptor) string {
 	namespace := id.Namespace
 	if id.Namespace == "" {
 		namespace = k.systemNamespace
 	}
 	if id.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
-		if k.environment == config_core.UniversalEnvironment {
+		if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(desc) {
 			return id.Name
 		}
 		return id.Name + "." + namespace
@@ -100,10 +102,21 @@ func (k *kriEndpoint) getCoreName(id kri.Identifier) string {
 		values = append(values, id.Namespace)
 	}
 	hashedName := hash.HashedName(id.Mesh, id.Name, values...)
-	if k.environment == config_core.UniversalEnvironment {
+	if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(desc) {
 		return hashedName
 	}
 	return hashedName + "." + k.systemNamespace
+}
+
+func (k *kriEndpoint) isClusterScoped(desc core_model.ResourceTypeDescriptor) bool {
+	if k.environment != config_core.KubernetesEnvironment {
+		return false
+	}
+	obj, err := k8s_registry.Global().NewObject(desc.NewObject().GetSpec())
+	if err != nil {
+		return false
+	}
+	return obj.Scope() == k8s_model.ScopeCluster
 }
 
 func getDescriptor(resourceType core_model.ResourceType) (*core_model.ResourceTypeDescriptor, error) {

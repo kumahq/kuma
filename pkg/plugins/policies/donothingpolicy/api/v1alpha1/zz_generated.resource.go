@@ -199,4 +199,5 @@ var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "dnp",
 	IsFromAsRules:                false,
+	Order:                        0,
 }

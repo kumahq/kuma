@@ -81,7 +81,6 @@ func (d *k8sDeployment) ingressDeployment() *appsv1.Deployment {
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("50m"),
 									corev1.ResourceMemory: resource.MustParse("64Mi"),
 								},
 							},
@@ -110,7 +109,7 @@ func (d *k8sDeployment) ingressService() *corev1.Service {
 			},
 		},
 		Spec: corev1.ServiceSpec{
-			Type:     corev1.ServiceTypeLoadBalancer,
+			Type:     corev1.ServiceTypeNodePort,
 			Selector: map[string]string{"app": name},
 			Ports: []corev1.ServicePort{
 				{
@@ -175,7 +174,6 @@ func (d *k8sDeployment) egressDeployment() *appsv1.Deployment {
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("50m"),
 									corev1.ResourceMemory: resource.MustParse("64Mi"),
 								},
 							},

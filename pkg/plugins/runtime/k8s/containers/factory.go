@@ -77,19 +77,31 @@ func NewDataplaneProxyFactory(
 	}
 }
 
+func sidecarLimits(limits runtime_k8s.SidecarResourceLimits) kube_core.ResourceList {
+	result := kube_core.ResourceList{
+		kube_core.ResourceMemory:           kube_api.MustParse(limits.Memory),
+		kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
+	}
+	cpu := kube_api.MustParse(limits.CPU)
+	if !cpu.IsZero() {
+		result[kube_core.ResourceCPU] = cpu
+	}
+	return result
+}
+
 func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]string) (int64, error) {
 	count, ok, err := metadata.Annotations(annotations).GetUint32(metadata.KumaSidecarConcurrencyAnnotation)
 	if ok {
 		return int64(count), err
 	}
 
-	// Note that validation requires the resource limit is not empty.
-	cpuRequest := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
+	cpuLimit := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
+	if cpuLimit.IsZero() {
+		return 0, nil
+	}
 	// Only autotune to down to 2 to mitigate the latency
 	// risk if a worker thread blocks.
-	ncpu := max(cpuRequest.MilliValue()/1000, 2)
-
-	return ncpu, nil
+	return max(cpuLimit.MilliValue()/1000, 2), nil
 }
 
 func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
@@ -199,11 +211,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
 				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(50, kube_api.Mega)),
 			},
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
-				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
-				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
-			},
+			Limits: sidecarLimits(i.ContainerConfig.Resources.Limits),
 		},
 	}
 	if i.sidecarContainersEnabled {

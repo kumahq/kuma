@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
@@ -25,6 +24,7 @@ import (
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
 	"github.com/kumahq/kuma/v2/pkg/api-server/filters"
@@ -272,7 +272,7 @@ func addResourcesEndpoints(
 	}
 	globalInsightEndpoint.addEndpoint(ws)
 
-	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess).addEndpoint(ws)
+	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc
@@ -387,7 +387,10 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	var httpServer, httpsServer *http.Server
 	if a.config.HTTP.Enabled {
 		httpServer = &http.Server{
-			ReadHeaderTimeout: time.Second,
+			ReadHeaderTimeout: a.config.ReadHeaderTimeout.Duration,
+			ReadTimeout:       a.config.ReadTimeout.Duration,
+			WriteTimeout:      a.config.WriteTimeout.Duration,
+			IdleTimeout:       a.config.IdleTimeout.Duration,
 			Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
 			Handler:           a.mux,
 			ErrorLog:          adapter.ToStd(log),
@@ -404,7 +407,10 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			return err
 		}
 		httpsServer = &http.Server{
-			ReadHeaderTimeout: time.Second,
+			ReadHeaderTimeout: a.config.ReadHeaderTimeout.Duration,
+			ReadTimeout:       a.config.ReadTimeout.Duration,
+			WriteTimeout:      a.config.WriteTimeout.Duration,
+			IdleTimeout:       a.config.IdleTimeout.Duration,
 			Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
 			Handler:           a.mux,
 			TLSConfig:         tlsConfig,
@@ -421,16 +427,21 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		log.Info("stopping down API Server")
 		a.httpReady.Store(false)
 		a.httpsReady.Store(false)
+		var errs error
 		if httpServer != nil {
-			return httpServer.Shutdown(context.Background())
+			if err := httpServer.Shutdown(context.Background()); err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
 		if httpsServer != nil {
-			return httpsServer.Shutdown(context.Background())
+			if err := httpsServer.Shutdown(context.Background()); err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
+		return errs
 	case err := <-errChan:
 		return err
 	}
-	return nil
 }
 
 func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {

@@ -352,9 +352,11 @@ func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpy
 	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, nil, false, ""); err != nil {
 		return err
 	}
+	c.mutex.Lock()
 	c.apps[name] = app
 	c.networking[name] = app.universalNetworking
 	c.createEnvoyTunnel(name)
+	c.mutex.Unlock()
 	return app.dpApp.Start()
 }
 

@@ -1,0 +1,40 @@
+{
+ "policies": [
+  {
+   "kind": "MeshTrafficPermission",
+   "origins": [
+    {
+     "kri": "kri_mtp_default___allow_"
+    }
+   ],
+   "rules": [
+    {
+     "conf": {
+      "allow": [
+       {
+        "spiffeID": {
+         "type": "Prefix",
+         "value": "spiffe://trust-domain.mesh/ns/backend"
+        }
+       }
+      ]
+     },
+     "kri": "kri_mtp_default___allow_"
+    },
+    {
+     "conf": {
+      "deny": [
+       {
+        "spiffeID": {
+         "type": "Exact",
+         "value": "spiffe://trust-domain.mesh/ns/backend/v1"
+        }
+       }
+      ]
+     },
+     "kri": "kri_mtp_default___allow_"
+    }
+   ]
+  }
+ ]
+}

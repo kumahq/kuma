@@ -214,6 +214,14 @@ apiServer:
     rootUrl: "" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
     # The path to serve the GUI from
     basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
+  # The amount of time allowed to read request headers
+  readHeaderTimeout: 1s # ENV: KUMA_API_SERVER_READ_HEADER_TIMEOUT
+  # The maximum duration for reading the entire request
+  readTimeout: 10s # ENV: KUMA_API_SERVER_READ_TIMEOUT
+  # The maximum duration before timing out writes of the response
+  writeTimeout: 30s # ENV: KUMA_API_SERVER_WRITE_TIMEOUT
+  # The maximum amount of time to wait for the next request when keep-alives are enabled
+  idleTimeout: 2m0s # ENV: KUMA_API_SERVER_IDLE_TIMEOUT
 # Environment-specific configuration
 runtime:
   # Kubernetes-specific configuration
@@ -316,8 +324,8 @@ runtime:
             memory: 64Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
           # Maximum amount of compute resources allowed.
           limits:
-            # CPU, in cores. (500m = .5 cores)
-            cpu: 1000m # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
+            # CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+            cpu: "0" # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
             # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
         # Additional environment variables that can be placed on Kuma DP sidecar
@@ -329,6 +337,36 @@ runtime:
       initContainer:
         # Image name.
         image: kuma/kuma-init:latest # ENV: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+        # Compute resource requirements.
+        resources:
+          # Minimum amount of compute resources required.
+          requests:
+            # CPU, in cores. (500m = .5 cores)
+            cpu: 20m # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 20M # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
+          # Maximum amount of compute resources allowed.
+          limits:
+            # CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+            cpu: "0" # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 50M # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
+      # ValidationContainer defines configuration of the Kuma validation init container
+      validationContainer:
+        # Compute resource requirements.
+        resources:
+          # Minimum amount of compute resources required.
+          requests:
+            # CPU, in cores. (500m = .5 cores)
+            cpu: 20m # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 20M # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_MEMORY
+          # Maximum amount of compute resources allowed.
+          limits:
+            # CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+            cpu: "0" # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 50M # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
       # ContainerPatches is an optional list of ContainerPatch names which will be applied
       # to init and sidecar containers if workload is not annotated with a patch list.
       containerPatches: [] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES
