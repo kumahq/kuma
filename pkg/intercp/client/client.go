@@ -51,12 +51,14 @@ func New(serverURL string, tlsCfg *TLSConfig, maxMsgSize int) (Conn, error) {
 	default:
 		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
-	dialOpts = append(dialOpts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(
-		otelgrpc.WithFilter(filters.Not(filters.ServiceName(system_proto.InterCpPingService_ServiceDesc.ServiceName))),
-	)))
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(
-		grpc.MaxCallRecvMsgSize(maxMsgSize),
-		grpc.MaxCallSendMsgSize(maxMsgSize),
-	))
+	dialOpts = append(dialOpts,
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
+			otelgrpc.WithFilter(filters.Not(filters.ServiceName(system_proto.InterCpPingService_ServiceDesc.ServiceName))),
+		)),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxMsgSize),
+			grpc.MaxCallSendMsgSize(maxMsgSize),
+		),
+	)
 	return grpc.NewClient(url.Host, dialOpts...)
 }
