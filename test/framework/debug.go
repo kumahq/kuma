@@ -151,10 +151,36 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 			}
 		}
 	}
-	if Config.K8sType == K3dK8sType || Config.K8sType == K3dCalicoK8sType {
-		if err := debugK3dLogs(cluster); err != nil {
+	eventsOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "get", "events", "-A", "--sort-by=.lastTimestamp")
+	if err != nil {
+		errs = multierr.Combine(errs, fmt.Errorf("failed to get events: %w", err))
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "events.txt"), eventsOut)
+	}
+
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType:
+		if err := debugDockerNodeLogs(cluster, "k3d-"+cluster.Name()); err != nil {
 			errs = multierr.Combine(errs, err)
 		}
+	case KindK8sType:
+		if err := debugDockerNodeLogs(cluster, cluster.Name()); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+	}
+
+	topNodes, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "top", "nodes")
+	if err != nil {
+		Logf("kubectl top nodes not available for cluster %q: %s", cluster.Name(), err)
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "top-nodes.txt"), topNodes)
+	}
+
+	topPods, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "top", "pods", "-A", "--containers")
+	if err != nil {
+		Logf("kubectl top pods not available for cluster %q: %s", cluster.Name(), err)
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "top-pods.txt"), topPods)
 	}
 
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
@@ -166,23 +192,61 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 	return errs
 }
 
-func debugK3dLogs(cluster Cluster) error {
-	Logf("collecting k3d container logs for cluster %q", cluster.Name())
+func debugDockerNodeLogs(cluster Cluster, nameFilter string) error {
+	Logf("collecting docker node logs for cluster %q (filter: %s)", cluster.Name(), nameFilter)
 	ctx := context.Background()
-	listOut, err := exec.CommandContext(ctx, "docker", "ps", "-a", "--filter", "name=k3d-"+cluster.Name(), "--format", "{{.Names}}").Output()
+	listOut, err := exec.CommandContext(ctx, "docker", "ps", "-a", "--filter", "name="+nameFilter, "--format", "{{.Names}}").Output()
 	if err != nil {
-		return fmt.Errorf("failed to list k3d containers for cluster %q: %w", cluster.Name(), err)
+		return fmt.Errorf("failed to list docker containers for cluster %q: %w", cluster.Name(), err)
 	}
 	var errs error
 	for containerName := range strings.FieldsSeq(string(listOut)) {
 		logOut, err := exec.CommandContext(ctx, "docker", "logs", "--timestamps", containerName).CombinedOutput()
 		if err != nil {
 			errs = multierr.Combine(errs, fmt.Errorf("failed to get docker logs for container %q: %w", containerName, err))
-			continue
+		} else {
+			report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+".log"), logOut)
 		}
-		report.AddFileToReportEntry(path.Join(cluster.Name(), "k3d", containerName+".log"), logOut)
+		if err := debugDockerNodeStats(ctx, cluster, containerName); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
 	}
 	return errs
+}
+
+// debugDockerNodeStats collects CPU pressure and load info from inside a node container.
+// This is used to confirm CPU starvation when metrics-server is unavailable.
+func debugDockerNodeStats(ctx context.Context, cluster Cluster, containerName string) error {
+	// sh script that collects:
+	// - load average and CPU count (quick starvation signal)
+	// - cgroup v2 CPU throttling for all kubepods (nr_throttled / throttled_usec)
+	// - cgroup v1 fallback
+	script := `
+echo "=== uptime ==="
+uptime
+echo "=== nproc ==="
+nproc
+echo "=== /proc/loadavg ==="
+cat /proc/loadavg
+echo "=== /proc/stat (cpu lines) ==="
+grep '^cpu' /proc/stat
+echo "=== cgroup v2 cpu throttling (kubepods) ==="
+find /sys/fs/cgroup/kubepods.slice -name 'cpu.stat' 2>/dev/null \
+  | xargs grep -h '' 2>/dev/null \
+  | grep -E 'nr_throttled|throttled_usec|nr_periods' \
+  | sort | uniq -c | sort -rn
+echo "=== cgroup v1 cpu throttling (kubepods) ==="
+find /sys/fs/cgroup/cpu,cpuacct/kubepods -name 'cpu.stat' 2>/dev/null \
+  | xargs grep -h '' 2>/dev/null \
+  | grep -E 'nr_throttled|throttled_time|nr_periods' \
+  | sort | uniq -c | sort -rn
+`
+	out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "sh", "-c", script).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to collect node stats from container %q: %w", containerName, err)
+	}
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+"-stats.txt"), out)
+	return nil
 }
 
 func debugKubeNamespace(cluster Cluster, namespace string) error {
@@ -203,13 +267,6 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 		Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 	}
 	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
-
-	eventsOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "events", "--sort-by=.lastTimestamp")
-	if err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("kubectl get events for namespace %s failed: %w", namespace, err))
-	} else {
-		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, "events.txt"), eventsOut)
-	}
 
 	pods, err := k8s.ListPodsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
 	if err != nil {
