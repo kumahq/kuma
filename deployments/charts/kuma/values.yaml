@@ -823,12 +823,18 @@ meshZoneProxyDefaults:
       type: LoadBalancer
       # -- Default port for zone ingress Service.
       port: 10001
+      # -- Container port the zone ingress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10001
   egress:
     service:
       # -- Default Service type for zone egress.
       type: ClusterIP
       # -- Default port for zone egress Service.
       port: 10002
+      # -- Container port the zone egress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10002
 
 # List of meshes to deploy zone proxies for.
 meshes:

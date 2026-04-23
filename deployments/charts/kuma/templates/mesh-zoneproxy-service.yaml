@@ -33,7 +33,7 @@ spec:
   ports:
     - port: {{ default $roleEntry.defaults.service.port (and $cfg.service $cfg.service.port) }}
       protocol: TCP
-      targetPort: {{ $roleEntry.defaults.service.port }}
+      targetPort: {{ $roleEntry.defaults.service.targetPort }}
   selector:
     {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
   {{- with (and $cfg.service $cfg.service.spec) }}
