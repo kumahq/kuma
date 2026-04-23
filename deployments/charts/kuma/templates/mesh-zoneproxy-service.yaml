@@ -36,6 +36,9 @@ spec:
       targetPort: {{ $roleEntry.defaultPort }}
   selector:
     {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+  {{- with (and $cfg.service $cfg.service.spec) }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
 {{- end }}
 
 {{- end }}
