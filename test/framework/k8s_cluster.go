@@ -62,6 +62,7 @@ type K8sCluster struct {
 	opts                kumaDeploymentOptions
 	portForwards        map[portforward.Spec]portforward.Tunnel
 	adminTunnels        map[portforward.Spec]envoy_admin.Tunnel
+	tunnelMu            sync.Mutex
 }
 
 var _ Cluster = &K8sCluster{}
@@ -149,7 +150,9 @@ func (c *K8sCluster) PortForwardApp(spec portforward.Spec) (portforward.Tunnel, 
 		)
 	}
 
+	c.tunnelMu.Lock()
 	c.portForwards[spec] = fwd
+	c.tunnelMu.Unlock()
 
 	return fwd, nil
 }
@@ -1606,9 +1609,12 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		return nil, errors.Wrap(err, "invalid port-forward spec")
 	}
 
+	c.tunnelMu.Lock()
 	if tnl := c.adminTunnels[args]; tnl != nil {
+		c.tunnelMu.Unlock()
 		return tnl, nil
 	}
+	c.tunnelMu.Unlock()
 
 	fwd, err := c.PortForwardApp(args)
 	if err != nil {
@@ -1632,7 +1638,9 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		)
 	}
 
+	c.tunnelMu.Lock()
 	c.adminTunnels[args] = tnl
+	c.tunnelMu.Unlock()
 
 	return tnl, nil
 }
