@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -25,7 +26,14 @@ import (
 func MeshTimeout() {
 	const mesh = "multizone-meshtimeout"
 	const k8sZoneNamespace = "multizone-meshtimeout-ns"
-
+	mshZone := builders.MeshMultiZoneService().
+		WithName("test-server").
+		WithMesh(mesh).
+		WithServiceLabelSelector(map[string]string{
+			"kuma.io/display-name":  "test-server",
+			"k8s.kuma.io/namespace": k8sZoneNamespace,
+		}).
+		AddIntPortWithName(80, core_meta.ProtocolHTTP, "80").Build()
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
@@ -38,20 +46,7 @@ func MeshTimeout() {
 				),
 			).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
-			Install(YamlUniversal(fmt.Sprintf(`
-type: MeshMultiZoneService
-name: test-server
-mesh: %s
-spec:
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/display-name: test-server
-        k8s.kuma.io/namespace: %s
-  ports:
-  - port: 80
-    appProtocol: http
-`, mesh, k8sZoneNamespace))).
+			Install(ResourceUniversal(mshZone)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 

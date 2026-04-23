@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -20,20 +21,11 @@ import (
 )
 
 func ExternalServicesOnMultizoneUniversal() {
-	meshDefaulMtlsOn := `
-type: Mesh
-name: default
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-networking:
-  outbound:
-    passthrough: true
-routing:
-  localityAwareLoadBalancing: %s
-`
+	meshDefaultMTLSOn := builders.
+		Mesh().
+		WithName("default").
+		WithBuiltinMTLSBackend("ca-1").
+		WithNetworkingPassThrough(true)
 
 	externalServiceRes := func(service, address string, tls bool, caCert []byte) *core_mesh.ExternalServiceResource {
 		res := &core_mesh.ExternalServiceResource{
@@ -98,7 +90,7 @@ routing:
 		global = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
 		err = NewClusterSetup().
 			Install(Kuma(core.Global)).
-			Install(YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
+			Install(ResourceUniversal(meshDefaultMTLSOn.WithRoutingLocalityAwareLoadBalancing(false).Build())).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -270,7 +262,7 @@ networking:
 		)
 
 		// when locality-aware lb is enabled
-		Expect(YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "true"))(global)).To(Succeed())
+		Expect(ResourceUniversal(meshDefaultMTLSOn.WithRoutingLocalityAwareLoadBalancing(true).Build())(global)).To(Succeed())
 		// then
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(zone1, "demo-client", "es-for-zones.mesh")
