@@ -211,4 +211,5 @@ var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mal",
 	IsFromAsRules:                true,
+	Order:                        600,
 }
