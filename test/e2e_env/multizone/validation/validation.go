@@ -162,9 +162,9 @@ func ResourceValidation() {
 	}
 
 	It("Global CP / MeshTimeout", func() { runPair(globalT, "meshtimeout", "meshtimeouts") })
-	It("Global CP / MeshService", func() { runPair(globalT, "meshservice", "meshservices") })
+	It("Global CP / MeshExternalService", func() { runPair(globalT, "meshexternalservice", "meshexternalservices") })
 	It("UniZone CP / MeshTimeout", func() { runPair(uniZoneT, "meshtimeout", "meshtimeouts") })
-	It("UniZone CP / MeshService", func() { runPair(uniZoneT, "meshservice", "meshservices") })
+	It("UniZone CP / MeshExternalService", func() { runPair(uniZoneT, "meshexternalservice", "meshexternalservices") })
 	It("KubeZone CP / MeshTimeout", func() { runPair(kubeT, "meshtimeout", "meshtimeouts") })
-	It("KubeZone CP / MeshService", func() { runPair(kubeT, "meshservice", "meshservices") })
+	It("KubeZone CP / MeshExternalService", func() { runPair(kubeT, "meshexternalservice", "meshexternalservices") })
 }

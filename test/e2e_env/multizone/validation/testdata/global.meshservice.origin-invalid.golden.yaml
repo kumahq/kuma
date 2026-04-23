@@ -1,9 +1,0 @@
-HTTP/1.1 405 Method Not Allowed
-
-{
- "type": "/std-errors",
- "status": 405,
- "title": "Method not allowed",
- "detail": "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API. You can still use 'kumactl' or the HTTP API to modify them on the zone control plane.\n",
- "details": "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API. You can still use 'kumactl' or the HTTP API to modify them on the zone control plane.\n"
-}

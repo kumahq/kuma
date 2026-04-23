@@ -1,0 +1,10 @@
+type: MeshExternalService
+name: mes-zone-other
+mesh: multizone-label-validation
+labels:
+  kuma.io/zone: other-zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http

@@ -1,0 +1,12 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: mes-mesh-current
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: multizone-label-validation
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
