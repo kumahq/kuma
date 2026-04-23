@@ -29,6 +29,7 @@ var log = core.Log.WithName("inter-cp")
 
 func Setup(rt runtime.Runtime) error {
 	cfg := rt.Config().InterCp
+	maxMsgSize := int(rt.Config().Multizone.Global.KDS.MaxMsgSize)
 	defaults := &intercp_tls.DefaultsComponent{
 		ResManager: rt.ResourceManager(),
 		Log:        log.WithName("defaults"),
@@ -58,7 +59,7 @@ func Setup(rt runtime.Runtime) error {
 			ClientCert: certs.client,
 		})
 
-		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca, instance.Id)
+		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca, instance.Id, maxMsgSize)
 		if err != nil {
 			return errors.Wrap(err, "could not start inter-cp server")
 		}
@@ -97,8 +98,10 @@ func Setup(rt runtime.Runtime) error {
 	)
 }
 
-func DefaultClientPool() *client.Pool {
-	return client.NewPool(client.New, 5*time.Minute, core.Now)
+func DefaultClientPool(maxMsgSize int) *client.Pool {
+	return client.NewPool(func(serverURL string, tlsCfg *client.TLSConfig) (client.Conn, error) {
+		return client.New(serverURL, tlsCfg, maxMsgSize)
+	}, 5*time.Minute, core.Now)
 }
 
 func PooledEnvoyAdminClientFn(pool *client.Pool) envoyadmin.NewClientFn {
