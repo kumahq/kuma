@@ -856,10 +856,10 @@ meshes:
         name: ""
         # -- (string) Per-mesh override for Service type. Falls back to
         # meshZoneProxyDefaults.ingress.service.type when unset.
-        type: null
+        type:
         # -- (int) Per-mesh override for Service port. Falls back to
         # meshZoneProxyDefaults.ingress.service.port when unset.
-        port: null
+        port:
         # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
         # Merged directly into the Service spec.
         spec: {}
@@ -897,10 +897,10 @@ meshes:
         name: ""
         # -- (string) Per-mesh override for Service type. Falls back to
         # meshZoneProxyDefaults.egress.service.type when unset.
-        type: null
+        type:
         # -- (int) Per-mesh override for Service port. Falls back to
         # meshZoneProxyDefaults.egress.service.port when unset.
-        port: null
+        port:
         # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
         # Merged directly into the Service spec.
         spec: {}
