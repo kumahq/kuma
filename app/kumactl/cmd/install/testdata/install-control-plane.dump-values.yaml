@@ -832,6 +832,9 @@ meshes:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
         name: ""
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
       # -- Resource requests and limits for the pod (pod-level resources).
       # Applied to all containers in the pod (pause + injected kuma-sidecar).
       resources: {}
@@ -864,6 +867,9 @@ meshes:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
         name: ""
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
       # -- Resource requests and limits for the pod (pod-level resources).
       # Applied to all containers in the pod (pause + injected kuma-sidecar).
       resources: {}
