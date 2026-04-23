@@ -236,6 +236,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
+| meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].ingress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
 | meshes[0].ingress.containerResources | object | `{}` | Resource requests and limits for the pause container. |
@@ -245,6 +246,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.replicas | int | `1` |  |
 | meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
+| meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].egress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
 | meshes[0].egress.containerResources | object | `{}` | Resource requests and limits for the pause container. |
