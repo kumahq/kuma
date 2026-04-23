@@ -200,4 +200,5 @@ var MeshHealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mhc",
 	IsFromAsRules:                false,
+	Order:                        1200,
 }

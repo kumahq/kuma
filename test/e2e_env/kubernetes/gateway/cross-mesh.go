@@ -173,7 +173,7 @@ func CrossMeshGatewayOnKubernetes() {
 				kubernetes.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
-			), "30s", "1s").Should(Succeed())
+			), "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 			Consistently(FailToProxyRequestToGateway(
 				kubernetes.Cluster,
 				gatewayAddr,

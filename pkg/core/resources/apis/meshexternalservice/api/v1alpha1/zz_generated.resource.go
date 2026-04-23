@@ -214,4 +214,5 @@ var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: true,
 	ShortName:                    "extsvc",
 	IsFromAsRules:                false,
+	Order:                        0,
 }

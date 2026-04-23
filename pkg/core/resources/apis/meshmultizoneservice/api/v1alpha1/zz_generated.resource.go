@@ -214,4 +214,5 @@ var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mzsvc",
 	IsFromAsRules:                false,
+	Order:                        0,
 }
