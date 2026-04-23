@@ -1,0 +1,10 @@
+type: MeshService
+name: ms-positive
+mesh: multizone-label-validation
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

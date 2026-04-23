@@ -30,6 +30,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/v2/test/e2e_env/multizone/sync"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficpermission"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/validation"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/unifiednaming"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/virtualoutbound"
@@ -95,4 +96,5 @@ var (
 	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
 	_ = Describe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", meshproxy.Connectivity, Ordered)
+	_ = Describe("Resource Label Validation", validation.ResourceValidation, Ordered)
 )

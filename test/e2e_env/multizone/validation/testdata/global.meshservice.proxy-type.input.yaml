@@ -1,0 +1,12 @@
+type: MeshService
+name: ms-proxy-type
+mesh: multizone-label-validation
+labels:
+  kuma.io/proxy-type: sidecar
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

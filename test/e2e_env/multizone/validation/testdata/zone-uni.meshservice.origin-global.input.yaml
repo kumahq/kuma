@@ -1,0 +1,12 @@
+type: MeshService
+name: ms-origin-global
+mesh: multizone-label-validation
+labels:
+  kuma.io/origin: global
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

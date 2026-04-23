@@ -1,0 +1,12 @@
+type: MeshService
+name: ms-kube-namespace
+mesh: multizone-label-validation
+labels:
+  k8s.kuma.io/namespace: kuma-system
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

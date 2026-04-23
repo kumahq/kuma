@@ -1,0 +1,13 @@
+type: MeshService
+name: ms-arbitrary-user
+mesh: multizone-label-validation
+labels:
+  kuma.io/foo: bar
+  k8s.kuma.io/baz: qux
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

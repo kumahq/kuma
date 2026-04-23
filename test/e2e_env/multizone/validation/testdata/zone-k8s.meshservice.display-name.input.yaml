@@ -1,0 +1,15 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: ms-display-name
+  namespace: default
+  labels:
+    kuma.io/mesh: multizone-label-validation
+    kuma.io/display-name: my-custom-name
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

@@ -1,0 +1,15 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt-mesh-other
+  namespace: default
+  labels:
+    kuma.io/mesh: nonexistent-mesh
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

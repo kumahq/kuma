@@ -1,0 +1,15 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: ms-zone-other
+  namespace: default
+  labels:
+    kuma.io/mesh: multizone-label-validation
+    kuma.io/zone: other-zone
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

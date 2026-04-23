@@ -1,0 +1,12 @@
+type: MeshService
+name: ms-zone-current
+mesh: multizone-label-validation
+labels:
+  kuma.io/zone: kuma-4
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

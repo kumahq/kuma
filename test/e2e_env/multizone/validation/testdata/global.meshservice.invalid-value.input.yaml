@@ -1,0 +1,12 @@
+type: MeshService
+name: ms-invalid-value
+mesh: multizone-label-validation
+labels:
+  kuma.io/custom: "not valid!!"
+spec:
+  ports:
+    - port: 80
+      appProtocol: http
+  selector:
+    dataplaneTags:
+      kuma.io/service: my-service

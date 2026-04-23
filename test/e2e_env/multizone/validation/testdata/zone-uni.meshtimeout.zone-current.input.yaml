@@ -1,0 +1,13 @@
+type: MeshTimeout
+name: mt-zone-current
+mesh: multizone-label-validation
+labels:
+  kuma.io/zone: kuma-4
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s
