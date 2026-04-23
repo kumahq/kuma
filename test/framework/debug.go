@@ -1,10 +1,13 @@
 package framework
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -148,11 +151,36 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 			}
 		}
 	}
+	if Config.K8sType == K3dK8sType || Config.K8sType == K3dCalicoK8sType {
+		if err := debugK3dLogs(cluster); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+	}
+
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
 	for _, namespace := range namespaces {
 		if err := debugKubeNamespace(cluster, namespace); err != nil {
 			errs = multierr.Combine(errs, fmt.Errorf("failed to debug namespace %s, %w", namespace, err))
 		}
+	}
+	return errs
+}
+
+func debugK3dLogs(cluster Cluster) error {
+	Logf("collecting k3d container logs for cluster %q", cluster.Name())
+	ctx := context.Background()
+	listOut, err := exec.CommandContext(ctx, "docker", "ps", "-a", "--filter", "name=k3d-"+cluster.Name(), "--format", "{{.Names}}").Output()
+	if err != nil {
+		return fmt.Errorf("failed to list k3d containers for cluster %q: %w", cluster.Name(), err)
+	}
+	var errs error
+	for containerName := range strings.FieldsSeq(string(listOut)) {
+		logOut, err := exec.CommandContext(ctx, "docker", "logs", "--timestamps", containerName).CombinedOutput()
+		if err != nil {
+			errs = multierr.Combine(errs, fmt.Errorf("failed to get docker logs for container %q: %w", containerName, err))
+			continue
+		}
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k3d", containerName+".log"), logOut)
 	}
 	return errs
 }
