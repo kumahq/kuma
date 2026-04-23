@@ -176,6 +176,27 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	}
 	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
 
+	eventsOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "events", "--sort-by=.lastTimestamp")
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("kubectl get events for namespace %s failed: %w", namespace, err))
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, "events.txt"), eventsOut)
+	}
+
+	pods, err := k8s.ListPodsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to list pods in namespace %s: %w", namespace, err))
+	} else {
+		for i := range pods {
+			podDescribe, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "describe", "pod", pods[i].Name)
+			if err != nil {
+				errs = multierr.Append(errs, fmt.Errorf("failed to describe pod %s in namespace %s: %w", pods[i].Name, namespace, err))
+			} else {
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, fmt.Sprintf("pod-%s-describe.txt", pods[i].Name)), podDescribe)
+			}
+		}
+	}
+
 	deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to list deployments in namespace %s, %w", namespace, err))
