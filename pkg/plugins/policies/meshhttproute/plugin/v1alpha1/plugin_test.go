@@ -2857,6 +2857,96 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 		}()),
 	)
+
+	It("should fail when request mirror backend is unresolvable", func() {
+		outboundTargets := xds_builders.EndpointMap().
+			AddEndpoint("backend", xds_builders.Endpoint().
+				WithTarget("192.168.0.4").
+				WithPort(8084).
+				WithWeight(1).
+				WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+		mirrorBackendRef := common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshServiceSubset,
+				Name: pointer.To("payments"),
+				Tags: &map[string]string{
+					"version": "v1",
+					"region":  "us",
+					"env":     "dev",
+				},
+			},
+		}
+		given := outboundsTestCase{
+			xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				Build(),
+			proxy: xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().
+					WithName("web-01").
+					WithAddress("192.168.0.2").
+					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+				WithOutbounds(xds_types.Outbounds{
+					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+						Port: builders.FirstOutboundPort,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "backend",
+						},
+					}},
+				}).
+				WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+							Rules: core_rules.Rules{
+								test_policies.NewRule(subsetutils.MeshService("backend"), api.PolicyDefault{
+									Rules: []api.Rule{{
+										Matches: []api.Match{{
+											Path: &api.PathMatch{
+												Type:  api.PathPrefix,
+												Value: "/v1",
+											},
+										}},
+										Default: api.RuleConf{
+											Filters: &[]api.Filter{{
+												Type: api.RequestMirrorType,
+												RequestMirror: &api.RequestMirror{
+													BackendRef: mirrorBackendRef,
+												},
+											}},
+										},
+									}},
+								}),
+							},
+						}),
+				).
+				Build(),
+		}
+
+		metrics, err := metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		claCache, err := cla.NewCache(1*time.Second, metrics)
+		Expect(err).ToNot(HaveOccurred())
+		given.xdsContext.ControlPlane.CLACache = claCache
+
+		secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+		dataSourceLoader := datasource.NewDataSourceLoader(secretManager)
+		given.xdsContext.Mesh.DataSourceLoader = dataSourceLoader
+
+		for n, p := range core_plugins.Plugins().ProxyPlugins() {
+			Expect(p.Apply(context.Background(), given.xdsContext.Mesh, given.proxy)).To(Succeed(), n)
+		}
+
+		gatewayGenerator := plugin_gateway.NewGenerator("test-zone")
+		_, err = gatewayGenerator.Generate(context.Background(), nil, given.xdsContext, given.proxy)
+		Expect(err).NotTo(HaveOccurred())
+
+		resourceSet := core_xds.NewResourceSet()
+		policyPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		err = policyPlugin.Apply(resourceSet, given.xdsContext, given.proxy)
+
+		Expect(err).To(MatchError(ContainSubstring("could not find cluster for backendRef " + string(mirrorBackendRef.Hash()))))
+	})
 })
 
 const secureSecret = `
