@@ -59,6 +59,7 @@ type InstallControlPlaneArgs struct {
 	ValueFiles                                   []string
 	Values                                       []string
 	SkipKinds                                    []string
+	SkipCRDs                                     bool
 	// APIVersions is a hidden, internal option
 	APIVersions        []string
 	DumpValues         bool

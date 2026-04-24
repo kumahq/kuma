@@ -229,7 +229,11 @@ This command requires that the KUBECONFIG environment is set`,
 				return errors.Wrap(err, "Failed to render helm template files")
 			}
 
-			sortedResources, err := k8s.SortResourcesByKind(renderedFiles, args.SkipKinds...)
+			skipKinds := args.SkipKinds
+			if args.SkipCRDs || isUniversalEnvironment(vals, ctx.HELMValuesPrefix) {
+				skipKinds = append(skipKinds, "CustomResourceDefinition")
+			}
+			sortedResources, err := k8s.SortResourcesByKind(renderedFiles, skipKinds...)
 			if err != nil {
 				return errors.Wrap(err, "Failed to sort resources by kind")
 			}
@@ -299,6 +303,7 @@ This command requires that the KUBECONFIG environment is set`,
 	if err := cmd.Flags().MarkHidden("skip-kinds"); err != nil {
 		panic(err.Error())
 	}
+	cmd.Flags().BoolVar(&args.SkipCRDs, "skip-crds", false, "skip installation of CRDs (CustomResourceDefinitions). This is useful when installing a global control plane with universal environment")
 
 	// This is used for testing the install command without a cluster
 	cmd.Flags().StringArrayVar(&args.APIVersions, "api-versions", []string{}, "INTERNAL: Kubernetes api versions used for Capabilities.APIVersions")
@@ -308,6 +313,22 @@ This command requires that the KUBECONFIG environment is set`,
 
 	cmd.Flags().BoolVar(&args.DumpValues, "dump-values", false, "output all possible values for the configuration. This is similar to `helm show values <chart>")
 	return cmd
+}
+
+func isUniversalEnvironment(vals map[string]any, prefix string) bool {
+	m := vals
+	if prefix != "" {
+		sub, ok := m[prefix].(map[string]any)
+		if !ok {
+			return false
+		}
+		m = sub
+	}
+	cp, ok := m["controlPlane"].(map[string]any)
+	if !ok {
+		return false
+	}
+	return cp["environment"] == "universal"
 }
 
 func mergeMaps(a, b map[string]any) map[string]any {
