@@ -127,6 +127,7 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
+		configured[listenerKey] = struct{}{}
 		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{
