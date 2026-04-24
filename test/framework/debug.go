@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	v1 "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/test/framework/kumactl"
@@ -189,7 +190,62 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 			errs = multierr.Combine(errs, fmt.Errorf("failed to debug namespace %s, %w", namespace, err))
 		}
 	}
+
+	if err := debugCNIPods(cluster); err != nil {
+		errs = multierr.Combine(errs, fmt.Errorf("failed to debug CNI pods, %w", err))
+	}
 	return errs
+}
+
+// debugCNIPods collects logs and describes for the kuma-cni-node DaemonSet
+// pods. Without this the stderr-hijacked output of the kuma-cni plugin is
+// lost on failures and we can't tell whether iptables rules were installed
+// for a given pod sandbox.
+func debugCNIPods(cluster Cluster) error {
+	kubeOptions := *cluster.GetKubectlOptions(Config.CNINamespace)
+	kubeOptions.Logger = logger.Discard
+	pods, err := k8s.ListPodsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{
+		LabelSelector: "app=" + Config.CNIApp,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list %s pods in %s: %w", Config.CNIApp, Config.CNINamespace, err)
+	}
+	if len(pods) == 0 {
+		return nil
+	}
+	var errs error
+	for i := range pods {
+		pod := &pods[i]
+		describe, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "describe", "pod", pod.Name)
+		if err != nil {
+			errs = multierr.Combine(errs, fmt.Errorf("failed to describe CNI pod %s: %w", pod.Name, err))
+		} else {
+			report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", Config.CNINamespace, fmt.Sprintf("pod-%s-describe.txt", pod.Name)), describe)
+		}
+		containers := append([]string{}, containerNames(pod.Spec.InitContainers)...)
+		containers = append(containers, containerNames(pod.Spec.Containers)...)
+		for _, c := range containers {
+			logs, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "logs", pod.Name, "-c", c)
+			if err != nil {
+				errs = multierr.Combine(errs, fmt.Errorf("failed to get logs for %s/%s: %w", pod.Name, c, err))
+			} else if logs != "" {
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", Config.CNINamespace, fmt.Sprintf("pod-%s-%s.log", pod.Name, c)), logs)
+			}
+			prev, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "logs", pod.Name, "-c", c, "--previous")
+			if err == nil && prev != "" {
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", Config.CNINamespace, fmt.Sprintf("pod-%s-%s-previous.log", pod.Name, c)), prev)
+			}
+		}
+	}
+	return errs
+}
+
+func containerNames(cs []v1.Container) []string {
+	names := make([]string, len(cs))
+	for i, c := range cs {
+		names[i] = c.Name
+	}
+	return names
 }
 
 func debugDockerNodeLogs(cluster Cluster, nameFilter string) error {
@@ -210,8 +266,72 @@ func debugDockerNodeLogs(cluster Cluster, nameFilter string) error {
 		if err := debugDockerNodeStats(ctx, cluster, containerName); err != nil {
 			errs = multierr.Combine(errs, err)
 		}
+		if err := debugDockerKubeletLogs(ctx, cluster, containerName); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+		if err := debugDockerNodeCNIState(ctx, cluster, containerName); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
 	}
 	return errs
+}
+
+// debugDockerNodeCNIState collects node-scoped CNI diagnostics: the kuma-cni
+// plugin's own log file, the chained CNI config, and iptables-save output.
+// These are the primary signals when a kuma-validation init container hangs
+// because the CNI plugin failed to install transparent-proxy rules for a pod.
+func debugDockerNodeCNIState(ctx context.Context, cluster Cluster, containerName string) error {
+	script := `
+echo "=== /tmp/kuma-cni.log (CNI plugin runtime log) ==="
+cat /tmp/kuma-cni.log 2>/dev/null || echo "not present"
+echo
+echo "=== /etc/cni/net.d listing ==="
+ls -la /etc/cni/net.d 2>/dev/null || echo "not present"
+echo
+echo "=== /etc/cni/net.d/*.conflist contents ==="
+for f in /etc/cni/net.d/*.conflist /etc/cni/net.d/*.conf; do
+  [ -e "$f" ] || continue
+  echo "--- $f ---"
+  cat "$f"
+done
+echo
+echo "=== iptables-save -t nat (nft) ==="
+iptables-nft-save -t nat 2>/dev/null || echo "iptables-nft-save unavailable"
+echo
+echo "=== iptables-save -t raw (nft) ==="
+iptables-nft-save -t raw 2>/dev/null || echo "iptables-nft-save unavailable"
+echo
+echo "=== ip6tables-save -t nat (nft) ==="
+ip6tables-nft-save -t nat 2>/dev/null || echo "ip6tables-nft-save unavailable"
+echo
+echo "=== iptables-save -t nat (legacy) ==="
+iptables-legacy-save -t nat 2>/dev/null || echo "iptables-legacy-save unavailable"
+echo
+echo "=== conntrack counters (kuma zones) ==="
+conntrack -L -z 1 2>/dev/null | head -40 || echo "conntrack unavailable"
+echo
+echo "=== mounts of kuma-cni hostPaths ==="
+mount | grep -E 'cni|opt/cni' || true
+`
+	out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "sh", "-c", script).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to collect CNI state from %q: %w", containerName, err)
+	}
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+"-cni.txt"), out)
+	return nil
+}
+
+func debugDockerKubeletLogs(ctx context.Context, cluster Cluster, containerName string) error {
+	// k3s embeds kubelet; its logs go to /var/log/k3s.log inside the node container.
+	// docker logs only captures k3s process stdout/stderr (init output), not kubelet activity.
+	out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "sh", "-c",
+		"cat /var/log/k3s.log 2>/dev/null || journalctl -u k3s --no-pager 2>/dev/null || echo 'kubelet logs not found'",
+	).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to get kubelet logs from %q: %w", containerName, err)
+	}
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+"-kubelet.log"), out)
+	return nil
 }
 
 // debugDockerNodeStats collects CPU pressure and load info from inside a node container.
