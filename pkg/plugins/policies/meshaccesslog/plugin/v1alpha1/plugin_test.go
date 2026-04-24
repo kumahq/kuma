@@ -37,12 +37,27 @@ import (
 
 var _ = Describe("MeshAccessLog", func() {
 	type sidecarTestCase struct {
+<<<<<<< HEAD
 		resources         []core_xds.Resource
 		outbounds         []*builders.OutboundBuilder
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
 		expectedListeners []string
 		expectedClusters  []string
+=======
+		resources           []core_xds.Resource
+		outbounds           xds_types.Outbounds
+		toRules             core_rules.ToRules
+		fromRules           core_rules.FromRules
+		expectedListeners   []string
+		expectedClusters    []string
+		features            xds_types.Features
+		meshServicesMode    mesh_proto.Mesh_MeshServices_Mode
+		dataplaneLabels     map[string]string
+		inboundTagsDisabled bool
+		inboundName         string
+		extraInbounds       []*builders.InboundBuilder
+>>>>>>> 9a57939108 (fix(meshaccesslog): deduplicate access logs for shared inbound port (#16374))
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -52,7 +67,48 @@ var _ = Describe("MeshAccessLog", func() {
 				resourceSet.Add(&r)
 			}
 
+<<<<<<< HEAD
 			xdsCtx := xds_samples.SampleContext()
+=======
+			xdsCtx := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServicesMode)).
+				WithResources(xds_context.NewResources()).
+				WithEndpointMap(
+					xds_builders.EndpointMap().
+						AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
+						AddEndpoint("other-service-http", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service")).
+						AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
+				).
+				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service-http", core_meta.ProtocolHTTP).
+				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
+				With(func(ctx *xds_context.Context) {
+					ctx.ControlPlane.InboundTagsDisabled = given.inboundTagsDisabled
+				}).
+				Build()
+
+			inboundBuilder := builders.Inbound().
+				WithService("backend").
+				WithAddress("127.0.0.1").
+				WithPort(17777).
+				WithTags(map[string]string{
+					mesh_proto.ProtocolTag: "http",
+				})
+			if given.inboundName != "" {
+				inboundBuilder = inboundBuilder.WithName(given.inboundName)
+			}
+			dpBuilder := builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				AddInbound(inboundBuilder)
+			for _, extra := range given.extraInbounds {
+				dpBuilder = dpBuilder.AddInbound(extra)
+			}
+			if given.dataplaneLabels != nil {
+				dpBuilder = dpBuilder.WithLabels(given.dataplaneLabels)
+			}
+
+>>>>>>> 9a57939108 (fix(meshaccesslog): deduplicate access logs for shared inbound port (#16374))
 			proxy := xds_builders.Proxy().
 				WithMetadata(&xds.DataplaneMetadata{
 					AccessLogSocketPath: "/tmp/kuma-al-backend-default.sock",
@@ -885,6 +941,7 @@ var _ = Describe("MeshAccessLog", func() {
 					}},
 				},
 			},
+<<<<<<< HEAD
 			expectedListeners: []string{
 				`
             address:
@@ -934,6 +991,97 @@ var _ = Describe("MeshAccessLog", func() {
                   statPrefix: "127_0_0_1_17777"
             name: inbound:127.0.0.1:17777
             trafficDirection: INBOUND`,
+=======
+			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
+		}),
+		Entry("inbound with two services on the same port does not duplicate access log", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			extraInbounds: []*builders.InboundBuilder{
+				builders.Inbound().
+					WithService("backend-canary").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Subset: subsetutils.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: &api.Rule{Default: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						}},
+					}},
+				},
+			},
+			expectedListeners: []string{"inbound_route_duplicate_port.listener.golden.yaml"},
+		}),
+		Entry("inbound route with inbound tags disabled", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			inboundTagsDisabled: true,
+			inboundName:         "http",
+			dataplaneLabels: map[string]string{
+				mesh_proto.ZoneTag:          "zone-1",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+>>>>>>> 9a57939108 (fix(meshaccesslog): deduplicate access logs for shared inbound port (#16374))
 			},
 		}),
 	)
