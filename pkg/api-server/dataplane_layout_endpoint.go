@@ -1,9 +1,9 @@
 package api_server
 
 import (
+	"fmt"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -100,15 +100,17 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		}
 	})
 	for _, listener := range dataplane.Spec.GetNetworking().GetListeners() {
-		sectionName := listener.GetName()
-		if sectionName == "" {
-			sectionName = strconv.Itoa(int(listener.GetPort()))
+		sectionName := listener.GetSectionName()
+		proxyResourceName, err := listenerProxyResourceName(listener, sectionName)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to compute listener proxy resource name")
+			return
 		}
 		inbounds = append(inbounds, api_common.DataplaneInbound{
 			Kri:               kri.WithSectionName(kri.From(dataplane), sectionName).String(),
 			Port:              int32(listener.GetPort()),
 			Protocol:          core_meta.ProtocolTCP.String(),
-			ProxyResourceName: listenerProxyResourceName(dataplane, listener, sectionName),
+			ProxyResourceName: proxyResourceName,
 		})
 	}
 
@@ -166,16 +168,15 @@ func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, me
 }
 
 func listenerProxyResourceName(
-	dataplane *core_mesh.DataplaneResource,
 	listener *v1alpha1.Dataplane_Networking_Listener,
 	sectionName string,
-) string {
+) (string, error) {
 	switch listener.GetType() {
 	case v1alpha1.Dataplane_Networking_Listener_ZoneIngress:
-		return naming.ContextualZoneIngressListenerName(sectionName)
+		return naming.ContextualZoneIngressListenerName(sectionName), nil
 	case v1alpha1.Dataplane_Networking_Listener_ZoneEgress:
-		return naming.ContextualZoneEgressListenerName(sectionName)
+		return naming.ContextualZoneEgressListenerName(sectionName), nil
 	default:
-		return naming.MustContextualInboundName(dataplane, sectionName)
+		return "", fmt.Errorf("unsupported listener type %q", listener.GetType().String())
 	}
 }
