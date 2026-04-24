@@ -112,12 +112,16 @@ func applyToInbounds(
 	backends *EndpointAccumulator,
 	accessLogSocketPath string,
 ) error {
+	configured := map[core_rules.InboundListener]struct{}{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
+		}
+		if _, ok := configured[listenerKey]; ok {
+			continue
 		}
 		listener, ok := inboundListeners[listenerKey]
 		if !ok {
