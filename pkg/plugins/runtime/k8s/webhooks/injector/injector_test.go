@@ -1064,4 +1064,119 @@ spec:
 			cfgFile: "inject.config.yaml",
 		}),
 	)
+
+	Describe("delta xDS injection", func() {
+		const (
+			defaultMesh = `
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default`
+			defaultNamespace = `
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+  labels:
+    kuma.io/sidecar-injection: enabled`
+		)
+
+		newInjector := func(deltaXdsEnabled bool) *inject.KumaInjector {
+			var cfg conf.Injector
+			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
+			cfg.CaCertFile = caCertPath
+			inj, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, deltaXdsEnabled)
+			ExpectWithOffset(1, err).ToNot(HaveOccurred())
+			return inj
+		}
+
+		injectPod := func(injector *inject.KumaInjector, podYAML string) *kube_core.Pod {
+			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
+
+			obj, _, err := decoder.Decode([]byte(defaultMesh), nil, nil)
+			ExpectWithOffset(1, err).ToNot(HaveOccurred())
+			ExpectWithOffset(1, k8sClient.Create(context.Background(), obj.(kube_client.Object))).To(Succeed())
+
+			ns, _, err := decoder.Decode([]byte(defaultNamespace), nil, nil)
+			ExpectWithOffset(1, err).ToNot(HaveOccurred())
+			ExpectWithOffset(1, k8sClient.Update(context.Background(), ns.(kube_client.Object))).To(Succeed())
+
+			pod := &kube_core.Pod{}
+			ExpectWithOffset(1, yaml.Unmarshal([]byte(podYAML), pod)).To(Succeed())
+			ExpectWithOffset(1, injector.InjectKuma(context.Background(), pod)).To(Succeed())
+			return pod
+		}
+
+		sidecarEnv := func(pod *kube_core.Pod) []kube_core.EnvVar {
+			for _, c := range pod.Spec.Containers {
+				if c.Name == k8s_util.KumaSidecarContainerName {
+					return c.Env
+				}
+			}
+			return nil
+		}
+
+		It("sets DELTA_GRPC transport on the injected sidecar", func() {
+			pod := injectPod(newInjector(true), `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox`)
+
+			Expect(sidecarEnv(pod)).To(ContainElement(kube_core.EnvVar{
+				Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+				Value: "DELTA_GRPC",
+			}))
+		})
+
+		It("allows per-pod xds-transport-protocol-variant annotation to override deltaXds", func() {
+			// The per-pod annotation is applied after deltaXdsEnabled, so it takes precedence.
+			pod := injectPod(newInjector(true), `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  annotations:
+    kuma.io/xds-transport-protocol-variant: "GRPC"
+  labels:
+    run: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox`)
+
+			Expect(sidecarEnv(pod)).To(ContainElement(kube_core.EnvVar{
+				Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+				Value: "GRPC",
+			}))
+		})
+
+		It("allows kuma.io/sidecar-env-vars to override the transport variant", func() {
+			// sidecar-env-vars runs after deltaXdsEnabled, so the annotation wins.
+			pod := injectPod(newInjector(true), `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  annotations:
+    kuma.io/sidecar-env-vars: "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT=GRPC"
+  labels:
+    run: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox`)
+
+			Expect(sidecarEnv(pod)).To(ContainElement(kube_core.EnvVar{
+				Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+				Value: "GRPC",
+			}))
+		})
+	})
 }, Ordered)
