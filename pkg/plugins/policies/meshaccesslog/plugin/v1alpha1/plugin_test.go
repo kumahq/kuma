@@ -75,6 +75,7 @@ var _ = Describe("MeshAccessLog", func() {
 		expectedClusters  []string
 		features          xds_types.Features
 		meshServicesMode  mesh_proto.Mesh_MeshServices_Mode
+		extraInbounds     []*builders.InboundBuilder
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -99,25 +100,28 @@ var _ = Describe("MeshAccessLog", func() {
 				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 				Build()
 
+			dpBuilder := builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				AddInbound(builders.Inbound().
+					WithService("backend").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+				)
+
+			for _, extra := range given.extraInbounds {
+				dpBuilder = dpBuilder.AddInbound(extra)
+			}
 			proxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir:  "/tmp",
 					Features: given.features,
 				}).
-				WithDataplane(
-					builders.Dataplane().
-						WithName("backend").
-						WithMesh("default").
-						AddInbound(builders.Inbound().
-							WithService("backend").
-							WithAddress("127.0.0.1").
-							WithPort(17777).
-							WithTags(map[string]string{
-								mesh_proto.ProtocolTag: "http",
-							}),
-						),
-				).
+				WithDataplane(dpBuilder).
 				WithOutbounds(append(given.outbounds, &xds_types.Outbound{
 					LegacyOutbound: builders.Outbound().
 						WithService("other-service-http").
@@ -721,6 +725,65 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			},
 			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
+		}),
+		Entry("inbound with two services on the same port does not duplicate access log", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			extraInbounds: []*builders.InboundBuilder{
+				builders.Inbound().
+					WithService("backend-canary").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Subset: subsetutils.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: &api.Rule{Default: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						}},
+					}},
+				},
+			},
+			expectedListeners: []string{"inbound_route_duplicate_port.listener.golden.yaml"},
 		}),
 	)
 	type gatewayTestCase struct {
