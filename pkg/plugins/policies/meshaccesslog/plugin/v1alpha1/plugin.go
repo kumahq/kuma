@@ -75,6 +75,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 }
 
 func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *plugin_xds.EndpointAccumulator, path string) error {
+	configured := map[core_rules.InboundListener]struct{}{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -82,10 +83,17 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
+
+		if _, ok := configured[listenerKey]; ok {
+			continue
+		}
+
 		listener, ok := inboundListeners[listenerKey]
 		if !ok {
 			continue
 		}
+
+		configured[listenerKey] = struct{}{}
 
 		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends, path); err != nil {
 			return err
