@@ -75,7 +75,7 @@ var _ = Describe("MeshAccessLog", func() {
 		expectedClusters  []string
 		features          xds_types.Features
 		meshServicesMode  mesh_proto.Mesh_MeshServices_Mode
-		extraInbounds       []*builders.InboundBuilder
+		extraInbounds     []*builders.InboundBuilder
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -101,16 +101,17 @@ var _ = Describe("MeshAccessLog", func() {
 				Build()
 
 			dpBuilder := builders.Dataplane().
-						WithName("backend").
-						WithMesh("default").
-						AddInbound(builders.Inbound().
-							WithService("backend").
-							WithAddress("127.0.0.1").
-							WithPort(17777).
-							WithTags(map[string]string{
-								mesh_proto.ProtocolTag: "http",
-							}),
-						)
+				WithName("backend").
+				WithMesh("default").
+				AddInbound(builders.Inbound().
+					WithService("backend").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+				)
+
 			for _, extra := range given.extraInbounds {
 				dpBuilder = dpBuilder.AddInbound(extra)
 			}
