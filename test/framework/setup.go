@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-<<<<<<< HEAD
 	"strings"
-=======
 	"sync/atomic"
->>>>>>> 5ccb1675bf (fix(xds): scope ZoneIngress deduplication per-zone (#16290))
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -582,28 +579,15 @@ func universalZoneProxyRelatedResource(
 	}
 }
 
-<<<<<<< HEAD
-func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, port int) string {
-		return fmt.Sprintf(ZoneIngress, AppIngress, address, UniversalZoneIngressPort, port)
-	}
-=======
 // ingressPortAllocator hands out unique advertised ports for universal ZoneIngress
 // instances so that no two ingresses share the same IP:port when running in a
 // Docker/k3d environment where all zones resolve to the same host address.
 var ingressPortAllocator atomic.Int32
->>>>>>> 5ccb1675bf (fix(xds): scope ZoneIngress deduplication per-zone (#16290))
 
 func init() {
 	ingressPortAllocator.Store(int32(UniversalZoneIngressPort) - 1)
 }
 
-<<<<<<< HEAD
-func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	name := fmt.Sprintf("%s-%d", AppIngress, advertisedPort)
-	manifestFunc := func(address string, port int) string {
-		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, port)
-=======
 // AllocateIngressPort returns the next unique advertised port for a universal
 // ZoneIngress. It is safe to call from multiple goroutines.
 func AllocateIngressPort() int {
@@ -615,15 +599,8 @@ func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...Ap
 }
 
 func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, _ int) (string, error) {
-		zi := ZoneIngressTemplateData{
-			Name:              name,
-			AdvertisedAddress: address,
-			AdvertisedPort:    advertisedPort,
-			Port:              advertisedPort,
-		}
-		return RenderZoneIngressTemplate(zi)
->>>>>>> 5ccb1675bf (fix(xds): scope ZoneIngress deduplication per-zone (#16290))
+	manifestFunc := func(address string, port int) string {
+		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, port)
 	}
 
 	var opts appDeploymentOptions
