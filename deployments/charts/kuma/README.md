@@ -231,11 +231,19 @@ A Helm chart for the Kuma Control Plane
 | zoneProxyImage.registry | string | `"registry.k8s.io"` | The pause image registry |
 | zoneProxyImage.repository | string | `"pause"` | The pause image repository |
 | zoneProxyImage.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
+| meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
+| meshZoneProxyDefaults.ingress.service.port | int | `10001` | Default port for zone ingress Service. |
+| meshZoneProxyDefaults.ingress.service.targetPort | int | `10001` | Container port the zone ingress listens on. Do not change unless the zone proxy binary is reconfigured. |
+| meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
+| meshZoneProxyDefaults.egress.service.port | int | `10002` | Default port for zone egress Service. |
+| meshZoneProxyDefaults.egress.service.targetPort | int | `10002` | Container port the zone egress listens on. Do not change unless the zone proxy binary is reconfigured. |
 | meshes[0].name | string | `"default"` | The mesh must already exist or be created separately; this Helm chart will not create it. |
 | meshes[0].ingress.enabled | bool | `false` | Deploy a zone ingress for this mesh. |
 | meshes[0].ingress.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
+| meshes[0].ingress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.ingress.service.type when unset. |
+| meshes[0].ingress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.ingress.service.port when unset. |
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].ingress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
@@ -246,6 +254,8 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.replicas | int | `1` |  |
 | meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
+| meshes[0].egress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.egress.service.type when unset. |
+| meshes[0].egress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.egress.service.port when unset. |
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].egress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
