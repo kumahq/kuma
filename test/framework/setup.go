@@ -529,7 +529,7 @@ func universalZoneProxyRelatedResource(
 	tokenProvider func(zone string) (string, error),
 	dpName string,
 	appType AppMode,
-	resourceManifestFunc func(address string, port int) string,
+	resourceManifestFunc func(address string) string,
 	concurrency int,
 ) func(cluster Cluster) error {
 	return func(cluster Cluster) error {
@@ -561,8 +561,7 @@ func universalZoneProxyRelatedResource(
 
 		uniCluster.apps[dpName] = app
 		publicAddress := app.ip
-		dpYAML := resourceManifestFunc(publicAddress, UniversalZoneIngressPort)
-
+		dpYAML := resourceManifestFunc(publicAddress)
 		token, err := tokenProvider(uniCluster.name)
 		if err != nil {
 			return err
@@ -599,8 +598,8 @@ func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...Ap
 }
 
 func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, port int) string {
-		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, port)
+	manifestFunc := func(address string) string {
+		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, advertisedPort)
 	}
 
 	var opts appDeploymentOptions
@@ -610,8 +609,8 @@ func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider fun
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(_ string, port int) string {
-		return fmt.Sprintf(ZoneEgress, port)
+	manifestFunc := func(_ string) string {
+		return fmt.Sprintf(ZoneEgress, UniversalZoneIngressPort)
 	}
 
 	var opts appDeploymentOptions
