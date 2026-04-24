@@ -127,12 +127,8 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-<<<<<<< HEAD
 		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
-=======
 		configured[listenerKey] = struct{}{}
-		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
->>>>>>> 9a57939108 (fix(meshaccesslog): deduplicate access logs for shared inbound port (#16374))
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
