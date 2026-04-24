@@ -668,7 +668,6 @@ func universalZoneProxyRelatedResource(
 	appType AppMode,
 	resourceManifestFunc func(address string) string,
 	concurrency int,
-	port int,
 ) func(cluster Cluster) error {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
@@ -743,7 +742,7 @@ func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider fun
 	var opts appDeploymentOptions
 	opts.apply(opt...)
 
-	return universalZoneProxyRelatedResource(tokenProvider, name, AppIngress, manifestFunc, opts.concurrency, advertisedPort)
+	return universalZoneProxyRelatedResource(tokenProvider, name, AppIngress, manifestFunc, opts.concurrency)
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
@@ -754,7 +753,7 @@ func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...App
 	var opts appDeploymentOptions
 	opts.apply(opt...)
 
-	return universalZoneProxyRelatedResource(tokenProvider, AppEgress, AppEgress, manifestFunc, opts.concurrency, UniversalZoneIngressPort)
+	return universalZoneProxyRelatedResource(tokenProvider, AppEgress, AppEgress, manifestFunc, opts.concurrency)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {
