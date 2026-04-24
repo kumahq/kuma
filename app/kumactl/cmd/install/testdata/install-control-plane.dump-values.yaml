@@ -814,6 +814,28 @@ zoneProxyImage:
   # -- The pause image tag
   tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
 
+# Default service settings for mesh zone proxies. Used as fallback when
+# meshes[].ingress.service or meshes[].egress.service fields are not set.
+meshZoneProxyDefaults:
+  ingress:
+    service:
+      # -- Default Service type for zone ingress.
+      type: LoadBalancer
+      # -- Default port for zone ingress Service.
+      port: 10001
+      # -- Container port the zone ingress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10001
+  egress:
+    service:
+      # -- Default Service type for zone egress.
+      type: ClusterIP
+      # -- Default port for zone egress Service.
+      port: 10002
+      # -- Container port the zone egress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10002
+
 # List of meshes to deploy zone proxies for.
 meshes:
   - # -- The mesh must already exist or be created separately; this Helm chart will not create it.
@@ -832,6 +854,15 @@ meshes:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
         name: ""
+        # -- (string) Per-mesh override for Service type. Falls back to
+        # meshZoneProxyDefaults.ingress.service.type when unset.
+        type:
+        # -- (int) Per-mesh override for Service port. Falls back to
+        # meshZoneProxyDefaults.ingress.service.port when unset.
+        port:
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
       # -- Resource requests and limits for the pod (pod-level resources).
       # Applied to all containers in the pod (pause + injected kuma-sidecar).
       resources: {}
@@ -864,6 +895,15 @@ meshes:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
         name: ""
+        # -- (string) Per-mesh override for Service type. Falls back to
+        # meshZoneProxyDefaults.egress.service.type when unset.
+        type:
+        # -- (int) Per-mesh override for Service port. Falls back to
+        # meshZoneProxyDefaults.egress.service.port when unset.
+        port:
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
       # -- Resource requests and limits for the pod (pod-level resources).
       # Applied to all containers in the pod (pause + injected kuma-sidecar).
       resources: {}
