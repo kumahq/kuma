@@ -67,21 +67,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-<<<<<<< HEAD
 func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *plugin_xds.EndpointAccumulator, path string) error {
-=======
-func applyToInbounds(
-	rules core_rules.FromRules,
-	inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	dataplane *core_mesh.DataplaneResource,
-	backends *EndpointAccumulator,
-	accessLogSocketPath string,
-	zone string,
-	workloadKRI string,
-	inboundTagsDisabled bool,
-) error {
 	configured := map[core_rules.InboundListener]struct{}{}
->>>>>>> 9a57939108 (fix(meshaccesslog): deduplicate access logs for shared inbound port (#16374))
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -96,24 +83,9 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-<<<<<<< HEAD
+		configured[listenerKey] = struct{}{}
 
 		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends, path); err != nil {
-=======
-		configured[listenerKey] = struct{}{}
-		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
-		kumaValues := listeners_v3.KumaValues{
-			SourceService:      mesh_proto.ServiceUnknown,
-			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
-			DestinationService: dataplane.InboundIdentifyingName(inboundTagsDisabled, inbound.Name),
-			Mesh:               dataplane.GetMeta().GetMesh(),
-			Zone:               zone,
-			WorkloadKRI:        workloadKRI,
-			TrafficDirection:   envoy.TrafficDirectionInbound,
-		}
-		if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
->>>>>>> 9a57939108 (fix(meshaccesslog): deduplicate access logs for shared inbound port (#16374))
 			return err
 		}
 	}
