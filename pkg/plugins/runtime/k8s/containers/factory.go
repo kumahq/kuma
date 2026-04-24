@@ -41,6 +41,7 @@ type DataplaneProxyFactory struct {
 	unifiedResourceNamingEnabled bool
 	otelPipeEnabled              bool
 	spireEnabled                 bool
+	deltaXdsEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -58,6 +59,7 @@ func NewDataplaneProxyFactory(
 	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
+	deltaXdsEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -74,6 +76,7 @@ func NewDataplaneProxyFactory(
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		otelPipeEnabled:              otelPipeEnabled,
 		spireEnabled:                 spireEnabled,
+		deltaXdsEnabled:              deltaXdsEnabled,
 	}
 }
 
@@ -369,6 +372,13 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
 			Value: "true",
+		}
+	}
+
+	if i.deltaXdsEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+			Value: "DELTA_GRPC",
 		}
 	}
 

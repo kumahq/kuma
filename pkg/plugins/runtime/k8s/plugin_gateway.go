@@ -96,7 +96,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		cpURL, caCert, rt.Config().GetEnvoyAdminPort(), rt.Config().GetEnvoyReadinessPort(),
 		cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS,
 		false, rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket, false, false, 0,
-		cfg.UnifiedResourceNamingEnabled, cfg.OtelPipeEnabled, cfg.Spire.Enabled,
+		cfg.UnifiedResourceNamingEnabled, cfg.OtelPipeEnabled, cfg.Spire.Enabled, rt.Config().Experimental.DeltaXds,
 	)
 
 	kubeConfig := mgr.GetConfig()
