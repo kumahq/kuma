@@ -3,6 +3,7 @@ package api_server
 import (
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -12,6 +13,7 @@ import (
 	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -97,6 +99,18 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 			ProxyResourceName: naming.MustContextualInboundName(dataplane, inbound.GetSectionName()),
 		}
 	})
+	for _, listener := range dataplane.Spec.GetNetworking().GetListeners() {
+		sectionName := listener.GetName()
+		if sectionName == "" {
+			sectionName = strconv.Itoa(int(listener.GetPort()))
+		}
+		inbounds = append(inbounds, api_common.DataplaneInbound{
+			Kri:               kri.WithSectionName(kri.From(dataplane), sectionName).String(),
+			Port:              int32(listener.GetPort()),
+			Protocol:          core_meta.ProtocolTCP.String(),
+			ProxyResourceName: listenerProxyResourceName(dataplane, listener, sectionName),
+		})
+	}
 
 	outbounds := []api_common.DataplaneOutbound{}
 	reachableOutbounds, _ := baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
@@ -149,4 +163,19 @@ func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, me
 		return nil
 	}
 	return &spiffeID
+}
+
+func listenerProxyResourceName(
+	dataplane *core_mesh.DataplaneResource,
+	listener *v1alpha1.Dataplane_Networking_Listener,
+	sectionName string,
+) string {
+	switch listener.GetType() {
+	case v1alpha1.Dataplane_Networking_Listener_ZoneIngress:
+		return naming.ContextualZoneIngressListenerName(sectionName)
+	case v1alpha1.Dataplane_Networking_Listener_ZoneEgress:
+		return naming.ContextualZoneEgressListenerName(sectionName)
+	default:
+		return naming.MustContextualInboundName(dataplane, sectionName)
+	}
 }

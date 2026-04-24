@@ -1,0 +1,21 @@
+{
+ "inbounds": [
+  {
+   "kri": "kri_dp_default_test-zone__dp-zone-proxy_zi-main",
+   "port": 10001,
+   "protocol": "tcp",
+   "proxyResourceName": "self_zoneingress_dp_zi-main"
+  },
+  {
+   "kri": "kri_dp_default_test-zone__dp-zone-proxy_10002",
+   "port": 10002,
+   "protocol": "tcp",
+   "proxyResourceName": "self_zoneegress_dp_10002"
+  }
+ ],
+ "kri": "kri_dp_default_test-zone__dp-zone-proxy_",
+ "labels": {
+  "kuma.io/zone": "test-zone"
+ },
+ "outbounds": []
+}
