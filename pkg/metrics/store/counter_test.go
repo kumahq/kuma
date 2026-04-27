@@ -73,18 +73,20 @@ var _ = Describe("Counter", func() {
 		})
 
 		go func() {
+			defer GinkgoRecover()
 			err := resyncer.Start(stop)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 
 		go func() {
+			defer GinkgoRecover()
 			err = counter.StartWithTicker(stop, counterTicker)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 	})
 
 	AfterEach(func() {
-		stop <- struct{}{}
+		close(stop)
 	})
 
 	findGauge := func(resTypeName string) *io_prometheus_client.Gauge {
@@ -133,6 +135,25 @@ var _ = Describe("Counter", func() {
 			g.Expect(findGauge("Mesh").GetValue()).To(Equal(float64(2)))
 			g.Expect(findGauge("Dataplane").GetValue()).To(Equal(float64(1)))
 			g.Expect(findGauge("TrafficPermission").GetValue()).To(Equal(float64(2)))
+		}).Should(Succeed())
+	})
+
+	It("should count dataplanes without mesh insights", func() {
+		// given
+		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = resManager.Create(
+			context.Background(),
+			&core_mesh.DataplaneResource{Spec: samples.Dataplane},
+			core_store.CreateByKey("dp-1", "mesh-1"),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			g.Expect(findGauge("Mesh").GetValue()).To(Equal(float64(1)))
+			g.Expect(findGauge("Dataplane").GetValue()).To(Equal(float64(1)))
 		}).Should(Succeed())
 	})
 })
