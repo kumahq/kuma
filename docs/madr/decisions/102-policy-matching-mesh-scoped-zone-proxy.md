@@ -328,18 +328,14 @@ Priority column indicates planned release milestone.
 ### MeshTrafficPermission Default Behaviour
 
 Zone egress is a security boundary — it is the sole exit path for MeshExternalService traffic.
-The default behavior when no MeshTrafficPermission targets zone egress must be **deny-all**.
-This MADR proposes changing `mesh.spec.routing.defaultForbidMeshExternalServiceAccess` from its
-current default of `false` (permissive, set in MADR-062 when egress targeting was not yet available)
-to `true` (deny-all). Now that MeshTrafficPermission can target zone egress with per-destination
-granularity, the fail-closed default is both safe and practical. This requires an explicit
-implementation change to the API default value.
+The default behavior when no MeshTrafficPermission targets a mesh-scoped zone egress Dataplane
+is **deny-all**.
+
+The legacy flag `mesh.spec.routing.defaultForbidMeshExternalServiceAccess` applied only to the
+old global-scoped `ZoneEgress` resource. It is irrelevant for mesh-scoped zone proxy Dataplanes
+and will be removed in 3.0.
 
 Operators must create explicit `allow` entries in MeshTrafficPermission to grant access.
-
-> **Breaking change**: this default flip MUST be documented in `UPGRADE.md` in bold.
-> Users relying on the permissive default will have all MeshExternalService access blocked
-> after upgrading without any MeshTrafficPermission policy in place.
 
 ### Audit Trail
 
@@ -362,9 +358,9 @@ destination SNI, providing an audit trail of which workload accessed which exter
    With the KRI-based SNI format (MADR-101), SNIs are human-readable and predictable.
    `targetRef` in `Match` is deferred to a follow-up.
 
-3. **Default RBAC behaviour**: `defaultForbidMeshExternalServiceAccess` defaults to `true`
-   (deny-all). This supersedes MADR-062's permissive default, which was set before egress
-   targeting was available.
+3. **Default RBAC behaviour**: mesh-scoped zone egress Dataplanes are deny-all by default when
+   no MeshTrafficPermission targets them. The legacy `mesh.spec.routing.defaultForbidMeshExternalServiceAccess`
+   flag is irrelevant for the new resource type and will be removed in 3.0.
 
 4. **Non-matching SNI semantics**: If no `allow` entry matches the SNI, access is denied
    (fail-closed). In traffic policies, non-matching `sni` entries are silently skipped.
