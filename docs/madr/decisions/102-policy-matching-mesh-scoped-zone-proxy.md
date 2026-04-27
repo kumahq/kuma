@@ -76,9 +76,11 @@ Zone proxy `Dataplane` resources are targeted the same way as any other `Datapla
 `targetRef.kind: Dataplane` with `name`, `labels`, or `sectionName`. No special targeting
 mechanism is introduced.
 
-- Use `name` to target a specific zone proxy instance.
-- Use `labels` (e.g. `k8s.kuma.io/zone-proxy-type: egress`) to target all zone proxies of a type.
-  On Kubernetes these labels are set automatically, Universal users set them in their Dataplane template.
+- Use `name/namespace` to target a specific zone proxy instance. Because `Dataplane` resources always live on
+  Zone CPs, name-based policies must be applied on the Zone CP, not the Global CP.
+- Use `labels` to target a group of zone proxies (e.g. all proxies in a namespace). 
+  When the policy is applied on the Global CP, label-based matching is the only
+  approach since `name/namespace` matching doesn't work due to KDS hashing.
 - Use `sectionName` to target a specific listener when a Dataplane mixes zone proxy and regular
   inbound listeners.
 
