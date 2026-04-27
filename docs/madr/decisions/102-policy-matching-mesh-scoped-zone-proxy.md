@@ -298,6 +298,27 @@ spec:
               value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
+#### Access control: deny all access to a specific external resource ("deny always wins")
+
+A `deny` entry with only `sni` and no `spiffeID` matches every source. Because deny always wins
+over allow, this policy blocks all access to `aws-aurora` regardless of any other MTP with `allow`.
+
+```yaml
+type: MeshTrafficPermission
+mesh: default
+name: deny-aurora
+spec:
+  targetRef:
+    kind: Dataplane
+    sectionName: ze-port
+  rules:
+    - default:
+        deny:
+          - sni:
+              type: Exact
+              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
+```
+
 #### MeshTimeout: match via `rules`
 
 `spec.rules[].matches[].sni` selects a specific filter chain on the zone proxy inbound.
