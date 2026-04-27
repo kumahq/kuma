@@ -333,6 +333,10 @@ env:
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   value: "true"
 {{- end }}
+{{- if .Values.experimental.deltaXds }}
+- name: KUMA_EXPERIMENTAL_DELTA_XDS
+  value: "true"
+{{- end }}
 {{- if .Values.experimental.inboundTagsDisabled }}
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
   value: "true"
