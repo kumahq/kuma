@@ -115,13 +115,14 @@ spec:
   targetRef:
     kind: Dataplane
     sectionName: ze-port
-  default:
-    allow:
-      - spiffeID:
-          type: Exact
-          value: "spiffe://default/ns/backend-ns/sa/backend"
-        sni:
-          value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora"
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: "spiffe://default/ns/backend-ns/sa/backend"
+            sni:
+              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora"
 ```
 
 * Good, because it maps directly to Envoy's filter chain match on `server_names`.
@@ -157,21 +158,22 @@ spec:
   targetRef:
     kind: Dataplane
     sectionName: ze-port
-  default:
-    allow:
-      - spiffeID:
-          type: Exact
-          value: "spiffe://default/ns/backend-ns/sa/backend"
-        targetRef:
-          kind: MeshExternalService
-          name: aws-aurora
-      - spiffeID:
-          type: Exact
-          value: "spiffe://default/ns/backend-ns/sa/backend"
-        targetRef:
-          kind: MeshExternalService
-          labels:
-            k8s.kuma.io/namespace: backend-ns
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: "spiffe://default/ns/backend-ns/sa/backend"
+            targetRef:
+              kind: MeshExternalService
+              name: aws-aurora
+          - spiffeID:
+              type: Exact
+              value: "spiffe://default/ns/backend-ns/sa/backend"
+            targetRef:
+              kind: MeshExternalService
+              labels:
+                k8s.kuma.io/namespace: backend-ns
 ```
 
 * Good, because users reference the resource by name or labels.
@@ -249,13 +251,14 @@ spec:
   targetRef:
     kind: Dataplane
     sectionName: ze-port
-  default:
-    allow:
-      - spiffeID:
-          type: Exact
-          value: "spiffe://default/ns/backend-ns/sa/backend"
-        sni:
-          value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: "spiffe://default/ns/backend-ns/sa/backend"
+            sni:
+              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
 No other service can reach `aws-aurora` through zone egress because no other `allow` entry matches.
@@ -272,13 +275,14 @@ spec:
   targetRef:
     kind: Dataplane
     sectionName: ze-port
-  default:
-    deny:
-      - spiffeID:
-          type: Exact
-          value: "spiffe://default/ns/backend-ns/sa/compromised-worker"
-        sni:
-          value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
+  rules:
+    - default:
+        deny:
+          - spiffeID:
+              type: Exact
+              value: "spiffe://default/ns/backend-ns/sa/compromised-worker"
+            sni:
+              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
 #### MeshTimeout: match via `rules`
@@ -351,7 +355,7 @@ destination SNI, providing an audit trail of which workload accessed which exter
 ## Decision
 
 1. **Policy structure**:
-   - `MeshTrafficPermission` uses `spec.default.allow/deny/allowWithShadowDeny` with SpiffeID matches.
+   - `MeshTrafficPermission` uses `spec.rules[].default.allow/deny/allowWithShadowDeny` with SpiffeID matches.
 
 2. **Destination selector in inbound rules**: Extend the `Match` struct with an `sni` field.
    SNI maps directly to Envoy's `server_names` filter chain match — no CP resolution step.
