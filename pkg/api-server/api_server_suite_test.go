@@ -71,6 +71,9 @@ func NewTestApiServerConfigurer() *testApiServerConfigurer {
 		store:  memory.NewStore(),
 	}
 	t.config.GUI.Enabled = false
+	t.config.HTTP.Interface = "127.0.0.1"
+	t.config.HTTPS.Interface = "127.0.0.1"
+	t.config.Authn.LocalhostIsAdmin = true
 	return t
 }
 

@@ -15,6 +15,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	config "github.com/kumahq/kuma/v2/pkg/config/api-server"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -59,6 +60,9 @@ var _ = Describe("Resource Endpoints", func() {
 			m, _ := core_metrics.NewMetrics("Zone")
 			metrics = m
 			return m
+		}).WithConfigMutator(func(cfg *config.ApiServerConfig) {
+			cfg.CorsAllowedDomains = []string{".*"}
+			cfg.Authn.LocalhostIsAdmin = true
 		}))
 	})
 
