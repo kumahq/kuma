@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -39,10 +40,12 @@ func isDirectLoopbackRequest(r *http.Request) bool {
 	if hasProxyHeaders(r.Header) {
 		return false
 	}
-	if !isLoopbackHost(hostWithoutPort(r.Host)) {
+	if !isLoopbackRequestHost(r.Host) {
 		return false
 	}
-	if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "", "same-origin", "none":
+	default:
 		return false
 	}
 	return isSameOriginLoopback(r.Header.Get("Origin"), r.Host)
@@ -60,12 +63,12 @@ func isLoopbackHost(host string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-func hostWithoutPort(hostport string) string {
-	host, _, err := net.SplitHostPort(hostport)
-	if err != nil {
-		return hostport
+func isLoopbackRequestHost(hostport string) bool {
+	host, _, ok := parseAuthority("http", hostport)
+	if !ok {
+		return false
 	}
-	return host
+	return isLoopbackHost(host)
 }
 
 func hasProxyHeaders(h http.Header) bool {
@@ -86,5 +89,73 @@ func isSameOriginLoopback(origin, requestHost string) bool {
 	if !isLoopbackHost(u.Hostname()) {
 		return false
 	}
-	return strings.EqualFold(u.Host, requestHost)
+	originHost, originPort, ok := parseOrigin(u)
+	if !ok {
+		return false
+	}
+	host, port, ok := parseAuthority(u.Scheme, requestHost)
+	if !ok {
+		return false
+	}
+	return originHost == host && originPort == port
+}
+
+func parseOrigin(u *url.URL) (string, string, bool) {
+	if u.User != nil || u.Host == "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return "", "", false
+	}
+	if strings.HasSuffix(u.Host, ":") {
+		return "", "", false
+	}
+	return parseURLAuthority(u)
+}
+
+func parseAuthority(scheme, hostport string) (string, string, bool) {
+	if strings.HasSuffix(hostport, ":") {
+		return "", "", false
+	}
+	u, err := url.Parse(scheme + "://" + hostport)
+	if err != nil || u.User != nil || u.Host == "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return "", "", false
+	}
+	return parseURLAuthority(u)
+}
+
+func parseURLAuthority(u *url.URL) (string, string, bool) {
+	port := u.Port()
+	if port == "" {
+		port = defaultPort(u.Scheme)
+	}
+	if !validPort(port) {
+		return "", "", false
+	}
+	host := canonicalHost(u.Hostname())
+	if host == "" {
+		return "", "", false
+	}
+	return host, port, true
+}
+
+func canonicalHost(host string) string {
+	host = strings.TrimSuffix(strings.ToLower(host), ".")
+	ip := net.ParseIP(host)
+	if ip != nil {
+		return ip.String()
+	}
+	return host
+}
+
+func defaultPort(scheme string) string {
+	switch scheme {
+	case "http":
+		return "80"
+	case "https":
+		return "443"
+	}
+	return ""
+}
+
+func validPort(port string) bool {
+	n, err := strconv.Atoi(port)
+	return err == nil && n > 0 && n <= 65535
 }
