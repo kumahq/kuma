@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -528,7 +529,7 @@ func universalZoneProxyRelatedResource(
 	tokenProvider func(zone string) (string, error),
 	dpName string,
 	appType AppMode,
-	resourceManifestFunc func(address string, port int) string,
+	resourceManifestFunc func(address string) string,
 	concurrency int,
 ) func(cluster Cluster) error {
 	return func(cluster Cluster) error {
@@ -560,8 +561,7 @@ func universalZoneProxyRelatedResource(
 
 		uniCluster.apps[dpName] = app
 		publicAddress := app.ip
-		dpYAML := resourceManifestFunc(publicAddress, UniversalZoneIngressPort)
-
+		dpYAML := resourceManifestFunc(publicAddress)
 		token, err := tokenProvider(uniCluster.name)
 		if err != nil {
 			return err
@@ -578,21 +578,28 @@ func universalZoneProxyRelatedResource(
 	}
 }
 
-func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, port int) string {
-		return fmt.Sprintf(ZoneIngress, AppIngress, address, UniversalZoneIngressPort, port)
-	}
+// ingressPortAllocator hands out unique advertised ports for universal ZoneIngress
+// instances so that no two ingresses share the same IP:port when running in a
+// Docker/k3d environment where all zones resolve to the same host address.
+var ingressPortAllocator atomic.Int32
 
-	var opts appDeploymentOptions
-	opts.apply(opt...)
-
-	return universalZoneProxyRelatedResource(tokenProvider, AppIngress, AppIngress, manifestFunc, opts.concurrency)
+func init() {
+	ingressPortAllocator.Store(int32(UniversalZoneIngressPort) - 1)
 }
 
-func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	name := fmt.Sprintf("%s-%d", AppIngress, advertisedPort)
-	manifestFunc := func(address string, port int) string {
-		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, port)
+// AllocateIngressPort returns the next unique advertised port for a universal
+// ZoneIngress. It is safe to call from multiple goroutines.
+func AllocateIngressPort() int {
+	return int(ingressPortAllocator.Add(1))
+}
+
+func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
+	return MultipleIngressUniversal(AllocateIngressPort(), AppIngress, tokenProvider, opt...)
+}
+
+func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
+	manifestFunc := func(address string) string {
+		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, advertisedPort)
 	}
 
 	var opts appDeploymentOptions
@@ -602,8 +609,8 @@ func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(_ string, port int) string {
-		return fmt.Sprintf(ZoneEgress, port)
+	manifestFunc := func(_ string) string {
+		return fmt.Sprintf(ZoneEgress, UniversalZoneIngressPort)
 	}
 
 	var opts appDeploymentOptions
