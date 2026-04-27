@@ -1,10 +1,12 @@
 package api_server_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,12 +31,12 @@ var _ = Describe("Auth test", func() {
 	var httpsPort uint32
 	stop := func() {}
 	var externalIP string
+	var apiServer *api_server.ApiServer
 
 	BeforeEach(func() {
 		externalIP = getExternalIP()
 		Expect(externalIP).ToNot(BeEmpty())
 		certPath, keyPath := createCertsForIP(externalIP)
-		var apiServer *api_server.ApiServer
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
 			cfg.HTTPS.TlsCertFile = certPath
 			cfg.HTTPS.TlsKeyFile = keyPath
