@@ -387,5 +387,5 @@ destination SNI, providing an audit trail of which workload accessed which exter
 mesh-scoped `Dataplane` resources with a `listeners` array.
 [MADR-062](062-meshexternalservice-and-zoneegress.md) established which `to` policies apply
 on zone egress for MeshExternalService traffic but deferred egress targeting and inbound policies.
-MADR-101 (pending) introduces a new KRI-based SNI format that makes SNIs human-readable and
+MADR-101 (accepted) introduces a new KRI-based SNI format that makes SNIs human-readable and
 bidirectionally convertible to KRI.
