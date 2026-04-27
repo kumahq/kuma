@@ -16,7 +16,7 @@ import (
 // runLocalhost runs LocalhostAuthenticator with the given request parameters
 // and returns the name of the resulting user from context.
 func runLocalhost(remoteAddr, host, origin string, extraHeaders map[string]string) string {
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+host+"/test", http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/test", http.NoBody)
 	req.RemoteAddr = remoteAddr
 	req.Host = host
 	if origin != "" {
@@ -76,6 +76,8 @@ var _ = Describe("LocalhostAuthenticator", func() {
 			"127.0.0.1:54321", "localhost:5681", "", map[string]string{"X-Real-IP": "1.2.3.4"}, false),
 		Entry("non-loopback Host (reverse proxy public domain)",
 			"127.0.0.1:54321", "api.example.com", "", nil, false),
+		Entry("malformed bracketed IPv6 Host",
+			"[::1]:54321", "[::1", "", nil, false),
 		Entry("Origin: null",
 			"127.0.0.1:54321", "localhost:5681", "null", nil, false),
 		Entry("malformed Origin",

@@ -53,7 +53,9 @@ func isLoopbackHost(host string) bool {
 	if host == "localhost" {
 		return true
 	}
-	host = strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		host = strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	}
 	ip := net.ParseIP(host)
 	return ip != nil && ip.IsLoopback()
 }
