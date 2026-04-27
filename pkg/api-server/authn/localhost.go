@@ -22,23 +22,24 @@ func LocalhostAuthenticator(request *restful.Request, response *restful.Response
 	chain.ProcessFilter(request, response)
 }
 
-// isDirectLoopbackRequest returns true only when all four conditions hold:
-//   - RemoteAddr is a loopback literal (127.0.0.1 or ::1),
+// isDirectLoopbackRequest returns true only when all conditions hold:
+//   - RemoteAddr is a loopback address,
 //   - no proxy-hop headers are present (Forwarded, X-Forwarded-For, X-Real-IP),
-//   - the Host header is itself a loopback literal, and
+//   - the Host header is localhost or a loopback address,
+//   - the browser did not mark the request as cross-site, and
 //   - if an Origin header is present it is same-origin with the Host.
 //
 // This prevents browsers on the same machine, which connect over loopback,
 // from triggering admin access on behalf of a non-localhost origin.
 func isDirectLoopbackRequest(r *http.Request) bool {
 	remoteHost, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil || !isLoopbackLiteral(remoteHost) {
+	if err != nil || !isLoopbackHost(remoteHost) {
 		return false
 	}
 	if hasProxyHeaders(r.Header) {
 		return false
 	}
-	if !isLoopbackLiteral(hostWithoutPort(r.Host)) {
+	if !isLoopbackHost(hostWithoutPort(r.Host)) {
 		return false
 	}
 	if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
@@ -47,7 +48,7 @@ func isDirectLoopbackRequest(r *http.Request) bool {
 	return isSameOriginLoopback(r.Header.Get("Origin"), r.Host)
 }
 
-func isLoopbackLiteral(host string) bool {
+func isLoopbackHost(host string) bool {
 	host = strings.TrimSuffix(strings.ToLower(host), ".")
 	if host == "localhost" {
 		return true
@@ -79,7 +80,7 @@ func isSameOriginLoopback(origin, requestHost string) bool {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return false
 	}
-	if !isLoopbackLiteral(u.Hostname()) {
+	if !isLoopbackHost(u.Hostname()) {
 		return false
 	}
 	return strings.EqualFold(u.Host, requestHost)
