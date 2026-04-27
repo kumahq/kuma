@@ -122,6 +122,7 @@ spec:
               type: Exact
               value: "spiffe://default/ns/backend-ns/sa/backend"
             sni:
+              type: Exact
               value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora"
 ```
 
@@ -226,6 +227,16 @@ type Match struct {
     SpiffeID *SpiffeIDMatch `json:"spiffeID,omitempty"`
     SNI      *SNIMatch      `json:"sni,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=Exact
+type SNIMatchType string
+
+const SNIExactMatchType SNIMatchType = "Exact"
+
+type SNIMatch struct {
+    Type  SNIMatchType `json:"type"`
+    Value string       `json:"value"`
+}
 ```
 
 - `sni` maps directly to Envoy's `server_names` filter chain match — no CP resolution step.
@@ -258,6 +269,7 @@ spec:
               type: Exact
               value: "spiffe://default/ns/backend-ns/sa/backend"
             sni:
+              type: Exact
               value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
@@ -282,6 +294,7 @@ spec:
               type: Exact
               value: "spiffe://default/ns/backend-ns/sa/compromised-worker"
             sni:
+              type: Exact
               value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
@@ -300,6 +313,7 @@ spec:
   rules:
     - matches:
         - sni:
+            type: Exact
             value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
       default:
         connectionTimeout: 10s
