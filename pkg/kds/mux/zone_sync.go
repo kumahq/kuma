@@ -209,8 +209,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
 			return
 		}
-		kdsStream, sendDone := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
-		_ = sendDone // sendLoop is cancelled when stream context ends; no CloseSend in this goroutine
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
 		cb := kds_sync_store_v2.GlobalSyncCallback(
 			stream.Context(),
 			g.resourceSyncer,

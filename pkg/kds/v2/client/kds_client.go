@@ -45,6 +45,7 @@ type DeltaKDSStream interface {
 	Receive() (UpstreamResponse, error)
 	ACK(resourceType core_model.ResourceType) error
 	NACK(resourceType core_model.ResourceType, err error) error
+	CloseSend() error
 }
 
 type KDSSyncClient interface {
