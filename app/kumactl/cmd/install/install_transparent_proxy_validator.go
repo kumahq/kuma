@@ -1,13 +1,11 @@
 package install
 
 import (
-	"context"
 	std_errors "errors"
 	"fmt"
 	"os"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -44,14 +42,6 @@ The result will be shown as text in stdout as well as the exit code.
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			logger := core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName(defaultLogName)
-			logger.Info("starting transparent proxy validator")
-
-			// Bound the total validation time so a stuck dial or DNS lookup
-			// causes a clean pod restart instead of a silent init-phase hang.
-			// Kept short (60s) so the pod can restart within the e2e
-			// framework's pod-ready wait window.
-			ctx, cancel := context.WithTimeout(cmd.Context(), time.Minute)
-			defer cancel()
 
 			var tpCfg *tproxy_dp.DataplaneConfig
 			if len(tpCfgValues) > 0 {
@@ -68,30 +58,25 @@ The result will be shown as text in stdout as well as the exit code.
 				serverPort = uint16(tpCfg.Redirect.Inbound.Port)
 			}
 
-			logger.Info("detecting local IPv6 address")
 			hasLocalIPv6Addr, _ := tproxy_config.HasLocalIPv6()
 			validateOnlyIPv4 := ipFamilyMode == tproxy_config.IPFamilyModeIPv4
-			logger.Info("validator configured", "ipFamilyMode", ipFamilyMode, "serverPort", serverPort, "hasLocalIPv6", hasLocalIPv6Addr)
 
 			validate := func(ipv6 bool) error {
-				ipType := strings.ToLower(tproxy_consts.IPTypeMap[ipv6])
 				if ipv6 && !hasLocalIPv6Addr || validateOnlyIPv4 {
-					logger.Info("skipping validation", "ipType", ipType)
 					return nil
 				}
 
-				logger := logger.WithName(ipType)
-				logger.Info("running validator")
+				logger := logger.WithName(strings.ToLower(tproxy_consts.IPTypeMap[ipv6]))
 				validator := tproxy_validate.NewValidator(ipv6, serverPort, logger)
 				exitC := make(chan struct{})
 
-				if _, err := validator.RunServer(ctx, exitC); err != nil {
+				if _, err := validator.RunServer(cmd.Context(), exitC); err != nil {
 					return err
 				}
 
 				// by using 0, we make the client to generate a random port to connect verifying
 				// the iptables rules are working
-				return validator.RunClient(ctx, 0, exitC)
+				return validator.RunClient(cmd.Context(), 0, exitC)
 			}
 
 			return errors.Wrap(
