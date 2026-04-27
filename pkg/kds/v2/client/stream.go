@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -34,17 +35,20 @@ type stream struct {
 	cpConfig           string
 	instanceID         string
 
-	sendCh       chan *envoy_sd.DeltaDiscoveryRequest
-	recvCh       chan *envoy_sd.DeltaDiscoveryResponse
-	ctx          context.Context
-	cancel       context.CancelCauseFunc
-	sendDone     chan struct{}
-	closeSendErr error
+	sendCh        chan *envoy_sd.DeltaDiscoveryRequest
+	recvCh        chan *envoy_sd.DeltaDiscoveryResponse
+	ctx           context.Context
+	cancel        context.CancelCauseFunc
+	closeSendCh   chan struct{}
+	closeSendOnce sync.Once
+	sendDone      chan struct{}
+	closeSendErr  error
 }
 
 type KDSSyncServiceStream interface {
 	Send(*envoy_sd.DeltaDiscoveryRequest) error
 	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
+	CloseSend() error
 	Context() context.Context
 }
 
@@ -92,6 +96,7 @@ func NewDeltaKDSStream(
 		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, capacity),
 		ctx:                ctx,
 		cancel:             cancel,
+		closeSendCh:        make(chan struct{}),
 		sendDone:           make(chan struct{}),
 	}
 
@@ -106,16 +111,13 @@ func NewDeltaKDSStream(
 
 func (s *stream) sendLoop() {
 	defer func() {
-		type closeSender interface {
-			CloseSend() error
-		}
-		if cs, ok := s.streamClient.(closeSender); ok {
-			s.closeSendErr = cs.CloseSend()
-		}
+		s.closeSendErr = s.streamClient.CloseSend()
 	}()
 	for {
 		select {
 		case <-s.ctx.Done():
+			return
+		case <-s.closeSendCh:
 			return
 		case req := <-s.sendCh:
 			if err := s.streamClient.Send(req); err != nil {
@@ -126,12 +128,14 @@ func (s *stream) sendLoop() {
 	}
 }
 
-// CloseSend signals the send goroutine to stop and waits for it to call
-// CloseSend on the underlying gRPC stream. This is thread-safe because
-// the underlying CloseSend is called within the send goroutine, never
-// concurrently with Send.
+// CloseSend half-closes the send side of the stream. It signals the
+// send goroutine to stop and waits for it to call CloseSend on the
+// underlying gRPC stream. The receive side is not affected — recvLoop
+// continues until the peer closes or the context is cancelled.
+// This is thread-safe: the underlying CloseSend runs within the send
+// goroutine, never concurrently with Send.
 func (s *stream) CloseSend() error {
-	s.cancel(nil)
+	s.closeSendOnce.Do(func() { close(s.closeSendCh) })
 	<-s.sendDone
 	return s.closeSendErr
 }
