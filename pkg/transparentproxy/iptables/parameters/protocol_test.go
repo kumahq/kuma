@@ -7,14 +7,6 @@ import (
 	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
 )
 
-func returnTrue() bool {
-	return true
-}
-
-func returnFalse() bool {
-	return false
-}
-
 var _ = Describe("ProtocolParameter", func() {
 	Describe("Protocol", func() {
 		DescribeTable("DestinationPort",
@@ -69,59 +61,6 @@ var _ = Describe("ProtocolParameter", func() {
 			),
 		)
 
-		Describe("NotDestinationPortIf", func() {
-			DescribeTable("should return nil, when predicate returns false",
-				func(port int) {
-					Expect(NotDestinationPortIf(returnFalse, uint16(port))).To(BeNil())
-				},
-				Entry("port 22", 22),
-				Entry("port 80", 80),
-				Entry("port 8080", 8080),
-				Entry("port 7777", 7777),
-			)
-
-			DescribeTable("should build a valid flag, when predicate returns true",
-				func(port int, verbose bool, want []string) {
-					// when
-					got := NotDestinationPortIf(returnTrue, uint16(port)).Build(verbose)
-
-					// then
-					Expect(got).To(Equal(want))
-				},
-				Entry("port 22",
-					22, false,
-					[]string{"!", "--dport", "22"},
-				),
-				Entry("port 22 - verbose",
-					22, true,
-					[]string{"!", "--destination-port", "22"},
-				),
-				Entry("port 80",
-					80, false,
-					[]string{"!", "--dport", "80"},
-				),
-				Entry("port 80 - verbose",
-					80, true,
-					[]string{"!", "--destination-port", "80"},
-				),
-				Entry("port 8080",
-					8080, false,
-					[]string{"!", "--dport", "8080"},
-				),
-				Entry("port 8080 - verbose",
-					8080, true,
-					[]string{"!", "--destination-port", "8080"},
-				),
-				Entry("port 7777",
-					7777, false,
-					[]string{"!", "--dport", "7777"},
-				),
-				Entry("port 7777 - verbose",
-					7777, true,
-					[]string{"!", "--destination-port", "7777"},
-				),
-			)
-		})
 
 		DescribeTable("Tcp",
 			func(parameters []*TcpUdpParameter, verbose bool, want []string) {
