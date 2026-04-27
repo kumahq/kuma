@@ -31,7 +31,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.48.2
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
-	github.com/jackc/pgx/v5 v5.9.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/josephburnett/jd/v2 v2.2.3
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9 // indirect
