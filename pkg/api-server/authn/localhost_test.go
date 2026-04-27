@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/api-server/authn"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 // runLocalhost runs LocalhostAuthenticator with the given request parameters
