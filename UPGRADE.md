@@ -6,6 +6,202 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+<<<<<<< HEAD
+=======
+## Upgrade to `2.14.x`
+
+### DNS server domain must not start with a dot
+
+The control plane now rejects a DNS server domain configuration that begins with a `.` (e.g., `.mesh`). Previously such a value was silently accepted and produced broken hostname generation.
+
+**Action required:**
+
+If you have `KUMA_DNS_SERVER_DOMAIN` or `dnsServer.domain` set to a value starting with `.`, remove the leading dot:
+
+```yaml
+# kuma-cp config
+dnsServer:
+  domain: mesh   # was: .mesh
+```
+
+Or via environment variable: `KUMA_DNS_SERVER_DOMAIN=mesh`
+
+### HostnameGenerator templates that produce invalid DNS names now fail explicitly
+
+`HostnameGenerator` templates that evaluate to an invalid DNS subdomain (e.g., starting with a dot, containing uppercase letters, or having consecutive dots) now return an error instead of silently generating a broken hostname.
+
+**Action required:**
+
+Review your `HostnameGenerator` resources and ensure their `spec.template` values produce valid [RFC 1123](https://tools.ietf.org/html/rfc1123) DNS subdomains for all inputs.
+
+### localhost-admin is restricted to direct loopback; CORS is now opt-in
+
+The defaults have been tightened:
+
+- `LocalhostIsAdmin` still defaults to `true`, but only direct loopback requests are promoted to admin.
+- `CorsAllowedDomains` now defaults to `[]` / empty (was `[".*"]`).
+
+The `LocalhostIsAdmin` restriction also applies to release branches as a security fix: the authenticator now only grants admin when the request is a **direct** loopback call (loopback `RemoteAddr`, loopback `Host`, no proxy-hop headers, and a matching `Origin` if present). Browsers connecting over loopback from a non-localhost page are no longer promoted to admin.
+
+**Action required:**
+
+_Local bootstrap / development (Universal mode)_
+
+If you rely on `LocalhostIsAdmin` for initial kumactl setup, keep using direct loopback access or switch to token-based authentication with `kumactl config control-planes add --auth-type=tokens`.
+
+_Reverse-proxy / CORS users_
+
+If your deployment relies on cross-origin API access (e.g., a custom GUI on a different port), set the allowed domains explicitly:
+
+```yaml
+# kuma-cp config
+apiServer:
+  corsAllowedDomains:
+    - "https://my-gui.example.com"
+```
+
+or via environment variable:
+
+```sh
+KUMA_API_SERVER_CORS_ALLOWED_DOMAINS=https://my-gui.example.com
+```
+
+The Helm chart already sets `KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN=false` and is not affected by the `LocalhostIsAdmin` default.
+
+### CPU limits removed from `kuma-init` and `kuma-sidecar` containers
+
+The default CPU limit for injected `kuma-init`, `kuma-sidecar` and `kuma-validation` containers has been removed (set to `0`, meaning no limit). Previously the defaults were `100m` and `1000m` respectively.
+
+**Why:** 
+
+CPU limits cause throttling even when CPU is available, which increases latency under load. Removing the limit allows the containers to burst during startup and high-traffic periods.
+
+**Action required:** 
+
+None for most users. If your cluster enforces CPU limits, either relax those policies or set explicit limits:
+
+**Kubernetes (Helm)**
+```yaml
+dataPlane:
+  initContainer:
+    resources:
+      limits:
+        cpu: 100m
+  sidecarContainer:
+    resources:
+      limits:
+        cpu: 1000m
+  validationContainer:
+    resources:
+      limits:
+        cpu: 100m
+```
+
+**Control plane environment variables**
+```sh
+KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU=100m
+KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU=1000m
+KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU=100m
+```
+
+### Envoy admin API now uses Unix domain socket by default
+
+The Envoy admin API (`localhost:9901`) now binds to a Unix domain socket instead of TCP by default. This eliminates the shared-network-namespace attack vector where a compromised app container could reach the admin API to kill the sidecar, dump config, or modify runtime behavior.
+
+**What changed:**
+- `KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET` defaults to `true`
+- Helm value: `experimental.envoyAdminUnixSocket` (default `true`)
+- A readiness reporter on TCP port 9902 handles K8s probes and lifecycle hooks
+- Port 9902 must not conflict with application ports in sidecar-injected pods
+
+**Action required:**
+
+If you have tooling that directly accesses the Envoy admin API on `localhost:9901` (e.g., scripts calling `/config_dump`, `/stats`, `/clusters`), you need to either:
+- Use the readiness reporter proxy on port 9902 instead, OR
+- Use `curl --unix-socket /tmp/kuma-dp-*/kuma-envoy-admin.sock http://localhost/...`
+
+**How to disable (revert to TCP admin):**
+
+**Kubernetes (Helm)**
+```yaml
+experimental:
+  envoyAdminUnixSocket: false
+```
+
+**Universal**
+```sh
+KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET=false kuma-cp run
+```
+
+### Observability: CP metrics OTLP push enabled by default
+
+When `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the control plane now automatically pushes all CP Prometheus metrics to the configured OTLP collector. This is enabled by default.
+
+**What changed:**
+- A new config field `metrics.openTelemetry.enabled` (default `true`) gates CP metrics OTLP push.
+- If you already set `OTEL_EXPORTER_OTLP_ENDPOINT` for tracing, metrics will now also be pushed to that endpoint.
+
+**Action required:**
+
+If you use `OTEL_EXPORTER_OTLP_ENDPOINT` for tracing only and do not want CP metrics pushed via OTLP, disable it:
+
+```yaml
+# kuma-cp config
+metrics:
+  openTelemetry:
+    enabled: false
+```
+
+Or via environment variable: `KUMA_METRICS_OPENTELEMETRY_ENABLED=false`
+
+### Observability: Prometheus metrics migration from Summary to Histogram
+
+Internal Kuma Prometheus metrics changed from `Summary` to `Histogram` types to fix stale values that accumulated over long windows.
+
+**What changed:**
+- All metrics previously exported as `prometheus.Summary` or `prometheus.SummaryVec` are now `prometheus.Histogram` or `prometheus.HistogramVec`.
+- Metrics that previously exposed quantiles (`0.5`, `0.9`, `0.99`) now use histogram buckets (`_bucket` with `le` labels).
+- `DefaultObjectives` is replaced by `DefaultBuckets`.
+
+**Action required:**
+- Update any dashboards, alerts, or queries that use the old quantile representations to use histogram buckets and the `histogram_quantile` function.
+
+### RBAC: Added `events.k8s.io` API group
+
+The control plane ClusterRole and the namespaced Role used by the control plane for `events` now include the `events.k8s.io` API group alongside the core (`""`) API group for `events` resources. This aligns with the Kubernetes `events.k8s.io/v1` API which replaced the deprecated core `v1` Events API.
+
+**Action required:**
+
+If you manage RBAC resources outside of Helm (e.g., via GitOps or manual manifests), update your RBAC rules for events in both ClusterRole and Role definitions to include the `events.k8s.io` API group for events resources.
+
+### RBAC: Added Role for mesh-scoped zone proxy rollout job
+
+When deploying mesh-scoped zone proxies via the `meshes` list in `values.yaml`, a new post-install hook job is created to rollout restart zone proxy deployments after the control plane becomes available. This job requires a new Role (namespaced to the release namespace) with permissions to `get`, `list`, and `patch` deployments in the `apps` API group.
+
+**Action required:**
+
+If you manage RBAC resources outside of Helm (e.g., via GitOps or manual manifests) and use mesh-scoped zone proxies, add the following Role in your release namespace:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: <chart-name>-rollout-zoneproxy-job
+  namespace: <release-namespace>
+rules:
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - patch
+```
+
+Along with the corresponding ServiceAccount and RoleBinding in the same namespace.
+
+>>>>>>> 8fefa8595d (fix(api-server): harden localhost admin auth (#16416))
 ## Upgrade to `2.13.x`
 
 ### Strict Inbound Port Filtering Enabled by Default

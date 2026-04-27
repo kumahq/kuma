@@ -117,6 +117,49 @@ var _ = Describe("Auth test", func() {
 		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
 	})
 
+	It("should block admin access when Origin is a cross-origin domain", func() {
+		// This simulates a browser fetch() from evil.com to localhost:5681.
+		// The browser connects over loopback, but the Origin header reveals a
+		// non-localhost origin.  LocalhostAuthenticator must NOT grant admin.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", "https://evil.com")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+	})
+
+	It("should grant admin when Origin is same-origin localhost (GUI use case)", func() {
+		// Simulates the Kuma GUI: browser on localhost fetching from the same
+		// localhost:port.  Origin matches Host, so admin should be granted.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", fmt.Sprintf("http://localhost:%d", httpPort))
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(200))
+	})
+
+	It("should block admin when a proxy header is present on a loopback request", func() {
+		// X-Forwarded-For on a loopback-sourced request signals a reverse proxy
+		// laundering remote traffic.  Admin must be denied.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("X-Forwarded-For", "203.0.113.1")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+	})
+
 	It("should be able to access config on localhost using HTTP", func() {
 		// when
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/config", httpPort))
