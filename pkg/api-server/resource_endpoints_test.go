@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+<<<<<<< HEAD
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -27,6 +28,25 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+=======
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
+	config "github.com/kumahq/kuma/v2/pkg/config/api-server"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+>>>>>>> 8fefa8595d (fix(api-server): harden localhost admin auth (#16416))
 )
 
 var _ = Describe("Resource Endpoints", func() {
@@ -43,6 +63,8 @@ var _ = Describe("Resource Endpoints", func() {
 			m, _ := core_metrics.NewMetrics("Zone")
 			metrics = m
 			return m
+		}).WithConfigMutator(func(cfg *config.ApiServerConfig) {
+			cfg.CorsAllowedDomains = []string{".*"}
 		}))
 	})
 
