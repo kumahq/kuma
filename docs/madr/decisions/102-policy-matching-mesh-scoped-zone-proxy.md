@@ -123,7 +123,7 @@ spec:
               value: "spiffe://default/ns/backend-ns/sa/backend"
             sni:
               type: Exact
-              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora"
+              value: "sni.extsvc.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
 * Good, because it maps directly to Envoy's filter chain match on `server_names`.
@@ -270,7 +270,7 @@ spec:
               value: "spiffe://default/ns/backend-ns/sa/backend"
             sni:
               type: Exact
-              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
+              value: "sni.extsvc.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
 No other service can reach `aws-aurora` through zone egress because no other `allow` entry matches.
@@ -295,7 +295,7 @@ spec:
               value: "spiffe://default/ns/backend-ns/sa/compromised-worker"
             sni:
               type: Exact
-              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
+              value: "sni.extsvc.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
 #### Access control: deny all access to a specific external resource ("deny always wins")
@@ -316,7 +316,7 @@ spec:
         deny:
           - sni:
               type: Exact
-              value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
+              value: "sni.extsvc.default.zone-1.backend-ns.aws-aurora.8443"
 ```
 
 #### MeshTimeout: match via `rules`
@@ -335,7 +335,7 @@ spec:
     - matches:
         - sni:
             type: Exact
-            value: "sni.meshexternalservice.default.zone-1.backend-ns.aws-aurora.8443"
+            value: "sni.extsvc.default.zone-1.backend-ns.aws-aurora.8443"
       default:
         connectionTimeout: 10s
 ```
