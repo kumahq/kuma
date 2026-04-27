@@ -62,7 +62,6 @@ var _ = Describe("Resource Endpoints", func() {
 			return m
 		}).WithConfigMutator(func(cfg *config.ApiServerConfig) {
 			cfg.CorsAllowedDomains = []string{".*"}
-			cfg.Authn.LocalhostIsAdmin = true
 		}))
 	})
 

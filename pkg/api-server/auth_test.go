@@ -39,7 +39,6 @@ var _ = Describe("Auth test", func() {
 			cfg.HTTPS.TlsCertFile = certPath
 			cfg.HTTPS.TlsKeyFile = keyPath
 			cfg.Authn.Type = certs.PluginName
-			cfg.Authn.LocalhostIsAdmin = true
 			cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 		}).WithAccessConfigMutator(func(cfg *access.AccessConfig) {
 			cfg.Static.ControlPlaneMetadata.Groups = []string{"mesh-system:authenticated"}
