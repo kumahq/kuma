@@ -266,7 +266,7 @@ func debugDockerNodeLogs(cluster Cluster, nameFilter string) error {
 		if err := debugDockerNodeStats(ctx, cluster, containerName); err != nil {
 			errs = multierr.Combine(errs, err)
 		}
-		if err := debugDockerKubeletLogs(ctx, cluster, containerName); err != nil {
+		if err := debugDockerVarLog(ctx, cluster, containerName); err != nil {
 			errs = multierr.Combine(errs, err)
 		}
 		if err := debugDockerNodeCNIState(ctx, cluster, containerName); err != nil {
@@ -321,17 +321,27 @@ mount | grep -E 'cni|opt/cni' || true
 	return nil
 }
 
-func debugDockerKubeletLogs(ctx context.Context, cluster Cluster, containerName string) error {
-	// k3s embeds kubelet; its logs go to /var/log/k3s.log inside the node container.
-	// docker logs only captures k3s process stdout/stderr (init output), not kubelet activity.
-	out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "sh", "-c",
-		"cat /var/log/k3s.log 2>/dev/null || journalctl -u k3s --no-pager 2>/dev/null || echo 'kubelet logs not found'",
-	).CombinedOutput()
+// debugDockerVarLog collects every file under /var/log inside a node container.
+// Pod logs from /var/log/pods/ are included here in their raw JSON-log format.
+func debugDockerVarLog(ctx context.Context, cluster Cluster, containerName string) error {
+	listOut, err := exec.CommandContext(ctx, "docker", "exec", containerName,
+		"find", "/var/log", "-type", "f",
+	).Output()
 	if err != nil {
-		return fmt.Errorf("failed to get kubelet logs from %q: %w", containerName, err)
+		return fmt.Errorf("failed to list /var/log in %q: %w", containerName, err)
 	}
-	report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+"-kubelet.log"), out)
-	return nil
+	var errs error
+	for filePath := range strings.FieldsSeq(string(listOut)) {
+		out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "cat", filePath).Output()
+		if err != nil {
+			errs = multierr.Combine(errs, fmt.Errorf("failed to read %s from %q: %w", filePath, containerName, err))
+			continue
+		}
+		// preserve the /var/log/... path structure under the container's dir
+		reportPath := path.Join(cluster.Name(), "docker", containerName+"-varlog", filePath)
+		report.AddFileToReportEntry(reportPath, out)
+	}
+	return errs
 }
 
 // debugDockerNodeStats collects CPU pressure and load info from inside a node container.
@@ -346,20 +356,28 @@ echo "=== uptime ==="
 uptime
 echo "=== nproc ==="
 nproc
+echo "=== nproc --all ==="
+nproc --all
 echo "=== /proc/loadavg ==="
 cat /proc/loadavg
-echo "=== /proc/stat (cpu lines) ==="
-grep '^cpu' /proc/stat
+echo "=== /proc/stat ==="
+cat /proc/stat
+echo "=== /proc/meminfo ==="
+cat /proc/meminfo
+echo "=== free ==="
+free -m
 echo "=== cgroup v2 cpu throttling (kubepods) ==="
 find /sys/fs/cgroup/kubepods.slice -name 'cpu.stat' 2>/dev/null \
-  | xargs grep -h '' 2>/dev/null \
-  | grep -E 'nr_throttled|throttled_usec|nr_periods' \
-  | sort | uniq -c | sort -rn
+  | while read f; do echo "--- $f ---"; cat "$f"; done
+echo "=== cgroup v2 memory (kubepods) ==="
+find /sys/fs/cgroup/kubepods.slice -name 'memory.stat' -o -name 'memory.current' -o -name 'memory.swap.current' 2>/dev/null \
+  | while read f; do echo "--- $f ---"; cat "$f"; done
 echo "=== cgroup v1 cpu throttling (kubepods) ==="
 find /sys/fs/cgroup/cpu,cpuacct/kubepods -name 'cpu.stat' 2>/dev/null \
-  | xargs grep -h '' 2>/dev/null \
-  | grep -E 'nr_throttled|throttled_time|nr_periods' \
-  | sort | uniq -c | sort -rn
+  | while read f; do echo "--- $f ---"; cat "$f"; done
+echo "=== cgroup v1 memory (kubepods) ==="
+find /sys/fs/cgroup/memory/kubepods -name 'memory.stat' -o -name 'memory.memsw.usage_in_bytes' 2>/dev/null \
+  | while read f; do echo "--- $f ---"; cat "$f"; done
 `
 	out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "sh", "-c", script).CombinedOutput()
 	if err != nil {
