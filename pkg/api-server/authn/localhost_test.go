@@ -53,6 +53,8 @@ var _ = Describe("LocalhostAuthenticator", func() {
 			"127.0.0.1:54321", "localhost:5681", "", nil, true),
 		Entry("direct loopback IPv6, no Origin",
 			"[::1]:54321", "localhost:5681", "", nil, true),
+		Entry("direct loopback IPv6 Host without explicit port",
+			"[::1]:54321", "[::1]", "", nil, true),
 		Entry("direct loopback, same-origin http://localhost",
 			"127.0.0.1:54321", "localhost:5681", "http://localhost:5681", nil, true),
 		Entry("direct loopback, same-origin http://127.0.0.1",
