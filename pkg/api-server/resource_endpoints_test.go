@@ -15,11 +15,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-<<<<<<< HEAD
-=======
 	config "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
->>>>>>> 8fefa8595d (fix(api-server): harden localhost admin auth (#16416))
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
