@@ -82,6 +82,10 @@ mechanism is introduced.
 - Use `sectionName` to target a specific listener when a Dataplane mixes zone proxy and regular
   inbound listeners.
 
+Zone proxies have no outbound listeners, so **`spec.to[]` is ignored** when a policy targets a
+zone proxy Dataplane. Policies must use `spec.rules[]` instead. A policy applied with `spec.to[]`
+targeting a zone proxy will be silently skipped during xDS generation.
+
 ### Destination Selector in Inbound Rules
 
 On zone egress, every inbound connection from a sidecar carries a **destination**:
@@ -415,6 +419,8 @@ destination SNI, providing an audit trail of which workload accessed which exter
 * `MeshTrafficPermission` places `sni` in allow/deny entries (alongside `spiffeID`)
   rather than in `rules[].matches[]` — this is a consequence of the MADR-081 API design and
   must be documented prominently for contributors.
+* `spec.to[]` is silently ignored when a policy targets a zone proxy Dataplane — zone proxies
+  have no outbound listeners.
 
 ## Resources
 
