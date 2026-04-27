@@ -9,14 +9,8 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/core"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
-=======
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
->>>>>>> 8fefa8595d (fix(api-server): harden localhost admin auth (#16416))
 )
 
 var log = core.Log.WithName("api-server").WithName("authn")
