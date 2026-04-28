@@ -5,6 +5,7 @@ metadata:
   namespace: kuma-system
   labels:
     kuma.io/mesh: multizone-label-validation
+    kuma.io/origin: zone
 spec:
   match:
     type: HostnameGenerator

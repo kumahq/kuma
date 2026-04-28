@@ -5,6 +5,7 @@ metadata:
   namespace: default
   labels:
     kuma.io/mesh: multizone-label-validation
+    kuma.io/origin: zone
     kuma.io/zone: other-zone
 spec:
   targetRef:
