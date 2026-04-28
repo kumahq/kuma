@@ -90,13 +90,16 @@ targeting a zone proxy will be silently skipped during xDS generation.
 
 ### Destination Selector in Inbound Rules
 
-On zone egress, every inbound connection from a sidecar carries a **destination**:
-the SNI presented in the mTLS handshake identifies the MeshExternalService the sidecar
-wants to reach. When zone egress builds per-MeshExternalService filter chains,
-this destination is available at the filter chain selection level.
+On both zone egress and zone ingress, every inbound mTLS connection carries a **destination**
+encoded in the SNI. The SNI is available at filter chain selection level, so inbound `rules`
+can use it to apply per-destination configuration.
 
-Inbound `rules` can select a specific MeshExternalService destination,
-enabling per-destination configuration on zone egress.
+**Zone egress**: the SNI identifies the `MeshExternalService` the sidecar wants to reach.
+Zone egress builds one filter chain per MeshExternalService, keyed by the MeshExternalService SNI.
+
+**Zone ingress**: the SNI identifies the `MeshService` in the local zone that the remote sidecar wants to reach.
+Zone ingress builds one filter chain per destination service. Policies such as `MeshAccessLog` and `MeshMetric` can use
+`sni` matching to filter or annotate traffic per destination service on zone ingress.
 
 #### Option A: SNI string match in `Match`
 
@@ -487,29 +490,26 @@ destination SNI, providing an audit trail of which workload accessed which exter
 
 ## Decision
 
-1. **Policy structure**:
-   - `MeshTrafficPermission` uses `spec.rules[].default.allow/deny/allowWithShadowDeny` with SpiffeID matches.
-
-2. **Destination selector in inbound rules**: Extend the `Match` struct with an `sni` field.
+1. **Destination selector in inbound rules**: Extend the `Match` struct with an `sni` field.
    SNI maps directly to Envoy's `server_names` filter chain match — no CP resolution step.
    With the KRI-based SNI format (MADR-101), SNIs are human-readable and predictable.
    `targetRef` in `Match` is deferred to a follow-up.
 
-3. **Default RBAC behaviour**: mesh-scoped zone egress Dataplanes are deny-all by default when
+2. **Default RBAC behaviour**: mesh-scoped zone egress Dataplanes are deny-all by default when
    no MeshTrafficPermission targets them. The legacy `mesh.spec.routing.defaultForbidMeshExternalServiceAccess`
    flag is irrelevant for the new resource type and will be removed in 3.0.
 
-4. **Non-matching SNI semantics**: If no `allow` entry matches the SNI, access is denied
+3. **Non-matching SNI semantics**: If no `allow` entry matches the SNI, access is denied
    (fail-closed). In traffic policies, non-matching `sni` entries are silently skipped.
 
 ## Notes
 
 * `targetRef` in `Match` is deferred to a follow-up; the struct can be extended without
   breaking existing policies once `sni` is proven in production.
-* Zone ingress inbound `rules` with `sni` matching is only required for `MeshAccessLog` —
-  it is the only zone ingress policy that needs per-destination log filtering; other zone
-  ingress policies (MeshMetric, MeshTrace) apply uniformly to all inbound traffic.
-* MeshRetry on zone egress outbound remains out of scope — squared retry amplification.
+* Zone ingress supports `sni` matching in `rules` for `MeshAccessLog` and `MeshMetric` —
+  both benefit from per-destination filtering. The SNI on zone ingress identifies a `MeshService`
+  (or `MeshExternalService`) destination, not only `MeshExternalService` as on zone egress.
+* MeshRetry on zone egress remains out of scope — squared retry amplification.
 * `MeshTrafficPermission` places `sni` in allow/deny entries (alongside `spiffeID`)
   rather than in `rules[].matches[]` — this is a consequence of the MADR-081 API design and
   must be documented prominently for contributors.
