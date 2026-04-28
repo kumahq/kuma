@@ -42,6 +42,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MISE_HTTP_RETRIES: 3
       - name: install-kuma-ci-tools
         run: |
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"

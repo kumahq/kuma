@@ -49,6 +49,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MISE_HTTP_RETRIES: 3
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
         if: contains(github.event.comment.body, '/format')

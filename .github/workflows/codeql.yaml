@@ -25,6 +25,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MISE_HTTP_RETRIES: 3
       - name: Initialize CodeQL
         uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:

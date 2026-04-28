@@ -20,6 +20,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MISE_HTTP_RETRIES: 3
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
