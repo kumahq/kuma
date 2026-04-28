@@ -91,22 +91,14 @@ var _ = Describe("Zone Delta Sync", func() {
 		zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
-<<<<<<< HEAD
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			policySync := client_v2.NewKDSSyncClient(
-				core.Log.WithName("kds-sink"),
-				kdsCtx.TypesSentByGlobal,
-				client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, "", len(kdsCtx.TypesSentByGlobal)),
-=======
-		wg.Go(func() {
-			kdsStream := client_v2.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", "", len(kdsCtx.TypesSentByGlobal))
+			kdsStream := client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, "", len(kdsCtx.TypesSentByGlobal))
 			policySync := client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				kdsCtx.TypesSentByGlobal,
 				kdsStream,
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"), 0,
 			)
 			_ = policySync.Receive()

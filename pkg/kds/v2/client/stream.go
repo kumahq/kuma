@@ -53,6 +53,27 @@ type KDSSyncServiceStream interface {
 	Context() context.Context
 }
 
+// ServerStream is the subset of KDSSyncServiceStream that gRPC server
+// streams satisfy (Send, Recv, Context but not CloseSend).
+type ServerStream interface {
+	Send(*envoy_sd.DeltaDiscoveryRequest) error
+	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
+	Context() context.Context
+}
+
+// NewServerStreamAdapter wraps a gRPC server stream to satisfy
+// KDSSyncServiceStream. Server streams signal completion by returning
+// from the handler, so CloseSend is a no-op.
+func NewServerStreamAdapter(s ServerStream) KDSSyncServiceStream {
+	return &serverStreamAdapter{s}
+}
+
+type serverStreamAdapter struct {
+	ServerStream
+}
+
+func (serverStreamAdapter) CloseSend() error { return nil }
+
 // NewDeltaKDSStream creates a new DeltaKDSStream and starts background
 // send/recv goroutines. Call CloseSend on the returned stream to
 // gracefully shut down the send goroutine and close the underlying
