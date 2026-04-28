@@ -95,16 +95,19 @@ var _ = Describe("Full sync tests", func() {
 			})
 		}
 
-		// Wait for some time to ensure sync was complete
-		time.Sleep(time.Second * 5)
+		// Wait until all stores converge to their expected golden state.
+		// Using Eventually instead of a fixed sleep avoids flakes on
+		// slow CI runners where 5s may not be enough for full sync.
+		for zoneName, zoneStore := range zones {
+			goldenFile := zoneName + ".golden.yaml"
+			Eventually(func(g Gomega) {
+				out, err := test_store.ExtractResources(ctx, zoneStore)
+				g.Expect(err).To(Succeed())
+				g.Expect(out).To(matchers.MatchGoldenEqual(folder, goldenFile), "zone %s", zoneName)
+			}, "30s", "250ms").Should(Succeed())
+		}
+
 		close(done)
 		wg.Wait()
-
-		// Compare golden files
-		for zoneName, zoneStore := range zones {
-			out, err := test_store.ExtractResources(ctx, zoneStore)
-			Expect(err).To(Succeed())
-			Expect(out).To(matchers.MatchGoldenEqual(folder, zoneName+".golden.yaml"), "zone %s", zoneName)
-		}
 	}, test.EntriesAsFolder("full_sync"))
 })
