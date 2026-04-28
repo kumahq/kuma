@@ -246,7 +246,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (envoy_http_conn_manager_prefix, envoy_response_code_class) (rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum by (envoy_http_conn_manager_prefix, envoy_response_code_class) (rate(envoy_http_downstream_rq_xx_total{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "{{envoy_http_conn_manager_prefix}} {{envoy_response_code_class}}xx",
           "refId": "A"
         }
