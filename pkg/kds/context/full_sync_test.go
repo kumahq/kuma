@@ -33,6 +33,11 @@ var _ = Describe("Full sync tests", func() {
 		zones := make(map[string]store.ResourceStore)
 		wg := sync.WaitGroup{}
 		done := make(chan struct{})
+		closeOnce := sync.Once{}
+		DeferCleanup(func() {
+			closeOnce.Do(func() { close(done) })
+			wg.Wait()
+		})
 
 		for _, file := range files {
 			if before, ok := strings.CutSuffix(file.Name(), ".input.yaml"); ok {
@@ -106,8 +111,5 @@ var _ = Describe("Full sync tests", func() {
 				g.Expect(out).To(matchers.MatchGoldenEqual(folder, goldenFile), "zone %s", zoneName)
 			}, "30s", "250ms").Should(Succeed())
 		}
-
-		close(done)
-		wg.Wait()
 	}, test.EntriesAsFolder("full_sync"))
 })
