@@ -190,7 +190,9 @@ runuser -u kuma-dp -- \
 			// Bound the total setup time so that a hung iptables binary
 			// causes a clean failure (and pod restart) instead of a
 			// permanent hang that blocks the pod in init phase forever.
-			setupCtx, setupCancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
+			// Kept short (60s) so the pod can restart within the e2e
+			// framework's 90s pod-ready wait window.
+			setupCtx, setupCancel := context.WithTimeout(cmd.Context(), time.Minute)
 			defer setupCancel()
 
 			initializedConfig, err := cfg.Initialize(setupCtx)

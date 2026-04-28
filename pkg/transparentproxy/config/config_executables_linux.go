@@ -112,6 +112,9 @@ func (c InitializedExecutable) Exec(
 	ctx context.Context,
 	args ...string,
 ) (*bytes.Buffer, *bytes.Buffer, error) {
+	ctx, cancel := context.WithTimeout(ctx, execCommandTimeout)
+	defer cancel()
+
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	// #nosec G204 G702

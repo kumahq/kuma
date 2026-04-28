@@ -23,6 +23,11 @@ import (
 
 const (
 	WarningDryRunNoValidIptablesFound = "[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables"
+
+	// execCommandTimeout bounds each individual iptables/iptables-save/iptables-restore
+	// invocation. A stuck kernel netlink call should not be able to hang kuma-init
+	// past this deadline; the caller propagates a larger overall setup timeout.
+	execCommandTimeout = 15 * time.Second
 )
 
 type Executable struct {
@@ -622,6 +627,9 @@ func getIptablesVersion(ctx context.Context, path string) (Version, error) {
 	isVersionMissing := func(output string) bool {
 		return strings.Contains(output, fmt.Sprintf("unrecognized option '%s'", consts.FlagVersion))
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, execCommandTimeout)
+	defer cancel()
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
