@@ -79,6 +79,10 @@ func (a *ApiServer) Config() api_server.ApiServerConfig {
 	return a.config
 }
 
+func (a *ApiServer) Handler() http.Handler {
+	return a.mux
+}
+
 func init() {
 	// turn off escape & character so the link in "next" fields for resources is user friendly
 	restful.NewEncoder = func(w io.Writer) *json.Encoder {
@@ -133,12 +137,14 @@ func NewApiServer(
 	}
 	container.Filter(authenticator)
 
-	cors := restful.CrossOriginResourceSharing{
-		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
-		AllowedDomains: serverConfig.CorsAllowedDomains,
-		Container:      container,
+	if len(serverConfig.CorsAllowedDomains) > 0 {
+		cors := restful.CrossOriginResourceSharing{
+			ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
+			AllowedDomains: serverConfig.CorsAllowedDomains,
+			Container:      container,
+		}
+		container.Filter(cors.Filter)
 	}
-	container.Filter(cors.Filter)
 
 	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
 	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.
