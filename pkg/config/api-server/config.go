@@ -243,7 +243,7 @@ func (a *ApiServerConfig) Validate() error {
 func DefaultApiServerConfig() *ApiServerConfig {
 	return &ApiServerConfig{
 		ReadOnly:           false,
-		CorsAllowedDomains: []string{".*"},
+		CorsAllowedDomains: []string{},
 		BasePath:           "/",
 		HTTP: ApiServerHTTPConfig{
 			Enabled:   true,
