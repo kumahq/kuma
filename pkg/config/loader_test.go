@@ -85,6 +85,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 			Expect(cfg.BootstrapServer.Params.XdsConnectTimeout.Duration).To(Equal(13 * time.Second))
+			Expect(cfg.BootstrapServer.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
 			Expect(cfg.BootstrapServer.Params.AdminAccessLogPath).To(Equal("/access/log/test"))
 			Expect(cfg.BootstrapServer.Params.AdminAddress).To(Equal("1.1.1.1"))
 
@@ -461,6 +462,7 @@ bootstrapServer:
     xdsHost: kuma-control-plane
     xdsPort: 4321
     xdsConnectTimeout: 13s
+    xdsGrpcMaxReceiveMessageBytes: 33554432
 apiServer:
   http:
     enabled: false # ENV: KUMA_API_SERVER_HTTP_ENABLED
@@ -859,6 +861,7 @@ meshService:
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":               "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":               "4321",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":    "13s",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES": "33554432",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":  "/access/log/test",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":          "1.1.1.1",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH": "/etc/resolv.conf",

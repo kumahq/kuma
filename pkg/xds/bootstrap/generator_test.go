@@ -186,11 +186,12 @@ var _ = Describe("bootstrapGenerator", func() {
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				return &bootstrap_config.BootstrapServerConfig{
 					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminAccessLogPath: "/var/log",
-						XdsHost:            "localhost",
-						XdsPort:            15678,
-						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
+						AdminAddress:                  "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+						AdminAccessLogPath:            "/var/log",
+						XdsHost:                       "localhost",
+						XdsPort:                       15678,
+						XdsConnectTimeout:             config_types.Duration{Duration: 2 * time.Second},
+						XdsGrpcMaxReceiveMessageBytes: 16777216,
 					},
 				}
 			}(),
@@ -236,11 +237,12 @@ var _ = Describe("bootstrapGenerator", func() {
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				return &bootstrap_config.BootstrapServerConfig{
 					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminAccessLogPath: "/var/log",
-						XdsHost:            "localhost",
-						XdsPort:            15678,
-						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
+						AdminAddress:                  "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+						AdminAccessLogPath:            "/var/log",
+						XdsHost:                       "localhost",
+						XdsPort:                       15678,
+						XdsConnectTimeout:             config_types.Duration{Duration: 2 * time.Second},
+						XdsGrpcMaxReceiveMessageBytes: 16777216,
 					},
 				}
 			}(),

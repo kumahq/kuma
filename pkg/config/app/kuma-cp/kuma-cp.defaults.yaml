@@ -100,6 +100,12 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
+    # Cap on the gRPC C-Core receive flow-control window for the kuma-dp xDS
+    # client. Set as the GoogleGrpc channel arg `grpc.max_receive_message_length`.
+    # Default 16 MiB is large enough for gateway DPs with 450+ listeners; the
+    # gRPC C-Core default of 4 MiB sizes the per-stream HTTP/2 receive window
+    # too small for the initial xDS push on those DPs and stalls the stream.
+    xdsGrpcMaxReceiveMessageBytes: 16777216 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Whether the MADS server is enabled

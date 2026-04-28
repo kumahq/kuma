@@ -63,6 +63,15 @@ type BootstrapParamsConfig struct {
 	XdsPort uint32 `json:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout config_types.Duration `json:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
+	// XdsGrpcMaxReceiveMessageBytes caps the gRPC C-Core receive flow-control
+	// window on the kuma-dp xDS client (set as the GoogleGrpc channel arg
+	// `grpc.max_receive_message_length`). The gRPC C-Core default of 4 MiB
+	// sizes the per-stream HTTP/2 receive window too small for the initial
+	// xDS push on gateway DPs with hundreds of listeners — under that load
+	// the receive window depletes mid-push and the gRPC client aborts the
+	// stalled stream with CANCELLED, preventing Envoy from ACKing LDS.
+	// Default: 16 MiB.
+	XdsGrpcMaxReceiveMessageBytes uint32 `json:"xdsGrpcMaxReceiveMessageBytes" envconfig:"kuma_bootstrap_server_params_xds_grpc_max_receive_message_bytes"`
 	// Path to the template of Corefile for data planes to use
 	CorefileTemplatePath string `json:"corefileTemplatePath" envconfig:"kuma_bootstrap_server_params_corefile_template_path"`
 }
@@ -89,6 +98,9 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.XdsConnectTimeout.Duration < 0 {
 		return errors.New("XdsConnectTimeout cannot be negative")
 	}
+	if b.XdsGrpcMaxReceiveMessageBytes == 0 {
+		return errors.New("XdsGrpcMaxReceiveMessageBytes cannot be zero")
+	}
 	if b.CorefileTemplatePath != "" && !files.FileExists(b.CorefileTemplatePath) {
 		return errors.New("CorefileTemplatePath must point to an existing file")
 	}
@@ -105,6 +117,8 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 		XdsHost:              "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
 		XdsPort:              0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
 		XdsConnectTimeout:    config_types.Duration{Duration: 1 * time.Second},
-		CorefileTemplatePath: "", // by default, data plane will use the embedded Corefile to be the template
+		// 16 MiB — large enough for gateway DPs with hundreds of listeners.
+		XdsGrpcMaxReceiveMessageBytes: 16777216,
+		CorefileTemplatePath:          "", // by default, data plane will use the embedded Corefile to be the template
 	}
 }
