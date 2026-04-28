@@ -56,7 +56,7 @@ type K8sCluster struct {
 	forwardedPortsChans []chan struct{}
 	verbose             bool
 	deployments         map[string]Deployment
-	mutex               sync.RWMutex // to protect deployments
+	mutex               sync.RWMutex // to protect deployments, portForwards, adminTunnels
 	defaultTimeout      time.Duration
 	defaultRetries      int
 	opts                kumaDeploymentOptions
@@ -127,6 +127,13 @@ func (c *K8sCluster) PortForwardApp(spec portforward.Spec) (portforward.Tunnel, 
 		return portforward.Tunnel{}, err
 	}
 
+	c.mutex.RLock()
+	existing := c.portForwards[spec]
+	c.mutex.RUnlock()
+	if existing.Endpoint != "" {
+		return existing, nil
+	}
+
 	podName, err := PodNameOfApp(c, spec.AppName, spec.Namespace)
 	if err != nil {
 		return portforward.Tunnel{}, errors.Wrapf(
@@ -149,7 +156,9 @@ func (c *K8sCluster) PortForwardApp(spec portforward.Spec) (portforward.Tunnel, 
 		)
 	}
 
+	c.mutex.Lock()
 	c.portForwards[spec] = fwd
+	c.mutex.Unlock()
 
 	return fwd, nil
 }
@@ -204,14 +213,21 @@ func (c *K8sCluster) AddPortForward(portFwd portforward.Tunnel, spec portforward
 		c.t.Fatalf("invalid port-forward spec: %s", err)
 	}
 
+	c.mutex.Lock()
 	c.portForwards[spec] = portFwd
+	c.mutex.Unlock()
 }
 
 func (c *K8sCluster) GetPortForward(spec portforward.Spec) portforward.Tunnel {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return c.portForwards[spec]
 }
 
 func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	for _, spec := range specs {
 		for fwdSpec, tnl := range c.portForwards {
 			if !fwdSpec.Matches(spec) {
@@ -1600,7 +1616,10 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		return nil, errors.Wrap(err, "invalid port-forward spec")
 	}
 
-	if tnl := c.adminTunnels[args]; tnl != nil {
+	c.mutex.RLock()
+	tnl := c.adminTunnels[args]
+	c.mutex.RUnlock()
+	if tnl != nil {
 		return tnl, nil
 	}
 
@@ -1615,7 +1634,7 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		)
 	}
 
-	tnl, err := tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
+	tnl, err = tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
 	if err != nil {
 		return nil, errors.Wrapf(
 			err,
@@ -1626,7 +1645,13 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		)
 	}
 
+	c.mutex.Lock()
+	if existing := c.adminTunnels[args]; existing != nil {
+		c.mutex.Unlock()
+		return existing, nil
+	}
 	c.adminTunnels[args] = tnl
+	c.mutex.Unlock()
 
 	return tnl, nil
 }
