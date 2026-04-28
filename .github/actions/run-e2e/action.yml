@@ -27,9 +27,16 @@ runs:
         remove_dotnet: true
         remove_haskell: true
     - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      with:
+        install: "false"
       env:
         GITHUB_TOKEN: ${{ github.token }}
-        MISE_HTTP_RETRIES: 3
+    - uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        retry_wait_seconds: 15
+        timeout_minutes: 10
+        command: mise install
     - run: make build
       shell: bash
     - run: make -j build/distributions
