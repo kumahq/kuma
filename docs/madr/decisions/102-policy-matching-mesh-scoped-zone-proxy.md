@@ -346,27 +346,119 @@ spec:
         connectionTimeout: 10s
 ```
 
-### Updated Policy Matrix
+### Policy Matrix
+
+#### Current
+
+> **Note:** This section covers only the new API relevant in 3.0, omitting legacy external services and `spec.from` policies.
+
+Global Zone Ingress **does not** support policies. There is no mechanism to apply them.
+
+Global Zone Egress receives configuration indirectly:
+certain policies that appear to target an outbound `spec.to[].kind: MeshExternalService`
+actually result in configuration applied to the Zone Egress proxy.
+Such policies can be discovered by checking which plugins implement the `EgressMatchedPolicies` method.
+
+For example,
+
+```yaml
+type: MeshCircuitBreaker
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: client
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        labels:
+          kuma.io/display-name: httpbin
+      default: $conf1
+```
+
+The configuration `$conf1` is going to be applied to Zone Egress, even though `spec.targetRef` targets the `app: client`.
+
+
+| Policy                    | Applied On     | Notes |
+|---------------------------|----------------|-------|
+| MeshCircuitBreaker        | Zone Egress    | When `spec.to[].kind: MeshExternalService` the policy is applied on zone egress |
+| MeshHealthCheck           | Zone Egress    | Same  |
+| MeshLoadBalancingStrategy | Zone Egress    | Same  |
+
+The existence of these policies breaks the established rule "top-level targetRef selects what proxy to be modified",
+so we should not apply this approach to new mesh-scoped zone proxies.
+
+This transition can be made non-breaking by keying on how the MeshExternalService cluster is
+generated: when the cluster routes through the old global-scoped Zone Egress listener, the
+`EgressMatchedPolicies` path applies these policies to the egress as before. When the cluster
+routes through a mesh-scoped zone proxy Dataplane, the policies are applied on the sidecar's
+outbound cluster instead. Both paths can coexist during the migration window, so no UPGRADE.md
+entry is required.
+
+#### Updated
+
+Only `spec.rules` can be used to provide configuration for zone proxies.
 
 Priority column indicates planned release milestone.
 
-| Policy                    | Zone Egress               | Zone Ingress          | Priority      | Notes |
-|---------------------------|---------------------------|-----------------------|---------------|-------|
-| MeshTrafficPermission     | Yes                       | No                    | **2.14**      | Required for MeshExternalService access control to be complete |
-| MeshAccessLog             | Yes                       | Yes                   | **2.14**      | |
-| MeshMetric                | Yes                       | Yes                   | **2.14**      | |
-| MeshTrace                 | Yes                       | No                    | **2.14**      | Ingress is TCP-only — tracing not meaningful |
-| MeshProxyPatch            | Yes                       | Yes                   | 3.0           | Independent of SNI/MES designs; customer demand in ask-mesh |
-| MeshTLS                   | Yes                       | Yes                   | 3.0           | |
-| MeshRateLimit             | Maybe                     | No                    | Maybe         | |
-| MeshTimeout               | Maybe                     | No                    | Maybe         | |
-| MeshFaultInjection        | Maybe                     | No                    | Maybe         | |
-| MeshCircuitBreaker        | Maybe                     | No                    | Maybe         | |
-| MeshHealthCheck           | Maybe                     | No                    | Maybe         | |
-| MeshLoadBalancingStrategy | No                        | No                    | Probably not  | |
-| MeshRetry                 | No                        | No                    | No            | Squared retries on both sides |
-| MeshHTTPRoute             | No                        | No                    | No            | |
-| MeshTCPRoute              | No                        | No                    | No            | |
+
+| Policy                    | Applied On                    | Priority      | Notes |
+|---------------------------|-------------------------------|---------------|-------|
+| MeshTrafficPermission     | Zone Egress                   | **2.14**      | Required for MeshExternalService access control to be complete |
+| MeshAccessLog             | Zone Egress, Zone Ingress     | **2.14**      | |
+| MeshMetric                | Zone Egress, Zone Ingress     | **2.14**      | |
+| MeshTrace                 | Zone Egress                   | **2.14**      | Ingress is TCP-only — tracing not meaningful |
+| MeshProxyPatch            | Zone Egress, Zone Ingress     | 3.0           | Independent of SNI/MES designs; customer demand in ask-mesh |
+| MeshTLS                   | Zone Egress                   | 3.0           | |
+| MeshRateLimit             | Zone Egress                   | 3.0           | |
+| MeshTimeout               | Zone Egress                   | 3.0           | |
+| MeshFaultInjection        | Zone Egress                   | 3.0           | |
+| MeshCircuitBreaker        | Zone Egress                   | 3.0           | |
+| MeshHealthCheck           | Zone Egress                   | 3.0           | |
+| MeshLoadBalancingStrategy | —                             | No            | We can't do much with external service endpoints |
+| MeshRetry                 | —                             | No            | Squared retries on both sides |
+| MeshHTTPRoute             | —                             | No            | |
+| MeshTCPRoute              | —                             | No            | |
+
+#### Migration
+
+`MeshCircuitBreaker` and `MeshHealthCheck` that were using `spec.to[].kind: MeshExternalService` need to be migrated for the new mesh-scoped zone egress.
+Assuming user had `MeshCircuitBreaker` for aws-aurora while using global zone egress:
+
+```yaml
+sni.extsvc.default.zone-1.backend-ns.aws-aurora.8443
+
+type: MeshCircuitBreaker
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: client
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        labels:
+          kuma.io/display-name: aws-aurora
+          kuma.io/zone: zone-1
+          k8s.kuma.io/namespace: backend-ns
+      default: $conf1
+```
+
+It needs to be rewritten to
+
+```yaml
+type: MeshCircuitBreaker
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      zone-egress: enabled
+  rules:
+    - matches:
+        - sni:
+            type: Exact
+            value: sni.extsvc.default.zone-1.backend-ns.aws-aurora.8443
+```
 
 ## Security implications and review
 
