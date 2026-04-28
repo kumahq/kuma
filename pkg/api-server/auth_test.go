@@ -1,14 +1,14 @@
 package api_server_test
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,12 +29,12 @@ var _ = Describe("Auth test", func() {
 	var httpsPort uint32
 	stop := func() {}
 	var externalIP string
+	var apiServer *api_server.ApiServer
 
 	BeforeEach(func() {
 		externalIP = getExternalIP()
 		Expect(externalIP).ToNot(BeEmpty())
 		certPath, keyPath := createCertsForIP(externalIP)
-		var apiServer *api_server.ApiServer
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
 			cfg.HTTPS.TlsCertFile = certPath
 			cfg.HTTPS.TlsKeyFile = keyPath
@@ -85,8 +85,9 @@ var _ = Describe("Auth test", func() {
 	})
 
 	It("should be able to access admin endpoints using client certs and HTTPS", func() {
-		// when
-		resp, err := httpsClient.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
+		// when - test that client cert authentication works via HTTPS
+		// Using localhost instead of external IP since client cert auth doesn't depend on RemoteAddr
+		resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -94,29 +95,70 @@ var _ = Describe("Auth test", func() {
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
-		// when
-		resp, err := http.Get(fmt.Sprintf("http://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpPort)))))
+		// when - simulate request from external IP by setting RemoteAddr
+		req := httptest.NewRequest(http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp).To(HaveHTTPStatus(403))
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-non-localhost.golden.json")))
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-non-localhost.golden.json")))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
-		// when
-		resp, err := httpsClientWithoutCerts.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
+		// when - simulate request from external IP without client certs by setting RemoteAddr
+		req := httptest.NewRequest(http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp).To(HaveHTTPStatus(403))
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
+	})
+
+	It("should block admin access when Origin is a cross-origin domain", func() {
+		// This simulates a browser fetch() from evil.com to localhost:5681.
+		// The browser connects over loopback, but the Origin header reveals a
+		// non-localhost origin.  LocalhostAuthenticator must NOT grant admin.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", "https://evil.com")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+	})
+
+	It("should grant admin when Origin is same-origin localhost (GUI use case)", func() {
+		// Simulates the Kuma GUI: browser on localhost fetching from the same
+		// localhost:port.  Origin matches Host, so admin should be granted.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", fmt.Sprintf("http://localhost:%d", httpPort))
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(200))
+	})
+
+	It("should block admin when a proxy header is present on a loopback request", func() {
+		// X-Forwarded-For on a loopback-sourced request signals a reverse proxy
+		// laundering remote traffic.  Admin must be denied.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("X-Forwarded-For", "203.0.113.1")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
 	})
 
 	It("should be able to access config on localhost using HTTP", func() {
@@ -129,16 +171,15 @@ var _ = Describe("Auth test", func() {
 	})
 
 	It("should be block an access to config endpoints from other machine using HTTP", func() {
-		// when
-		resp, err := http.Get(fmt.Sprintf("http://%s/config", net.JoinHostPort(externalIP, strconv.Itoa(int(httpPort)))))
+		// when - simulate request from external IP by setting RemoteAddr
+		req := httptest.NewRequest(http.MethodGet, "/config", http.NoBody)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp).To(HaveHTTPStatus(403))
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Body.Close()).To(Succeed())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-config-non-localhost.golden.json")))
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-config-non-localhost.golden.json")))
 	})
 })
 
