@@ -76,24 +76,13 @@ func ResourceValidation() {
 		return fmt.Sprintf("%s %s\n\n%s", resp.Proto, resp.Status, strings.TrimRight(string(body), "\n"))
 	}
 
-	// applyKube applies K8s-format YAML via kubectl and returns stdout on
-	// success or err.Error() verbatim on failure.
-	applyKube := func(cluster Cluster, yamlBody string) string {
-		tmpf, err := os.CreateTemp("", "kuma-validation-*.yaml")
-		if err != nil {
-			return fmt.Sprintf("temp file error: %v", err)
-		}
-		defer func() { _ = os.Remove(tmpf.Name()) }()
-		if _, err := tmpf.WriteString(yamlBody); err != nil {
-			_ = tmpf.Close()
-			return fmt.Sprintf("write error: %v", err)
-		}
-		_ = tmpf.Close()
-
+	// applyKube applies a K8s-format YAML file via kubectl and returns stdout
+	// on success or err.Error() verbatim on failure.
+	applyKube := func(cluster Cluster, inputPath string) string {
 		out, err := k8s.RunKubectlAndGetOutputE(
 			cluster.GetTesting(),
 			cluster.GetKubectlOptions(),
-			"apply", "-f", tmpf.Name(),
+			"apply", "-f", inputPath,
 		)
 		if err != nil {
 			return err.Error()
@@ -103,25 +92,25 @@ func ResourceValidation() {
 
 	type target struct {
 		slug  string
-		apply func(resource, yamlBody string) string
+		apply func(resource, inputPath, yamlBody string) string
 	}
 
 	globalT := target{
 		slug: "global",
-		apply: func(resource, yamlBody string) string {
+		apply: func(resource, _, yamlBody string) string {
 			return applyUniversal(multizone.Global, resource, yamlBody)
 		},
 	}
 	uniZoneT := target{
 		slug: "zone-uni",
-		apply: func(resource, yamlBody string) string {
+		apply: func(resource, _, yamlBody string) string {
 			return applyUniversal(multizone.UniZone1, resource, yamlBody)
 		},
 	}
 	kubeT := target{
 		slug: "zone-k8s",
-		apply: func(_, yamlBody string) string {
-			return applyKube(multizone.KubeZone1, yamlBody)
+		apply: func(_, inputPath, _ string) string {
+			return applyKube(multizone.KubeZone1, inputPath)
 		},
 	}
 
@@ -148,7 +137,7 @@ func ResourceValidation() {
 				if err != nil {
 					return err
 				}
-				results[i] = result{path: path, blob: t.apply(apiPath, string(body))}
+				results[i] = result{path: path, blob: t.apply(apiPath, path, string(body))}
 				return nil
 			})
 		}
