@@ -16,15 +16,10 @@ func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.R
 	for i := 0; i < len(clientStreams); i++ {
 		clientID := fmt.Sprintf("client-%d", i)
 		item := clientStreams[i]
-<<<<<<< HEAD
 		comp := kds_client.NewKDSSink(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client.NewKDSStream(item, clientID, ""), cb)
-=======
-		kdsStream := kds_client_v2.NewDeltaKDSStream(item, clientID, fmt.Sprintf("cp-%d", i), "", len(resourceTypes))
-		comp := kds_client_v2.NewKDSSyncClient(core.Log.WithName("kds").WithName(clientID), resourceTypes, kdsStream, cb, 0)
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 		go func() {
 			_ = comp.Receive()
-			_ = kdsStream.CloseSend()
+			_ = item.CloseSend()
 		}()
 	}
 }
@@ -37,10 +32,11 @@ func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes
 			mode:       config_core.Zone,
 		}
 		item := clientStreams[i]
-		comp := kds_client_v2.NewKDSSyncClient(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client_v2.NewDeltaKDSStream(item, clientID, runtimeInfo, "", len(resourceTypes)), cb, 0)
+		kdsStream := kds_client_v2.NewDeltaKDSStream(item, clientID, runtimeInfo, "", len(resourceTypes))
+		comp := kds_client_v2.NewKDSSyncClient(core.Log.WithName("kds").WithName(clientID), resourceTypes, kdsStream, cb, 0)
 		go func() {
 			_ = comp.Receive()
-			_ = item.CloseSend()
+			_ = kdsStream.CloseSend()
 		}()
 	}
 }

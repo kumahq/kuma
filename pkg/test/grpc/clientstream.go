@@ -51,8 +51,10 @@ func NewMockClientStream() *MockClientStream {
 func (stream *MockClientStream) CloseSend() error {
 	stream.Lock()
 	defer stream.Unlock()
-	close(stream.SentCh)
-	stream.closed = true
+	if !stream.closed {
+		close(stream.SentCh)
+		stream.closed = true
+	}
 	return nil
 }
 

@@ -42,14 +42,9 @@ type Callbacks struct {
 type DeltaKDSStream interface {
 	DeltaDiscoveryRequest(resourceType model.ResourceType) error
 	Receive() (UpstreamResponse, error)
-<<<<<<< HEAD
 	ACK(resourceType model.ResourceType) error
 	NACK(resourceType model.ResourceType, err error) error
-=======
-	ACK(resourceType core_model.ResourceType) error
-	NACK(resourceType core_model.ResourceType, err error) error
 	CloseSend() error
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 }
 
 type KDSSyncClient interface {
@@ -114,22 +109,9 @@ func (s *kdsSyncClient) Receive() error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to store %s resources", received.Type)
 		}
-<<<<<<< HEAD
 		if validationErrors != nil {
 			s.log.Info("received resource is invalid, sending NACK", "err", validationErrors)
 			if err := s.kdsStream.NACK(received.Type, validationErrors); err != nil {
-				if err == io.EOF {
-					return nil
-				}
-=======
-		if nackError != nil || validationErrors != nil {
-			combinedErrors := std_errors.Join(nackError, validationErrors)
-			s.log.Info("received resource is invalid, sending NACK", "err", combinedErrors)
-			if s.callbacks.OnNACK != nil {
-				s.callbacks.OnNACK(received.Type)
-			}
-			if err := s.kdsStream.NACK(received.Type, combinedErrors); err != nil {
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
 			continue

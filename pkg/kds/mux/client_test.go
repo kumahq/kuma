@@ -6,10 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
-	stream_v3 "github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,15 +16,16 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/kds/mux"
 	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
+	kds_client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	kds_setup "github.com/kumahq/kuma/v2/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/v2/pkg/test/runtime"
 )
 
 // reconnectTrackingServer simulates a Global CP that closes the
@@ -48,10 +48,6 @@ func (s *reconnectTrackingServer) GlobalToZoneSync(stream mesh_proto.KDSSyncServ
 	s.mu.Unlock()
 
 	if count == 1 {
-		// First connection: close the stream after a short delay.
-		// Returning nil closes the stream cleanly (zone gets io.EOF).
-		// Returning a status error simulates the global CP explicitly
-		// canceling the stream.
 		select {
 		case <-time.After(300 * time.Millisecond):
 		case <-stream.Context().Done():
@@ -63,7 +59,6 @@ func (s *reconnectTrackingServer) GlobalToZoneSync(stream mesh_proto.KDSSyncServ
 		return nil
 	}
 
-	// Second (or later) connection: zone successfully reconnected.
 	s.reconnectedOnce.Do(func() { close(s.reconnectedCh) })
 	<-stream.Context().Done()
 	return nil
@@ -95,31 +90,7 @@ func (s *reconnectTrackingServer) StreamClusters(stream mesh_proto.GlobalKDSServ
 	return nil
 }
 
-// testZoneDeltaServer is a no-op delta server for the zone-to-global
-// direction. It blocks until the stream context is canceled.
-type testZoneDeltaServer struct{}
-
-func (s *testZoneDeltaServer) DeltaStreamHandler(str stream_v3.DeltaStream, _ string) error {
-	<-str.Context().Done()
-	return nil
-}
-
-var _ delta.Server = &testZoneDeltaServer{}
-
 var _ = Describe("Client", func() {
-	// Regression test: when a GlobalToZoneSync gRPC stream is terminated by
-	// the server, the mux client must trigger a full reconnect via
-	// ResilientComponent.
-	//
-	// Before the fix, startGlobalToZoneSync silently exited on nil error
-	// (io.EOF) without sending to errorCh. Because Start() only returns
-	// when it receives from errorCh (or stop), the mux client stayed alive
-	// — healthchecks and ZoneToGlobal kept working — but GlobalToZone was
-	// permanently dead.
-	//
-	// In production this was triggered by a global CP restart behind a load
-	// balancer: the LB closed the GlobalToZone HTTP/2 stream with a clean
-	// TCP FIN (io.EOF) instead of a gRPC error.
 	type testCase struct {
 		description string
 		errCode     codes.Code
@@ -141,35 +112,58 @@ var _ = Describe("Client", func() {
 			go func() { _ = grpcSrv.Serve(lis) }()
 			defer grpcSrv.Stop()
 
-			globalStore := memory.NewStore()
 			cfg := kuma_cp.DefaultConfig()
 			cfg.Multizone.Zone.Name = "zone-1"
-			rt := kds_setup.NewTestRuntime(context.Background(), cfg, globalStore)
+			cfg.Experimental.KDSDeltaEnabled = true
 
 			metrics, err := core_metrics.NewMetrics("")
 			Expect(err).ToNot(HaveOccurred())
 
-			zoneStore := memory.NewStore()
-			resourceSyncer, err := sync_store_v2.NewResourceSyncer(
-				core.Log.WithName("syncer"),
-				zoneStore,
-				store.NoTransactions{},
-				metrics,
-				context.Background(),
-			)
-			Expect(err).ToNot(HaveOccurred())
+			typesSentByGlobal := registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))
+			runtimeInfo := &runtime.TestRuntimeInfo{InstanceId: "zone-1", Mode: config_core.Zone}
+
+			globalToZoneCb := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errChan chan error) {
+				kdsStream := kds_client_v2.NewDeltaKDSStream(stream, "zone-1", runtimeInfo, "", len(typesSentByGlobal))
+				syncClient := kds_client_v2.NewKDSSyncClient(
+					core.Log.WithName("test-g2z"),
+					typesSentByGlobal,
+					kdsStream,
+					nil,
+					0,
+				)
+				go func() {
+					err := syncClient.Receive()
+					if err != nil && !errors.Is(err, context.Canceled) {
+						select {
+						case errChan <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error"):
+						default:
+						}
+					}
+				}()
+			})
+
+			zoneToGlobalCb := mux.OnZoneToGlobalSyncStartedFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errChan chan error) {
+				go func() {
+					<-stream.Context().Done()
+				}()
+			})
+
+			// SOTW callback (unused for delta, but required by NewClient)
+			sotwCb := mux.OnSessionStartedFunc(func(session mux.Session) error {
+				return nil
+			})
 
 			muxClient := mux.NewClient(
 				context.Background(),
 				"grpc://"+lis.Addr().String(),
 				"zone-1",
-				*rt.Config().Multizone.Zone.KDS,
-				rt.Config().Experimental,
+				sotwCb,
+				globalToZoneCb,
+				zoneToGlobalCb,
+				*cfg.Multizone.Zone.KDS,
+				cfg.Experimental,
 				metrics,
-				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
-				resourceSyncer,
-				rt,
-				&testZoneDeltaServer{},
+				service.NewEnvoyAdminProcessor(nil, nil),
 			)
 
 			resilient := component.NewResilientComponent(
@@ -187,7 +181,7 @@ var _ = Describe("Client", func() {
 		},
 		Entry("server returns nil (io.EOF)", testCase{
 			description: "LB or global CP closes stream cleanly",
-			errCode:     codes.OK, // handler returns nil
+			errCode:     codes.OK,
 		}),
 		Entry("server returns Canceled", testCase{
 			description: "global CP explicitly cancels the stream",
