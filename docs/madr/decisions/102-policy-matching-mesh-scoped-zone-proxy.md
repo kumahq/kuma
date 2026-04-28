@@ -404,24 +404,23 @@ Only `spec.rules` can be used to provide configuration for zone proxies.
 
 Priority column indicates planned release milestone.
 
-
-| Policy                    | Applied On                    | Priority      | Notes |
-|---------------------------|-------------------------------|---------------|-------|
-| MeshTrafficPermission     | Zone Egress                   | **2.14**      | Required for MeshExternalService access control to be complete |
-| MeshAccessLog             | Zone Egress, Zone Ingress     | **2.14**      | |
-| MeshMetric                | Zone Egress, Zone Ingress     | **2.14**      | |
-| MeshTrace                 | Zone Egress                   | **2.14**      | Ingress is TCP-only — tracing not meaningful |
-| MeshProxyPatch            | Zone Egress, Zone Ingress     | 3.0           | Independent of SNI/MES designs; customer demand in ask-mesh |
-| MeshTLS                   | Zone Egress                   | 3.0           | |
-| MeshRateLimit             | Zone Egress                   | 3.0           | |
-| MeshTimeout               | Zone Egress                   | 3.0           | |
-| MeshFaultInjection        | Zone Egress                   | 3.0           | |
-| MeshCircuitBreaker        | Zone Egress                   | 3.0           | |
-| MeshHealthCheck           | Zone Egress                   | 3.0           | |
-| MeshLoadBalancingStrategy | —                             | No            | We can't do much with external service endpoints |
-| MeshRetry                 | —                             | No            | Squared retries on both sides |
-| MeshHTTPRoute             | —                             | No            | |
-| MeshTCPRoute              | —                             | No            | |
+| Policy                    | Applied On Listener Types   | Priority      | Notes |
+|---------------------------|-----------------------------|---------------|-------|
+| MeshTrafficPermission     | ZoneEgress                  | **2.14**      | Required for MeshExternalService access control to be complete |
+| MeshAccessLog             | ZoneEgress, ZoneIngress     | **2.14**      | |
+| MeshMetric                | ZoneEgress, ZoneIngress     | **2.14**      | |
+| MeshTrace                 | ZoneEgress                  | **2.14**      | Ingress is TCP-only — tracing not meaningful |
+| MeshProxyPatch            | ZoneEgress, ZoneIngress     | 3.0           | Independent of SNI/MES designs; customer demand in ask-mesh |
+| MeshTLS                   | ZoneEgress                  | 3.0           | |
+| MeshRateLimit             | ZoneEgress                  | 3.0           | |
+| MeshTimeout               | ZoneEgress                  | 3.0           | |
+| MeshFaultInjection        | ZoneEgress                  | 3.0           | |
+| MeshCircuitBreaker        | ZoneEgress                  | 3.0           | |
+| MeshHealthCheck           | ZoneEgress                  | 3.0           | |
+| MeshLoadBalancingStrategy | —                           | No            | We can't do much with external service endpoints |
+| MeshRetry                 | —                           | No            | Squared retries on both sides |
+| MeshHTTPRoute             | —                           | No            | |
+| MeshTCPRoute              | —                           | No            | |
 
 #### Migration
 
@@ -515,6 +514,33 @@ destination SNI, providing an audit trail of which workload accessed which exter
   must be documented prominently for contributors.
 * `spec.to[]` is silently ignored when a policy targets a zone proxy Dataplane — zone proxies
   have no outbound listeners.
+
+## Open Questions
+
+1. Given the following policy:
+
+   ```yaml
+   type: MeshAccessLog
+   mesh: default
+   name: log-backend-traffic
+   spec:
+     targetRef:
+       kind: Mesh
+     rules:
+       - matches:
+           - sni:
+               type: Exact
+               value: sni.ms.default.zone-1.backend-ns.backend.8080
+         default:
+           backends:
+             - type: File
+               file:
+                 path: /tmp/access.log
+   ```
+
+   On which dataplanes should this log rule take effect?
+   - Currently, it takes effect only on mesh-scoped zone ingress
+   - Should it also apply to regular sidecars implementing the `backend` MeshService?
 
 ## Resources
 
