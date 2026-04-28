@@ -66,16 +66,14 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 }
 
 func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
-	t.RLock()
+	t.Lock()
 	dpData := t.watchdogs[dpKey]
-	t.RUnlock()
+	delete(t.watchdogs, dpKey)
+	t.Unlock()
 
 	if dpData != nil {
 		dpData.cancelFunc()
 		<-dpData.stopped
 		dataplaneSyncTrackerLog.V(1).Info("watchdog for a Dataplane stopped", "dpKey", dpKey, "streamID", streamID)
-		t.Lock()
-		defer t.Unlock()
-		delete(t.watchdogs, dpKey)
 	}
 }
