@@ -126,54 +126,15 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
 	log = log.WithValues("rpc", "global-to-zone")
-<<<<<<< HEAD
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
-=======
-	log.Info("GlobalToZoneSync new session created")
-
-	cfgJson, err := config.ConfigForDisplay(pointer.To(c.rt.Config()))
-	if err != nil {
-		trySend(ctx, errorCh, errors.Wrap(err, "could not marshall config to json"))
-		return
-	}
-
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
 		trySend(ctx, errorCh, err)
 		return
 	}
-<<<<<<< HEAD
 	processingErrorsCh := make(chan error)
 	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
-=======
-	kdsStream := kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
-	defer func() {
-		if err := kdsStream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-	}()
-
-	syncClient := kds_client_v2.NewKDSSyncClient(
-		log,
-		c.typesSentByGlobal,
-		kdsStream,
-		kds_sync_store.ZoneSyncCallback(
-			stream.Context(),
-			c.resourceSyncer,
-			c.rt.Config().Store.Type == store.KubernetesStore,
-			resources_k8s.NewSimpleKubeFactory(),
-			c.rt.Config().Store.Kubernetes.SystemNamespace,
-		),
-		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
-	)
-
-	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
-		trySend(ctx, errorCh, errors.Wrap(err, "GlobalToZoneSyncClient finished with an error"))
-	}
-	log.Info("GlobalToZoneSync finished gracefully")
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
@@ -185,28 +146,9 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		trySend(ctx, errorCh, err)
 		return
 	}
-<<<<<<< HEAD
 	processingErrorsCh := make(chan error)
 	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
-=======
-	defer func() {
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-	}()
-
-	log.Info("ZoneToGlobalSync new session created")
-	errorStream := NewErrorRecorderStream(kds_server_v2.NewServerStream(stream))
-	err = c.deltaServer.DeltaStreamHandler(errorStream, "")
-	if err == nil {
-		err = errorStream.Err()
-	}
-
-	if err != nil && !errors.Is(err, context.Canceled) {
-		trySend(ctx, errorCh, errors.Wrap(err, "ZoneToGlobalSync finished with an error"))
-	}
-	log.Info("ZoneToGlobalSync finished gracefully")
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 // trySend attempts to send err to errorCh. If the context is already
@@ -221,7 +163,6 @@ func trySend(ctx context.Context, errorCh chan error, err error) {
 	case errorCh <- err:
 	default:
 	}
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 }
 
 func (c *client) startXDSConfigs(
@@ -338,9 +279,11 @@ func (c *client) handleProcessingErrors(
 		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
-	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
+	if ctx.Err() != nil && (errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled) {
+		// Suppress cancellation only when the zone CP itself is shutting
+		// down (ctx is done). Server-initiated codes.Canceled (when ctx
+		// is still alive) must trigger a reconnect.
 		log.Info("rpc stream shutting down")
-		// Let's not propagate this error further as we've already cancelled the context
 		err = nil
 	} else {
 		log.Error(err, "rpc stream failed prematurely, will restart in background")
