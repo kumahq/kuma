@@ -73,7 +73,7 @@ func ResourceValidation() {
 		defer func() { _ = resp.Body.Close() }()
 		body, _ := io.ReadAll(resp.Body)
 
-		return fmt.Sprintf("%s %s\n\n%s", resp.Proto, resp.Status, strings.TrimRight(string(body), "\n"))
+		return fmt.Sprintf("%s %s\n\n%s\n", resp.Proto, resp.Status, strings.TrimRight(string(body), "\n"))
 	}
 
 	// applyKube applies a K8s-format YAML file via kubectl and returns stdout
