@@ -2,6 +2,7 @@ type: MeshExternalService
 name: mes-zone-current
 mesh: multizone-label-validation
 labels:
+  kuma.io/origin: zone
   kuma.io/zone: kuma-4
 spec:
   match:

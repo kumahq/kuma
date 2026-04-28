@@ -7,20 +7,12 @@ HTTP/1.1 400 Bad Request
  "detail": "Resource is not valid",
  "invalid_parameters": [
   {
-   "field": "labels[\"kuma.io/origin\"]",
-   "reason": "the origin label must be set to 'zone'"
-  },
-  {
    "field": "labels[\"kuma.io/Not Valid!\"]",
    "reason": "name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
-  {
-   "field": "labels[\"kuma.io/origin\"]",
-   "message": "the origin label must be set to 'zone'"
-  },
   {
    "field": "labels[\"kuma.io/Not Valid!\"]",
    "message": "name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')"

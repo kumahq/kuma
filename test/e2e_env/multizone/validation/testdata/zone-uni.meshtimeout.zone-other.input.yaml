@@ -2,6 +2,7 @@ type: MeshTimeout
 name: mt-zone-other
 mesh: multizone-label-validation
 labels:
+  kuma.io/origin: zone
   kuma.io/zone: other-zone
 spec:
   targetRef:

@@ -2,6 +2,7 @@ type: MeshExternalService
 name: mes-display-name
 mesh: multizone-label-validation
 labels:
+  kuma.io/origin: zone
   kuma.io/display-name: my-custom-name
 spec:
   match:

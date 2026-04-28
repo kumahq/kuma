@@ -2,6 +2,7 @@ type: MeshTimeout
 name: mt-invalid-value
 mesh: multizone-label-validation
 labels:
+  kuma.io/origin: zone
   kuma.io/custom: "not valid!!"
 spec:
   targetRef:

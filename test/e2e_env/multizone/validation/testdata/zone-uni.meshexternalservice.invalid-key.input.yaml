@@ -2,6 +2,7 @@ type: MeshExternalService
 name: mes-invalid-key
 mesh: multizone-label-validation
 labels:
+  kuma.io/origin: zone
   "kuma.io/Not Valid!": value
 spec:
   match:
