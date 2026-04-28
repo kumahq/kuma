@@ -32,14 +32,14 @@ Continue using `kuma.io/proxy-type` to identify zone proxies.
 Add new auto-computed Dataplane labels:
 
 ```yaml
-kuma.io/dataplane-listener-zoneingress: enabled
-kuma.io/dataplane-listener-zoneegress: enabled
+kuma.io/listener-zoneingress: enabled
+kuma.io/listener-zoneegress: enabled
 ```
 
 Rules:
 
-- If a Dataplane has at least one `ZoneIngress` listener, set `kuma.io/dataplane-listener-zoneingress: enabled`
-- If a Dataplane has at least one `ZoneEgress` listener, set `kuma.io/dataplane-listener-zoneegress: enabled`
+- If a Dataplane has at least one `ZoneIngress` listener, set `kuma.io/listener-zoneingress: enabled`
+- If a Dataplane has at least one `ZoneEgress` listener, set `kuma.io/listener-zoneegress: enabled`
 - If a Dataplane has both listener types, set both labels
 - If a Dataplane has neither listener type, set neither label
 
@@ -59,8 +59,8 @@ None.
 
 We standardize two new auto-computed Dataplane labels for mesh-scoped zone proxy listeners:
 
-- `kuma.io/dataplane-listener-zoneingress: enabled`
-- `kuma.io/dataplane-listener-zoneegress: enabled`
+- `kuma.io/listener-zoneingress: enabled`
+- `kuma.io/listener-zoneegress: enabled`
 
 These labels are set based on listener presence on the Dataplane.
 They are the coarse-grained selection mechanism for zone proxy listener type.
