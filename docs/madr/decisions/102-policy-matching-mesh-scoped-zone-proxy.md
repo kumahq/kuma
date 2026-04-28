@@ -137,6 +137,7 @@ spec:
 
 * Good, because it maps directly to Envoy's filter chain match on `server_names`.
 * Good, because it is transparent — what you write is what Envoy matches on.
+* Good, because SNI is observable at the wire - policy application can be verified by inspecting traffic directly.
 * Good, because the KRI-based SNI format (MADR-101) makes SNIs human-readable and
   predictable — users can construct them from resource attributes without querying the CP.
 * Bad, because coupling policy to SNI strings creates a dependency on SNI format stability,
@@ -188,7 +189,7 @@ spec:
 
 * Good, because users reference the resource by name or labels.
 * Good, because it is consistent with how other Kuma policies reference resources.
-* Good, because label-based matching provides broad scoping (by namespace, zone, team, etc.) without requiring users to know internal SNI formats.
+* Good, because label-based matching provides broad scoping (by namespace, zone, team, etc.) without requiring users to know SNI formats.
 * Good, because users are already familiar with `targetRef` selectors from existing policies and do not need to learn a new matching mechanism.
 * Good, because policies are insensitive to SNI format changes, if the SNI format evolves, existing policies require no updates; the CP re-resolves them.
 * Bad, because CP must resolve `targetRef` to SNI(s) during policy processing (when building Envoy configuration).
