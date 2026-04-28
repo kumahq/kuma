@@ -230,6 +230,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	}
 	return UpstreamResponse{
 		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
+		Nonce:               resp.GetNonce(),
 		Type:                rs.GetItemType(),
 		AddedResources:      rs,
 		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),
