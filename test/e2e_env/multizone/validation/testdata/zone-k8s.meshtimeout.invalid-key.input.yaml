@@ -1,0 +1,17 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt-invalid-key
+  namespace: default
+  labels:
+    kuma.io/mesh: multizone-label-validation
+    kuma.io/origin: zone
+    "kuma.io/Not Valid!": value
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s
