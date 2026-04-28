@@ -37,6 +37,15 @@ import (
 
 var clientLog = core.Log.WithName("kds-delta-client")
 
+// serverStreamAdapter wraps a gRPC server stream to satisfy
+// KDSSyncServiceStream. Server streams signal completion by returning
+// from the handler, so CloseSend is a no-op.
+type serverStreamAdapter struct {
+	mesh_proto.KDSSyncService_ZoneToGlobalSyncServer
+}
+
+func (serverStreamAdapter) CloseSend() error { return nil }
+
 type KDSSyncServiceServer struct {
 	filters    []kds_context.FilterV2
 	extensions context.Context
@@ -186,7 +195,30 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error, 1)
 	go func() {
+<<<<<<< HEAD
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
+=======
+		if err := createZoneIfAbsent(stream.Context(), logger, zone, g.resManager); err != nil {
+			if errors.Is(err, context.Canceled) {
+				processingErrorsCh <- nil
+				return
+			}
+			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
+			return
+		}
+		kdsStream := kds_client_v2.NewDeltaKDSStream(serverStreamAdapter{stream}, zone, g.instanceID, "", len(g.typesSentByZone))
+		cb := kds_sync_store_v2.GlobalSyncCallback(
+			stream.Context(),
+			g.resourceSyncer,
+			g.k8sStore,
+			k8s.NewSimpleKubeFactory(),
+			g.systemNamespace,
+		)
+		zoneName := zone
+		cb.OnNACK = func(resourceType core_model.ResourceType) {
+			g.metrics.KdsNackTotal.WithLabelValues(zoneName, string(resourceType)).Inc()
+		}
+>>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 		sink := kds_client_v2.NewKDSSyncClient(
 			logger,
 			g.typesSentByZone,

@@ -2,7 +2,6 @@ package client
 
 import (
 	std_errors "errors"
-	"io"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -45,6 +44,7 @@ type DeltaKDSStream interface {
 	Receive() (UpstreamResponse, error)
 	ACK(resourceType core_model.ResourceType) error
 	NACK(resourceType core_model.ResourceType, err error) error
+	CloseSend() error
 }
 
 type KDSSyncClient interface {
@@ -86,9 +86,6 @@ func (s *kdsSyncClient) Receive() error {
 	for {
 		received, err := s.kdsStream.Receive()
 		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
 		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
@@ -98,18 +95,12 @@ func (s *kdsSyncClient) Receive() error {
 			if validationErrors != nil {
 				s.log.Info("received resource is invalid, sending NACK", "err", validationErrors)
 				if err := s.kdsStream.NACK(received.Type, validationErrors); err != nil {
-					if err == io.EOF {
-						return nil
-					}
 					return errors.Wrap(err, "failed to NACK a discovery response")
 				}
 				continue
 			}
 			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
 			if err := s.kdsStream.ACK(received.Type); err != nil {
-				if err == io.EOF {
-					return nil
-				}
 				return errors.Wrap(err, "failed to ACK a discovery response")
 			}
 			continue
@@ -122,9 +113,6 @@ func (s *kdsSyncClient) Receive() error {
 			combinedErrors := std_errors.Join(nackError, validationErrors)
 			s.log.Info("received resource is invalid, sending NACK", "err", combinedErrors)
 			if err := s.kdsStream.NACK(received.Type, combinedErrors); err != nil {
-				if err == io.EOF {
-					return nil
-				}
 				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
 			continue
@@ -136,9 +124,6 @@ func (s *kdsSyncClient) Receive() error {
 		}
 		s.log.V(1).Info("sending ACK", "type", received.Type)
 		if err := s.kdsStream.ACK(received.Type); err != nil {
-			if err == io.EOF {
-				return nil
-			}
 			return errors.Wrap(err, "failed to ACK a discovery response")
 		}
 	}
