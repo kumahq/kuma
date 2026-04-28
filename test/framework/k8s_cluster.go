@@ -213,14 +213,21 @@ func (c *K8sCluster) AddPortForward(portFwd portforward.Tunnel, spec portforward
 		c.t.Fatalf("invalid port-forward spec: %s", err)
 	}
 
+	c.mutex.Lock()
 	c.portForwards[spec] = portFwd
+	c.mutex.Unlock()
 }
 
 func (c *K8sCluster) GetPortForward(spec portforward.Spec) portforward.Tunnel {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return c.portForwards[spec]
 }
 
 func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	for _, spec := range specs {
 		for fwdSpec, tnl := range c.portForwards {
 			if !fwdSpec.Matches(spec) {
