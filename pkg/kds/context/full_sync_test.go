@@ -33,6 +33,11 @@ var _ = Describe("Full sync tests", func() {
 		zones := make(map[string]store.ResourceStore)
 		wg := sync.WaitGroup{}
 		done := make(chan struct{})
+		closeOnce := sync.Once{}
+		DeferCleanup(func() {
+			closeOnce.Do(func() { close(done) })
+			wg.Wait()
+		})
 
 		for _, file := range files {
 			if before, ok := strings.CutSuffix(file.Name(), ".input.yaml"); ok {
@@ -95,16 +100,16 @@ var _ = Describe("Full sync tests", func() {
 			})
 		}
 
-		// Wait for some time to ensure sync was complete
-		time.Sleep(time.Second * 5)
-		close(done)
-		wg.Wait()
-
-		// Compare golden files
+		// Wait until all stores converge to their expected golden state.
+		// Using Eventually instead of a fixed sleep avoids flakes on
+		// slow CI runners where 5s may not be enough for full sync.
 		for zoneName, zoneStore := range zones {
-			out, err := test_store.ExtractResources(ctx, zoneStore)
-			Expect(err).To(Succeed())
-			Expect(out).To(matchers.MatchGoldenEqual(folder, zoneName+".golden.yaml"), "zone %s", zoneName)
+			goldenFile := zoneName + ".golden.yaml"
+			Eventually(func(g Gomega) {
+				out, err := test_store.ExtractResources(ctx, zoneStore)
+				g.Expect(err).To(Succeed())
+				g.Expect(out).To(matchers.MatchGoldenEqual(folder, goldenFile), "zone %s", zoneName)
+			}, "30s", "250ms").Should(Succeed())
 		}
 	}, test.EntriesAsFolder("full_sync"))
 })
