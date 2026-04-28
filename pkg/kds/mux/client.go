@@ -136,7 +136,10 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	}
 	processingErrorsCh := make(chan error)
 	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
-	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
+	// Pass nil for stream: the callback creates a NewDeltaKDSStream wrapper
+	// whose sendLoop calls CloseSend on the raw stream. Passing the raw
+	// stream here would race with sendLoop's CloseSend.
+	c.handleProcessingErrors(ctx, nil, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
@@ -150,7 +153,8 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	}
 	processingErrorsCh := make(chan error)
 	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
-	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
+	// Pass nil: same reason as GlobalToZone above.
+	c.handleProcessingErrors(ctx, nil, log, processingErrorsCh, errorCh)
 }
 
 // trySend attempts to send err to errorCh. If the context is already
@@ -290,8 +294,10 @@ func (c *client) handleProcessingErrors(
 	} else {
 		log.Error(err, "rpc stream failed prematurely, will restart in background")
 	}
-	if err := stream.CloseSend(); err != nil {
-		log.Error(err, "CloseSend returned an error")
+	if stream != nil {
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
 	}
 	if err != nil {
 		trySend(ctx, errorCh, err)
