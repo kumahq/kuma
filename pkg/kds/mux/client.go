@@ -190,12 +190,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
 		trySend(ctx, errorCh, errors.Wrap(err, "GlobalToZoneSyncClient finished with an error"))
 	}
-<<<<<<< HEAD
-
-	log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
-=======
 	log.Info("GlobalToZoneSync finished gracefully")
->>>>>>> 666d45dc0f (fix(kds): reconnect mux client when GlobalToZone stream is closed by … (#16326))
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
