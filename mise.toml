@@ -3,7 +3,7 @@ experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
 actionlint = "1.7.12"
-buf = "1.68.2"
+buf = "1.68.4"
 container-structure-test = "1.22.1"
 ginkgo = "2.28.1"
 go = "1.26.2"
@@ -12,12 +12,12 @@ jq = "1.8.1"
 helm = "4.1.4"
 helm-docs = "1.14.2"
 kind = "0.31.0"
-kubectl = "1.35.4"
+kubectl = "1.36.0"
 protoc = "34.1"
 shellcheck = "0.11.0"
 yq = "4.53.2"
 node = "24"
-"npm:@redocly/cli" = "2.28.0"
+"npm:@redocly/cli" = "2.29.2"
 "npm:oas-toolkit" = "latest"
 "aqua:bufbuild/protoc-gen-validate" = "1.3.3"
 "aqua:grpc/grpc-go/protoc-gen-go-grpc" = "1.6.1"
@@ -28,7 +28,7 @@ node = "24"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.6.0"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.20.1"
-"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20260418192536-e4a998cc6b09"
+"go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20260424122448-c8b4b9d61fbd"
 "go:github.com/grafana/dashboard-linter" = "v0.0.0-20250428211052-5e22d6dc65a1"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
@@ -41,4 +41,4 @@ node = "24"
 #     .github/workflows/transparentproxy-tests.yaml
 #     .github/workflows/update-insecure-dependencies.yaml
 golangci-lint = "2.11.4"
-skaffold = "2.18.3"
+skaffold = "2.19.0"
