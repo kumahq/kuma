@@ -123,7 +123,11 @@ func ZoneTag(r core_model.Resource) string {
 		if res.GetNetworking().GetGateway() != nil {
 			return res.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
 		}
-		return res.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
+		inbounds := res.GetNetworking().GetInbound()
+		if len(inbounds) == 0 {
+			return ""
+		}
+		return inbounds[0].GetTags()[mesh_proto.ZoneTag]
 	case *mesh_proto.ZoneIngress:
 		return res.GetZone()
 	case *mesh_proto.ZoneEgress:
