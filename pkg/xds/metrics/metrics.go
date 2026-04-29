@@ -8,11 +8,13 @@ import (
 )
 
 type Metrics struct {
-	XdsGenerations          *prometheus.HistogramVec
-	XdsGenerationsErrors    prometheus.Counter
-	KubeAuthCache           *prometheus.CounterVec
-	CertExpirationTimestamp *prometheus.GaugeVec
-	SnapshotResources       *prometheus.HistogramVec
+	XdsGenerations                         *prometheus.HistogramVec
+	XdsGenerationsErrors                   prometheus.Counter
+	KubeAuthCache                          *prometheus.CounterVec
+	CertExpirationTimestamp                *prometheus.GaugeVec
+	SnapshotResources                      *prometheus.HistogramVec
+	XdsStreamStaleOwnerTakeovers           *prometheus.CounterVec
+	XdsStreamRegistrationInProgressRetries *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -37,15 +39,33 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Help:    "Distribution of resource counts per xDS snapshot by resource type.",
 		Buckets: prometheus.ExponentialBuckets(1, 2, 12),
 	}, []string{"resource_type"})
-	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources); err != nil {
+	xdsStreamStaleOwnerTakeovers := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "xds_stream_stale_owner_takeovers_total",
+		Help: "Total number of stale xDS stream owners replaced by a new stream",
+	}, []string{"mesh", "proxy_type"})
+	xdsStreamRegistrationInProgressRetries := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "xds_stream_registration_in_progress_retries_total",
+		Help: "Total number of xDS stream requests rejected because another registration is in progress",
+	}, []string{"mesh", "proxy_type"})
+	if err := metrics.BulkRegister(
+		xdsGenerations,
+		xdsGenerationsErrors,
+		kubeAuthCache,
+		certExpirationTimestamp,
+		snapshotResources,
+		xdsStreamStaleOwnerTakeovers,
+		xdsStreamRegistrationInProgressRetries,
+	); err != nil {
 		return nil, err
 	}
 
 	return &Metrics{
-		XdsGenerations:          xdsGenerations,
-		XdsGenerationsErrors:    xdsGenerationsErrors,
-		KubeAuthCache:           kubeAuthCache,
-		CertExpirationTimestamp: certExpirationTimestamp,
-		SnapshotResources:       snapshotResources,
+		XdsGenerations:                         xdsGenerations,
+		XdsGenerationsErrors:                   xdsGenerationsErrors,
+		KubeAuthCache:                          kubeAuthCache,
+		CertExpirationTimestamp:                certExpirationTimestamp,
+		SnapshotResources:                      snapshotResources,
+		XdsStreamStaleOwnerTakeovers:           xdsStreamStaleOwnerTakeovers,
+		XdsStreamRegistrationInProgressRetries: xdsStreamRegistrationInProgressRetries,
 	}, nil
 }

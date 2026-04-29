@@ -43,6 +43,11 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
+	if dpWatchdog := t.watchdogs[dpKey]; dpWatchdog != nil {
+		dpWatchdog.cancelFunc()
+		<-dpWatchdog.stopped
+		dataplaneSyncTrackerLog.V(1).Info("existing watchdog for a Dataplane stopped", "dpKey", dpKey, "streamID", streamID)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	state := &watchdogState{

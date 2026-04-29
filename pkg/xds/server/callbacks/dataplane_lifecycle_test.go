@@ -54,7 +54,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		dpLifecycle := NewDataplaneLifecycle(ctx, resManager, authenticator, 0*time.Second, cpInstanceID, 0*time.Second)
-		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(dpLifecycle))
+		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(dpLifecycle, nil))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
