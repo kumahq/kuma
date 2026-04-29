@@ -468,6 +468,17 @@ spec:
             value: sni.extsvc.default.zone-1.aws-aurora.8443
 ```
 
+## Implementation
+
+As a prerequisite for this MADR is the implementation of [MADR-101](101-sni-format-improvements.md).
+
+The matching API implementation should be shared.
+Adding a matcher such as `SNIMatch` is not a per-policy effort,
+except for policy-specific tests where needed.
+
+Producing the smallest and most optimal Envoy configuration is the primary goal.
+If that means the zone proxy generator needs to peek into matchers and avoid generating those that are guaranteed not to match, so be it.
+
 ## Security implications and review
 
 ### MeshTrafficPermission Default Behaviour
