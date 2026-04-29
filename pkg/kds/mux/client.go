@@ -164,12 +164,15 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 	processingErrorsCh := make(chan error)
 	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	// Pass nil for stream: the callback creates a NewDeltaKDSStream wrapper
+	// whose sendLoop calls CloseSend on the raw stream. Passing the raw
+	// stream here would race with sendLoop's CloseSend.
+	c.handleProcessingErrors(ctx, nil, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
@@ -178,12 +181,27 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
 	stream, err := kdsClient.ZoneToGlobalSync(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 	processingErrorsCh := make(chan error)
 	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	// Pass nil: same reason as GlobalToZone above.
+	c.handleProcessingErrors(ctx, nil, log, processingErrorsCh, errorCh)
+}
+
+// trySend attempts to send err to errorCh. If the context is already
+// done (another stream triggered a restart, or the app is shutting
+// down), the error is dropped. If errorCh already has an error from
+// another stream, the error is also dropped.
+func trySend(ctx context.Context, errorCh chan error, err error) {
+	if ctx.Err() != nil {
+		return
+	}
+	select {
+	case errorCh <- err:
+	default:
+	}
 }
 
 func (c *client) startXDSConfigs(
@@ -197,13 +215,13 @@ func (c *client) startXDSConfigs(
 	log.Info("initializing rpc stream for executing config dump on data plane proxies")
 	stream, err := client.StreamXDSConfigs(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startStats(
@@ -217,13 +235,13 @@ func (c *client) startStats(
 	log.Info("initializing rpc stream for executing stats on data plane proxies")
 	stream, err := client.StreamStats(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startClusters(
@@ -237,13 +255,13 @@ func (c *client) startClusters(
 	log.Info("initializing rpc stream for executing clusters on data plane proxies")
 	stream, err := client.StreamClusters(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startHealthCheck(
@@ -268,7 +286,7 @@ func (c *client) startHealthCheck(
 				return
 			}
 			log.Error(err, "health check failed")
-			errorCh <- errors.Wrap(err, "zone health check request failed")
+			trySend(ctx, errorCh, errors.Wrap(err, "zone health check request failed"))
 		} else if interval := resp.Interval.AsDuration(); interval > 0 {
 			if prevInterval != interval {
 				prevInterval = interval
@@ -288,6 +306,7 @@ func (c *client) startHealthCheck(
 }
 
 func (c *client) handleProcessingErrors(
+	ctx context.Context,
 	stream grpc.ClientStream,
 	log logr.Logger,
 	processingErrorsCh chan error,
@@ -299,18 +318,22 @@ func (c *client) handleProcessingErrors(
 		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
-	if errors.Is(err, context.Canceled) {
+	if ctx.Err() != nil && (errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled) {
+		// Suppress cancellation only when the zone CP itself is shutting
+		// down (ctx is done). Server-initiated codes.Canceled (when ctx
+		// is still alive) must trigger a reconnect.
 		log.Info("rpc stream shutting down")
-		// Let's not propagate this error further as we've already cancelled the context
 		err = nil
 	} else {
 		log.Error(err, "rpc stream failed prematurely, will restart in background")
 	}
-	if err := stream.CloseSend(); err != nil {
-		log.Error(err, "CloseSend returned an error")
+	if stream != nil {
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
 	}
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 	}
 }
 

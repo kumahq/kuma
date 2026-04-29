@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -35,18 +36,50 @@ type stream struct {
 	cpConfig           string
 	runtimeInfo        core_runtime.RuntimeInfo
 
-	sendCh chan *envoy_sd.DeltaDiscoveryRequest
-	recvCh chan *envoy_sd.DeltaDiscoveryResponse
-	ctx    context.Context
-	cancel context.CancelCauseFunc
+	sendCh        chan *envoy_sd.DeltaDiscoveryRequest
+	recvCh        chan *envoy_sd.DeltaDiscoveryResponse
+	ctx           context.Context
+	cancel        context.CancelCauseFunc
+	closeSendCh   chan struct{}
+	closeSendOnce sync.Once
+	sendDone      chan struct{}
+	closeSendErr  error
 }
 
 type KDSSyncServiceStream interface {
 	Send(*envoy_sd.DeltaDiscoveryRequest) error
 	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
+	CloseSend() error
 	Context() context.Context
 }
 
+// ServerStream is the subset of KDSSyncServiceStream that gRPC server
+// streams satisfy (Send, Recv, Context but not CloseSend).
+type ServerStream interface {
+	Send(*envoy_sd.DeltaDiscoveryRequest) error
+	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
+	Context() context.Context
+}
+
+// NewServerStreamAdapter wraps a gRPC server stream to satisfy
+// KDSSyncServiceStream. Server streams signal completion by returning
+// from the handler, so CloseSend is a no-op.
+func NewServerStreamAdapter(s ServerStream) KDSSyncServiceStream {
+	return &serverStreamAdapter{s}
+}
+
+type serverStreamAdapter struct {
+	ServerStream
+}
+
+func (serverStreamAdapter) CloseSend() error { return nil }
+
+// NewDeltaKDSStream creates a new DeltaKDSStream and starts background
+// send/recv goroutines. Call CloseSend on the returned stream to
+// gracefully shut down the send goroutine and close the underlying
+// gRPC stream. CloseSend is thread-safe: it waits for the send
+// goroutine to exit and calls the underlying CloseSend within that
+// goroutine, avoiding data races between Send and CloseSend.
 func NewDeltaKDSStream(
 	s KDSSyncServiceStream,
 	clientId string,
@@ -54,7 +87,14 @@ func NewDeltaKDSStream(
 	cpConfig string,
 	numberOfDistinctTypes int,
 ) DeltaKDSStream {
-	ctx, cancel := context.WithCancelCause(s.Context())
+	// Use Background instead of s.Context() to decouple from the gRPC
+	// stream's context. When the server closes the stream, gRPC cancels
+	// the stream context with context.Canceled. If that propagated to our
+	// context, it would race with recvLoop's cancel(io.EOF) — whichever
+	// runs first sets the cause. By using Background, the cause is always
+	// determined by sendLoop/recvLoop errors (io.EOF, transport errors),
+	// never by gRPC's internal context cancellation.
+	ctx, cancel := context.WithCancelCause(context.Background())
 
 	// In theory capacity == numberOfDistinctTypes would be enough:
 	//
@@ -78,18 +118,28 @@ func NewDeltaKDSStream(
 		recvCh:             make(chan *envoy_sd.DeltaDiscoveryResponse, capacity),
 		ctx:                ctx,
 		cancel:             cancel,
+		closeSendCh:        make(chan struct{}),
+		sendDone:           make(chan struct{}),
 	}
 
-	go stream.sendLoop()
+	go func() {
+		defer close(stream.sendDone)
+		stream.sendLoop()
+	}()
 	go stream.recvLoop()
 
 	return stream
 }
 
 func (s *stream) sendLoop() {
+	defer func() {
+		s.closeSendErr = s.streamClient.CloseSend()
+	}()
 	for {
 		select {
 		case <-s.ctx.Done():
+			return
+		case <-s.closeSendCh:
 			return
 		case req := <-s.sendCh:
 			if err := s.streamClient.Send(req); err != nil {
@@ -98,6 +148,18 @@ func (s *stream) sendLoop() {
 			}
 		}
 	}
+}
+
+// CloseSend half-closes the send side of the stream. It signals the
+// send goroutine to stop and waits for it to call CloseSend on the
+// underlying gRPC stream. The receive side is not affected — recvLoop
+// continues until the peer closes or the context is cancelled.
+// This is thread-safe: the underlying CloseSend runs within the send
+// goroutine, never concurrently with Send.
+func (s *stream) CloseSend() error {
+	s.closeSendOnce.Do(func() { close(s.closeSendCh) })
+	<-s.sendDone
+	return s.closeSendErr
 }
 
 func (s *stream) recvLoop() {
