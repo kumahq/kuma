@@ -157,6 +157,12 @@ func (c *K8sCluster) PortForwardApp(spec portforward.Spec) (portforward.Tunnel, 
 	}
 
 	c.mutex.Lock()
+	existing = c.portForwards[spec]
+	if existing.Endpoint != "" {
+		c.mutex.Unlock()
+		fwd.Close()
+		return existing, nil
+	}
 	c.portForwards[spec] = fwd
 	c.mutex.Unlock()
 
