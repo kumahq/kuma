@@ -37,6 +37,15 @@ import (
 
 var clientLog = core.Log.WithName("kds-delta-client")
 
+// serverStreamAdapter wraps a gRPC server stream to satisfy
+// KDSSyncServiceStream. Server streams signal completion by returning
+// from the handler, so CloseSend is a no-op.
+type serverStreamAdapter struct {
+	mesh_proto.KDSSyncService_ZoneToGlobalSyncServer
+}
+
+func (serverStreamAdapter) CloseSend() error { return nil }
+
 type KDSSyncServiceServer struct {
 	filters    []kds_context.FilterV2
 	extensions context.Context
@@ -186,7 +195,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error, 1)
 	go func() {
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
+		kdsStream := kds_client_v2.NewDeltaKDSStream(serverStreamAdapter{stream}, zone, g.instanceID, "", len(g.typesSentByZone))
 		sink := kds_client_v2.NewKDSSyncClient(
 			logger,
 			g.typesSentByZone,
