@@ -160,6 +160,7 @@ func applyToInbounds(
 	workloadKRI string,
 	inboundTagsDisabled bool,
 ) error {
+	configured := map[core_rules.InboundListener]struct{}{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -167,10 +168,14 @@ func applyToInbounds(
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
+		if _, ok := configured[listenerKey]; ok {
+			continue
+		}
 		listener, ok := inboundListeners[listenerKey]
 		if !ok {
 			continue
 		}
+		configured[listenerKey] = struct{}{}
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{

@@ -46,9 +46,9 @@
   version: 2.9.14
   release: 2.9.x
   releaseDate: "2024-10-22"
-  endOfLifeDate: "2026-04-22"
+  endOfLifeDate: "2026-06-22"
   branch: release-2.9
-  extensionMonths: 6
+  extensionMonths: 8
 - edition: kuma
   version: 2.10.11
   release: 2.10.x
