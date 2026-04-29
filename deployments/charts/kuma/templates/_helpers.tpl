@@ -307,6 +307,10 @@ env:
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   value: "true"
 {{- end }}
+{{- if .Values.experimental.deltaXds }}
+- name: KUMA_EXPERIMENTAL_DELTA_XDS
+  value: "true"
+{{- end }}
 {{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"

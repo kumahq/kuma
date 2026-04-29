@@ -940,6 +940,8 @@ experimental:
   # -- If true, enable native Kubernetes sidecars. This requires at least
   # Kubernetes v1.29
   sidecarContainers: false
+  # -- If true, uses Delta xDS (incremental) protocol to deliver changes to sidecars instead of State of the World (SOTW).
+  deltaXds: false
 
 # Postgres' settings for universal control plane on k8s
 postgres:

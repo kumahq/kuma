@@ -38,6 +38,7 @@ type DataplaneProxyFactory struct {
 	applicationProbeProxyPort    uint32
 	unifiedResourceNamingEnabled bool
 	spireEnabled                 bool
+	deltaXdsEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -52,6 +53,7 @@ func NewDataplaneProxyFactory(
 	applicationProbeProxyPort uint32,
 	unifiedResourceNamingEnabled bool,
 	spireEnabled bool,
+	deltaXdsEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -65,6 +67,7 @@ func NewDataplaneProxyFactory(
 		applicationProbeProxyPort:    applicationProbeProxyPort,
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		spireEnabled:                 spireEnabled,
+		deltaXdsEnabled:              deltaXdsEnabled,
 	}
 }
 
@@ -276,6 +279,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
 			Value: i.ControlPlaneCACert,
 		},
+	}
+	if i.deltaXdsEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+			Value: "DELTA_GRPC",
+		}
 	}
 	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
