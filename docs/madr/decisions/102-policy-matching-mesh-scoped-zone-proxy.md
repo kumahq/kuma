@@ -112,7 +112,7 @@ type Match struct {
 }
 ```
 
-With the KRI-based SNI format (MADR-101), SNIs follow the
+With the KRI-based SNI format [MADR-101](101-sni-format-improvements.md), SNIs follow the
 pattern `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` and are human-readable,
 predictable, and bidirectionally convertible to KRI.
 
