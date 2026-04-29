@@ -453,7 +453,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      zone-egress: enabled
+      kuma.io/listener-zoneegress: enabled
   rules:
     - matches:
         - sni:
