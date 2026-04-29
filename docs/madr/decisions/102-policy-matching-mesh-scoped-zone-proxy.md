@@ -397,7 +397,7 @@ generated: when the cluster routes through the old global-scoped Zone Egress lis
 `EgressMatchedPolicies` path applies these policies to the egress as before. When the cluster
 routes through a mesh-scoped zone proxy Dataplane, the policies are applied on the sidecar's
 outbound cluster instead. Both paths can coexist during the migration window, so no UPGRADE.md
-entry is required.
+entry is required for 2.14.
 
 #### Updated
 
@@ -513,6 +513,18 @@ destination SNI, providing an audit trail of which workload accessed which exter
   must be documented prominently for contributors.
 * `spec.to[]` is silently ignored when a policy targets a zone proxy Dataplane — zone proxies
   have no outbound listeners.
+
+## UPGRADE.md
+
+### 2.14
+
+None
+
+### 3.0
+
+* global scoped zone proxies are removed
+* drop MeshLoadBalancingStrategy support for MeshExternalServices
+* `defaultForbidMeshExternalServiceAccess` is removed
 
 ## Open Questions
 
