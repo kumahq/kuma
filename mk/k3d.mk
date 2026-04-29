@@ -70,7 +70,8 @@ K3D_CLUSTER_CREATE_OPTS ?= \
 	--image "$(K3S_IMAGE)" \
 	--volume "$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0" \
 	--network "$(DOCKER_NETWORK)" \
-	--timeout "120s" \
+	--timeout "300s" \
+	--no-rollback \
 	--k3s-arg "--kubelet-arg=image-gc-high-threshold=100@server:0" \
 	--registry-config "$(K3D_REGISTRY_FILE)"
 

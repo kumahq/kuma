@@ -1,10 +1,13 @@
 package framework
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -13,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	v1 "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/test/framework/kumactl"
@@ -148,13 +152,239 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 			}
 		}
 	}
+	eventsOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "get", "events", "-A", "--sort-by=.lastTimestamp")
+	if err != nil {
+		errs = multierr.Combine(errs, fmt.Errorf("failed to get events: %w", err))
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "events.txt"), eventsOut)
+	}
+
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType:
+		if err := debugDockerNodeLogs(cluster, "k3d-"+cluster.Name()); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+	case KindK8sType:
+		if err := debugDockerNodeLogs(cluster, cluster.Name()); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+	}
+
+	topNodes, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "top", "nodes")
+	if err != nil {
+		Logf("kubectl top nodes not available for cluster %q: %s", cluster.Name(), err)
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "top-nodes.txt"), topNodes)
+	}
+
+	topPods, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "top", "pods", "-A", "--containers")
+	if err != nil {
+		Logf("kubectl top pods not available for cluster %q: %s", cluster.Name(), err)
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "top-pods.txt"), topPods)
+	}
+
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
 	for _, namespace := range namespaces {
 		if err := debugKubeNamespace(cluster, namespace); err != nil {
 			errs = multierr.Combine(errs, fmt.Errorf("failed to debug namespace %s, %w", namespace, err))
 		}
 	}
+
+	if err := debugCNIPods(cluster); err != nil {
+		errs = multierr.Combine(errs, fmt.Errorf("failed to debug CNI pods, %w", err))
+	}
 	return errs
+}
+
+// debugCNIPods collects logs and describes for the kuma-cni-node DaemonSet
+// pods. Without this the stderr-hijacked output of the kuma-cni plugin is
+// lost on failures and we can't tell whether iptables rules were installed
+// for a given pod sandbox.
+func debugCNIPods(cluster Cluster) error {
+	kubeOptions := *cluster.GetKubectlOptions(Config.CNINamespace)
+	kubeOptions.Logger = logger.Discard
+	pods, err := k8s.ListPodsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{
+		LabelSelector: "app=" + Config.CNIApp,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list %s pods in %s: %w", Config.CNIApp, Config.CNINamespace, err)
+	}
+	if len(pods) == 0 {
+		return nil
+	}
+	var errs error
+	for i := range pods {
+		pod := &pods[i]
+		describe, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "describe", "pod", pod.Name)
+		if err != nil {
+			errs = multierr.Combine(errs, fmt.Errorf("failed to describe CNI pod %s: %w", pod.Name, err))
+		} else {
+			report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", Config.CNINamespace, fmt.Sprintf("pod-%s-describe.txt", pod.Name)), describe)
+		}
+		containers := append([]string{}, containerNames(pod.Spec.InitContainers)...)
+		containers = append(containers, containerNames(pod.Spec.Containers)...)
+		for _, c := range containers {
+			logs, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "logs", pod.Name, "-c", c)
+			if err != nil {
+				errs = multierr.Combine(errs, fmt.Errorf("failed to get logs for %s/%s: %w", pod.Name, c, err))
+			} else if logs != "" {
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", Config.CNINamespace, fmt.Sprintf("pod-%s-%s.log", pod.Name, c)), logs)
+			}
+			prev, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "logs", pod.Name, "-c", c, "--previous")
+			if err == nil && prev != "" {
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", Config.CNINamespace, fmt.Sprintf("pod-%s-%s-previous.log", pod.Name, c)), prev)
+			}
+		}
+	}
+	return errs
+}
+
+func containerNames(cs []v1.Container) []string {
+	names := make([]string, len(cs))
+	for i, c := range cs {
+		names[i] = c.Name
+	}
+	return names
+}
+
+func debugDockerNodeLogs(cluster Cluster, nameFilter string) error {
+	Logf("collecting docker node logs for cluster %q (filter: %s)", cluster.Name(), nameFilter)
+	ctx := context.Background()
+	listOut, err := exec.CommandContext(ctx, "docker", "ps", "-a", "--filter", "name="+nameFilter, "--format", "{{.Names}}").Output()
+	if err != nil {
+		return fmt.Errorf("failed to list docker containers for cluster %q: %w", cluster.Name(), err)
+	}
+	var errs error
+	for containerName := range strings.FieldsSeq(string(listOut)) {
+		logOut, err := exec.CommandContext(ctx, "docker", "logs", "--timestamps", containerName).CombinedOutput()
+		if err != nil {
+			errs = multierr.Combine(errs, fmt.Errorf("failed to get docker logs for container %q: %w", containerName, err))
+		} else {
+			report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+".log"), logOut)
+		}
+		if err := debugDockerNodeStats(ctx, cluster, containerName); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+		if err := debugDockerVarLog(ctx, cluster, containerName); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+		if err := debugDockerNodeCNIState(ctx, cluster, containerName); err != nil {
+			errs = multierr.Combine(errs, err)
+		}
+	}
+	return errs
+}
+
+// debugDockerNodeCNIState collects node-scoped CNI diagnostics: the kuma-cni
+// plugin's own log file, the chained CNI config, and iptables-save output.
+// These are the primary signals when a kuma-validation init container hangs
+// because the CNI plugin failed to install transparent-proxy rules for a pod.
+func debugDockerNodeCNIState(ctx context.Context, cluster Cluster, containerName string) error {
+	script := `
+echo "=== /tmp/kuma-cni.log (CNI plugin runtime log) ==="
+cat /tmp/kuma-cni.log 2>/dev/null || echo "not present"
+echo
+echo "=== /etc/cni/net.d listing ==="
+ls -la /etc/cni/net.d 2>/dev/null || echo "not present"
+echo
+echo "=== /etc/cni/net.d/*.conflist contents ==="
+for f in /etc/cni/net.d/*.conflist /etc/cni/net.d/*.conf; do
+  [ -e "$f" ] || continue
+  echo "--- $f ---"
+  cat "$f"
+done
+echo
+echo "=== iptables-save -t nat (nft) ==="
+iptables-nft-save -t nat 2>/dev/null || echo "iptables-nft-save unavailable"
+echo
+echo "=== iptables-save -t raw (nft) ==="
+iptables-nft-save -t raw 2>/dev/null || echo "iptables-nft-save unavailable"
+echo
+echo "=== ip6tables-save -t nat (nft) ==="
+ip6tables-nft-save -t nat 2>/dev/null || echo "ip6tables-nft-save unavailable"
+echo
+echo "=== iptables-save -t nat (legacy) ==="
+iptables-legacy-save -t nat 2>/dev/null || echo "iptables-legacy-save unavailable"
+echo
+echo "=== conntrack counters (kuma zones) ==="
+conntrack -L -z 1 2>/dev/null | head -40 || echo "conntrack unavailable"
+echo
+echo "=== mounts of kuma-cni hostPaths ==="
+mount | grep -E 'cni|opt/cni' || true
+`
+	out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "sh", "-c", script).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to collect CNI state from %q: %w", containerName, err)
+	}
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+"-cni.txt"), out)
+	return nil
+}
+
+// debugDockerVarLog collects every file under /var/log inside a node container.
+// Pod logs from /var/log/pods/ are included here in their raw JSON-log format.
+func debugDockerVarLog(ctx context.Context, cluster Cluster, containerName string) error {
+	listOut, err := exec.CommandContext(ctx, "docker", "exec", containerName,
+		"find", "/var/log", "-type", "f",
+	).Output()
+	if err != nil {
+		return fmt.Errorf("failed to list /var/log in %q: %w", containerName, err)
+	}
+	var errs error
+	for filePath := range strings.FieldsSeq(string(listOut)) {
+		out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "cat", filePath).Output()
+		if err != nil {
+			errs = multierr.Combine(errs, fmt.Errorf("failed to read %s from %q: %w", filePath, containerName, err))
+			continue
+		}
+		// preserve the /var/log/... path structure under the container's dir
+		reportPath := path.Join(cluster.Name(), "docker", containerName+"-varlog", filePath)
+		report.AddFileToReportEntry(reportPath, out)
+	}
+	return errs
+}
+
+// debugDockerNodeStats collects CPU pressure and load info from inside a node container.
+// This is used to confirm CPU starvation when metrics-server is unavailable.
+func debugDockerNodeStats(ctx context.Context, cluster Cluster, containerName string) error {
+	// sh script that collects:
+	// - load average and CPU count (quick starvation signal)
+	// - cgroup v2 CPU throttling for all kubepods (nr_throttled / throttled_usec)
+	// - cgroup v1 fallback
+	script := `
+echo "=== uptime ==="
+uptime
+echo "=== nproc ==="
+nproc
+echo "=== nproc --all ==="
+nproc --all
+echo "=== /proc/loadavg ==="
+cat /proc/loadavg
+echo "=== /proc/stat ==="
+cat /proc/stat
+echo "=== /proc/meminfo ==="
+cat /proc/meminfo
+echo "=== free ==="
+free -m
+echo "=== cgroup v2 cpu throttling (kubepods) ==="
+find /sys/fs/cgroup/kubepods.slice -name 'cpu.stat' 2>/dev/null \
+  | while read f; do echo "--- $f ---"; cat "$f"; done
+echo "=== cgroup v2 memory (kubepods) ==="
+find /sys/fs/cgroup/kubepods.slice -name 'memory.stat' -o -name 'memory.current' -o -name 'memory.swap.current' 2>/dev/null \
+  | while read f; do echo "--- $f ---"; cat "$f"; done
+echo "=== cgroup v1 cpu throttling (kubepods) ==="
+find /sys/fs/cgroup/cpu,cpuacct/kubepods -name 'cpu.stat' 2>/dev/null \
+  | while read f; do echo "--- $f ---"; cat "$f"; done
+echo "=== cgroup v1 memory (kubepods) ==="
+find /sys/fs/cgroup/memory/kubepods -name 'memory.stat' -o -name 'memory.memsw.usage_in_bytes' 2>/dev/null \
+  | while read f; do echo "--- $f ---"; cat "$f"; done
+`
+	out, err := exec.CommandContext(ctx, "docker", "exec", containerName, "sh", "-c", script).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to collect node stats from container %q: %w", containerName, err)
+	}
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "docker", containerName+"-stats.txt"), out)
+	return nil
 }
 
 func debugKubeNamespace(cluster Cluster, namespace string) error {
@@ -175,6 +405,20 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 		Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 	}
 	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
+
+	pods, err := k8s.ListPodsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to list pods in namespace %s: %w", namespace, err))
+	} else {
+		for i := range pods {
+			podDescribe, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "describe", "pod", pods[i].Name)
+			if err != nil {
+				errs = multierr.Append(errs, fmt.Errorf("failed to describe pod %s in namespace %s: %w", pods[i].Name, namespace, err))
+			} else {
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, fmt.Sprintf("pod-%s-describe.txt", pods[i].Name)), podDescribe)
+			}
+		}
+	}
 
 	deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
 	if err != nil {

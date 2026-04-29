@@ -53,6 +53,13 @@ runs:
         }
         EOF
         sudo service docker restart
+    - name: "Configure inotify limits for k3d"
+      if: ${{ inputs.k8s_version != 'kindIpv6' && !startsWith(inputs.k8s_version, 'kind') }}
+      shell: bash
+      run: |
+        sudo sysctl -w fs.inotify.max_user_instances=8192
+        sudo sysctl -w fs.inotify.max_user_watches=1048576
+        sudo sysctl -w fs.inotify.max_queued_events=16384
     - name: "Run E2E tests"
       shell: bash
       env:

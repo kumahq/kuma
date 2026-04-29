@@ -1,11 +1,13 @@
 package install
 
 import (
+	"context"
 	std_errors "errors"
 	"fmt"
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -43,6 +45,9 @@ The result will be shown as text in stdout as well as the exit code.
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			logger := core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName(defaultLogName)
 
+			ctx, cancel := context.WithTimeout(cmd.Context(), time.Minute)
+			defer cancel()
+
 			var tpCfg *tproxy_dp.DataplaneConfig
 			if len(tpCfgValues) > 0 {
 				if runtime.GOOS != "linux" {
@@ -70,13 +75,13 @@ The result will be shown as text in stdout as well as the exit code.
 				validator := tproxy_validate.NewValidator(ipv6, serverPort, logger)
 				exitC := make(chan struct{})
 
-				if _, err := validator.RunServer(cmd.Context(), exitC); err != nil {
+				if _, err := validator.RunServer(ctx, exitC); err != nil {
 					return err
 				}
 
 				// by using 0, we make the client to generate a random port to connect verifying
 				// the iptables rules are working
-				return validator.RunClient(cmd.Context(), 0, exitC)
+				return validator.RunClient(ctx, 0, exitC)
 			}
 
 			return errors.Wrap(
