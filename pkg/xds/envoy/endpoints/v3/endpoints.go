@@ -38,7 +38,7 @@ func ToLocalityLbEndpoints(endpoints []core_xds.Endpoint) []*envoy_endpoint.Loca
 			}
 		}
 		lbEndpoint := &envoy_endpoint.LbEndpoint{
-			Metadata: envoy.EndpointMetadata(ep.Tags),
+			Metadata: envoy.EndpointMetadataWithLabels(ep.Tags, ep.Labels),
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
 					Address: address,

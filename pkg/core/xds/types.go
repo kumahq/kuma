@@ -118,6 +118,12 @@ type Endpoint struct {
 	UnixDomainPath  string
 	Port            uint32
 	Tags            map[string]string
+
+	// Labels holds resource/workload labels for this endpoint. Unlike Tags (which
+	// are derived from Dataplane inbound configuration), Labels are sourced from
+	// resource metadata (for example, pod labels in Kubernetes mode) and remain
+	// available even when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is true.
+	Labels          map[string]string
 	Weight          uint32
 	Locality        *Locality
 	ExternalService *ExternalService

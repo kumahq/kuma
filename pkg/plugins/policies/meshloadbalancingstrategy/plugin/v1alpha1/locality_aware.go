@@ -22,12 +22,13 @@ const defaultOverprovisioningFactor uint32 = 200
 func NewEndpoints(
 	existingEndpoints []*envoy_endpoint.LocalityLbEndpoints,
 	tags mesh_proto.MultiValueTagSet,
+	podLabels map[string]string,
 	conf *api.Conf,
 	localZone string,
 	egressEnabled bool,
 	origin origin.Origin,
 ) []*envoy_endpoint.LocalityLbEndpoints {
-	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, localZone)
+	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, podLabels, localZone)
 	var endpointsList []core_xds.Endpoint
 	for _, localityLbEndpoint := range existingEndpoints {
 		for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
@@ -46,6 +47,13 @@ func NewEndpoints(
 			}
 		}
 	}
+	// Filter each endpoint's Labels to only keys referenced by AffinityTags,
+	// so the rebuilt xDS metadata doesn't carry unrelated pod labels.
+	if conf != nil {
+		for i := range endpointsList {
+			endpointsList[i].Labels = affinityTagPodLabels(endpointsList[i].Labels, *conf)
+		}
+	}
 	return endpoints.ToLocalityLbEndpoints(endpointsList)
 }
 
@@ -53,6 +61,7 @@ func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) cor
 	endpoint := core_xds.Endpoint{}
 	endpoint.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
 	endpoint.Tags = envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
+	endpoint.Labels = envoy_metadata.ExtractLbLabels(lbEndpoint.Metadata)
 	address := lbEndpoint.GetEndpoint().GetAddress()
 	if address.GetSocketAddress() != nil {
 		endpoint.Target = address.GetSocketAddress().GetAddress()
@@ -104,7 +113,7 @@ func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGro
 
 func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endpoint *core_xds.Endpoint, localZone string) {
 	for _, localRule := range localPriorityGroups {
-		val, ok := endpoint.Tags[localRule.Key]
+		val, ok := resolveEndpointAffinityValue(endpoint.Tags, endpoint.Labels, localRule.Key)
 		if ok && val == localRule.Value {
 			endpoint.Locality = &core_xds.Locality{
 				Zone:     localZone,
@@ -137,4 +146,18 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 		Zone:     fmt.Sprintf("egress_%s", sha256.Hash(builder.String())[:8]),
 		Priority: 1,
 	}
+}
+
+// resolveEndpointAffinityValue looks up an affinity key first in endpoint tags,
+// then falls back to pod labels. This mirrors resolveAffinityValues in priority.go
+// and ensures consistent "prefer tags, fall back to labels" semantics.
+func resolveEndpointAffinityValue(tags, labels map[string]string, key string) (string, bool) {
+	if v, ok := tags[key]; ok {
+		return v, true
+	}
+	if v, ok := labels[key]; ok {
+		log.V(1).Info("affinity tag absent from endpoint tags, using label fallback", "key", key, "value", v)
+		return v, true
+	}
+	return "", false
 }
