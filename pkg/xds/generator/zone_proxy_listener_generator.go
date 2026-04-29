@@ -102,7 +102,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	address := listener.Address
 	port := listener.Port
 
-	listenerName := naming.ContextualZoneIngressListenerName(listener.Name)
+	listenerName := naming.ContextualZoneIngressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
@@ -179,7 +179,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	address := listener.Address
 	port := listener.Port
 
-	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(listener.Name)
+	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, zoneEgressListenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
