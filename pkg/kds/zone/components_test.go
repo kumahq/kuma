@@ -215,10 +215,11 @@ var _ = Describe("Zone Sync", func() {
 			go func() {
 				defer GinkgoRecover()
 				defer wg.Done()
+				kdsStream := kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, "", len(kdsCtx.TypesSentByGlobal))
 				syncClient := kds_client_v2.NewKDSSyncClient(
 					core.Log.WithName("kds-sink"),
 					kdsCtx.TypesSentByGlobal,
-					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, "", len(kdsCtx.TypesSentByGlobal)),
+					kdsStream,
 					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
 					0,
 				)
