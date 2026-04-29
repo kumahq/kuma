@@ -94,6 +94,11 @@ On both zone egress and zone ingress, every inbound mTLS connection carries a **
 encoded in the SNI. The SNI is available at filter chain selection level, so inbound `rules`
 can use it to apply per-destination configuration.
 
+SNI matching is a general matcher on traffic, not a matcher scoped specifically to zone proxies.
+The first use case is mesh-scoped zone proxy inbound listeners because they already select
+per-destination filter chains from SNI, but once the matcher exists in policy APIs it should be
+usable anywhere the policy implementation can evaluate SNI for the traffic being configured.
+
 **Zone egress**: the SNI identifies the `MeshExternalService` the sidecar wants to reach.
 Zone egress builds one filter chain per MeshExternalService, keyed by the MeshExternalService SNI.
 
@@ -255,7 +260,9 @@ type SNIMatch struct {
 - When a `Match` contains both `spiffeID` and `sni`, both conditions must hold.
 - With the KRI-based SNI format (MADR-101), SNIs are human-readable and predictable —
   users construct them from resource attributes without querying the CP.
-- `sni` in `Match` is valid only when the policy targets a zone proxy Dataplane.
+- `sni` in `Match` is not limited to zone proxy Dataplanes. It applies wherever the policy
+  implementation has SNI available for matching traffic; zone proxy inbound listeners are the
+  first supported consumer.
 
 `targetRef` in `Match` may be added as a follow-up once `sni` is proven in production.
 The `Match` struct can be extended without breaking existing policies.
@@ -491,6 +498,8 @@ destination SNI, providing an audit trail of which workload accessed which exter
 1. **Destination selector in inbound rules**: Extend the `Match` struct with an `sni` field.
    SNI maps directly to Envoy's `server_names` filter chain match — no CP resolution step.
    With the KRI-based SNI format (MADR-101), SNIs are human-readable and predictable.
+   SNI matching is a traffic matcher and is not scoped to zone proxies; zone proxies are the first
+   consumer because their listeners naturally expose per-destination SNI matching.
    `targetRef` in `Match` is deferred to a follow-up.
 
 2. **Default RBAC behaviour**: mesh-scoped zone egress Dataplanes are deny-all by default when
@@ -525,33 +534,6 @@ None
 * global scoped zone proxies are removed
 * drop MeshLoadBalancingStrategy support for MeshExternalServices
 * `defaultForbidMeshExternalServiceAccess` is removed
-
-## Open Questions
-
-1. Given the following policy:
-
-   ```yaml
-   type: MeshAccessLog
-   mesh: default
-   name: log-backend-traffic
-   spec:
-     targetRef:
-       kind: Mesh
-     rules:
-       - matches:
-           - sni:
-               type: Exact
-               value: sni.ms.default.zone-1.backend-ns.backend.8080
-         default:
-           backends:
-             - type: File
-               file:
-                 path: /tmp/access.log
-   ```
-
-   On which dataplanes should this log rule take effect?
-   - Currently, it takes effect only on mesh-scoped zone ingress
-   - Should it also apply to regular sidecars implementing the `backend` MeshService?
 
 ## Resources
 
