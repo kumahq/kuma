@@ -148,7 +148,7 @@ var _ = Describe("ComputePolicyRole", func() {
 			namespace:    resource_labels.NewNamespace("kuma-system", true),
 			expectedRole: mesh_proto.SystemPolicyRole,
 		}),
-		Entry("policy with consumer and producer to-itmes", testCase{
+		Entry("policy with consumer and producer to-items", testCase{
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
