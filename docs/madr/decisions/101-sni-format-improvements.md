@@ -113,8 +113,7 @@ however DNS hostnames don't allow empty segments, i.e. `kri.m....default.` is no
 However, the problem can be solved for a subset of KRIs that satisfy the constraints:
 
 - resource types are `MeshService`, `MeshExternalService` and `MeshMultiZoneService`
-- `mesh`, `name` and `sectionName` are always non-empty
-- if `namespace` is non-empty then `zone` is non-empty
+- `mesh`, `name`, `namespace` and `sectionName` are always non-empty
 
 These constraints follow naturally from Kuma's resource model and are reasonable in the context of SNI matching.
 
@@ -124,7 +123,6 @@ In that case, the KRI `kri_<type>_<mesh>_<zone>_<namespace>_<name>_<sectionName>
 It's unambiguous because different cases have different number of segments:
 
 - global-originated resource - `sni.<type>.<mesh>.<name>.<sectionName>` (5 segments)
-- zone-originated resource in system namespace - `sni.<type>.<mesh>.<zone>.<name>.<sectionName>` (6 segments)
 - zone-originated resource in custom namespace - `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` (7 segments)
 
 Additionally, this format requires that `name`, `sectionName`, `mesh`, `zone`, and `namespace`
