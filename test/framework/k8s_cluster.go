@@ -1436,7 +1436,9 @@ func (c *K8sCluster) Deploy(deployment Deployment) error {
 	c.mutex.Lock()
 	c.deployments[deployment.Name()] = deployment
 	c.mutex.Unlock()
-	return deployment.Deploy(c)
+	return withDeployGate(func() error {
+		return deployment.Deploy(c)
+	})
 }
 
 func (c *K8sCluster) DeleteDeployment(name string) error {
