@@ -252,7 +252,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
-| meshes[0].ingress.deployment.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
+| meshes[0].ingress.deployment.resources | object | `{}` | Pod-level resource requests and limits (requires Kubernetes 1.34+ with PodLevelResources feature gate). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
 | meshes[0].ingress.deployment.containerResources | object | `{}` | Resource requests and limits for the pause container. |
 | meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
@@ -269,7 +269,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
-| meshes[0].egress.deployment.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
+| meshes[0].egress.deployment.resources | object | `{}` | Pod-level resource requests and limits (requires Kubernetes 1.34+ with PodLevelResources feature gate). Applied to all containers in the pod (pause + injected kuma-sidecar). |
 | meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
 | meshes[0].egress.deployment.containerResources | object | `{}` | Resource requests and limits for the pause container. |
 | meshes[0].egress.hpa.enabled | bool | `false` |  |
