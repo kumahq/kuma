@@ -216,6 +216,34 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).To(MatchError("stream was authenticated for ID default.web-01. Received request is for node with ID default.web-02. Node ID cannot be changed after stream is initialized"))
 	})
 
+	It("should accept delta requests that omit Node after the first request", func() {
+		// given
+		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
+		streamID := int64(1)
+
+		// when
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when first delta request carries Node
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.web-01",
+			},
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when subsequent delta request omits Node (per xDS spec)
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
 	It("should not authenticate when DP is absent in the CP and it's not passed through Envoy metadata", func() {
 		// given
 		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
