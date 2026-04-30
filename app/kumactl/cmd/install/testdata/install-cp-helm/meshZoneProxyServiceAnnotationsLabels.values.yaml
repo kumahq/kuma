@@ -7,11 +7,10 @@ meshes:
         repository: pause
         tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
       service:
-        spec:
-          externalIPs:
-            - 192.168.5.2
-          loadBalancerSourceRanges:
-            - 10.0.0.0/8
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: "external"
+        labels:
+          environment: production
     egress:
       enabled: true
       image:
@@ -19,5 +18,7 @@ meshes:
         repository: pause
         tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
       service:
-        spec:
-          publishNotReadyAddresses: true
+        annotations:
+          custom.io/egress: "true"
+        labels:
+          environment: production

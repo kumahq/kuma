@@ -475,6 +475,9 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
     k8s.kuma.io/zone-proxy-type: ingress
+    "environment": "production"
+  annotations:
+    "service.beta.kubernetes.io/aws-load-balancer-type": "external"
 spec:
   type: LoadBalancer
   ports:
@@ -497,6 +500,9 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
     k8s.kuma.io/zone-proxy-type: egress
+    "environment": "production"
+  annotations:
+    "custom.io/egress": "true"
 spec:
   type: ClusterIP
   ports:

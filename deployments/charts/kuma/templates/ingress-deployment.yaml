@@ -5,6 +5,12 @@ metadata:
   name: {{ include "kuma.name" . }}-ingress
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.ingressLabels" . | nindent 4 }}
+  {{- with .Values.ingress.deploymentAnnotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
 spec:
   strategy:
     rollingUpdate:

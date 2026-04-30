@@ -22,10 +22,13 @@ metadata:
   labels:
     {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
     k8s.kuma.io/zone-proxy-type: {{ $role }}
-  {{- if and $cfg.service $cfg.service.annotations }}
+    {{- range $key, $value := (and $cfg.service $cfg.service.labels) }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{- end }}
+  {{- with (and $cfg.service $cfg.service.annotations) }}
   annotations:
-    {{- range $key, $value := $cfg.service.annotations }}
-    {{ $key }}: {{ $value | quote }}
+    {{- range $key, $value := . }}
+    {{ $key | quote }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
 spec:
