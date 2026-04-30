@@ -218,17 +218,18 @@ var _ = Describe("Auth Callbacks", func() {
 
 	It("should accept delta requests that omit Node after the first request", func() {
 		// given
+		deltaCallbacks := v3.AdaptDeltaCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
 		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
 		streamID := int64(1)
 
 		// when
-		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
+		err := deltaCallbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when first delta request carries Node
-		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
+		err = deltaCallbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 			},
@@ -238,10 +239,11 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when subsequent delta request omits Node (per xDS spec)
-		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{})
+		err = deltaCallbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		Expect(testAuth.callCounter).To(Equal(1)) // auth must not be called again when Node is absent
 	})
 
 	It("should not authenticate when DP is absent in the CP and it's not passed through Envoy metadata", func() {
