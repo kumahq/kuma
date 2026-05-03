@@ -183,6 +183,20 @@ components:
           type: string
         proxyResourceName:
           type: string
+    DataplaneListener:
+      type: object
+      required: [ kri, type, port, proxyResourceName ]
+      properties:
+        kri:
+          type: string
+        type:
+          type: string
+          enum: [ ZoneIngress, ZoneEgress ]
+        port:
+          type: integer
+          x-go-type: 'int32'
+        proxyResourceName:
+          type: string
     DataplaneOutbound:
       type: object
       required: [ kri, port, protocol, proxyResourceName ]
