@@ -1,6 +1,6 @@
 ARG ARCH
 FROM kumahq/envoy:no-push-$ARCH AS envoy
-FROM ghcr.io/spiffe/spire-server:1.14.5@sha256:295af37293ffef6530ba0cafce055c41fd4d26dbabaca24944c029bbc8291214 AS spire_server
+FROM ghcr.io/spiffe/spire-server:1.14.6@sha256:0ed27f4651abae66e25b9bc8cf0e80b143629b3d34a7fcf4c8cce70c81c0043b AS spire_server
 FROM ghcr.io/spiffe/spire-agent:1.14.5@sha256:efb8d29ace803852c8f3d0001c3d183102bfda2c6ff52e4a93a067269a2caa5e AS spire_agent
 # Built in github.com/kumahq/ci-tools
 FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:487f66a9386f17fb2ba4cf5271bbf6ce8c79daadb3ad8dc80406acddb99fb110
