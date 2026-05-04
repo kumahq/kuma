@@ -26,6 +26,21 @@ runs:
         remove_android: true
         remove_dotnet: true
         remove_haskell: true
+    # Move systemd-journald to tmpfs. systemd-journald aggregates stdout/stderr
+    # from every container that uses the default Docker logging driver
+    # (kuma-cp, calico-typha, felix, k3s, kubelet, etc.), which on heavy E2E
+    # runs is the second-largest writer to the host's persistent disk
+    # (observed: 363 MB written during a 17-min multizone suite). Setting
+    # Storage=volatile makes journald write to /run/log/journal (tmpfs)
+    # instead of /var/log/journal (host disk), eliminating that traffic at
+    # the source. Logs are still readable via journalctl during the run, just
+    # not preserved across reboots - which CI runners don't survive anyway.
+    - name: "Move systemd-journald to tmpfs"
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/systemd/journald.conf.d
+        echo -e '[Journal]\nStorage=volatile' | sudo tee /etc/systemd/journald.conf.d/ci-tmpfs.conf
+        sudo systemctl restart systemd-journald
     - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
       env:
         GITHUB_TOKEN: ${{ github.token }}
