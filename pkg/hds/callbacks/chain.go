@@ -39,8 +39,7 @@ func (chain Chain) OnEndpointHealthResponse(streamID int64, response *envoy_serv
 }
 
 func (chain Chain) OnStreamClosed(streamID int64) {
-	for _, v := range slices.Backward(chain) {
-		cb := v
+	for _, cb := range slices.Backward(chain) {
 		cb.OnStreamClosed(streamID)
 	}
 }
