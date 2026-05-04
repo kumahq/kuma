@@ -106,7 +106,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 5
+      max-parallel: 2
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
     env:
@@ -132,7 +132,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 5
+      max-parallel: 3
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
     env:
