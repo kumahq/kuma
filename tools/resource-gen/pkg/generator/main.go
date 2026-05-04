@@ -107,7 +107,7 @@ type {{.ResourceType}}List struct {
 
 {{- if not .SkipRegistration}}
 func init() {
-	SchemeBuilder.Register(&{{.ResourceType}}{}, &{{.ResourceType}}List{})
+	knownTypes = append(knownTypes, &{{.ResourceType}}{}, &{{.ResourceType}}List{})
 }
 {{- end}}
 
