@@ -96,7 +96,8 @@ func (l *Loader) LoadReader(r io.Reader) error {
 }
 
 func (l *Loader) LoadBytes(content []byte) error {
-	if reflect.ValueOf(l.cfg).Kind() != reflect.Ptr {
+	const ptr = reflect.Pointer
+	if reflect.ValueOf(l.cfg).Kind() != ptr {
 		return errors.New("configuration must be a pointer; ensure the Config instance is passed by reference")
 	}
 
