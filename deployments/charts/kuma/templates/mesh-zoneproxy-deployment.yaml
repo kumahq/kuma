@@ -23,7 +23,7 @@
 {{- range $roleEntry := $roles }}
 {{- $role := $roleEntry.role }}
 {{- $cfg := $roleEntry.cfg }}
-{{- $dep := and $cfg.deployment | default dict }}
+{{- $dep := $cfg.deployment | default dict }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -32,14 +32,12 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
-    {{- range $key, $value := $dep.labels }}
-    {{ $key | quote }}: {{ $value | quote }}
+    {{- with $dep.labels }}
+    {{- toYaml . | nindent 4 }}
     {{- end }}
   {{- with $dep.annotations }}
   annotations:
-    {{- range $key, $value := . }}
-    {{ $key | quote }}: {{ $value | quote }}
-    {{- end }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   strategy:
