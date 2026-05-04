@@ -41,6 +41,7 @@ type DataplaneProxyFactory struct {
 	unifiedResourceNamingEnabled bool
 	otelPipeEnabled              bool
 	spireEnabled                 bool
+	deltaXdsEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -58,6 +59,7 @@ func NewDataplaneProxyFactory(
 	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
+	deltaXdsEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -74,6 +76,7 @@ func NewDataplaneProxyFactory(
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		otelPipeEnabled:              otelPipeEnabled,
 		spireEnabled:                 spireEnabled,
+		deltaXdsEnabled:              deltaXdsEnabled,
 	}
 }
 
@@ -305,6 +308,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
 			Value: "true",
+		}
+	}
+	if i.deltaXdsEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+			Value: "DELTA_GRPC",
 		}
 	}
 	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
