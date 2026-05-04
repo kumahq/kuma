@@ -106,6 +106,26 @@ ifeq ($(GOOS),linux)
 K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 endif
 
+# --- kine SQLite on tmpfs (CI only) ---
+# k3s stores its kine SQLite database at /var/lib/rancher/k3s/server/db/.
+# Every k8s API write fsyncs that file. Under disk contention on shared CI
+# runners (observed: IO PSI full avg10 = 30% during e2e runs while CPU PSI
+# stayed mild at 8-15%), each fsync stalls hundreds of ms, which backs up
+# into apiserver write paths and wedges container init via kubelet -> apiserver
+# -> kine. Bind-mounting the db/ directory onto /dev/shm (tmpfs) eliminates
+# fsync latency entirely. The data is intentionally ephemeral - we delete the
+# k3d cluster at suite end - so loss-on-host-crash is irrelevant.
+#
+# Linux + CI only: /dev/shm specifics differ on Docker Desktop, and developers
+# benefit less from this since their disks aren't on shared GH runners.
+# Deferred (=) so $(CLUSTER_NAME) resolves per-target at recipe time.
+K3D_KINE_TMPFS_DIR = /dev/shm/k3d-$(CLUSTER_NAME)-kine
+ifeq ($(GOOS),linux)
+ifeq ($(CI),true)
+K3D_CLUSTER_CREATE_OPTS += --volume "$(K3D_KINE_TMPFS_DIR):/var/lib/rancher/k3s/server/db@server:0"
+endif
+endif
+
 # --- k3d-specific context ---
 
 CLUSTER_KUBECONTEXT := k3d-$(CLUSTER_NAME)
@@ -280,6 +300,9 @@ K3D_CREATE_CLUSTER ?= $(KUMA_DIR)/mk/resources/k3d-create-cluster.sh
 
 .PHONY: k3d/cluster/create
 k3d/cluster/create: $(KUBECONFIG_DIR)
+ifeq ($(GOOS)$(CI),linuxtrue)
+	$(Q)mkdir -p "$(K3D_KINE_TMPFS_DIR)"
+endif
 	$(Q)$(K3D_CREATE_CLUSTER) \
 	  "$(DOCKER_NETWORK)" \
 	  "$(K3D_PORT_PREFIX_LOCK_DIR)" \
@@ -289,6 +312,9 @@ k3d/cluster/create: $(KUBECONFIG_DIR)
 .PHONY: k3d/cluster/stop
 k3d/cluster/stop:
 	$(Q)$(K3D) cluster delete $(CLUSTER_NAME) && rm -f $(K3D_CLUSTER_KUBECONFIG)
+ifeq ($(GOOS)$(CI),linuxtrue)
+	$(Q)rm -rf "$(K3D_KINE_TMPFS_DIR)"
+endif
 
 # Orchestrated via sequential $(MAKE) calls to guarantee ordering under -j.
 .PHONY: k3d/cluster/start
