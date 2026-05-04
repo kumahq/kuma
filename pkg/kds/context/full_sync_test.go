@@ -103,6 +103,11 @@ var _ = Describe("Full sync tests", func() {
 		// Wait until all stores converge to their expected golden state.
 		// Using Eventually instead of a fixed sleep avoids flakes on
 		// slow CI runners where 5s may not be enough for full sync.
+		// When regenerating golden files, Eventually writes partial state on
+		// the first match — sleep first to let full sync complete.
+		if os.Getenv("UPDATE_GOLDEN_FILES") != "" {
+			time.Sleep(5 * time.Second)
+		}
 		for zoneName, zoneStore := range zones {
 			goldenFile := zoneName + ".golden.yaml"
 			Eventually(func(g Gomega) {
