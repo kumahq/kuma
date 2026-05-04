@@ -99,7 +99,7 @@ func (l *MeshHealthCheckList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshHealthCheck{}, &MeshHealthCheckList{})
+	knownTypes = append(knownTypes, &MeshHealthCheck{}, &MeshHealthCheckList{})
 	registry.RegisterObjectType(&policy.MeshHealthCheck{}, &MeshHealthCheck{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

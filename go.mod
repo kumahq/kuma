@@ -92,7 +92,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20260502001324-b7f5293f4787
 	k8s.io/kubectl v0.36.0
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
-	sigs.k8s.io/controller-runtime v0.23.3
+	sigs.k8s.io/controller-runtime v0.24.0
 	sigs.k8s.io/controller-tools v0.20.1
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.5.1
@@ -199,7 +199,6 @@ require (
 	github.com/gonvenience/term v1.0.4 // indirect
 	github.com/gonvenience/text v1.0.9 // indirect
 	github.com/gonvenience/ytbx v1.4.7 // indirect
-	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83 // indirect
@@ -291,12 +290,11 @@ require (
 	k8s.io/code-generator v0.36.0 // indirect
 	k8s.io/component-base v0.36.0 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
+	k8s.io/streaming v0.36.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
-
-require k8s.io/streaming v0.36.0 // indirect
 
 replace (
 	github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.14.0-kong-1
