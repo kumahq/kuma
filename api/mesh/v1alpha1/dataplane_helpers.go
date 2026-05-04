@@ -408,6 +408,17 @@ func (d *Dataplane_Networking_Inbound) GetSectionName() string {
 	return strconv.Itoa(int(d.Port))
 }
 
+// GetSectionName returns either listener name or stringified port value.
+func (l *Dataplane_Networking_Listener) GetSectionName() string {
+	if l == nil {
+		return ""
+	}
+	if l.Name != "" {
+		return l.Name
+	}
+	return strconv.Itoa(int(l.Port))
+}
+
 // GetService returns a service name represented by this outbound interface.
 //
 // The purpose of this method is to encapsulate implementation detail
