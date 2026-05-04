@@ -731,10 +731,10 @@ metadata:
     kuma.io/mesh: default
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    "team": "platform"
+    team: platform
   annotations:
-    "argocd.argoproj.io/hook-delete-policy": "BeforeHookCreation"
-    "custom.io/annotation": "ingress-value"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    custom.io/annotation: ingress-value
 spec:
   strategy:
     rollingUpdate:
@@ -795,7 +795,7 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
-    "custom.io/annotation": "egress-value"
+    custom.io/annotation: egress-value
 spec:
   strategy:
     rollingUpdate:
