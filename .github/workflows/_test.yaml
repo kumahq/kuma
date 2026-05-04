@@ -44,7 +44,7 @@ jobs:
                 "target": [""],
                 "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
-                "parallelism": [4],
+                "parallelism": [2],
                 "cniNetworkPlugin": ["flannel"],
                 "sidecarContainers": [""]
               },
