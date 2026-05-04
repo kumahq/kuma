@@ -69,6 +69,13 @@ runs:
           export K8S_CLUSTER_TOOL=kind
           export KUMA_DEFAULT_RETRIES=60
           export KUMA_DEFAULT_TIMEOUT="6s"
+        elif [[ "$E2E_K8S_VERSION" == "kind-v1.35"* ]]; then
+          export K8S_CLUSTER_TOOL=kind
+          # CI_KUBERNETES_VERSION uses the default from mk/kind.mk (CI_KUBERNETES_VERSION)
+        elif [[ "$E2E_K8S_VERSION" == "kind-v1.32"* ]]; then
+          export K8S_CLUSTER_TOOL=kind
+          # Keep in sync with CI_KUBERNETES_MIN_VERSION in mk/kind.mk
+          export CI_KUBERNETES_VERSION="v1.32.11@sha256:5fc52d52a7b9574015299724bd68f183702956aa4a2116ae75a63cb574b35af8"
         fi
         if [[ "$E2E_K8S_VERSION" != "kind"* ]]; then
           export K3S_VERSION="$E2E_K8S_VERSION"

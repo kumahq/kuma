@@ -42,7 +42,7 @@ define append_label_filter
 $(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) && $(1),$(1))
 endef
 
-K8S_CLUSTER_TOOL ?= k3d
+K8S_CLUSTER_TOOL ?= kind
 ifeq ($(K8S_CLUSTER_TOOL),k3d)
 	ifeq ($(K3D_CNI),calico)
 		E2E_ENV_VARS += KUMA_K8S_TYPE=k3d-calico
@@ -104,7 +104,7 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 # Clusters are deleted only if all tests passes, otherwise clusters are live and running current test deployment
 # GINKGO_EDITOR_INTEGRATION is required to work with focused test. Normally they exit with non 0 code which prevents clusters to be cleaned up.
 # We run ginkgo instead of "go test" to fail fast (builtin "go test" fail fast does not seem to work with individual ginkgo tests)
-# Run only with -j and K8S_CLUSTER_TOOL=k3d (which is the default value)
+# Run only with -j
 .PHONY: test/e2e/debug
 test/e2e/debug: $(E2E_DEPS_TARGETS)
 	$(MAKE) -j $(K8SCLUSTERS_START_TARGETS) build/kumactl images

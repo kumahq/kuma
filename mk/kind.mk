@@ -10,6 +10,8 @@ endif
 
 # renovate[docker]: depName=kindest/node
 CI_KUBERNETES_VERSION ?= v1.35.1@sha256:05d7bcdefbda08b4e038f644c4df690cdac3fba8b06f8289f30e10026720a1ab
+# renovate[docker]: depName=kindest/node
+CI_KUBERNETES_MIN_VERSION ?= v1.32.11@sha256:5fc52d52a7b9574015299724bd68f183702956aa4a2116ae75a63cb574b35af8
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
