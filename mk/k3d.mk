@@ -4,7 +4,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))k8s.mk
 
 # --- K3s ---
 
-K3S_VERSION ?= $(K8S_MIN_VERSION)
+K3S_VERSION ?= v1.32.13-k3s1
 ifdef CI_K3S_VERSION
 ifeq ($(origin K3S_VERSION), default)
 K3S_VERSION := $(CI_K3S_VERSION)
