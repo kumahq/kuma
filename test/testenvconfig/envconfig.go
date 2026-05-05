@@ -105,9 +105,10 @@ var (
 
 // GatherInfo gathers information about the specified struct
 func GatherInfo(prefix string, spec any) ([]varInfo, error) {
+	const ptr = reflect.Pointer
 	s := reflect.ValueOf(spec)
 
-	if s.Kind() != reflect.Ptr {
+	if s.Kind() != ptr {
 		return nil, ErrInvalidSpecification
 	}
 	s = s.Elem()
@@ -125,7 +126,8 @@ func GatherInfo(prefix string, spec any) ([]varInfo, error) {
 			continue
 		}
 
-		for f.Kind() == reflect.Ptr {
+		const ptr = reflect.Pointer
+		for f.Kind() == ptr {
 			if f.IsNil() {
 				if f.Type().Elem().Kind() != reflect.Struct {
 					// nil pointer to a non-struct: leave it alone

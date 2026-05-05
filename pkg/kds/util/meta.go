@@ -41,7 +41,7 @@ func WithLabel(key, value string) CloneResourceMetaOpt {
 //
 // In 2.7.x method 'GetMeta().GetLabels()' on Kubernetes returned a label map with 'k8s.kuma.io/namespace' added
 // dynamically. This behavior was changed in 2.9.x by https://github.com/kumahq/kuma/pull/11020, the namespace label is now
-// supposed to be set in ComputeLabels function. But this functions is called only on Create/Update of the resources.
+// supposed to be set in labels.Compute function. But this function is called only on Create/Update of the resources.
 // This means policies that were created on 2.7.x won't have 'k8s.kuma.io/namespace' label when synced to Global.
 // Even though the lack of namespace labels affects only how resource looks in GUI on Global it's still worth setting it.
 func PopulateNamespaceLabelFromNameExtension() CloneResourceMetaOpt {

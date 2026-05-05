@@ -1106,6 +1106,8 @@ experimental:
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
   envoyAdminUnixSocket: true
+  # -- If true, uses Delta xDS (incremental) protocol to deliver changes to sidecars instead of State of the World (SOTW).
+  deltaXds: false
 
 # Postgres' settings for universal control plane on k8s
 postgres:

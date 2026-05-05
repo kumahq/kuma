@@ -17,6 +17,7 @@
  "labels": {
   "kuma.io/zone": "test-zone"
  },
+ "listeners": [],
  "outbounds": [
   {
    "kri": "kri_msvc_default_test-zone__test-server-1_main-port",
