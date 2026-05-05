@@ -248,13 +248,11 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].ingress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].ingress.deployment | object | `{"annotations":{},"containerResources":{},"labels":{},"podSpec":{},"replicas":1,"resources":{}}` | Deployment-level settings. |
+| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
 | meshes[0].ingress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
-| meshes[0].ingress.deployment.resources | object | `{}` | Pod-level resource requests and limits (requires Kubernetes 1.34+ with PodLevelResources feature gate). Applied to all containers in the pod (pause + injected kuma-sidecar). |
-| meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
-| meshes[0].ingress.deployment.containerResources | object | `{}` | Resource requests and limits for the pause container. |
+| meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
 | meshes[0].egress.enabled | bool | `false` | Deploy a zone egress for this mesh. |
@@ -265,13 +263,11 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].egress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].egress.deployment | object | `{"annotations":{},"containerResources":{},"labels":{},"podSpec":{},"replicas":1,"resources":{}}` | Deployment-level settings. |
+| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
 | meshes[0].egress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
-| meshes[0].egress.deployment.resources | object | `{}` | Pod-level resource requests and limits (requires Kubernetes 1.34+ with PodLevelResources feature gate). Applied to all containers in the pod (pause + injected kuma-sidecar). |
-| meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
-| meshes[0].egress.deployment.containerResources | object | `{}` | Resource requests and limits for the pause container. |
+| meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].egress.hpa.enabled | bool | `false` |  |
 | meshes[0].egress.hpa.minReplicas | int | `2` |  |
 | meshes[0].egress.hpa.maxReplicas | int | `5` |  |

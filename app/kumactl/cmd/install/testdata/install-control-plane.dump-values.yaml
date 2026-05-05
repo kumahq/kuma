@@ -877,15 +877,11 @@ meshes:
         annotations: {}
         # -- Labels to add to the Deployment resource.
         labels: {}
-        # -- Pod-level resource requests and limits (requires Kubernetes 1.34+ with PodLevelResources feature gate).
-        # Applied to all containers in the pod (pause + injected kuma-sidecar).
-        resources: {}
         # -- Subset of Kubernetes PodSpec fields applied to the pod template
         # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-        #  priorityClassName, securityContext, containerSecurityContext).
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
         podSpec: {}
-        # -- Resource requests and limits for the pause container.
-        containerResources: {}
       # -- Horizontal Pod Autoscaler settings.
       hpa:
         enabled: false
@@ -929,15 +925,11 @@ meshes:
         annotations: {}
         # -- Labels to add to the Deployment resource.
         labels: {}
-        # -- Pod-level resource requests and limits (requires Kubernetes 1.34+ with PodLevelResources feature gate).
-        # Applied to all containers in the pod (pause + injected kuma-sidecar).
-        resources: {}
         # -- Subset of Kubernetes PodSpec fields applied to the pod template
         # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-        #  priorityClassName, securityContext, containerSecurityContext).
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
         podSpec: {}
-        # -- Resource requests and limits for the pause container.
-        containerResources: {}
       hpa:
         enabled: false
         minReplicas: 2
