@@ -14,9 +14,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
@@ -112,70 +112,36 @@ func ResourceValidation() {
 		return strings.TrimRight(out, "\n") + "\n"
 	}
 
-	type target struct {
-		slug  string
-		apply func(resource, yamlBody string) string
+	apiPaths := map[string]string{
+		"meshtimeout":         "meshtimeouts",
+		"meshexternalservice": "meshexternalservices",
 	}
 
-	globalT := target{
-		slug: "global",
-		apply: func(resource, yamlBody string) string {
-			return applyUniversal(multizone.Global, resource, yamlBody)
-		},
-	}
-	uniZoneT := target{
-		slug: "zone-uni",
-		apply: func(resource, yamlBody string) string {
-			return applyUniversal(multizone.UniZone1, resource, yamlBody)
-		},
-	}
-	kubeT := target{
-		slug: "zone-k8s",
-		apply: func(_, yamlBody string) string {
-			return applyKube(multizone.KubeZone1, yamlBody)
-		},
-	}
+	// Filename convention: "<target>.<resource>.<case>.input.yaml".
+	DescribeTable("validates labels", func(inputFile string) {
+		parts := strings.Split(filepath.Base(inputFile), ".")
+		Expect(len(parts)).To(BeNumerically(">=", 4), "unexpected filename: %s", inputFile)
+		targetSlug, resourceSlug := parts[0], parts[1]
 
-	// resourceSlug matches the testdata filename segment; apiPath is the REST
-	// plural path used in HTTP PUT URLs.
-	runPair := func(t target, resourceSlug, apiPath string) {
-		// CWD when ginkgo runs the suite is the suite package dir
-		// (test/e2e_env/multizone), so paths must include the sub-package prefix.
-		pattern := filepath.Join("validation", "testdata", t.slug+"."+resourceSlug+".*.input.yaml")
-		inputs, err := filepath.Glob(pattern)
+		apiPath, ok := apiPaths[resourceSlug]
+		Expect(ok).To(BeTrue(), "unknown resource slug %q in %s", resourceSlug, inputFile)
+
+		body, err := os.ReadFile(inputFile)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(inputs).ToNot(BeEmpty(), "no input files matched %s", pattern)
 
-		type result struct {
-			path string
-			blob string
+		var blob string
+		switch targetSlug {
+		case "global":
+			blob = applyUniversal(multizone.Global, apiPath, string(body))
+		case "zone-uni":
+			blob = applyUniversal(multizone.UniZone1, apiPath, string(body))
+		case "zone-k8s":
+			blob = applyKube(multizone.KubeZone1, string(body))
+		default:
+			Fail(fmt.Sprintf("unknown target slug %q in %s", targetSlug, inputFile))
 		}
-		results := make([]result, len(inputs))
 
-		g := errgroup.Group{}
-		for i, path := range inputs {
-			g.Go(func() error {
-				body, err := os.ReadFile(path)
-				if err != nil {
-					return err
-				}
-				results[i] = result{path: path, blob: t.apply(apiPath, string(body))}
-				return nil
-			})
-		}
-		Expect(g.Wait()).To(Succeed())
-
-		for _, r := range results {
-			goldenPath := strings.Replace(r.path, ".input.yaml", ".golden.yaml", 1)
-			Expect(r.blob).To(matchers.MatchGoldenEqual(goldenPath),
-				"case: %s", filepath.Base(r.path))
-		}
-	}
-
-	It("Global CP / MeshTimeout", func() { runPair(globalT, "meshtimeout", "meshtimeouts") })
-	It("Global CP / MeshExternalService", func() { runPair(globalT, "meshexternalservice", "meshexternalservices") })
-	It("UniZone CP / MeshTimeout", func() { runPair(uniZoneT, "meshtimeout", "meshtimeouts") })
-	It("UniZone CP / MeshExternalService", func() { runPair(uniZoneT, "meshexternalservice", "meshexternalservices") })
-	It("KubeZone CP / MeshTimeout", func() { runPair(kubeT, "meshtimeout", "meshtimeouts") })
-	It("KubeZone CP / MeshExternalService", func() { runPair(kubeT, "meshexternalservice", "meshexternalservices") })
+		goldenPath := strings.Replace(inputFile, ".input.yaml", ".golden.yaml", 1)
+		Expect(blob).To(matchers.MatchGoldenEqual(goldenPath))
+	}, test.EntriesForFolder("", "validation"))
 }
