@@ -2323,7 +2323,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(kuma_dp_dns_request_duration_seconds_count{mesh=\"$mesh\"}[5m]) * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
+          "expr": "sum(rate(kuma_dp_dns_request_duration_seconds_count{mesh=\"$mesh\"}[5m]) * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})))",
           "legendFormat": "total",
           "refId": "A"
         }
@@ -2398,22 +2398,22 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(kuma_dp_dns_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(kuma_dp_dns_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}))) by (le))",
           "legendFormat": "local p99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(kuma_dp_dns_upstream_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(kuma_dp_dns_upstream_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}))) by (le))",
           "legendFormat": "upstream p99",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(kuma_dp_dns_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(kuma_dp_dns_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}))) by (le))",
           "legendFormat": "local p50",
           "refId": "C"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(kuma_dp_dns_upstream_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(kuma_dp_dns_upstream_request_duration_seconds_bucket{mesh=\"$mesh\"}[5m]) * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"}))) by (le))",
           "legendFormat": "upstream p50",
           "refId": "D"
         }
@@ -2487,7 +2487,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (qtype, source) (rate(kuma_dp_dns_queries_total{mesh=\"$mesh\"}[5m]) * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
+          "expr": "sum by (qtype, source) (rate(kuma_dp_dns_queries_total{mesh=\"$mesh\"}[5m]) * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})))",
           "legendFormat": "{{qtype}} / {{source}}",
           "refId": "A"
         }
@@ -2591,7 +2591,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (rcode) (rate(kuma_dp_dns_response_codes_total{mesh=\"$mesh\"}[5m]) * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
+          "expr": "sum by (rcode) (rate(kuma_dp_dns_response_codes_total{mesh=\"$mesh\"}[5m]) * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})))",
           "legendFormat": "{{rcode}}",
           "refId": "A"
         }
@@ -2660,7 +2660,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (pod) (kuma_dp_dns_entries_total{mesh=\"$mesh\"} * on(pod) group_left() envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})",
+          "expr": "sum by (pod) (kuma_dp_dns_entries_total{mesh=\"$mesh\"} * on(pod) group_left() (max by (pod) (envoy_server_live{mesh=\"$mesh\",namespace=~\"$namespace\",kuma_io_zone=~\"$zone\",kuma_workload=\"$workload\"})))",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
