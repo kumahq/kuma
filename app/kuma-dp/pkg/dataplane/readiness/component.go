@@ -80,11 +80,13 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 	var lis net.Listener
 	var protocol, addr string
 	if r.unixSocketDisabled {
+		// "tcp" gives a dual-stack listener on Linux when bound to the IPv6
+		// wildcard, so K8s probes work whether they hit a pod's IPv4 or IPv6
+		// address. "tcp6" would set IPV6_V6ONLY and refuse IPv4 probes.
+		protocol = "tcp"
 		if govalidator.IsIPv6(r.localListenAddr) {
-			protocol = "tcp6"
 			addr = fmt.Sprintf("[%s]:%d", r.localListenAddr, r.localListenPort)
 		} else {
-			protocol = "tcp"
 			addr = fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
 		}
 	} else {
