@@ -119,10 +119,13 @@ func ResourceValidation() {
 		var stdout, stderr bytes.Buffer
 		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr
+		var out string
 		if err := cmd.Run(); err != nil {
-			return fmt.Sprintf("error while running command: %v; %s", err, stderr.String())
+			out = fmt.Sprintf("error while running command: %v; %s", err, stderr.String())
+		} else {
+			out = stdout.String()
 		}
-		return stdout.String()
+		return strings.TrimRight(out, "\n") + "\n"
 	}
 
 	type target struct {
