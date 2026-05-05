@@ -225,7 +225,6 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		close(s.configReady)
 	})
 
-
 	// Shut down all servers. For servers not yet started when we enter this
 	// loop, retry until they start (making Shutdown effective) or their
 	// goroutine exits (meaning they failed to start and are already done).
