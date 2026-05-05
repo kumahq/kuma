@@ -114,7 +114,7 @@ func ResourceValidation() {
 			args = append(args, "--namespace", opts.Namespace)
 		}
 		args = append(args, "apply", "-f", "-")
-		cmd := exec.Command("kubectl", args...)
+		cmd := exec.CommandContext(context.Background(), "kubectl", args...)
 		cmd.Stdin = strings.NewReader(rendered)
 		var stdout, stderr bytes.Buffer
 		cmd.Stdout = &stdout
