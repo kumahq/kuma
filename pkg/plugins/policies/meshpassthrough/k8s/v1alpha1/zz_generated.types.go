@@ -99,7 +99,7 @@ func (l *MeshPassthroughList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshPassthrough{}, &MeshPassthroughList{})
+	knownTypes = append(knownTypes, &MeshPassthrough{}, &MeshPassthroughList{})
 	registry.RegisterObjectType(&policy.MeshPassthrough{}, &MeshPassthrough{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

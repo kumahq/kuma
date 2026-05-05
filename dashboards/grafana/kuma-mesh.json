@@ -354,7 +354,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "1 - (sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) / clamp_min(sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])), 1))",
+          "expr": "1 - ((sum(rate(envoy_http_downstream_rq_xx{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) or vector(0)) / clamp_min(sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])) or vector(0), 1))",
           "legendFormat": "",
           "refId": "A"
         }
