@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v2/test/framework/utils"
 )
 
 func ResourceValidation() {
@@ -72,25 +72,12 @@ func ResourceValidation() {
 			return fmt.Sprintf("request error: %v", err)
 		}
 		defer func() { _ = resp.Body.Close() }()
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Sprintf("%s %s\n\nbody read error: %v\n", resp.Proto, resp.Status, err)
+		}
 
 		return fmt.Sprintf("%s %s\n\n%s\n", resp.Proto, resp.Status, strings.TrimRight(string(body), "\n"))
-	}
-
-	// renderTemplate processes the YAML body through Go templates, exposing the
-	// framework Config so input files can reference {{ Config.KumaNamespace }}.
-	renderTemplate := func(body string) (string, error) {
-		tpl, err := template.New("input").Funcs(template.FuncMap{
-			"Config": func() *E2eConfig { return Config },
-		}).Parse(body)
-		if err != nil {
-			return "", err
-		}
-		var buf bytes.Buffer
-		if err := tpl.Execute(&buf, nil); err != nil {
-			return "", err
-		}
-		return buf.String(), nil
 	}
 
 	// applyKube renders the YAML body with Go templates and pipes it into
@@ -98,10 +85,7 @@ func ResourceValidation() {
 	// leak into errors). The error format mirrors terratest's ErrWithCmdOutput
 	// to keep golden files compatible.
 	applyKube := func(cluster Cluster, yamlBody string) string {
-		rendered, err := renderTemplate(yamlBody)
-		if err != nil {
-			return fmt.Sprintf("template render error: %v", err)
-		}
+		rendered := utils.FromTemplate(Default, yamlBody, Config)
 		opts := cluster.GetKubectlOptions()
 		args := []string{}
 		if opts.ContextName != "" {
@@ -130,24 +114,24 @@ func ResourceValidation() {
 
 	type target struct {
 		slug  string
-		apply func(resource, inputPath, yamlBody string) string
+		apply func(resource, yamlBody string) string
 	}
 
 	globalT := target{
 		slug: "global",
-		apply: func(resource, _, yamlBody string) string {
+		apply: func(resource, yamlBody string) string {
 			return applyUniversal(multizone.Global, resource, yamlBody)
 		},
 	}
 	uniZoneT := target{
 		slug: "zone-uni",
-		apply: func(resource, _, yamlBody string) string {
+		apply: func(resource, yamlBody string) string {
 			return applyUniversal(multizone.UniZone1, resource, yamlBody)
 		},
 	}
 	kubeT := target{
 		slug: "zone-k8s",
-		apply: func(_, _, yamlBody string) string {
+		apply: func(_, yamlBody string) string {
 			return applyKube(multizone.KubeZone1, yamlBody)
 		},
 	}
@@ -175,7 +159,7 @@ func ResourceValidation() {
 				if err != nil {
 					return err
 				}
-				results[i] = result{path: path, blob: t.apply(apiPath, path, string(body))}
+				results[i] = result{path: path, blob: t.apply(apiPath, string(body))}
 				return nil
 			})
 		}
