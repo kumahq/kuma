@@ -1,20 +1,14 @@
 package validation
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -41,77 +35,6 @@ func ResourceValidation() {
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	// applyUniversal sends HTTP PUT to the kuma-cp REST API and returns the
-	// raw response as "<proto> <status>\n\n<body>".
-	applyUniversal := func(cluster Cluster, resource, yamlBody string) string {
-		jsonBody, err := yaml.YAMLToJSON([]byte(yamlBody))
-		if err != nil {
-			return fmt.Sprintf("yaml-to-json error: %v", err)
-		}
-
-		var meta struct {
-			Name string `json:"name"`
-			Mesh string `json:"mesh"`
-		}
-		if err := json.Unmarshal(jsonBody, &meta); err != nil {
-			return fmt.Sprintf("parse name/mesh error: %v", err)
-		}
-
-		url := fmt.Sprintf("%s/meshes/%s/%s/%s",
-			cluster.GetKuma().GetAPIServerAddress(),
-			meta.Mesh, resource, meta.Name)
-		req, err := http.NewRequestWithContext(context.Background(),
-			http.MethodPut, url, bytes.NewReader(jsonBody))
-		if err != nil {
-			return fmt.Sprintf("request create error: %v", err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return fmt.Sprintf("request error: %v", err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Sprintf("%s %s\n\nbody read error: %v\n", resp.Proto, resp.Status, err)
-		}
-
-		return fmt.Sprintf("%s %s\n\n%s\n", resp.Proto, resp.Status, strings.TrimRight(string(body), "\n"))
-	}
-
-	// applyKube renders the YAML body with Go templates and pipes it into
-	// `kubectl apply -f -` so output is stable across runs (no temp file paths
-	// leak into errors). The error format mirrors terratest's ErrWithCmdOutput
-	// to keep golden files compatible.
-	applyKube := func(cluster Cluster, yamlBody string) string {
-		rendered := utils.FromTemplate(Default, yamlBody, Config)
-		opts := cluster.GetKubectlOptions()
-		args := []string{}
-		if opts.ContextName != "" {
-			args = append(args, "--context", opts.ContextName)
-		}
-		if opts.ConfigPath != "" {
-			args = append(args, "--kubeconfig", opts.ConfigPath)
-		}
-		if opts.Namespace != "" {
-			args = append(args, "--namespace", opts.Namespace)
-		}
-		args = append(args, "apply", "-f", "-")
-		cmd := exec.CommandContext(context.Background(), "kubectl", args...)
-		cmd.Stdin = strings.NewReader(rendered)
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		var out string
-		if err := cmd.Run(); err != nil {
-			out = fmt.Sprintf("error while running command: %v; %s", err, stderr.String())
-		} else {
-			out = stdout.String()
-		}
-		return strings.TrimRight(out, "\n") + "\n"
-	}
-
 	apiPaths := map[string]string{
 		"meshtimeout":         "meshtimeouts",
 		"meshexternalservice": "meshexternalservices",
@@ -132,11 +55,19 @@ func ResourceValidation() {
 		var blob string
 		switch targetSlug {
 		case "global":
-			blob = applyUniversal(multizone.Global, apiPath, string(body))
+			blob = ApplyResourceRawResponse(multizone.Global, apiPath, string(body))
 		case "zone-uni":
-			blob = applyUniversal(multizone.UniZone1, apiPath, string(body))
+			blob = ApplyResourceRawResponse(multizone.UniZone1, apiPath, string(body))
 		case "zone-k8s":
-			blob = applyKube(multizone.KubeZone1, string(body))
+			rendered := utils.FromTemplate(Default, string(body), Config)
+			tmpfile, terr := k8s.StoreConfigToTempFileE(multizone.KubeZone1.GetTesting(), rendered)
+			Expect(terr).ToNot(HaveOccurred())
+			defer os.Remove(tmpfile)
+			out, kerr := k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "apply", "-f", tmpfile)
+			if kerr != nil {
+				out = kerr.Error()
+			}
+			blob = strings.TrimRight(out, "\n") + "\n"
 		default:
 			Fail(fmt.Sprintf("unknown target slug %q in %s", targetSlug, inputFile))
 		}
