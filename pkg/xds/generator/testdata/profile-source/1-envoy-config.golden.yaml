@@ -110,8 +110,9 @@ resources:
       - lbEndpoints:
         - endpoint:
             address:
-              pipe:
-                path: /tmp/kuma-readiness-reporter.sock
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 9903
     name: kuma:readiness
     type: STATIC
 - name: localhost:8080

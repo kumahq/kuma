@@ -976,15 +976,6 @@
                               "cluster": "kuma:readiness",
                               "prefixRewrite": "/ready"
                             }
-                          },
-                          {
-                            "match": {
-                              "prefix": "/"
-                            },
-                            "route": {
-                              "cluster": "kuma:readiness",
-                              "prefixRewrite": "/"
-                            }
                           }
                         ]
                       }

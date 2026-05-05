@@ -44,6 +44,11 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 							StringValue: "8000",
 						},
 					},
+					"dataplane.readinessReporter.port": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "9300",
+						},
+					},
 					"dataplane.appProbeProxy.enabled": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "true",
@@ -60,6 +65,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				AdminPort:            1234,
 				DNSPort:              8000,
 				SystemCaPath:         "/etc/certs/cert.pem",
+				ReadinessPort:        9300,
 				AppProbeProxyEnabled: true,
 				IPv6Enabled:          true,
 			},
