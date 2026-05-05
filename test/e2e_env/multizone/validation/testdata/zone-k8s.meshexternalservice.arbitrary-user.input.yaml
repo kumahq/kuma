@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
   name: mes-arbitrary-user
-  namespace: kuma-system
+  namespace: {{ Config.KumaNamespace }}
   labels:
     kuma.io/mesh: multizone-label-validation
     kuma.io/origin: zone

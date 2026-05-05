@@ -8,10 +8,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"text/template"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -76,18 +77,52 @@ func ResourceValidation() {
 		return fmt.Sprintf("%s %s\n\n%s\n", resp.Proto, resp.Status, strings.TrimRight(string(body), "\n"))
 	}
 
-	// applyKube applies a K8s-format YAML file via kubectl and returns stdout
-	// on success or err.Error() verbatim on failure.
-	applyKube := func(cluster Cluster, inputPath string) string {
-		out, err := k8s.RunKubectlAndGetOutputE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(),
-			"apply", "-f", inputPath,
-		)
+	// renderTemplate processes the YAML body through Go templates, exposing the
+	// framework Config so input files can reference {{ Config.KumaNamespace }}.
+	renderTemplate := func(body string) (string, error) {
+		tpl, err := template.New("input").Funcs(template.FuncMap{
+			"Config": func() *E2eConfig { return Config },
+		}).Parse(body)
 		if err != nil {
-			return err.Error()
+			return "", err
 		}
-		return out
+		var buf bytes.Buffer
+		if err := tpl.Execute(&buf, nil); err != nil {
+			return "", err
+		}
+		return buf.String(), nil
+	}
+
+	// applyKube renders the YAML body with Go templates and pipes it into
+	// `kubectl apply -f -` so output is stable across runs (no temp file paths
+	// leak into errors). The error format mirrors terratest's ErrWithCmdOutput
+	// to keep golden files compatible.
+	applyKube := func(cluster Cluster, yamlBody string) string {
+		rendered, err := renderTemplate(yamlBody)
+		if err != nil {
+			return fmt.Sprintf("template render error: %v", err)
+		}
+		opts := cluster.GetKubectlOptions()
+		args := []string{}
+		if opts.ContextName != "" {
+			args = append(args, "--context", opts.ContextName)
+		}
+		if opts.ConfigPath != "" {
+			args = append(args, "--kubeconfig", opts.ConfigPath)
+		}
+		if opts.Namespace != "" {
+			args = append(args, "--namespace", opts.Namespace)
+		}
+		args = append(args, "apply", "-f", "-")
+		cmd := exec.Command("kubectl", args...)
+		cmd.Stdin = strings.NewReader(rendered)
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Sprintf("error while running command: %v; %s", err, stderr.String())
+		}
+		return stdout.String()
 	}
 
 	type target struct {
@@ -109,8 +144,8 @@ func ResourceValidation() {
 	}
 	kubeT := target{
 		slug: "zone-k8s",
-		apply: func(_, inputPath, _ string) string {
-			return applyKube(multizone.KubeZone1, inputPath)
+		apply: func(_, _, yamlBody string) string {
+			return applyKube(multizone.KubeZone1, yamlBody)
 		},
 	}
 
