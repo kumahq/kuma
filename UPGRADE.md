@@ -8,6 +8,100 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### DNS server domain must not start with a dot
+
+The control plane now rejects a DNS server domain configuration that begins with a `.` (e.g., `.mesh`). Previously such a value was silently accepted and produced broken hostname generation.
+
+**Action required:**
+
+If you have `KUMA_DNS_SERVER_DOMAIN` or `dnsServer.domain` set to a value starting with `.`, remove the leading dot:
+
+```yaml
+# kuma-cp config
+dnsServer:
+  domain: mesh   # was: .mesh
+```
+
+Or via environment variable: `KUMA_DNS_SERVER_DOMAIN=mesh`
+
+### HostnameGenerator templates that produce invalid DNS names now fail explicitly
+
+`HostnameGenerator` templates that evaluate to an invalid DNS subdomain (e.g., starting with a dot, containing uppercase letters, or having consecutive dots) now return an error instead of silently generating a broken hostname.
+
+**Action required:**
+
+Review your `HostnameGenerator` resources and ensure their `spec.template` values produce valid [RFC 1123](https://tools.ietf.org/html/rfc1123) DNS subdomains for all inputs.
+
+### localhost-admin is restricted to direct loopback; CORS is now opt-in
+
+The defaults have been tightened:
+
+- `LocalhostIsAdmin` still defaults to `true`, but only direct loopback requests are promoted to admin.
+- `CorsAllowedDomains` now defaults to `[]` / empty (was `[".*"]`).
+
+The `LocalhostIsAdmin` restriction also applies to release branches as a security fix: the authenticator now only grants admin when the request is a **direct** loopback call (loopback `RemoteAddr`, loopback `Host`, no proxy-hop headers, and a matching `Origin` if present). Browsers connecting over loopback from a non-localhost page are no longer promoted to admin.
+
+**Action required:**
+
+_Local bootstrap / development (Universal mode)_
+
+If you rely on `LocalhostIsAdmin` for initial kumactl setup, keep using direct loopback access or switch to token-based authentication with `kumactl config control-planes add --auth-type=tokens`.
+
+_Reverse-proxy / CORS users_
+
+If your deployment relies on cross-origin API access (e.g., a custom GUI on a different port), set the allowed domains explicitly:
+
+```yaml
+# kuma-cp config
+apiServer:
+  corsAllowedDomains:
+    - "https://my-gui.example.com"
+```
+
+or via environment variable:
+
+```sh
+KUMA_API_SERVER_CORS_ALLOWED_DOMAINS=https://my-gui.example.com
+```
+
+The Helm chart already sets `KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN=false` and is not affected by the `LocalhostIsAdmin` default.
+
+### CPU limits removed from `kuma-init` and `kuma-sidecar` containers
+
+The default CPU limit for injected `kuma-init`, `kuma-sidecar` and `kuma-validation` containers has been removed (set to `0`, meaning no limit). Previously the defaults were `100m` and `1000m` respectively.
+
+**Why:** 
+
+CPU limits cause throttling even when CPU is available, which increases latency under load. Removing the limit allows the containers to burst during startup and high-traffic periods.
+
+**Action required:** 
+
+None for most users. If your cluster enforces CPU limits, either relax those policies or set explicit limits:
+
+**Kubernetes (Helm)**
+```yaml
+dataPlane:
+  initContainer:
+    resources:
+      limits:
+        cpu: 100m
+  sidecarContainer:
+    resources:
+      limits:
+        cpu: 1000m
+  validationContainer:
+    resources:
+      limits:
+        cpu: 100m
+```
+
+**Control plane environment variables**
+```sh
+KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU=100m
+KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU=1000m
+KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU=100m
+```
+
 ### Envoy admin API now uses Unix domain socket by default
 
 The Envoy admin API (`localhost:9901`) now binds to a Unix domain socket instead of TCP by default. This eliminates the shared-network-namespace attack vector where a compromised app container could reach the admin API to kill the sidecar, dump config, or modify runtime behavior.

@@ -103,9 +103,11 @@ func New(
 	sidecarContainersEnabled bool,
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
+	readinessPort uint32,
 	envoyAdminUnixSocket bool,
 	systemNamespace string,
 	metrics core_metrics.Metrics,
+	deltaXdsEnabled bool,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -129,14 +131,15 @@ func New(
 		sidecarContainersEnabled: sidecarContainersEnabled,
 		converter:                converter,
 		defaultAdminPort:         envoyAdminPort,
+		defaultReadinessPort:     readinessPort,
 		envoyAdminUnixSocket:     envoyAdminUnixSocket,
 		proxyFactory: containers.NewDataplaneProxyFactory(
-			controlPlaneURL, caCert, envoyAdminPort,
+			controlPlaneURL, caCert, envoyAdminPort, readinessPort,
 			cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
-			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
+			cfg.OtelPipeEnabled, cfg.Spire.Enabled, deltaXdsEnabled,
 		),
 		systemNamespace: systemNamespace,
 		metrics:         im,
@@ -150,6 +153,7 @@ type KumaInjector struct {
 	converter                k8s_common.Converter
 	proxyFactory             *containers.DataplaneProxyFactory
 	defaultAdminPort         uint32
+	defaultReadinessPort     uint32
 	envoyAdminUnixSocket     bool
 	systemNamespace          string
 	metrics                  *injectionMetrics
@@ -236,6 +240,15 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		tpCfg, err := tproxy_k8s.ConfigForKubernetes(tpCfgBase, i.cfg, pod.Annotations, logger)
 		if err != nil {
 			return err
+		}
+
+		// When admin UDS is enabled, the readiness reporter listens on a
+		// TCP port instead of the Envoy admin port. Exclude it from
+		// inbound interception so K8s probes reach kuma-dp directly.
+		if i.envoyAdminUnixSocket && i.defaultReadinessPort != 0 {
+			if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
+				return err
+			}
 		}
 
 		pod.Spec.Volumes = append(pod.Spec.Volumes, volumeTPBase)
@@ -626,6 +639,40 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 	return nil
 }
 
+func initContainerLimits(limits runtime_k8s.InitContainerResourceLimits) kube_core.ResourceList {
+	result := kube_core.ResourceList{
+		kube_core.ResourceMemory: kube_api.MustParse(limits.Memory),
+	}
+	if cpu := kube_api.MustParse(limits.CPU); !cpu.IsZero() {
+		result[kube_core.ResourceCPU] = cpu
+	}
+	return result
+}
+
+func initContainerRequests(requests runtime_k8s.InitContainerResourceRequests) kube_core.ResourceList {
+	return kube_core.ResourceList{
+		kube_core.ResourceCPU:    kube_api.MustParse(requests.CPU),
+		kube_core.ResourceMemory: kube_api.MustParse(requests.Memory),
+	}
+}
+
+func validationContainerLimits(limits runtime_k8s.ValidationContainerResourceLimits) kube_core.ResourceList {
+	result := kube_core.ResourceList{
+		kube_core.ResourceMemory: kube_api.MustParse(limits.Memory),
+	}
+	if cpu := kube_api.MustParse(limits.CPU); !cpu.IsZero() {
+		result[kube_core.ResourceCPU] = cpu
+	}
+	return result
+}
+
+func validationContainerRequests(requests runtime_k8s.ValidationContainerResourceRequests) kube_core.ResourceList {
+	return kube_core.ResourceList{
+		kube_core.ResourceCPU:    kube_api.MustParse(requests.CPU),
+		kube_core.ResourceMemory: kube_api.MustParse(requests.Memory),
+	}
+}
+
 func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]string) kube_core.Container {
 	mounts := []kube_core.VolumeMount{mountInitTmp}
 
@@ -667,14 +714,8 @@ func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]st
 			ReadOnlyRootFilesystem: pointer.To(true),
 		},
 		Resources: kube_core.ResourceRequirements{
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
-			},
-			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
-			},
+			Limits:   initContainerLimits(i.cfg.InitContainer.Resources.Limits),
+			Requests: initContainerRequests(i.cfg.InitContainer.Resources.Requests),
 		},
 		VolumeMounts: mounts,
 	}
@@ -696,10 +737,14 @@ func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]st
 			},
 		}
 
-		container.Resources.Limits = kube_core.ResourceList{
-			kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
+		// EBPF mode needs more memory; keep CPU limit from config
+		ebpfLimits := kube_core.ResourceList{
 			kube_core.ResourceMemory: *kube_api.NewScaledQuantity(80, kube_api.Mega),
 		}
+		if cpuLimit := kube_api.MustParse(i.cfg.InitContainer.Resources.Limits.CPU); !cpuLimit.IsZero() {
+			ebpfLimits[kube_core.ResourceCPU] = cpuLimit
+		}
+		container.Resources.Limits = ebpfLimits
 
 		container.VolumeMounts = append(container.VolumeMounts,
 			kube_core.VolumeMount{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
@@ -758,14 +803,8 @@ func (i *KumaInjector) NewValidationContainer(pod *kube_core.Pod) kube_core.Cont
 			AllowPrivilegeEscalation: pointer.To(false),
 		},
 		Resources: kube_core.ResourceRequirements{
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
-			},
-			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
-			},
+			Limits:   validationContainerLimits(i.cfg.ValidationContainer.Resources.Limits),
+			Requests: validationContainerRequests(i.cfg.ValidationContainer.Resources.Requests),
 		},
 		VolumeMounts: mounts,
 	}
@@ -922,6 +961,17 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		metadata.KumaTrafficExcludeInboundPorts,
 	); v != "" {
 		result[metadata.KumaTrafficExcludeInboundPorts] = v
+	}
+
+	// When admin UDS is enabled, exclude the readiness port from inbound
+	// interception so K8s probes reach kuma-dp directly.
+	if i.envoyAdminUnixSocket && i.defaultReadinessPort != 0 {
+		port := fmt.Sprintf("%d", i.defaultReadinessPort)
+		if existing := result[metadata.KumaTrafficExcludeInboundPorts]; existing != "" {
+			result[metadata.KumaTrafficExcludeInboundPorts] = existing + "," + port
+		} else {
+			result[metadata.KumaTrafficExcludeInboundPorts] = port
+		}
 	}
 
 	if v, _ := annotations.GetStringWithDefault(

@@ -1,0 +1,25 @@
+meshes:
+  - name: default
+    ingress:
+      enabled: true
+      replicas: 1
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      service:
+        spec:
+          externalIPs:
+            - 192.168.5.2
+          loadBalancerSourceRanges:
+            - 10.0.0.0/8
+    egress:
+      enabled: true
+      replicas: 1
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      service:
+        spec:
+          publishNotReadyAddresses: true

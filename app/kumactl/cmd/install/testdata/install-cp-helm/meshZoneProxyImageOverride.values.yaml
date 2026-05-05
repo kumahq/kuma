@@ -1,0 +1,14 @@
+zoneProxyImage:
+  registry: my-registry.example.com
+  repository: pause
+  tag: "3.10"
+meshes:
+  - name: default
+    ingress:
+      enabled: true
+      replicas: 1
+      image:
+        registry: override.example.com
+    egress:
+      enabled: true
+      replicas: 1

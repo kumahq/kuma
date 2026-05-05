@@ -30,7 +30,7 @@ func TransparentProxyConfigMap() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		Eventually(func() error {
-			return cluster.Install(E2EKuma(
+			return cluster.Install(Kuma(
 				config_core.Zone,
 				WithCtlOpts(map[string]string{
 					"--set": fmt.Sprintf("%stransparentProxy.configMap.enabled=true", Config.HelmSubChartPrefix),
@@ -160,7 +160,6 @@ redirect:
 					},
 					Resources: kube_core.ResourceRequirements{
 						Limits: kube_core.ResourceList{
-							"cpu":    resource.MustParse("50m"),
 							"memory": resource.MustParse("64Mi"),
 						},
 					},

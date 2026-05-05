@@ -41,7 +41,6 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/ordered"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
@@ -149,28 +148,28 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 		}
 	}
 	if r.descriptor.Name == core_mesh.DataplaneType {
-		ws.Route(ws.GET(pathPrefix+"/{name}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToProxyPolicy)).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_policies").To(r.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToProxyPolicy)).
 			Doc(fmt.Sprintf("Get policy config %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/_inbounds/{inbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToInboundConfig)).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_inbounds/{inbound_kri}/_policies").To(r.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToInboundConfig)).
 			Doc("Get policy config for inbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("inbound_kri", "KRI of a inbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_policies").To(r.getPoliciesConf(ordered.Policies, matchedPoliciesToOutboundPolicy)).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_policies").To(r.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToOutboundPolicy)).
 			Doc("Get policy config for outbound").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes").To(r.getPoliciesConf(
-			[]core_plugins.PluginName{
-				core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg),
-				core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg),
-			},
+			util_slices.Filter(core_plugins.Plugins().PolicyPlugins(), func(p core_plugins.RegisteredPolicyPlugin) bool {
+				return p.Name == core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) ||
+					p.Name == core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
+			}),
 			matchedPoliciesToRoutes,
 		)).
 			Doc("Get policy config for outbound").
@@ -179,8 +178,9 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(r.getPoliciesConf(
-			util_slices.Filter(ordered.Policies, func(name core_plugins.PluginName) bool {
-				return name != core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) && name != core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
+			util_slices.Filter(core_plugins.Plugins().PolicyPlugins(), func(p core_plugins.RegisteredPolicyPlugin) bool {
+				return p.Name != core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) &&
+					p.Name != core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
 			}), matchedPoliciesToRouteConfig)).
 			Doc("Get policy config for route").
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
@@ -1004,7 +1004,7 @@ func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api
 	return params, nil
 }
 
-func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, mapToResponse matchedPoliciesToResponse) restful.RouteFunction {
+func (r *resourceEndpoints) getPoliciesConf(plugins []core_plugins.RegisteredPolicyPlugin, mapToResponse matchedPoliciesToResponse) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		dataplaneName := request.PathParameter("name")
 		meshName, err := r.meshFromRequest(request)
@@ -1042,7 +1042,7 @@ func (r *resourceEndpoints) getPoliciesConf(policies []core_plugins.PluginName, 
 		}
 
 		var matchedPolicies []core_xds.TypedMatchingPolicies
-		allPlugins := core_plugins.Plugins().PolicyPlugins(policies)
+		allPlugins := plugins
 		for _, policyPlugin := range allPlugins {
 			res, err := policyPlugin.Plugin.MatchedPolicies(dataplane, baseMeshContext.Resources())
 			if err != nil {
@@ -1303,7 +1303,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		}
 		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
 		// Get all the matching policies
-		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
+		allPlugins := core_plugins.Plugins().PolicyPlugins()
 		rules := []api_common.InspectRule{}
 		for _, policyPlugin := range allPlugins {
 			res, err := policyPlugin.Plugin.MatchedPolicies(dp, resources)

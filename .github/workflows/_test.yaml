@@ -12,12 +12,12 @@ permissions:
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.31.12-k3s1
-  K8S_MAX_VERSION: v1.34.1-k3s1
+  K8S_MIN_VERSION: v1.32.13-k3s1
+  K8S_MAX_VERSION: v1.35.3-k3s1
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   test_unit:
-    timeout-minutes: 25
+    timeout-minutes: 30
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     runs-on: ubuntu-24.04
     steps:

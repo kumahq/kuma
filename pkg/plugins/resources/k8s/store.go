@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -273,6 +274,12 @@ var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
 	Mesh string
+
+	// cachedLabels memoizes the result of GetLabels. May be pre-populated by
+	// CachingConverter on cache hit to reuse labels computed for an earlier
+	// call against the same resourceVersion.
+	cachedLabels map[string]string
+	labelsOnce   sync.Once
 }
 
 func (m *KubernetesMetaAdapter) GetName() string {
@@ -302,23 +309,36 @@ func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
 }
 
+// GetLabels returns the labels of the underlying Kubernetes object enriched
+// with annotation-derived entries (display name, Kuma service account, Kuma
+// workload). The computation is memoized per adapter instance: callers MUST
+// treat the returned map as read-only. Mutating it would corrupt both the
+// adapter's cache and, when the adapter was produced by CachingConverter, the
+// cross-reconcile entry shared via resourceVersion key.
 func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
-	labels := maps.Clone(m.GetObjectMeta().GetLabels())
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	if displayName, ok := m.GetObjectMeta().GetAnnotations()[v1alpha1.DisplayName]; ok {
-		labels[v1alpha1.DisplayName] = displayName
-	} else {
-		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
-	}
-	if sa, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaServiceAccount]; ok {
-		labels[metadata.KumaServiceAccount] = sa
-	}
-	if workload, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaWorkload]; ok {
-		labels[metadata.KumaWorkload] = workload
-	}
-	return labels
+	m.labelsOnce.Do(func() {
+		if m.cachedLabels != nil {
+			// Pre-populated by CachingConverter on cache hit; nothing to do.
+			return
+		}
+		labels := maps.Clone(m.GetObjectMeta().GetLabels())
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		if displayName, ok := m.GetObjectMeta().GetAnnotations()[v1alpha1.DisplayName]; ok {
+			labels[v1alpha1.DisplayName] = displayName
+		} else {
+			labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
+		}
+		if sa, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaServiceAccount]; ok {
+			labels[metadata.KumaServiceAccount] = sa
+		}
+		if workload, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaWorkload]; ok {
+			labels[metadata.KumaWorkload] = workload
+		}
+		m.cachedLabels = labels
+	})
+	return m.cachedLabels
 }
 
 type KubeFactory interface {

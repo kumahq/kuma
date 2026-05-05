@@ -18,8 +18,12 @@ func Setup(rt runtime.Runtime) error {
 		return nil
 	}
 	logger := core.Log.WithName("meshservice").WithName("generator")
+	if rt.Config().MeshService.GenerationInterval.Duration == 0 {
+		logger.Info("MeshService generator is disabled, MeshServices must be managed manually")
+		return nil
+	}
 	if !slices.Contains(rt.Config().CoreResources.Enabled, "meshservices") {
-		logger.Info("MeshService is not enabled. Skip starting generator for MeshService.")
+		logger.Info("MeshServices are not enabled. Skip starting generator for MeshServices.")
 		return nil
 	}
 	if rt.Config().Experimental.InboundTagsDisabled {

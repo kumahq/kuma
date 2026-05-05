@@ -126,12 +126,14 @@ func NewApiServer(
 	}
 	container.Filter(rt.APIServerAuthenticator())
 
-	cors := restful.CrossOriginResourceSharing{
-		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
-		AllowedDomains: serverConfig.CorsAllowedDomains,
-		Container:      container,
+	if len(serverConfig.CorsAllowedDomains) > 0 {
+		cors := restful.CrossOriginResourceSharing{
+			ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
+			AllowedDomains: serverConfig.CorsAllowedDomains,
+			Container:      container,
+		}
+		container.Filter(cors.Filter)
 	}
-	container.Filter(cors.Filter)
 
 	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
 	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.

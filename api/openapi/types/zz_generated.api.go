@@ -74,11 +74,12 @@ type BaseStatus struct {
 	Total  int `json:"total"`
 }
 
-// DataplaneNetworkingLayout Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+// DataplaneNetworkingLayout Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
 type DataplaneNetworkingLayout struct {
 	Inbounds  []externalRef0.DataplaneInbound  `json:"inbounds"`
 	Kri       string                           `json:"kri"`
 	Labels    map[string]string                `json:"labels"`
+	Listeners []externalRef0.DataplaneListener `json:"listeners"`
 	Outbounds []externalRef0.DataplaneOutbound `json:"outbounds"`
 
 	// SpiffeId SPIFFE ID of the dataplane's workload identity certificate
@@ -115,8 +116,29 @@ type FullStatus struct {
 	Total             int `json:"total"`
 }
 
-// GlobalInsight Global Insight contains statistics for all main resources
-type GlobalInsight = SchemasGlobalInsight
+// GlobalInsightBase Global Insight contains statistics for all main resources
+type GlobalInsightBase struct {
+	// CreatedAt Time of Global Insight creation
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Dataplanes Dataplane proxy statistics
+	Dataplanes DataplanesStats `json:"dataplanes"`
+
+	// Meshes Mesh statistics
+	Meshes MeshesStats `json:"meshes"`
+
+	// Policies Policies statistics
+	Policies PoliciesStats `json:"policies"`
+
+	// Resources A map of resource names to their corresponding statistics
+	Resources map[string]ResourceStats `json:"resources"`
+
+	// Services Mesh services statistics
+	Services ServicesStats `json:"services"`
+
+	// Zones Zones statistics
+	Zones ZonesStats `json:"zones"`
+}
 
 // Index Some metadata about the service
 type Index struct {
@@ -224,38 +246,14 @@ type ZonesStats struct {
 	ZoneIngresses BaseStatus `json:"zoneIngresses"`
 }
 
-// SchemasGlobalInsight Global Insight contains statistics for all main resources
-type SchemasGlobalInsight struct {
-	// CreatedAt Time of Global Insight creation
-	CreatedAt time.Time `json:"createdAt"`
-
-	// Dataplanes Dataplane proxy statistics
-	Dataplanes DataplanesStats `json:"dataplanes"`
-
-	// Meshes Mesh statistics
-	Meshes MeshesStats `json:"meshes"`
-
-	// Policies Policies statistics
-	Policies PoliciesStats `json:"policies"`
-
-	// Resources A map of resource names to their corresponding statistics
-	Resources map[string]ResourceStats `json:"resources"`
-
-	// Services Mesh services statistics
-	Services ServicesStats `json:"services"`
-
-	// Zones Zones statistics
-	Zones ZonesStats `json:"zones"`
-}
-
-// DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+// DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
 type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
 
 // GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
 type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 
-// GlobalInsightResponse defines model for GlobalInsightResponse.
-type GlobalInsightResponse = GlobalInsight
+// GlobalInsightResponse Global Insight contains statistics for all main resources
+type GlobalInsightResponse = GlobalInsightBase
 
 // InboundPolicyConfResponse defines model for InboundPolicyConfResponse.
 type InboundPolicyConfResponse = externalRef0.InboundPoliciesList

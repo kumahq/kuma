@@ -22,7 +22,7 @@ var _ = framework.E2ESynchronizedBeforeSuite(
 		reachableservices.KubeCluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Silent)
 
 		err := framework.NewClusterSetup().
-			Install(framework.E2EKuma(config_core.Zone,
+			Install(framework.Kuma(config_core.Zone,
 				framework.WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
 			)).
 			Setup(reachableservices.KubeCluster)
@@ -43,6 +43,6 @@ var _ = framework.E2EAfterSuite(func() {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Auto Reachable Services on Kubernetes", Label("job-3"), Ordered, reachableservices.AutoReachableServices, Serial)
-	_ = Describe("Auto Reachable Mesh Services on Kubernetes", Label("job-3"), Ordered, reachableservices.AutoReachableMeshServices, Serial)
+	_ = Describe("Auto Reachable Services on Kubernetes", Label("job-0"), Ordered, reachableservices.AutoReachableServices, Serial)
+	_ = Describe("Auto Reachable Mesh Services on Kubernetes", Label("job-0"), Ordered, reachableservices.AutoReachableMeshServices, Serial)
 )

@@ -352,6 +352,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 			}
 
+			var dnsConfigReady <-chan struct{}
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
@@ -374,6 +375,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
 						return err
 					}
+					dnsConfigReady = dnsproxyServer.ConfigReady()
 					components = append(components, dnsproxyServer)
 				} else {
 					dnsServer, err := dnsserver.New(dnsOpts)
@@ -411,10 +413,24 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, observabilityComponents...)
 
+			readinessAddr := adminAddress
+			if readinessAddr == "" {
+				// When admin is on UDS, bind readiness reporter so K8s
+				// probes (podIP) and PostStart hooks (localhost) can
+				// reach /ready. Only /ready is served on this listener.
+				readinessAddr = "0.0.0.0"
+				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+					readinessAddr = "::"
+				}
+			}
 			readinessReporter := readiness.NewReporter(
+				cfg.Dataplane.ReadinessUnixSocketDisabled,
 				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
 				cfg.DataplaneRuntime.SocketDir,
-				adminSocketPath)
+				readinessAddr,
+				cfg.Dataplane.ReadinessPort,
+				adminSocketPath,
+				dnsConfigReady)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

@@ -1,0 +1,8 @@
+meshes:
+  - name: default
+    ingress:
+      enabled: true
+      replicas: 1
+    egress:
+      enabled: true
+      replicas: 1

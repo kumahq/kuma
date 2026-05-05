@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
@@ -14,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
 var workloadLabelLog = core.Log.WithName("xds").WithName("workload-label-validator")
@@ -22,14 +22,16 @@ var workloadLabelLog = core.Log.WithName("xds").WithName("workload-label-validat
 // WorkloadLabelValidator validates that dataplanes have the required kuma.io/workload label
 // when they are selected by a MeshIdentity that uses the workload label in its SPIFFE ID path template.
 type WorkloadLabelValidator struct {
-	rm manager.ReadOnlyResourceManager
+	rm  manager.ReadOnlyResourceManager
+	env config_core.EnvironmentType
 }
 
 var _ DataplaneCallbacks = &WorkloadLabelValidator{}
 
-func NewWorkloadLabelValidator(rm manager.ReadOnlyResourceManager) *WorkloadLabelValidator {
+func NewWorkloadLabelValidator(rm manager.ReadOnlyResourceManager, env config_core.EnvironmentType) *WorkloadLabelValidator {
 	return &WorkloadLabelValidator{
-		rm: rm,
+		rm:  rm,
+		env: env,
 	}
 }
 
@@ -67,12 +69,12 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 		return nil
 	}
 
-	if !matched.Spec.UsesWorkloadLabel() {
+	if !matched.Spec.UsesWorkloadLabel(v.env) {
 		return nil
 	}
 
 	if _, ok := labels[metadata.KumaWorkload]; !ok {
-		pathTemplate := pointer.Deref(matched.Spec.SpiffeID.Path)
+		pathTemplate := matched.Spec.SpiffeIDPathTemplate(v.env)
 		miName := matched.Meta.GetName()
 		errMsg := fmt.Errorf(
 			"missing required label '%s' - dataplane is selected by MeshIdentity '%s' with path template '%s'",

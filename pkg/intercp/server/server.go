@@ -47,9 +47,12 @@ func New(
 	certificate tls.Certificate,
 	caCert x509.Certificate,
 	instanceId string,
+	maxMsgSize int,
 ) (*InterCpServer, error) {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.MaxRecvMsgSize(maxMsgSize),
+		grpc.MaxSendMsgSize(maxMsgSize),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			Time:    grpcKeepAliveTime,
 			Timeout: grpcKeepAliveTime,

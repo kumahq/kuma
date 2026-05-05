@@ -258,14 +258,14 @@ spec:
         runAsUser: 1472
       initContainers:
         - name: init-plugins
-          image: alpine@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
+          image: alpine@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
           command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.1.1/kumahq-kuma-datasource-0.1.1.zip && unzip -o /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
           volumeMounts:
             - name: plugins-volume
               mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:12.4.2@sha256:83749231c3835e390a3144e5e940203e42b9589761f20ef3169c716e734ad505"
+          image: "grafana/grafana:13.0.1@sha256:0f86bada30d65ef9d0183b90c1e2682ac92d53d95da8bed322b984ea78a4a73a"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config

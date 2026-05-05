@@ -81,7 +81,7 @@ func CpCompatibilityMultizoneKubernetes() {
 	DescribeTable("Cross version check", func(version string) {
 		// Start a global (new version, local chart)
 		err := NewClusterSetup().
-			Install(E2EKuma(core.Global,
+			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(globalReleaseName),
 				WithHelmChartPath(Config.HelmChartPath),
@@ -91,7 +91,7 @@ func CpCompatibilityMultizoneKubernetes() {
 
 		// Start a zone (old version, from helm repo)
 		err = NewClusterSetup().
-			Install(E2EKuma(core.Zone,
+			Install(Kuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(zoneReleaseName),
 				WithHelmChartPath(Config.HelmChartName),

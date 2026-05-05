@@ -238,6 +238,17 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		}),
 	)
 
+	DescribeTable("should reject invalid pagination params",
+		func(query string) {
+			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights?" + query)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(400))
+		},
+		Entry("zero size", "size=0"),
+		Entry("negative size", "size=-1"),
+		Entry("negative offset", "size=10&offset=-1"),
+	)
+
 	It("should paginate correctly", func() {
 		// when
 		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights?size=1")

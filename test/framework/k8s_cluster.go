@@ -56,7 +56,7 @@ type K8sCluster struct {
 	forwardedPortsChans []chan struct{}
 	verbose             bool
 	deployments         map[string]Deployment
-	mutex               sync.RWMutex // to protect deployments
+	mutex               sync.RWMutex // to protect deployments, portForwards, adminTunnels
 	defaultTimeout      time.Duration
 	defaultRetries      int
 	opts                kumaDeploymentOptions
@@ -127,6 +127,13 @@ func (c *K8sCluster) PortForwardApp(spec portforward.Spec) (portforward.Tunnel, 
 		return portforward.Tunnel{}, err
 	}
 
+	c.mutex.RLock()
+	existing := c.portForwards[spec]
+	c.mutex.RUnlock()
+	if existing.Endpoint != "" {
+		return existing, nil
+	}
+
 	podName, err := PodNameOfApp(c, spec.AppName, spec.Namespace)
 	if err != nil {
 		return portforward.Tunnel{}, errors.Wrapf(
@@ -149,7 +156,15 @@ func (c *K8sCluster) PortForwardApp(spec portforward.Spec) (portforward.Tunnel, 
 		)
 	}
 
+	c.mutex.Lock()
+	existing = c.portForwards[spec]
+	if existing.Endpoint != "" {
+		c.mutex.Unlock()
+		fwd.Close()
+		return existing, nil
+	}
 	c.portForwards[spec] = fwd
+	c.mutex.Unlock()
 
 	return fwd, nil
 }
@@ -204,14 +219,21 @@ func (c *K8sCluster) AddPortForward(portFwd portforward.Tunnel, spec portforward
 		c.t.Fatalf("invalid port-forward spec: %s", err)
 	}
 
+	c.mutex.Lock()
 	c.portForwards[spec] = portFwd
+	c.mutex.Unlock()
 }
 
 func (c *K8sCluster) GetPortForward(spec portforward.Spec) portforward.Tunnel {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return c.portForwards[spec]
 }
 
 func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	for _, spec := range specs {
 		for fwdSpec, tnl := range c.portForwards {
 			if !fwdSpec.Matches(spec) {
@@ -487,10 +509,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	if c.opts.zoneIngress {
 		argsMap["--ingress-enabled"] = ""
 		argsMap["--ingress-use-node-port"] = ""
+		args = append(args, "--set", fmt.Sprintf("%singress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
 	}
 
 	if c.opts.zoneEgress {
 		argsMap["--egress-enabled"] = ""
+		args = append(args, "--set", fmt.Sprintf("%segress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
 		if Config.Debug {
 			args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
 		}
@@ -556,6 +580,8 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"dataPlane.image.repository":             Config.KumaDPImageRepo,
 		"dataPlane.initImage.repository":         Config.KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
+		"ingress.resources.limits.cpu":           "null",
+		"egress.resources.limits.cpu":            "null",
 	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry
@@ -706,15 +732,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
-	if c.opts.kumaInitNoCPULimit {
-		const patchName = "kuma-init-no-cpu-limit"
-		if existing, ok := c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"]; ok {
-			c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"] = existing + "," + patchName
-		} else {
-			c.opts.env["KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES"] = patchName
-		}
-	}
-
 	var err error
 	switch c.opts.installationMode {
 	case KumactlInstallationMode:
@@ -736,24 +753,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
 		return errors.Wrap(err, "Kuma control-plane failed to start")
-	}
-
-	if c.opts.kumaInitNoCPULimit {
-		const patchName = "kuma-init-no-cpu-limit"
-		patch := fmt.Sprintf(`apiVersion: kuma.io/v1alpha1
-kind: ContainerPatch
-metadata:
-  namespace: %s
-  name: %s
-spec:
-  initPatch:
-    - op: remove
-      path: /resources/limits/cpu
-    - op: remove
-      path: /resources/limits/memory`, Config.KumaNamespace, patchName)
-		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), patch); err != nil {
-			return errors.Wrap(err, "failed to apply kuma-init-no-cpu-limit ContainerPatch")
-		}
 	}
 
 	var wg sync.WaitGroup
@@ -1520,7 +1519,11 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 }
 
 func (c *K8sCluster) LoadImages(names ...string) error {
-	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 3, 0, func() (string, error) {
+	// 3 retries with 0 backoff was too tight: a single transient docker
+	// daemon hiccup blew through all attempts before recovery. Bumped to
+	// 5 attempts with 5s backoff so a brief image-import failure does
+	// not fail the whole test suite.
+	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 5, 5*time.Second, func() (string, error) {
 		err := c.loadImages(names...)
 		return "Loaded images " + strings.Join(names, ", "), err
 	})
@@ -1619,7 +1622,10 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		return nil, errors.Wrap(err, "invalid port-forward spec")
 	}
 
-	if tnl := c.adminTunnels[args]; tnl != nil {
+	c.mutex.RLock()
+	tnl := c.adminTunnels[args]
+	c.mutex.RUnlock()
+	if tnl != nil {
 		return tnl, nil
 	}
 
@@ -1634,7 +1640,7 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		)
 	}
 
-	tnl, err := tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
+	tnl, err = tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
 	if err != nil {
 		return nil, errors.Wrapf(
 			err,
@@ -1645,7 +1651,13 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		)
 	}
 
+	c.mutex.Lock()
+	if existing := c.adminTunnels[args]; existing != nil {
+		c.mutex.Unlock()
+		return existing, nil
+	}
 	c.adminTunnels[args] = tnl
+	c.mutex.Unlock()
 
 	return tnl, nil
 }

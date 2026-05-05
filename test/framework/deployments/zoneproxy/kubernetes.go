@@ -81,7 +81,6 @@ func (d *k8sDeployment) ingressDeployment() *appsv1.Deployment {
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("50m"),
 									corev1.ResourceMemory: resource.MustParse("64Mi"),
 								},
 							},
@@ -175,7 +174,6 @@ func (d *k8sDeployment) egressDeployment() *appsv1.Deployment {
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("50m"),
 									corev1.ResourceMemory: resource.MustParse("64Mi"),
 								},
 							},

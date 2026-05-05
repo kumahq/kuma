@@ -54,6 +54,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
 		inboundTagsDisabled bool
+		meshServicesMode    *mesh_proto.Mesh_MeshServices_Mode
 		expectedErr         string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
@@ -143,8 +144,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 				WorkloadLabels:    given.workloadLabels,
 			}
 
+			msMode := mesh_proto.Mesh_MeshServices_Exclusive
+			if given.meshServicesMode != nil {
+				msMode = *given.meshServicesMode
+			}
 			mesh := builders.Mesh().
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+				WithMeshServicesEnabled(msMode).
 				Build()
 
 			// when
@@ -407,6 +412,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "43.pod.yaml",
 			servicesForPod: "43.services-for-pod.yaml",
 			expectedErr:    "conflicting listener types on port 10001",
+		}),
+		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
+			pod:              "44.pod.yaml",
+			servicesForPod:   "44.services-for-pod.yaml",
+			dataplane:        "44.dataplane.yaml",
+			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
 		}),
 	)
 

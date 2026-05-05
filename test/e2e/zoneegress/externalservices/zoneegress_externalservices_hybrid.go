@@ -87,7 +87,7 @@ conf:
 		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent).WithRetries(90).WithTimeout(6 * time.Second)
 
 		Expect(NewClusterSetup().
-			Install(E2EKuma(config_core.Global)).
+			Install(Kuma(config_core.Global)).
 			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "true", "true"))).
 			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
 			Install(YamlUniversal(ptWaitForWarmOnInit)).
@@ -101,7 +101,7 @@ conf:
 		// K8s Cluster 1
 		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*K8sCluster)
 		NewClusterSetup().
-			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh)),
@@ -116,7 +116,7 @@ conf:
 		// Universal Cluster 4
 		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent).WithRetries(90).WithTimeout(6 * time.Second).(*UniversalCluster)
 		NewClusterSetup().
-			Install(E2EKuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
 			Install(Parallel(
 				DemoClientUniversal(

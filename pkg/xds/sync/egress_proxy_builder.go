@@ -15,7 +15,6 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/ordered"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
@@ -142,7 +141,7 @@ func (p *EgressProxyBuilder) Build(
 
 func matchEgressPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
 	pluginPolicies := core_xds.PluginOriginatedPolicies{}
-	for _, plugin := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
+	for _, plugin := range core_plugins.Plugins().PolicyPlugins() {
 		egressPlugin, ok := plugin.Plugin.(core_plugins.EgressPolicyPlugin)
 		if !ok {
 			continue

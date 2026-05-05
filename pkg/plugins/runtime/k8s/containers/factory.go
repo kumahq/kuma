@@ -26,12 +26,11 @@ func (a EnvVarsByName) Less(i, j int) bool {
 	return a[i].Name < a[j].Name
 }
 
-const defaultKumaDPSocketDir = "/tmp/kuma-dp"
-
 type DataplaneProxyFactory struct {
 	ControlPlaneURL              string
 	ControlPlaneCACert           string
 	DefaultAdminPort             uint32
+	DefaultReadinessPort         uint32
 	ContainerConfig              runtime_k8s.DataplaneContainer
 	BuiltinDNS                   runtime_k8s.BuiltinDNS
 	WaitForDataplane             bool
@@ -42,12 +41,14 @@ type DataplaneProxyFactory struct {
 	unifiedResourceNamingEnabled bool
 	otelPipeEnabled              bool
 	spireEnabled                 bool
+	deltaXdsEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
 	controlPlaneURL string,
 	controlPlaneCACert string,
 	defaultAdminPort uint32,
+	defaultReadinessPort uint32,
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
@@ -58,11 +59,13 @@ func NewDataplaneProxyFactory(
 	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
+	deltaXdsEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
 		ControlPlaneCACert:           controlPlaneCACert,
 		DefaultAdminPort:             defaultAdminPort,
+		DefaultReadinessPort:         defaultReadinessPort,
 		ContainerConfig:              containerConfig,
 		BuiltinDNS:                   builtinDNS,
 		WaitForDataplane:             waitForDataplane,
@@ -73,7 +76,20 @@ func NewDataplaneProxyFactory(
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		otelPipeEnabled:              otelPipeEnabled,
 		spireEnabled:                 spireEnabled,
+		deltaXdsEnabled:              deltaXdsEnabled,
 	}
+}
+
+func sidecarLimits(limits runtime_k8s.SidecarResourceLimits) kube_core.ResourceList {
+	result := kube_core.ResourceList{
+		kube_core.ResourceMemory:           kube_api.MustParse(limits.Memory),
+		kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
+	}
+	cpu := kube_api.MustParse(limits.CPU)
+	if !cpu.IsZero() {
+		result[kube_core.ResourceCPU] = cpu
+	}
+	return result
 }
 
 func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]string) (int64, error) {
@@ -82,13 +98,13 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 		return int64(count), err
 	}
 
-	// Note that validation requires the resource limit is not empty.
-	cpuRequest := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
+	cpuLimit := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
+	if cpuLimit.IsZero() {
+		return 0, nil
+	}
 	// Only autotune to down to 2 to mitigate the latency
 	// risk if a worker thread blocks.
-	ncpu := max(cpuRequest.MilliValue()/1000, 2)
-
-	return ncpu, nil
+	return max(cpuLimit.MilliValue()/1000, 2), nil
 }
 
 func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
@@ -125,7 +141,13 @@ func (i *DataplaneProxyFactory) NewContainer(
 		adminPort = i.DefaultAdminPort
 	}
 
+	// When admin UDS is enabled, Envoy admin listens on a Unix socket
+	// instead of TCP. Use the dedicated readiness port for probes since
+	// K8s probes only support TCP/HTTP.
 	probePort := adminPort
+	if i.envoyAdminUnixSocket {
+		probePort = i.DefaultReadinessPort
+	}
 
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
 	if err != nil {
@@ -192,11 +214,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
 				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(50, kube_api.Mega)),
 			},
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
-				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
-				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
-			},
+			Limits: sidecarLimits(i.ContainerConfig.Resources.Limits),
 		},
 	}
 	if i.sidecarContainersEnabled {
@@ -218,17 +236,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 	}
 
 	if waitForDataplaneReady {
-		var waitCmd []string
-		if i.envoyAdminUnixSocket {
-			socketPath := fmt.Sprintf("%s/kuma-readiness-reporter.sock", defaultKumaDPSocketDir)
-			waitCmd = []string{"kuma-dp", "wait", "--unix-socket", socketPath}
-		} else {
-			waitCmd = []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", probePort)}
-		}
 		container.Lifecycle = &kube_core.Lifecycle{
 			PostStart: &kube_core.LifecycleHandler{
 				Exec: &kube_core.ExecAction{
-					Command: waitCmd,
+					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", probePort)},
 				},
 			},
 		}
@@ -292,11 +303,17 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		},
 	}
 	if i.envoyAdminUnixSocket {
-		// When admin is on UDS, set a fixed socket dir so the readiness unix socket
-		// path is predictable for the PostStart wait hook.
-		envVars["KUMA_DATAPLANE_RUNTIME_SOCKET_DIR"] = kube_core.EnvVar{
-			Name:  "KUMA_DATAPLANE_RUNTIME_SOCKET_DIR",
-			Value: defaultKumaDPSocketDir,
+		// When admin is on UDS, force readiness reporter to use TCP so
+		// K8s probes (which only support TCP/HTTP) can reach it.
+		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
+			Value: "true",
+		}
+	}
+	if i.deltaXdsEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+			Value: "DELTA_GRPC",
 		}
 	}
 	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
@@ -420,6 +437,15 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars[envName] = kube_core.EnvVar{
 			Name:  envName,
 			Value: envVal,
+		}
+	}
+
+	// Re-assert readiness env var after user overrides — overriding this
+	// would desync kuma-dp from the injected probes and break readiness.
+	if i.envoyAdminUnixSocket {
+		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
+			Value: "true",
 		}
 	}
 
