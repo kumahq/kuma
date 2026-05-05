@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
   name: mt-origin-zone
-  namespace: {{ Config.KumaNamespace }}
+  namespace: {{ .KumaNamespace }}
   labels:
     kuma.io/mesh: multizone-label-validation
     kuma.io/origin: zone

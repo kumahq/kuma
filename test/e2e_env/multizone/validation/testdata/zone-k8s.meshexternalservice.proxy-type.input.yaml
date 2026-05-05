@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
   name: mes-proxy-type
-  namespace: {{ Config.KumaNamespace }}
+  namespace: {{ .KumaNamespace }}
   labels:
     kuma.io/mesh: multizone-label-validation
     kuma.io/origin: zone

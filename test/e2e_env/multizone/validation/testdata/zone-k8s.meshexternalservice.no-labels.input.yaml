@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
   name: mes-no-labels
-  namespace: {{ Config.KumaNamespace }}
+  namespace: {{ .KumaNamespace }}
 spec:
   match:
     type: HostnameGenerator

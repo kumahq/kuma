@@ -2,7 +2,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
   name: mt-no-labels
-  namespace: {{ Config.KumaNamespace }}
+  namespace: {{ .KumaNamespace }}
 spec:
   targetRef:
     kind: Mesh
