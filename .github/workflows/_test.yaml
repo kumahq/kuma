@@ -44,7 +44,7 @@ jobs:
                 "target": [""],
                 "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
-                "parallelism": [2],
+                "parallelism": [4],
                 "cniNetworkPlugin": ["flannel"],
                 "sidecarContainers": [""]
               },
@@ -106,7 +106,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 2
+      max-parallel: 4
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
     env:
@@ -132,7 +132,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 3
+      max-parallel: 5
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
     env:
