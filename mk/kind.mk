@@ -13,6 +13,15 @@ CI_KUBERNETES_VERSION ?= v1.35.1@sha256:05d7bcdefbda08b4e038f644c4df690cdac3fba8
 # renovate[docker]: depName=kindest/node
 CI_KUBERNETES_MIN_VERSION ?= v1.32.11@sha256:5fc52d52a7b9574015299724bd68f183702956aa4a2116ae75a63cb574b35af8
 
+# --- MetalLB ---
+
+# renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
+METALLB_VERSION ?= v0.15.3
+METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
+METALLB_NAMESPACE ?= metallb-system
+METALLB_RENDER_POOL ?= $(KUMA_DIR)/mk/resources/render-metallb-pool.sh
+KIND_METALLB_RESOURCES ?= $(TMP_DIR_K8S)/metallb-$(CLUSTER_NAME).yaml
+
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
 
@@ -32,6 +41,26 @@ kind/cleanup-docker-credentials:
 # Create the Docker network before kind so kind uses it as primary via
 # KIND_EXPERIMENTAL_DOCKER_NETWORK. This puts kind nodes directly on the
 # same network as universal test containers - no secondary interface needed.
+.PHONY: $(KIND_METALLB_RESOURCES)
+$(KIND_METALLB_RESOURCES): $(METALLB_RENDER_POOL)
+	$(Q)$(METALLB_RENDER_POOL) $(DOCKER_NETWORK) $(CLUSTER_NUMBER) $@ $(METALLB_NAMESPACE)
+
+.PHONY: kind/cluster/metallb/setup
+kind/cluster/metallb/setup: $(KIND_METALLB_RESOURCES)
+	$(Q)KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) apply \
+	  --filename $(METALLB_MANIFESTS)
+	$(Q)KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) rollout status deployment \
+	  --namespace $(METALLB_NAMESPACE) \
+	  --timeout 120s
+	$(Q)KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) wait \
+	  --namespace $(METALLB_NAMESPACE) \
+	  --for condition=Ready \
+	  --timeout 120s \
+	  --all pods
+	$(Q)KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) apply \
+	  --namespace $(METALLB_NAMESPACE) \
+	  --filename $(KIND_METALLB_RESOURCES)
+
 .PHONY: kind/cluster/start
 kind/cluster/start: $(KUBECONFIG_DIR) kind/setup-docker-credentials k8s/docker/network/create
 	$(KIND) get clusters | grep -x "$(CLUSTER_NAME)" >/dev/null 2>&1 && echo "Kind cluster already running." || \
@@ -44,6 +73,7 @@ kind/cluster/start: $(KUBECONFIG_DIR) kind/setup-docker-credentials k8s/docker/n
 			--quiet --wait 120s && \
 		KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) scale deployment --replicas 1 coredns --namespace kube-system && \
 		$(MAKE) kind/cluster/wait)
+	$(Q)$(MAKE) kind/cluster/metallb/setup
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
