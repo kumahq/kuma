@@ -22,6 +22,7 @@
   "test": "value"
  },
  "dnsPort": 15054,
+ "readinessPort": 9902,
  "operatingSystem": "linux",
  "features": [
   "feature-tcp-accesslog-via-named-pipe"

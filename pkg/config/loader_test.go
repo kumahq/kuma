@@ -81,6 +81,7 @@ var _ = Describe("Config loader", func() {
 			}
 
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
+			Expect(cfg.BootstrapServer.Params.ReadinessPort).To(Equal(uint32(9903)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 			Expect(cfg.BootstrapServer.Params.XdsConnectTimeout.Duration).To(Equal(13 * time.Second))
@@ -454,6 +455,7 @@ store:
 bootstrapServer:
   params:
     adminPort: 1234
+    readinessPort: 9903
     adminAccessLogPath: /access/log/test
     adminAddress: 1.1.1.1
     xdsHost: kuma-control-plane
@@ -854,6 +856,7 @@ meshService:
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":             "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":         "9903",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":               "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":               "4321",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":    "13s",
