@@ -188,13 +188,13 @@ func SetupAndGetState() []byte {
 	zeSpec := portforward.Spec{
 		AppName:    Config.ZoneEgressApp,
 		Namespace:  Config.KumaNamespace,
-		RemotePort: 9901,
+		RemotePort: 9902,
 	}
 
 	ziSpec := portforward.Spec{
 		AppName:    Config.ZoneIngressApp,
 		Namespace:  Config.KumaNamespace,
-		RemotePort: 9901,
+		RemotePort: 9902,
 	}
 
 	state := State{
@@ -237,12 +237,12 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 	zone.AddPortForward(networkingState.ZoneEgress, portforward.Spec{
 		AppName:    Config.ZoneEgressApp,
 		Namespace:  Config.KumaNamespace,
-		RemotePort: 9901,
+		RemotePort: 9902,
 	})
 	zone.AddPortForward(networkingState.ZoneIngress, portforward.Spec{
 		AppName:    Config.ZoneIngressApp,
 		Namespace:  Config.KumaNamespace,
-		RemotePort: 9901,
+		RemotePort: 9902,
 	})
 	return zone
 }
