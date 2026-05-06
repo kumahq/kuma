@@ -386,7 +386,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
-			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
+			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
 			Expect(cfg.Experimental.DeltaXds).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
@@ -811,7 +811,7 @@ experimental:
     fullResyncInterval: 15s
     delayFullResync: true
   autoReachableServices: true
-  sidecarContainers: true
+  sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
   deltaXds: true
@@ -1150,7 +1150,7 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
-				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
+				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
 				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",

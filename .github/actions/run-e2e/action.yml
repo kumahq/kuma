@@ -80,8 +80,8 @@ runs:
           export MAKE_PARAMETERS="-j2"
         fi
 
-        if [[ "$E2E_SIDECAR_CONTAINERS" != "" ]]; then
-          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
+        if [[ "$E2E_SIDECAR_CONTAINERS" == "false" ]]; then
+          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
         fi
 
         if [[ "$E2E_TARGET" == "" ]]; then
