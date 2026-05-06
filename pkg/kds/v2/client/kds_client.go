@@ -2,7 +2,6 @@ package client
 
 import (
 	std_errors "errors"
-	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -21,8 +20,6 @@ type UpstreamResponse struct {
 	RemovedResourcesKey []core_model.ResourceKey
 	IsInitialRequest    bool
 }
-
-const debugKDSPayloadDumpEnv = "KUMA_DEBUG_KDS_DUMP"
 
 func (u *UpstreamResponse) Validate() error {
 	if u.AddedResources == nil {
@@ -56,13 +53,19 @@ type KDSSyncClient interface {
 	Receive() error
 }
 
+// SyncClientConfig configures runtime behavior of the KDS receive loop.
+type SyncClientConfig struct {
+	ResponseBackoff time.Duration
+	LogPayloads     bool
+}
+
 type kdsSyncClient struct {
-	log              logr.Logger
-	resourceTypes    []core_model.ResourceType
-	callbacks        *Callbacks
-	kdsStream        DeltaKDSStream
-	responseBackoff  time.Duration
-	debugPayloadDump bool
+	log             logr.Logger
+	resourceTypes   []core_model.ResourceType
+	callbacks       *Callbacks
+	kdsStream       DeltaKDSStream
+	responseBackoff time.Duration
+	logPayloads     bool
 }
 
 func NewKDSSyncClient(
@@ -70,15 +73,15 @@ func NewKDSSyncClient(
 	rt []core_model.ResourceType,
 	kdsStream DeltaKDSStream,
 	cb *Callbacks,
-	responseBackoff time.Duration,
+	cfg SyncClientConfig,
 ) KDSSyncClient {
 	return &kdsSyncClient{
-		log:              log,
-		resourceTypes:    rt,
-		kdsStream:        kdsStream,
-		callbacks:        cb,
-		responseBackoff:  responseBackoff,
-		debugPayloadDump: os.Getenv(debugKDSPayloadDumpEnv) == "true",
+		log:             log,
+		resourceTypes:   rt,
+		kdsStream:       kdsStream,
+		callbacks:       cb,
+		responseBackoff: cfg.ResponseBackoff,
+		logPayloads:     cfg.LogPayloads,
 	}
 }
 
@@ -140,7 +143,7 @@ func (s *kdsSyncClient) Receive() error {
 }
 
 func (s *kdsSyncClient) logReceivedResponse(received UpstreamResponse) {
-	if s.debugPayloadDump {
+	if s.logPayloads {
 		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 		return
 	}
