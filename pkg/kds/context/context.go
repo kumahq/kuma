@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
@@ -306,7 +307,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 					return false
 				}
 				// otherwise we're testing the role in Global CP in case Zone had the validation webhook turned off
-				role, err := core_model.ComputePolicyRole(policy, core_model.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
+				role, err := resource_labels.ComputePolicyRole(policy, resource_labels.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
 				if err != nil {
 					ri := kri.From(r)
 					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)

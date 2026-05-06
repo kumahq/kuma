@@ -184,7 +184,10 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 			resources_k8s.NewSimpleKubeFactory(),
 			c.rt.Config().Store.Kubernetes.SystemNamespace,
 		),
-		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
+		kds_client_v2.SyncClientConfig{
+			ResponseBackoff: c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
+			LogPayloads:     c.rt.Config().Multizone.Zone.KDS.LogPayloads,
+		},
 	)
 
 	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {

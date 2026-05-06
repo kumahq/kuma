@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
@@ -55,16 +56,16 @@ func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Contex
 		return nil
 	}
 
-	labels, err := model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		dataplaneProto,
 		mergeLabels(dataplane.GetLabels(), pod.Labels),
 		dataplane.Mesh,
-		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
-		model.WithMode(r.PodConverter.Mode),
-		model.WithK8s(true),
-		model.WithZone(r.PodConverter.Zone),
-		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
+		resource_labels.WithMode(r.PodConverter.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(r.PodConverter.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
 	)
 	if err != nil {
 		return err

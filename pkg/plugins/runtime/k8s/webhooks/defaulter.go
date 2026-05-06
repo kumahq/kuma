@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
@@ -66,15 +67,15 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 
-	computed, err := core_model.ComputeLabels(
+	computed, err := resource_labels.Compute(
 		resource.Descriptor(),
 		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
 		resource.GetMeta().GetMesh(),
-		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
-		core_model.WithMode(h.Mode),
-		core_model.WithK8s(true),
-		core_model.WithZone(h.ZoneName),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
+		resource_labels.WithMode(h.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(h.ZoneName),
 	)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)

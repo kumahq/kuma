@@ -40,6 +40,8 @@ type KdsServerConfig struct {
 	// ResponseBackoff is a time Global CP waits before sending ACK/NACK.
 	// This is a way to slow down Zone CP from sending resources too often.
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_global_kds_response_backoff"`
+	// If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
+	LogPayloads bool `json:"logPayloads" envconfig:"kuma_multizone_global_kds_log_payloads"`
 	// ZoneHealthCheck holds config for ensuring zones are online
 	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
 	Tracing         KDSServerTracing      `json:"tracing"`
@@ -105,6 +107,8 @@ type KdsClientConfig struct {
 	// ResponseBackoff is a time Zone CP waits before sending ACK/NACK.
 	// This is a way to slow down Global CP from sending resources too often.
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_zone_kds_response_backoff"`
+	// If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
+	LogPayloads bool `json:"logPayloads" envconfig:"kuma_multizone_zone_kds_log_payloads"`
 	// Labels allows for customizing label handling
 	Labels ZoneLabels `json:"labels"`
 }
