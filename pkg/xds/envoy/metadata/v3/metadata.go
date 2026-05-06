@@ -1,8 +1,6 @@
 package envoy
 
 import (
-	"strings"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -49,15 +47,14 @@ func LbMetadata(tags tags.Tags) *envoy_core.Metadata {
 // available even when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED strips inbound
 // tags. The "prefer tags, fall back to labels" semantics are applied by
 // consumers (see resolveAffinityValues / resolveEndpointAffinityValue).
-//
-// kuma.io/* system labels (kuma.io/zone, kuma.io/proxy-type, etc.) are
-// filtered out — they describe the resource, not the workload, and would
-// otherwise bloat every endpoint's metadata.
 func EndpointMetadataWithLabels(t tags.Tags, labels map[string]string) *envoy_core.Metadata {
 	meta := EndpointMetadata(t)
-	labelFields := userLabelFields(labels)
-	if len(labelFields) == 0 {
+	if len(labels) == 0 {
 		return meta
+	}
+	labelFields := make(map[string]*structpb.Value, len(labels))
+	for k, v := range labels {
+		labelFields[k] = structpb.NewStringValue(v)
 	}
 	if meta == nil {
 		meta = &envoy_core.Metadata{
@@ -66,23 +63,6 @@ func EndpointMetadataWithLabels(t tags.Tags, labels map[string]string) *envoy_co
 	}
 	meta.FilterMetadata[LbLabelsKey] = &structpb.Struct{Fields: labelFields}
 	return meta
-}
-
-func userLabelFields(labels map[string]string) map[string]*structpb.Value {
-	if len(labels) == 0 {
-		return nil
-	}
-	fields := make(map[string]*structpb.Value, len(labels))
-	for k, v := range labels {
-		if strings.HasPrefix(k, "kuma.io/") {
-			continue
-		}
-		fields[k] = structpb.NewStringValue(v)
-	}
-	if len(fields) == 0 {
-		return nil
-	}
-	return fields
 }
 
 // ExtractLbLabels reads pod/workload labels from Envoy endpoint filter metadata.

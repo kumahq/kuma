@@ -109,38 +109,6 @@ var _ = Describe("EndpointMetadataWithLabels()", func() {
 		// then
 		Expect(metadata).To(BeNil())
 	})
-
-	It("should drop kuma.io/* system labels from LbLabelsKey", func() {
-		// given: dataplane labels include both system (kuma.io/*) and user labels
-		labels := map[string]string{
-			"kuma.io/zone":       "kuma-3",
-			"kuma.io/proxy-type": "sidecar",
-			"app":                "frontend",
-		}
-
-		// when
-		metadata := EndpointMetadataWithLabels(nil, labels)
-
-		// then: only the user label survives
-		Expect(metadata).ToNot(BeNil())
-		fields := metadata.GetFilterMetadata()[LbLabelsKey].GetFields()
-		Expect(fields).To(HaveLen(1))
-		Expect(fields["app"].GetStringValue()).To(Equal("frontend"))
-	})
-
-	It("should return tag-only metadata when labels contain only kuma.io/* keys", func() {
-		// given: tags + only system labels — nothing user-relevant for LbLabelsKey
-		t := tags.Tags{"version": "v2"}
-		labels := map[string]string{"kuma.io/zone": "kuma-3"}
-
-		// when
-		metadata := EndpointMetadataWithLabels(t, labels)
-
-		// then
-		Expect(metadata).ToNot(BeNil())
-		Expect(metadata.GetFilterMetadata()).To(HaveKey("envoy.lb"))
-		Expect(metadata.GetFilterMetadata()).ToNot(HaveKey(LbLabelsKey))
-	})
 })
 
 var _ = Describe("ExtractLbLabels()", func() {
