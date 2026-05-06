@@ -114,10 +114,10 @@ type Locality struct {
 
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
-	Target          string
-	UnixDomainPath  string
-	Port            uint32
-	Tags            map[string]string
+	Target         string
+	UnixDomainPath string
+	Port           uint32
+	Tags           map[string]string
 
 	// Labels holds resource/workload labels for this endpoint. Unlike Tags (which
 	// are derived from Dataplane inbound configuration), Labels are sourced from
