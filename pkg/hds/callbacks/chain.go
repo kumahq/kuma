@@ -1,7 +1,6 @@
 package callbacks
 
 import (
-	"slices"
 	"context"
 	"slices"
 
@@ -39,6 +38,8 @@ func (chain Chain) OnEndpointHealthResponse(streamID int64, response *envoy_serv
 	return nil
 }
 
-func (chain Chain) OnStreamClosed(streamID int6_, v := range slices.Backward(chain)Backward(chv	cb.OnStreamClosed(streamID)
+func (chain Chain) OnStreamClosed(streamID int64) {
+	for _, cb := range slices.Backward(chain) {
+		cb.OnStreamClosed(streamID)
 	}
 }
