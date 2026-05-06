@@ -51,14 +51,12 @@ perConnectionBufferLimitBytes: 123
 		Entry("enable reuse port enabled", testCase{
 			opt: EnableReusePort(true),
 			expected: `
-enableReusePort: true
 name: test_listener
 `,
 		}),
 		Entry("enable reuse port disabled", testCase{
 			opt: EnableReusePort(false),
 			expected: `
-enableReusePort: true
 name: test_listener
 `,
 		}),

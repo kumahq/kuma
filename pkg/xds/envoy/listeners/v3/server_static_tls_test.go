@@ -39,7 +39,6 @@ var _ = Describe("ServerSideStaticTLS", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: true
             filterChains:
             - filters:
               - name: envoy.filters.network.tcp_proxy
