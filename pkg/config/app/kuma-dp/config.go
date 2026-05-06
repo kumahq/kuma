@@ -143,15 +143,15 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
-	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
-	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
-	// ResilientComponentMaxBackoff defines the max backoff between restarts of resilient components
-	ResilientComponentMaxBackoff config_types.Duration `json:"resilientComponentMaxBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_max_backoff"`
 	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
 	// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
 	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
 	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
+	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
+	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
+	// ResilientComponentMaxBackoff defines the max backoff between restarts of resilient components
+	ResilientComponentMaxBackoff config_types.Duration `json:"resilientComponentMaxBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_max_backoff"`
 }
 
 func (d *Dataplane) PostProcess() error {
