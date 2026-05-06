@@ -2,7 +2,6 @@ address:
   socketAddress:
     address: 127.0.0.1
     portValue: 17778
-enableReusePort: true
 filterChains:
 - filters:
   - name: envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit

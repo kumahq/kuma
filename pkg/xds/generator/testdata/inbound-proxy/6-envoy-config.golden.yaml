@@ -86,7 +86,6 @@ resources:
         address: 127.0.0.1
         portValue: 8080
     bindToPort: false
-    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -162,7 +161,6 @@ resources:
         address: 192.168.0.1
         portValue: 443
     bindToPort: false
-    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -238,7 +236,6 @@ resources:
         address: 192.168.0.1
         portValue: 80
     bindToPort: false
-    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -637,7 +634,6 @@ resources:
         address: 192.168.0.2
         portValue: 443
     bindToPort: false
-    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -713,7 +709,6 @@ resources:
         address: 192.168.0.2
         portValue: 80
     bindToPort: false
-    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -883,7 +878,6 @@ resources:
         address: ::1
         portValue: 8081
     bindToPort: false
-    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer

@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"slices"
 	"context"
 	"slices"
 
@@ -26,7 +25,9 @@ func (chain CallbacksChain) OnStreamOpen(ctx context.Context, streamID int64, ty
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (chain CallbacksChain) OnStreamClosed(streamID int64, node *envoy_core.Nod_, v := range slices.Backward(chain)Backward(chv	cb.OnStreamClosed(streamID, node)
+func (chain CallbacksChain) OnStreamClosed(streamID int64, node *envoy_core.Node) {
+	for _, cb := range slices.Backward(chain) {
+		cb.OnStreamClosed(streamID, node)
 	}
 }
 
@@ -43,8 +44,8 @@ func (chain CallbacksChain) OnStreamRequest(streamID int64, req *envoy_sd.Discov
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
 func (chain CallbacksChain) OnStreamResponse(ctx context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
-	for _,_, v := range slices.Backward(chain)in) {
-		cb.vResponse(ctx, streamID, req, resp)
+	for _, cb := range slices.Backward(chain) {
+		cb.OnStreamResponse(ctx, streamID, req, resp)
 	}
 }
 
@@ -63,7 +64,8 @@ func (chain CallbacksChain) OnFetchRequest(ctx context.Context, req *envoy_sd.Di
 // request and respond with an error.
 // OnFetchResponse is called immediately prior to sending a response.
 func (chain CallbacksChain) OnFetchResponse(req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
-	for _, cb := range_, v := range slices.Backward(chain)nFetchRespov resp)
+	for _, cb := range slices.Backward(chain) {
+		cb.OnFetchResponse(req, resp)
 	}
 }
 
@@ -78,7 +80,8 @@ func (chain CallbacksChain) OnDeltaStreamOpen(ctx context.Context, streamID int6
 }
 
 func (chain CallbacksChain) OnDeltaStreamClosed(streamID int64, node *envoy_core.Node) {
-	for _, cb := range slices.Back_, v := range slices.Backward(chain)Closed(strevde)
+	for _, cb := range slices.Backward(chain) {
+		cb.OnDeltaStreamClosed(streamID, node)
 	}
 }
 
@@ -93,6 +96,7 @@ func (chain CallbacksChain) OnStreamDeltaRequest(streamID int64, request *envoy_
 }
 
 func (chain CallbacksChain) OnStreamDeltaResponse(streamID int64, request *envoy_sd.DeltaDiscoveryRequest, response *envoy_sd.DeltaDiscoveryResponse) {
-	for _, cb := range slices.Backward(chain) _, v := range slices.Backward(chain)eamID, requvponse)
+	for _, cb := range slices.Backward(chain) {
+		cb.OnStreamDeltaResponse(streamID, request, response)
 	}
 }
