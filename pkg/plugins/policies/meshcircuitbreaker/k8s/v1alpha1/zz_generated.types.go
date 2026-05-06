@@ -99,7 +99,7 @@ func (l *MeshCircuitBreakerList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshCircuitBreaker{}, &MeshCircuitBreakerList{})
+	knownTypes = append(knownTypes, &MeshCircuitBreaker{}, &MeshCircuitBreakerList{})
 	registry.RegisterObjectType(&policy.MeshCircuitBreaker{}, &MeshCircuitBreaker{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

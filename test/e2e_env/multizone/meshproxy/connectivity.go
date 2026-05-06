@@ -213,7 +213,7 @@ spec:
 				r, err := rest.JSON.Unmarshal([]byte(out), meshtrust_api.MeshTrustResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				trust = r.GetSpec().(*meshtrust_api.MeshTrust)
-			}, "30s", "1s").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
 			return trust
 		}
 

@@ -223,7 +223,7 @@ var _ = Describe("Zone Sync", func() {
 					kdsCtx.TypesSentByGlobal,
 					kdsStream,
 					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
-					0,
+					kds_client_v2.SyncClientConfig{},
 				)
 				_ = syncClient.Receive()
 			}()

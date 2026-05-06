@@ -1,8 +1,9 @@
 package k8scnicncfio
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	v1 "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 )
@@ -12,15 +13,14 @@ var (
 	GroupVersion = schema.GroupVersion{Group: "k8s.cni.cncf.io", Version: "v1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
-func init() {
-	// We only register manually written functions here. The registration of the
-	// generated functions takes place in the generated files. The separation
-	// makes the code compile even when the generated files are missing.
-	SchemeBuilder.Register(&v1.NetworkAttachmentDefinition{}, &v1.NetworkAttachmentDefinitionList{})
+func addKnownTypes(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(GroupVersion, &v1.NetworkAttachmentDefinition{}, &v1.NetworkAttachmentDefinitionList{})
+	metav1.AddToGroupVersion(scheme, GroupVersion)
+	return nil
 }
