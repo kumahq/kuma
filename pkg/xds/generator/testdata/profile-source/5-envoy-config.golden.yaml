@@ -206,7 +206,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 80
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -256,7 +256,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 9902
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager

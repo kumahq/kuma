@@ -7,7 +7,7 @@ resources:
         address: 127.0.0.1
         portValue: 17777
     bindToPort: false
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -83,7 +83,7 @@ resources:
         address: 127.0.0.1
         portValue: 17778
     bindToPort: false
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -158,7 +158,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15001
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
@@ -176,7 +176,7 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15001
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy

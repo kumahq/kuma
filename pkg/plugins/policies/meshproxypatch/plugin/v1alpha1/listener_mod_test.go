@@ -268,7 +268,7 @@ var _ = Describe("Listener modifications", func() {
                   socketAddress:
                     address: 192.168.0.1
                     portValue: 8080
-                enableReusePort: false
+                enableReusePort: true
                 name: inbound:192.168.0.1:8080
                 tcpFastOpenQueueLength: 88
                 trafficDirection: INBOUND

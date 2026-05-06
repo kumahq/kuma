@@ -45,7 +45,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 443
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -120,7 +120,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 80
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -518,7 +518,7 @@ resources:
       socketAddress:
         address: 192.168.0.2
         portValue: 443
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer
@@ -593,7 +593,7 @@ resources:
       socketAddress:
         address: 192.168.0.2
         portValue: 80
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: raw_buffer

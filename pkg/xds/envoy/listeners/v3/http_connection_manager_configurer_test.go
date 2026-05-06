@@ -50,7 +50,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
+            enableReusePort: true
             filterChains:
             - filters:
               - name: envoy.filters.network.http_connection_manager

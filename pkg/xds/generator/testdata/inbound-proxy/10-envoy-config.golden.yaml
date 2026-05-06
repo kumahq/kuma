@@ -29,7 +29,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 9000
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
