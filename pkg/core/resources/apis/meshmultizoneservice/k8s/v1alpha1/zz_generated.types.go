@@ -111,7 +111,7 @@ func (l *MeshMultiZoneServiceList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshMultiZoneService{}, &MeshMultiZoneServiceList{})
+	knownTypes = append(knownTypes, &MeshMultiZoneService{}, &MeshMultiZoneServiceList{})
 	registry.RegisterObjectType(&policy.MeshMultiZoneService{}, &MeshMultiZoneService{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

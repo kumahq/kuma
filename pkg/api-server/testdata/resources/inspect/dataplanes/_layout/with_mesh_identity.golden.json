@@ -12,6 +12,7 @@
   "kuma.io/workload": "my-app",
   "kuma.io/zone": "test-zone"
  },
+ "listeners": [],
  "outbounds": [],
  "spiffeId": "spiffe://default.test-zone.mesh.local/workload/my-app"
 }

@@ -74,11 +74,12 @@ type BaseStatus struct {
 	Total  int `json:"total"`
 }
 
-// DataplaneNetworkingLayout Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+// DataplaneNetworkingLayout Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
 type DataplaneNetworkingLayout struct {
 	Inbounds  []externalRef0.DataplaneInbound  `json:"inbounds"`
 	Kri       string                           `json:"kri"`
 	Labels    map[string]string                `json:"labels"`
+	Listeners []externalRef0.DataplaneListener `json:"listeners"`
 	Outbounds []externalRef0.DataplaneOutbound `json:"outbounds"`
 
 	// SpiffeId SPIFFE ID of the dataplane's workload identity certificate
@@ -245,7 +246,7 @@ type ZonesStats struct {
 	ZoneIngresses BaseStatus `json:"zoneIngresses"`
 }
 
-// DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
+// DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
 type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
 
 // GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.

@@ -124,8 +124,8 @@ In that case, the KRI `kri_<type>_<mesh>_<zone>_<namespace>_<name>_<sectionName>
 It's unambiguous because different cases have different number of segments:
 
 - global-originated resource - `sni.<type>.<mesh>.<name>.<sectionName>` (5 segments)
-- zone-originated resource in system namespace - `sni.<type>.<mesh>.<zone>.<name>.<sectionName>` (6 segments)
-- zone-originated resource in custom namespace - `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` (7 segments)
+- zone-originated resource on universal - `sni.<type>.<mesh>.<zone>.<name>.<sectionName>` (6 segments)
+- zone-originated resource on k8s - `sni.<type>.<mesh>.<zone>.<namespace>.<name>.<sectionName>` (7 segments)
 
 Additionally, this format requires that `name`, `sectionName`, `mesh`, `zone`, and `namespace`
 do not contain `.` characters, since dots are used as segment delimiters.

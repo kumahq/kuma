@@ -99,7 +99,7 @@ func (l *MeshTLSList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTLS{}, &MeshTLSList{})
+	knownTypes = append(knownTypes, &MeshTLS{}, &MeshTLSList{})
 	registry.RegisterObjectType(&policy.MeshTLS{}, &MeshTLS{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
