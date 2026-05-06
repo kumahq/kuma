@@ -64,8 +64,9 @@ var _ = Describe("Metadata()", func() {
 })
 
 var _ = Describe("EndpointMetadataWithLabels()", func() {
-	It("should return tag-based metadata when tags are present, ignoring labels", func() {
-		// given: tags produce non-nil metadata, so labels must not be added
+	It("should encode tags under envoy.lb and labels under LbLabelsKey when both are present", func() {
+		// given: both tags and labels — labels live under a separate key so consumers
+		// can fall back to them when an affinity tag is absent from inbound tags.
 		t := tags.Tags{
 			"version": "v2",
 			"region":  "us",
@@ -75,10 +76,11 @@ var _ = Describe("EndpointMetadataWithLabels()", func() {
 		// when
 		metadata := EndpointMetadataWithLabels(t, labels)
 
-		// then: metadata comes from tags, not labels
+		// then
 		Expect(metadata).ToNot(BeNil())
 		Expect(metadata.GetFilterMetadata()).To(HaveKey("envoy.lb"))
-		Expect(metadata.GetFilterMetadata()).ToNot(HaveKey(LbLabelsKey))
+		Expect(metadata.GetFilterMetadata()).To(HaveKey(LbLabelsKey))
+		Expect(metadata.GetFilterMetadata()[LbLabelsKey].GetFields()["app"].GetStringValue()).To(Equal("backend"))
 	})
 
 	It("should return label-based metadata under LbLabelsKey when tags are absent", func() {

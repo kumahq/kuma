@@ -18,6 +18,8 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               kuma.io/zone: zone-1
+            io.kuma.labels:
+              k8s.io/node: node2
       loadBalancingWeight: 1
       locality:
         zone: zone-1
@@ -35,6 +37,8 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               kuma.io/zone: zone-1
+            io.kuma.labels:
+              k8s.io/az: test
       loadBalancingWeight: 900
       locality:
         subZone: k8s.io/az=test
@@ -53,6 +57,8 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               kuma.io/zone: zone-1
+            io.kuma.labels:
+              k8s.io/node: node1
       loadBalancingWeight: 9000
       locality:
         subZone: k8s.io/node=node1
@@ -71,6 +77,8 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               kuma.io/zone: zone-1
+            io.kuma.labels:
+              k8s.io/region: test
       loadBalancingWeight: 90
       locality:
         subZone: k8s.io/region=test

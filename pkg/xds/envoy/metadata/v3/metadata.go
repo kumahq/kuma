@@ -42,29 +42,27 @@ func LbMetadata(tags tags.Tags) *envoy_core.Metadata {
 }
 
 // EndpointMetadataWithLabels builds Envoy endpoint filter metadata that includes
-// inbound tags (under the "envoy.lb" key) and, when inbound tags are absent,
-// pod/workload labels (under the "io.kuma.labels" key). This allows
-// AffinityTags to fall back to pod labels when inbound tags are absent due to
-// KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED, without bloating metadata when tags
-// are present.
+// inbound tags (under the "envoy.lb" key) and pod/workload labels (under the
+// "io.kuma.labels" key). Labels are encoded under a separate key so they remain
+// available even when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED strips inbound
+// tags. The "prefer tags, fall back to labels" semantics are applied by
+// consumers (see resolveAffinityValues / resolveEndpointAffinityValue).
 func EndpointMetadataWithLabels(t tags.Tags, labels map[string]string) *envoy_core.Metadata {
 	meta := EndpointMetadata(t)
-	// Labels are used strictly as a fallback when inbound tags are unavailable.
-	// If we already have tag-derived metadata or there are no labels, return as-is.
-	if meta != nil || len(labels) == 0 {
+	if len(labels) == 0 {
 		return meta
 	}
 	labelFields := make(map[string]*structpb.Value, len(labels))
 	for k, v := range labels {
 		labelFields[k] = structpb.NewStringValue(v)
 	}
-	return &envoy_core.Metadata{
-		FilterMetadata: map[string]*structpb.Struct{
-			LbLabelsKey: {
-				Fields: labelFields,
-			},
-		},
+	if meta == nil {
+		meta = &envoy_core.Metadata{
+			FilterMetadata: map[string]*structpb.Struct{},
+		}
 	}
+	meta.FilterMetadata[LbLabelsKey] = &structpb.Struct{Fields: labelFields}
+	return meta
 }
 
 // ExtractLbLabels reads pod/workload labels from Envoy endpoint filter metadata.
