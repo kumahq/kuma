@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -59,7 +60,7 @@ func ResourceValidation() {
 			blob = ApplyResourceRawResponse(multizone.UniZone1, apiPath, string(body))
 		case "zone-k8s":
 			rendered := utils.FromTemplate(Default, string(body), Config)
-			out, kerr := RunKubectlWithStdinAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), rendered, "apply", "-f", "-")
+			out, kerr := RunKubectlWithStdinAndGetOutputE(context.Background(), multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), rendered, "apply", "-f", "-")
 			if kerr != nil {
 				out = kerr.Error()
 			}

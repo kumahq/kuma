@@ -2,6 +2,7 @@ package framework
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -31,7 +32,7 @@ import (
 // <output>" string. Use when kubectl error messages should reference "STDIN"
 // instead of a non-deterministic temp file path (terratest's *FromString
 // helpers shell out to a temp file).
-func RunKubectlWithStdinAndGetOutputE(t testing.TestingT, options *k8s.KubectlOptions, stdinData string, args ...string) (string, error) {
+func RunKubectlWithStdinAndGetOutputE(ctx context.Context, t testing.TestingT, options *k8s.KubectlOptions, stdinData string, args ...string) (string, error) {
 	cmdArgs := []string{}
 	if options.ContextName != "" {
 		cmdArgs = append(cmdArgs, "--context", options.ContextName)
@@ -44,7 +45,7 @@ func RunKubectlWithStdinAndGetOutputE(t testing.TestingT, options *k8s.KubectlOp
 	}
 	cmdArgs = append(cmdArgs, args...)
 
-	cmd := exec.Command("kubectl", cmdArgs...)
+	cmd := exec.CommandContext(ctx, "kubectl", cmdArgs...)
 	cmd.Stdin = strings.NewReader(stdinData)
 	out, err := cmd.CombinedOutput()
 	output := string(out)
