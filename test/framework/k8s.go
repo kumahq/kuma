@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -22,6 +24,35 @@ import (
 
 	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
 )
+
+// RunKubectlWithStdinAndGetOutputE runs kubectl with the given args, piping
+// stdinData through stdin. On success returns combined stdout/stderr; on
+// failure returns a terratest-compatible "error while running command: <err>;
+// <output>" string. Use when kubectl error messages should reference "STDIN"
+// instead of a non-deterministic temp file path (terratest's *FromString
+// helpers shell out to a temp file).
+func RunKubectlWithStdinAndGetOutputE(t testing.TestingT, options *k8s.KubectlOptions, stdinData string, args ...string) (string, error) {
+	cmdArgs := []string{}
+	if options.ContextName != "" {
+		cmdArgs = append(cmdArgs, "--context", options.ContextName)
+	}
+	if options.ConfigPath != "" {
+		cmdArgs = append(cmdArgs, "--kubeconfig", options.ConfigPath)
+	}
+	if options.Namespace != "" {
+		cmdArgs = append(cmdArgs, "--namespace", options.Namespace)
+	}
+	cmdArgs = append(cmdArgs, args...)
+
+	cmd := exec.Command("kubectl", cmdArgs...)
+	cmd.Stdin = strings.NewReader(stdinData)
+	out, err := cmd.CombinedOutput()
+	output := string(out)
+	if err != nil {
+		return output, fmt.Errorf("error while running command: %w; %s", err, strings.TrimRight(output, "\n"))
+	}
+	return output, nil
+}
 
 func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error) {
 	pod, err := PodOfApp(cluster, name, namespace)

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -60,10 +59,7 @@ func ResourceValidation() {
 			blob = ApplyResourceRawResponse(multizone.UniZone1, apiPath, string(body))
 		case "zone-k8s":
 			rendered := utils.FromTemplate(Default, string(body), Config)
-			tmpfile, terr := k8s.StoreConfigToTempFileE(multizone.KubeZone1.GetTesting(), rendered)
-			Expect(terr).ToNot(HaveOccurred())
-			defer os.Remove(tmpfile)
-			out, kerr := k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "apply", "-f", tmpfile)
+			out, kerr := RunKubectlWithStdinAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), rendered, "apply", "-f", "-")
 			if kerr != nil {
 				out = kerr.Error()
 			}
