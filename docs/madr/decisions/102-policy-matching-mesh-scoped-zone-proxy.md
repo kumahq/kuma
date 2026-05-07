@@ -39,12 +39,9 @@ spec:
               value: sni.extsvc.default.zone-1.aws-aurora.8443
 ```
 
-`targetRef` inside `Match` is deferred to a follow-up; `sni` can coexist with it later without
-breaking existing policies.
-
 ### `MeshCircuitBreaker`, `MeshHealthCheck`
 
-These policies have no `rules[]` field, so destination selection uses `spec.to[].targetRef`.
+These policies have no `rules[].matches[]` field, so destination selection uses `spec.to[].targetRef`.
 Top-level `targetRef` selects the zone proxy (or a listener via `sectionName`); each
 `spec.to[]` entry selects the destination `filterChain` whose SNI matches the referenced
 `MeshExternalService` / `MeshService`.
