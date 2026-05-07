@@ -419,15 +419,26 @@ spec:
 
 * Good, because it is consistent with group (2) (`MeshCircuitBreaker`, `MeshHealthCheck`) on zone proxies.
 * Good, because users can target a `MeshExternalService` by labels without knowing the SNI format.
+* Bad, because it cannot express source-conditioned per-destination policies like "access log
+  requests from spiffeID X to MeshExternalService Y" — `spec.to[]` selects only the destination
+  filter chain and has no place to constrain the source identity.
 
 ##### Decision
 
-Implement Option B: `spec.to[].targetRef` selects the `filterChain` on the zone proxy.
+Implement Option A: `rules[].matches[].sni` selects the `filterChain` on the zone proxy.
 
-When user needs to configure any policy for zone proxy, all they need to do is select `MeshExternalService` in `spec.to[]`.
-The only exception is `MeshTrafficPermission`,
-but that's acceptable as the policy is security focused,
-matching on the SNI makes it difficult to make a mistake.
+The deciding factor is expressiveness: `rules[].matches[]` can constrain both source
+(`spiffeID`) and destination (`sni`) in the same entry, which is required for use cases like
+"access log requests from spiffeID X to MeshExternalService Y". Option B's `spec.to[]` cannot
+express this — it selects a destination filter chain with no place for source conditioning.
+
+The shape inconsistency with group (2) (`MeshCircuitBreaker`, `MeshHealthCheck`, which use
+`spec.to[]`) is acceptable: groups (2) and (3) differ in that group (3) policies legitimately
+care about the source, so reusing the matcher API introduced for `MeshTrafficPermission` is the
+right fit. The `SNIMatch` type is shared across (1) and (3).
+
+The incomplete `rules[].matches[]` implementation tracked in
+[#16460](https://github.com/kumahq/kuma/issues/16460) must be finished as part of this work.
 
 #### (4) `MeshMetric`, `MeshTrace`, `MeshProxyPatch`
 
@@ -492,21 +503,23 @@ destination SNI, providing an audit trail of which workload accessed which exter
 3. **Non-matching SNI semantics**: If no `allow` entry matches the SNI, access is denied
    (fail-closed). In traffic policies, non-matching `sni` entries are silently skipped.
 
-4. **Destination selector for non-MTP policies on zone proxies**: For all other policies in
-   this MADR (`MeshAccessLog`, `MeshMetric`, `MeshTrace`, `MeshTimeout`, `MeshRateLimit`,
-   `MeshFaultInjection`, `MeshCircuitBreaker`, `MeshHealthCheck`, …), the top-level `targetRef`
-   selects the zone proxy (or listener via `sectionName`) and `spec.to[].targetRef` selects the
-   destination `filterChain`. This is uniform across groups (2) and (3); `rules[].matches[]` is
-   not used for destination selection on zone proxies.
+4. **Destination selector for non-MTP policies on zone proxies**: Group (2) policies
+   (`MeshCircuitBreaker`, `MeshHealthCheck`) use `spec.to[].targetRef` to select the destination
+   `filterChain` — they have no `rules[]` field. Group (3) policies (`MeshAccessLog`,
+   `MeshTimeout`, `MeshRateLimit`, `MeshFaultInjection`) use `rules[].matches[].sni` to select
+   the destination `filterChain`, because `rules[].matches[]` can constrain source and
+   destination in the same entry (e.g. "log spiffeID X to MES Y"), which `spec.to[]` cannot
+   express. Group (4) policies (`MeshMetric`, `MeshTrace`, `MeshProxyPatch`) configure the
+   proxy as a whole and use only top-level `targetRef`.
 
 ## Notes
 
 * `targetRef` in `Match` is deferred to a follow-up; the struct can be extended without
   breaking existing policies once `sni` is proven in production.
-* On zone ingress, `MeshAccessLog` and `MeshMetric` use `spec.to[].targetRef` to select a
-  destination `filterChain` (same shape as on zone egress). The destination on zone ingress
-  identifies a `MeshService` (or `MeshExternalService`), not only `MeshExternalService` as on
-  zone egress.
+* On zone ingress, `MeshAccessLog` uses `rules[].matches[].sni` (group 3) and `MeshMetric`
+  uses top-level `targetRef` only (group 4) — same shape as on zone egress. The destination
+  SNI on zone ingress identifies a `MeshService` (or `MeshExternalService`), not only
+  `MeshExternalService` as on zone egress.
 * MeshRetry on zone egress remains out of scope — squared retry amplification.
 * `MeshTrafficPermission` places `sni` in allow/deny entries (alongside `spiffeID`)
   rather than in `rules[].matches[]` — this is a consequence of the MADR-081 API design and
