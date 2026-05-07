@@ -557,6 +557,66 @@ right fit. The `SNIMatch` type is shared across (1) and (3).
 The incomplete `rules[].matches[]` implementation tracked in
 [#16460](https://github.com/kumahq/kuma/issues/16460) must be finished as part of this work.
 
+##### `spec.to[]` is also accepted as an alias for `rules[].matches[].sni`
+
+Per Kuma's "apply where possible" style, `spec.to[]` on a zone proxy is not rejected for
+group (3) policies — it is accepted as an alias for `rules[].matches[].sni`. The CP
+resolves `spec.to[].targetRef → MeshExternalService → SNI`, locates the filter chain
+whose `server_names` matches that SNI, and applies the policy's `default` fields wherever
+each field lives in Envoy (filter chain, cluster, HCM filter, route). The outcome is
+identical to writing `rules[].matches[].sni` with the resolved SNI.
+
+```yaml
+# These two are equivalent on zone egress.
+
+# (a) spec.to[] form — label-friendly, no SNI knowledge required
+type: MeshTimeout
+spec:
+  targetRef: { kind: Dataplane, sectionName: ze-port }
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        labels: { kuma.io/display-name: aws-aurora }
+      default:
+        connectionTimeout: 5s
+        http: { requestTimeout: 10s }
+
+# (b) rules[].matches[] form — explicit SNI, can also constrain source
+type: MeshTimeout
+spec:
+  targetRef: { kind: Dataplane, sectionName: ze-port }
+  rules:
+    - matches:
+        - sni: { type: Exact, value: sni.extsvc.default.zone-1.aws-aurora.8443 }
+      default:
+        connectionTimeout: 5s
+        http: { requestTimeout: 10s }
+```
+
+`rules[].matches[]` remains the only form that can constrain by source — pick it whenever
+`spiffeID` matters. Use `spec.to[]` when destination-only is enough and label-based
+selection is preferable to writing the SNI string.
+
+##### Matches containing `spiffeID` and field placement
+
+When a `rules[].matches[]` entry contains `spiffeID`, the policy default is asking to be
+source-conditioned. Each field of the default lands at a specific position in the Envoy
+config; whether source conditioning is honored depends on whether SPIFFE is available at
+that position — and adding `sni` to the same match does not change the answer, it only
+locates the filter chain/cluster.
+
+- **Applied** — fields evaluated *after* the mTLS handshake, where SPIFFE is known: e.g.
+  `MeshAccessLog` formatters/conditional logging, `MeshRateLimit` HTTP-level descriptors
+  on HCM filter chains, RBAC-gated HTTP fields.
+- **Not applied** — fields on the cluster (e.g. `MeshTimeout.connectionTimeout`) or on
+  the filter chain itself (e.g. TCP `idleTimeout` on `tcp_proxy`). The cluster is shared
+  across all sources reaching the same destination; the filter chain is selected before
+  the handshake completes. In both cases the position cannot be keyed by source even when
+  `sni` is also present in the match.
+
+The validator emits a warning when a match with `spiffeID` specifies a field that cannot
+be source-keyed, so operators see why their config did not take effect.
+
 #### (4) `MeshMetric`, `MeshTrace`, `MeshProxyPatch`
 
 These policies do not support per-destination granularity — they configure the proxy as a whole.
