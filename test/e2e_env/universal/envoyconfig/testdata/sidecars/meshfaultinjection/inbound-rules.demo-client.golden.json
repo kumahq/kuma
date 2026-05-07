@@ -340,7 +340,6 @@
           }
         },
         "bindToPort": false,
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -435,7 +434,6 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -464,7 +462,6 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -493,7 +490,6 @@
             "portValue": 0
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -734,7 +730,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&kuma.io/service=demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
+                          "value": "\u0026kuma.io/service=demo-client\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=client-owners\u0026"
                         }
                       }
                     ],

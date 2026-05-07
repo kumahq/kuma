@@ -276,7 +276,6 @@
             "portValue": 0
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -464,7 +463,7 @@
                           {
                             "header": {
                               "key": "x-kuma-tags",
-                              "value": "&kuma.io/service=gateway-proxy&&kuma.io/zone=kuma-3&"
+                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
                             }
                           }
                         ],
@@ -490,7 +489,7 @@
                           {
                             "header": {
                               "key": "x-kuma-tags",
-                              "value": "&kuma.io/service=gateway-proxy&&kuma.io/zone=kuma-3&"
+                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
                             }
                           }
                         ],
