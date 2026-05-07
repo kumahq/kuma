@@ -53,7 +53,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 5670
-    enableReusePort: true
     filterChains:
     - filterChainMatch:
         transportProtocol: tls

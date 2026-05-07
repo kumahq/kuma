@@ -43,7 +43,6 @@ resources:
       socketAddress:
         address: 192.168.0.2
         portValue: 443
-    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -89,7 +88,6 @@ resources:
       socketAddress:
         address: 192.168.0.2
         portValue: 80
-    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac

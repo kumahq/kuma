@@ -2,7 +2,6 @@ address:
   socketAddress:
     address: 127.0.0.1
     portValue: 17778
-enableReusePort: true
 filterChains:
 - filters:
   - name: envoy.filters.network.tcp_proxy

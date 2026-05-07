@@ -58,7 +58,7 @@ name: test_listener
 		Entry("enable reuse port disabled", testCase{
 			opt: EnableReusePort(false),
 			expected: `
-enableReusePort: true
+enableReusePort: false
 name: test_listener
 `,
 		}),

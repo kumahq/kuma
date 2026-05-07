@@ -278,6 +278,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.ResponseBackoff.Duration).To(Equal(time.Second))
+			Expect(cfg.Multizone.Global.KDS.LogPayloads).To(BeTrue())
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.Timeout.Duration).To(Equal(110 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.CloseStaleConn).To(BeTrue())
@@ -291,6 +292,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.ResponseBackoff.Duration).To(Equal(2 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.LogPayloads).To(BeTrue())
 			Expect(cfg.Multizone.Zone.KDS.TlsSkipVerify).To(BeTrue())
 			Expect(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
 
@@ -667,6 +669,7 @@ multizone:
       msgSendTimeout: 10s
       nackBackoff: 11s
       responseBackoff: 1s
+      logPayloads: true
       zoneHealthCheck:
         pollInterval: 11s
         timeout: 110s
@@ -685,6 +688,7 @@ multizone:
       msgSendTimeout: 20s
       nackBackoff: 21s
       responseBackoff: 2s
+      logPayloads: true
       tlsSkipVerify: true
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
@@ -1049,6 +1053,7 @@ meshService:
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF":                                               "1s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_LOG_PAYLOADS":                                                   "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_POLL_INTERVAL":                                "11s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_TIMEOUT":                                      "110s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_CLOSE_STALE_CONN":                             "true",
@@ -1062,6 +1067,7 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
 				"KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF":                                                 "2s",
+				"KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS":                                                     "true",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
 				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
