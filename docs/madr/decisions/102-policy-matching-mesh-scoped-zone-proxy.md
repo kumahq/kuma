@@ -614,8 +614,11 @@ locates the filter chain/cluster.
   the handshake completes. In both cases the position cannot be keyed by source even when
   `sni` is also present in the match.
 
-The validator emits a warning when a match with `spiffeID` specifies a field that cannot
-be source-keyed, so operators see why their config did not take effect.
+The mapping from field → Envoy position is known statically per policy, so the validator
+can enforce this for real — it rejects a policy where a match contains `spiffeID` and the
+`default` sets a field that lands at a position which cannot be keyed by source. Operators
+get a concrete error at apply time pointing at the offending field, instead of a silently
+unapplied config.
 
 #### (4) `MeshMetric`, `MeshTrace`, `MeshProxyPatch`
 
