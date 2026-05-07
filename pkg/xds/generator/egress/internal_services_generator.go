@@ -2,7 +2,7 @@ package egress
 
 import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"

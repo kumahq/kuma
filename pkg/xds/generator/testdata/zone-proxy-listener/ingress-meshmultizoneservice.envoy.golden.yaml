@@ -1,5 +1,5 @@
 resources:
-- name: kri_msvc_default_east__backend_80
+- name: kri_mzsvc_default___global-svc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
@@ -7,19 +7,19 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: kri_msvc_default_east__backend_80
+    name: kri_mzsvc_default___global-svc_80
     type: EDS
-- name: kri_msvc_default_east__backend_80
+- name: kri_mzsvc_default___global-svc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: kri_msvc_default_east__backend_80
+    clusterName: kri_mzsvc_default___global-svc_80
     endpoints:
     - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
               address: 192.168.0.1
-              portValue: 2521
+              portValue: 8080
         loadBalancingWeight: 1
 - name: self_zoneingress_dp_zone-ingress-port
   resource:
@@ -32,14 +32,14 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - sni.msvc.default.east.backend.80
+        - sni.mzsvc.default.global-svc.80
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: kri_msvc_default_east__backend_80
-          statPrefix: kri_msvc_default_east__backend_80
+          cluster: kri_mzsvc_default___global-svc_80
+          statPrefix: kri_mzsvc_default___global-svc_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

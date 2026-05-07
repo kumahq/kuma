@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -175,4 +177,175 @@ var _ = Describe("SNI", func() {
 			snis[sni] = struct{}{}
 		}
 	})
+
+	type kriTestCase struct {
+		id        kri.Identifier
+		expected  string
+		expectErr bool
+	}
+	DescribeTable("SNIFromKRI",
+		func(tc kriTestCase) {
+			sni, err := tls.SNIFromKRI(tc.id)
+			if tc.expectErr {
+				Expect(err).To(HaveOccurred())
+			} else {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(sni).To(Equal(tc.expected))
+				Expect(govalidator.IsDNSName(sni)).To(BeTrue())
+			}
+		},
+		// MeshService — global (no zone, no namespace)
+		Entry("MeshService global", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expected: "sni.msvc.default.backend.http",
+		}),
+		// MeshService — zone-originated, system namespace (zone set, no namespace)
+		Entry("MeshService zone system-ns", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Zone:         "east",
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expected: "sni.msvc.default.east.backend.http",
+		}),
+		// MeshService — zone-originated, custom namespace
+		Entry("MeshService zone custom-ns", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Zone:         "east",
+				Namespace:    "app-ns",
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expected: "sni.msvc.default.east.app-ns.backend.http",
+		}),
+		// MeshExternalService — global
+		Entry("MeshExternalService global", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshexternalservice_api.MeshExternalServiceType,
+				Mesh:         "default",
+				Name:         "ext-backend",
+				SectionName:  "9000",
+			},
+			expected: "sni.extsvc.default.ext-backend.9000",
+		}),
+		// MeshExternalService — zone-originated
+		Entry("MeshExternalService zone", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshexternalservice_api.MeshExternalServiceType,
+				Mesh:         "prod",
+				Zone:         "west",
+				Name:         "ext-backend",
+				SectionName:  "9000",
+			},
+			expected: "sni.extsvc.prod.west.ext-backend.9000",
+		}),
+		// MeshMultiZoneService — global (MeshMultiZoneService never carries zone/namespace)
+		Entry("MeshMultiZoneService global", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshmzservice_api.MeshMultiZoneServiceType,
+				Mesh:         "default",
+				Name:         "global-svc",
+				SectionName:  "http",
+			},
+			expected: "sni.mzsvc.default.global-svc.http",
+		}),
+		// MeshMultiZoneService — numeric port as sectionName
+		Entry("MeshMultiZoneService numeric port", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshmzservice_api.MeshMultiZoneServiceType,
+				Mesh:         "default",
+				Name:         "global-svc",
+				SectionName:  "8080",
+			},
+			expected: "sni.mzsvc.default.global-svc.8080",
+		}),
+		// Error: empty Mesh
+		Entry("error empty mesh", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
+		// Error: empty Name
+		Entry("error empty name", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
+		// Error: empty SectionName
+		Entry("error empty sectionName", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         "backend",
+			},
+			expectErr: true,
+		}),
+		// Error: namespace set without zone
+		Entry("error namespace without zone", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Namespace:    "app-ns",
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
+		// Error: mesh segment contains '.'
+		Entry("error mesh contains dot", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "de.fault",
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
+		// Error: name segment contains '.'
+		Entry("error name contains dot", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         "back.end",
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
+		// Error: zone segment contains '.'
+		Entry("error zone contains dot", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Zone:         "east.zone",
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
+		// Error: sectionName contains '.'
+		Entry("error sectionName contains dot", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         "backend",
+				SectionName:  "http.port",
+			},
+			expectErr: true,
+		}),
+	)
 })

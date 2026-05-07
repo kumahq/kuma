@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
@@ -164,7 +165,14 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
+	var err error
 	sni := meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace)
+	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
+		sni, err = tls.SNIFromKRI(backendRef.Resource)
+	}
+	if err != nil {
+		return nil, "", err
+	}
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(
 			clusters.EdsCluster(),

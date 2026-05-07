@@ -8,10 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/util/maps"
 	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 )
@@ -45,6 +47,8 @@ func TagsFromSNI(sni string) (envoy_tags.Tags, error) {
 const (
 	sniFormatVersion = "a"
 	dnsLabelLimit    = 63
+	sniFormatPrefix  = "sni"
+	dnsHostnameLimit = 253
 )
 
 func SNIForResource(resName string, meshName string, resType model.ResourceType, port int32, additionalData map[string]string) string {
@@ -77,4 +81,54 @@ func SNIForResource(resName string, meshName string, resType model.ResourceType,
 	}
 
 	return fmt.Sprintf("%s%x.%s.%d.%s.%s", sniFormatVersion, hashBytes, resName, port, meshName, resTypeAbbrv)
+}
+
+// SNIFromKRI builds an SNI in the KRI-derived format described in MADR 101.
+//
+// The format is:
+//
+//	sni.<short>.<mesh>.<name>.<sectionName>                          (5 segments) — global-originated
+//	sni.<short>.<mesh>.<zone>.<name>.<sectionName>                   (6 segments) — zone-originated resource on universal
+//	sni.<short>.<mesh>.<zone>.<namespace>.<name>.<sectionName>       (7 segments) — zone-originated resource on k8s
+//
+// The KRI must satisfy:
+//   - ResourceType is one of MeshService, MeshExternalService, MeshMultiZoneService
+//   - Mesh, Name and SectionName are non-empty
+//   - if Namespace is non-empty, Zone must also be non-empty
+//   - no segment contains "."
+func SNIFromKRI(id kri.Identifier) (string, error) {
+	desc, err := registry.Global().DescriptorFor(id.ResourceType)
+	if err != nil {
+		panic(errors.Wrapf(err, "SNIFromKRI: unknown resource type %q", id.ResourceType))
+	}
+	switch id.ResourceType {
+	case meshservice_api.MeshServiceType,
+		meshexternalservice_api.MeshExternalServiceType,
+		meshmzservice_api.MeshMultiZoneServiceType:
+	default:
+		panic(fmt.Sprintf("SNIFromKRI: resource type %q is not supported for SNI", id.ResourceType))
+	}
+	if id.Mesh == "" || id.Name == "" || id.SectionName == "" {
+		return "", errors.Errorf("SNIFromKRI: mesh, name and sectionName must be non-empty: %+v", id)
+	}
+	if id.Namespace != "" && id.Zone == "" {
+		return "", errors.Errorf("SNIFromKRI: namespace %q set without zone: %+v", id.Namespace, id)
+	}
+
+	segments := []string{sniFormatPrefix, desc.ShortName, id.Mesh}
+	if id.Zone != "" {
+		segments = append(segments, id.Zone)
+	}
+	if id.Namespace != "" {
+		segments = append(segments, id.Namespace)
+	}
+	segments = append(segments, id.Name, id.SectionName)
+
+	for _, s := range segments {
+		if strings.ContainsRune(s, '.') {
+			return "", errors.Errorf("SNIFromKRI: segment %q contains '.': %+v", s, id)
+		}
+	}
+
+	return strings.Join(segments, "."), nil
 }

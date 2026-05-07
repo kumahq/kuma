@@ -54,10 +54,15 @@ func GenerateClusters(
 			if meshCtx.IsExternalService(serviceName) {
 				switch {
 				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
-					sni := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
 					if proxy.WorkloadIdentity != nil {
-						// MeshExternalService is only routable through zone egress in workload-identity mode.
-						// Skip cluster generation if no zone egress SANs are available.
+						sni, err := tls.SNIFromKRI(service.BackendRef().Resource())
+						if err != nil {
+							return nil, err
+						}
+						// we only want to route when are mesh-scoped zone egresses
+						if len(meshCtx.ZoneEgresses) == 0 {
+							continue
+						}
 						egressSANs := meshCtx.ZoneEgressSANs()
 						if len(egressSANs) == 0 {
 							continue
@@ -70,6 +75,7 @@ func GenerateClusters(
 							Configure(envoy_clusters.EdsCluster()).
 							Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 					} else {
+						egressSNI := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
 						edsClusterBuilder.
 							Configure(envoy_clusters.EdsCluster()).
 							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
@@ -78,7 +84,7 @@ func GenerateClusters(
 								meshCtx.Resource,
 								mesh_proto.ZoneEgressServiceName,
 								true,
-								sni,
+								egressSNI,
 								false,
 							))
 					}
@@ -146,6 +152,13 @@ func GenerateClusters(
 						sni := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
+							if meshCtx.ZonesWithMeshScopedProxy[realResourceRef.Resource.Zone] {
+								var err error
+								sni, err = tls.SNIFromKRI(realResourceRef.Resource)
+								if err != nil {
+									return nil, err
+								}
+							}
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
 							if err != nil {
 								return nil, err
