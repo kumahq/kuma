@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/unifiednaming"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/validation"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/virtualoutbound"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/zoneegress"
@@ -96,4 +97,5 @@ var (
 	_ = Describe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", meshproxy.Connectivity, Ordered)
 	_ = Describe("MeshProxy Migration", meshproxy.Migration, Ordered)
+	_ = Describe("Resource Label Validation", validation.ResourceValidation, Ordered)
 )

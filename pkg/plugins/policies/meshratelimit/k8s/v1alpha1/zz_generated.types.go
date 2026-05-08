@@ -99,7 +99,7 @@ func (l *MeshRateLimitList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshRateLimit{}, &MeshRateLimitList{})
+	knownTypes = append(knownTypes, &MeshRateLimit{}, &MeshRateLimitList{})
 	registry.RegisterObjectType(&policy.MeshRateLimit{}, &MeshRateLimit{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

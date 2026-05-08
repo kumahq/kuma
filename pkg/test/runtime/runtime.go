@@ -126,7 +126,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		DataplaneToken: tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
 		ZoneToken:      tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
-	builder.WithInterCPClientPool(intercp.DefaultClientPool())
+	builder.WithInterCPClientPool(intercp.DefaultClientPool(int(builder.Config().Multizone.Global.KDS.MaxMsgSize)))
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 

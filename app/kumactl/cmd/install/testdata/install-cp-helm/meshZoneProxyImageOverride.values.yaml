@@ -6,9 +6,11 @@ meshes:
   - name: default
     ingress:
       enabled: true
-      replicas: 1
+      deployment:
+        replicas: 1
       image:
         registry: override.example.com
     egress:
       enabled: true
-      replicas: 1
+      deployment:
+        replicas: 1

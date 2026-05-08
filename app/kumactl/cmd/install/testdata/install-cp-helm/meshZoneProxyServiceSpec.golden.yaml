@@ -731,7 +731,7 @@ kind: Deployment
 metadata:
   name: kuma-default-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-default-ingress
     kuma.io/mesh: default
     app.kubernetes.io/name: kuma
@@ -790,7 +790,7 @@ kind: Deployment
 metadata:
   name: kuma-default-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-default-egress
     kuma.io/mesh: default
     app.kubernetes.io/name: kuma

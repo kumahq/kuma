@@ -8,6 +8,17 @@
       }
     },
     {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.endpoint.v3.ClusterLoadAssignment/envoyconfig_test-server__kuma-3_msvc_80/endpoints/0/lbEndpoints/0/metadata/filterMetadata/io.kuma.labels",
+      "value": {
+        "kuma.io/env": "universal",
+        "kuma.io/mesh": "envoyconfig",
+        "kuma.io/origin": "zone",
+        "kuma.io/proxy-type": "sidecar",
+        "kuma.io/zone": "kuma-3"
+      }
+    },
+    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.endpoint.v3.ClusterLoadAssignment/envoyconfig_test-server__kuma-3_msvc_80/endpoints/0/loadBalancingWeight",
       "value": 1
@@ -301,6 +312,13 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }

@@ -30,7 +30,7 @@ COMPILE_IN_PATH ?= ./pkg/transparentproxy/ebpf/programs
 
 define make_ebpf_targets
 $(1)/mb_*: | $(1)
-	curl --progress-bar --location $(TARBALL_URL)/all-$(3).tar.gz | tar -C $$(@D) -xz
+	curl --retry 3 --retry-delay 60 --retry-all-errors -s --fail --location $(TARBALL_URL)/all-$(3).tar.gz | tar -C $$(@D) -xz
 
 $(2)/mb_*: | $(2) $(1)/mb_*
 	command cp $(1)/mb_* $(2)

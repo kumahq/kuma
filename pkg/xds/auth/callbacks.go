@@ -157,9 +157,8 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request,
 
 	if s.nodeID == "" {
 		s.nodeID = req.NodeId()
-	}
-
-	if s.nodeID != req.NodeId() {
+	} else if req.NodeId() != "" && s.nodeID != req.NodeId() {
+		// Delta xDS only requires Node on the first request; subsequent requests may omit it.
 		return stream{}, errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", s.nodeID, req.NodeId())
 	}
 

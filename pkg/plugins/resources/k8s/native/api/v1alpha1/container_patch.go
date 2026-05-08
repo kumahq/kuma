@@ -61,7 +61,7 @@ type ContainerPatchList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ContainerPatch{}, &ContainerPatchList{})
+	knownTypes = append(knownTypes, &ContainerPatch{}, &ContainerPatchList{})
 }
 
 func ToJsonPatch(in []JsonPatchBlock) jsonpatch.Patch {

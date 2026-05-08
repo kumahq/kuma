@@ -29,6 +29,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
@@ -494,15 +495,15 @@ func (r *resourceEndpoints) createResource(
 		}
 	}
 
-	labels, err := core_model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		res.Descriptor(),
 		res.GetSpec(),
 		res.GetMeta().GetLabels(),
 		meshName,
-		core_model.WithNamespace(core_model.GetNamespace(res.GetMeta(), r.systemNamespace)),
-		core_model.WithMode(r.mode),
-		core_model.WithK8s(r.isK8s),
-		core_model.WithZone(r.zoneName),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(res.GetMeta(), r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
@@ -542,15 +543,15 @@ func (r *resourceEndpoints) updateResource(
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
-	currentLabels, err := core_model.ComputeLabels(
+	currentLabels, err := resource_labels.Compute(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
 		currentRes.GetMeta().GetLabels(),
 		meshName,
-		core_model.WithNamespace(core_model.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
-		core_model.WithMode(r.mode),
-		core_model.WithK8s(r.isK8s),
-		core_model.WithZone(r.zoneName),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
@@ -560,15 +561,15 @@ func (r *resourceEndpoints) updateResource(
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	// Compute labels for new request
-	labels, err := core_model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
 		newResRest.GetMeta().GetLabels(),
 		meshName,
-		core_model.WithNamespace(core_model.GetNamespace(newResRest.GetMeta(), r.systemNamespace)),
-		core_model.WithMode(r.mode),
-		core_model.WithK8s(r.isK8s),
-		core_model.WithZone(r.zoneName),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(newResRest.GetMeta(), r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
