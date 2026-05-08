@@ -607,6 +607,8 @@ ingress:
   annotations: { }
   # -- Additional pod annotations
   podAnnotations: { }
+  # -- Annotations to add to the Deployment resource.
+  deploymentAnnotations: { }
   # -- Node Selector for the Ingress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -735,6 +737,8 @@ egress:
   annotations: { }
   # -- Additional pod annotations
   podAnnotations: { }
+  # -- Annotations to add to the Deployment resource.
+  deploymentAnnotations: { }
   # -- Node Selector for the Egress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -844,8 +848,6 @@ meshes:
     ingress:
       # -- Deploy a zone ingress for this mesh.
       enabled: false
-      # -- Number of replicas. Ignored when hpa.enabled is true.
-      replicas: 1
       # -- Per-mesh override for the pause container image. Falls back to
       # .Values.zoneProxyImage when unset. Partial overrides inherit the
       # remaining registry/repository/tag fields from the chart-level default.
@@ -863,15 +865,23 @@ meshes:
         # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
         # Merged directly into the Service spec.
         spec: {}
-      # -- Resource requests and limits for the pod (pod-level resources).
-      # Applied to all containers in the pod (pause + injected kuma-sidecar).
-      resources: {}
-      # -- Subset of Kubernetes PodSpec fields applied to the pod template
-      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-      #  priorityClassName, securityContext, containerSecurityContext).
-      podSpec: {}
-      # -- Resource requests and limits for the pause container.
-      containerResources: {}
+        # -- Annotations to add to the Service resource.
+        annotations: {}
+        # -- Labels to add to the Service resource.
+        labels: {}
+      # -- Deployment-level settings.
+      deployment:
+        # -- Number of replicas. Ignored when hpa.enabled is true.
+        replicas: 1
+        # -- Annotations to add to the Deployment resource.
+        annotations: {}
+        # -- Labels to add to the Deployment resource.
+        labels: {}
+        # -- Subset of Kubernetes PodSpec fields applied to the pod template
+        # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
+        podSpec: {}
       # -- Horizontal Pod Autoscaler settings.
       hpa:
         enabled: false
@@ -886,7 +896,6 @@ meshes:
     egress:
       # -- Deploy a zone egress for this mesh.
       enabled: false
-      replicas: 1
       # -- Per-mesh override for the pause container image. Falls back to
       # .Values.zoneProxyImage when unset. Partial overrides inherit the
       # remaining registry/repository/tag fields from the chart-level default.
@@ -904,15 +913,23 @@ meshes:
         # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
         # Merged directly into the Service spec.
         spec: {}
-      # -- Resource requests and limits for the pod (pod-level resources).
-      # Applied to all containers in the pod (pause + injected kuma-sidecar).
-      resources: {}
-      # -- Subset of Kubernetes PodSpec fields applied to the pod template
-      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-      #  priorityClassName, securityContext, containerSecurityContext).
-      podSpec: {}
-      # -- Resource requests and limits for the pause container.
-      containerResources: {}
+        # -- Annotations to add to the Service resource.
+        annotations: {}
+        # -- Labels to add to the Service resource.
+        labels: {}
+      # -- Deployment-level settings.
+      deployment:
+        # -- Number of replicas. Ignored when hpa.enabled is true.
+        replicas: 1
+        # -- Annotations to add to the Deployment resource.
+        annotations: {}
+        # -- Labels to add to the Deployment resource.
+        labels: {}
+        # -- Subset of Kubernetes PodSpec fields applied to the pod template
+        # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
+        podSpec: {}
       hpa:
         enabled: false
         minReplicas: 2

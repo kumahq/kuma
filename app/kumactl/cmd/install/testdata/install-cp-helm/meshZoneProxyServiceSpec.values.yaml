@@ -2,7 +2,6 @@ meshes:
   - name: default
     ingress:
       enabled: true
-      replicas: 1
       image:
         registry: registry.k8s.io
         repository: pause
@@ -15,7 +14,6 @@ meshes:
             - 10.0.0.0/8
     egress:
       enabled: true
-      replicas: 1
       image:
         registry: registry.k8s.io
         repository: pause

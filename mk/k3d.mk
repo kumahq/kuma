@@ -27,6 +27,8 @@ CALICO_VERSION ?= v3.32.0
 CALICO_NAMESPACE ?= tigera-operator
 CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
 CALICO_HELM_REPO_NAME ?= projectcalico
+CALICO_CRDS_HELM_RELEASE ?= calico-crds
+CALICO_CRDS_HELM_CHART ?= $(CALICO_HELM_REPO_NAME)/crd.projectcalico.org.v1
 CALICO_HELM_RELEASE ?= calico
 CALICO_HELM_CHART ?= $(CALICO_HELM_REPO_NAME)/tigera-operator
 
@@ -166,6 +168,11 @@ k3d/cluster/cni/setup/flannel: ; @
 k3d/cluster/cni/setup/calico:
 	$(Q)$(HELM) repo add $(CALICO_HELM_REPO_NAME) $(CALICO_HELM_REPO_ADDR) >/dev/null
 	$(Q)$(HELM) repo update $(CALICO_HELM_REPO_NAME) >/dev/null
+	$(Q)$(HELM) template $(CALICO_CRDS_HELM_RELEASE) $(CALICO_CRDS_HELM_CHART) \
+		--version $(CALICO_VERSION) | \
+		$(KUBECTL) apply --server-side -f -
+	$(Q)$(KUBECTL) wait --for=condition=Established --timeout=120s \
+		crd/installations.operator.tigera.io
 	$(Q)$(HELM) upgrade $(CALICO_HELM_RELEASE) $(CALICO_HELM_CHART) \
 		--install --create-namespace --wait \
 		--kube-context $(KUBECONTEXT) \
