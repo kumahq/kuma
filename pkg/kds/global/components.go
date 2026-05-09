@@ -26,7 +26,7 @@ func Setup(rt runtime.Runtime) error {
 		return nil
 	}
 
-	deltaServer, err := kds_server.New(
+	deltaServer, kdsMetrics, err := kds_server.New(
 		kdsDeltaGlobalLog,
 		rt,
 		rt.KDSContext().TypesSentByGlobal,
@@ -67,6 +67,7 @@ func Setup(rt runtime.Runtime) error {
 			return err
 		}
 	}
+	kdsSyncServer := mux.NewKDSSyncServiceServer(rt, deltaServer, resourceSyncer, kdsMetrics)
 	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
 		rt.KDSContext().ServerStreamInterceptors,
 		rt.KDSContext().ServerUnaryInterceptor,
@@ -83,11 +84,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.EventBus(),
 			rt.Config().Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration,
 		),
-		mux.NewKDSSyncServiceServer(
-			rt,
-			deltaServer,
-			resourceSyncer,
-		),
+		kdsSyncServer,
 	),
 		rt.Config().General.ResilientComponentBaseBackoff.Duration,
 		rt.Config().General.ResilientComponentMaxBackoff.Duration),

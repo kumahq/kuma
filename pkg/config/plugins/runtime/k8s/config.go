@@ -57,7 +57,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 							Memory: "64Mi",
 						},
 						Limits: SidecarResourceLimits{
-							CPU:    "1000m",
+							CPU:    "0",
 							Memory: "512Mi",
 						},
 					},
@@ -66,6 +66,28 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			ContainerPatches: []string{},
 			InitContainer: InitContainer{
 				Image: "kuma/kuma-init:latest",
+				Resources: InitContainerResources{
+					Requests: InitContainerResourceRequests{
+						CPU:    "20m",
+						Memory: "20M",
+					},
+					Limits: InitContainerResourceLimits{
+						CPU:    "0",
+						Memory: "50M",
+					},
+				},
+			},
+			ValidationContainer: ValidationContainer{
+				Resources: ValidationContainerResources{
+					Requests: ValidationContainerResourceRequests{
+						CPU:    "20m",
+						Memory: "20M",
+					},
+					Limits: ValidationContainerResourceLimits{
+						CPU:    "0",
+						Memory: "50M",
+					},
+				},
 			},
 			SidecarTraffic: SidecarTraffic{
 				ExcludeInboundPorts:  []uint32{},
@@ -213,6 +235,8 @@ type Injector struct {
 	SidecarContainer SidecarContainer `json:"sidecarContainer,omitempty"`
 	// InitContainer defines configuration of the Kuma init container.
 	InitContainer InitContainer `json:"initContainer,omitempty"`
+	// ValidationContainer defines configuration of the Kuma validation init container.
+	ValidationContainer ValidationContainer `json:"validationContainer,omitempty"`
 	// ContainerPatches is an optional list of ContainerPatch names which will be applied
 	// to init and sidecar containers if workload is not annotated with a patch list.
 	ContainerPatches []string `json:"containerPatches" envconfig:"kuma_runtime_kubernetes_injector_container_patches"`
@@ -395,6 +419,72 @@ type InitContainer struct {
 
 	// Image name.
 	Image string `json:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
+	// Compute resource requirements.
+	Resources InitContainerResources `json:"resources,omitempty"`
+}
+
+// InitContainerResources defines compute resource requirements for the init container.
+type InitContainerResources struct {
+	// Minimum amount of compute resources required.
+	Requests InitContainerResourceRequests `json:"requests,omitempty"`
+	// Maximum amount of compute resources allowed.
+	Limits InitContainerResourceLimits `json:"limits,omitempty"`
+}
+
+// InitContainerResourceRequests defines the minimum amount of compute resources required.
+type InitContainerResourceRequests struct {
+	config.BaseConfig
+
+	// CPU, in cores. (500m = .5 cores)
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_init_container_resources_requests_cpu"`
+	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_init_container_resources_requests_memory"`
+}
+
+// InitContainerResourceLimits defines the maximum amount of compute resources allowed.
+type InitContainerResourceLimits struct {
+	config.BaseConfig
+
+	// CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_init_container_resources_limits_cpu"`
+	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_init_container_resources_limits_memory"`
+}
+
+// ValidationContainer defines configuration of the Kuma validation init container.
+type ValidationContainer struct {
+	config.BaseConfig
+
+	// Compute resource requirements.
+	Resources ValidationContainerResources `json:"resources,omitempty"`
+}
+
+// ValidationContainerResources defines compute resource requirements for the validation init container.
+type ValidationContainerResources struct {
+	// Minimum amount of compute resources required.
+	Requests ValidationContainerResourceRequests `json:"requests,omitempty"`
+	// Maximum amount of compute resources allowed.
+	Limits ValidationContainerResourceLimits `json:"limits,omitempty"`
+}
+
+// ValidationContainerResourceRequests defines the minimum amount of compute resources required.
+type ValidationContainerResourceRequests struct {
+	config.BaseConfig
+
+	// CPU, in cores. (500m = .5 cores)
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_validation_container_resources_requests_cpu"`
+	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_validation_container_resources_requests_memory"`
+}
+
+// ValidationContainerResourceLimits defines the maximum amount of compute resources allowed.
+type ValidationContainerResourceLimits struct {
+	config.BaseConfig
+
+	// CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_validation_container_resources_limits_cpu"`
+	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_validation_container_resources_limits_memory"`
 }
 
 type BuiltinDNS struct {
@@ -484,12 +574,14 @@ var _ config.Config = &Injector{}
 
 func (i *Injector) Sanitize() {
 	i.InitContainer.Sanitize()
+	i.ValidationContainer.Sanitize()
 	i.SidecarContainer.Sanitize()
 }
 
 func (i *Injector) PostProcess() error {
 	return multierr.Combine(
 		i.InitContainer.PostProcess(),
+		i.ValidationContainer.PostProcess(),
 		i.SidecarContainer.PostProcess(),
 	)
 }
@@ -501,6 +593,9 @@ func (i *Injector) Validate() error {
 	}
 	if err := i.InitContainer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".InitContainer is not valid"))
+	}
+	if err := i.ValidationContainer.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".ValidationContainer is not valid"))
 	}
 	return errs
 }
@@ -555,10 +650,140 @@ func (c *SidecarContainer) Validate() error {
 
 var _ config.Config = &InitContainer{}
 
+func (c *InitContainer) Sanitize() {
+	c.Resources.Sanitize()
+}
+
+func (c *InitContainer) PostProcess() error {
+	return c.Resources.PostProcess()
+}
+
 func (c *InitContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+	}
+	if err := c.Resources.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Resources is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &InitContainerResources{}
+
+func (c *InitContainerResources) Sanitize() {
+	c.Limits.Sanitize()
+	c.Requests.Sanitize()
+}
+
+func (c *InitContainerResources) PostProcess() error {
+	return multierr.Combine(
+		c.Limits.PostProcess(),
+		c.Requests.PostProcess(),
+	)
+}
+
+func (c *InitContainerResources) Validate() error {
+	var errs error
+	if err := c.Requests.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Requests is not valid"))
+	}
+	if err := c.Limits.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Limits is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &InitContainerResourceRequests{}
+
+func (c *InitContainerResourceRequests) Validate() error {
+	var errs error
+	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+	}
+	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &InitContainerResourceLimits{}
+
+func (c *InitContainerResourceLimits) Validate() error {
+	var errs error
+	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+	}
+	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &ValidationContainer{}
+
+func (c *ValidationContainer) Sanitize() {
+	c.Resources.Sanitize()
+}
+
+func (c *ValidationContainer) PostProcess() error {
+	return c.Resources.PostProcess()
+}
+
+func (c *ValidationContainer) Validate() error {
+	if err := c.Resources.Validate(); err != nil {
+		return errors.Wrapf(err, ".Resources is not valid")
+	}
+	return nil
+}
+
+var _ config.Config = &ValidationContainerResources{}
+
+func (c *ValidationContainerResources) Sanitize() {
+	c.Limits.Sanitize()
+	c.Requests.Sanitize()
+}
+
+func (c *ValidationContainerResources) PostProcess() error {
+	return multierr.Combine(
+		c.Limits.PostProcess(),
+		c.Requests.PostProcess(),
+	)
+}
+
+func (c *ValidationContainerResources) Validate() error {
+	var errs error
+	if err := c.Requests.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Requests is not valid"))
+	}
+	if err := c.Limits.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Limits is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &ValidationContainerResourceRequests{}
+
+func (c *ValidationContainerResourceRequests) Validate() error {
+	var errs error
+	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+	}
+	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &ValidationContainerResourceLimits{}
+
+func (c *ValidationContainerResourceLimits) Validate() error {
+	var errs error
+	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+	}
+	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
 	}
 	return errs
 }

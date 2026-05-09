@@ -26,7 +26,7 @@ func NewCachedGlobalInsightService(globalInsightService GlobalInsightService, te
 	}
 }
 
-func (gis *cachedGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error) {
+func (gis *cachedGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsightBase, error) {
 	tenantID, err := gis.tenants.GetID(ctx)
 	if err != nil {
 		return nil, err
@@ -42,5 +42,5 @@ func (gis *cachedGlobalInsightService) GetGlobalInsight(ctx context.Context) (*a
 		return insight, nil
 	}
 
-	return obj.(*api_types.GlobalInsight), nil
+	return obj.(*api_types.GlobalInsightBase), nil
 }

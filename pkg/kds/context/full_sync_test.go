@@ -2,6 +2,7 @@ package context_test
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path"
 	"strings"
@@ -62,6 +63,19 @@ var _ = Describe("Full sync tests", func() {
 			defer GinkgoRecover()
 			Expect(rt.Start(done)).To(Succeed())
 		})
+		// Wait for the Global KDS listener to accept connections before
+		// starting zones. Otherwise zones can race Global's bind and
+		// hit "connection refused", which triggers the resilient
+		// component's 5s backoff — roughly the same as the test's
+		// 5s sync window, so the retry never lands in time.
+		Eventually(func() error {
+			c, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", globalPort), time.Second)
+			if err != nil {
+				return err
+			}
+			_ = c.Close()
+			return nil
+		}, "10s", "50ms").Should(Succeed())
 		// start zones
 		for zoneName, zoneStore := range zones {
 			if zoneName == "global" {

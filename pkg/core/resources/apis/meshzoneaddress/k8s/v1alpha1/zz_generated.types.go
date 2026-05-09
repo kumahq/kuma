@@ -97,7 +97,7 @@ func (l *MeshZoneAddressList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshZoneAddress{}, &MeshZoneAddressList{})
+	knownTypes = append(knownTypes, &MeshZoneAddress{}, &MeshZoneAddressList{})
 	registry.RegisterObjectType(&policy.MeshZoneAddress{}, &MeshZoneAddress{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

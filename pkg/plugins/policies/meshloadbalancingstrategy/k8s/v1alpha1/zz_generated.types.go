@@ -99,7 +99,7 @@ func (l *MeshLoadBalancingStrategyList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategyList{})
+	knownTypes = append(knownTypes, &MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategyList{})
 	registry.RegisterObjectType(&policy.MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategy{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

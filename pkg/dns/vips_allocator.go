@@ -218,6 +218,7 @@ func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(
 		// Error might occur only if we run out of VIPs. There is no point to pass it through,
 		// we must notify user in logs and proceed
 		Log.Error(err, "failed to allocate new VIPs", "mesh", mesh)
+		d.metrics.VipAllocationExhaustion.WithLabelValues(mesh).Inc()
 	}
 	changes, out := oldView.Update(newView)
 	if len(changes) == 0 {

@@ -99,7 +99,7 @@ func (l *MeshRetryList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshRetry{}, &MeshRetryList{})
+	knownTypes = append(knownTypes, &MeshRetry{}, &MeshRetryList{})
 	registry.RegisterObjectType(&policy.MeshRetry{}, &MeshRetry{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

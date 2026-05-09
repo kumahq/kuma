@@ -103,7 +103,7 @@ func (l *MeshTCPRouteList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTCPRoute{}, &MeshTCPRouteList{})
+	knownTypes = append(knownTypes, &MeshTCPRoute{}, &MeshTCPRouteList{})
 	registry.RegisterObjectType(&policy.MeshTCPRoute{}, &MeshTCPRoute{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

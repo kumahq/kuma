@@ -667,9 +667,9 @@ components:
           type: integer
           description: Number of meshes
           example: 3
-    schemas-GlobalInsight:
+    GlobalInsightBase:
       type: object
-      title: GlobalInsight
+      title: GlobalInsightBase
       description: Global Insight contains statistics for all main resources
       required:
         - createdAt
@@ -710,9 +710,6 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/ResourceStats'
           description: A map of resource names to their corresponding statistics
-    GlobalInsight:
-      allOf:
-        - $ref: '#/components/schemas/schemas-GlobalInsight'
     InspectHostnames:
       type: object
       title: InspectHostnames
@@ -752,8 +749,8 @@ components:
     DataplaneNetworkingLayout:
       type: object
       title: DataplaneLayout
-      description: Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
-      required: [ kri, labels, inbounds, outbounds ]
+      description: Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
+      required: [ kri, labels, inbounds, outbounds, listeners ]
       properties:
         kri:
           type: string
@@ -775,6 +772,13 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/DataplaneOutbound'
+        listeners:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneListener'
+        spiffeId:
+          type: string
+          description: SPIFFE ID of the dataplane's workload identity certificate
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -793,7 +797,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/GlobalInsight'
+            $ref: '#/components/schemas/GlobalInsightBase'
           examples:
             Single control plane response:
               $ref: '#/components/examples/GlobalInsightExample'

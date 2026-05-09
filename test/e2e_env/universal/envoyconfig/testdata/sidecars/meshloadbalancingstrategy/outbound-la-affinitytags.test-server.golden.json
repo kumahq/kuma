@@ -8,6 +8,17 @@
       }
     },
     {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.endpoint.v3.ClusterLoadAssignment/envoyconfig_test-server__kuma-3_msvc_80/endpoints/0/lbEndpoints/0/metadata/filterMetadata/io.kuma.labels",
+      "value": {
+        "kuma.io/env": "universal",
+        "kuma.io/mesh": "envoyconfig",
+        "kuma.io/origin": "zone",
+        "kuma.io/proxy-type": "sidecar",
+        "kuma.io/zone": "kuma-3"
+      }
+    },
+    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.endpoint.v3.ClusterLoadAssignment/envoyconfig_test-server__kuma-3_msvc_80/endpoints/0/loadBalancingWeight",
       "value": 1
@@ -186,8 +197,8 @@
                   "endpoint": {
                     "address": {
                       "socketAddress": {
-                        "address": "IP_REDACTED",
-                        "portValue": 9901
+                        "address": "ADMIN_REDACTED",
+                        "portValue": 0
                       }
                     }
                   }
@@ -210,8 +221,9 @@
                 {
                   "endpoint": {
                     "address": {
-                      "pipe": {
-                        "path": "/tmp/kuma-readiness-reporter.sock"
+                      "socketAddress": {
+                        "address": "ADMIN_REDACTED",
+                        "portValue": 0
                       }
                     }
                   }
@@ -313,6 +325,13 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -592,8 +611,8 @@
       "kuma:envoy:admin": {
         "address": {
           "socketAddress": {
-            "address": "IP_REDACTED",
-            "portValue": 9901
+            "address": "ADMIN_REDACTED",
+            "portValue": 0
           }
         },
         "enableReusePort": false,

@@ -111,7 +111,7 @@ func (l *MeshTraceList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTrace{}, &MeshTraceList{})
+	knownTypes = append(knownTypes, &MeshTrace{}, &MeshTraceList{})
 	registry.RegisterObjectType(&policy.MeshTrace{}, &MeshTrace{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

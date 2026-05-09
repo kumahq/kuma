@@ -21,21 +21,32 @@ func SkipInboundTags() {
 	meshName := "skip-inbound-tags"
 	namespace := "skip-inbound-tags-ns"
 
-	hostnameGenerator := fmt.Sprintf(`
+	meshIdentity := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
-kind: HostnameGenerator
+kind: MeshIdentity
 metadata:
+  name: identity-skip-inbound-tags
+  namespace: %s
   labels:
     kuma.io/mesh: %s
-  name: skip-inbound-tags-hg
-  namespace: %s
+    kuma.io/origin: zone
 spec:
   selector:
-    meshService:
-      matchLabels:
-        k8s.kuma.io/namespace: %s
-  template: "{{ .DisplayName }}.mesh"
-`, meshName, Config.KumaNamespace, namespace)
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: Bundled
+    bundled:
+      meshTrustCreation: Enabled
+      insecureAllowSelfSigned: true
+      certificateParameters:
+        expiry: 24h
+      autogenerate:
+        enabled: true
+`, Config.KumaNamespace, meshName)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -43,12 +54,10 @@ spec:
 			Install(Yaml(
 				builders.Mesh().
 					WithName(meshName).
-					WithBuiltinMTLSBackend("ca-1").
-					WithEnabledMTLSBackend("ca-1").
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			)).
-			Install(YamlK8s(hostnameGenerator)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(YamlK8s(meshIdentity)).
 			Install(Parallel(
 				testserver.Install(
 					testserver.WithName("test-server"),
@@ -92,9 +101,9 @@ spec:
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(
 				KubeCluster.GetTesting(),
-				KubeCluster.GetKubectlOptions(Config.KumaNamespace),
-				"get", "meshservices", "-n", Config.KumaNamespace,
-				"-l", fmt.Sprintf("k8s.kuma.io/namespace=%s", namespace),
+				KubeCluster.GetKubectlOptions(namespace),
+				"get", "meshservices", "-n", namespace,
+				"-l", fmt.Sprintf("kuma.io/mesh=%s", meshName),
 				"-o", "jsonpath={.items[*].spec.selector.dataplaneTags}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -104,9 +113,9 @@ spec:
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(
 				KubeCluster.GetTesting(),
-				KubeCluster.GetKubectlOptions(Config.KumaNamespace),
-				"get", "meshservices", "-n", Config.KumaNamespace,
-				"-l", fmt.Sprintf("k8s.kuma.io/namespace=%s", namespace),
+				KubeCluster.GetKubectlOptions(namespace),
+				"get", "meshservices", "-n", namespace,
+				"-l", fmt.Sprintf("kuma.io/mesh=%s", meshName),
 				"-o", "jsonpath={.items[*].spec.selector.dataplaneLabels}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -119,7 +128,7 @@ spec:
 			_, err := client.CollectEchoResponse(
 				KubeCluster,
 				"demo-client",
-				"test-server.mesh",
+				fmt.Sprintf("test-server.%s.svc.cluster.local", namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

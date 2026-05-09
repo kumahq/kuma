@@ -15,7 +15,7 @@ import (
 )
 
 type GlobalInsightService interface {
-	GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error)
+	GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsightBase, error)
 }
 
 type defaultGlobalInsightService struct {
@@ -32,8 +32,8 @@ func NewDefaultGlobalInsightService(resourceStore core_store.ResourceStore) Glob
 	}
 }
 
-func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error) {
-	globalInsights := &api_types.GlobalInsight{CreatedAt: core.Now()}
+func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsightBase, error) {
+	globalInsights := &api_types.GlobalInsightBase{CreatedAt: core.Now()}
 
 	meshInsights := &mesh.MeshInsightResourceList{}
 	if err := gis.resourceStore.List(ctx, meshInsights); err != nil {
@@ -69,7 +69,7 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 
 func (gis *defaultGlobalInsightService) aggregateDataplanes(
 	meshInsights *mesh.MeshInsightResourceList,
-	globalInsight *api_types.GlobalInsight,
+	globalInsight *api_types.GlobalInsightBase,
 ) {
 	for _, meshInsight := range meshInsights.GetItems() {
 		dataplanesByType := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetDataplanesByType()
@@ -96,7 +96,7 @@ func (gis *defaultGlobalInsightService) aggregateDataplanes(
 
 func (gis *defaultGlobalInsightService) aggregatePolicies(
 	meshInsights *mesh.MeshInsightResourceList,
-	globalInsight *api_types.GlobalInsight,
+	globalInsight *api_types.GlobalInsightBase,
 ) {
 	for _, meshInsight := range meshInsights.GetItems() {
 		policies := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetPolicies()
@@ -110,7 +110,7 @@ func (gis *defaultGlobalInsightService) aggregatePolicies(
 func (gis *defaultGlobalInsightService) aggregateResources(
 	ctx context.Context,
 	meshInsights *mesh.MeshInsightResourceList,
-	globalInsight *api_types.GlobalInsight,
+	globalInsight *api_types.GlobalInsightBase,
 ) error {
 	globalInsight.Resources = map[string]api_types.ResourceStats{}
 	for _, meshInsight := range meshInsights.GetItems() {
@@ -164,7 +164,7 @@ func addResourceTotal(resources map[string]api_types.ResourceStats, resourceName
 
 func (gis *defaultGlobalInsightService) aggregateServices(
 	ctx context.Context,
-	globalInsight *api_types.GlobalInsight,
+	globalInsight *api_types.GlobalInsightBase,
 ) error {
 	serviceInsights := &mesh.ServiceInsightResourceList{}
 	if err := gis.resourceStore.List(ctx, serviceInsights); err != nil {
@@ -207,7 +207,7 @@ func updateServiceStatus(serviceStatus mesh_proto.ServiceInsight_Service_Status,
 
 func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
 	ctx context.Context,
-	globalInsight *api_types.GlobalInsight,
+	globalInsight *api_types.GlobalInsightBase,
 ) error {
 	zoneInsights := &system.ZoneInsightResourceList{}
 	if err := gis.resourceStore.List(ctx, zoneInsights); err != nil {
@@ -226,7 +226,7 @@ func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
 
 func (gis *defaultGlobalInsightService) aggregateZoneIngresses(
 	ctx context.Context,
-	globalInsight *api_types.GlobalInsight,
+	globalInsight *api_types.GlobalInsightBase,
 ) error {
 	zoneIngressInsights := &mesh.ZoneIngressInsightResourceList{}
 	if err := gis.resourceStore.List(ctx, zoneIngressInsights); err != nil {
@@ -245,7 +245,7 @@ func (gis *defaultGlobalInsightService) aggregateZoneIngresses(
 
 func (gis *defaultGlobalInsightService) aggregateZoneEgresses(
 	ctx context.Context,
-	globalInsight *api_types.GlobalInsight,
+	globalInsight *api_types.GlobalInsightBase,
 ) error {
 	zoneEgressInsights := &mesh.ZoneEgressInsightResourceList{}
 	if err := gis.resourceStore.List(ctx, zoneEgressInsights); err != nil {

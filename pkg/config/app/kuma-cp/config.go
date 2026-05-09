@@ -50,10 +50,17 @@ type Defaults struct {
 type Metrics struct {
 	config.BaseConfig
 
-	Dataplane    *DataplaneMetrics    `json:"dataplane"`
-	Zone         *ZoneMetrics         `json:"zone"`
-	Mesh         *MeshMetrics         `json:"mesh"`
-	ControlPlane *ControlPlaneMetrics `json:"controlPlane"`
+	Dataplane     *DataplaneMetrics     `json:"dataplane"`
+	Zone          *ZoneMetrics          `json:"zone"`
+	Mesh          *MeshMetrics          `json:"mesh"`
+	ControlPlane  *ControlPlaneMetrics  `json:"controlPlane"`
+	OpenTelemetry *MetricsOpenTelemetry `json:"openTelemetry"`
+}
+
+// MetricsOpenTelemetry configures CP metrics push via OTLP.
+type MetricsOpenTelemetry struct {
+	// If true, CP metrics will be pushed via OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set.
+	Enabled bool `json:"enabled" envconfig:"kuma_metrics_opentelemetry_enabled"`
 }
 
 func (m *Metrics) Validate() error {
@@ -263,6 +270,9 @@ var DefaultConfig = func() Config {
 			},
 			ControlPlane: &ControlPlaneMetrics{
 				ReportResourcesCount: true,
+			},
+			OpenTelemetry: &MetricsOpenTelemetry{
+				Enabled: true,
 			},
 		},
 		Reports: &Reports{
@@ -558,6 +568,13 @@ func (c Config) GetEnvoyAdminPort() uint32 {
 	return c.BootstrapServer.Params.AdminPort
 }
 
+func (c Config) GetEnvoyReadinessPort() uint32 {
+	if c.BootstrapServer == nil || c.BootstrapServer.Params == nil {
+		return 0
+	}
+	return c.BootstrapServer.Params.ReadinessPort
+}
+
 type MeshMultiZoneServiceIPAM struct {
 	// CIDR for MeshMultiZone IPs
 	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"`
@@ -571,8 +588,8 @@ func (i MeshMultiZoneServiceIPAM) Validate() error {
 }
 
 type MeshServiceConfig struct {
-	// How often we check whether MeshServices need to be generated from
-	// Dataplanes
+	// How often we check whether MeshServices need to be
+	// generated from Dataplanes set to 0 to disable automatic meshservice management (only applies to universal)
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
 	// How long we wait before deleting a MeshService if all Dataplanes are gone
 	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD"`

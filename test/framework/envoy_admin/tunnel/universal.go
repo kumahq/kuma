@@ -22,8 +22,44 @@ func NewUniversalEnvoyAdminTunnel(remoteExec func(cmdName, cmd string) (string, 
 	}
 }
 
+// adminCurlCmd builds a curl command that auto-detects whether admin is on
+// a Unix domain socket (kuma-envoy-admin.sock) or TCP port 9901.
+func adminCurlCmd(flags, path string) string {
+	return fmt.Sprintf(
+		`sock=$(find /tmp -name kuma-envoy-admin.sock 2>/dev/null | head -1); `+
+			`if [ -n "$sock" ]; then `+
+			`curl %s --unix-socket "$sock" 'http://localhost%s'; `+
+			`else `+
+			`curl %s 'http://localhost:9901%s'; `+
+			`fi`,
+		flags, path, flags, path,
+	)
+}
+
+// AdminCurlCmd returns a shell command that curls the Envoy admin API,
+// auto-detecting UDS vs TCP. Use in Cluster.Exec calls from test code.
+//
+// Returns a single-element slice so that Exec (which joins args with
+// spaces) preserves the script as one shell command.
+func AdminCurlCmd(path string) []string {
+	return []string{
+		fmt.Sprintf(
+			`sock=$(find /tmp -name kuma-envoy-admin.sock 2>/dev/null | head -1); `+
+				`if [ -n "$sock" ]; then `+
+				`curl -s --max-time 5 --fail --unix-socket "$sock" 'http://localhost%s'; `+
+				`else `+
+				`curl -s --max-time 5 --fail 'http://localhost:9901%s'; `+
+				`fi`,
+			path, path,
+		),
+	}
+}
+
 func (t *UniversalTunnel) GetStats(name string) (*stats.Stats, error) {
-	stdout, err := t.remoteExec("getstats_"+name, fmt.Sprintf("curl -s --max-time 3 --fail 'http://localhost:9901/stats?format=json&filter=%s'", name))
+	stdout, err := t.remoteExec(
+		"getstats_"+name,
+		adminCurlCmd("-s --max-time 3 --fail", fmt.Sprintf("/stats?format=json&filter=%s", name)),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +72,10 @@ func (t *UniversalTunnel) GetStats(name string) (*stats.Stats, error) {
 }
 
 func (t *UniversalTunnel) GetClusters() (*clusters.Clusters, error) {
-	stdout, err := t.remoteExec("getclusters", "curl -s --max-time 3 --fail http://localhost:9901/clusters?format=json")
+	stdout, err := t.remoteExec(
+		"getclusters",
+		adminCurlCmd("-s --max-time 3 --fail", "/clusters?format=json"),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +88,10 @@ func (t *UniversalTunnel) GetClusters() (*clusters.Clusters, error) {
 }
 
 func (t *UniversalTunnel) GetConfigDump() (*config_dump.EnvoyConfig, error) {
-	stdout, err := t.remoteExec("getconfig_dump", "curl -s --max-time 3 --fail http://localhost:9901/config_dump?format=json")
+	stdout, err := t.remoteExec(
+		"getconfig_dump",
+		adminCurlCmd("-s --max-time 3 --fail", "/config_dump?format=json"),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +100,9 @@ func (t *UniversalTunnel) GetConfigDump() (*config_dump.EnvoyConfig, error) {
 }
 
 func (t *UniversalTunnel) ResetCounters() error {
-	_, err := t.remoteExec("resetcounters", "curl -v --max-time 3 --fail -XPOST 'http://localhost:9901/reset_counters'")
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := t.remoteExec(
+		"resetcounters",
+		adminCurlCmd("-v --max-time 3 --fail -XPOST", "/reset_counters"),
+	)
+	return err
 }
