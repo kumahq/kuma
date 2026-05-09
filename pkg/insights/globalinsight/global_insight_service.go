@@ -19,13 +19,17 @@ type GlobalInsightService interface {
 }
 
 type defaultGlobalInsightService struct {
-	resourceStore core_store.ResourceStore
+	resourceStore             core_store.ResourceStore
+	globalResourceDescriptors []core_model.ResourceTypeDescriptor
 }
 
 var _ GlobalInsightService = &defaultGlobalInsightService{}
 
 func NewDefaultGlobalInsightService(resourceStore core_store.ResourceStore) GlobalInsightService {
-	return &defaultGlobalInsightService{resourceStore: resourceStore}
+	return &defaultGlobalInsightService{
+		resourceStore:             resourceStore,
+		globalResourceDescriptors: globalResourceDescriptors(),
+	}
 }
 
 func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error) {
@@ -115,18 +119,7 @@ func (gis *defaultGlobalInsightService) aggregateResources(
 		}
 	}
 
-	for _, descriptor := range registry.Global().ObjectDescriptors(
-		core_model.HasScope(core_model.ScopeGlobal),
-		core_model.HasWsEnabled(),
-		core_model.Not(core_model.IsInsight()),
-		core_model.Not(core_model.Named(
-			mesh.MeshType,
-			system.ZoneType,
-			mesh.ZoneIngressType,
-			mesh.ZoneEgressType,
-			system.ConfigType,
-		)),
-	) {
+	for _, descriptor := range gis.globalResourceDescriptors {
 		list := descriptor.NewList()
 		if err := gis.resourceStore.List(ctx, list); err != nil {
 			return err
@@ -137,10 +130,30 @@ func (gis *defaultGlobalInsightService) aggregateResources(
 			continue
 		}
 
-		addResourceTotal(globalInsight.Resources, string(descriptor.Name), count)
+		globalInsight.Resources[string(descriptor.Name)] = api_types.ResourceStats{
+			Total: count,
+		}
 	}
 
 	return nil
+}
+
+func globalResourceDescriptors() []core_model.ResourceTypeDescriptor {
+	return registry.Global().ObjectDescriptors(
+		core_model.HasScope(core_model.ScopeGlobal),
+		core_model.HasWsEnabled(),
+		core_model.TypeFilterFn(func(descriptor core_model.ResourceTypeDescriptor) bool {
+			return !descriptor.AdminOnly
+		}),
+		core_model.Not(core_model.IsInsight()),
+		core_model.Not(core_model.Named(
+			mesh.MeshType,
+			system.ZoneType,
+			mesh.ZoneIngressType,
+			mesh.ZoneEgressType,
+			system.ConfigType,
+		)),
+	)
 }
 
 func addResourceTotal(resources map[string]api_types.ResourceStats, resourceName string, total int) {
