@@ -6,12 +6,12 @@ Technical Story: https://github.com/Kong/kong-mesh/issues/9443
 
 ## Context and Problem Statement
 
-On Universal, the CP auto-generates `MeshService` from `Dataplane` inbound tags (`pkg/core/resources/apis/meshservice/generate/generator.go`). A field report exposed two unmet needs:
+On Universal, the control plane (CP) auto-generates `MeshService` from `Dataplane` inbound tags (`pkg/core/resources/apis/meshservice/generate/generator.go`). A field report exposed two unmet needs:
 
-- Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the auto-generated `MeshService`. MMZS selects on `MeshService.metadata.labels`, so multi-zone selection by team/env is impossible for Universal today.
+- Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the auto-generated `MeshService`. MeshMultiZoneService (MMZS) selects on `MeshService.metadata.labels`, so multi-zone selection by team/env is impossible for Universal today.
 - Some operators (ECS/Fargate behind restricted networks) cannot reach the zone CP REST API. Their only channel is the `Dataplane` shipped via `kuma-dp run --dataplane-file`.
 
-Inbound tags do two jobs: DP grouping (which DPs are one logical service) and per-inbound service membership (which services this port serves). The `kuma.io/workload` label and existing `Workload` generator solve the first job. M:M cases (port carve-out: one workload to many MeshServices; workload aggregation: blue/green, canary) need the second.
+Inbound tags do two jobs: data plane (DP) grouping (which DPs are one logical service) and per-inbound service membership (which services this port serves). The `kuma.io/workload` label and existing `Workload` generator solve the first job. Many-to-many (M:M) cases (port carve-out: one workload to many MeshServices; workload aggregation: blue/green, canary) need the second.
 
 ### Use cases
 
@@ -29,7 +29,7 @@ Inbound tags do two jobs: DP grouping (which DPs are one logical service) and pe
 
 ### Release timeline
 
-- Kuma 2.14: tag-free operation supported on K8s and Universal, opt-in via `inboundTagsDisabled`. The structural replacement (C or D) ships here with a migration tool. The tactical label-propagation patch ships here.
+- Kuma 2.14: tag-free operation supported on Kubernetes (K8s) and Universal, opt-in via `inboundTagsDisabled`. The structural replacement (C or D) ships here with a migration tool. The tactical label-propagation patch ships here.
 - Kuma 3.0: tags removed by default. Downstream policies matching `kuma.io/service` break unless migrated.
 
 ## Design
