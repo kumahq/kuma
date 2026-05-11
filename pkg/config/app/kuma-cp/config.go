@@ -294,7 +294,7 @@ var DefaultConfig = func() Config {
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
 				DelayFullResync:    false,
 			},
-			SidecarContainers: false,
+			SidecarContainers: true,
 			DeltaXds:          false,
 		},
 		Proxy:         xds.DefaultProxyConfig(),

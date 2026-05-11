@@ -851,7 +851,7 @@ experimental:
   autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
   # Enables sidecar containers in Kubernetes if supported by the Kubernetes
   # environment.
-  sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+  sidecarContainers: true # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   # If true uses Delta xDS to deliver changes to sidecars.
   deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
 proxy:
