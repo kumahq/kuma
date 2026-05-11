@@ -25,7 +25,6 @@ Inbound tags do two jobs: data plane (DP) grouping (which DPs are one logical se
 - Restricted-network operators must declare intent and observe its effect through the `Dataplane`/`kuma-dp` channel only. Signals queryable solely via `kumactl inspect` are unreachable for them.
 - Auto-generation has a single writer (CP). Distributed N-writer designs on a shared resource reintroduce CP-side coordination.
 - Silent MMZS misses are unacceptable.
-- Decision-blocking inputs: empirical M:M usage frequency (Options C vs D), and Workload-to-MeshService lifecycle ownership (cascading vs grace-period delete).
 
 ### Release timeline
 
