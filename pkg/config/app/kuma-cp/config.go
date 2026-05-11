@@ -608,7 +608,7 @@ type MeshServiceConfig struct {
 func (i MeshServiceConfig) Validate() error {
 	for _, k := range i.LabelPropagation.AllowedLabelKeys {
 		if mesh_proto.IsReservedLabelKey(k) {
-			return errors.Errorf("LabelPropagation.AllowedLabelKeys contains reserved key %q", k)
+			return errors.Errorf(".MeshService.LabelPropagation.AllowedLabelKeys contains reserved key %q", k)
 		}
 	}
 	return nil
