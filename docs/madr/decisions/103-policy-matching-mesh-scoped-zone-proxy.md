@@ -344,8 +344,7 @@ type SNIMatch struct {
 - With the KRI-based SNI format [MADR-101](101-sni-format-improvements.md), SNIs are human-readable and predictable —
   users construct them from resource attributes without querying the CP.
 - `sni` in `Match` is not limited to zone proxy Dataplanes. It applies wherever the policy
-  implementation has SNI available for matching traffic; zone proxy inbound listeners are the
-  first supported consumer.
+  implementation has SNI available for matching traffic.
 
 `targetRef` in `Match` may be added as a follow-up once `sni` is proven in production.
 The `Match` struct can be extended without breaking existing policies.
