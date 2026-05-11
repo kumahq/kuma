@@ -1,18 +1,13 @@
 # Auto-generated MeshService on Universal post-inbound-tag removal
 
-* Status: proposed
+* Status: accepted
 
 Technical Story: https://github.com/Kong/kong-mesh/issues/9443
 
 ## Context and Problem Statement
 
 On Universal, the CP auto-generates `MeshService` from `Dataplane` inbound tags
-(`pkg/core/resources/apis/meshservice/generate/generator.go`). Two in-flight
-changes collide:
-
-1. Remove auto-generation of `MeshService` on Universal.
-2. Remove `Dataplane` inbound tags in favour of `MeshService` as primary identity.
-
+(`pkg/core/resources/apis/meshservice/generate/generator.go`). 
 A field report exposed two unmet needs:
 
 - Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the
@@ -32,8 +27,7 @@ aggregation: blue/green, canary) need the second.
 
 1. Trivial: N tasks for one service, one MeshService, custom labels reach `MeshService.metadata.labels`.
 2. Port carve-out: one workload exposes `http`, `admin`, `metrics` as separate MeshServices.
-3. Workload aggregation: two workloads (blue/green) back the same MeshService.
-4. Restricted-network operator: declares everything via `Dataplane` template at `kuma-dp` startup.
+3. Restricted-network operator: declares everything via `Dataplane` template at `kuma-dp` startup.
 
 ## Decision Drivers
 
@@ -43,17 +37,10 @@ aggregation: blue/green, canary) need the second.
 - Silent MMZS misses are unacceptable.
 - Decision-blocking inputs: empirical M:M usage frequency (Options C vs D), and Workload-to-MeshService lifecycle ownership (cascading vs grace-period delete).
 
-### Release timeline (hard)
+### Release timeline
 
 - Kuma 2.14: tag-free operation supported on K8s and Universal, opt-in via `inboundTagsDisabled`. The structural replacement (C or D) ships here with a migration tool. The tactical label-propagation patch ships here.
 - Kuma 3.0: tags removed by default. Downstream policies matching `kuma.io/service` break unless migrated.
-- Exit criteria below are 2.14-cycle deliverables.
-
-### Path-dependent constraints
-
-- KDS replication: any auto-gen must round-trip zone to global cleanly.
-- MMZS resolution: needs a deterministic label source-of-truth across reconciles.
-- Unified resource naming: validator enforces `inbound.name` stability.
 
 ## Design
 
@@ -83,6 +70,7 @@ CP generates one MeshService per `kuma.io/workload` value; ports = union of all 
 
 * Good. Covers the trivial case with no new spec fields.
 * Bad. Cannot express M:M cases. Removing inbound tags silently drops port carve-out and workload aggregation.
+* Bad. Blue/green deployments impossible
 
 ### Option D: structured per-inbound `meshServices` field
 
@@ -106,12 +94,12 @@ label match plus per-port-name filter; `ports` is the union by `inbound.name`;
 
 Member DPs sorted by `(creation_time, name)` via `SortDataplanes`. On conflict:
 
-| Conflict | Policy |
-|---|---|
-| Same port name, different port/protocol | First-DP-wins; `WorkloadStatus.Conditions[PortConflict]=True` |
-| Same label key, different value | First-DP-wins; `WorkloadStatus.Conditions[LabelConflict]=True` |
-| Divergent port set across DPs | Union; xDS endpoint filter drops DPs missing the port |
-| Missing `kuma.io/workload` or `inbound.name` | Reject at registration |
+| Conflict                                     | Policy                                                         |
+|----------------------------------------------|----------------------------------------------------------------|
+| Same port name, different port/protocol      | First-DP-wins; `WorkloadStatus.Conditions[PortConflict]=True`  |
+| Same label key, different value              | First-DP-wins; `WorkloadStatus.Conditions[LabelConflict]=True` |
+| Divergent port set across DPs                | Union; xDS endpoint filter drops DPs missing the port          |
+| Missing `kuma.io/workload` or `inbound.name` | Reject at registration                                         |
 
 Migration: `kuma.io/service: <name>` inbound tag becomes `inbound.meshServices: [<name>]`. Mechanical 1:1 lift.
 
@@ -126,14 +114,7 @@ Migration: `kuma.io/service: <name>` inbound tag becomes `inbound.meshServices: 
 * Bad. First-DP-wins may not match operator intuition for blue/green (newest-wins).
 * Bad. Largest implementation surface: validator, generator, condition lifecycle, xDS filter, migration tool, downstream policy audits.
 
-### Tactical patch (independent, ships in 2.14)
-
-Generator propagates non-`kuma.io/*` keys from `Dataplane.metadata.labels` to
-`MeshService.metadata.labels`, first-DP-wins. Closes the field report. Inbound
-tags do not propagate, which signals deprecation. Once shipped, MMZS selectors
-in the wild depend on it; Option B becomes materially harder.
-
-### Migration window behavior
+#### Migration window behavior
 
 A fleet in transition carries both forms. `checkMeshServicesConsistency`
 oscillates each tick under split fleets. The chosen option must enforce one
@@ -142,45 +123,29 @@ of:
 - Validator: a Dataplane MUST NOT carry both `inbound.tags["kuma.io/service"]` and the new field.
 - Per-mesh flag: `inboundTagsDisabled` flips per-mesh, exactly one generator path per mesh.
 
-### Alternatives not considered
-
-- Event-driven generator off `DataplaneLifecycle`: revisit if the performance budget is exceeded.
-- MeshService-as-view (not stock): foreclosed by the current KDS/MMZS replication contract.
-
-## Security implications and review
+#### Security implications and review
 
 - DP token scope unchanged; CP remains sole `MeshService` writer.
 - No new privileged DP-to-CP channel. Option A's auth-broadening is avoided.
 - `kuma.io/workload` and `inbound.meshServices` are validated at Dataplane registration.
 
-## Reliability implications
+#### Reliability implications
 
-- Silent MMZS-miss is the dominant failure. CP emits a structured warning and
-  metric whenever an MMZS resolves to zero MeshServices in a zone. Lands with
-  the tactical patch.
 - `WorkloadStatus.Conditions[PortConflict|LabelConflict]` are set and cleared
   on every reconcile pass; stale `True` values are unacceptable and must be
   tested.
 - Conflict signals must mirror to `DataplaneInsight` so `kuma-dp` logs surface
   them locally for restricted-network operators.
-- `inboundTagsDisabled` is opt-in in 2.14 and default in 3.0; no follow-up
-  MADR. Migration is forward-only.
 
-### Required failure-mode handling
+## Tactical patch (independent, ships in 2.14)
 
-| Failure | Required behavior |
-|---|---|
-| Cross-operator `kuma.io/workload` collision | Validator checks uniqueness within mesh, or document accepted merge |
-| Auto-gen vs operator-authored MeshService same name | Operator-authored wins via `ManagedByLabel`; generator MUST NOT overwrite |
-| Operator removes `kuma.io/workload` from running DP | Treat as workload departure; grace-period delete only when no DP claims it |
-| Conflict resolved between reconciles | Set conditions to `False` explicitly on clean pass |
-
-### Performance budget
-
-Polling cost at scale is unmeasured. Publish p50/p99 of
-`component_meshservice_generator` at 1k, 5k, and 20k Dataplanes before the
-structural option lands. Option D adds an O(M) factor (mean `meshServices[]`
-cardinality) on top of the existing O(D·I).
+- Generator propagates non-`kuma.io/*` keys from `Dataplane.metadata.labels` to
+`MeshService.metadata.labels`, first-DP-wins. Closes the field report. Inbound
+tags do not propagate, which signals deprecation. Once shipped, MMZS selectors
+in the wild depend on it.
+- Silent MMZS-miss is the dominant failure. CP emits a structured warning and
+metric whenever an MMZS resolves to zero MeshServices in a zone. Lands with
+the tactical patch.
 
 ## Implications for Kong Mesh
 
@@ -190,19 +155,5 @@ audit policies, run the migration tool, and document the 2.14-to-3.0 upgrade.
 
 ## Decision
 
-TBD. The tactical patch and MMZS observability ship in 2.14 ahead of the structural decision.
-
-## Exit criteria (close inside Kuma 2.14)
-
-1. M:M telemetry: count unique `kuma.io/service` values per workload-grouped DP set. Threshold of >=X% with >1 service/workload picks Option D; below picks Option C.
-2. Performance run at 1k, 5k, and 20k Dataplanes.
-3. Operator interviews: 3-5 ECS/Fargate restricted-network operators, ACTA-style.
-4. Lifecycle commitment: Workload-owns-MeshService vs generator-owns-MeshService.
-5. Migration tool ships in 2.14 alongside opt-in.
-6. Conflict policy locked: first-DP-wins vs newest-wins vs explicit priority, decided on data, not aesthetics.
-
-## Notes
-
-- Open: precise selector encoding for "workload labels union per-port filter". May live in xDS endpoint generator; confirm against `pkg/xds/generator/endpoint*`.
-- Open: field naming to avoid `meshServices` (field) vs `MeshService` (resource) confusion.
-- Open: whether to widen the bootstrap channel to accept operator-authored MeshService for the restricted-network cohort, narrowing the gap between Options B and D.
+Not generating MeshService on univeral is most clean solution. In removes all the ambiguities that comes with MeshService generation. 
+It leaves full controll over Mesh Service to Mesh Operator, they can label it as they need for grouping in MeshMultizoneService.
