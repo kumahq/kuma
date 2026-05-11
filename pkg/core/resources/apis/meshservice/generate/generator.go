@@ -77,14 +77,12 @@ func New(
 }
 
 type meshServicesResult struct {
-	services          map[string]*meshservice_api.MeshService
-	inboundsByService map[string][]*mesh_proto.Dataplane_Networking_Inbound
+	services map[string]*meshservice_api.MeshService
 }
 
 func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
-	inboundsByService := map[string][]*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		if g.inboundTagsDisabled && len(inbound.GetTags()) == 0 {
 			continue
@@ -114,7 +112,6 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		}
 
 		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
-		inboundsByService[serviceTagValue] = append(inboundsByService[serviceTagValue], inbound)
 	}
 
 	services := map[string]*meshservice_api.MeshService{}
@@ -130,15 +127,13 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		services[serviceTag] = &ms
 	}
 	return meshServicesResult{
-		services:          services,
-		inboundsByService: inboundsByService,
+		services: services,
 	}
 }
 
 type dataplaneAndMeshService struct {
-	dataplane         model.ResourceMeta
-	meshService       *meshservice_api.MeshService
-	labelContribution map[string]string // nil for now; populated in Phase 4
+	dataplane   model.ResourceMeta
+	meshService *meshservice_api.MeshService
 }
 
 // checkMeshServicesConsistency returns a list of dataplanes that conflict and
@@ -193,9 +188,8 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		result := g.meshServicesForDataplane(dataplane)
 		for name, ms := range result.services {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
-				dataplane:         dataplane.GetMeta(),
-				meshService:       ms,
-				labelContribution: nil,
+				dataplane:   dataplane.GetMeta(),
+				meshService: ms,
 			})
 		}
 	}
@@ -223,8 +217,10 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			meshService.Meta = meta
 			meshService.Spec = newMeshService
 
-			// Unset the grace period by excluding it from desired labels
-			newLabels := desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, nil)
+			// Preserve existing labels, removing only the grace-period label
+			existingLabels := maps.Clone(meshService.GetMeta().GetLabels())
+			delete(existingLabels, mesh_proto.DeletionGracePeriodStartedLabel)
+			newLabels := desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, existingLabels)
 
 			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 				log.Error(err, "couldn't update MeshService")

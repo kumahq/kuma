@@ -379,6 +379,35 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
+	It("should preserve existing labels when updating MeshService", func() {
+		err := samples.DataplaneBackendBuilder().Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		ms := meshservice_api.NewMeshServiceResource()
+		Eventually(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+		}, "2s", "100ms").Should(Succeed())
+
+		labelsWithCustom := make(map[string]string)
+		for k, v := range ms.GetMeta().GetLabels() {
+			labelsWithCustom[k] = v
+		}
+		labelsWithCustom["custom.io/extra"] = "preserved"
+		Expect(resManager.Update(context.Background(), ms, store.UpdateWithLabels(labelsWithCustom))).To(Succeed())
+
+		dp := core_mesh.NewDataplaneResource()
+		Expect(resManager.Get(context.Background(), dp, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
+		dp.Spec.Networking.Inbound[0].Port += 1
+		dp.Spec.Networking.Inbound[0].ServicePort += 1
+		Expect(resManager.Update(context.Background(), dp)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.Spec.Ports[0].Port).To(Equal(int32(81)))
+			g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("custom.io/extra", "preserved"))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
 	It("should emit metric", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_meshservice_generator")).ToNot(BeNil())
