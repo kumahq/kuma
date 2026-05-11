@@ -8,7 +8,7 @@ Technical Story: https://github.com/Kong/kong-mesh/issues/9443
 
 On Universal, the control plane (CP) auto-generates `MeshService` from `Dataplane` inbound tags (`pkg/core/resources/apis/meshservice/generate/generator.go`). A field report exposed two unmet needs:
 
-- Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the auto-generated `MeshService`. MeshMultiZoneService (MMZS) selects on `MeshService.metadata.labels`, so multi-zone selection by team/env is impossible for Universal today.
+- Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the auto-generated `MeshService`. MeshMultizoneService selects on `MeshService.metadata.labels`, so multi-zone selection by team/env is impossible for Universal today.
 - Some operators (ECS/Fargate behind restricted networks) cannot reach the zone CP REST API. Their only channel is the `Dataplane` shipped via `kuma-dp run --dataplane-file`.
 
 Inbound tags do two jobs: data plane (DP) grouping (which DPs are one logical service) and per-inbound service membership (which services this port serves). The `kuma.io/workload` label and existing `Workload` generator solve the first job. Many-to-many (M:M) cases (port carve-out: one workload to many MeshServices; workload aggregation: blue/green, canary) need the second.
@@ -24,11 +24,11 @@ Inbound tags do two jobs: data plane (DP) grouping (which DPs are one logical se
 - Removing inbound tags must not regress M:M expressiveness.
 - Restricted-network operators must declare intent and observe its effect through the `Dataplane`/`kuma-dp` channel only. Signals queryable solely via `kumactl inspect` are unreachable for them.
 - Auto-generation has a single writer (CP). Distributed N-writer designs on a shared resource reintroduce CP-side coordination.
-- Silent MMZS misses are unacceptable.
+- Silent MeshMultizoneService misses are unacceptable.
 
 ### Release timeline
 
-- Kuma 2.14: tag-free operation supported on Kubernetes (K8s) and Universal, opt-in via `inboundTagsDisabled`. The structural replacement (C or D) ships here with a migration tool. The tactical label-propagation patch ships here.
+- Kuma 2.14: tag-free operation supported on Kubernetes (K8s) and Universal, opt-in via `inboundTagsDisabled`. The chosen path (Option D) ships here with a migration tool. The tactical label-propagation patch ships here.
 - Kuma 3.0: tags removed by default. Downstream policies matching `kuma.io/service` break unless migrated.
 
 ## Design
@@ -41,19 +41,7 @@ DP renders MeshService template and submits via bootstrap; CP upserts.
 * Bad. The mitigations (idempotent first-write, ref counting, primary DP) reintroduce CP coordination.
 * Bad. Broadens DP token to write a shared resource; security regression.
 
-### Option B: operator-authored MeshService, no auto-generation
-
-CP no longer generates. Operators run `kumactl apply -f meshservice.yaml`.
-
-* Good. Deletes the polling generator, `checkMeshServicesConsistency`, grace-period delete, and ownership tracking. Smallest CP code.
-* Good. No conflict resolution (single writer). No `WorkloadStatus.Conditions` to maintain.
-* Good. Symmetric with Kubernetes (operator authors the service-identity resource).
-* Good. No new fields on `Dataplane` spec.
-* Bad. Blocks the restricted-network operator entirely.
-* Bad. Universal users must run a parallel CI/GitOps surface for MeshService.
-* Bad. The tactical label-propagation patch cannot ship under it.
-
-### Option C: workload-only auto-generation
+### Option B: workload-only auto-generation
 
 CP generates one MeshService per `kuma.io/workload` value; ports = union of all inbounds.
 
@@ -61,7 +49,7 @@ CP generates one MeshService per `kuma.io/workload` value; ports = union of all 
 * Bad. Cannot express M:M cases. Removing inbound tags silently drops port carve-out and workload aggregation.
 * Bad. Blue/green deployments impossible.
 
-### Option D: structured per-inbound `meshServices` field
+### Option C: structured per-inbound `meshServices` field
 
 Replace the free-form `inbound.tags["kuma.io/service"]` with a typed list:
 
@@ -91,18 +79,17 @@ Migration: `kuma.io/service: <name>` inbound tag becomes `inbound.meshServices: 
 
 * Good. Full M:M expressiveness; the multi-valued list fits port carve-out and aggregation.
 * Good. The channel is the existing `Dataplane`; restricted-network operators are unblocked.
-* Good. Typed and validated; typos fail at registration, not silently at MMZS.
+* Good. Typed and validated; a typo in the `meshServices` field is rejected at Dataplane registration, instead of silently producing a MeshMultizoneService that selects zero MeshServices later.
 * Good. Composes with the existing `kuma.io/workload` label and `Workload` generator.
-* Good. The tactical label-propagation patch ships under it; the field report closes immediately.
-* Bad. Concedes per-inbound service membership is load-bearing; that's a walk-back from "remove inbound tags entirely."
+* Good. The tactical label-propagation patch (see "Tactical patch" section below) is compatible with this option, so the user-reported issue that initiated this MADR can be closed without waiting for the full structural change.
+* Bad. Re-introduces per-inbound service membership under a new name. The original plan was to remove inbound tags entirely; this option keeps the same concept (which inbound serves which logical service) under a typed field instead of a free-form tag. We get a cleaner schema but admit the concept itself cannot be removed.
 * Bad. Adds a hard-to-delete field on `Dataplane`. The polling generator and `inboundTagsDisabled` branching stay.
-* Bad. `meshServices` (plural, on inbound) vs `MeshService` (resource) creates support confusion.
-* Bad. First-DP-wins may not match operator intuition for blue/green (newest-wins).
+* Bad. First-DP-wins conflict policy is wrong for blue/green: when blue and green Dataplanes disagree on a label or port for the same service, the older (blue) one wins because it registered first, but operators usually expect the newer (green) deployment to take precedence.
 * Bad. Largest implementation surface: validator, generator, condition lifecycle, xDS filter, migration tool, downstream policy audits.
 
 #### Migration window behavior
 
-A fleet in transition carries both forms. `checkMeshServicesConsistency` oscillates each tick under split fleets. The chosen option must enforce one of:
+During the migration to the new field, some Dataplanes in a mesh still use the old `kuma.io/service` inbound tag while others already use `inbound.meshServices`. If both forms reference the same service name, the existing `checkMeshServicesConsistency` logic picks a different "winner" on each reconcile pass and the generated `MeshService` spec flips back and forth. To prevent that, the implementation must enforce one of:
 
 - Validator: a Dataplane MUST NOT carry both `inbound.tags["kuma.io/service"]` and the new field.
 - Per-mesh flag: `inboundTagsDisabled` flips per-mesh, exactly one generator path per mesh.
@@ -118,16 +105,30 @@ A fleet in transition carries both forms. `checkMeshServicesConsistency` oscilla
 - `WorkloadStatus.Conditions[PortConflict|LabelConflict]` are set and cleared on every reconcile pass; stale `True` values are unacceptable and must be tested.
 - Conflict signals must mirror to `DataplaneInsight` so `kuma-dp` logs surface them locally for restricted-network operators.
 
+### Option D: operator-authored MeshService, no auto-generation
+
+CP no longer generates. Operators run `kumactl apply -f meshservice.yaml`.
+
+* Good. Deletes the polling generator, `checkMeshServicesConsistency`, grace-period delete, and ownership tracking. Smallest CP code.
+* Good. No conflict resolution (single writer). No `WorkloadStatus.Conditions` to maintain.
+* Good. Symmetric with Kubernetes (operator authors the service-identity resource).
+* Good. No new fields on `Dataplane` spec.
+* Bad. Blocks the restricted-network operator entirely.
+* Bad. Universal users must run a parallel CI/GitOps surface for MeshService.
+* Bad. The tactical label-propagation patch cannot ship under it.
+
 ## Tactical patch (independent, ships in 2.14)
 
-- Generator propagates non-`kuma.io/*` keys from `Dataplane.metadata.labels` to `MeshService.metadata.labels`, first-DP-wins. Closes the field report. Inbound tags do not propagate, which signals deprecation. Once shipped, MMZS selectors in the wild depend on it.
-- Silent MMZS-miss is the dominant failure. CP emits a structured warning and metric whenever an MMZS resolves to zero MeshServices in a zone. Lands with the tactical patch.
+The "tactical patch" is a small immediate change that ships ahead of the structural decision and closes the user-reported issue (the field report). It is independent of which option (A-D) is ultimately chosen.
+
+- Generator propagates non-`kuma.io/*` keys from `Dataplane.metadata.labels` to `MeshService.metadata.labels`, first-DP-wins. Closes the field report. Inbound tags do not propagate, which signals deprecation. Once shipped, MeshMultizoneService selectors in the wild depend on it.
+- A silent MeshMultizoneService selector miss (the selector resolves to zero MeshServices) is the dominant failure. CP emits a structured warning and metric whenever this happens in a zone. Lands with the tactical patch.
 
 ## Implications for Kong Mesh
 
-Significant in 3.0. Every downstream policy matching on `kuma.io/service` inbound tags breaks at upgrade unless migrated. The downstream project must audit policies, run the migration tool, and document the 2.14-to-3.0 upgrade.
+None specific to the downstream project. The 2.14-to-3.0 migration applies uniformly to all Kuma users; any downstream-specific code that derives MeshServices from inbound tags or matches policies on `kuma.io/service` must be updated alongside Kuma 3.0.
 
 ## Decision
 
 Not generating MeshService on Universal is most clean solution. It removes all the ambiguities that come with MeshService generation.
-It leaves full control over MeshService to mesh operator, they can label it as they need for grouping in MMZS.
+It leaves full control over MeshService to mesh operator, they can label it as they need for grouping in MeshMultizoneService.
