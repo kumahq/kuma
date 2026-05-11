@@ -120,6 +120,7 @@ spec:
 - `MeshRetry` on zone egress — squared retry amplification.
 - `MeshOPA` — was never supported on zone egress; needs its own decision.
 - `MeshGlobalRateLimit` — no action required.
+- `MeshLoadBalancingStrategy` — doesn't make sense to make complex load balancing for `MeshExteralService` endpoints on egress.
 
 ## Context and Problem Statement
 
@@ -558,45 +559,12 @@ right fit. The `SNIMatch` type is shared across (1) and (3).
 The incomplete `rules[].matches[]` implementation tracked in
 [#16460](https://github.com/kumahq/kuma/issues/16460) must be finished as part of this work.
 
-##### `spec.to[]` is also accepted as an alias for `rules[].matches[].sni`
+##### `spec.to[]` on zone proxies is a no-op
 
-Per Kuma's "apply where possible" style, `spec.to[]` on a zone proxy is not rejected for
-group (3) policies — it is accepted as an alias for `rules[].matches[].sni`. The CP
-resolves `spec.to[].targetRef → MeshExternalService → SNI`, locates the filter chain
-whose `server_names` matches that SNI, and applies the policy's `default` fields wherever
-each field lives in Envoy (filter chain, cluster, HCM filter, route). The outcome is
-identical to writing `rules[].matches[].sni` with the resolved SNI.
-
-```yaml
-# These two are equivalent on zone egress.
-
-# (a) spec.to[] form — label-friendly, no SNI knowledge required
-type: MeshTimeout
-spec:
-  targetRef: { kind: Dataplane, sectionName: ze-port }
-  to:
-    - targetRef:
-        kind: MeshExternalService
-        labels: { kuma.io/display-name: aws-aurora }
-      default:
-        connectionTimeout: 5s
-        http: { requestTimeout: 10s }
-
-# (b) rules[].matches[] form — explicit SNI, can also constrain source
-type: MeshTimeout
-spec:
-  targetRef: { kind: Dataplane, sectionName: ze-port }
-  rules:
-    - matches:
-        - sni: { type: Exact, value: sni.extsvc.default.zone-1.aws-aurora.8443 }
-      default:
-        connectionTimeout: 5s
-        http: { requestTimeout: 10s }
-```
-
-`rules[].matches[]` remains the only form that can constrain by source — pick it whenever
-`spiffeID` matters. Use `spec.to[]` when destination-only is enough and label-based
-selection is preferable to writing the SNI string.
+For group (3) policies, `spec.to[].targetRef.kind: MeshExternalService` on a zone proxy
+is accepted by validation but produces no configuration — destination selection goes
+through `rules[].matches[].sni`. Use `rules[].matches[]` to target a destination on a
+zone proxy.
 
 ##### Matches containing `spiffeID` and field placement
 
