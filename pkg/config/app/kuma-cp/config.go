@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/config"
 	"github.com/kumahq/kuma/v2/pkg/config/access"
 	api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
@@ -296,6 +297,10 @@ var DefaultConfig = func() Config {
 			},
 			SidecarContainers: true,
 			DeltaXds:          false,
+			MeshServiceLabelPropagation: ExperimentalMeshServiceLabelPropagation{
+				Enabled:          false,
+				AllowedLabelKeys: []string{},
+			},
 		},
 		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
@@ -483,6 +488,25 @@ type ExperimentalConfig struct {
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
+	// MeshServiceLabelPropagation controls propagation of user-defined labels from MeshService to generated resources.
+	MeshServiceLabelPropagation ExperimentalMeshServiceLabelPropagation `json:"meshServiceLabelPropagation"`
+}
+
+func (e *ExperimentalConfig) Validate() error {
+	for _, k := range e.MeshServiceLabelPropagation.AllowedLabelKeys {
+		if mesh_proto.IsReservedLabelKey(k) {
+			return errors.Errorf("MeshServiceLabelPropagation.AllowedLabelKeys contains reserved key %q", k)
+		}
+	}
+	return nil
+}
+
+type ExperimentalMeshServiceLabelPropagation struct {
+	// If true, propagate allowed user-defined labels from MeshService to generated resources.
+	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_MESHSERVICE_LABEL_PROPAGATION_ENABLED"`
+	// AllowedLabelKeys is the list of non-reserved label keys eligible for propagation.
+	// Reserved keys (kuma.io/ and k8s.kuma.io/ prefixes) are rejected at validation time.
+	AllowedLabelKeys []string `json:"allowedLabelKeys" envconfig:"KUMA_EXPERIMENTAL_MESHSERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
