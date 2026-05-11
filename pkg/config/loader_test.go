@@ -345,6 +345,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.DpServer.ReadHeaderTimeout.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.DpServer.GracefulShutdownTimeout.Duration).To(Equal(13 * time.Second))
 			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
 			Expect(cfg.DpServer.Hds.Interval.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.DpServer.Hds.RefreshInterval.Duration).To(Equal(12 * time.Second))
@@ -742,6 +743,7 @@ dpServer:
   tlsMaxVersion: TLSv1_3
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   readHeaderTimeout: 11s
+  gracefulShutdownTimeout: 13s
   port: 9876
   authn:
     dpProxy:
@@ -1108,6 +1110,7 @@ meshService:
 				"KUMA_DP_SERVER_TLS_MAX_VERSION":                                                           "TLSv1_3",
 				"KUMA_DP_SERVER_TLS_CIPHER_SUITES":                                                         "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_DP_SERVER_READ_HEADER_TIMEOUT":                                                       "11s",
+				"KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT":                                                 "13s",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_TYPE":                                                       "dpToken",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_ENABLE_ISSUER":                                     "false",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_VALIDATOR_USE_SECRETS":                             "false",
