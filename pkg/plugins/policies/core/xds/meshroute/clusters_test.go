@@ -7,23 +7,13 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
-func meshCtxWith(ms *meshservice_api.MeshServiceResource) xds_context.MeshContext {
-	return xds_context.MeshContext{
-		BaseMeshContext: &xds_context.BaseMeshContext{
-			DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}),
-		},
-	}
-}
-
 var _ = Describe("SniForBackendRef", func() {
-	DescribeTable("should return SNI and true when port is found",
+	DescribeTable("returns SNI built from resolved port",
 		func(sectionName string) {
 			ms := builders.MeshService().
 				WithName("backend").
@@ -31,12 +21,14 @@ var _ = Describe("SniForBackendRef", func() {
 				AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
 				Build()
 
+			port, ok := ms.FindPortByName(sectionName)
+			Expect(ok).To(BeTrue())
+
 			id := kri.WithSectionName(kri.From(ms), sectionName)
 			ref := &resolve.RealResourceBackendRef{Resource: id}
 
-			sni, ok := meshroute.SniForBackendRef(ref, meshCtxWith(ms), "")
+			sni := meshroute.SniForBackendRef(ref, ms, port, "")
 
-			Expect(ok).To(BeTrue())
 			Expect(sni).NotTo(BeEmpty())
 			Expect(sni).To(ContainSubstring(".8080."))
 		},
@@ -44,42 +36,22 @@ var _ = Describe("SniForBackendRef", func() {
 		Entry("by port value", "8080"),
 	)
 
-	It("returns empty string and false when sectionName does not match any port", func() {
+	It("uses SNIName for MeshService destination", func() {
 		ms := builders.MeshService().
 			WithName("backend").
 			WithMesh("default").
 			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
 			Build()
 
-		id := kri.WithSectionName(kri.From(ms), "grpc")
-		ref := &resolve.RealResourceBackendRef{Resource: id}
-
-		sni, ok := meshroute.SniForBackendRef(ref, meshCtxWith(ms), "")
-
-		Expect(ok).To(BeFalse())
-		Expect(sni).To(BeEmpty())
-	})
-
-	It("returns empty string and false when service is not in the index", func() {
-		ms := builders.MeshService().
-			WithName("backend").
-			WithMesh("default").
-			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
-			Build()
-
-		// empty index — service not registered
-		emptyCtx := xds_context.MeshContext{
-			BaseMeshContext: &xds_context.BaseMeshContext{
-				DestinationIndex: xds_context.NewDestinationIndex(),
-			},
-		}
+		port, ok := ms.FindPortByName("http")
+		Expect(ok).To(BeTrue())
 
 		id := kri.WithSectionName(kri.From(ms), "http")
+		id.ResourceType = meshservice_api.MeshServiceType
 		ref := &resolve.RealResourceBackendRef{Resource: id}
 
-		sni, ok := meshroute.SniForBackendRef(ref, emptyCtx, "")
+		sni := meshroute.SniForBackendRef(ref, ms, port, "kuma-system")
 
-		Expect(ok).To(BeFalse())
-		Expect(sni).To(BeEmpty())
+		Expect(sni).To(ContainSubstring(ms.SNIName("kuma-system")))
 	})
 })

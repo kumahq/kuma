@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -54,10 +55,12 @@ func GenerateClusters(
 			if meshCtx.IsExternalService(serviceName) {
 				switch {
 				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
-					sni, ok := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
+					realResourceRef := service.BackendRef().RealResourceBackendRef()
+					dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
 					if !ok {
 						continue
 					}
+					sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 					if proxy.WorkloadIdentity != nil {
 						// MeshExternalService is only routable through zone egress in workload-identity mode.
 						// Skip cluster generation if no zone egress SANs are available.
@@ -133,23 +136,19 @@ func GenerateClusters(
 					}
 				} else {
 					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
-						tlsReady = true // tls readiness is only relevant for MeshService
-						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							dest := meshCtx.GetServiceByKRI(realResourceRef.Resource)
-							if dest != nil {
-								ms := dest.(*meshservice_api.MeshServiceResource)
-								// we only check TLS status for local service
-								// services that are synced can be accessed only with TLS through ZoneIngress
-								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
-								if port, found := ms.FindPortByName(realResourceRef.Resource.SectionName); found {
-									protocol = port.GetProtocol()
-								}
-							}
-						}
-						sni, ok := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
+						dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
 						if !ok {
 							continue
 						}
+						tlsReady = true // tls readiness is only relevant for MeshService
+						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
+							ms := dest.(*meshservice_api.MeshServiceResource)
+							// we only check TLS status for local service
+							// services that are synced can be accessed only with TLS through ZoneIngress
+							tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
+							protocol = port.GetProtocol()
+						}
+						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
@@ -237,24 +236,16 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 
 func SniForBackendRef(
 	backendRef *resolve.RealResourceBackendRef,
-	meshCtx xds_context.MeshContext,
+	dest core.Destination,
+	port core.Port,
 	systemNamespace string,
-) (string, bool) {
-	dest := meshCtx.GetServiceByKRI(backendRef.Resource)
-	if dest == nil {
-		return "", false
-	}
-	p, ok := dest.FindPortByName(backendRef.Resource.SectionName)
-	if !ok {
-		return "", false
-	}
-	resource := dest.(core_model.Resource)
-	name := core_model.GetDisplayName(resource.GetMeta())
+) string {
+	name := core_model.GetDisplayName(dest.GetMeta())
 	if backendRef.Resource.ResourceType == meshservice_api.MeshServiceType {
-		name = resource.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
+		name = dest.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
 	}
 
-	return tls.SNIForResource(name, resource.GetMeta().GetMesh(), resource.Descriptor().Name, p.GetValue(), nil), true
+	return tls.SNIForResource(name, dest.GetMeta().GetMesh(), dest.Descriptor().Name, port.GetValue(), nil)
 }
 
 func Identities(
