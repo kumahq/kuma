@@ -620,6 +620,10 @@ can enforce this for real — it rejects a policy where a match contains `spiffe
 get a concrete error at apply time pointing at the offending field, instead of a silently
 unapplied config.
 
+**Zone ingress note**: zone ingress does not terminate mTLS, so no SPIFFE identity is
+available on its filter chains. A `rules[].matches[].spiffeID` entry on a zone ingress is
+syntactically valid but will never match traffic.
+
 #### (4) `MeshMetric`, `MeshTrace`, `MeshProxyPatch`
 
 These policies do not support per-destination granularity — they configure the proxy as a whole.
