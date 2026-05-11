@@ -324,9 +324,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 				}
 			}
 
-			// TODO (Icarus9913): replace the function by model.ZoneOfResource(r)
-			// Reference: https://github.com/kumahq/kuma/issues/10952
-			zoneTag := util.ZoneTag(r)
+			zoneTag := core_model.ZoneOfResource(r)
 
 			// don't need to sync resource to the zone where resource is originating from
 			if zoneName == zoneTag {

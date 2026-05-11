@@ -117,27 +117,6 @@ func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) boo
 	return false
 }
 
-func ZoneTag(r core_model.Resource) string {
-	switch res := r.GetSpec().(type) {
-	case *mesh_proto.Dataplane:
-		if res.GetNetworking().GetGateway() != nil {
-			return res.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
-		}
-		inbounds := res.GetNetworking().GetInbound()
-		if len(inbounds) == 0 {
-			return ""
-		}
-		return inbounds[0].GetTags()[mesh_proto.ZoneTag]
-	case *mesh_proto.ZoneIngress:
-		return res.GetZone()
-	case *mesh_proto.ZoneEgress:
-		return res.GetZone()
-	default:
-		// todo(jakubdyszkiewicz): consider replacing this whole function with just core_model.ZoneOfResource(r)
-		return core_model.ZoneOfResource(r)
-	}
-}
-
 func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaResource) (core_model.ResourceList, error) {
 	list, err := registry.Global().NewList(resourceType)
 	if err != nil {
