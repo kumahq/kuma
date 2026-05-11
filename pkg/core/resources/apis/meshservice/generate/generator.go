@@ -76,9 +76,15 @@ func New(
 	}, nil
 }
 
-func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) map[string]*meshservice_api.MeshService {
+type meshServicesResult struct {
+	services          map[string]*meshservice_api.MeshService
+	inboundsByService map[string][]*mesh_proto.Dataplane_Networking_Inbound
+}
+
+func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
+	inboundsByService := map[string][]*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		if g.inboundTagsDisabled && len(inbound.GetTags()) == 0 {
 			continue
@@ -108,6 +114,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		}
 
 		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
+		inboundsByService[serviceTagValue] = append(inboundsByService[serviceTagValue], inbound)
 	}
 
 	services := map[string]*meshservice_api.MeshService{}
@@ -122,12 +129,16 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		}
 		services[serviceTag] = &ms
 	}
-	return services
+	return meshServicesResult{
+		services:          services,
+		inboundsByService: inboundsByService,
+	}
 }
 
 type dataplaneAndMeshService struct {
-	dataplane   model.ResourceMeta
-	meshService *meshservice_api.MeshService
+	dataplane         model.ResourceMeta
+	meshService       *meshservice_api.MeshService
+	labelContribution map[string]string // nil for now; populated in Phase 4
 }
 
 // checkMeshServicesConsistency returns a list of dataplanes that conflict and
@@ -161,14 +172,30 @@ func servicesDiffer(a, b *meshservice_api.MeshService) bool {
 	return !reflect.DeepEqual(a.Ports, b.Ports)
 }
 
+func desiredLabels(mesh, name, zone string, propagated map[string]string) map[string]string {
+	out := maps.Clone(propagated)
+	if out == nil {
+		out = map[string]string{}
+	}
+	out[metadata.KumaMeshLabel] = mesh
+	out[mesh_proto.DisplayName] = name
+	out[mesh_proto.ManagedByLabel] = managedByValue
+	out[mesh_proto.EnvTag] = mesh_proto.UniversalEnvironment
+	out[mesh_proto.ZoneTag] = zone
+	out[mesh_proto.ResourceOriginLabel] = string(mesh_proto.ZoneResourceOrigin)
+	return out
+}
+
 func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource, meshServices []*meshservice_api.MeshServiceResource) {
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
-		for name, ms := range g.meshServicesForDataplane(dataplane) {
+		result := g.meshServicesForDataplane(dataplane)
+		for name, ms := range result.services {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
-				dataplane:   dataplane.GetMeta(),
-				meshService: ms,
+				dataplane:         dataplane.GetMeta(),
+				meshService:       ms,
+				labelContribution: nil,
 			})
 		}
 	}
@@ -196,9 +223,8 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			meshService.Meta = meta
 			meshService.Spec = newMeshService
 
-			// Unset the grace period by deleting the label
-			newLabels := maps.Clone(meshService.GetMeta().GetLabels())
-			delete(newLabels, mesh_proto.DeletionGracePeriodStartedLabel)
+			// Unset the grace period by excluding it from desired labels
+			newLabels := desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, nil)
 
 			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 				log.Error(err, "couldn't update MeshService")
@@ -255,14 +281,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		if len(conflicting) > 0 {
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
-		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
-			metadata.KumaMeshLabel:         mesh,
-			mesh_proto.DisplayName:         name,
-			mesh_proto.ManagedByLabel:      managedByValue,
-			mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
-			mesh_proto.ZoneTag:             g.zone,
-			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-		})); err != nil {
+		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(desiredLabels(mesh, name, g.zone, nil))); err != nil {
 			log.Error(err, "couldn't create MeshService")
 			continue
 		}
