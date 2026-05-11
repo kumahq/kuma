@@ -76,11 +76,7 @@ func New(
 	}, nil
 }
 
-type meshServicesResult struct {
-	services map[string]*meshservice_api.MeshService
-}
-
-func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
+func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) map[string]*meshservice_api.MeshService {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
@@ -126,9 +122,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		}
 		services[serviceTag] = &ms
 	}
-	return meshServicesResult{
-		services: services,
-	}
+	return services
 }
 
 type dataplaneAndMeshService struct {
@@ -185,8 +179,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
-		result := g.meshServicesForDataplane(dataplane)
-		for name, ms := range result.services {
+		for name, ms := range g.meshServicesForDataplane(dataplane) {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
 				dataplane:   dataplane.GetMeta(),
 				meshService: ms,
