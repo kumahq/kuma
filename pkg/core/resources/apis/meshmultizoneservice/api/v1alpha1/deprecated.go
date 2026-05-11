@@ -20,5 +20,11 @@ func (t *MeshMultiZoneServiceResource) Deprecations() []string {
 		deprecations = append(deprecations, nameDeprecationMsg)
 	}
 
+	if len(name) > 63 {
+		lengthDeprecationMsg := fmt.Sprintf("Invalid %s resource name: '%s'. Name must be no more than 63 characters long. This is deprecated and will be rejected in a future release.",
+			MeshMultiZoneServiceResourceTypeDescriptor.Name, name)
+		deprecations = append(deprecations, lengthDeprecationMsg)
+	}
+
 	return deprecations
 }

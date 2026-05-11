@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### `MeshMultiZoneService` names longer than 63 characters are deprecated
+
+`MeshService` and `MeshExternalService` already reject names longer than 63 characters.
+`MeshMultiZoneService` (MMZS) historically allowed up to 253, but its name is used to render DNS hostnames through `HostnameGenerator` (e.g. `{{ .DisplayName }}.mzsvc.mesh.local`), so any name longer than 63 produces an invalid RFC 1035 label.
+
+The control plane now emits a deprecation warning in the API response when an MMZS is created or updated with a name longer than 63 characters.
+This will become a hard validation error in 3.0.
+
+**Action required:**
+
+Rename any `MeshMultiZoneService` whose name exceeds 63 characters before upgrading to 3.0.
+
 ### DNS server domain must not start with a dot
 
 The control plane now rejects a DNS server domain configuration that begins with a `.` (e.g., `.mesh`). Previously such a value was silently accepted and produced broken hostname generation.
