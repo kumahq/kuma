@@ -9,6 +9,7 @@ import (
 )
 
 // MeshFaultInjection allows you to test the resiliency of your services by injecting faults like delays, connection aborts, and response bandwidth limits into the traffic. This is useful for chaos testing and validating that your applications handle failures gracefully.
+// +kuma:policy:order=800
 type MeshFaultInjection struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

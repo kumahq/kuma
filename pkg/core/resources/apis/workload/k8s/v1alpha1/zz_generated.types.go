@@ -109,7 +109,7 @@ func (l *WorkloadList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&Workload{}, &WorkloadList{})
+	knownTypes = append(knownTypes, &Workload{}, &WorkloadList{})
 	registry.RegisterObjectType(&policy.Workload{}, &Workload{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

@@ -177,6 +177,9 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 		if err != nil {
 			return store.ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
 		}
+		if o < 0 {
+			return store.ErrorInvalid("invalid offset: must be non-negative")
+		}
 		offset = o
 	}
 

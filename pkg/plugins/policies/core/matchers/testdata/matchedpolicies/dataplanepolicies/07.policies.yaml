@@ -1,4 +1,4 @@
-# 07. policies do not select anything because inbound is ignored
+# 07. policies select ignored inbounds by tags
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1

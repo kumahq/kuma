@@ -200,4 +200,5 @@ var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mfi",
 	IsFromAsRules:                false,
+	Order:                        800,
 }

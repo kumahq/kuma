@@ -43,6 +43,6 @@ var _ = framework.E2EAfterSuite(func() {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Auto Reachable Services on Kubernetes", Label("job-3"), Ordered, reachableservices.AutoReachableServices, Serial)
-	_ = Describe("Auto Reachable Mesh Services on Kubernetes", Label("job-3"), Ordered, reachableservices.AutoReachableMeshServices, Serial)
+	_ = Describe("Auto Reachable Services on Kubernetes", Label("job-0"), Ordered, reachableservices.AutoReachableServices, Serial)
+	_ = Describe("Auto Reachable Mesh Services on Kubernetes", Label("job-0"), Ordered, reachableservices.AutoReachableMeshServices, Serial)
 )

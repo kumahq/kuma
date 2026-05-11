@@ -46,6 +46,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			TlsMinVersion:            "TLSv1_2",
 			TlsCipherSuites:          []string{},
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
+			LogPayloads:              false,
 			Tracing: KDSServerTracing{
 				Enabled: true,
 			},
@@ -127,6 +128,7 @@ func DefaultZoneConfig() *ZoneConfig {
 			MaxMsgSize:      10 * 1024 * 1024,
 			MsgSendTimeout:  config_types.Duration{Duration: 60 * time.Second},
 			NackBackoff:     config_types.Duration{Duration: 5 * time.Second},
+			LogPayloads:     false,
 		},
 		DisableOriginLabelValidation: false,
 		IngressUpdateInterval:        config_types.Duration{Duration: 1 * time.Second},

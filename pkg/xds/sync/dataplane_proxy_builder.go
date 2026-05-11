@@ -22,7 +22,6 @@ import (
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/ordered"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
@@ -234,7 +233,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	if p.IncludeShadow {
 		opts = append(opts, core_plugins.IncludeShadow())
 	}
-	for _, p := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
+	for _, p := range core_plugins.Plugins().PolicyPlugins() {
 		res, err := p.Plugin.MatchedPolicies(dataplane, resources, opts...)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", p.Name)

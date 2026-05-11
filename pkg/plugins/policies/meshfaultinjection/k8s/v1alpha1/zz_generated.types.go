@@ -99,7 +99,7 @@ func (l *MeshFaultInjectionList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshFaultInjection{}, &MeshFaultInjectionList{})
+	knownTypes = append(knownTypes, &MeshFaultInjection{}, &MeshFaultInjectionList{})
 	registry.RegisterObjectType(&policy.MeshFaultInjection{}, &MeshFaultInjection{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

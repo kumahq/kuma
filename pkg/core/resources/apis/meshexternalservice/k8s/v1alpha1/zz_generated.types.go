@@ -110,7 +110,7 @@ func (l *MeshExternalServiceList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshExternalService{}, &MeshExternalServiceList{})
+	knownTypes = append(knownTypes, &MeshExternalService{}, &MeshExternalServiceList{})
 	registry.RegisterObjectType(&policy.MeshExternalService{}, &MeshExternalService{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

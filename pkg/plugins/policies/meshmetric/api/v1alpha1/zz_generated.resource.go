@@ -211,4 +211,5 @@ var MeshMetricResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mm",
 	IsFromAsRules:                false,
+	Order:                        1500,
 }

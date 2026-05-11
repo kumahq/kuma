@@ -607,6 +607,8 @@ ingress:
   annotations: { }
   # -- Additional pod annotations
   podAnnotations: { }
+  # -- Annotations to add to the Deployment resource.
+  deploymentAnnotations: { }
   # -- Node Selector for the Ingress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -735,6 +737,8 @@ egress:
   annotations: { }
   # -- Additional pod annotations
   podAnnotations: { }
+  # -- Annotations to add to the Deployment resource.
+  deploymentAnnotations: { }
   # -- Node Selector for the Egress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -803,6 +807,39 @@ egress:
       # -- A list of DNS search domains for hostname lookup in the Pod.
       searches: []
 
+# Default pause container image for mesh-scoped zone proxy deployments.
+# Individual meshes[].ingress.image / meshes[].egress.image override per-mesh.
+# Override if registry.k8s.io is not reachable or mirrored elsewhere.
+zoneProxyImage:
+  # -- The pause image registry
+  registry: registry.k8s.io
+  # -- The pause image repository
+  repository: pause
+  # -- The pause image tag
+  tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+
+# Default service settings for mesh zone proxies. Used as fallback when
+# meshes[].ingress.service or meshes[].egress.service fields are not set.
+meshZoneProxyDefaults:
+  ingress:
+    service:
+      # -- Default Service type for zone ingress.
+      type: LoadBalancer
+      # -- Default port for zone ingress Service.
+      port: 10001
+      # -- Container port the zone ingress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10001
+  egress:
+    service:
+      # -- Default Service type for zone egress.
+      type: ClusterIP
+      # -- Default port for zone egress Service.
+      port: 10002
+      # -- Container port the zone egress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10002
+
 # List of meshes to deploy zone proxies for.
 meshes:
   - # -- The mesh must already exist or be created separately; this Helm chart will not create it.
@@ -811,30 +848,40 @@ meshes:
     ingress:
       # -- Deploy a zone ingress for this mesh.
       enabled: false
-      # -- Number of replicas. Ignored when hpa.enabled is true.
-      replicas: 1
-      # Pause container image (dummy main container for sidecar injection).
-      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
-      image:
-        # -- The pause image registry
-        registry: registry.k8s.io
-        # -- The pause image repository
-        repository: pause
-        # -- The pause image tag
-        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      # -- Per-mesh override for the pause container image. Falls back to
+      # .Values.zoneProxyImage when unset. Partial overrides inherit the
+      # remaining registry/repository/tag fields from the chart-level default.
+      image: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
         name: ""
-      # -- Resource requests and limits for the pod (pod-level resources).
-      # Applied to all containers in the pod (pause + injected kuma-sidecar).
-      resources: {}
-      # -- Subset of Kubernetes PodSpec fields applied to the pod template
-      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-      #  priorityClassName, securityContext, containerSecurityContext).
-      podSpec: {}
-      # -- Resource requests and limits for the pause container.
-      containerResources: {}
+        # -- (string) Per-mesh override for Service type. Falls back to
+        # meshZoneProxyDefaults.ingress.service.type when unset.
+        type:
+        # -- (int) Per-mesh override for Service port. Falls back to
+        # meshZoneProxyDefaults.ingress.service.port when unset.
+        port:
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
+        # -- Annotations to add to the Service resource.
+        annotations: {}
+        # -- Labels to add to the Service resource.
+        labels: {}
+      # -- Deployment-level settings.
+      deployment:
+        # -- Number of replicas. Ignored when hpa.enabled is true.
+        replicas: 1
+        # -- Annotations to add to the Deployment resource.
+        annotations: {}
+        # -- Labels to add to the Deployment resource.
+        labels: {}
+        # -- Subset of Kubernetes PodSpec fields applied to the pod template
+        # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
+        podSpec: {}
       # -- Horizontal Pod Autoscaler settings.
       hpa:
         enabled: false
@@ -849,29 +896,40 @@ meshes:
     egress:
       # -- Deploy a zone egress for this mesh.
       enabled: false
-      replicas: 1
-      # Pause container image (dummy main container for sidecar injection).
-      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
-      image:
-        # -- The pause image registry
-        registry: registry.k8s.io
-        # -- The pause image repository
-        repository: pause
-        # -- The pause image tag
-        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      # -- Per-mesh override for the pause container image. Falls back to
+      # .Values.zoneProxyImage when unset. Partial overrides inherit the
+      # remaining registry/repository/tag fields from the chart-level default.
+      image: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
         name: ""
-      # -- Resource requests and limits for the pod (pod-level resources).
-      # Applied to all containers in the pod (pause + injected kuma-sidecar).
-      resources: {}
-      # -- Subset of Kubernetes PodSpec fields applied to the pod template
-      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-      #  priorityClassName, securityContext, containerSecurityContext).
-      podSpec: {}
-      # -- Resource requests and limits for the pause container.
-      containerResources: {}
+        # -- (string) Per-mesh override for Service type. Falls back to
+        # meshZoneProxyDefaults.egress.service.type when unset.
+        type:
+        # -- (int) Per-mesh override for Service port. Falls back to
+        # meshZoneProxyDefaults.egress.service.port when unset.
+        port:
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
+        # -- Annotations to add to the Service resource.
+        annotations: {}
+        # -- Labels to add to the Service resource.
+        labels: {}
+      # -- Deployment-level settings.
+      deployment:
+        # -- Number of replicas. Ignored when hpa.enabled is true.
+        replicas: 1
+        # -- Annotations to add to the Deployment resource.
+        annotations: {}
+        # -- Labels to add to the Deployment resource.
+        labels: {}
+        # -- Subset of Kubernetes PodSpec fields applied to the pod template
+        # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
+        podSpec: {}
       hpa:
         enabled: false
         minReplicas: 2
@@ -895,7 +953,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.35.4@sha256:e8bc9c71a813d90d5f7689fa57516b2aacd7a02bb9d70d3ab6664ed6d202fc10
+    tag: v1.36.0@sha256:63e5e76b746bb8b891a94968d380736c035e768dab0d56ddad1f50c750a4be39
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
@@ -1065,6 +1123,8 @@ experimental:
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
   envoyAdminUnixSocket: true
+  # -- If true, uses Delta xDS (incremental) protocol to deliver changes to sidecars instead of State of the World (SOTW).
+  deltaXds: false
 
 # Postgres' settings for universal control plane on k8s
 postgres:

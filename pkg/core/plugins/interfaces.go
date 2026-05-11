@@ -117,6 +117,8 @@ func IncludeShadow() MatchedPoliciesOption {
 // PolicyPlugin a plugin to add a Policy to Kuma
 type PolicyPlugin interface {
 	Plugin
+	// Order defines execution priority relative to other policy plugins. Lower runs first.
+	Order() int
 	// MatchedPolicies return all the policies of the plugins' type matching this dataplane. This is used in the inspect api and accessible in Apply through `proxy.Policies.Dynamic`
 	MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error)
 	// Apply to `rs` using the `ctx` and `proxy` the mutation for all policies of the type this plugin implements.

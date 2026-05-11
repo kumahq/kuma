@@ -30,14 +30,18 @@ var _ = Describe("Readiness Reporter", func() {
 		Expect(lis.Close()).To(Succeed())
 
 		baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
-		reporter = readiness.NewReporter(true, "", "127.0.0.1", port, adminSocketPath)
+		reporter = readiness.NewReporter(true, "", "127.0.0.1", port, adminSocketPath, nil)
 		go func() {
 			defer GinkgoRecover()
 			_ = reporter.Start(stopCh)
 		}()
 		Eventually(func() error {
-			_, err := http.Get(baseURL + "/ready")
-			return err
+			resp, err := http.Get(baseURL + "/ready")
+			if err != nil {
+				return err
+			}
+			resp.Body.Close()
+			return nil
 		}, 5*time.Second, 50*time.Millisecond).Should(Succeed())
 	}
 
@@ -45,6 +49,92 @@ var _ = Describe("Readiness Reporter", func() {
 		if stopCh != nil {
 			close(stopCh)
 		}
+	})
+
+	Context("with DNS config gate", func() {
+		var dnsReady chan struct{}
+
+		BeforeEach(func() {
+			stopCh = make(chan struct{})
+			lis, err := net.Listen("tcp", "127.0.0.1:0")
+			Expect(err).ToNot(HaveOccurred())
+			port = uint32(lis.Addr().(*net.TCPAddr).Port)
+			Expect(lis.Close()).To(Succeed())
+
+			baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+			dnsReady = make(chan struct{})
+			reporter = readiness.NewReporter(true, "", "127.0.0.1", port, "", dnsReady)
+			go func() {
+				defer GinkgoRecover()
+				_ = reporter.Start(stopCh)
+			}()
+			Eventually(func() error {
+				resp, err := http.Get(baseURL + "/ready")
+				if err != nil {
+					return err
+				}
+				resp.Body.Close()
+				return nil
+			}, 5*time.Second, 50*time.Millisecond).Should(Succeed())
+		})
+
+		It("returns NOT_READY until DNS config channel is closed", func() {
+			resp, err := http.Get(baseURL + "/ready")
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusServiceUnavailable))
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).To(Equal("NOT_READY"))
+		})
+
+		It("returns READY after DNS config channel is closed", func() {
+			close(dnsReady)
+			Eventually(func() int {
+				resp, err := http.Get(baseURL + "/ready")
+				if err != nil {
+					return 0
+				}
+				resp.Body.Close()
+				return resp.StatusCode
+			}, 5*time.Second, 50*time.Millisecond).Should(Equal(http.StatusOK))
+		})
+	})
+
+	Context("with DNS config gate timeout", func() {
+		BeforeEach(func() {
+			stopCh = make(chan struct{})
+			lis, err := net.Listen("tcp", "127.0.0.1:0")
+			Expect(err).ToNot(HaveOccurred())
+			port = uint32(lis.Addr().(*net.TCPAddr).Port)
+			Expect(lis.Close()).To(Succeed())
+
+			baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+			dnsReady := make(chan struct{})
+			reporter = readiness.NewReporterWithDeadline(true, "", "127.0.0.1", port, "", dnsReady, time.Now().Add(-time.Second))
+			go func() {
+				defer GinkgoRecover()
+				_ = reporter.Start(stopCh)
+			}()
+			Eventually(func() error {
+				resp, err := http.Get(baseURL + "/ready")
+				if err != nil {
+					return err
+				}
+				resp.Body.Close()
+				return nil
+			}, 5*time.Second, 50*time.Millisecond).Should(Succeed())
+		})
+
+		It("bypasses gate and returns READY when deadline is already past", func() {
+			resp, err := http.Get(baseURL + "/ready")
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).To(Equal("READY"))
+		})
 	})
 
 	Context("without admin socket", func() {
