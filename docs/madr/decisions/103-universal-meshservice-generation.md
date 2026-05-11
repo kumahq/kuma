@@ -7,7 +7,7 @@ Technical Story: https://github.com/Kong/kong-mesh/issues/9443
 ## Context and Problem Statement
 
 On Universal, the CP auto-generates `MeshService` from `Dataplane` inbound tags
-(`pkg/core/resources/apis/meshservice/generate/generator.go`). 
+(`pkg/core/resources/apis/meshservice/generate/generator.go`).
 A field report exposed two unmet needs:
 
 - Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the
@@ -70,7 +70,7 @@ CP generates one MeshService per `kuma.io/workload` value; ports = union of all 
 
 * Good. Covers the trivial case with no new spec fields.
 * Bad. Cannot express M:M cases. Removing inbound tags silently drops port carve-out and workload aggregation.
-* Bad. Blue/green deployments impossible
+* Bad. Blue/green deployments impossible.
 
 ### Option D: structured per-inbound `meshServices` field
 
@@ -155,5 +155,5 @@ audit policies, run the migration tool, and document the 2.14-to-3.0 upgrade.
 
 ## Decision
 
-Not generating MeshService on univeral is most clean solution. In removes all the ambiguities that comes with MeshService generation. 
-It leaves full controll over Mesh Service to Mesh Operator, they can label it as they need for grouping in MeshMultizoneService.
+Not generating MeshService on Universal is most clean solution. It removes all the ambiguities that come with MeshService generation.
+It leaves full control over MeshService to mesh operator, they can label it as they need for grouping in MMZS.
