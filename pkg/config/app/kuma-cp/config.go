@@ -297,10 +297,6 @@ var DefaultConfig = func() Config {
 			},
 			SidecarContainers: true,
 			DeltaXds:          false,
-			MeshServiceLabelPropagation: ExperimentalMeshServiceLabelPropagation{
-				Enabled:          false,
-				AllowedLabelKeys: []string{},
-			},
 		},
 		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
@@ -323,6 +319,10 @@ var DefaultConfig = func() Config {
 		MeshService: MeshServiceConfig{
 			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
 			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
+			LabelPropagation: MeshServiceLabelPropagation{
+				Enabled:          false,
+				AllowedLabelKeys: []string{},
+			},
 		},
 	}
 }
@@ -388,6 +388,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.IPAM.Validate(); err != nil {
 		return errors.Wrap(err, "IPAM validation failed")
+	}
+	if err := c.MeshService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshService validation failed")
 	}
 	return nil
 }
@@ -488,25 +491,6 @@ type ExperimentalConfig struct {
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
-	// MeshServiceLabelPropagation controls propagation of user-defined labels from MeshService to generated resources.
-	MeshServiceLabelPropagation ExperimentalMeshServiceLabelPropagation `json:"meshServiceLabelPropagation"`
-}
-
-func (e *ExperimentalConfig) Validate() error {
-	for _, k := range e.MeshServiceLabelPropagation.AllowedLabelKeys {
-		if mesh_proto.IsReservedLabelKey(k) {
-			return errors.Errorf("MeshServiceLabelPropagation.AllowedLabelKeys contains reserved key %q", k)
-		}
-	}
-	return nil
-}
-
-type ExperimentalMeshServiceLabelPropagation struct {
-	// If true, propagate allowed user-defined labels from MeshService to generated resources.
-	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_MESHSERVICE_LABEL_PROPAGATION_ENABLED"`
-	// AllowedLabelKeys is the list of non-reserved label keys eligible for propagation.
-	// Reserved keys (kuma.io/ and k8s.kuma.io/ prefixes) are rejected at validation time.
-	AllowedLabelKeys []string `json:"allowedLabelKeys" envconfig:"KUMA_EXPERIMENTAL_MESHSERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
@@ -617,8 +601,23 @@ type MeshServiceConfig struct {
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
 	// How long we wait before deleting a MeshService if all Dataplanes are gone
 	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD"`
+	// LabelPropagation controls propagation of user-defined labels from MeshService to generated resources.
+	LabelPropagation MeshServiceLabelPropagation `json:"labelPropagation"`
 }
 
 func (i MeshServiceConfig) Validate() error {
+	for _, k := range i.LabelPropagation.AllowedLabelKeys {
+		if mesh_proto.IsReservedLabelKey(k) {
+			return errors.Errorf("LabelPropagation.AllowedLabelKeys contains reserved key %q", k)
+		}
+	}
 	return nil
+}
+
+type MeshServiceLabelPropagation struct {
+	// If true, propagate allowed user-defined labels from MeshService to generated resources.
+	Enabled bool `json:"enabled" envconfig:"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED"`
+	// AllowedLabelKeys is the list of non-reserved label keys eligible for propagation.
+	// Reserved keys (kuma.io/ and k8s.kuma.io/ prefixes) are rejected at validation time.
+	AllowedLabelKeys []string `json:"allowedLabelKeys" envconfig:"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS"`
 }

@@ -854,14 +854,6 @@ experimental:
   sidecarContainers: true # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   # If true uses Delta xDS to deliver changes to sidecars.
   deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
-  # If true, inbound tags are disabled. CP runs without relying on inbound tags.
-  inboundTagsDisabled: false # ENV: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
-  # Controls propagation of user-defined labels from MeshService to generated resources.
-  meshServiceLabelPropagation:
-    # If true, propagate allowed user-defined labels from MeshService to generated resources.
-    enabled: false # ENV: KUMA_EXPERIMENTAL_MESHSERVICE_LABEL_PROPAGATION_ENABLED
-    # List of non-reserved label keys eligible for propagation. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
-    allowedLabelKeys: [] # ENV: KUMA_EXPERIMENTAL_MESHSERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming
@@ -944,3 +936,9 @@ meshService:
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
+  # Controls propagation of user-defined labels from MeshService to generated resources.
+  labelPropagation:
+    # If true, propagate allowed user-defined labels from MeshService to generated resources.
+    enabled: false # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED
+    # List of non-reserved label keys eligible for propagation. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
+    allowedLabelKeys: [] # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS

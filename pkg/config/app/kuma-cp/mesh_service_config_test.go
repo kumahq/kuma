@@ -7,16 +7,16 @@ import (
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 )
 
-var _ = Describe("ExperimentalConfig Validate", func() {
+var _ = Describe("MeshServiceConfig Validate", func() {
 	type testCase struct {
-		cfg     kuma_cp.ExperimentalMeshServiceLabelPropagation
+		cfg     kuma_cp.MeshServiceLabelPropagation
 		wantErr string
 	}
 
-	DescribeTable("MeshServiceLabelPropagation validation",
+	DescribeTable("LabelPropagation validation",
 		func(given testCase) {
-			cfg := kuma_cp.ExperimentalConfig{
-				MeshServiceLabelPropagation: given.cfg,
+			cfg := kuma_cp.MeshServiceConfig{
+				LabelPropagation: given.cfg,
 			}
 			err := cfg.Validate()
 			if given.wantErr != "" {
@@ -27,33 +27,33 @@ var _ = Describe("ExperimentalConfig Validate", func() {
 			}
 		},
 		Entry("disabled with empty allow-list", testCase{
-			cfg: kuma_cp.ExperimentalMeshServiceLabelPropagation{
+			cfg: kuma_cp.MeshServiceLabelPropagation{
 				Enabled:          false,
 				AllowedLabelKeys: []string{},
 			},
 		}),
 		Entry("enabled with non-reserved keys", testCase{
-			cfg: kuma_cp.ExperimentalMeshServiceLabelPropagation{
+			cfg: kuma_cp.MeshServiceLabelPropagation{
 				Enabled:          true,
 				AllowedLabelKeys: []string{"app", "version", "team"},
 			},
 		}),
 		Entry("rejects kuma.io/ reserved key", testCase{
-			cfg: kuma_cp.ExperimentalMeshServiceLabelPropagation{
+			cfg: kuma_cp.MeshServiceLabelPropagation{
 				Enabled:          true,
 				AllowedLabelKeys: []string{"app", "kuma.io/service"},
 			},
 			wantErr: `reserved key "kuma.io/service"`,
 		}),
 		Entry("rejects k8s.kuma.io/ reserved key", testCase{
-			cfg: kuma_cp.ExperimentalMeshServiceLabelPropagation{
+			cfg: kuma_cp.MeshServiceLabelPropagation{
 				Enabled:          false,
 				AllowedLabelKeys: []string{"k8s.kuma.io/namespace"},
 			},
 			wantErr: `reserved key "k8s.kuma.io/namespace"`,
 		}),
 		Entry("enabled with nil allow-list", testCase{
-			cfg: kuma_cp.ExperimentalMeshServiceLabelPropagation{
+			cfg: kuma_cp.MeshServiceLabelPropagation{
 				Enabled:          true,
 				AllowedLabelKeys: nil,
 			},
