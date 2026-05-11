@@ -312,7 +312,6 @@ spec:
 * Good, because it is consistent with how other Kuma policies reference resources.
 * Good, because label-based matching provides broad scoping (by namespace, zone, team, etc.) without requiring users to know SNI formats.
 * Good, because policies are insensitive to SNI format changes, if the SNI format evolves, existing policies require no updates; the CP re-resolves them.
-* Bad, because CP must resolve `targetRef` to SNI(s) during policy processing (when building Envoy configuration).
 * Bad, because `labels` matching can unintentionally select multiple MeshExternalServices, which may not be the user's intent.
 * Bad, because `targetRef` in `Match` is only meaningful on zone proxy Dataplanes where per-destination filter chains exist. On regular sidecars the field has no matching filter chain and is silently ignored — same behavior as MeshHTTPRoute on DPPs without the referenced route.
 
