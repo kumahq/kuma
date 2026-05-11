@@ -190,6 +190,9 @@ mechanism is introduced.
 - Use `labels` to target a group of zone proxies (e.g. all proxies in a namespace).
   When the policy is applied on the Global CP, label-based matching is the only
   approach since `name/namespace` matching doesn't work due to KDS hashing.
+  The computed labels `kuma.io/listener-zoneingress` and `kuma.io/listener-zoneegress`
+  (introduced in [MADR-102](102-zone-proxy-listener-computed-labels.md)) provide
+  coarse-grained selection of all zone proxies exposing a given listener type.
 - Use `sectionName` to target a specific listener when a Dataplane mixes zone proxy and regular
   inbound listeners.
 
@@ -263,7 +266,7 @@ spec:
 * Good, because it maps directly to Envoy's filter chain match on `server_names`.
 * Good, because it is transparent — what you write is what Envoy matches on.
 * Good, because SNI is observable at the wire - policy application can be verified by inspecting traffic directly.
-* Good, because the KRI-based SNI format (MADR-101) makes SNIs human-readable and
+* Good, because the KRI-based SNI format ([MADR-101](101-sni-format-improvements.md) makes SNIs human-readable and
   predictable — users can construct them from resource attributes without querying the CP.
 * Bad, because coupling policy to SNI strings creates a dependency on SNI format stability,
   even though [MADR-101](101-sni-format-improvements.md) makes SNIs human-readable and predictable.
