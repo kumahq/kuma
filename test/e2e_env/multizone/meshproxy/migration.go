@@ -264,7 +264,6 @@ func Migration() {
 			firstErr error
 		)
 		for _, route := range routes {
-
 			wg.Add(1)
 			go func() {
 				defer GinkgoRecover()
