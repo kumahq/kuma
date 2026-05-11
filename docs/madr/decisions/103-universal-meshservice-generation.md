@@ -6,22 +6,12 @@ Technical Story: https://github.com/Kong/kong-mesh/issues/9443
 
 ## Context and Problem Statement
 
-On Universal, the CP auto-generates `MeshService` from `Dataplane` inbound tags
-(`pkg/core/resources/apis/meshservice/generate/generator.go`).
-A field report exposed two unmet needs:
+On Universal, the CP auto-generates `MeshService` from `Dataplane` inbound tags (`pkg/core/resources/apis/meshservice/generate/generator.go`). A field report exposed two unmet needs:
 
-- Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the
-  auto-generated `MeshService`. MMZS selects on `MeshService.metadata.labels`,
-  so multi-zone selection by team/env is impossible for Universal today.
-- Some operators (ECS/Fargate behind restricted networks) cannot reach the
-  zone CP REST API. Their only channel is the `Dataplane` shipped via
-  `kuma-dp run --dataplane-file`.
+- Custom `Dataplane.metadata.labels` and inbound tags do not propagate to the auto-generated `MeshService`. MMZS selects on `MeshService.metadata.labels`, so multi-zone selection by team/env is impossible for Universal today.
+- Some operators (ECS/Fargate behind restricted networks) cannot reach the zone CP REST API. Their only channel is the `Dataplane` shipped via `kuma-dp run --dataplane-file`.
 
-Inbound tags do two jobs: DP grouping (which DPs are one logical service) and
-per-inbound service membership (which services this port serves). The
-`kuma.io/workload` label and existing `Workload` generator solve the first
-job. M:M cases (port carve-out: one workload to many MeshServices; workload
-aggregation: blue/green, canary) need the second.
+Inbound tags do two jobs: DP grouping (which DPs are one logical service) and per-inbound service membership (which services this port serves). The `kuma.io/workload` label and existing `Workload` generator solve the first job. M:M cases (port carve-out: one workload to many MeshServices; workload aggregation: blue/green, canary) need the second.
 
 ### Use cases
 
@@ -87,10 +77,7 @@ networking:
       meshServices: [checkout-metrics, observability]   # multi-valued, M:M
 ```
 
-CP groups inbounds across the mesh by each value in `inbound.meshServices[*]`.
-Per group: `name` is the membership value; `selector` is `kuma.io/workload`
-label match plus per-port-name filter; `ports` is the union by `inbound.name`;
-`labels` is the union of non-`kuma.io/*` keys from member Dataplanes.
+CP groups inbounds across the mesh by each value in `inbound.meshServices[*]`. Per group: `name` is the membership value; `selector` is `kuma.io/workload` label match plus per-port-name filter; `ports` is the union by `inbound.name`; `labels` is the union of non-`kuma.io/*` keys from member Dataplanes.
 
 Member DPs sorted by `(creation_time, name)` via `SortDataplanes`. On conflict:
 
@@ -116,9 +103,7 @@ Migration: `kuma.io/service: <name>` inbound tag becomes `inbound.meshServices: 
 
 #### Migration window behavior
 
-A fleet in transition carries both forms. `checkMeshServicesConsistency`
-oscillates each tick under split fleets. The chosen option must enforce one
-of:
+A fleet in transition carries both forms. `checkMeshServicesConsistency` oscillates each tick under split fleets. The chosen option must enforce one of:
 
 - Validator: a Dataplane MUST NOT carry both `inbound.tags["kuma.io/service"]` and the new field.
 - Per-mesh flag: `inboundTagsDisabled` flips per-mesh, exactly one generator path per mesh.
@@ -131,27 +116,17 @@ of:
 
 #### Reliability implications
 
-- `WorkloadStatus.Conditions[PortConflict|LabelConflict]` are set and cleared
-  on every reconcile pass; stale `True` values are unacceptable and must be
-  tested.
-- Conflict signals must mirror to `DataplaneInsight` so `kuma-dp` logs surface
-  them locally for restricted-network operators.
+- `WorkloadStatus.Conditions[PortConflict|LabelConflict]` are set and cleared on every reconcile pass; stale `True` values are unacceptable and must be tested.
+- Conflict signals must mirror to `DataplaneInsight` so `kuma-dp` logs surface them locally for restricted-network operators.
 
 ## Tactical patch (independent, ships in 2.14)
 
-- Generator propagates non-`kuma.io/*` keys from `Dataplane.metadata.labels` to
-`MeshService.metadata.labels`, first-DP-wins. Closes the field report. Inbound
-tags do not propagate, which signals deprecation. Once shipped, MMZS selectors
-in the wild depend on it.
-- Silent MMZS-miss is the dominant failure. CP emits a structured warning and
-metric whenever an MMZS resolves to zero MeshServices in a zone. Lands with
-the tactical patch.
+- Generator propagates non-`kuma.io/*` keys from `Dataplane.metadata.labels` to `MeshService.metadata.labels`, first-DP-wins. Closes the field report. Inbound tags do not propagate, which signals deprecation. Once shipped, MMZS selectors in the wild depend on it.
+- Silent MMZS-miss is the dominant failure. CP emits a structured warning and metric whenever an MMZS resolves to zero MeshServices in a zone. Lands with the tactical patch.
 
 ## Implications for Kong Mesh
 
-Significant in 3.0. Every downstream policy matching on `kuma.io/service`
-inbound tags breaks at upgrade unless migrated. The downstream project must
-audit policies, run the migration tool, and document the 2.14-to-3.0 upgrade.
+Significant in 3.0. Every downstream policy matching on `kuma.io/service` inbound tags breaks at upgrade unless migrated. The downstream project must audit policies, run the migration tool, and document the 2.14-to-3.0 upgrade.
 
 ## Decision
 
