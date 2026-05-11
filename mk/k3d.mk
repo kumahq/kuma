@@ -213,6 +213,7 @@ endif
 .PHONY: k3d/configure/metallb
 k3d/configure/metallb:
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f $(METALLB_MANIFESTS)
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) rollout status deployment -n $(METALLB_NAMESPACE) --timeout=120s
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=120s --for=condition=Ready -n $(METALLB_NAMESPACE) --all pods
 	@# Construct a valid address space from the docker network and the template IPAddressPool
 	@# Make sure we only take an IPv4 network
