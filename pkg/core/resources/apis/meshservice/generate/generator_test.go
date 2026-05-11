@@ -2,6 +2,7 @@ package generate_test
 
 import (
 	"context"
+	"maps"
 	"net"
 	"time"
 
@@ -389,9 +390,7 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 
 		labelsWithCustom := make(map[string]string)
-		for k, v := range ms.GetMeta().GetLabels() {
-			labelsWithCustom[k] = v
-		}
+		maps.Copy(labelsWithCustom, ms.GetMeta().GetLabels())
 		labelsWithCustom["custom.io/extra"] = "preserved"
 		Expect(resManager.Update(context.Background(), ms, store.UpdateWithLabels(labelsWithCustom))).To(Succeed())
 
