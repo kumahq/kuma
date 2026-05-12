@@ -401,6 +401,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.MeshService.LabelPropagation.Enabled).To(BeTrue())
+			Expect(cfg.MeshService.LabelPropagation.AllowedLabelKeys).To(Equal([]string{"app", "version"}))
 			Expect(cfg.Runtime.Universal.Workload.GenerationInterval.Duration).To(Equal(9 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
@@ -855,6 +857,11 @@ ipam:
 meshService:
   generationInterval: 8s
   deletionGracePeriod: 11s
+  labelPropagation:
+    enabled: true
+    allowedLabelKeys:
+    - app
+    - version
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -1179,6 +1186,8 @@ meshService:
 				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
 				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
+				"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED":                                              "true",
+				"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS":                                   "app,version",
 				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL":                                      "9s",
 			},
 			yamlFileConfig: "",

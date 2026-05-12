@@ -936,3 +936,9 @@ meshService:
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
+  # Controls propagation of user-defined labels from MeshService to generated resources.
+  labelPropagation:
+    # If true, propagate allowed user-defined labels from MeshService to generated resources.
+    enabled: false # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED
+    # List of non-reserved label keys eligible for propagation. When empty and enabled is true, all non-reserved labels are propagated. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
+    allowedLabelKeys: [] # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS
