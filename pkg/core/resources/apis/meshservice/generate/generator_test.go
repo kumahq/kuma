@@ -549,7 +549,7 @@ var _ = Describe("MeshService generator", func() {
 			).To(Succeed())
 		})
 
-		It("removes a propagated label when the Dataplane stops carrying it", func() {
+		It("preserves a previously-propagated label when the Dataplane stops carrying it", func() {
 			err := builders.Dataplane().
 				WithAddress("127.0.0.1").
 				WithoutInbounds().
@@ -572,11 +572,14 @@ var _ = Describe("MeshService generator", func() {
 			delete(dp.Spec.Networking.Inbound[0].Tags, "appci")
 			Expect(resManager.Update(context.Background(), dp)).To(Succeed())
 
-			Eventually(func(g Gomega) {
+			// The reconciler only overwrites keys it actively manages (system keys and
+			// keys in the current propagation vote). A key absent from the current vote
+			// is not removed — it is preserved to avoid stripping operator-managed labels.
+			Consistently(func(g Gomega) {
 				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
-				g.Expect(ms.GetMeta().GetLabels()).ToNot(HaveKey("appci"))
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
 				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("kuma.io/mesh", model.DefaultMesh))
-			}, "2s", "100ms").Should(Succeed())
+			}, "500ms", "100ms").Should(Succeed())
 		})
 
 		It("does not Update when nothing changes between reconciles", func() {
@@ -643,7 +646,7 @@ var _ = Describe("MeshService generator", func() {
 			}, "2s", "100ms").Should(Succeed())
 		})
 
-		It("replaces externally-added labels on reconcile", func() {
+		It("preserves externally-added labels on reconcile", func() {
 			err := samples.DataplaneBackendBuilder().Create(resManager)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -656,10 +659,10 @@ var _ = Describe("MeshService generator", func() {
 			newLabels["external.io/foo"] = "bar"
 			Expect(resManager.Update(context.Background(), ms, store.UpdateWithLabels(newLabels))).To(Succeed())
 
-			Eventually(func(g Gomega) {
+			Consistently(func(g Gomega) {
 				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
-				g.Expect(ms.GetMeta().GetLabels()).ToNot(HaveKey("external.io/foo"))
-			}, "2s", "100ms").Should(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("external.io/foo", "bar"))
+			}, "500ms", "100ms").Should(Succeed())
 		})
 
 		It("propagates all non-reserved labels when AllowedLabelKeys is empty", func() {
