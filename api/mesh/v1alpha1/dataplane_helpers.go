@@ -14,6 +14,11 @@ import (
 )
 
 const (
+	KumaIOPrefix    = "kuma.io/"
+	K8sKumaIOPrefix = "k8s.kuma.io/"
+)
+
+const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	KubeServiceTag   = "k8s.kuma.io/service-name"
 	KubePortTag      = "k8s.kuma.io/service-port"
@@ -21,6 +26,11 @@ const (
 	// currently only disabled/enabled is supported
 	KDSSyncLabel = "kuma.io/kds-sync"
 )
+
+// IsReservedLabelKey reports whether k belongs to a Kuma-reserved label namespace.
+func IsReservedLabelKey(k string) bool {
+	return strings.HasPrefix(k, KumaIOPrefix) || strings.HasPrefix(k, K8sKumaIOPrefix)
+}
 
 const (
 	KubernetesEnvironment = "kubernetes"
@@ -299,9 +309,6 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
 	var selectedInbounds []InboundInterface
 	for _, inbound := range n.Inbound {
-		if inbound.State == Dataplane_Networking_Inbound_Ignored {
-			continue
-		}
 		if sectionName == "" || inbound.GetSectionName() == sectionName {
 			selectedInbounds = append(selectedInbounds, n.ToInboundInterface(inbound))
 		}
@@ -409,6 +416,17 @@ func (d *Dataplane_Networking_Inbound) GetSectionName() string {
 		return d.Name
 	}
 	return strconv.Itoa(int(d.Port))
+}
+
+// GetSectionName returns either listener name or stringified port value.
+func (l *Dataplane_Networking_Listener) GetSectionName() string {
+	if l == nil {
+		return ""
+	}
+	if l.Name != "" {
+		return l.Name
+	}
+	return strconv.Itoa(int(l.Port))
 }
 
 // GetService returns a service name represented by this outbound interface.
@@ -675,4 +693,43 @@ func (r TagSelectorRank) CompareTo(other TagSelectorRank) int {
 		return r.ExactMatches - other.ExactMatches
 	}
 	return thisTotal - otherTotal
+}
+
+// HasZoneProxyListeners returns true when the Networking contains at least one
+// embedded zone proxy listener (ZoneIngress or ZoneEgress type).
+func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneIngress || l.Type == Dataplane_Networking_Listener_ZoneEgress {
+			return true
+		}
+	}
+	return false
+}
+
+// IsZoneProxyOnly returns true when the Dataplane has zone proxy listeners but
+// no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
+func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
+	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
+}
+
+// GetReadyZoneIngressListeners returns all listeners of type ZoneIngress in Ready state.
+func (n *Dataplane_Networking) GetReadyZoneIngressListeners() []*Dataplane_Networking_Listener {
+	var result []*Dataplane_Networking_Listener
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneIngress && l.State == Dataplane_Networking_Listener_Ready {
+			result = append(result, l)
+		}
+	}
+	return result
+}
+
+// GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.
+func (n *Dataplane_Networking) GetReadyZoneEgressListeners() []*Dataplane_Networking_Listener {
+	var result []*Dataplane_Networking_Listener
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneEgress && l.State == Dataplane_Networking_Listener_Ready {
+			result = append(result, l)
+		}
+	}
+	return result
 }

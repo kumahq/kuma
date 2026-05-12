@@ -141,7 +141,7 @@ func SetupGatewayCluster() {
 }
 
 func CleanupAfterGatewayTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(mesh, policies...)
+	return cleanupAfterTest(mesh, []string{"gateway-proxy"}, policies...)
 }
 
 func CleanupAfterGatewaySuite() {

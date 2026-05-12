@@ -54,18 +54,34 @@ func GenerateClusters(
 			if meshCtx.IsExternalService(serviceName) {
 				switch {
 				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
-					// MeshExternalService is only available through egress
-					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
-							proxy.SecretsTracker,
-							unifiedNaming,
-							meshCtx.Resource,
-							mesh_proto.ZoneEgressServiceName,
-							true,
-							SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace),
-							false,
-						))
+					sni := SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace)
+					if proxy.WorkloadIdentity != nil {
+						// MeshExternalService is only routable through zone egress in workload-identity mode.
+						// Skip cluster generation if no zone egress SANs are available.
+						egressSANs := meshCtx.ZoneEgressSANs()
+						if len(egressSANs) == 0 {
+							continue
+						}
+						upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
+						if err != nil {
+							return nil, err
+						}
+						edsClusterBuilder.
+							Configure(envoy_clusters.EdsCluster()).
+							Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
+					} else {
+						edsClusterBuilder.
+							Configure(envoy_clusters.EdsCluster()).
+							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
+								proxy.SecretsTracker,
+								unifiedNaming,
+								meshCtx.Resource,
+								mesh_proto.ZoneEgressServiceName,
+								true,
+								sni,
+								false,
+							))
+					}
 				case meshCtx.Resource.ZoneEgressEnabled():
 					// path for old ExternalService
 					edsClusterBuilder.
@@ -130,7 +146,7 @@ func GenerateClusters(
 						sni := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
-							upstreamCtx, err := UpstreamTLSContext(realResourceRef, meshCtx, proxy, sni)
+							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
 							if err != nil {
 								return nil, err
 							}
@@ -170,9 +186,9 @@ func GenerateClusters(
 	return resources, nil
 }
 
-func UpstreamTLSContext(realResourceRef *resolve.RealResourceBackendRef, meshCtx xds_context.MeshContext, proxy *core_xds.Proxy, sni string) (*envoy_tls.UpstreamTlsContext, error) {
-	sanMatchers := []*bldrs_common.Builder[envoy_tls.SubjectAltNameMatcher]{}
-	for _, san := range Identities(realResourceRef, meshCtx, true) {
+func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envoy_tls.UpstreamTlsContext, error) {
+	sanMatchers := make([]*bldrs_common.Builder[envoy_tls.SubjectAltNameMatcher], 0, len(sans))
+	for _, san := range sans {
 		conf := bldrs_tls.NewSubjectAltNameMatcher().Configure(bldrs_tls.URI(bldrs_matcher.NewStringMatcher().Configure(bldrs_matcher.ExactMatcher(san))))
 		sanMatchers = append(sanMatchers, conf)
 	}
@@ -193,34 +209,24 @@ func UpstreamTLSContext(realResourceRef *resolve.RealResourceBackendRef, meshCtx
 			),
 		)
 	}
-
-	defaultValidation := bldrs_tls.DefaultValidationContext(
-		bldrs_tls.NewDefaultValidationContext().Configure(
-			bldrs_tls.SANs(sanMatchers),
-		),
-	)
-	combinedValidation := bldrs_tls.CombinedCertificateValidationContext(
-		bldrs_tls.NewCombinedCertificateValidationContext().
-			Configure(validationSds).
-			Configure(defaultValidation),
-	)
 	commonTlsContext := bldrs_tls.NewCommonTlsContext().
-		Configure(combinedValidation).
+		Configure(bldrs_tls.CombinedCertificateValidationContext(
+			bldrs_tls.NewCombinedCertificateValidationContext().
+				Configure(validationSds).
+				Configure(bldrs_tls.DefaultValidationContext(
+					bldrs_tls.NewDefaultValidationContext().Configure(bldrs_tls.SANs(sanMatchers)),
+				)),
+		)).
 		Configure(bldrs_tls.TlsCertificateSdsSecretConfigs([]*bldrs_common.Builder[envoy_tls.SdsSecretConfig]{
 			bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(
 				proxy.WorkloadIdentity.IdentitySourceConfigurer(),
 			),
 		})).
 		Configure(bldrs_tls.KumaAlpnProtocol())
-
-	upstreamCtx, err := bldrs_tls.NewUpstreamTLSContext().
+	return bldrs_tls.NewUpstreamTLSContext().
 		Configure(bldrs_tls.SNI(sni)).
 		Configure(bldrs_tls.UpstreamCommonTlsContext(commonTlsContext)).
 		Build()
-	if err != nil {
-		return nil, err
-	}
-	return upstreamCtx, nil
 }
 
 func SniForBackendRef(

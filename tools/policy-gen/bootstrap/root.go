@@ -26,6 +26,7 @@ type config struct {
 	generateFrom      bool
 	isPolicy          bool
 	hasStatus         bool
+	order             int
 }
 
 func (c config) policyPath() string {
@@ -105,6 +106,7 @@ func generateType(c config) error {
 		"generateFrom":      c.generateFrom,
 		"isPolicy":          c.isPolicy,
 		"hasStatus":         c.hasStatus,
+		"order":             c.order,
 	})
 	if err != nil {
 		return err
@@ -142,6 +144,7 @@ func generatePlugin(c config) error {
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
 		"generateFrom":      c.generateFrom,
+		"order":             c.order,
 	})
 }
 
@@ -166,6 +169,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&cfg.generateFrom, "generate-from", false, "Generate 'from' array for incoming traffic configuration")
 	rootCmd.Flags().BoolVar(&cfg.isPolicy, "is-policy", false, "Resource is a policy")
 	rootCmd.Flags().BoolVar(&cfg.hasStatus, "has-status", false, "Resource has a status field")
+	rootCmd.Flags().IntVar(&cfg.order, "order", 0, "Execution order of the policy plugin relative to others (lower runs first)")
 }
 
 var typeTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
@@ -181,6 +185,9 @@ import (
 // {{ .name }} TODO add some description for public usage!
 // +kuma:policy:skip_registration=true
 // +kuma:policy:is_policy={{ .isPolicy }}
+{{- if .isPolicy }}
+// +kuma:policy:order={{ .order }}
+{{- end}}
 type {{ .name }} struct {
 	{{- if .generateTargetRef }}
 	// TargetRef is a reference to the resource the policy takes an effect on.
@@ -246,16 +253,17 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	{{- if .generateTargetRef }}
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	api "{{ .package }}"
 	{{- end}}
+	api "{{ .package }}"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 var log = core.Log.WithName("{{.name}}")
 
-type plugin struct {
-}
+type plugin struct{}
+
+func (p plugin) Order() int { return api.{{.name}}ResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

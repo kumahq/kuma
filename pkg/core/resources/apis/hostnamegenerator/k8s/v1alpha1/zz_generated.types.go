@@ -97,7 +97,7 @@ func (l *HostnameGeneratorList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&HostnameGenerator{}, &HostnameGeneratorList{})
+	knownTypes = append(knownTypes, &HostnameGenerator{}, &HostnameGeneratorList{})
 	registry.RegisterObjectType(&policy.HostnameGenerator{}, &HostnameGenerator{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

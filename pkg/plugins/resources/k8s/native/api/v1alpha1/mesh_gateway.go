@@ -1,9 +1,9 @@
 package v1alpha1
 
 func RegisterK8sGatewayTypes() {
-	SchemeBuilder.Register(&MeshGatewayInstance{}, &MeshGatewayInstanceList{})
+	knownTypes = append(knownTypes, &MeshGatewayInstance{}, &MeshGatewayInstanceList{})
 }
 
 func RegisterK8sGatewayAPITypes() {
-	SchemeBuilder.Register(&MeshGatewayConfig{}, &MeshGatewayConfigList{})
+	knownTypes = append(knownTypes, &MeshGatewayConfig{}, &MeshGatewayConfigList{})
 }

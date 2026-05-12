@@ -80,6 +80,12 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	core_plugins.Init(cfg.CoreResources.Enabled, core_apis.NameToModule)
 	core_plugins.Init(cfg.Policies.Enabled, policies.NameToModule)
+	policyPlugins := core_plugins.Plugins().PolicyPlugins()
+	policyNames := make([]string, 0, len(policyPlugins))
+	for _, p := range policyPlugins {
+		policyNames = append(policyNames, string(p.Name))
+	}
+	log.Info("policy plugins loaded in order", "policies", policyNames)
 	core_plugins.InitAllIf(cfg.CoreResources.Enabled, "meshidentities", meshidentity.NameToModule)
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
@@ -138,13 +144,17 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 	builder.WithCAProvider(caProvider)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
-	}))
+	})
+	if err != nil {
+		return nil, err
+	}
+	builder.WithDpServer(dpServer)
 	resourceManager := builder.ResourceManager()
 	kdsContext := kds_context.DefaultContext(appCtx, resourceManager, cfg)
 	builder.WithKDSContext(kdsContext)
-	builder.WithInterCPClientPool(intercp.DefaultClientPool())
+	builder.WithInterCPClientPool(intercp.DefaultClientPool(int(cfg.Multizone.Global.KDS.MaxMsgSize)))
 
 	if cfg.Mode == config_core.Global {
 		kdsEnvoyAdminClient := kds_envoyadmin.NewClient(

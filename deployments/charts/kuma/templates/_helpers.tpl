@@ -249,6 +249,8 @@ env:
 {{- end }}
 - name: KUMA_DP_SERVER_HDS_ENABLED
   value: "false"
+- name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+  value: {{ .Values.controlPlane.madsServer.enabled | quote }}
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -259,8 +261,32 @@ env:
   value: {{ .Values.cni.enabled | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
+- name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
+  value: {{ .Values.dataPlane.sidecarContainer.resources.requests.cpu | default "50m" | quote }}
+- name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
+  value: {{ .Values.dataPlane.sidecarContainer.resources.requests.memory | default "64Mi" | quote }}
+- name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
+  value: {{ .Values.dataPlane.sidecarContainer.resources.limits.cpu | default "0" | quote }}
+- name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
+  value: {{ .Values.dataPlane.sidecarContainer.resources.limits.memory | default "512Mi" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+- name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
+  value: {{ .Values.dataPlane.initContainer.resources.requests.cpu | default "20m" | quote }}
+- name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
+  value: {{ .Values.dataPlane.initContainer.resources.requests.memory | default "20M" | quote }}
+- name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
+  value: {{ .Values.dataPlane.initContainer.resources.limits.cpu | default "0" | quote }}
+- name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
+  value: {{ .Values.dataPlane.initContainer.resources.limits.memory | default "50M" | quote }}
+- name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_CPU
+  value: {{ .Values.dataPlane.validationContainer.resources.requests.cpu | default "20m" | quote }}
+- name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_MEMORY
+  value: {{ .Values.dataPlane.validationContainer.resources.requests.memory | default "20M" | quote }}
+- name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU
+  value: {{ .Values.dataPlane.validationContainer.resources.limits.cpu | default "0" | quote }}
+- name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
+  value: {{ .Values.dataPlane.validationContainer.resources.limits.memory | default "50M" | quote }}
 {{- if .Values.dataPlane.dnsLogging }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
   value: "true"
@@ -303,14 +329,18 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-{{- if .Values.experimental.sidecarContainers }}
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  value: "true"
-{{- end }}
+  value: {{ .Values.experimental.sidecarContainers | quote }}
 {{- if .Values.experimental.inboundTagsDisabled }}
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
   value: "true"
 {{- end }}
+{{- if .Values.experimental.deltaXds }}
+- name: KUMA_EXPERIMENTAL_DELTA_XDS
+  value: "true"
+{{- end }}
+- name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
+  value: {{ .Values.experimental.envoyAdminUnixSocket | quote }}
 {{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"

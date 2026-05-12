@@ -42,7 +42,7 @@ type CircuitBreakerList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&CircuitBreaker{}, &CircuitBreakerList{})
+	knownTypes = append(knownTypes, &CircuitBreaker{}, &CircuitBreakerList{})
 }
 
 func (cb *CircuitBreaker) GetObjectMeta() *metav1.ObjectMeta {
@@ -151,7 +151,7 @@ type DataplaneList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Dataplane{}, &DataplaneList{})
+	knownTypes = append(knownTypes, &Dataplane{}, &DataplaneList{})
 }
 
 func (cb *Dataplane) GetObjectMeta() *metav1.ObjectMeta {
@@ -256,7 +256,7 @@ type DataplaneInsightList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&DataplaneInsight{}, &DataplaneInsightList{})
+	knownTypes = append(knownTypes, &DataplaneInsight{}, &DataplaneInsightList{})
 }
 
 func (cb *DataplaneInsight) GetObjectMeta() *metav1.ObjectMeta {
@@ -361,7 +361,7 @@ type ExternalServiceList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ExternalService{}, &ExternalServiceList{})
+	knownTypes = append(knownTypes, &ExternalService{}, &ExternalServiceList{})
 }
 
 func (cb *ExternalService) GetObjectMeta() *metav1.ObjectMeta {
@@ -466,7 +466,7 @@ type FaultInjectionList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&FaultInjection{}, &FaultInjectionList{})
+	knownTypes = append(knownTypes, &FaultInjection{}, &FaultInjectionList{})
 }
 
 func (cb *FaultInjection) GetObjectMeta() *metav1.ObjectMeta {
@@ -571,7 +571,7 @@ type HealthCheckList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&HealthCheck{}, &HealthCheckList{})
+	knownTypes = append(knownTypes, &HealthCheck{}, &HealthCheckList{})
 }
 
 func (cb *HealthCheck) GetObjectMeta() *metav1.ObjectMeta {
@@ -676,7 +676,7 @@ type MeshList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Mesh{}, &MeshList{})
+	knownTypes = append(knownTypes, &Mesh{}, &MeshList{})
 }
 
 func (cb *Mesh) GetObjectMeta() *metav1.ObjectMeta {
@@ -781,7 +781,7 @@ type MeshGatewayList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshGateway{}, &MeshGatewayList{})
+	knownTypes = append(knownTypes, &MeshGateway{}, &MeshGatewayList{})
 }
 
 func (cb *MeshGateway) GetObjectMeta() *metav1.ObjectMeta {
@@ -886,7 +886,7 @@ type MeshGatewayRouteList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshGatewayRoute{}, &MeshGatewayRouteList{})
+	knownTypes = append(knownTypes, &MeshGatewayRoute{}, &MeshGatewayRouteList{})
 }
 
 func (cb *MeshGatewayRoute) GetObjectMeta() *metav1.ObjectMeta {
@@ -991,7 +991,7 @@ type MeshInsightList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshInsight{}, &MeshInsightList{})
+	knownTypes = append(knownTypes, &MeshInsight{}, &MeshInsightList{})
 }
 
 func (cb *MeshInsight) GetObjectMeta() *metav1.ObjectMeta {
@@ -1096,7 +1096,7 @@ type ProxyTemplateList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ProxyTemplate{}, &ProxyTemplateList{})
+	knownTypes = append(knownTypes, &ProxyTemplate{}, &ProxyTemplateList{})
 }
 
 func (cb *ProxyTemplate) GetObjectMeta() *metav1.ObjectMeta {
@@ -1201,7 +1201,7 @@ type RateLimitList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&RateLimit{}, &RateLimitList{})
+	knownTypes = append(knownTypes, &RateLimit{}, &RateLimitList{})
 }
 
 func (cb *RateLimit) GetObjectMeta() *metav1.ObjectMeta {
@@ -1306,7 +1306,7 @@ type RetryList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Retry{}, &RetryList{})
+	knownTypes = append(knownTypes, &Retry{}, &RetryList{})
 }
 
 func (cb *Retry) GetObjectMeta() *metav1.ObjectMeta {
@@ -1411,7 +1411,7 @@ type ServiceInsightList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ServiceInsight{}, &ServiceInsightList{})
+	knownTypes = append(knownTypes, &ServiceInsight{}, &ServiceInsightList{})
 }
 
 func (cb *ServiceInsight) GetObjectMeta() *metav1.ObjectMeta {
@@ -1516,7 +1516,7 @@ type TimeoutList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Timeout{}, &TimeoutList{})
+	knownTypes = append(knownTypes, &Timeout{}, &TimeoutList{})
 }
 
 func (cb *Timeout) GetObjectMeta() *metav1.ObjectMeta {
@@ -1621,7 +1621,7 @@ type TrafficLogList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&TrafficLog{}, &TrafficLogList{})
+	knownTypes = append(knownTypes, &TrafficLog{}, &TrafficLogList{})
 }
 
 func (cb *TrafficLog) GetObjectMeta() *metav1.ObjectMeta {
@@ -1726,7 +1726,7 @@ type TrafficPermissionList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&TrafficPermission{}, &TrafficPermissionList{})
+	knownTypes = append(knownTypes, &TrafficPermission{}, &TrafficPermissionList{})
 }
 
 func (cb *TrafficPermission) GetObjectMeta() *metav1.ObjectMeta {
@@ -1831,7 +1831,7 @@ type TrafficRouteList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&TrafficRoute{}, &TrafficRouteList{})
+	knownTypes = append(knownTypes, &TrafficRoute{}, &TrafficRouteList{})
 }
 
 func (cb *TrafficRoute) GetObjectMeta() *metav1.ObjectMeta {
@@ -1936,7 +1936,7 @@ type TrafficTraceList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&TrafficTrace{}, &TrafficTraceList{})
+	knownTypes = append(knownTypes, &TrafficTrace{}, &TrafficTraceList{})
 }
 
 func (cb *TrafficTrace) GetObjectMeta() *metav1.ObjectMeta {
@@ -2041,7 +2041,7 @@ type VirtualOutboundList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&VirtualOutbound{}, &VirtualOutboundList{})
+	knownTypes = append(knownTypes, &VirtualOutbound{}, &VirtualOutboundList{})
 }
 
 func (cb *VirtualOutbound) GetObjectMeta() *metav1.ObjectMeta {
@@ -2147,7 +2147,7 @@ type ZoneEgressList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneEgress{}, &ZoneEgressList{})
+	knownTypes = append(knownTypes, &ZoneEgress{}, &ZoneEgressList{})
 }
 
 func (cb *ZoneEgress) GetObjectMeta() *metav1.ObjectMeta {
@@ -2252,7 +2252,7 @@ type ZoneEgressInsightList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneEgressInsight{}, &ZoneEgressInsightList{})
+	knownTypes = append(knownTypes, &ZoneEgressInsight{}, &ZoneEgressInsightList{})
 }
 
 func (cb *ZoneEgressInsight) GetObjectMeta() *metav1.ObjectMeta {
@@ -2358,7 +2358,7 @@ type ZoneIngressList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneIngress{}, &ZoneIngressList{})
+	knownTypes = append(knownTypes, &ZoneIngress{}, &ZoneIngressList{})
 }
 
 func (cb *ZoneIngress) GetObjectMeta() *metav1.ObjectMeta {
@@ -2463,7 +2463,7 @@ type ZoneIngressInsightList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneIngressInsight{}, &ZoneIngressInsightList{})
+	knownTypes = append(knownTypes, &ZoneIngressInsight{}, &ZoneIngressInsightList{})
 }
 
 func (cb *ZoneIngressInsight) GetObjectMeta() *metav1.ObjectMeta {

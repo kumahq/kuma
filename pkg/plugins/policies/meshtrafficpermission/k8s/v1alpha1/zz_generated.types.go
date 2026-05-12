@@ -99,7 +99,7 @@ func (l *MeshTrafficPermissionList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTrafficPermission{}, &MeshTrafficPermissionList{})
+	knownTypes = append(knownTypes, &MeshTrafficPermission{}, &MeshTrafficPermissionList{})
 	registry.RegisterObjectType(&policy.MeshTrafficPermission{}, &MeshTrafficPermission{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

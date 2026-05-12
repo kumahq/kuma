@@ -49,16 +49,17 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 	networking := dataplane.Spec.GetNetworking()
 
-	processRef := func(kind string, name string, port *uint32, labels map[string]string) {
+	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
 		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), labels)
 		if len(ids) == 0 {
 			ids = []kri.Identifier{
 				resolve.TargetRefToKRI(
 					kri.From(dataplane),
 					common_api.TargetRef{
-						Kind:   common_api.TargetRefKind(kind),
-						Name:   &name,
-						Labels: &labels,
+						Kind:      common_api.TargetRefKind(kind),
+						Name:      &name,
+						Namespace: &namespace,
+						Labels:    &labels,
 					},
 				),
 			}
@@ -87,7 +88,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 	// Handle user defined outbound without a transparent proxy
 	for _, o := range networking.GetOutbounds(mesh_proto.BackendRefFilter) {
-		processRef(o.BackendRef.Kind, o.BackendRef.Name, &o.BackendRef.Port, o.BackendRef.Labels)
+		processRef(o.BackendRef.Kind, o.BackendRef.Name, "", &o.BackendRef.Port, o.BackendRef.Labels)
 	}
 
 	if len(outbounds) > 0 {
@@ -111,7 +112,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 			port = pointer.To(ref.Port.GetValue())
 		}
 
-		processRef(ref.Kind, ref.Name, port, ref.Labels)
+		processRef(ref.Kind, ref.Name, ref.Namespace, port, ref.Labels)
 	}
 
 	return outbounds, true

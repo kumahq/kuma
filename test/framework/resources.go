@@ -1,9 +1,12 @@
 package framework
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -117,6 +120,41 @@ func WaitForMesh(mesh string, clusters []Cluster) error {
 	return WaitForResource(core_mesh.MeshResourceTypeDescriptor, core_model.ResourceKey{Name: mesh}, clusters...)
 }
 
+// WaitForZoneOnline polls `kumactl inspect zones` on the given Global CP
+// cluster until the named zone appears with status Online. Use this after
+// starting a new zone CP dynamically (e.g. NewUniversalCluster + Kuma(core.Zone))
+// to ensure KDS registration and MeshService propagation have completed
+// before running cross-zone assertions.
+func WaitForZoneOnline(global Cluster, zoneName string) error {
+	_, err := retry.DoWithRetryE(
+		global.GetTesting(),
+		fmt.Sprintf("wait for zone %s online", zoneName),
+		// 120 retries * 3s = 6 min. Cold-start KDS connection on
+		// IPv6 kindIpv6 clusters can take 60-90s; the previous 60s
+		// budget was not enough.
+		4*DefaultRetries, DefaultTimeout,
+		func() (string, error) {
+			out, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+			if err != nil {
+				return "", err
+			}
+			if !strings.Contains(out, zoneName) {
+				return "", fmt.Errorf("zone %s not found in zones list:\n%s", zoneName, out)
+			}
+			for line := range strings.SplitSeq(out, "\n") {
+				if strings.Contains(line, zoneName) {
+					if !strings.Contains(line, "Online") {
+						return "", fmt.Errorf("zone %s not Online: %s", zoneName, line)
+					}
+					return "", nil
+				}
+			}
+			return "", fmt.Errorf("zone %s not found in zones output", zoneName)
+		},
+	)
+	return err
+}
+
 func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_model.ResourceKey, clusters ...Cluster) error {
 	for _, c := range clusters {
 		_, err := retry.DoWithRetryE(c.GetTesting(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
@@ -144,6 +182,33 @@ func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (i
 		Total int `json:"total"`
 	}{}
 	if err := json.Unmarshal([]byte(output), &t); err != nil {
+		return 0, err
+	}
+	return t.Total, nil
+}
+
+// NumberOfResourcesByPath counts resources by querying the cluster's REST API
+// directly at the given path (e.g. "/zone-ingresses"). Use this instead of
+// NumberOfResources when the cluster runs an old CP that may not support the
+// current kumactl endpoint names.
+func NumberOfResourcesByPath(c Cluster, path string) (int, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.GetKuma().GetAPIServerAddress()+path, http.NoBody)
+	if err != nil {
+		return 0, err
+	}
+	r, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = r.Body.Close() }()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return 0, err
+	}
+	t := struct {
+		Total int `json:"total"`
+	}{}
+	if err := json.Unmarshal(body, &t); err != nil {
 		return 0, err
 	}
 	return t.Total, nil

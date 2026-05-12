@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/channels"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
@@ -123,9 +124,8 @@ mtls:
 		// then traffic went over mTLS with no errors
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
-				universal.Cluster, "demo-client", "http://localhost:9901/stats",
-			)
+			cmd := tunnel.AdminCurlCmd("/stats")
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster.%s_backend__kuma-3_msvc_80.ssl.handshake", meshName)))
 			g.Expect(stdout).ToNot(ContainSubstring(fmt.Sprintf("cluster.%s_backend__kuma-3_msvc_80.ssl.handshake: 0", meshName)))

@@ -360,6 +360,7 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Zone",
 	PluralDisplayName:   "Zones",
+	ShortName:           "z",
 	IsExperimental:      false,
 	IsProxy:             false,
 	Insight:             NewZoneInsightResource(),

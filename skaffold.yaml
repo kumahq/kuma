@@ -14,7 +14,8 @@ build:
       runtimeType: go
       custom:
         buildCommand: |
-          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          platform=${PLATFORMS:+$(echo $PLATFORMS | cut -d'/' -f2)}
+          platform=${platform:-$(go env GOARCH)}
           GOTRACEBACK=all DEBUG=true EXTRA_GOFLAGS='-gcflags="all=-N -l"' make image/kuma-cp/$platform docker/tag/kuma-cp
         dependencies:
           paths:
@@ -23,7 +24,8 @@ build:
     - image: kumahq/kuma-dp
       custom:
         buildCommand: |
-          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          platform=${PLATFORMS:+$(echo $PLATFORMS | cut -d'/' -f2)}
+          platform=${platform:-$(go env GOARCH)}
           make image/kuma-dp/$platform docker/tag/kuma-dp
         dependencies:
           paths:
@@ -32,7 +34,8 @@ build:
     - image: kumahq/kumactl
       custom:
         buildCommand: |
-          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          platform=${PLATFORMS:+$(echo $PLATFORMS | cut -d'/' -f2)}
+          platform=${platform:-$(go env GOARCH)}
           make image/kumactl/$platform docker/tag/kumactl
         dependencies:
           paths:
@@ -41,7 +44,8 @@ build:
     - image: kumahq/kuma-init
       custom:
         buildCommand: |
-          platform=$(echo $PLATFORMS | cut -d'/' -f2)
+          platform=${PLATFORMS:+$(echo $PLATFORMS | cut -d'/' -f2)}
+          platform=${platform:-$(go env GOARCH)}
           make image/kuma-init/$platform docker/tag/kuma-init
         dependencies:
           paths:

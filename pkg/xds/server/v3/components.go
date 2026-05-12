@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"context"
 	"time"
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -42,11 +41,11 @@ func RegisterXDS(
 
 	authenticator := rt.XDS().PerProxyTypeAuthenticator()
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
-	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager()))
+	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager(), rt.Config().Environment))
 
 	dpLifecycle := xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration))
-	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks)
+	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks, xdsMetrics)
 	ingressReconciler := DefaultIngressReconciler(rt, xdsContext, statsCallbacks)
 	egressReconciler := DefaultEgressReconciler(rt, xdsContext, statsCallbacks)
 	otelStatusCache := otelstatus.NewCache()
@@ -55,7 +54,7 @@ func RegisterXDS(
 		return err
 	}
 
-	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
+	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
 
 	callbacks := util_xds_v3.CallbacksChain{
@@ -89,8 +88,8 @@ func RegisterXDS(
 	}
 
 	rest := envoy_server_rest.NewServer(xdsContext.Cache(), callbacks)
-	sotw := envoy_server_sotw.NewServer(context.Background(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
-	delta := envoy_server_delta.NewServer(context.Background(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
+	sotw := envoy_server_sotw.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
+	delta := envoy_server_delta.NewServer(rt.AppContext(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
 		o.Ordered = true
 	})
 	newServerAdvanced := envoy_server.NewServerAdvanced(rest, sotw, delta)
@@ -104,6 +103,7 @@ func DefaultReconciler(
 	rt core_runtime.Runtime,
 	xdsContext XdsContext,
 	statsCallbacks util_xds.StatsCallbacks,
+	metrics *xds_metrics.Metrics,
 ) xds_sync.SnapshotReconciler {
 	resolver := xds_template.SequentialResolver(
 		&xds_template.SimpleProxyTemplateResolver{
@@ -119,6 +119,7 @@ func DefaultReconciler(
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 		statsCallbacks: statsCallbacks,
+		metrics:        metrics,
 	}
 }
 

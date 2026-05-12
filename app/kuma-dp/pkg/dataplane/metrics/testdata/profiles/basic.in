@@ -115,3 +115,33 @@ envoy_http_downstream_cx_active{envoy_http_conn_manager_prefix="system_envoy_adm
 
 # TYPE envoy_listener_sock_downstream_pre_cx_active counter
 envoy_listener_sock_downstream_pre_cx_active{envoy_listener_address="system_meshmetric_foo_bar_baz"} 233
+
+# TYPE envoy_cluster_circuit_breakers_default_cx_open counter
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_circuit_breakers_default_remaining_cx counter
+envoy_cluster_circuit_breakers_default_remaining_cx{envoy_cluster_name="example"} 99
+
+# TYPE envoy_cluster_circuit_breakers_default_remaining_pending counter
+envoy_cluster_circuit_breakers_default_remaining_pending{envoy_cluster_name="example"} 50
+
+# TYPE envoy_cluster_upstream_cx_total counter
+envoy_cluster_upstream_cx_total{envoy_cluster_name="example"} 5
+
+# TYPE envoy_listener_downstream_cx_total counter
+envoy_listener_downstream_cx_total{envoy_listener_address="example"} 5
+
+# TYPE envoy_listener_ssl_handshake counter
+envoy_listener_ssl_handshake{envoy_listener_address="example"} 3
+
+# TYPE envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds counter
+envoy_listener_server_ssl_socket_factory_ssl_context_update_by_sds{envoy_listener_address="example"} 2
+
+# TYPE kuma_dp_dns_request_duration_seconds_bucket counter
+kuma_dp_dns_request_duration_seconds_bucket{le="0.005"} 10
+
+# TYPE kuma_dp_dns_upstream_request_duration_seconds_bucket counter
+kuma_dp_dns_upstream_request_duration_seconds_bucket{le="0.005"} 8
+
+# TYPE envoy_some_irrelevant_metric counter
+envoy_some_irrelevant_metric{envoy_cluster_name="example"} 1

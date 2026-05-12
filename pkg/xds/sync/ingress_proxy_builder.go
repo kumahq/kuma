@@ -63,13 +63,13 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	zoneIngress *core_mesh.ZoneIngressResource,
 	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) *core_xds.ZoneIngressProxy {
-	var meshResourceList []*core_xds.MeshIngressResources
+	var meshResourceList []*core_xds.MeshProxyResources
 
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		meshName := mesh.GetMeta().GetName()
 		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
-		meshResources := &core_xds.MeshIngressResources{
+		meshResources := &core_xds.MeshProxyResources{
 			Mesh:        mesh,
 			EndpointMap: meshCtx.IngressEndpointMap,
 			Resources:   meshCtx.Resources.MeshLocalResources,

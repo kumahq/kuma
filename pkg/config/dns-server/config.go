@@ -3,6 +3,7 @@ package dns_server
 import (
 	"errors"
 	"net"
+	"strings"
 
 	"github.com/kumahq/kuma/v2/pkg/config"
 )
@@ -22,6 +23,9 @@ type Config struct {
 }
 
 func (g *Config) Validate() error {
+	if strings.HasPrefix(g.Domain, ".") {
+		return errors.New("domain must not start with a dot")
+	}
 	_, _, err := net.ParseCIDR(g.CIDR)
 	if err != nil {
 		return errors.New("CIDR must be valid")

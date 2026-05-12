@@ -111,7 +111,7 @@ func (l *MeshAccessLogList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshAccessLog{}, &MeshAccessLogList{})
+	knownTypes = append(knownTypes, &MeshAccessLog{}, &MeshAccessLogList{})
 	registry.RegisterObjectType(&policy.MeshAccessLog{}, &MeshAccessLog{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

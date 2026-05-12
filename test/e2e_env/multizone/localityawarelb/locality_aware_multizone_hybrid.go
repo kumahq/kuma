@@ -343,9 +343,6 @@ spec:
 			),
 		)
 
-		// clean stats
-		Expect(resetCounter(multizone.KubeZone2, "demo-client-mesh-route", namespace)).To(Succeed())
-
 		// when load balancing policy created
 		meshLoadBalancingStrategyDemoClientMeshRoute := utils.FromTemplate(Default, `
 type: MeshLoadBalancingStrategy
@@ -369,28 +366,32 @@ spec:
 
 		Expect(NewClusterSetup().Install(YamlUniversal(meshLoadBalancingStrategyDemoClientMeshRoute)).Setup(multizone.Global)).To(Succeed())
 
-		// and generate some traffic
-		_, err := client.CollectResponsesAndFailures(
-			multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
-			client.WithNumberOfRequests(200),
-			client.NoFail(),
-			client.WithoutRetries(),
-			client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
-		)
-		Expect(err).ToNot(HaveOccurred())
+		// then - wait for MLBS EDS to converge before measuring the distribution
+		Eventually(func(g Gomega) {
+			g.Expect(resetCounter(multizone.KubeZone2, "demo-client-mesh-route", namespace)).To(Succeed())
 
-		// then
-		failedRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(failedRequests).To(BeNumerically("~", 100, 25))
-		successRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-70a8d85bc2519528.upstream_rq_2xx")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(successRequests).To(BeNumerically("~", 100, 25))
+			_, err := client.CollectResponsesAndFailures(
+				multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
+				client.WithNumberOfRequests(200),
+				client.NoFail(),
+				client.WithoutRetries(),
+				client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			failedRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(failedRequests).To(BeNumerically("~", 100, 25))
+
+			successRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-70a8d85bc2519528.upstream_rq_2xx")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(successRequests).To(BeNumerically("~", 100, 25))
+		}, "60s", "10s").Should(Succeed())
 	})
 }
 
 func collectMetric(cluster Cluster, name string, namespace string, metricName string) (int, error) {
-	resp, _, err := client.CollectResponse(cluster, name, fmt.Sprintf("http://localhost:9901/stats?filter=%s", metricName), client.FromKubernetesPod(namespace, name))
+	resp, _, err := client.CollectResponse(cluster, name, fmt.Sprintf("http://localhost:9902/stats?filter=%s", metricName), client.FromKubernetesPod(namespace, name))
 	if err != nil {
 		return -1, err
 	}
@@ -408,7 +409,7 @@ func collectMetric(cluster Cluster, name string, namespace string, metricName st
 
 func resetCounter(cluster Cluster, name string, namespace string) error {
 	_, _, err := client.CollectResponse(
-		cluster, name, "http://localhost:9901/reset_counters",
+		cluster, name, "http://localhost:9902/reset_counters",
 		client.FromKubernetesPod(namespace, name),
 		client.WithMethod("POST"),
 	)

@@ -52,6 +52,8 @@ var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
+func (p plugin) Order() int { return api.MeshAccessLogResourceTypeDescriptor.Order }
+
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
@@ -158,6 +160,7 @@ func applyToInbounds(
 	workloadKRI string,
 	inboundTagsDisabled bool,
 ) error {
+	configured := map[core_rules.InboundListener]struct{}{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -165,10 +168,14 @@ func applyToInbounds(
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
+		if _, ok := configured[listenerKey]; ok {
+			continue
+		}
 		listener, ok := inboundListeners[listenerKey]
 		if !ok {
 			continue
 		}
+		configured[listenerKey] = struct{}{}
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{
@@ -428,7 +435,11 @@ func applyToRealResource(
 	})) > 0
 
 	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+		base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
+		if base == nil {
+			return nil
+		}
+		return base.
 			Configure(If(core_meta.IsHTTPBased(r.Protocol), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
 				Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 				Configure(bldrs_matcher.NullValue())),
@@ -437,7 +448,11 @@ func applyToRealResource(
 
 	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
 		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+			base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
+			if base == nil {
+				return nil
+			}
+			return base.
 				Configure(bldrs_accesslog.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
 					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.ExactValue(routeID.String()))))

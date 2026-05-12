@@ -78,7 +78,11 @@ func BestMatched(
 	return matches[0].policy, true
 }
 
-func (i *MeshIdentity) getSpiffeIDTemplate(env config_core.EnvironmentType) string {
+// SpiffeIDPathTemplate returns the path portion of the SPIFFE ID template that
+// will be used when rendering the SPIFFE ID for a dataplane. It falls back to
+// an environment-specific default when the MeshIdentity does not specify a
+// custom path.
+func (i *MeshIdentity) SpiffeIDPathTemplate(env config_core.EnvironmentType) string {
 	var defaultSpiffeIDPathTemplate string
 	switch env {
 	case config_core.KubernetesEnvironment:
@@ -86,14 +90,17 @@ func (i *MeshIdentity) getSpiffeIDTemplate(env config_core.EnvironmentType) stri
 	case config_core.UniversalEnvironment:
 		defaultSpiffeIDPathTemplate = defaultUniversalSpiffeIDPathTemplate
 	}
+	if i.SpiffeID == nil {
+		return defaultSpiffeIDPathTemplate
+	}
+	return pointer.DerefOr(i.SpiffeID.Path, defaultSpiffeIDPathTemplate)
+}
+
+func (i *MeshIdentity) getSpiffeIDTemplate(env config_core.EnvironmentType) string {
 	builder := strings.Builder{}
 	builder.WriteString("spiffe://")
 	builder.WriteString("{{ .TrustDomain }}")
-	if i.SpiffeID != nil {
-		builder.WriteString(pointer.DerefOr(i.SpiffeID.Path, defaultSpiffeIDPathTemplate))
-	} else {
-		builder.WriteString(defaultSpiffeIDPathTemplate)
-	}
+	builder.WriteString(i.SpiffeIDPathTemplate(env))
 	return builder.String()
 }
 
@@ -192,10 +199,9 @@ var (
 
 // UsesWorkloadLabel checks if this MeshIdentity's SPIFFE ID path template contains
 // the workload reference in the form of {{ label "kuma.io/workload" }} or {{ .Workload }}.
-func (i *MeshIdentity) UsesWorkloadLabel() bool {
-	if i.SpiffeID == nil || i.SpiffeID.Path == nil {
-		return false
-	}
-	path := *i.SpiffeID.Path
+// The environment is taken into account because the default Universal path template
+// references .Workload even when no custom path is configured.
+func (i *MeshIdentity) UsesWorkloadLabel(env config_core.EnvironmentType) bool {
+	path := i.SpiffeIDPathTemplate(env)
 	return workloadLabelRegex.MatchString(path) || workloadPlaceholderRegex.MatchString(path)
 }

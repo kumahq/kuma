@@ -1,0 +1,47 @@
+{{- range $meshEntry := .Values.meshes }}
+{{- $meshName := $meshEntry.name }}
+
+{{- /* Build list of enabled roles with their defaults from meshZoneProxyDefaults */ -}}
+{{- $roles := list }}
+{{- if and $meshEntry.ingress $meshEntry.ingress.enabled }}
+{{- $roles = append $roles (dict "role" "ingress" "cfg" $meshEntry.ingress "defaults" $.Values.meshZoneProxyDefaults.ingress) }}
+{{- end }}
+{{- if and $meshEntry.egress $meshEntry.egress.enabled }}
+{{- $roles = append $roles (dict "role" "egress" "cfg" $meshEntry.egress "defaults" $.Values.meshZoneProxyDefaults.egress) }}
+{{- end }}
+
+{{- range $roleEntry := $roles }}
+{{- $role := $roleEntry.role }}
+{{- $cfg := $roleEntry.cfg }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kuma.mesh.zoneproxy.serviceName" (dict "root" $ "meshName" $meshName "role" $role "nameOverride" (and $cfg.service $cfg.service.name)) }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+    k8s.kuma.io/zone-proxy-type: {{ $role }}
+    {{- range $key, $value := (and $cfg.service $cfg.service.labels) }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{- end }}
+  {{- with (and $cfg.service $cfg.service.annotations) }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  type: {{ default $roleEntry.defaults.service.type (and $cfg.service $cfg.service.type) }}
+  ports:
+    - port: {{ default $roleEntry.defaults.service.port (and $cfg.service $cfg.service.port) }}
+      protocol: TCP
+      targetPort: {{ $roleEntry.defaults.service.targetPort }}
+  selector:
+    {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+  {{- with (and $cfg.service $cfg.service.spec) }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
+
+{{- end }}
