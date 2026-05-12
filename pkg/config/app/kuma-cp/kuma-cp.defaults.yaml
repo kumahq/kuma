@@ -940,5 +940,5 @@ meshService:
   labelPropagation:
     # If true, propagate allowed user-defined labels from MeshService to generated resources.
     enabled: false # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED
-    # List of non-reserved label keys eligible for propagation. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
+    # List of non-reserved label keys eligible for propagation. When empty and enabled is true, all non-reserved labels are propagated. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
     allowedLabelKeys: [] # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS

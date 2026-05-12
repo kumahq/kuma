@@ -618,6 +618,7 @@ type MeshServiceLabelPropagation struct {
 	// If true, propagate allowed user-defined labels from MeshService to generated resources.
 	Enabled bool `json:"enabled" envconfig:"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED"`
 	// AllowedLabelKeys is the list of non-reserved label keys eligible for propagation.
+	// When empty and Enabled is true, all non-reserved labels are propagated.
 	// Reserved keys (kuma.io/ and k8s.kuma.io/ prefixes) are rejected at validation time.
 	AllowedLabelKeys []string `json:"allowedLabelKeys" envconfig:"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS"`
 }
