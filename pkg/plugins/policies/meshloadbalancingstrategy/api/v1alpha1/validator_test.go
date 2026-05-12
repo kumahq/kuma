@@ -9,6 +9,33 @@ import (
 )
 
 var _ = Describe("validation", func() {
+
+	DescribeTable("valid cases",
+		func(yaml string) {
+			resource := NewMeshLoadBalancingStrategyResource()
+			Expect(core_model.FromYAML([]byte(yaml), resource.GetSpec())).To(Succeed())
+			Expect(resource.Validate()).To(Succeed())
+		},
+		Entry("valid crossZone with MeshMultiZoneService target", `
+type: MeshLoadBalancingStrategy
+name: crosszone-valid
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshMultiZoneService
+    name: backend
+  default:
+    localityAwareness:
+      crossZone:
+        failover:
+        - from:
+            zones: ["zone-1"]
+          to:
+            type: Any
+`),
+	)
+
 	DescribeErrorCases(
 		api.NewMeshLoadBalancingStrategyResource,
 		ErrorCases(
@@ -39,7 +66,7 @@ to: []
 				Message: "value 'MeshServiceSubset' is not supported",
 			}, {
 				Field:   "spec.to[1].default.localityAwareness.crossZone",
-				Message: "must not be set: MeshService traffic is local",
+				Message: "must not be set: crossZone is only supported when targeting MeshMultiZoneService",
 			}},
 			`
 type: MeshLoadBalancingStrategy
