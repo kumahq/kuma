@@ -47,12 +47,6 @@ func RegisterXDS(
 		return err
 	}
 
-<<<<<<< HEAD
-=======
-	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
-	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
-
->>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
@@ -61,7 +55,7 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 			xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration)),
 		),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
 	}
@@ -70,31 +64,7 @@ func RegisterXDS(
 		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
 	}
 
-<<<<<<< HEAD
-	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks, sotw.WithOrderedADS())
-=======
-	deltaCallbacks := util_xds_v3.CallbacksChain{
-		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
-		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
-		util_xds_v3.AdaptDeltaCallbacks(authCallbacks),
-		util_xds_v3.AdaptDeltaCallbacks(workloadLabelValidator),
-		util_xds_v3.AdaptDeltaCallbacks(dpLifecycle),
-		util_xds_v3.AdaptDeltaCallbacks(syncTracker),
-		util_xds_v3.AdaptDeltaCallbacks(dpStatusTracker),
-		util_xds_v3.AdaptDeltaCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
-	}
-
-	if cb := rt.XDS().ServerCallbacks; cb != nil {
-		deltaCallbacks = append(deltaCallbacks, util_xds_v3.AdaptDeltaCallbacks(cb))
-	}
-
-	rest := envoy_server_rest.NewServer(xdsContext.Cache(), callbacks)
-	sotw := envoy_server_sotw.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
-	delta := envoy_server_delta.NewServer(rt.AppContext(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
-		o.Ordered = true
-	})
-	newServerAdvanced := envoy_server.NewServerAdvanced(rest, sotw, delta)
->>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
+	srv := envoy_server.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, sotw.WithOrderedADS())
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
 	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)
