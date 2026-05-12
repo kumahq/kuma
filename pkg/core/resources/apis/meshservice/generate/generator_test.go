@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -31,6 +33,22 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/server"
 )
+
+type countingResourceManager struct {
+	manager.ResourceManager
+	updates atomic.Int32
+	creates atomic.Int32
+}
+
+func (c *countingResourceManager) Update(ctx context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
+	c.updates.Add(1)
+	return c.ResourceManager.Update(ctx, r, fs...)
+}
+
+func (c *countingResourceManager) Create(ctx context.Context, r model.Resource, fs ...store.CreateOptionsFunc) error {
+	c.creates.Add(1)
+	return c.ResourceManager.Create(ctx, r, fs...)
+}
 
 var _ = Describe("MeshService generator", func() {
 	var stopCh chan struct{}
@@ -72,6 +90,7 @@ var _ = Describe("MeshService generator", func() {
 			meshCache,
 			"zone",
 			false,
+			kuma_cp.MeshServiceLabelPropagation{},
 		)
 
 		Expect(err).ToNot(HaveOccurred())
@@ -448,6 +467,7 @@ var _ = Describe("MeshService generator", func() {
 				meshCache,
 				"zone",
 				true,
+				kuma_cp.MeshServiceLabelPropagation{},
 			)
 			Expect(err).ToNot(HaveOccurred())
 			stopCh = make(chan struct{})
@@ -473,6 +493,276 @@ var _ = Describe("MeshService generator", func() {
 				g.Expect(resManager.List(context.Background(), mss)).To(Succeed())
 				g.Expect(mss.GetItems()).To(BeEmpty())
 			}, "1s", "100ms").Should(Succeed())
+		})
+	})
+
+	Context("with LabelPropagation enabled", func() {
+		var countingMgr *countingResourceManager
+
+		BeforeEach(func() {
+			close(stopCh)
+
+			m, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			metrics = m
+			s := memory.NewStore()
+			baseManager := manager.NewResourceManager(s)
+			countingMgr = &countingResourceManager{ResourceManager: baseManager}
+			resManager = countingMgr
+			meshContextBuilder = xds_context.NewMeshContextBuilder(
+				resManager,
+				server.MeshResourceTypes(),
+				net.LookupIP,
+				"zone",
+				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
+				".mesh",
+				80,
+				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				nil,
+			)
+			meshCache, err := cache_mesh.NewCache(
+				100*time.Millisecond,
+				meshContextBuilder,
+				metrics,
+			)
+			Expect(err).ToNot(HaveOccurred())
+			allocator, err := generate.New(
+				logr.Discard(),
+				50*time.Millisecond,
+				gracePeriodInterval,
+				metrics,
+				resManager,
+				meshCache,
+				"zone",
+				false,
+				kuma_cp.MeshServiceLabelPropagation{Enabled: true},
+			)
+			Expect(err).ToNot(HaveOccurred())
+			stopCh = make(chan struct{})
+			innerCh := stopCh
+			go func() {
+				defer GinkgoRecover()
+				Expect(allocator.Start(innerCh)).To(Succeed())
+			}()
+			Expect(
+				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+			).To(Succeed())
+		})
+
+		It("preserves a previously-propagated label when the Dataplane stops carrying it", func() {
+			err := builders.Dataplane().
+				WithAddress("127.0.0.1").
+				WithoutInbounds().
+				AddInbound(builders.Inbound().
+					WithPort(80).
+					WithServicePort(8080).
+					WithTags(map[string]string{mesh_proto.ServiceTag: "backend", "appci": "jeffy"}),
+				).
+				Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
+			}, "2s", "100ms").Should(Succeed())
+
+			dp := core_mesh.NewDataplaneResource()
+			Expect(resManager.Get(context.Background(), dp, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
+			delete(dp.Spec.Networking.Inbound[0].Tags, "appci")
+			Expect(resManager.Update(context.Background(), dp)).To(Succeed())
+
+			// The reconciler only overwrites keys it actively manages (system keys and
+			// keys in the current propagation vote). A key absent from the current vote
+			// is not removed — it is preserved to avoid stripping operator-managed labels.
+			Consistently(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("kuma.io/mesh", model.DefaultMesh))
+			}, "500ms", "100ms").Should(Succeed())
+		})
+
+		It("does not Update when nothing changes between reconciles", func() {
+			err := samples.DataplaneBackendBuilder().Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			}, "2s", "100ms").Should(Succeed())
+
+			baseline := countingMgr.updates.Load()
+			Consistently(func(g Gomega) {
+				g.Expect(countingMgr.updates.Load()).To(Equal(baseline))
+			}, "300ms", "50ms").Should(Succeed())
+		})
+
+		It("propagates non-reserved labels on create and excludes reserved keys", func() {
+			err := builders.Dataplane().
+				WithAddress("127.0.0.1").
+				WithoutInbounds().
+				AddInbound(builders.Inbound().
+					WithPort(80).
+					WithServicePort(8080).
+					WithTags(map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						"appci":               "jeffy",
+						mesh_proto.ZoneTag:    "user-zone",
+					}),
+				).
+				Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
+				// kuma.io/zone is a system label — present but set by the generator, not from the inbound tag
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue(mesh_proto.ZoneTag, "zone"))
+				g.Expect(ms.GetMeta().GetLabels()).ToNot(HaveKeyWithValue(mesh_proto.ZoneTag, "user-zone"))
+			}, "2s", "100ms").Should(Succeed())
+		})
+
+		It("issues an Update when only a propagated label changed", func() {
+			err := samples.DataplaneBackendBuilder().Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			}, "2s", "100ms").Should(Succeed())
+
+			baseline := countingMgr.updates.Load()
+
+			dp := core_mesh.NewDataplaneResource()
+			Expect(resManager.Get(context.Background(), dp, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
+			dp.Spec.Networking.Inbound[0].Tags["appci"] = "jeffy"
+			Expect(resManager.Update(context.Background(), dp)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(countingMgr.updates.Load()).To(BeNumerically(">", baseline))
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
+			}, "2s", "100ms").Should(Succeed())
+		})
+
+		It("preserves externally-added labels on reconcile", func() {
+			err := samples.DataplaneBackendBuilder().Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			}, "2s", "100ms").Should(Succeed())
+
+			newLabels := maps.Clone(ms.GetMeta().GetLabels())
+			newLabels["external.io/foo"] = "bar"
+			Expect(resManager.Update(context.Background(), ms, store.UpdateWithLabels(newLabels))).To(Succeed())
+
+			Consistently(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("external.io/foo", "bar"))
+			}, "500ms", "100ms").Should(Succeed())
+		})
+
+		It("propagates all non-reserved labels when AllowedLabelKeys is empty", func() {
+			err := builders.Dataplane().
+				WithAddress("127.0.0.1").
+				WithoutInbounds().
+				AddInbound(builders.Inbound().
+					WithPort(80).
+					WithServicePort(8080).
+					WithTags(map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						"appci":               "jeffy",
+						"team":                "blue",
+					}),
+				).
+				Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("team", "blue"))
+			}, "2s", "100ms").Should(Succeed())
+		})
+
+		Context("with AllowedLabelKeys", func() {
+			BeforeEach(func() {
+				close(stopCh)
+
+				m, err := core_metrics.NewMetrics("")
+				Expect(err).ToNot(HaveOccurred())
+				metrics = m
+				s := memory.NewStore()
+				baseManager := manager.NewResourceManager(s)
+				countingMgr = &countingResourceManager{ResourceManager: baseManager}
+				resManager = countingMgr
+				meshContextBuilder = xds_context.NewMeshContextBuilder(
+					resManager,
+					server.MeshResourceTypes(),
+					net.LookupIP,
+					"zone",
+					vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
+					".mesh",
+					80,
+					xds_context.AnyToAnyReachableServicesGraphBuilder,
+					nil,
+				)
+				meshCache, err := cache_mesh.NewCache(
+					100*time.Millisecond,
+					meshContextBuilder,
+					metrics,
+				)
+				Expect(err).ToNot(HaveOccurred())
+				allocator, err := generate.New(
+					logr.Discard(),
+					50*time.Millisecond,
+					gracePeriodInterval,
+					metrics,
+					resManager,
+					meshCache,
+					"zone",
+					false,
+					kuma_cp.MeshServiceLabelPropagation{Enabled: true, AllowedLabelKeys: []string{"appci"}},
+				)
+				Expect(err).ToNot(HaveOccurred())
+				stopCh = make(chan struct{})
+				innerCh := stopCh
+				go func() {
+					defer GinkgoRecover()
+					Expect(allocator.Start(innerCh)).To(Succeed())
+				}()
+				Expect(
+					samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+				).To(Succeed())
+			})
+
+			It("propagates only allowed keys", func() {
+				err := builders.Dataplane().
+					WithAddress("127.0.0.1").
+					WithoutInbounds().
+					AddInbound(builders.Inbound().
+						WithPort(80).
+						WithServicePort(8080).
+						WithTags(map[string]string{
+							mesh_proto.ServiceTag: "backend",
+							"appci":               "jeffy",
+							"team":                "blue",
+						}),
+					).
+					Create(resManager)
+				Expect(err).ToNot(HaveOccurred())
+
+				ms := meshservice_api.NewMeshServiceResource()
+				Eventually(func(g Gomega) {
+					g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+					g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
+					g.Expect(ms.GetMeta().GetLabels()).ToNot(HaveKey("team"))
+				}, "2s", "100ms").Should(Succeed())
+			})
 		})
 	})
 })
