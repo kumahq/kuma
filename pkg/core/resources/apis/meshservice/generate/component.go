@@ -39,6 +39,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.MeshCache(),
 		rt.Config().Multizone.Zone.Name,
 		rt.Config().Experimental.InboundTagsDisabled,
+		rt.Config().MeshService.LabelPropagation,
 	)
 	if err != nil {
 		return err

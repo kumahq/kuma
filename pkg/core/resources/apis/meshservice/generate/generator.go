@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -35,14 +36,17 @@ const (
 // Generator generates MeshService objects from Dataplane resources created on
 // universal.
 type Generator struct {
-	logger              logr.Logger
-	generateInterval    time.Duration
-	deletionGracePeriod time.Duration
-	metric              prometheus.Histogram
-	resManager          manager.ResourceManager
-	meshCache           *mesh_cache.Cache
-	zone                string
-	inboundTagsDisabled bool
+	logger                  logr.Logger
+	generateInterval        time.Duration
+	deletionGracePeriod     time.Duration
+	metric                  prometheus.Histogram
+	resManager              manager.ResourceManager
+	meshCache               *mesh_cache.Cache
+	zone                    string
+	inboundTagsDisabled     bool
+	labelPropagationEnabled bool
+	allowSet                map[string]struct{} // nil = allow all non-reserved
+	droppedLabelsMetric     prometheus.Counter  // unregistered placeholder; Phase 5 registers
 }
 
 var _ component.Component = &Generator{}
@@ -56,6 +60,7 @@ func New(
 	meshCache *mesh_cache.Cache,
 	zone string,
 	inboundTagsDisabled bool,
+	labelPropagation kuma_cp.MeshServiceLabelPropagation,
 ) (*Generator, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name: "component_meshservice_generator",
@@ -64,21 +69,41 @@ func New(
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
 	}
+	var allowSet map[string]struct{}
+	if len(labelPropagation.AllowedLabelKeys) > 0 {
+		allowSet = make(map[string]struct{}, len(labelPropagation.AllowedLabelKeys))
+		for _, k := range labelPropagation.AllowedLabelKeys {
+			allowSet[k] = struct{}{}
+		}
+	}
+	droppedLabels := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "component_meshservice_generator_dropped_labels_total",
+		Help: "Internal placeholder; Phase 5 replaces with a registered CounterVec.",
+	})
 	return &Generator{
-		logger:              logger,
-		generateInterval:    generateInterval,
-		deletionGracePeriod: deletionGracePeriod,
-		metric:              metric,
-		resManager:          resManager,
-		meshCache:           meshCache,
-		zone:                zone,
-		inboundTagsDisabled: inboundTagsDisabled,
+		logger:                  logger,
+		generateInterval:        generateInterval,
+		deletionGracePeriod:     deletionGracePeriod,
+		metric:                  metric,
+		resManager:              resManager,
+		meshCache:               meshCache,
+		zone:                    zone,
+		inboundTagsDisabled:     inboundTagsDisabled,
+		labelPropagationEnabled: labelPropagation.Enabled,
+		allowSet:                allowSet,
+		droppedLabelsMetric:     droppedLabels,
 	}, nil
 }
 
-func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) map[string]*meshservice_api.MeshService {
+type meshServicesResult struct {
+	services           map[string]*meshservice_api.MeshService
+	labelContributions map[string]map[string]string // serviceTag → per-DP contribution
+}
+
+func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
+	inboundsByService := map[string][]*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		if g.inboundTagsDisabled && len(inbound.GetTags()) == 0 {
 			continue
@@ -108,6 +133,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		}
 
 		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
+		inboundsByService[serviceTagValue] = append(inboundsByService[serviceTagValue], inbound)
 	}
 
 	services := map[string]*meshservice_api.MeshService{}
@@ -122,12 +148,21 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		}
 		services[serviceTag] = &ms
 	}
-	return services
+
+	contributions := map[string]map[string]string{}
+	if g.labelPropagationEnabled {
+		for tag, ins := range inboundsByService {
+			contributions[tag] = dpContribution(dataplane, ins, g.allowSet, g.droppedLabelsMetric, log)
+		}
+	}
+
+	return meshServicesResult{services: services, labelContributions: contributions}
 }
 
 type dataplaneAndMeshService struct {
-	dataplane   model.ResourceMeta
-	meshService *meshservice_api.MeshService
+	dataplane         *core_mesh.DataplaneResource
+	meshService       *meshservice_api.MeshService
+	labelContribution map[string]string // nil when flag disabled
 }
 
 // checkMeshServicesConsistency returns a list of dataplanes that conflict and
@@ -179,12 +214,29 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
-		for name, ms := range g.meshServicesForDataplane(dataplane) {
+		result := g.meshServicesForDataplane(dataplane)
+		for name, ms := range result.services {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
-				dataplane:   dataplane.GetMeta(),
-				meshService: ms,
+				dataplane:         dataplane,
+				meshService:       ms,
+				labelContribution: result.labelContributions[name],
 			})
 		}
+	}
+
+	propagatedLabelsFor := func(entries []dataplaneAndMeshService) map[string]string {
+		if !g.labelPropagationEnabled {
+			return nil
+		}
+		dps := make([]*core_mesh.DataplaneResource, 0, len(entries))
+		byName := make(map[string]map[string]string, len(entries))
+		for _, e := range entries {
+			dps = append(dps, e.dataplane)
+			byName[e.dataplane.GetMeta().GetName()] = e.labelContribution
+		}
+		return mergeAcrossDataplanes(dps, func(dp *core_mesh.DataplaneResource) map[string]string {
+			return byName[dp.GetMeta().GetName()]
+		})
 	}
 
 	for _, meshService := range meshServices {
@@ -192,10 +244,11 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			continue
 		}
 		log := log.WithValues("MeshService", meshService.GetMeta().GetName())
-		conflicting, newMeshService := checkMeshServicesConsistency(meshService.Spec, meshservicesByName[meshService.GetMeta().GetName()])
+		entries := meshservicesByName[meshService.GetMeta().GetName()]
+		conflicting, newMeshService := checkMeshServicesConsistency(meshService.Spec, entries)
 		var dps []string
 		for _, dp := range conflicting {
-			dps = append(dps, dp.dataplane.GetName())
+			dps = append(dps, dp.dataplane.GetMeta().GetName())
 		}
 		if len(conflicting) > 0 {
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
@@ -203,28 +256,39 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		delete(meshservicesByName, meshService.GetMeta().GetName())
 		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
 
-		servicesDiffer := newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService)
-		if newMeshService != nil && (servicesDiffer || hasGracePeriodLabel) {
+		specDiffers := newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService)
+
+		existingLabels := maps.Clone(meshService.GetMeta().GetLabels())
+		delete(existingLabels, mesh_proto.DeletionGracePeriodStartedLabel)
+		var desired map[string]string
+		var labelsChanged bool
+		if g.labelPropagationEnabled {
+			propagated := propagatedLabelsFor(entries)
+			desired = desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, propagated)
+			labelsChanged = !maps.Equal(existingLabels, desired)
+		} else {
+			desired = existingLabels
+		}
+
+		if newMeshService != nil && (specDiffers || hasGracePeriodLabel || labelsChanged) {
 			meta := meshService.GetMeta()
 			meshService = meshservice_api.NewMeshServiceResource()
 			meshService.Meta = meta
 			meshService.Spec = newMeshService
 
-			// Preserve existing labels, removing only the grace-period label
-			existingLabels := maps.Clone(meshService.GetMeta().GetLabels())
-			delete(existingLabels, mesh_proto.DeletionGracePeriodStartedLabel)
-			newLabels := desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, existingLabels)
-
-			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
+			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(desired)); err != nil {
 				log.Error(err, "couldn't update MeshService")
 				continue
 			}
 			var reasons []string
-			if servicesDiffer {
+			if specDiffers {
 				reasons = append(reasons, "spec changed")
 			}
 			if hasGracePeriodLabel {
 				reasons = append(reasons, "no longer scheduled for deletion")
+			}
+			if labelsChanged {
+				reasons = append(reasons, "labels changed")
 			}
 			log.Info("updated MeshService", "reasons", reasons)
 		} else if newMeshService == nil {
@@ -265,12 +329,13 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		meshService.Spec = newMeshService
 		var dps []string
 		for _, dp := range conflicting {
-			dps = append(dps, dp.dataplane.GetName())
+			dps = append(dps, dp.dataplane.GetMeta().GetName())
 		}
 		if len(conflicting) > 0 {
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
-		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(desiredLabels(mesh, name, g.zone, nil))); err != nil {
+		createLabels := desiredLabels(mesh, name, g.zone, propagatedLabelsFor(meshServices))
+		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(createLabels)); err != nil {
 			log.Error(err, "couldn't create MeshService")
 			continue
 		}
