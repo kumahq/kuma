@@ -40,6 +40,10 @@ type DpServerConfig struct {
 	// Tokens e2e tests, which started flaking a lot after introducing explicit
 	// 1s timeout)
 	ReadHeaderTimeout config_types.Duration `json:"readHeaderTimeout" envconfig:"kuma_dp_server_read_header_timeout"`
+	// GracefulShutdownTimeout should be smaller than controller-runtime's
+	// shutdown budget (30s upstream default) and the pod's
+	// terminationGracePeriodSeconds.
+	GracefulShutdownTimeout config_types.Duration `json:"gracefulShutdownTimeout" envconfig:"kuma_dp_server_graceful_shutdown_timeout"`
 	// Authn defines authentication configuration for the DP Server.
 	Authn DpServerAuthnConfig `json:"authn"`
 	// Hds defines a Health Discovery Service configuration
@@ -78,6 +82,9 @@ func (a *DpServerConfig) Validate() error {
 	}
 	if a.ReadHeaderTimeout.Duration < 0 {
 		return errors.New("ReadHeaderTimeout must be greater or equal 0s")
+	}
+	if a.GracefulShutdownTimeout.Duration <= 0 {
+		errs = multierr.Append(errs, errors.New(".GracefulShutdownTimeout must be greater than 0s"))
 	}
 	return errs
 }
@@ -230,6 +237,8 @@ func DefaultDpServerConfig() *DpServerConfig {
 		// (we observed this in Projected Service Account Tokens e2e tests,
 		// which started flaking a lot after introducing this 1s timeout)
 		ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},
+		// 10s leaves ~20s headroom inside controller-runtime's 30s shutdown budget.
+		GracefulShutdownTimeout: config_types.Duration{Duration: 10 * time.Second},
 	}
 }
 

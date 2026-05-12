@@ -20,7 +20,7 @@ var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncTracker", func() {
 		It("should not fail when ADS stream is closed before Watchdog is even created", func() {
 			// setup
-			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(nil))
+			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(context.Background(), nil))
 
 			// given
 			ctx := context.Background()
@@ -43,7 +43,7 @@ var _ = Describe("Sync", func() {
 
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
-			tracker := NewDataplaneSyncTracker(nil)
+			tracker := NewDataplaneSyncTracker(context.Background(), nil)
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -76,6 +76,7 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
+<<<<<<< HEAD
 			tracker := NewDataplaneSyncTracker(&watchdogFuncFactory{
 				fn: func(key core_model.ResourceKey) util_xds_v3.Watchdog {
 					return WatchdogFunc(func(ctx context.Context) {
@@ -85,6 +86,15 @@ var _ = Describe("Sync", func() {
 					})
 				},
 			})
+=======
+			tracker := NewDataplaneSyncTracker(context.Background(), sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, _ *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
+				return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
+					watchdogCh <- key
+					<-ctx.Done()
+					close(watchdogCh)
+				})
+			}))
+>>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -133,6 +143,7 @@ var _ = Describe("Sync", func() {
 			// setup
 			var activeWatchdogs int32
 			var cleanupDone atomic.Bool
+<<<<<<< HEAD
 			tracker := NewDataplaneSyncTracker(&watchdogFuncFactory{
 				fn: func(key core_model.ResourceKey) util_xds_v3.Watchdog {
 					return WatchdogFunc(func(ctx context.Context) {
@@ -143,6 +154,16 @@ var _ = Describe("Sync", func() {
 					})
 				},
 			})
+=======
+			tracker := NewDataplaneSyncTracker(context.Background(), sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, _ *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
+				return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
+					activeWatchdogs.Add(1)
+					<-ctx.Done()
+					activeWatchdogs.Add(-1)
+					cleanupDone.Store(true)
+				})
+			}))
+>>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
@@ -200,6 +221,28 @@ var _ = Describe("Sync", func() {
 			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
 		})
 
+		It("should cancel watchdog when parent context is canceled", test.Within(5*time.Second, func() {
+			parentCtx, cancelParent := context.WithCancel(context.Background())
+			watchdogStarted := make(chan struct{})
+			watchdogReturned := make(chan struct{})
+
+			tracker := NewDataplaneSyncTracker(parentCtx, sync.DataplaneWatchdogFactoryFunc(func(_ core_model.ResourceKey, _ *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
+				return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
+					close(watchdogStarted)
+					<-ctx.Done()
+					close(watchdogReturned)
+				})
+			}))
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+
+			Expect(callbacks.OnStreamOpen(context.Background(), 1, "")).ToNot(HaveOccurred())
+			Expect(callbacks.OnStreamRequest(1, &envoy_sd.DiscoveryRequest{Node: &envoy_core.Node{Id: "demo.example"}})).ToNot(HaveOccurred())
+			Eventually(watchdogStarted).Should(BeClosed())
+
+			cancelParent()
+			Eventually(watchdogReturned).Should(BeClosed())
+		}))
+
 		It("should pass stream context to watchdog factory when supported", test.Within(5*time.Second, func() {
 			streamCtxCh := make(chan context.Context, 1)
 			watchdogDone := make(chan struct{})
@@ -209,7 +252,7 @@ var _ = Describe("Sync", func() {
 				streamCtxCh:  streamCtxCh,
 				watchdogDone: watchdogDone,
 			}
-			tracker := NewDataplaneSyncTracker(factory)
+			tracker := NewDataplaneSyncTracker(context.Background(), factory)
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
