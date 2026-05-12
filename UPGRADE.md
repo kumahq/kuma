@@ -13,14 +13,21 @@ does not have any particular instructions.
 A new optional behavior propagates non-reserved Dataplane inbound tags
 and resource labels onto auto-generated MeshService objects.
 
-- Enable via env: `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED=true`
-  (or YAML: `meshService.labelPropagation.enabled: true`).
-- Restrict to specific keys via:
-  `meshService.labelPropagation.allowedLabelKeys: ["team","tier"]`.
-  Empty list (default) and `enabled=true` propagates all non-reserved keys.
+- Enable via env: `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED=true`, or in
+  `kuma-cp.yaml`:
+
+  ```yaml
+  meshService:
+    labelPropagation:
+      enabled: true
+      allowedLabelKeys: ["team", "tier"]
+  ```
+
+  Empty `allowedLabelKeys` (default) with `enabled: true` propagates all
+  non-reserved keys.
 - Reserved namespaces `kuma.io/*` and `k8s.kuma.io/*` are never propagated.
-- Only applies when the mesh uses `meshServices.mode: Exclusive`. K8s path
-  is unaffected.
+- Applies whenever MeshServices are enabled (mesh `meshServices.mode` is not
+  `Disabled`). K8s path is unaffected.
 - Rolling deploys: per-key majority-wins across Dataplanes, newest-tiebreak.
 
 Default remains `false`; behaviour is unchanged for existing deployments.

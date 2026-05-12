@@ -59,7 +59,7 @@ networking:
 			g.Expect(labels).To(HaveKeyWithValue("team", "payments"))
 
 			g.Expect(labels).ToNot(HaveKey("kuma.io/owner"))
-			g.Expect(labels).ToNot(HaveKeyWithValue("kuma.io/protocol", "http"))
+			g.Expect(labels).ToNot(HaveKey("kuma.io/protocol"))
 
 			g.Expect(labels).To(HaveKeyWithValue(metadata.KumaMeshLabel, meshName))
 			g.Expect(labels).To(HaveKeyWithValue(mesh_proto.ManagedByLabel, "meshservice-generator"))

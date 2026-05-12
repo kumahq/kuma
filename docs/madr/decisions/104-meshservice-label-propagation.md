@@ -72,8 +72,8 @@ The propagation call site is `generator.go:227-240`. The function
 `propagatedLabelsFor` is a no-op when:
 
 - `g.labelPropagationEnabled == false` (flag off, default).
-- The mesh `meshServices.mode` is not `Exclusive` (generator short-circuits
-  before reaching label code for other modes).
+- The mesh `meshServices.mode` is `Disabled` (generator skips MeshService
+  reconciliation entirely for that mesh, so label code is never reached).
 
 The result is passed into `desiredLabels`, which merges propagated keys
 with the mandatory system keys. System keys always override propagated keys
