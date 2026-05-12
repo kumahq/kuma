@@ -61,12 +61,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet()); err != nil {
+	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet(), core_xds.NonMeshExternalService); err != nil {
 		return err
 	}
 
 	if len(proxy.Dataplane.Spec.GetNetworking().GetReadyZoneEgressListeners()) > 0 {
-		if err := applyToZoneEgressClusters(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet()); err != nil {
+		if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet(), core_xds.MeshExternalServiceOnly); err != nil {
 			return err
 		}
 	}
@@ -250,20 +250,8 @@ func applyToRealResource(meshCtx xds_context.MeshContext, rules outbound.Resourc
 	return nil
 }
 
-func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet) error {
-	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
-		if err := applyToRealResource(meshCtx, rules, tagSet, uri, resType); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func applyToZoneEgressClusters(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet) error {
-	for uri, resType := range rs.IndexByOrigin() {
-		if uri.ResourceType != meshexternalservice_api.MeshExternalServiceType {
-			continue
-		}
+func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet, filters ...func(*core_xds.Resource) bool) error {
+	for uri, resType := range rs.IndexByOrigin(filters...) {
 		if err := applyToRealResource(meshCtx, rules, tagSet, uri, resType); err != nil {
 			return err
 		}

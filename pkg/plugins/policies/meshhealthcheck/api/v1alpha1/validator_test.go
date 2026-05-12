@@ -94,6 +94,18 @@ to:
       tcp: # it will pick the protocol as described in 'protocol selection' section
         disabled: true # new, default false, can be disabled for override
 `),
+			Entry("to level MeshExternalService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: external
+    default:
+      interval: 10s
+      tcp: # it will pick the protocol as described in 'protocol selection' section
+        disabled: true # new, default false, can be disabled for override
+`),
 		)
 
 		type testCase struct {

@@ -74,12 +74,12 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules); err != nil {
+	if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules, core_xds.NonMeshExternalService); err != nil {
 		return err
 	}
 
 	if len(proxy.Dataplane.Spec.GetNetworking().GetReadyZoneEgressListeners()) > 0 {
-		if err := applyToZoneEgressClusters(ctx.Mesh, rs, policies.ToRules.ResourceRules); err != nil {
+		if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules, core_xds.MeshExternalServiceOnly); err != nil {
 			return err
 		}
 	}
@@ -271,24 +271,9 @@ func applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
 	rules outbound.ResourceRules,
+	filters ...func(*core_xds.Resource) bool,
 ) error {
-	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
-		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func applyToZoneEgressClusters(
-	meshCtx xds_context.MeshContext,
-	rs *core_xds.ResourceSet,
-	rules outbound.ResourceRules,
-) error {
-	for uri, resType := range rs.IndexByOrigin() {
-		if uri.ResourceType != meshexternalservice_api.MeshExternalServiceType {
-			continue
-		}
+	for uri, resType := range rs.IndexByOrigin(filters...) {
 		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
 			return err
 		}

@@ -241,6 +241,15 @@ to:
       name: web-backend
     default:
       connectionLimits: { }`),
+			Entry("with MeshExternalService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: external
+    default:
+      connectionLimits: { }`),
 			Entry("gateway example", `
 targetRef:
   kind: MeshGateway
