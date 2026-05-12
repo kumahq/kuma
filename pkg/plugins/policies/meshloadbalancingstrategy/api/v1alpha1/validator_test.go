@@ -10,12 +10,8 @@ import (
 
 var _ = Describe("validation", func() {
 
-	DescribeTable("valid cases",
-		func(yaml string) {
-			resource := NewMeshLoadBalancingStrategyResource()
-			Expect(core_model.FromYAML([]byte(yaml), resource.GetSpec())).To(Succeed())
-			Expect(resource.Validate()).To(Succeed())
-		},
+	DescribeValidCases(
+		api.NewMeshLoadBalancingStrategyResource,
 		Entry("valid crossZone with MeshMultiZoneService target", `
 type: MeshLoadBalancingStrategy
 name: crosszone-valid
