@@ -377,5 +377,83 @@ filters:
                     name: default
     statPrefix: shadow_deny.`,
 		}),
+		Entry("allow spiffeID AND sni in one match, sni-only in another", testCase{
+			stats: "sni_match_prefix",
+			inboundRules: []*inbound.Rule{
+				{
+					Conf: &v1alpha1.Rule{
+						Default: v1alpha1.RuleConf{
+							Allow: &[]common_api.Match{
+								{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/ns/backend-ns/sa/backend",
+									},
+									SNI: &common_api.SNIMatch{
+										Type:  common_api.SNIExactMatchType,
+										Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+									},
+								},
+								{
+									SNI: &common_api.SNIMatch{
+										Type:  common_api.SNIExactMatchType,
+										Value: "sni.extsvc.default.zone-1.aws-rds.8443",
+									},
+								},
+							},
+						},
+					},
+					Origin: mtpOrigin("mtp-1"),
+				},
+			},
+			expected: `
+filters:
+- name: envoy.filters.network.rbac
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+    matcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    orMatcher:
+                        predicate:
+                            - andMatcher:
+                                predicate:
+                                    - singlePredicate:
+                                        input:
+                                            name: envoy.matching.inputs.uri_san
+                                            typedConfig:
+                                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                                        valueMatch:
+                                            exact: spiffe://default/ns/backend-ns/sa/backend
+                                    - singlePredicate:
+                                        input:
+                                            name: envoy.matching.inputs.server_name
+                                            typedConfig:
+                                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput
+                                        valueMatch:
+                                            exact: sni.extsvc.default.zone-1.aws-aurora.8443
+                            - singlePredicate:
+                                input:
+                                    name: envoy.matching.inputs.server_name
+                                    typedConfig:
+                                        '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput
+                                valueMatch:
+                                    exact: sni.extsvc.default.zone-1.aws-rds.8443
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    statPrefix: sni_match_prefix.`,
+		}),
 	)
 })

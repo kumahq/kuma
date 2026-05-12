@@ -460,6 +460,18 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 			verr.AddViolation("spiffeID", "must be a valid Spiffe ID")
 		}
 	}
+	if match.SNI != nil {
+		switch match.SNI.Type {
+		case common_api.SNIExactMatchType:
+		case "":
+			verr.AddViolation("sni.type", "must be set")
+		default:
+			verr.AddViolation("sni.type", fmt.Sprintf("unrecognized type %q, supported values are: Exact", match.SNI.Type))
+		}
+		if match.SNI.Value == "" {
+			verr.AddViolation("sni.value", "must be set")
+		}
+	}
 	return verr
 }
 
