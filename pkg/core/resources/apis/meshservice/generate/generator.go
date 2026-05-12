@@ -155,7 +155,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 	contributions := map[string]map[string]string{}
 	if g.labelPropagationEnabled {
 		for tag, ins := range inboundsByService {
-			contributions[tag] = dpContribution(dataplane, ins, g.allowSet, g.droppedLabels, g.logger)
+			contributions[tag] = dpContribution(dataplane, ins, g.allowSet, g.droppedLabels, g.logger, tag)
 		}
 	}
 

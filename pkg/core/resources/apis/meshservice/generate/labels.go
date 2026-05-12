@@ -20,6 +20,7 @@ func dpContribution(
 	allowSet map[string]struct{},
 	droppedLabels *prometheus.CounterVec,
 	log logr.Logger,
+	service string,
 ) map[string]string {
 	out := map[string]string{}
 	if dp == nil {
@@ -30,6 +31,7 @@ func dpContribution(
 		droppedLabels.WithLabelValues(reason).Inc()
 		log.Info("dropping label during MeshService generation",
 			"reason", reason,
+			"service", service,
 			"dataplane", dp.GetMeta().GetName(),
 			"mesh", dp.GetMeta().GetMesh(),
 			"key", key,
@@ -67,7 +69,7 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				log.V(1).Info("inbound tag not in allow-list", "key", k)
+				drop("not_allowed", k)
 				continue
 			}
 		}
@@ -89,7 +91,7 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				log.V(1).Info("DP label not in allow-list", "key", k)
+				drop("not_allowed", k)
 				continue
 			}
 		}

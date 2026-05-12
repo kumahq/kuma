@@ -81,13 +81,13 @@ var _ = DescribeTable("dpContribution",
 		}
 		dp := dpWith("dp-1", dpLabels, time.Unix(0, 0), ins...)
 		c := newDroppedLabels()
-		got := generate.DpContribution(dp, ins, allowSet, c, logr.Discard())
+		got := generate.DpContribution(dp, ins, allowSet, c, logr.Discard(), "backend")
 		Expect(got).To(Equal(want))
 
 		for reason, n := range wantDrops {
 			Expect(testutil.ToFloat64(c.WithLabelValues(reason))).To(Equal(n))
 		}
-		for _, reason := range []string{"invalid", "inbound_conflict"} {
+		for _, reason := range []string{"invalid", "inbound_conflict", "not_allowed"} {
 			if _, ok := wantDrops[reason]; ok {
 				continue
 			}
@@ -157,7 +157,7 @@ var _ = DescribeTable("dpContribution",
 		nil,
 		[]map[string]string{{mesh_proto.ServiceTag: "backend", "appci": "jeffy", "team": "payments"}},
 		[]string{"appci"},
-		map[string]string{"appci": "jeffy"}, nil),
+		map[string]string{"appci": "jeffy"}, map[string]float64{"not_allowed": 1.0}),
 	Entry("9a: reserved DP label does NOT override valid inbound",
 		map[string]string{mesh_proto.ZoneTag: "evil-override", "color": "blu"},
 		[]map[string]string{{mesh_proto.ServiceTag: "backend", "color": "red"}},
@@ -172,7 +172,7 @@ var _ = DescribeTable("dpContribution",
 		map[string]string{"team": "infra"},
 		[]map[string]string{{mesh_proto.ServiceTag: "backend", "appci": "jeffy"}},
 		[]string{"appci"},
-		map[string]string{"appci": "jeffy"}, nil),
+		map[string]string{"appci": "jeffy"}, map[string]float64{"not_allowed": 1.0}),
 	Entry("9d: invalid DP label value → drop + metric",
 		map[string]string{"appci": "bad value with space"},
 		[]map[string]string{{mesh_proto.ServiceTag: "backend"}},
@@ -338,7 +338,7 @@ var _ = Describe("log emission", func() {
 			inboundWithTags(map[string]string{mesh_proto.ServiceTag: "backend", "appci": "b"}),
 		}
 		dp := dpWith("dp-1", nil, time.Unix(0, 0), ins...)
-		_ = generate.DpContribution(dp, ins, nil, c, log)
+		_ = generate.DpContribution(dp, ins, nil, c, log, "backend")
 
 		Expect(root.messages).To(HaveLen(1))
 		entry := root.messages[0]
@@ -360,7 +360,7 @@ var _ = Describe("log emission", func() {
 			inboundWithTags(map[string]string{mesh_proto.ServiceTag: "backend", "BAD!KEY": "x"}),
 		}
 		dp := dpWith("dp-1", nil, time.Unix(0, 0), ins...)
-		_ = generate.DpContribution(dp, ins, nil, c, log)
+		_ = generate.DpContribution(dp, ins, nil, c, log, "backend")
 
 		Expect(root.messages).To(HaveLen(1))
 		kv := tagsMap(root.messages[0].tags)
@@ -375,7 +375,7 @@ var _ = Describe("log emission", func() {
 			inboundWithTags(map[string]string{mesh_proto.ServiceTag: "backend", "appci": "bad value with space"}),
 		}
 		dp := dpWith("dp-1", nil, time.Unix(0, 0), ins...)
-		_ = generate.DpContribution(dp, ins, nil, c, log)
+		_ = generate.DpContribution(dp, ins, nil, c, log, "backend")
 
 		Expect(root.messages).To(HaveLen(1))
 		kv := tagsMap(root.messages[0].tags)
@@ -395,7 +395,7 @@ var _ = Describe("helper purity", func() {
 
 		in := inboundWithTags(inTags)
 		dp := dpWith("dp-1", dpLabels, time.Unix(0, 0), in)
-		_ = generate.DpContribution(dp, []*mesh_proto.Dataplane_Networking_Inbound{in}, allow, newDroppedLabels(), logr.Discard())
+		_ = generate.DpContribution(dp, []*mesh_proto.Dataplane_Networking_Inbound{in}, allow, newDroppedLabels(), logr.Discard(), "backend")
 
 		Expect(dpLabels).To(Equal(dpLabelsSnap))
 		Expect(inTags).To(Equal(inTagsSnap))
