@@ -296,6 +296,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
 )
 
+require github.com/kylelemons/godebug v1.1.0 // indirect
+
 replace (
 	github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.14.0-kong-1
 	github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-control-plane/contrib v1.36.0-kong-1
