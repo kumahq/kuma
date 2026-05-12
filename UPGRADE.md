@@ -8,6 +8,27 @@ does not have any particular instructions.
 
 ## Upgrade to `2.12.x`
 
+### dp-server graceful shutdown is now time-bounded
+
+The dp-server's graceful shutdown is now bounded by a configurable timeout. Previously the HTTP server would wait indefinitely for xDS streams to drain, which could keep the pod from exiting within its `terminationGracePeriodSeconds` and surface as a non-zero exit.
+
+**What changed:**
+- New config: `dpServer.gracefulShutdownTimeout` (default `10s`).
+- Env var: `KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT`.
+- Once the timeout expires, dp-server force-stops the gRPC server (aborting any stream whose handler ignored cancellation) and lets the pod exit cleanly.
+
+**Action required:**
+
+None for default deployments. The 10s default sits inside controller-runtime's 30s shutdown budget and the chart's `controlPlane.terminationGracePeriodSeconds=30`.
+
+If you previously raised `terminationGracePeriodSeconds` to absorb long xDS drains, raise this timeout in lockstep, e.g.:
+
+```sh
+KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT=60s
+```
+
+Keep it strictly smaller than `terminationGracePeriodSeconds` so the bounded shutdown can run before the pod is killed.
+
 ### Helm: Configurable hook job TTL and annotations
 
 Hook job templates (`pre-install`, `pre-upgrade`, `pre-delete`, `post-delete`, `post-install`) were modified to make `ttlSecondsAfterFinished` and job annotations configurable. This fixes ArgoCD deployments getting stuck during upgrades: with `ttlSecondsAfterFinished: 0`, Kubernetes deleted hook Jobs immediately upon completion before ArgoCD could read their status, causing syncs to hang indefinitely.
