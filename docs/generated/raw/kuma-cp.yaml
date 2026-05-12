@@ -590,6 +590,10 @@ dpServer:
   # Tokens e2e tests, which started flaking a lot after introducing explicit
   # 1s timeout)
   readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
+  # GracefulShutdownTimeout should be smaller than controller-runtime's
+  # shutdown budget (30s upstream default) and the pod's
+  # terminationGracePeriodSeconds.
+  gracefulShutdownTimeout: 10s # ENV: KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT
   # Authn defines an authentication configuration for the DP Server
   authn:
     # Configuration for data plane proxy authentication.
