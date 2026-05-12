@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"context"
 	"time"
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -52,8 +51,13 @@ func RegisterXDS(
 		return err
 	}
 
+<<<<<<< HEAD
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)
+=======
+	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
+	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
+>>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
 
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
@@ -84,8 +88,8 @@ func RegisterXDS(
 	}
 
 	rest := envoy_server_rest.NewServer(xdsContext.Cache(), callbacks)
-	sotw := envoy_server_sotw.NewServer(context.Background(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
-	delta := envoy_server_delta.NewServer(context.Background(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
+	sotw := envoy_server_sotw.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
+	delta := envoy_server_delta.NewServer(rt.AppContext(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
 		o.Ordered = true
 	})
 	newServerAdvanced := envoy_server.NewServerAdvanced(rest, sotw, delta)
