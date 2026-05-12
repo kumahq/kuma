@@ -49,7 +49,7 @@ func dpContribution(
 		}
 	}
 
-	// Step 3: validate and write consensus values.
+	// Step 2: validate and write consensus values.
 	for k, e := range consensus {
 		if e.drop {
 			metric.Inc()
@@ -76,7 +76,7 @@ func dpContribution(
 		out[k] = e.value
 	}
 
-	// Step 2: DP resource labels overlay — runs same validation pipeline.
+	// Step 3: DP resource labels overlay — runs same validation pipeline.
 	for k, v := range dp.GetMeta().GetLabels() {
 		if mesh_proto.IsReservedLabelKey(k) {
 			continue
