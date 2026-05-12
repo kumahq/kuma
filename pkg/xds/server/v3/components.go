@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"context"
 	"time"
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -56,7 +55,7 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 			xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration)),
 		),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
 	}
@@ -65,7 +64,7 @@ func RegisterXDS(
 		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
 	}
 
-	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks, sotw.WithOrderedADS())
+	srv := envoy_server.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, sotw.WithOrderedADS())
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
 	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)

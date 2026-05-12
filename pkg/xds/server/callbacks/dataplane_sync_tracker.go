@@ -15,8 +15,9 @@ var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-
 
 type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_xds_v3.Watchdog
 
-func NewDataplaneSyncTracker(factory sync.DataplaneWatchdogFactory) DataplaneCallbacks {
+func NewDataplaneSyncTracker(appCtx context.Context, factory sync.DataplaneWatchdogFactory) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
+		appCtx:    appCtx,
 		factory:   factory,
 		watchdogs: map[core_model.ResourceKey]*watchdogState{},
 	}
@@ -31,6 +32,7 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 // Node info can be (but does not have to be) carried only on the first XDS request. That's why need streamsAssociation map
 // that indicates that the stream was already associated
 type dataplaneSyncTracker struct {
+	appCtx  context.Context
 	factory sync.DataplaneWatchdogFactory
 
 	stdsync.RWMutex // protects access to the fields below
@@ -46,7 +48,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	t.Lock()
 	defer t.Unlock()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.appCtx)
 	state := &watchdogState{
 		cancelFunc: cancel,
 		stopped:    make(chan struct{}),
