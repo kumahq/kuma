@@ -58,6 +58,8 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
+				metric.Inc()
+				log.V(1).Info("dropping inbound tag not in allow-list", "key", k, "dp", dp.Meta.GetName())
 				continue
 			}
 		}
