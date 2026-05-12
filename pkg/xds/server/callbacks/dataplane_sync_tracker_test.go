@@ -22,7 +22,7 @@ var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncTracker", func() {
 		It("should not fail when ADS stream is closed before Watchdog is even created", func() {
 			// setup
-			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(nil))
+			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(nil), nil)
 
 			// given
 			ctx := context.Background()
@@ -46,7 +46,7 @@ var _ = Describe("Sync", func() {
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
 			tracker := NewDataplaneSyncTracker(nil)
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker, nil))
 
 			// given
 			ctx := context.Background()
@@ -85,7 +85,7 @@ var _ = Describe("Sync", func() {
 					close(watchdogCh)
 				})
 			}))
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker, nil))
 
 			// given
 			ctx := context.Background()
@@ -141,7 +141,7 @@ var _ = Describe("Sync", func() {
 					cleanupDone.Store(true)
 				})
 			}))
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker, nil))
 
 			// when one stream for backend-01 is connected and request is sent
 			streamID1 := int64(1)
@@ -202,7 +202,7 @@ var _ = Describe("Sync", func() {
 				watchdogDone: watchdogDone,
 			}
 			tracker := NewDataplaneSyncTracker(factory)
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker, nil))
 
 			// given
 			ctx := context.Background()
@@ -228,6 +228,48 @@ var _ = Describe("Sync", func() {
 
 			By("waiting for Watchdog to stop")
 			Eventually(watchdogDone).Should(BeClosed())
+		}))
+
+		It("should stop stale watchdog and keep new owner watchdog running", test.Within(5*time.Second, func() {
+			var started atomic.Int32
+			var stopped atomic.Int32
+			var active atomic.Int32
+
+			tracker := NewDataplaneSyncTracker(sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, _ *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
+				return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
+					started.Add(1)
+					active.Add(1)
+					<-ctx.Done()
+					active.Add(-1)
+					stopped.Add(1)
+				})
+			}))
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker, nil))
+
+			node := &envoy_core.Node{Id: "default.backend-01"}
+			req := &envoy_sd.DiscoveryRequest{Node: node}
+
+			ctx1, cancel1 := context.WithCancel(context.Background())
+			Expect(callbacks.OnStreamOpen(ctx1, 1, "")).To(Succeed())
+			Expect(callbacks.OnStreamRequest(1, req)).To(Succeed())
+			Eventually(started.Load).Should(Equal(int32(1)))
+			Eventually(active.Load).Should(Equal(int32(1)))
+
+			// Mark stream 1 as stale before cleanup callback runs.
+			cancel1()
+
+			Expect(callbacks.OnStreamOpen(context.Background(), 2, "")).To(Succeed())
+			Expect(callbacks.OnStreamRequest(2, req)).To(Succeed())
+			Eventually(started.Load).Should(Equal(int32(2)))
+
+			// Closing stale stream should only stop stale watchdog and keep new one running.
+			callbacks.OnStreamClosed(1, node)
+			Eventually(stopped.Load).Should(Equal(int32(1)))
+			Consistently(active.Load).Should(Equal(int32(1)))
+
+			callbacks.OnStreamClosed(2, node)
+			Eventually(stopped.Load).Should(Equal(int32(2)))
+			Eventually(active.Load).Should(Equal(int32(0)))
 		}))
 	})
 })
