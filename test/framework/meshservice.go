@@ -16,3 +16,15 @@ func GetMeshServiceStatus(cluster Cluster, meshServiceName, meshName string) (*m
 	}
 	return res.GetSpec().(*meshservice_api.MeshService), res.GetStatus().(*meshservice_api.MeshServiceStatus), nil
 }
+
+func GetMeshServiceLabels(cluster Cluster, meshName, meshServiceName string) (map[string]string, error) {
+	out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshservice", "-m", meshName, meshServiceName, "-ojson")
+	if err != nil {
+		return nil, err
+	}
+	res, err := rest.JSON.Unmarshal([]byte(out), meshservice_api.MeshServiceResourceTypeDescriptor)
+	if err != nil {
+		return nil, err
+	}
+	return res.GetMeta().GetLabels(), nil
+}
