@@ -339,7 +339,7 @@ A Helm chart for the Kuma Control Plane
 | experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
 | experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
 | experimental.ebpf.programsSourcePath | string | `"/tmp/kuma-ebpf"` | Path where compiled eBPF programs which will be installed can be found |
-| experimental.sidecarContainers | bool | `false` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
+| experimental.sidecarContainers | bool | `true` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
 | experimental.inboundTagsDisabled | bool | `false` | If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching. |
 | experimental.envoyAdminUnixSocket | bool | `true` | If true, Envoy admin API binds to a Unix domain socket instead of TCP. |
 | experimental.deltaXds | bool | `false` | If true, uses Delta xDS (incremental) protocol to deliver changes to sidecars instead of State of the World (SOTW). |

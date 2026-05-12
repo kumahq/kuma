@@ -388,7 +388,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
-			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
+			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
 			Expect(cfg.Experimental.DeltaXds).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
@@ -401,6 +401,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.MeshService.LabelPropagation.Enabled).To(BeTrue())
+			Expect(cfg.MeshService.LabelPropagation.AllowedLabelKeys).To(Equal([]string{"app", "version"}))
 			Expect(cfg.Runtime.Universal.Workload.GenerationInterval.Duration).To(Equal(9 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
@@ -815,7 +817,7 @@ experimental:
     fullResyncInterval: 15s
     delayFullResync: true
   autoReachableServices: true
-  sidecarContainers: true
+  sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
   deltaXds: true
@@ -855,6 +857,11 @@ ipam:
 meshService:
   generationInterval: 8s
   deletionGracePeriod: 11s
+  labelPropagation:
+    enabled: true
+    allowedLabelKeys:
+    - app
+    - version
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -1156,7 +1163,7 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
-				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
+				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
 				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
@@ -1179,6 +1186,8 @@ meshService:
 				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
 				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
+				"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED":                                              "true",
+				"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS":                                   "app,version",
 				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL":                                      "9s",
 			},
 			yamlFileConfig: "",

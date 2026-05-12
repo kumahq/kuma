@@ -1118,7 +1118,7 @@ experimental:
     programsSourcePath: /tmp/kuma-ebpf
   # -- If true, enable native Kubernetes sidecars. This requires at least
   # Kubernetes v1.29
-  sidecarContainers: false
+  sidecarContainers: true
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
