@@ -689,6 +689,60 @@ var _ = Describe("MeshService generator", func() {
 			}, "2s", "100ms").Should(Succeed())
 		})
 
+		It("registers component_meshservice_generator_dropped_labels_total and increments by reason", func() {
+			err := builders.Dataplane().WithName("dp-conflict").WithAddress("10.0.0.1").
+				WithoutInbounds().
+				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).
+					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-conflict", "appci": "a"})).
+				AddInbound(builders.Inbound().WithPort(81).WithServicePort(8081).
+					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-conflict", "appci": "b"})).
+				Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Colon is valid in Kuma tag values but rejected by IsValidLabelValue,
+			// triggering drop("invalid", "appci") in step 2 of dpContribution.
+			err = builders.Dataplane().WithName("dp-invalid").WithAddress("10.0.0.2").
+				WithoutInbounds().
+				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).
+					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-invalid", "appci": "colon:invalid"})).
+				Create(resManager)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func(g Gomega) {
+				mConflict := test_metrics.FindMetric(metrics, "component_meshservice_generator_dropped_labels_total", "reason", "inbound_conflict")
+				g.Expect(mConflict).ToNot(BeNil())
+				g.Expect(mConflict.GetCounter().GetValue()).To(BeNumerically(">=", 1.0))
+
+				mInvalid := test_metrics.FindMetric(metrics, "component_meshservice_generator_dropped_labels_total", "reason", "invalid")
+				g.Expect(mInvalid).ToNot(BeNil())
+				g.Expect(mInvalid.GetCounter().GetValue()).To(BeNumerically(">=", 1.0))
+			}, "2s", "100ms").Should(Succeed())
+
+			// Label contract: every series must carry a "reason" label.
+			// The zone constant label added by metrics wrapping is also present.
+			families, err := metrics.Gather()
+			Expect(err).ToNot(HaveOccurred())
+			for _, f := range families {
+				if f.GetName() != "component_meshservice_generator_dropped_labels_total" {
+					continue
+				}
+				for _, m := range f.GetMetric() {
+					var reasonFound bool
+					for _, lp := range m.GetLabel() {
+						if lp.GetName() == "reason" {
+							reasonFound = true
+						}
+					}
+					Expect(reasonFound).To(BeTrue(), "every series must have a reason label")
+				}
+			}
+		})
+
+		It("still registers the legacy histogram after adding dropped-labels vec", func() {
+			m := test_metrics.FindMetric(metrics, "component_meshservice_generator")
+			Expect(m).ToNot(BeNil())
+		})
+
 		Context("with AllowedLabelKeys", func() {
 			BeforeEach(func() {
 				close(stopCh)

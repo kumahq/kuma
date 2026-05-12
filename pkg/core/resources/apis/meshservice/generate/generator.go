@@ -46,7 +46,7 @@ type Generator struct {
 	inboundTagsDisabled     bool
 	labelPropagationEnabled bool
 	allowSet                map[string]struct{} // nil = allow all non-reserved
-	droppedLabelsMetric     prometheus.Counter  // unregistered placeholder; Phase 5 registers
+	droppedLabels           *prometheus.CounterVec
 }
 
 var _ component.Component = &Generator{}
@@ -76,10 +76,13 @@ func New(
 			allowSet[k] = struct{}{}
 		}
 	}
-	droppedLabels := prometheus.NewCounter(prometheus.CounterOpts{
+	droppedLabels := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "component_meshservice_generator_dropped_labels_total",
-		Help: "Internal placeholder; Phase 5 replaces with a registered CounterVec.",
-	})
+		Help: "Number of Dataplane label/tag keys dropped during MeshService generation.",
+	}, []string{"reason"})
+	if err := metrics.Register(droppedLabels); err != nil {
+		return nil, err
+	}
 	return &Generator{
 		logger:                  logger,
 		generateInterval:        generateInterval,
@@ -91,7 +94,7 @@ func New(
 		inboundTagsDisabled:     inboundTagsDisabled,
 		labelPropagationEnabled: labelPropagation.Enabled,
 		allowSet:                allowSet,
-		droppedLabelsMetric:     droppedLabels,
+		droppedLabels:           droppedLabels,
 	}, nil
 }
 
@@ -152,7 +155,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 	contributions := map[string]map[string]string{}
 	if g.labelPropagationEnabled {
 		for tag, ins := range inboundsByService {
-			contributions[tag] = dpContribution(dataplane, ins, g.allowSet, g.droppedLabelsMetric, log)
+			contributions[tag] = dpContribution(dataplane, ins, g.allowSet, g.droppedLabels, g.logger)
 		}
 	}
 
