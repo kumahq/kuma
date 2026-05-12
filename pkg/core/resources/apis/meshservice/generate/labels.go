@@ -38,6 +38,16 @@ func dpContribution(
 		)
 	}
 
+	debugDrop := func(reason, key string) {
+		log.V(1).Info("dropping label during MeshService generation",
+			"reason", reason,
+			"service", service,
+			"dataplane", dp.GetMeta().GetName(),
+			"mesh", dp.GetMeta().GetMesh(),
+			"key", key,
+		)
+	}
+
 	// Step 1: cross-inbound consensus on non-reserved tags.
 	type tagEntry struct {
 		value string
@@ -69,7 +79,7 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				drop("not_allowed", k)
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
@@ -91,7 +101,7 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				drop("not_allowed", k)
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
