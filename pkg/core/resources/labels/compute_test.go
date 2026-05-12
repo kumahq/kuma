@@ -298,5 +298,86 @@ var _ = Describe("Compute", func() {
 				"kuma.io/proxy-type": "zoneegress",
 			},
 		}),
+		Entry("dataplane with ZoneIngress listener", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithMesh("mesh-1").
+				With(func(dp *mesh.DataplaneResource) {
+					dp.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+							Address: "127.0.0.1",
+							Port:    10001,
+						},
+					}
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":                 "mesh-1",
+				"kuma.io/origin":               "zone",
+				"kuma.io/zone":                 "zone-1",
+				"kuma.io/env":                  "kubernetes",
+				"kuma.io/proxy-type":           "sidecar",
+				"kuma.io/listener-zoneingress": "enabled",
+			},
+		}),
+		Entry("dataplane with ZoneEgress listener", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithMesh("mesh-1").
+				With(func(dp *mesh.DataplaneResource) {
+					dp.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "127.0.0.1",
+							Port:    10001,
+						},
+					}
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":                "mesh-1",
+				"kuma.io/origin":              "zone",
+				"kuma.io/zone":                "zone-1",
+				"kuma.io/env":                 "kubernetes",
+				"kuma.io/proxy-type":          "sidecar",
+				"kuma.io/listener-zoneegress": "enabled",
+			},
+		}),
+		Entry("dataplane with both ZoneIngress and ZoneEgress listeners", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithMesh("mesh-1").
+				With(func(dp *mesh.DataplaneResource) {
+					dp.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+							Address: "127.0.0.1",
+							Port:    10001,
+						},
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "127.0.0.1",
+							Port:    10002,
+						},
+					}
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":                 "mesh-1",
+				"kuma.io/origin":               "zone",
+				"kuma.io/zone":                 "zone-1",
+				"kuma.io/env":                  "kubernetes",
+				"kuma.io/proxy-type":           "sidecar",
+				"kuma.io/listener-zoneingress": "enabled",
+				"kuma.io/listener-zoneegress":  "enabled",
+			},
+		}),
 	)
 })
