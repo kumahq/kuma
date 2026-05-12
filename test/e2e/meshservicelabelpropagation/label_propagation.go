@@ -68,6 +68,7 @@ networking:
 	})
 
 	It("propagates updated tag value when Dataplane is re-applied", func() {
+		// Change team payments→platform and add tier to cover both value-update and addition paths.
 		dpUpdated := `
 type: Dataplane
 mesh: lp-mesh
@@ -81,7 +82,7 @@ networking:
     tags:
       kuma.io/service: lp-svc
       kuma.io/protocol: http
-      team: payments
+      team: platform
       tier: backend
 `
 		Expect(framework.YamlUniversal(dpUpdated)(Cluster)).To(Succeed())
@@ -89,8 +90,9 @@ networking:
 		Eventually(func(g Gomega) {
 			labels, err := framework.GetMeshServiceLabels(Cluster, meshName, serviceTag)
 			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(labels).To(HaveKeyWithValue("team", "platform"))
+			g.Expect(labels).ToNot(HaveKeyWithValue("team", "payments"))
 			g.Expect(labels).To(HaveKeyWithValue("tier", "backend"))
-			g.Expect(labels).To(HaveKeyWithValue("team", "payments"))
 			g.Expect(labels).To(HaveKeyWithValue("color", "blue"))
 		}, "60s", "2s").Should(Succeed())
 	})
