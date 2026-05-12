@@ -165,13 +165,14 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
-	var err error
 	sni := meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace)
 	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
+		var err error
 		sni, err = tls.SNIFromKRI(backendRef.Resource)
-	}
-	if err != nil {
-		return nil, "", err
+		if err != nil {
+			log.Error(err, "failed to compute SNI for cluster, skipping", "resource", backendRef.Resource)
+			return nil, "", nil
+		}
 	}
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(

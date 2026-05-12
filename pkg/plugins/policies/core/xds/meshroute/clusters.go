@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
@@ -30,6 +31,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 )
+
+var log = core.Log.WithName("meshroute-clusters")
 
 func GenerateClusters(
 	proxy *core_xds.Proxy,
@@ -57,7 +60,8 @@ func GenerateClusters(
 					if proxy.WorkloadIdentity != nil {
 						sni, err := tls.SNIFromKRI(service.BackendRef().Resource())
 						if err != nil {
-							return nil, err
+							log.Error(err, "failed to compute SNI for cluster, skipping", "cluster", clusterName)
+							continue
 						}
 						// we only want to route when are mesh-scoped zone egresses
 						if len(meshCtx.ZoneEgresses) == 0 {
@@ -149,16 +153,19 @@ func GenerateClusters(
 								}
 							}
 						}
-						sni := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
+						var sni string
+						if proxy.WorkloadIdentity != nil && meshCtx.ZonesWithMeshScopedProxy[realResourceRef.Resource.Zone] {
+							var err error
+							sni, err = tls.SNIFromKRI(realResourceRef.Resource)
+							if err != nil {
+								log.Error(err, "failed to compute SNI for cluster, skipping", "cluster", clusterName)
+								continue
+							}
+						} else {
+							sni = SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
+						}
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
-							if meshCtx.ZonesWithMeshScopedProxy[realResourceRef.Resource.Zone] {
-								var err error
-								sni, err = tls.SNIFromKRI(realResourceRef.Resource)
-								if err != nil {
-									return nil, err
-								}
-							}
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
 							if err != nil {
 								return nil, err

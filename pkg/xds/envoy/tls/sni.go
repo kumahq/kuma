@@ -99,14 +99,14 @@ func SNIForResource(resName string, meshName string, resType model.ResourceType,
 func SNIFromKRI(id kri.Identifier) (string, error) {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	if err != nil {
-		panic(errors.Wrapf(err, "SNIFromKRI: unknown resource type %q", id.ResourceType))
+		return "", errors.Wrapf(err, "SNIFromKRI: unknown resource type %q", id.ResourceType)
 	}
 	switch id.ResourceType {
 	case meshservice_api.MeshServiceType,
 		meshexternalservice_api.MeshExternalServiceType,
 		meshmzservice_api.MeshMultiZoneServiceType:
 	default:
-		panic(fmt.Sprintf("SNIFromKRI: resource type %q is not supported for SNI", id.ResourceType))
+		return "", errors.Errorf("SNIFromKRI: resource type %q is not supported for SNI", id.ResourceType)
 	}
 	if id.Mesh == "" || id.Name == "" || id.SectionName == "" {
 		return "", errors.Errorf("SNIFromKRI: mesh, name and sectionName must be non-empty: %+v", id)
@@ -130,5 +130,9 @@ func SNIFromKRI(id kri.Identifier) (string, error) {
 		}
 	}
 
-	return strings.Join(segments, "."), nil
+	result := strings.Join(segments, ".")
+	if len(result) > dnsHostnameLimit {
+		return "", errors.Errorf("SNIFromKRI: resulting SNI length %d exceeds DNS hostname limit of %d: %s", len(result), dnsHostnameLimit, result)
+	}
+	return result, nil
 }

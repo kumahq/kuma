@@ -208,7 +208,8 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
 		sni, err := tls.SNIFromKRI(id)
 		if err != nil {
-			return nil, err
+			zoneProxyLog.Error(err, "failed to compute SNI, skipping destination", "id", id)
+			continue
 		}
 		clusterName := id.String()
 		group := endpointMap[clusterName]
