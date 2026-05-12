@@ -14,6 +14,11 @@ import (
 )
 
 const (
+	KumaIOPrefix    = "kuma.io/"
+	K8sKumaIOPrefix = "k8s.kuma.io/"
+)
+
+const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	KubeServiceTag   = "k8s.kuma.io/service-name"
 	KubePortTag      = "k8s.kuma.io/service-port"
@@ -21,6 +26,11 @@ const (
 	// currently only disabled/enabled is supported
 	KDSSyncLabel = "kuma.io/kds-sync"
 )
+
+// IsReservedLabelKey reports whether k belongs to a Kuma-reserved label namespace.
+func IsReservedLabelKey(k string) bool {
+	return strings.HasPrefix(k, KumaIOPrefix) || strings.HasPrefix(k, K8sKumaIOPrefix)
+}
 
 const (
 	KubernetesEnvironment = "kubernetes"
