@@ -50,14 +50,9 @@ func RegisterXDS(
 	if err != nil {
 		return err
 	}
-<<<<<<< HEAD
-	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
-	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)
-=======
 
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
-	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
->>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
+	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)
 
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
