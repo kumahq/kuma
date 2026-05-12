@@ -260,23 +260,20 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 
 		existingLabels := maps.Clone(meshService.GetMeta().GetLabels())
 		delete(existingLabels, mesh_proto.DeletionGracePeriodStartedLabel)
-		var desired map[string]string
-		var labelsChanged bool
+		var propagated map[string]string
 		if g.labelPropagationEnabled {
-			propagated := propagatedLabelsFor(entries)
-			desired = desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, propagated)
-			// Preserve labels set externally (not by propagation or system).
-			// desiredLabels covers system keys and propagation-voted keys; stripping
-			// anything else would destroy operator-managed labels on update.
-			for k, v := range existingLabels {
-				if _, managed := desired[k]; !managed {
-					desired[k] = v
-				}
-			}
-			labelsChanged = !maps.Equal(existingLabels, desired)
-		} else {
-			desired = existingLabels
+			propagated = propagatedLabelsFor(entries)
 		}
+		desired := desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, propagated)
+		// Preserve labels set externally (not by propagation or system).
+		// desiredLabels covers system keys and propagation-voted keys; stripping
+		// anything else would destroy operator-managed labels on update.
+		for k, v := range existingLabels {
+			if _, managed := desired[k]; !managed {
+				desired[k] = v
+			}
+		}
+		labelsChanged := !maps.Equal(existingLabels, desired)
 
 		if newMeshService != nil && (specDiffers || hasGracePeriodLabel || labelsChanged) {
 			meta := meshService.GetMeta()
