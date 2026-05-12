@@ -161,6 +161,20 @@ func servicesDiffer(a, b *meshservice_api.MeshService) bool {
 	return !reflect.DeepEqual(a.Ports, b.Ports)
 }
 
+func desiredLabels(mesh, name, zone string, propagated map[string]string) map[string]string {
+	out := maps.Clone(propagated)
+	if out == nil {
+		out = map[string]string{}
+	}
+	out[metadata.KumaMeshLabel] = mesh
+	out[mesh_proto.DisplayName] = name
+	out[mesh_proto.ManagedByLabel] = managedByValue
+	out[mesh_proto.EnvTag] = mesh_proto.UniversalEnvironment
+	out[mesh_proto.ZoneTag] = zone
+	out[mesh_proto.ResourceOriginLabel] = string(mesh_proto.ZoneResourceOrigin)
+	return out
+}
+
 func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource, meshServices []*meshservice_api.MeshServiceResource) {
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
@@ -196,9 +210,10 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			meshService.Meta = meta
 			meshService.Spec = newMeshService
 
-			// Unset the grace period by deleting the label
-			newLabels := maps.Clone(meshService.GetMeta().GetLabels())
-			delete(newLabels, mesh_proto.DeletionGracePeriodStartedLabel)
+			// Preserve existing labels, removing only the grace-period label
+			existingLabels := maps.Clone(meshService.GetMeta().GetLabels())
+			delete(existingLabels, mesh_proto.DeletionGracePeriodStartedLabel)
+			newLabels := desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, existingLabels)
 
 			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 				log.Error(err, "couldn't update MeshService")
@@ -255,14 +270,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		if len(conflicting) > 0 {
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
-		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
-			metadata.KumaMeshLabel:         mesh,
-			mesh_proto.DisplayName:         name,
-			mesh_proto.ManagedByLabel:      managedByValue,
-			mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
-			mesh_proto.ZoneTag:             g.zone,
-			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-		})); err != nil {
+		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(desiredLabels(mesh, name, g.zone, nil))); err != nil {
 			log.Error(err, "couldn't create MeshService")
 			continue
 		}
