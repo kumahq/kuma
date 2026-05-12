@@ -121,6 +121,10 @@ func SetupServer(rt core_runtime.Runtime) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
+	if !rt.Config().MonitoringAssignmentServer.Enabled {
+		log.Info("MADS server is disabled")
+		return nil
+	}
 	return rt.Add(&muxServer{
 		meshCache:           rt.MeshCache(),
 		rm:                  rt.ReadOnlyResourceManager(),

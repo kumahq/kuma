@@ -1,0 +1,10 @@
+meshes:
+  - name: default
+    ingress:
+      enabled: true
+      deployment:
+        replicas: 1
+    egress:
+      enabled: true
+      deployment:
+        replicas: 1

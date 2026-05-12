@@ -32,6 +32,7 @@ import (
 var _ = Describe("PodReconciler", func() {
 	var kubeClient kube_client.Client
 	var reconciler kube_reconcile.Reconciler
+	var fakeRecorder *kube_events.FakeRecorder
 
 	BeforeEach(func() {
 		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
@@ -539,6 +540,61 @@ var _ = Describe("PodReconciler", func() {
 					},
 				},
 			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "zone-proxy-pod",
+					Annotations: map[string]string{
+						"kuma.io/mesh":             "poc",
+						"kuma.io/sidecar-injected": "true",
+					},
+					Labels: map[string]string{
+						"app": "zone-proxy",
+					},
+					UID: "zone-proxy-pod-demo",
+				},
+				Spec: kube_core.PodSpec{
+					Containers: []kube_core.Container{
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 10001},
+							},
+						},
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.10",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "zone-proxy-svc",
+					Labels: map[string]string{
+						metadata.KumaZoneProxyTypeLabel: "ingress",
+					},
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.10",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 10001,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 10001,
+							},
+						},
+					},
+					Selector: map[string]string{
+						"app": "zone-proxy",
+					},
+				},
+			},
 			&mesh_k8s.Mesh{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name: "poc",
@@ -553,9 +609,10 @@ var _ = Describe("PodReconciler", func() {
 				},
 			}).Build()
 
+		fakeRecorder = kube_events.NewFakeRecorder(10)
 		reconciler = &PodReconciler{
 			Client:        kubeClient,
-			EventRecorder: kube_events.NewFakeRecorder(10),
+			EventRecorder: fakeRecorder,
 			Scheme:        k8sClientScheme,
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
@@ -1040,5 +1097,23 @@ var _ = Describe("PodReconciler", func() {
 			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should emit warning event when zone proxy Services exist but MeshServices mode is not Exclusive", func() {
+		// given - zone-proxy-pod is in mesh "poc" which has no MeshServices mode (defaults to Disabled)
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "zone-proxy-pod"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		var event string
+		Eventually(fakeRecorder.Events).Should(Receive(&event))
+		Expect(event).To(ContainSubstring("ZoneProxyListenersSkipped"))
 	})
 })

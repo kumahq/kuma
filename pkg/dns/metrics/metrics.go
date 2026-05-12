@@ -7,8 +7,9 @@ import (
 )
 
 type Metrics struct {
-	VipGenerations       prometheus.Histogram
-	VipGenerationsErrors prometheus.Counter
+	VipGenerations          prometheus.Histogram
+	VipGenerationsErrors    prometheus.Counter
+	VipAllocationExhaustion *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -20,12 +21,17 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Name: "vip_generation_errors",
 		Help: "Counter of errors during VIP generation",
 	})
-	if err := metrics.BulkRegister(vipGenerations, vipGenerationsErrors); err != nil {
+	vipAllocationExhaustion := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "vip_allocation_exhaustion_total",
+		Help: "Total VIP allocation failures due to IPAM pool exhaustion, by mesh.",
+	}, []string{"mesh"})
+	if err := metrics.BulkRegister(vipGenerations, vipGenerationsErrors, vipAllocationExhaustion); err != nil {
 		return nil, err
 	}
 
 	return &Metrics{
-		VipGenerations:       vipGenerations,
-		VipGenerationsErrors: vipGenerationsErrors,
+		VipGenerations:          vipGenerations,
+		VipGenerationsErrors:    vipGenerationsErrors,
+		VipAllocationExhaustion: vipAllocationExhaustion,
 	}, nil
 }

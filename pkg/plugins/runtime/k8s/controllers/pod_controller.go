@@ -43,6 +43,10 @@ const (
 	// FailedToGenerateKumaDataplaneReason is added to an event when
 	// a Dataplane cannot be generated or is not valid.
 	FailedToGenerateKumaDataplaneReason = "FailedToGenerateKumaDataplane"
+	// ZoneProxyListenersSkippedReason is added to a warning event when
+	// zone proxy Services are found but MeshServices mode is not Exclusive,
+	// so listener generation is skipped.
+	ZoneProxyListenersSkippedReason = "ZoneProxyListenersSkipped"
 )
 
 // PodReconciler reconciles a Pod object
@@ -354,6 +358,16 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		}
 
 		return err
+	}
+	if operationResult != kube_controllerutil.OperationResultNone &&
+		mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+		for _, svc := range services {
+			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
+				r.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
+					"Zone proxy Services found but spec.meshServices.mode is not set to Exclusive; set spec.meshServices.mode: Exclusive on the Mesh to enable zone proxy listener generation")
+				break
+			}
+		}
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:

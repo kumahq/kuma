@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -20,6 +21,7 @@ import (
 	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
 )
 
@@ -34,6 +36,7 @@ type DataplaneWatchdogDependencies struct {
 	MeshCache             *mesh.Cache
 	ResManager            core_manager.ReadOnlyResourceManager
 	OtelStatusCache       *otelstatus.Cache
+	XdsMetrics            *xds_metrics.Metrics
 }
 
 type Status string
@@ -64,6 +67,8 @@ type DataplaneWatchdog struct {
 	// used by MeshIdentity
 	workloadIdentity *core_xds.WorkloadIdentity
 	lastIdentityHash string // last Hash of MeshIdentities
+	lastOtelStatus   *mesh_proto.DataplaneInsight_OpenTelemetry
+	otelStatusSynced bool
 }
 
 func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, meta *core_xds.DataplaneMetadata, dpKey core_model.ResourceKey) *DataplaneWatchdog {
@@ -98,6 +103,8 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
 		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
+		d.lastOtelStatus = nil
+		d.otelStatusSynced = false
 		d.OtelStatusCache.Set(d.key, nil)
 		return d.DataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
@@ -183,6 +190,11 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 			return SyncResult{}, errors.Wrap(err, "could not get identity")
 		}
 		d.workloadIdentity = identity
+		if d.XdsMetrics != nil && identity != nil && identity.ExpirationTime != nil {
+			d.XdsMetrics.CertExpirationTimestamp.
+				WithLabelValues(d.key.Mesh).
+				Set(float64(identity.ExpirationTime.Unix()))
+		}
 	}
 	if d.workloadIdentity != nil {
 		proxy.WorkloadIdentity = d.workloadIdentity
@@ -203,13 +215,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	d.lastHash = meshCtx.Hash
 	d.lastIdentityHash = identityHash
 
-	if d.OtelStatusCache != nil {
-		if proxy.OtelPipeBackends == nil || proxy.OtelPipeBackends.Empty() {
-			d.OtelStatusCache.Set(d.key, nil)
-		} else {
-			d.OtelStatusCache.Set(d.key, otelstatus.Build(proxy.OtelPipeBackends.All()))
-		}
-	}
+	d.syncOtelStatus(proxy.OtelPipeBackends)
 
 	if changed {
 		result.Status = ChangedStatus
@@ -217,6 +223,29 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 		result.Status = GeneratedStatus
 	}
 	return result, nil
+}
+
+func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) bool {
+	if d.OtelStatusCache == nil {
+		return false
+	}
+
+	var all []core_xds.OtelPipeBackend
+	if backends != nil && !backends.Empty() {
+		all = backends.All()
+	}
+
+	status := otelstatus.Build(all)
+
+	if d.otelStatusSynced && proto.Equal(status, d.lastOtelStatus) {
+		return false
+	}
+
+	d.lastOtelStatus = status
+	d.otelStatusSynced = true
+	d.OtelStatusCache.Set(d.key, status)
+
+	return true
 }
 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {

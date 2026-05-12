@@ -1,0 +1,14 @@
+controlPlane:
+  tls:
+    general:
+      # Override the test's --tls-general-secret and --tls-general-ca-bundle flags
+      secretName: ""
+      caBundle: ""
+      certManager:
+        enabled: true
+        dnsNames:
+          - kuma-control-plane.kuma-system
+          - kuma-control-plane.kuma-system.svc
+          - kuma-control-plane.kuma-system.svc.cluster.local
+          - my-custom-domain.example.com
+          - another-custom-domain.example.com

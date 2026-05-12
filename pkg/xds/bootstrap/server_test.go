@@ -84,18 +84,20 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		dpServerCfg := dp_server_cfg.DpServerConfig{
-			Port:              port,
-			TlsCertFile:       filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
-			TlsKeyFile:        filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
-			ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},
+			Port:                    port,
+			TlsCertFile:             filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			TlsKeyFile:              filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+			ReadHeaderTimeout:       config_types.Duration{Duration: 5 * time.Second},
+			GracefulShutdownTimeout: config_types.Duration{Duration: 10 * time.Second},
 		}
-		dpServer := server.NewDpServer(dpServerCfg, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
+		dpServer, err := server.NewDpServer(dpServerCfg, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
 			return true
 		})
+		Expect(err).ToNot(HaveOccurred())
 
 		proxyConfig := xds_config.DefaultProxyConfig()
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false, false)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false, false, false)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,

@@ -1,0 +1,28 @@
+exclusions:
+  template-job-rule:
+    reason: "Kuma dashboards filter by mesh/namespace/workload, not by job"
+    entries: []
+  template-instance-rule:
+    reason: "Kuma dashboards filter by mesh/namespace/workload, not by instance"
+    entries: []
+  target-job-rule:
+    reason: "Kuma metrics use mesh/namespace/workload labels, not job"
+    entries: []
+  target-instance-rule:
+    reason: "Kuma metrics use mesh/namespace/workload labels, not instance"
+    entries: []
+  target-rate-interval-rule:
+    reason: "Using [5m] because $__rate_interval requires min_step configuration"
+    entries: []
+  panel-title-description-rule:
+    reason: "Panel titles are self-descriptive, descriptions not required"
+    entries: []
+  panel-datasource-rule:
+    reason: "CP dashboard uses hardcoded datasource UID, to be migrated"
+    entries: []
+  panel-units-rule:
+    reason: "Stat panels showing raw counts do not need units"
+    entries: []
+  uneditable-dashboard:
+    reason: "Dashboards are managed via GrafanaDashboard CRs, editable flag is irrelevant"
+    entries: []

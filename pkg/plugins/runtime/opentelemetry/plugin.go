@@ -3,6 +3,7 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -21,6 +22,8 @@ import (
 )
 
 func init() {
+	// Registered as "tracing.opentelemetry" for historical reasons.
+	// This plugin also handles CP metrics OTLP push (auto-enabled via OTEL_EXPORTER_OTLP_ENDPOINT).
 	core_plugins.Register("tracing.opentelemetry", &plugin{})
 }
 
@@ -56,16 +59,25 @@ func (t *tracer) NeedLeaderElection() bool {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	otel := rt.Config().Tracing.OpenTelemetry
-	if !otel.Enabled && otel.Endpoint == "" {
-		return nil
+	otelTracing := rt.Config().Tracing.OpenTelemetry
+	if otelTracing.Enabled || otelTracing.Endpoint != "" {
+		t := tracer{
+			config: otelTracing,
+		}
+		if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
+			return err
+		}
 	}
 
-	t := tracer{
-		config: otel,
-	}
-	if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
-		return err
+	if rt.Config().Metrics.OpenTelemetry.Enabled && os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
+		metricsLog := core.Log.WithName("otel-metrics-pusher")
+		mp := &metricsPusher{
+			gatherer: rt.Metrics(),
+			log:      metricsLog,
+		}
+		if err := rt.Add(component.NewResilientComponent(metricsLog, mp, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -9,30 +9,12 @@ import (
 )
 
 type ResourceMeta struct {
-	Type                string            `json:"type"`
-	Mesh                string            `json:"mesh,omitempty"`
-	Name                string            `json:"name"`
-	CreationTime        time.Time         `json:"creationTime"`
-	ModificationTime    time.Time         `json:"modificationTime"`
-	Labels              map[string]string `json:"labels,omitempty"`
-	kriDefaultZone      string
-	kriDefaultNamespace string
-}
-
-func (r *ResourceMeta) SetKRIDefaults(zone, namespace string) {
-	r.kriDefaultZone = zone
-	r.kriDefaultNamespace = namespace
-}
-
-func (r ResourceMeta) kriOptions() []kri.Option {
-	var opts []kri.Option
-	if r.kriDefaultZone != "" {
-		opts = append(opts, kri.WithDefaultZone(r.kriDefaultZone))
-	}
-	if r.kriDefaultNamespace != "" {
-		opts = append(opts, kri.WithDefaultNamespace(r.kriDefaultNamespace))
-	}
-	return opts
+	Type             string            `json:"type"`
+	Mesh             string            `json:"mesh,omitempty"`
+	Name             string            `json:"name"`
+	CreationTime     time.Time         `json:"creationTime"`
+	ModificationTime time.Time         `json:"modificationTime"`
+	Labels           map[string]string `json:"labels,omitempty"`
 }
 
 func (r ResourceMeta) MarshalJSON() ([]byte, error) {
@@ -44,7 +26,7 @@ func (r ResourceMeta) MarshalJSON() ([]byte, error) {
 		Alias: Alias(r),
 	}
 
-	if id, _ := kri.FromResourceMetaE(r, r.Type, r.kriOptions()...); !id.IsEmpty() {
+	if id, _ := kri.FromResourceMetaE(r, r.Type); !id.IsEmpty() {
 		out.KRI = id.String()
 	}
 

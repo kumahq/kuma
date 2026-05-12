@@ -325,9 +325,6 @@ func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppTyp
 func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool) {
 	inbounds := []core_rules.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-		if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
-			continue
-		}
 		if tagsSelector.Matches(inbound.Tags) {
 			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
 			inbounds = append(inbounds, core_rules.InboundListener{

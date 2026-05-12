@@ -153,21 +153,22 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
 	log = log.WithValues("rpc", "global-to-zone")
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
+	log.Info("GlobalToZoneSync new session created")
 
 	cfgJson, err := config.ConfigForDisplay(pointer.To(c.rt.Config()))
 	if err != nil {
-		errorCh <- errors.Wrap(err, "could not marshall config to json")
+		trySend(ctx, errorCh, errors.Wrap(err, "could not marshall config to json"))
 		return
 	}
 
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
+	kdsStream := kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
 	defer func() {
-		if err := stream.CloseSend(); err != nil {
+		if err := kdsStream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
 	}()
@@ -175,7 +176,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	syncClient := kds_client_v2.NewKDSSyncClient(
 		log,
 		c.typesSentByGlobal,
-		kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal)),
+		kdsStream,
 		kds_sync_store.ZoneSyncCallback(
 			stream.Context(),
 			c.resourceSyncer,
@@ -183,15 +184,16 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 			resources_k8s.NewSimpleKubeFactory(),
 			c.rt.Config().Store.Kubernetes.SystemNamespace,
 		),
-		c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
+		kds_client_v2.SyncClientConfig{
+			ResponseBackoff: c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
+			LogPayloads:     c.rt.Config().Multizone.Zone.KDS.LogPayloads,
+		},
 	)
 
 	if err := syncClient.Receive(); err != nil && !errors.Is(err, context.Canceled) {
-		errorCh <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
-		return
+		trySend(ctx, errorCh, errors.Wrap(err, "GlobalToZoneSyncClient finished with an error"))
 	}
-
-	log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
+	log.Info("GlobalToZoneSync finished gracefully")
 }
 
 func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
@@ -200,7 +202,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
 	stream, err := kdsClient.ZoneToGlobalSync(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 	defer func() {
@@ -217,11 +219,23 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	}
 
 	if err != nil && !errors.Is(err, context.Canceled) {
-		errorCh <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+		trySend(ctx, errorCh, errors.Wrap(err, "ZoneToGlobalSync finished with an error"))
+	}
+	log.Info("ZoneToGlobalSync finished gracefully")
+}
+
+// trySend attempts to send err to errorCh. If the context is already
+// done (another stream triggered a restart, or the app is shutting
+// down), the error is dropped. If errorCh already has an error from
+// another stream, the error is also dropped.
+func trySend(ctx context.Context, errorCh chan error, err error) {
+	if ctx.Err() != nil {
 		return
 	}
-
-	log.V(1).Info("ZoneToGlobalSync finished gracefully")
+	select {
+	case errorCh <- err:
+	default:
+	}
 }
 
 func (c *client) startXDSConfigs(
@@ -235,13 +249,13 @@ func (c *client) startXDSConfigs(
 	log.Info("initializing rpc stream for executing config dump on data plane proxies")
 	stream, err := client.StreamXDSConfigs(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startStats(
@@ -255,13 +269,13 @@ func (c *client) startStats(
 	log.Info("initializing rpc stream for executing stats on data plane proxies")
 	stream, err := client.StreamStats(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startClusters(
@@ -275,13 +289,13 @@ func (c *client) startClusters(
 	log.Info("initializing rpc stream for executing clusters on data plane proxies")
 	stream, err := client.StreamClusters(ctx)
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 		return
 	}
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startHealthCheck(
@@ -306,7 +320,7 @@ func (c *client) startHealthCheck(
 				return
 			}
 			log.Error(err, "health check failed")
-			errorCh <- errors.Wrap(err, "zone health check request failed")
+			trySend(ctx, errorCh, errors.Wrap(err, "zone health check request failed"))
 		} else if interval := resp.Interval.AsDuration(); interval > 0 {
 			if prevInterval != interval {
 				prevInterval = interval
@@ -326,6 +340,7 @@ func (c *client) startHealthCheck(
 }
 
 func (c *client) handleProcessingErrors(
+	ctx context.Context,
 	stream grpc.ClientStream,
 	log logr.Logger,
 	processingErrorsCh chan error,
@@ -337,7 +352,7 @@ func (c *client) handleProcessingErrors(
 		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
 		log.Info("rpc stream shutting down")
 		// Let's not propagate this error further as we've already cancelled the context
 		err = nil
@@ -348,7 +363,7 @@ func (c *client) handleProcessingErrors(
 		log.Error(err, "CloseSend returned an error")
 	}
 	if err != nil {
-		errorCh <- err
+		trySend(ctx, errorCh, err)
 	}
 }
 

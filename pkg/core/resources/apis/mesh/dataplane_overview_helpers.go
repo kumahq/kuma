@@ -20,28 +20,42 @@ const (
 
 func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	proxyOnline := t.Spec.DataplaneInsight.IsOnline()
+	networking := t.Spec.Dataplane.GetNetworking()
 
+	// Gateway is mutually exclusive with inbounds and zone proxy listeners.
+	if networking.GetGateway() != nil {
+		if proxyOnline {
+			return Online, nil
+		}
+		return Offline, nil
+	}
+
+	var ready int
 	var errs []string
+	total := len(networking.GetInbound()) + len(networking.GetListeners())
 
-	for _, inbound := range t.Spec.Dataplane.Networking.Inbound {
+	for _, inbound := range networking.GetInbound() {
 		if (inbound.Health != nil && !inbound.Health.Ready) || inbound.State == mesh_proto.Dataplane_Networking_Inbound_NotReady {
 			errs = append(errs, fmt.Sprintf("inbound[port=%d,svc=%s] is not ready", inbound.Port, inbound.Tags[mesh_proto.ServiceTag]))
+		} else {
+			ready++
 		}
 	}
 
-	allInboundsOffline := len(errs) == len(t.Spec.Dataplane.Networking.Inbound)
-	allInboundsOnline := len(errs) == 0
-
-	if t.Spec.Dataplane.GetNetworking().GetGateway() != nil {
-		allInboundsOffline = false
-		allInboundsOnline = true
+	for _, l := range networking.GetListeners() {
+		if l.State == mesh_proto.Dataplane_Networking_Listener_Ready {
+			ready++
+		} else {
+			errs = append(errs, fmt.Sprintf("listener[port=%d,type=%s] is not ready", l.Port, l.Type))
+		}
 	}
 
-	if !proxyOnline || allInboundsOffline {
+	switch {
+	case !proxyOnline || ready == 0:
 		return Offline, errs
-	}
-	if !allInboundsOnline {
+	case ready < total:
 		return PartiallyDegraded, errs
+	default:
+		return Online, nil
 	}
-	return Online, nil
 }

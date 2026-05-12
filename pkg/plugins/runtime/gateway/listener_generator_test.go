@@ -26,7 +26,7 @@ var _ = Describe("Gateway Listener", func() {
 		if err != nil {
 			return nil, err
 		}
-		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
+		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks, nil)
 
 		Expect(StoreInlineFixture(rt, []byte(gateway))).To(Succeed())
 

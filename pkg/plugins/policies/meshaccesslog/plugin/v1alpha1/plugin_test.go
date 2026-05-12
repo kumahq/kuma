@@ -82,6 +82,7 @@ var _ = Describe("MeshAccessLog", func() {
 		dataplaneLabels     map[string]string
 		inboundTagsDisabled bool
 		inboundName         string
+		extraInbounds       []*builders.InboundBuilder
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -123,6 +124,9 @@ var _ = Describe("MeshAccessLog", func() {
 				WithName("backend").
 				WithMesh("default").
 				AddInbound(inboundBuilder)
+			for _, extra := range given.extraInbounds {
+				dpBuilder = dpBuilder.AddInbound(extra)
+			}
 			if given.dataplaneLabels != nil {
 				dpBuilder = dpBuilder.WithLabels(given.dataplaneLabels)
 			}
@@ -738,6 +742,65 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
 		}),
+		Entry("inbound with two services on the same port does not duplicate access log", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			extraInbounds: []*builders.InboundBuilder{
+				builders.Inbound().
+					WithService("backend-canary").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Subset: subsetutils.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: &api.Rule{Default: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						}},
+					}},
+				},
+			},
+			expectedListeners: []string{"inbound_route_duplicate_port.listener.golden.yaml"},
+		}),
 		Entry("inbound route with inbound tags disabled", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
@@ -989,6 +1052,100 @@ var _ = Describe("MeshAccessLog", func() {
 		Expect(backends[0].UseHTTP).To(BeFalse())
 		Expect(backends[0].Logs).ToNot(BeNil())
 		Expect(backends[0].Logs.Enabled).To(BeTrue())
+	})
+
+	It("should skip access log for dangling opentelemetry backendRef", func() {
+		resourceSet := core_xds.NewResourceSet()
+		outboundListener := outboundServiceTCPListener("other-service-tcp", 37777)
+		resourceSet.Add(&outboundListener)
+
+		// No MOTB resources - the backendRef will be dangling
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+			Items: []*motb_api.MeshOpenTelemetryBackendResource{},
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(meshResources).
+			WithEndpointMap(
+				xds_builders.EndpointMap().
+					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
+					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
+			).
+			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+			AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
+			Build()
+
+		proxy := xds_builders.Proxy().
+			WithID(*core_xds.BuildProxyId("default", "backend")).
+			WithMetadata(&core_xds.DataplaneMetadata{
+				WorkDir: "/tmp",
+				Features: xds_types.Features{
+					xds_types.FeatureOtelViaKumaDp: true,
+				},
+			}).
+			WithDataplane(
+				builders.Dataplane().
+					WithName("backend").
+					WithMesh("default").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777).
+						WithTags(map[string]string{
+							mesh_proto.ProtocolTag: "http",
+						}),
+					),
+			).
+			WithOutbounds(xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service-tcp").
+						WithAddress("127.0.0.1").
+						WithPort(37777).Build(),
+				},
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
+				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
+					{
+						Subset: subsetutils.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "other-service-tcp",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									BackendRef: &common_api.BackendResourceRef{
+										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+										Labels: map[string]string{"kuma.io/display-name": "non-existent-backend"},
+									},
+								},
+							}},
+						},
+					},
+				},
+			}, core_rules.FromRules{})).
+			WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
+			Build()
+
+		proxy.OtelPipeBackends = &core_xds.OtelPipeBackends{}
+
+		meshAccessLogPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(meshAccessLogPlugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		// No clusters should be created for the dangling backendRef
+		clusterResources, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(strings.TrimSpace(string(clusterResources))).To(Equal("{}"))
+
+		// No pipe backends should be accumulated
+		Expect(proxy.OtelPipeBackends.Empty()).To(BeTrue())
+
+		// The listener must still be valid - no partial access_log entries
+		listenerResources, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(listenerResources)).ToNot(ContainSubstring("open_telemetry"))
 	})
 
 	type gatewayTestCase struct {

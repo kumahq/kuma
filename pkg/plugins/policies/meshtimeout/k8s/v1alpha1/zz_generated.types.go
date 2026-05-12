@@ -99,7 +99,7 @@ func (l *MeshTimeoutList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTimeout{}, &MeshTimeoutList{})
+	knownTypes = append(knownTypes, &MeshTimeout{}, &MeshTimeoutList{})
 	registry.RegisterObjectType(&policy.MeshTimeout{}, &MeshTimeout{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

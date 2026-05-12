@@ -7,6 +7,7 @@ import (
 
 // MeshPassthrough controls how traffic to external services (outside the mesh) is handled by the sidecar proxy. It allows you to configure passthrough mode to permit, deny, or selectively allow traffic to specific external destinations based on domain names, IPs, or CIDR ranges.
 // +kuma:policy:is_policy=true
+// +kuma:policy:order=500
 type MeshPassthrough struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

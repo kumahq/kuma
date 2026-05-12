@@ -274,6 +274,12 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
 			expected:         "08.envoy.golden.yaml",
 		}),
+		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,duplicate_ports", testCase{
+			proxy:            strictInboundPortsProxy([]uint32{8080, 8080}),
+			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected:         "10.envoy.golden.yaml",
+		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,gateway", testCase{
 			proxy: &model.Proxy{
 				Metadata: &model.DataplaneMetadata{Features: map[string]bool{

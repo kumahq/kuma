@@ -17,6 +17,7 @@ import (
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/api"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v2/test/framework/versions"
 )
 
 func UpgradingWithHelmChartMultizone() {
@@ -144,9 +145,18 @@ spec:
 				Setup(zoneUniversal)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func(g Gomega) (int, error) {
-				return NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
-			}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
+			// Old zone CPs (< 2.11.0) expose /zone-ingresses; the current kumactl
+			// calls /zoneingresses (renamed in 2.11.0). Query the zone REST API
+			// directly for old versions to avoid the endpoint mismatch.
+			if versions.IsVersionLessThan(version, "2.11.0") {
+				Eventually(func(g Gomega) (int, error) {
+					return NumberOfResourcesByPath(zoneK8s, "/zone-ingresses")
+				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
+			} else {
+				Eventually(func(g Gomega) (int, error) {
+					return NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
+			}
 
 			By("upgrade Zone")
 			// when
@@ -169,7 +179,27 @@ spec:
 					}
 				}
 				g.Expect(newZoneConnected).To(BeTrue())
-			}, "30s", "100ms").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
+
+			// Wait for zone ingresses to settle after upgrade before checking consistency.
+			// After Helm upgrade returns, the old zone ingress pod may still be in Terminating
+			// state (K8s graceful period up to 30s) plus the CP deregistration delay (default 10s),
+			// so the old ingress remains visible to global for up to ~40s after the upgrade completes.
+			Eventually(func(g Gomega) {
+				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesGlobal).To(Equal(2))
+			}, "3m", "1s").Should(Succeed())
+
+			// Wait for zone ingresses to sync from global to individual zones.
+			Eventually(func(g Gomega) {
+				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesK8sZone).To(Equal(2))
+				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesUniversalZone).To(Equal(2))
+			}, "3m", "1s").Should(Succeed())
 
 			// then
 			Consistently(func(g Gomega) {
@@ -198,7 +228,7 @@ spec:
 				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(zoneIngressesGlobal).To(And(Equal(2), Equal(zoneIngressesUniversalZone), Equal(zoneIngressesK8sZone)))
-			}, "5s", "100ms").Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),
 		SupportedVersionEntries(),

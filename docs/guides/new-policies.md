@@ -3,16 +3,43 @@
 Use the tool:
 
 ```shell
-go run ./tools/policy-gen/bootstrap/... --name CaseNameOfPolicy --is-policy true
+go run ./tools/policy-gen/bootstrap/... --name CaseNameOfPolicy --is-policy true --order 750
 ```
 
 The output of the tool will tell you where the important files are!
+
+## Picking an order value
+
+Existing policies use multiples of 100 (`100` through `1500`) with a gap of 100 between each, so a new policy can be slotted between two neighbors without renumbering anything.
+
+Current order (lower runs first):
+
+| Order | Policy              |
+|------:|:--------------------|
+|   100 | MeshHTTPRoute       |
+|   200 | MeshTCPRoute        |
+|   300 | MeshTLS             |
+|   400 | MeshLoadBalancingStrategy |
+|   500 | MeshPassthrough     |
+|   600 | MeshAccessLog       |
+|   700 | MeshTrace           |
+|   800 | MeshFaultInjection  |
+|   900 | MeshRateLimit       |
+|  1000 | MeshTimeout         |
+|  1100 | MeshTrafficPermission |
+|  1200 | MeshHealthCheck     |
+|  1300 | MeshCircuitBreaker  |
+|  1400 | MeshRetry           |
+|  1500 | MeshMetric          |
+|  9999 | MeshProxyPatch (reserved — must run last) |
+
+When adding a new policy, pick a value halfway between the two neighbors where it logically fits (e.g. between `MeshTrace` at `700` and `MeshFaultInjection` at `800`, use `750`).
 
 ## Add plugin name to the configuration
 
 To enable policy you need to adjust configuration of two places:
 * Remove `+kuma:policy:skip_registration=true` from your policy schema.
-* `pkg/plugins/policies/core/ordered/ordered.go`. Plugins name is equals to `KumactlArg` in file `zz_generated.resource.go`. It's important to place the plugin in the correct place because the order of executions is important.
+* Also, define the order of the policy using the `+kuma:policy:order=N` marker on the policy spec struct, as it determines the configuration generation order.
 
 ## Linter
 

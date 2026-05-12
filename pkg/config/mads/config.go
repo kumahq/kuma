@@ -14,6 +14,7 @@ import (
 
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
 	return &MonitoringAssignmentServerConfig{
+		Enabled:                   true,
 		Port:                      5676,
 		DefaultFetchTimeout:       config_types.Duration{Duration: 30 * time.Second},
 		ApiVersions:               []mads.ApiVersion{mads.API_V1},
@@ -28,6 +29,8 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 type MonitoringAssignmentServerConfig struct {
 	config.BaseConfig
 
+	// Enabled if true starts the MADS server.
+	Enabled bool `json:"enabled" envconfig:"kuma_monitoring_assignment_server_enabled"`
 	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
 	// over both grpc and http.
 	Port uint32 `json:"port" envconfig:"kuma_monitoring_assignment_server_port"`
@@ -54,6 +57,9 @@ type MonitoringAssignmentServerConfig struct {
 var _ config.Config = &MonitoringAssignmentServerConfig{}
 
 func (c *MonitoringAssignmentServerConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
 	var errs error
 	if 65535 < c.Port {
 		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))

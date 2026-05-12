@@ -230,7 +230,7 @@ func (l *{{.Name}}List) GetItems() []model.KubernetesObject {
 
 {{if not .SkipRegistration}}
 func init() {
-	SchemeBuilder.Register(&{{.Name}}{}, &{{.Name}}List{})
+	knownTypes = append(knownTypes, &{{.Name}}{}, &{{.Name}}List{})
 	registry.RegisterObjectType(&policy.{{.Name}}{}, &{{.Name}}{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
@@ -253,8 +253,9 @@ var groupVersionInfoTemplate = template.Must(template.New("groupversion-info").P
 package {{.Package}}
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 var (
@@ -262,9 +263,17 @@ var (
 	GroupVersion = schema.GroupVersion{Group: "kuma.io", Version: "{{.Package}}"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+func addKnownTypes(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(GroupVersion, knownTypes...)
+	metav1.AddToGroupVersion(scheme, GroupVersion)
+	return nil
+}
+
+var knownTypes []runtime.Object
 `))

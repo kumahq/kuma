@@ -1,0 +1,10 @@
+ingress:
+  enabled: true
+  deploymentAnnotations:
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    custom.io/team: platform
+egress:
+  enabled: true
+  deploymentAnnotations:
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    custom.io/team: platform

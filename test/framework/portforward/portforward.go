@@ -7,7 +7,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 )
 
-var EnvoyAdminDefaultSpec = Spec{RemotePort: 9901}
+var EnvoyAdminDefaultSpec = Spec{RemotePort: 9902}
 
 type Tunnel struct {
 	tunnel   *k8s.Tunnel

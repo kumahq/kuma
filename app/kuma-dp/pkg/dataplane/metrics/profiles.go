@@ -152,6 +152,22 @@ var basicProfile = []selectorFunction{
 		Type:  v1alpha1.ExactSelectorType,
 		Match: "envoy_cluster_membership_total",
 	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ContainsSelectorType,
+		Match: "circuit_breakers",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ContainsSelectorType,
+		Match: "cx_total",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ContainsSelectorType,
+		Match: "ssl_handshake",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ContainsSelectorType,
+		Match: "ssl_context_update_by_sds",
+	}),
 	// end of dashboards
 	// start of dns stats
 	selectorToFilterFunction(v1alpha1.Selector{
@@ -161,6 +177,10 @@ var basicProfile = []selectorFunction{
 	selectorToFilterFunction(v1alpha1.Selector{
 		Type:  v1alpha1.PrefixSelectorType,
 		Match: "envoy_dns_cares",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: "kuma_dp_dns",
 	}),
 	// end of dns stats
 }

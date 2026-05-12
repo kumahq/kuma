@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -314,5 +315,9 @@ func EvaluateTemplate(localZone string, generatorTemplate string, meta model.Res
 	if err != nil {
 		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())
 	}
-	return sb.String(), nil
+	generated := sb.String()
+	if violations := k8s_validation.IsDNS1123Subdomain(generated); len(violations) > 0 {
+		return "", fmt.Errorf("generated hostname %q is not a valid DNS name: %s", generated, strings.Join(violations, ", "))
+	}
+	return generated, nil
 }
