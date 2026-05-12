@@ -93,10 +93,12 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filte
 	shutdownDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name: "dp_server_shutdown_duration_seconds",
 		Help: "Wall-clock time spent in dp-server graceful shutdown.",
-		// Static buckets sized for the realistic configured range: well
-		// below the 10s default, fine-grained around it, and up to ~90s
-		// to cover operators who bump terminationGracePeriodSeconds.
-		Buckets: []float64{0.1, 0.5, 1, 2, 5, 10, 15, 30, 60, 90},
+		// Buckets tuned around the 10s default deadline: sub-second
+		// resolution for the common clean-drain case, dense between
+		// 5s and 10s to separate slow drains from the force-stop,
+		// and a long tail up to 60s for operators who bump
+		// terminationGracePeriodSeconds.
+		Buckets: []float64{0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 7.5, 9, 10, 15, 30, 60},
 	})
 	if err := metrics.BulkRegister(forceStopCount, shutdownDuration); err != nil {
 		return nil, err
@@ -166,7 +168,10 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 
-	errChan := make(chan error)
+	// Buffered so a late ServeTLS error (e.g., after force-stop) does
+	// not leak the goroutine when the outer select has already picked
+	// <-stop.
+	errChan := make(chan error, 1)
 
 	go func() {
 		defer close(errChan)
@@ -195,14 +200,20 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		switch {
 		case err == nil:
 			log.Info("terminated normally")
+			return nil
 		case std_errors.Is(err, context.DeadlineExceeded):
+			// Expected outcome when xDS streams can't drain in time;
+			// the bounded deadline exists precisely so the pod can
+			// exit cleanly. Keep this at INFO to avoid false-positive
+			// alerts on ERROR-level kuma-cp lines.
 			d.forceStopCount.WithLabelValues(forceStopReasonTimeout).Inc()
-			log.Error(err, "dp-server force-stopped", "reason", forceStopReasonTimeout, "timeout", timeout)
+			log.Info("dp-server force-stopped", "reason", forceStopReasonTimeout, "timeout", timeout)
+			return nil
 		default:
 			d.forceStopCount.WithLabelValues(forceStopReasonError).Inc()
 			log.Error(err, "dp-server force-stopped", "reason", forceStopReasonError)
+			return err
 		}
-		return nil
 	case err := <-errChan:
 		d.ready.Store(false)
 		return err
