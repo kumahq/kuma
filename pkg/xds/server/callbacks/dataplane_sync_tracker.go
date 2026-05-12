@@ -12,18 +12,10 @@ import (
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 
-<<<<<<< HEAD
 func NewDataplaneSyncTracker(factory sync.DataplaneWatchdogFactory) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
 		watchdogFactory: factory,
 		watchdogs:       map[core_model.ResourceKey]*watchdogState{},
-=======
-func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory) DataplaneCallbacks {
-	return &dataplaneSyncTracker{
-		appCtx:               appCtx,
-		newDataplaneWatchdog: factoryFunc,
-		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
->>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
 	}
 }
 
@@ -36,12 +28,7 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 // Node info can be (but does not have to be) carried only on the first XDS request. That's why need streamsAssociation map
 // that indicates that the stream was already associated
 type dataplaneSyncTracker struct {
-<<<<<<< HEAD
 	watchdogFactory sync.DataplaneWatchdogFactory
-=======
-	appCtx               context.Context
-	newDataplaneWatchdog sync.DataplaneWatchdogFactory
->>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
 
 	stdsync.RWMutex // protects access to the fields below
 	watchdogs       map[core_model.ResourceKey]*watchdogState
@@ -56,11 +43,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	t.Lock()
 	defer t.Unlock()
 
-<<<<<<< HEAD
 	stopCh := make(chan struct{})
-=======
-	ctx, cancel := context.WithCancel(t.appCtx)
->>>>>>> 87abeb96b1 (fix(dp-server): bound shutdown, propagate appCtx (#16541))
 	state := &watchdogState{
 		cancelFunc: func() {
 			close(stopCh)
