@@ -80,11 +80,15 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 	var lis net.Listener
 	var protocol, addr string
 	if r.unixSocketDisabled {
+		// Use "tcp" (not "tcp6") so that when localListenAddr is the IPv6
+		// wildcard "::", Linux gives a dual-stack listener that accepts
+		// both IPv4 and IPv6 probes. "tcp6" sets IPV6_V6ONLY and would
+		// refuse IPv4 probes. For concrete addresses the family is
+		// determined by the address itself.
+		protocol = "tcp"
 		if govalidator.IsIPv6(r.localListenAddr) {
-			protocol = "tcp6"
 			addr = fmt.Sprintf("[%s]:%d", r.localListenAddr, r.localListenPort)
 		} else {
-			protocol = "tcp"
 			addr = fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
 		}
 	} else {
