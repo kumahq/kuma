@@ -107,27 +107,29 @@ spec:
 			// MeshMetric reached the proxy and emitted the dynconf listener.
 			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
 			// applications[] must be cleared on a zone-proxy-only DPP.
-			g.Expect(payload).To(ContainSubstring(`"applications":null`))
+			// The inlineString field is JSON-encoded inside the larger JSON dump,
+			// so internal quotes appear as \" in the payload string.
+			g.Expect(payload).To(ContainSubstring(`\"applications\":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
 			// proxy_role label identifies the proxy's purpose.
-			g.Expect(payload).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
+			g.Expect(payload).To(ContainSubstring(`\"kuma.proxy_role\":\"zone-egress\"`))
 			// service label falls back to the DPP name, never to ServiceUnknown.
-			g.Expect(payload).To(ContainSubstring(`"service":"zone-proxy-egress"`))
-			g.Expect(payload).ToNot(ContainSubstring(`"service":"unknown"`))
+			g.Expect(payload).To(ContainSubstring(`\"service\":\"zone-proxy-egress\"`))
+			g.Expect(payload).ToNot(ContainSubstring(`\"service\":\"unknown\"`))
 			// kuma.workload is suppressed: there is no co-located workload.
-			g.Expect(payload).ToNot(ContainSubstring(`"kuma.workload":`))
+			g.Expect(payload).ToNot(ContainSubstring(`\"kuma.workload\":`))
 		}, "60s", "2s").Should(Succeed())
 
 		// then — zone-ingress
 		Eventually(func(g Gomega) {
 			payload := dynConfigJSON(g, "zone-proxy-ingress")
 			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
-			g.Expect(payload).To(ContainSubstring(`"applications":null`))
+			g.Expect(payload).To(ContainSubstring(`\"applications\":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
-			g.Expect(payload).To(ContainSubstring(`"kuma.proxy_role":"zone-ingress"`))
-			g.Expect(payload).To(ContainSubstring(`"service":"zone-proxy-ingress"`))
-			g.Expect(payload).ToNot(ContainSubstring(`"service":"unknown"`))
-			g.Expect(payload).ToNot(ContainSubstring(`"kuma.workload":`))
+			g.Expect(payload).To(ContainSubstring(`\"kuma.proxy_role\":\"zone-ingress\"`))
+			g.Expect(payload).To(ContainSubstring(`\"service\":\"zone-proxy-ingress\"`))
+			g.Expect(payload).ToNot(ContainSubstring(`\"service\":\"unknown\"`))
+			g.Expect(payload).ToNot(ContainSubstring(`\"kuma.workload\":`))
 		}, "60s", "2s").Should(Succeed())
 	})
 }

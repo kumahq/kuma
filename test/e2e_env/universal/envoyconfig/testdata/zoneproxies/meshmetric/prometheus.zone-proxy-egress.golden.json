@@ -128,7 +128,6 @@
             "portValue": 5670
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -270,7 +269,6 @@
             "portValue": 5670
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -332,7 +330,6 @@
             "portValue": 0
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
