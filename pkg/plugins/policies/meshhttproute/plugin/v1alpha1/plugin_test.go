@@ -608,7 +608,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().
 					WithMeshContext(mc).
 					With(func(ctx *xds_context.Context) {
-						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"": true}
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"local": true}
 					}).
 					Build(),
 				proxy: proxy,
