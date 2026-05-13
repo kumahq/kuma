@@ -6,6 +6,7 @@ import (
 	net_url "net/url"
 	"strconv"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
@@ -108,7 +109,7 @@ func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, g
 			continue
 		}
 
-		if err := configureListener(ctx, rules, proxy, listener, ""); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, "", listener.TrafficDirection); err != nil {
 			return err
 		}
 	}
@@ -118,7 +119,7 @@ func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, g
 
 func applyToInbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
 	for _, inboundListener := range inboundListeners {
-		if err := configureListener(ctx, rules, proxy, inboundListener, ""); err != nil {
+		if err := configureListener(ctx, rules, proxy, inboundListener, "", inboundListener.TrafficDirection); err != nil {
 			return err
 		}
 	}
@@ -139,7 +140,7 @@ func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules,
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureListener(ctx, rules, proxy, listener, serviceName); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, serviceName, listener.TrafficDirection); err != nil {
 			return err
 		}
 	}
@@ -170,7 +171,10 @@ func applyToZoneProxyListeners(ctx xds_context.Context, rules core_rules.SingleI
 		if !ok {
 			continue
 		}
-		if err := configureListener(ctx, rules, proxy, listener, ""); err != nil {
+		// Zone-proxy listener TrafficDirection is INBOUND on the wire (Envoy receives
+		// from local sidecars), but a zone-egress span represents an outbound hop. Pass
+		// UNSPECIFIED so Datadog SplitService skips the misleading "_INBOUND" suffix.
+		if err := configureListener(ctx, rules, proxy, listener, "", envoy_core.TrafficDirection_UNSPECIFIED); err != nil {
 			return err
 		}
 	}
@@ -188,7 +192,8 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 		for typ, resources := range resType {
 			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
-					if err := configureListener(ctx, rules, proxy, listener.Resource.(*envoy_listener.Listener), destinationname.MustResolve(false, service, port)); err != nil {
+					l := listener.Resource.(*envoy_listener.Listener)
+					if err := configureListener(ctx, rules, proxy, l, destinationname.MustResolve(false, service, port), l.TrafficDirection); err != nil {
 						return err
 					}
 				}
@@ -198,10 +203,10 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 	return nil
 }
 
-func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
+func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
 	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
-	// A zone-proxy-only Dataplane has no service tag, so IdentifyingName falls back to "unknown".
-	// Use the Dataplane name instead so tracing span service names are stable (MADR-103 group 4).
+	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
+	// Use the Dataplane name so span service names stay stable.
 	if serviceName == mesh_proto.ServiceUnknown && proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
 		serviceName = proxy.Dataplane.GetMeta().GetName()
 	}
@@ -224,7 +229,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	configurer := plugin_xds.Configurer{
 		Conf:                  conf,
 		Service:               serviceName,
-		TrafficDirection:      listener.TrafficDirection,
+		TrafficDirection:      direction,
 		Destination:           destination,
 		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
 		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),

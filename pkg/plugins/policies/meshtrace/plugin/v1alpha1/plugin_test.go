@@ -774,9 +774,9 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	return actualResource
 }
 
-func zoneEgressOnlyDataplane(name string) *builders.DataplaneBuilder {
+func zoneEgressOnlyDataplane() *builders.DataplaneBuilder {
 	return builders.Dataplane().
-		WithName(name).
+		WithName("zone-egress-1").
 		WithAddress("192.168.0.10").
 		WithoutInbounds().
 		With(func(d *core_mesh.DataplaneResource) {
@@ -889,10 +889,11 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 
 var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 	type testCase struct {
-		dp              *builders.DataplaneBuilder
-		resources       []core_xds.Resource
-		singleItemRules core_rules.SingleItemRules
-		goldenFile      string
+		dp                  *builders.DataplaneBuilder
+		resources           []core_xds.Resource
+		singleItemRules     core_rules.SingleItemRules
+		inboundTagsDisabled bool
+		goldenFile          string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -902,8 +903,14 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 				rs.Add(&r)
 			}
 
-			xdsCtx := *xds_samples.SampleContextWith(xds_context.NewResources()).
-				WithMeshBuilder(samples.MeshDefaultBuilder()).Build()
+			ctxBuilder := xds_samples.SampleContextWith(xds_context.NewResources()).
+				WithMeshBuilder(samples.MeshDefaultBuilder())
+			if given.inboundTagsDisabled {
+				ctxBuilder = ctxBuilder.With(func(c *xds_context.Context) {
+					c.ControlPlane.InboundTagsDisabled = true
+				})
+			}
+			xdsCtx := *ctxBuilder.Build()
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(given.dp).
@@ -925,7 +932,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			Expect(clusterYaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.cluster.golden.yaml", given.goldenFile)))
 		},
 		Entry("zone-egress-only zipkin", testCase{
-			dp:        zoneEgressOnlyDataplane("zone-egress-1"),
+			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
@@ -944,7 +951,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			goldenFile: "zone-egress-only-zipkin",
 		}),
 		Entry("zone-egress-only datadog", testCase{
-			dp:        zoneEgressOnlyDataplane("zone-egress-1"),
+			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
@@ -962,7 +969,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			goldenFile: "zone-egress-only-datadog",
 		}),
 		Entry("zone-egress-only opentelemetry", testCase{
-			dp:        zoneEgressOnlyDataplane("zone-egress-1"),
+			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
@@ -1085,6 +1092,52 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 				}},
 			},
 			goldenFile: "mixed-inbound-and-zone-egress-otel",
+		}),
+		// Spec declares a zone-egress listener but the xDS ResourceSet has no
+		// matching resource. The plugin must skip the lookup miss without
+		// producing listener output; the meshtrace cluster is still added.
+		Entry("zone-egress-only with missing xDS listener", testCase{
+			dp:        zoneEgressOnlyDataplane(),
+			resources: nil,
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							Zipkin: &api.ZipkinBackend{
+								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+								SharedSpanContext: true,
+								TraceId128Bit:     true,
+							},
+						}},
+					},
+				}},
+			},
+			goldenFile: "zone-egress-only-missing-listener",
+		}),
+		// IdentifyingName(true) walks the workload label first. For a
+		// zone-proxy-only DPP without a workload label, it returns "unknown"
+		// and the fallback to Dataplane.Name fires the same way as the default
+		// path. Reuses the zone-egress-only-zipkin golden to pin that equivalence.
+		Entry("zone-egress-only zipkin with inboundTagsDisabled", testCase{
+			dp:                  zoneEgressOnlyDataplane(),
+			resources:           []core_xds.Resource{zoneEgressListenerResource()},
+			inboundTagsDisabled: true,
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							Zipkin: &api.ZipkinBackend{
+								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+								SharedSpanContext: true,
+								TraceId128Bit:     true,
+							},
+						}},
+					},
+				}},
+			},
+			goldenFile: "zone-egress-only-zipkin",
 		}),
 	)
 })

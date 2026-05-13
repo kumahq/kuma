@@ -81,7 +81,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                 collectorCluster: meshtrace:datadog
-                serviceName: backend_INBOUND
+                serviceName: backend
             spawnUpstreamSpan: false
       name: mes-http
     name: self_zoneegress_dp_ze-port

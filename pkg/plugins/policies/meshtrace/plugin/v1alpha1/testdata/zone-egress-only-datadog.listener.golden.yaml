@@ -40,7 +40,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                 collectorCluster: meshtrace:datadog
-                serviceName: zone-egress-1_INBOUND
+                serviceName: zone-egress-1
             spawnUpstreamSpan: false
       name: mes-http
     - filterChainMatch:
