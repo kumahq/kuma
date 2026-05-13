@@ -86,6 +86,9 @@ controlPlane:
             type: Utilization
             averageUtilization: 80
 
+    # -- Scaling behavior for the HPA (https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#configurable-scaling-behavior). Omit to use Kubernetes defaults.
+    behavior: {}
+
   # -- Node selector for the Kuma Control Plane pods
   nodeSelector:
     kubernetes.io/os: linux
