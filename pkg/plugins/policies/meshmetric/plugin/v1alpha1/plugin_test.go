@@ -41,9 +41,9 @@ func workloadLabels() map[string]string {
 	}
 }
 
-func zoneEgressOnlyDataplane(name string) *builders.DataplaneBuilder {
+func zoneEgressOnlyDataplane() *builders.DataplaneBuilder {
 	return builders.Dataplane().
-		WithName(name).
+		WithName("zone-egress-1").
 		WithAddress("192.168.0.10").
 		WithoutInbounds().
 		With(func(d *core_mesh.DataplaneResource) {
@@ -474,7 +474,7 @@ var _ = Describe("MeshMetric", func() {
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
-				WithDataplane(zoneEgressOnlyDataplane("zone-egress-1")).
+				WithDataplane(zoneEgressOnlyDataplane()).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -607,7 +607,7 @@ var _ = Describe("MeshMetric", func() {
 		}
 
 		It("zone-egress-only: drops applications and uses dataplane name as service label", func() {
-			body := applyAndExtractDynconfBody(buildProxy(zoneEgressOnlyDataplane("zone-egress-1"), "zone-egress-1"))
+			body := applyAndExtractDynconfBody(buildProxy(zoneEgressOnlyDataplane(), "zone-egress-1"))
 			// Applications cleared by sanitizeConfForProxy.
 			Expect(body).ToNot(ContainSubstring("my-app"))
 			Expect(body).ToNot(ContainSubstring(`"applications":[{`))
@@ -637,7 +637,7 @@ var _ = Describe("MeshMetric", func() {
 			noAppsProxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
-				WithDataplane(zoneEgressOnlyDataplane("zone-egress-1")).
+				WithDataplane(zoneEgressOnlyDataplane()).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -697,7 +697,7 @@ var _ = Describe("MeshMetric", func() {
 						xds_types.FeatureUnifiedResourceNaming: true,
 					},
 				}).
-				WithDataplane(zoneEgressOnlyDataplane("zone-egress-1")).
+				WithDataplane(zoneEgressOnlyDataplane()).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
