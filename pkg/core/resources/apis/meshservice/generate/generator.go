@@ -270,12 +270,29 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			propagated = propagatedLabelsFor(entries)
 		}
 		desired := desiredLabels(mesh, meshService.GetMeta().GetName(), g.zone, propagated)
-		// Preserve labels set externally (not by propagation or system).
-		// desiredLabels covers system keys and propagation-voted keys; stripping
-		// anything else would destroy operator-managed labels on update.
-		for k, v := range existingLabels {
-			if _, managed := desired[k]; !managed {
-				desired[k] = v
+		if g.labelPropagationEnabled {
+			// Record which keys are currently propagated so the next reconcile
+			// can tell them from operator-managed labels.
+			addPropagationTracking(desired, propagated)
+			// Preserve only truly external labels: not system, not previously propagated.
+			prevPropagated := extractPropagatedKeys(existingLabels)
+			for k, v := range existingLabels {
+				if mesh_proto.IsReservedLabelKey(k) {
+					continue
+				}
+				if prevPropagated[k] {
+					continue
+				}
+				if _, inDesired := desired[k]; !inDesired {
+					desired[k] = v
+				}
+			}
+		} else {
+			// When propagation is disabled preserve all external labels unchanged.
+			for k, v := range existingLabels {
+				if _, managed := desired[k]; !managed {
+					desired[k] = v
+				}
 			}
 		}
 		labelsChanged := !maps.Equal(existingLabels, desired)
@@ -344,7 +361,11 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		if len(conflicting) > 0 {
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
-		createLabels := desiredLabels(mesh, name, g.zone, propagatedLabelsFor(meshServices))
+		propagated := propagatedLabelsFor(meshServices)
+		createLabels := desiredLabels(mesh, name, g.zone, propagated)
+		if g.labelPropagationEnabled {
+			addPropagationTracking(createLabels, propagated)
+		}
 		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(createLabels)); err != nil {
 			log.Error(err, "couldn't create MeshService")
 			continue
