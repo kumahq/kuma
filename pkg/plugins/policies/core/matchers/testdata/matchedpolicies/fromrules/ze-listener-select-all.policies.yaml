@@ -1,0 +1,13 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-all
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-1
+  rules:
+    - default:
+        allow:
+          - sni:
+              type: Exact
+              value: sni.mes-1.default.zone-1.aws.8443

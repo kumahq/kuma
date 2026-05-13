@@ -1,0 +1,12 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-mesh
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - sni:
+              type: Exact
+              value: sni.mes-1.default.zone-1.aws.8443

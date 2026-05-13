@@ -1,0 +1,19 @@
+InboundRules:
+  1.1.1.1:10002:
+  - conf:
+      default:
+        allow:
+        - sni:
+            type: Exact
+            value: sni.mes-1.default.zone-1.aws.8443
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtp_mesh-1___mtp-ze_
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-ze
+        type: MeshTrafficPermission
+      RuleIndex: 0
+Rules:
+  1.1.1.1:10002: []
