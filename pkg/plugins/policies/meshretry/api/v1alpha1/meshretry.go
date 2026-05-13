@@ -168,7 +168,6 @@ type HTTP struct {
 	HostSelectionMaxAttempts *int64 `json:"hostSelectionMaxAttempts,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Canceled;DeadlineExceeded;Internal;ResourceExhausted;Unavailable
 type GRPCRetryOn string
 
 var (
@@ -215,8 +214,10 @@ type GRPC struct {
 	// RateLimitedBackOff is a configuration of backoff which will be used when
 	// the upstream returns one of the headers configured.
 	RateLimitedBackOff *RateLimitedBackOff `json:"rateLimitedBackOff,omitempty"`
-	// RetryOn is a list of conditions which will cause a retry.
-	// +kubebuilder:example={Canceled,DeadlineExceeded,Internal,ResourceExhausted,Unavailable}
+	// RetryOn is a list of conditions which will cause a retry. Supports both gRPC
+	// retry conditions (Canceled,DeadlineExceeded, Internal, ResourceExhausted,
+	// Unavailable) and HTTPretry conditions (see HTTP retryOn for full list).
+	// +kubebuilder:example={Canceled,DeadlineExceeded,Internal,ResourceExhausted,Unavailable,"5XX","GatewayError","Reset","Retriable4xx","ConnectFailure","EnvoyRatelimited","RefusedStream","Http3PostConnectFailure","HttpMethodConnect","HttpMethodDelete","HttpMethodGet","HttpMethodHead","HttpMethodOptions","HttpMethodPatch","HttpMethodPost","HttpMethodPut","HttpMethodTrace","500","503"}
 	RetryOn *[]GRPCRetryOn `json:"retryOn,omitempty"`
 }
 

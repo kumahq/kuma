@@ -296,20 +296,36 @@ components:
                                 type: array
                             type: object
                           retryOn:
-                            description: RetryOn is a list of conditions which will cause a retry.
+                            description: |-
+                              RetryOn is a list of conditions which will cause a retry. Supports both gRPC
+                              retry conditions (Canceled,DeadlineExceeded, Internal, ResourceExhausted,
+                              Unavailable) and HTTPretry conditions (see HTTP retryOn for full list).
                             example:
                               - Canceled
                               - DeadlineExceeded
                               - Internal
                               - ResourceExhausted
                               - Unavailable
+                              - 5XX
+                              - GatewayError
+                              - Reset
+                              - Retriable4xx
+                              - ConnectFailure
+                              - EnvoyRatelimited
+                              - RefusedStream
+                              - Http3PostConnectFailure
+                              - HttpMethodConnect
+                              - HttpMethodDelete
+                              - HttpMethodGet
+                              - HttpMethodHead
+                              - HttpMethodOptions
+                              - HttpMethodPatch
+                              - HttpMethodPost
+                              - HttpMethodPut
+                              - HttpMethodTrace
+                              - "500"
+                              - "503"
                             items:
-                              enum:
-                                - Canceled
-                                - DeadlineExceeded
-                                - Internal
-                                - ResourceExhausted
-                                - Unavailable
                               type: string
                             type: array
                         type: object
