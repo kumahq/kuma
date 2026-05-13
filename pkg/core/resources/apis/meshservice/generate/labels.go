@@ -1,6 +1,9 @@
 package generate
 
 import (
+	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -10,6 +13,46 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
+
+// propagationTrackingPrefix is the prefix for labels that record which
+// non-system keys were written by the previous propagation cycle. Used to
+// distinguish previously-propagated labels (candidates for removal) from
+// operator-managed labels (which must be preserved).
+const propagationTrackingPrefix = "kuma.io/pkey-"
+
+// addPropagationTracking clears any existing tracking labels in labels and
+// writes a new set recording which keys are present in propagated. Keys whose
+// names are not valid Kubernetes label values are silently skipped; they will
+// be treated as external on the next reconcile.
+func addPropagationTracking(labels map[string]string, propagated map[string]string) {
+	for k := range labels {
+		if strings.HasPrefix(k, propagationTrackingPrefix) {
+			delete(labels, k)
+		}
+	}
+	keys := make([]string, 0, len(propagated))
+	for k := range propagated {
+		if len(validation.IsValidLabelValue(k)) == 0 {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		labels[fmt.Sprintf("%s%d", propagationTrackingPrefix, i)] = k
+	}
+}
+
+// extractPropagatedKeys returns the set of non-system label keys that were
+// written by the previous propagation cycle, as recorded by tracking labels.
+func extractPropagatedKeys(labels map[string]string) map[string]bool {
+	out := map[string]bool{}
+	for k, v := range labels {
+		if strings.HasPrefix(k, propagationTrackingPrefix) {
+			out[v] = true
+		}
+	}
+	return out
+}
 
 // dpContribution computes the non-system labels for an auto-generated
 // MeshService from a single DataplaneResource and its inbounds.
