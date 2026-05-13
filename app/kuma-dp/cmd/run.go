@@ -276,9 +276,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
 			}
-			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
-			}
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
@@ -428,9 +425,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 			}
 			readinessReporter := readiness.NewReporter(
-				cfg.Dataplane.ReadinessUnixSocketDisabled,
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort,
 				adminSocketPath,
