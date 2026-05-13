@@ -18,7 +18,12 @@ spec:
   maxReplicas: {{ .Values.controlPlane.autoscaling.maxReplicas }}
   {{ if .Capabilities.APIVersions.Has "autoscaling/v2" }}
   metrics: {{- toYaml .Values.controlPlane.autoscaling.metrics | nindent 4 }}
+<<<<<<< HEAD
   {{ else }}
   targetCPUUtilizationPercentage: {{ .Values.controlPlane.autoscaling.targetCPUUtilizationPercentage }}
+=======
+  {{- with .Values.controlPlane.autoscaling.behavior }}
+  behavior: {{- toYaml . | nindent 4 }}
+>>>>>>> 3a18a8f1af (feat(charts): expose CP HPA behavior (#16576))
   {{- end }}
 {{- end }}
