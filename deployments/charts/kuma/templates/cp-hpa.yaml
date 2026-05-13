@@ -13,4 +13,7 @@ spec:
   minReplicas: {{ .Values.controlPlane.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.controlPlane.autoscaling.maxReplicas }}
   metrics: {{- toYaml .Values.controlPlane.autoscaling.metrics | nindent 4 }}
+  {{- with .Values.controlPlane.autoscaling.behavior }}
+  behavior: {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}
