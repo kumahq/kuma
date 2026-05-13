@@ -46,15 +46,27 @@ func addPropagationTracking(labels map[string]string, propagated map[string]stri
 
 // extractPropagatedKeys returns a function that reports whether a given label
 // key was recorded as propagated in the previous reconcile cycle.
+//
+// Handles two formats for backward compatibility during upgrades:
+//   - New format (current): kuma.io/pkey-<8hexchars> = ""  (key is hashed)
+//   - Old format (pre-hash): kuma.io/pkey-N = "<label-key>"  (key stored as value)
 func extractPropagatedKeys(labels map[string]string) func(string) bool {
 	hashes := map[string]bool{}
-	for k := range labels {
-		if strings.HasPrefix(k, propagationTrackingPrefix) {
+	oldKeys := map[string]bool{}
+	for k, v := range labels {
+		if !strings.HasPrefix(k, propagationTrackingPrefix) {
+			continue
+		}
+		if v == "" {
+			// New format: suffix is a hash of the label key.
 			hashes[k[len(propagationTrackingPrefix):]] = true
+		} else {
+			// Old format: value holds the label key directly.
+			oldKeys[v] = true
 		}
 	}
 	return func(key string) bool {
-		return hashes[trackingKeyHash(key)]
+		return hashes[trackingKeyHash(key)] || oldKeys[key]
 	}
 }
 

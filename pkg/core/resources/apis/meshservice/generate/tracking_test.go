@@ -72,16 +72,19 @@ var _ = Describe("propagation tracking", func() {
 			Expect(wasPropagated("app.example.com/tier")).To(BeFalse())
 		})
 
-		It("does not recognize old-format tracking labels (key name as value)", func() {
-			// Old format: kuma.io/pkey-0 = "foo.example.com/bar"
-			// After upgrade, the first reconcile replaces old labels; but before
-			// that, extractPropagatedKeys should NOT recognize old labels as tracking
-			// entries for their stored key names.
+		It("recognizes old-format tracking labels during upgrade transition", func() {
+			// Old format: kuma.io/pkey-N = "<label-key>" (value holds the key).
+			// On the first reconcile after upgrade the new code must still treat
+			// these as previously-propagated so stale labels are cleaned up
+			// instead of being preserved as operator-managed forever.
 			labels := map[string]string{
 				propagationTrackingPrefix + "0": "app.example.com/tier",
+				propagationTrackingPrefix + "1": "simple",
 			}
 			wasPropagated := extractPropagatedKeys(labels)
-			Expect(wasPropagated("app.example.com/tier")).To(BeFalse())
+			Expect(wasPropagated("app.example.com/tier")).To(BeTrue())
+			Expect(wasPropagated("simple")).To(BeTrue())
+			Expect(wasPropagated("not-tracked")).To(BeFalse())
 		})
 	})
 })
