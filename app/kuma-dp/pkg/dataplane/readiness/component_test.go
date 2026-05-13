@@ -222,4 +222,49 @@ var _ = Describe("Readiness Reporter", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 		})
 	})
+
+	Context("with IPv6 wildcard listener", func() {
+		BeforeEach(func() {
+			probe, err := net.Listen("tcp6", "[::1]:0")
+			if err != nil {
+				Skip("IPv6 loopback not available: " + err.Error())
+			}
+			Expect(probe.Close()).To(Succeed())
+
+			stopCh = make(chan struct{})
+			lis, err := net.Listen("tcp", "[::]:0")
+			Expect(err).ToNot(HaveOccurred())
+			port = uint32(lis.Addr().(*net.TCPAddr).Port)
+			Expect(lis.Close()).To(Succeed())
+
+			reporter = readiness.NewReporter(true, "", "::", port, "", nil)
+			go func() {
+				defer GinkgoRecover()
+				_ = reporter.Start(stopCh)
+			}()
+			baseURL = fmt.Sprintf("http://[::1]:%d", port)
+			Eventually(func() error {
+				resp, err := http.Get(baseURL + "/ready")
+				if err != nil {
+					return err
+				}
+				resp.Body.Close()
+				return nil
+			}, 5*time.Second, 50*time.Millisecond).Should(Succeed())
+		})
+
+		It("accepts probes on IPv6 loopback", func() {
+			resp, err := http.Get(fmt.Sprintf("http://[::1]:%d/ready", port))
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("accepts probes on IPv4 loopback (dual-stack)", func() {
+			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/ready", port))
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+	})
 })

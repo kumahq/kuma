@@ -166,12 +166,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
-	sni := meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace)
-	// Mirror meshroute/clusters.go: only emit the new SNI format when the
-	// destination zone is mesh-scoped AND the destination resource reports
-	// SNI compliance. Otherwise keep the legacy SNI — local-zone traffic
-	// still works; cross-zone via mesh-scoped ZI is signaled unreachable
-	// via the destination's SNICompliant=False condition.
+	sni := meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
 	destResource := meshCtx.GetServiceByKRI(backendRef.Resource)
 	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] && resource_status.IsSNICompliant(destResource) {
 		sni = tls.SNIFromKRI(backendRef.Resource)

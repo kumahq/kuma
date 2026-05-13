@@ -1,0 +1,14 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-listener
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-1
+    sectionName: ze-port
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://mesh-1/dp-1

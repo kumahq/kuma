@@ -345,6 +345,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.DpServer.ReadHeaderTimeout.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.DpServer.GracefulShutdownTimeout.Duration).To(Equal(13 * time.Second))
 			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
 			Expect(cfg.DpServer.Hds.Interval.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.DpServer.Hds.RefreshInterval.Duration).To(Equal(12 * time.Second))
@@ -388,7 +389,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
-			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
+			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
 			Expect(cfg.Experimental.DeltaXds).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
@@ -401,6 +402,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.MeshService.LabelPropagation.Enabled).To(BeTrue())
+			Expect(cfg.MeshService.LabelPropagation.AllowedLabelKeys).To(Equal([]string{"app", "version"}))
 			Expect(cfg.Runtime.Universal.Workload.GenerationInterval.Duration).To(Equal(9 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
@@ -742,6 +745,7 @@ dpServer:
   tlsMaxVersion: TLSv1_3
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   readHeaderTimeout: 11s
+  gracefulShutdownTimeout: 13s
   port: 9876
   authn:
     dpProxy:
@@ -815,7 +819,7 @@ experimental:
     fullResyncInterval: 15s
     delayFullResync: true
   autoReachableServices: true
-  sidecarContainers: true
+  sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
   deltaXds: true
@@ -855,11 +859,17 @@ ipam:
 meshService:
   generationInterval: 8s
   deletionGracePeriod: 11s
+  labelPropagation:
+    enabled: true
+    allowedLabelKeys:
+    - app
+    - version
 `,
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":             "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":         "9903",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":               "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":               "4321",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":    "13s",
@@ -1108,6 +1118,7 @@ meshService:
 				"KUMA_DP_SERVER_TLS_MAX_VERSION":                                                           "TLSv1_3",
 				"KUMA_DP_SERVER_TLS_CIPHER_SUITES":                                                         "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_DP_SERVER_READ_HEADER_TIMEOUT":                                                       "11s",
+				"KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT":                                                 "13s",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_TYPE":                                                       "dpToken",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_ENABLE_ISSUER":                                     "false",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_VALIDATOR_USE_SECRETS":                             "false",
@@ -1156,11 +1167,10 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
-				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
+				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
 				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":                                              "9903",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
@@ -1179,6 +1189,8 @@ meshService:
 				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
 				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
+				"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED":                                              "true",
+				"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS":                                   "app,version",
 				"KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL":                                      "9s",
 			},
 			yamlFileConfig: "",

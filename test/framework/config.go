@@ -245,7 +245,7 @@ var defaultConf = E2eConfig{
 	},
 	ZoneEgressApp:                     "kuma-egress",
 	ZoneIngressApp:                    "kuma-ingress",
-	KumaExperimentalSidecarContainers: false,
+	KumaExperimentalSidecarContainers: true,
 	DumpDir:                           path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
 	DumpOnSuccess:                     false,
 }
