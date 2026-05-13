@@ -164,7 +164,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
-	sni := meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace)
+	sni := meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(
 			clusters.EdsCluster(),

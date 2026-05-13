@@ -51,6 +51,8 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 			return nil
 		case err := <-errCh:
 			if err != nil {
+				// TODO: add per-name rate limiting here analogous to panicLogLimiter in runComponent;
+				// resilientComponent logs every restart, so a tight panic loop produces unbounded log volume.
 				r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
 			}
 		}

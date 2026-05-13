@@ -1,6 +1,9 @@
 package generate
 
 import (
+	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -11,6 +14,46 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
+// propagationTrackingPrefix is the prefix for labels that record which
+// non-system keys were written by the previous propagation cycle. Used to
+// distinguish previously-propagated labels (candidates for removal) from
+// operator-managed labels (which must be preserved).
+const propagationTrackingPrefix = "kuma.io/pkey-"
+
+// addPropagationTracking clears any existing tracking labels in labels and
+// writes a new set recording which keys are present in propagated. Keys whose
+// names are not valid Kubernetes label values are silently skipped; they will
+// be treated as external on the next reconcile.
+func addPropagationTracking(labels map[string]string, propagated map[string]string) {
+	for k := range labels {
+		if strings.HasPrefix(k, propagationTrackingPrefix) {
+			delete(labels, k)
+		}
+	}
+	keys := make([]string, 0, len(propagated))
+	for k := range propagated {
+		if len(validation.IsValidLabelValue(k)) == 0 {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		labels[fmt.Sprintf("%s%d", propagationTrackingPrefix, i)] = k
+	}
+}
+
+// extractPropagatedKeys returns the set of non-system label keys that were
+// written by the previous propagation cycle, as recorded by tracking labels.
+func extractPropagatedKeys(labels map[string]string) map[string]bool {
+	out := map[string]bool{}
+	for k, v := range labels {
+		if strings.HasPrefix(k, propagationTrackingPrefix) {
+			out[v] = true
+		}
+	}
+	return out
+}
+
 // dpContribution computes the non-system labels for an auto-generated
 // MeshService from a single DataplaneResource and its inbounds.
 // It never mutates its inputs and always returns a non-nil map.
@@ -18,12 +61,34 @@ func dpContribution(
 	dp *core_mesh.DataplaneResource,
 	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
 	allowSet map[string]struct{},
-	metric prometheus.Counter,
+	droppedLabels *prometheus.CounterVec,
 	log logr.Logger,
+	service string,
 ) map[string]string {
 	out := map[string]string{}
 	if dp == nil {
 		return out
+	}
+
+	drop := func(reason, key string) {
+		droppedLabels.WithLabelValues(reason).Inc()
+		log.Info("dropping label during MeshService generation",
+			"reason", reason,
+			"service", service,
+			"dataplane", dp.GetMeta().GetName(),
+			"mesh", dp.GetMeta().GetMesh(),
+			"key", key,
+		)
+	}
+
+	debugDrop := func(reason, key string) {
+		log.V(1).Info("dropping label during MeshService generation",
+			"reason", reason,
+			"service", service,
+			"dataplane", dp.GetMeta().GetName(),
+			"mesh", dp.GetMeta().GetMesh(),
+			"key", key,
+		)
 	}
 
 	// Step 1: cross-inbound consensus on non-reserved tags.
@@ -52,25 +117,21 @@ func dpContribution(
 	// Step 2: validate and write consensus values.
 	for k, e := range consensus {
 		if e.drop {
-			metric.Inc()
-			log.V(1).Info("dropping inbound tag — intra-DP disagreement", "key", k, "dp", dp.Meta.GetName())
+			drop("inbound_conflict", k)
 			continue
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				metric.Inc()
-				log.V(1).Info("dropping inbound tag not in allow-list", "key", k, "dp", dp.Meta.GetName())
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
 		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid label key", "key", k, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		if errs := validation.IsValidLabelValue(e.value); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid label value", "key", k, "value", e.value, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		out[k] = e.value
@@ -83,19 +144,16 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				metric.Inc()
-				log.V(1).Info("dropping DP label not in allow-list", "key", k, "dp", dp.Meta.GetName())
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
 		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid DP label key", "key", k, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid DP label value", "key", k, "value", v, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		out[k] = v
