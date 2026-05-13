@@ -379,5 +379,25 @@ var _ = Describe("Compute", func() {
 				"kuma.io/listener-zoneegress":  "enabled",
 			},
 		}),
+		Entry("stale listener labels are removed when listeners are absent", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithMesh("mesh-1").
+				WithServices("backend").
+				WithLabels(map[string]string{
+					"kuma.io/listener-zoneingress": "enabled",
+					"kuma.io/listener-zoneegress":  "enabled",
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":       "mesh-1",
+				"kuma.io/origin":     "zone",
+				"kuma.io/zone":       "zone-1",
+				"kuma.io/env":        "kubernetes",
+				"kuma.io/proxy-type": "sidecar",
+			},
+		}),
 	)
 })
