@@ -37,6 +37,9 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 		lastSuccess    = time.Now()
 		nextSampledAt  time.Time
 		suppressedLogs uint64
+		// attempt counts restarts within the current outage and drives sampling.
+		// generationID stays monotonic across stable-run boundaries for cross-outage tracing.
+		attempt uint64
 	)
 	for generationID := uint64(1); ; generationID++ {
 		lastStart := time.Now()
@@ -74,11 +77,13 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 			lastSuccess = time.Now()
 			nextSampledAt = time.Time{}
 			suppressedLogs = 0
+			attempt = 0
 		}
 		dur, _ := backoff.Next()
-		if generationID <= resilientLogSampleAfterAttempt || !time.Now().Before(nextSampledAt) {
+		attempt++
+		if attempt <= resilientLogSampleAfterAttempt || !time.Now().Before(nextSampledAt) {
 			fields := []any{
-				"attempt", generationID,
+				"attempt", attempt,
 				"sinceLastSuccess", time.Since(lastSuccess),
 				"nextBackoff", dur,
 			}
@@ -90,7 +95,8 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 				suppressedLogs = 0
 			}
 			r.log.Info("scheduling component restart", fields...)
-			if generationID > resilientLogSampleAfterAttempt {
+			// Arm the sampling window once we've hit the burst threshold.
+			if attempt >= resilientLogSampleAfterAttempt {
 				nextSampledAt = time.Now().Add(resilientLogSampleWindow)
 			}
 		} else {

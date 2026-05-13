@@ -1,6 +1,7 @@
 package component
 
 import (
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -112,7 +113,6 @@ func (c *scriptedComponent) NeedLeaderElection() bool { return false }
 func scriptOfErrors(errs ...error) []func() error {
 	out := make([]func() error, len(errs))
 	for i, e := range errs {
-		e := e
 		out[i] = func() error { return e }
 	}
 	return out
@@ -255,31 +255,39 @@ var _ = Describe("resilientComponent", func() {
 		Eventually(done).Should(BeClosed())
 
 		scheduled := root.entriesByMsg("scheduling component restart")
-		Expect(len(scheduled)).To(BeNumerically(">=", 1))
+		Expect(scheduled).ToNot(BeEmpty())
 		sinceLastSuccess, ok := scheduled[0].tags["sinceLastSuccess"].(time.Duration)
 		Expect(ok).To(BeTrue())
 		Expect(sinceLastSuccess).To(BeNumerically("<", stableRun/2))
 	})
 
-	It("starts a fresh sample window after a stable run", func() {
+	It("always-logs the first burst of a new outage after a stable run", func() {
 		log, root := newRecordingLogger()
 		stop := make(chan struct{})
 
 		const stableRun = 30 * time.Millisecond
 		const tinyMax = 1 * time.Millisecond
 
-		// Burst pushes the sampler past the always-log threshold and accumulates
-		// suppressed entries inside the same 10s window.
-		burst := make([]error, resilientLogSampleAfterAttempt*4)
-		for i := range burst {
-			burst[i] = errors.Errorf("burst-%d", i)
+		// Pre-burst pushes the sampler past the always-log threshold and
+		// accumulates suppressed entries inside the same 10s window.
+		preBurst := make([]error, resilientLogSampleAfterAttempt*4)
+		for i := range preBurst {
+			preBurst[i] = errors.Errorf("pre-%d", i)
 		}
-		script := scriptOfErrors(burst...)
+		script := scriptOfErrors(preBurst...)
+		// Stable run >backoffMaxTime ends one outage and starts a new one.
 		script = append(script, func() error {
 			time.Sleep(stableRun)
 			return errors.New("after-stable")
 		})
-		script = append(script, func() error { return errors.New("post-recovery") })
+		// Post-burst: the new outage's first 5 attempts must all log
+		// (post-stable plus 4 quick failures = 5 attempts), neither
+		// suppressed by leftover nextSampledAt nor carrying suppressed counts.
+		postBurst := make([]error, resilientLogSampleAfterAttempt-1)
+		for i := range postBurst {
+			postBurst[i] = errors.Errorf("post-%d", i)
+		}
+		script = append(script, scriptOfErrors(postBurst...)...)
 
 		c := &scriptedComponent{script: script}
 		r := NewResilientComponent(log, c, 100*time.Microsecond, tinyMax)
@@ -295,18 +303,20 @@ var _ = Describe("resilientComponent", func() {
 		Eventually(done).Should(BeClosed())
 
 		scheduled := root.entriesByMsg("scheduling component restart")
-		// The restart log scheduled right after the stable run carries
-		// lastError="after-stable" and must not inherit suppressed state from
-		// the prior burst.
-		var postStable *logEntry
-		for i := range scheduled {
-			if scheduled[i].tags["lastError"] == "after-stable" {
-				postStable = &scheduled[i]
-				break
-			}
+		start := slices.IndexFunc(scheduled, func(e logEntry) bool {
+			return e.tags["lastError"] == "after-stable"
+		})
+		Expect(start).To(BeNumerically(">=", 0))
+
+		// The new outage's first resilientLogSampleAfterAttempt entries must
+		// all be present with outage-local attempt counters 1..N and no
+		// suppressed counts from the prior outage.
+		Expect(len(scheduled)).To(BeNumerically(">=", start+resilientLogSampleAfterAttempt))
+		for i := range resilientLogSampleAfterAttempt {
+			entry := scheduled[start+i]
+			Expect(entry.tags).To(HaveKeyWithValue("attempt", uint64(i+1)))
+			Expect(entry.tags).ToNot(HaveKey("suppressed"))
 		}
-		Expect(postStable).ToNot(BeNil())
-		Expect(postStable.tags).ToNot(HaveKey("suppressed"))
 	})
 
 	It("clears lastError on the restart log after a clean exit", func() {
