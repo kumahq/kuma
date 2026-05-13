@@ -460,7 +460,6 @@ var _ = Describe("PodReconciler", func() {
 		Expect(actual).To(MatchYAML(`
         mesh: poc
         metadata:
-          creationTimestamp: null
           name: pod-with-kuma-sidecar-and-ip
           namespace: demo
           ownerReferences:
@@ -540,7 +539,6 @@ var _ = Describe("PodReconciler", func() {
 		Expect(actual).To(MatchYAML(`
         mesh: poc
         metadata:
-          creationTimestamp: null
           name: pod-with-kuma-sidecar-and-ip
           namespace: demo
           ownerReferences:
