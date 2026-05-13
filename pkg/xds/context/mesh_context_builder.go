@@ -258,7 +258,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	zonesWithMeshScopedProxy := map[string]bool{}
 	for _, mza := range resources.MeshZoneAddresses().Items {
-		if zone := mza.GetMeta().GetLabels()[mesh_proto.ZoneTag]; zone != "" {
+		if zone := core_model.ZoneOfResource(mza); zone != "" {
 			zonesWithMeshScopedProxy[zone] = true
 		}
 	}

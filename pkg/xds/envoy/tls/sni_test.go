@@ -196,7 +196,6 @@ var _ = Describe("SNI", func() {
 			Expect(sni).To(Equal(tc.expected))
 			Expect(govalidator.IsDNSName(sni)).To(BeTrue())
 		},
-		// MeshService — global (no zone, no namespace)
 		Entry("MeshService global", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -206,7 +205,6 @@ var _ = Describe("SNI", func() {
 			},
 			expected: "sni.msvc.default.backend.http",
 		}),
-		// MeshService — zone-originated, system namespace (zone set, no namespace)
 		Entry("MeshService zone system-ns", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -217,7 +215,6 @@ var _ = Describe("SNI", func() {
 			},
 			expected: "sni.msvc.default.east.backend.http",
 		}),
-		// MeshService — zone-originated, custom namespace
 		Entry("MeshService zone custom-ns", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -229,7 +226,6 @@ var _ = Describe("SNI", func() {
 			},
 			expected: "sni.msvc.default.east.app-ns.backend.http",
 		}),
-		// MeshExternalService — global
 		Entry("MeshExternalService global", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshexternalservice_api.MeshExternalServiceType,
@@ -239,7 +235,6 @@ var _ = Describe("SNI", func() {
 			},
 			expected: "sni.extsvc.default.ext-backend.9000",
 		}),
-		// MeshExternalService — zone-originated
 		Entry("MeshExternalService zone", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshexternalservice_api.MeshExternalServiceType,
@@ -250,7 +245,6 @@ var _ = Describe("SNI", func() {
 			},
 			expected: "sni.extsvc.prod.west.ext-backend.9000",
 		}),
-		// MeshMultiZoneService — global (MeshMultiZoneService never carries zone/namespace)
 		Entry("MeshMultiZoneService global", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshmzservice_api.MeshMultiZoneServiceType,
@@ -260,7 +254,6 @@ var _ = Describe("SNI", func() {
 			},
 			expected: "sni.mzsvc.default.global-svc.http",
 		}),
-		// MeshMultiZoneService — numeric port as sectionName
 		Entry("MeshMultiZoneService numeric port", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshmzservice_api.MeshMultiZoneServiceType,
@@ -270,7 +263,6 @@ var _ = Describe("SNI", func() {
 			},
 			expected: "sni.mzsvc.default.global-svc.8080",
 		}),
-		// Error: empty Mesh
 		Entry("error empty mesh", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -279,7 +271,6 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
-		// Error: empty Name
 		Entry("error empty name", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -288,7 +279,6 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
-		// Error: empty SectionName
 		Entry("error empty sectionName", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -297,7 +287,6 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
-		// Error: namespace set without zone
 		Entry("error namespace without zone", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -308,7 +297,6 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
-		// Error: mesh segment contains '.'
 		Entry("error mesh contains dot", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -318,7 +306,6 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
-		// Error: name segment contains '.'
 		Entry("error name contains dot", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -328,7 +315,6 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
-		// Error: zone segment contains '.'
 		Entry("error zone contains dot", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -339,7 +325,6 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
-		// Error: sectionName contains '.'
 		Entry("error sectionName contains dot", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,

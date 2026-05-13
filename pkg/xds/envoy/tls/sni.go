@@ -129,14 +129,14 @@ func ValidateSNIForKRI(id kri.Identifier) error {
 func buildSNISegments(id kri.Identifier) []string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	if err != nil {
-		panic(errors.Wrapf(err, "SNIFromKRI: unknown resource type %q", id.ResourceType))
+		panic(fmt.Sprintf("unknown resource type %s", id.ResourceType))
 	}
 	switch id.ResourceType {
 	case meshservice_api.MeshServiceType,
 		meshexternalservice_api.MeshExternalServiceType,
 		meshmzservice_api.MeshMultiZoneServiceType:
 	default:
-		panic(fmt.Sprintf("SNIFromKRI: resource type %q is not supported for SNI", id.ResourceType))
+		panic("resource type not supported for SNI")
 	}
 
 	segments := []string{sniFormatPrefix, desc.ShortName, id.Mesh}

@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
@@ -32,6 +33,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 )
+
+var log = core.Log.WithName("meshroute-clusters")
 
 func GenerateClusters(
 	proxy *core_xds.Proxy,

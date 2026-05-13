@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
@@ -22,6 +23,8 @@ import (
 	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 )
+
+var log = core.Log.WithName("zoneproxy-destinations")
 
 type MeshDestinations struct {
 	KumaIoServices map[string][]envoy_tags.Tags
