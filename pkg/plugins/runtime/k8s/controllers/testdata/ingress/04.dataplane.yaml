@@ -1,5 +1,4 @@
-metadata:
-  creationTimestamp: null
+metadata: {}
 spec:
   networking:
     address: 192.168.0.1

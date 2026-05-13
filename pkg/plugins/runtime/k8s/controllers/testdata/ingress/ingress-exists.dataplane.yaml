@@ -1,5 +1,4 @@
-metadata:
-  creationTimestamp: null
+metadata: {}
 spec:
   availableServices:
   - instances: 3
