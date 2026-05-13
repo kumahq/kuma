@@ -1,5 +1,4 @@
 metadata:
-  creationTimestamp: null
   labels:
     kuma.io/mesh: default
   name: example

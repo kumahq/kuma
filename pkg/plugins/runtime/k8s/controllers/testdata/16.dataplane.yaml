@@ -1,6 +1,5 @@
 mesh: default
-metadata:
-  creationTimestamp: null
+metadata: {}
 spec:
   networking:
     address: 10.244.0.8

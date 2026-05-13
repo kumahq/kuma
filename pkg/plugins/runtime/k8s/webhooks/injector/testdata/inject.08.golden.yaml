@@ -17,7 +17,6 @@ metadata:
     prometheus.io/path: /appmetrics
     prometheus.io/port: "5678"
     prometheus.io/scrape: "true"
-  creationTimestamp: null
   labels:
     run: busybox
   name: busybox
