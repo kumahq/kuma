@@ -1,6 +1,8 @@
 package component
 
 import (
+	"errors"
+	"fmt"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -9,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 )
 
 type logEntry struct {
@@ -167,6 +168,7 @@ var _ = Describe("resilientComponent", func() {
 		Expect(len(scheduled)).To(BeNumerically(">=", 3))
 
 		Expect(scheduled[0].tags).To(HaveKeyWithValue("attempt", uint64(1)))
+		Expect(scheduled[0].tags).To(HaveKey("generationID"))
 		Expect(scheduled[0].tags).To(HaveKey("sinceLastSuccess"))
 		Expect(scheduled[0].tags).To(HaveKey("nextBackoff"))
 		Expect(scheduled[0].tags).To(HaveKeyWithValue("lastError", "boom-1"))
@@ -208,7 +210,7 @@ var _ = Describe("resilientComponent", func() {
 		const failures = resilientLogSampleAfterAttempt + 7
 		errs := make([]error, failures)
 		for i := range errs {
-			errs[i] = errors.Errorf("err-%d", i)
+			errs[i] = fmt.Errorf("err-%d", i)
 		}
 		c := &scriptedComponent{script: scriptOfErrors(errs...)}
 		r := NewResilientComponent(log, c, 100*time.Microsecond, 1*time.Millisecond)
@@ -272,7 +274,7 @@ var _ = Describe("resilientComponent", func() {
 		// accumulates suppressed entries inside the same 10s window.
 		preBurst := make([]error, resilientLogSampleAfterAttempt*4)
 		for i := range preBurst {
-			preBurst[i] = errors.Errorf("pre-%d", i)
+			preBurst[i] = fmt.Errorf("pre-%d", i)
 		}
 		script := scriptOfErrors(preBurst...)
 		// Stable run >backoffMaxTime ends one outage and starts a new one.
@@ -285,7 +287,7 @@ var _ = Describe("resilientComponent", func() {
 		// suppressed by leftover nextSampledAt nor carrying suppressed counts.
 		postBurst := make([]error, resilientLogSampleAfterAttempt-1)
 		for i := range postBurst {
-			postBurst[i] = errors.Errorf("post-%d", i)
+			postBurst[i] = fmt.Errorf("post-%d", i)
 		}
 		script = append(script, scriptOfErrors(postBurst...)...)
 
@@ -319,7 +321,7 @@ var _ = Describe("resilientComponent", func() {
 		}
 	})
 
-	It("clears lastError on the restart log after a clean exit", func() {
+	It("skips the restart log on clean exit", func() {
 		log, root := newRecordingLogger()
 		stop := make(chan struct{})
 
@@ -341,9 +343,68 @@ var _ = Describe("resilientComponent", func() {
 		Eventually(done).Should(BeClosed())
 
 		scheduled := root.entriesByMsg("scheduling component restart")
-		Expect(len(scheduled)).To(BeNumerically(">=", 3))
+		// Only the transient-failure restart should emit; the two clean
+		// exits restart silently to avoid "restart with no error" noise.
+		Expect(scheduled).To(HaveLen(1))
 		Expect(scheduled[0].tags).To(HaveKeyWithValue("lastError", "transient"))
-		Expect(scheduled[1].tags).ToNot(HaveKey("lastError"))
-		Expect(scheduled[2].tags).ToNot(HaveKey("lastError"))
+	})
+
+	It("recovers from a panic in the wrapped component", func() {
+		log, root := newRecordingLogger()
+		stop := make(chan struct{})
+
+		c := &scriptedComponent{script: []func() error{
+			func() error { panic(errors.New("synthetic-panic")) },
+			func() error { panic("non-error-panic") },
+			func() error { return errors.New("after-panic") },
+		}}
+		r := NewResilientComponent(log, c, 1*time.Millisecond, 5*time.Millisecond)
+
+		done := make(chan struct{})
+		go func() {
+			defer GinkgoRecover()
+			defer close(done)
+			Expect(r.Start(stop)).To(Succeed())
+		}()
+		Eventually(c.calls.Load, "2s", "5ms").Should(BeNumerically(">=", int64(3)))
+		close(stop)
+		Eventually(done).Should(BeClosed())
+
+		terminated := root.entriesByMsg("component terminated with an error")
+		Expect(len(terminated)).To(BeNumerically(">=", 3))
+		errStr := func(e logEntry) string {
+			err, _ := e.tags["error"].(error)
+			if err == nil {
+				return ""
+			}
+			return err.Error()
+		}
+		Expect(errStr(terminated[0])).To(ContainSubstring("synthetic-panic"))
+		Expect(errStr(terminated[1])).To(ContainSubstring("non-error-panic"))
+		Expect(errStr(terminated[2])).To(ContainSubstring("after-panic"))
+	})
+
+	It("returns promptly when stop fires during the backoff sleep", func() {
+		log, _ := newRecordingLogger()
+		stop := make(chan struct{})
+
+		// Backoff window large enough to dominate any prompt-shutdown budget.
+		const backoff = 2 * time.Second
+		c := &scriptedComponent{script: scriptOfErrors(errors.New("trigger-backoff"))}
+		r := NewResilientComponent(log, c, backoff, backoff)
+
+		done := make(chan struct{})
+		go func() {
+			defer GinkgoRecover()
+			defer close(done)
+			Expect(r.Start(stop)).To(Succeed())
+		}()
+		Eventually(c.calls.Load, "2s", "5ms").Should(BeNumerically(">=", int64(1)))
+		// The component has returned its error; the wrapper is now in the
+		// backoff sleep. Closing stop must unblock it well before backoff fires.
+		closedAt := time.Now()
+		close(stop)
+		Eventually(done, "500ms").Should(BeClosed())
+		Expect(time.Since(closedAt)).To(BeNumerically("<", backoff))
 	})
 })

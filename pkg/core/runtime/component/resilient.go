@@ -79,16 +79,27 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 			suppressedLogs = 0
 			attempt = 0
 		}
+		// Clean exit: restart immediately without a sampled restart-log line
+		// and without a backoff delay. Operators read "scheduling restart"
+		// as "we hit a failure", so emitting it with no lastError is noise.
+		if lastError == nil {
+			select {
+			case <-stop:
+				r.log.Info("done")
+				return nil
+			default:
+				continue
+			}
+		}
 		dur, _ := backoff.Next()
 		attempt++
 		if attempt <= resilientLogSampleAfterAttempt || !time.Now().Before(nextSampledAt) {
 			fields := []any{
+				"generationID", generationID,
 				"attempt", attempt,
 				"sinceLastSuccess", time.Since(lastSuccess),
 				"nextBackoff", dur,
-			}
-			if lastError != nil {
-				fields = append(fields, "lastError", lastError.Error())
+				"lastError", lastError.Error(),
 			}
 			if suppressedLogs > 0 {
 				fields = append(fields, "suppressed", suppressedLogs)
@@ -102,7 +113,12 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 		} else {
 			suppressedLogs++
 		}
-		<-time.After(dur)
+		select {
+		case <-stop:
+			r.log.Info("done")
+			return nil
+		case <-time.After(dur):
+		}
 	}
 }
 
