@@ -20,14 +20,18 @@ import (
 // operator-managed labels (which must be preserved).
 const propagationTrackingPrefix = "kuma.io/pkey-"
 
-// trackingKeyHash returns an 8-hex-char fingerprint of labelKey. Storing the
+// trackingKeyHash returns a 16-hex-char fingerprint of labelKey. Storing the
 // hash in the label key (instead of the key name in the label value) avoids the
 // label-value character restriction: valid Kubernetes label keys can contain "/"
 // (e.g. "foo.example.com/bar") which is not allowed in label values, causing
 // such keys to be silently skipped and never cleaned up after DP removal.
+//
+// 16 hex chars (64 bits) keeps the suffix short while shrinking the collision
+// probability low enough that an unrelated external label cannot accidentally
+// match a tracking entry and get dropped during cleanup.
 func trackingKeyHash(labelKey string) string {
 	h := sha256.Sum256([]byte(labelKey))
-	return fmt.Sprintf("%x", h[:4]) // 8 hex chars, collision negligible for <1000 keys
+	return fmt.Sprintf("%x", h[:8]) // 16 hex chars, still short enough for a label key suffix
 }
 
 // addPropagationTracking clears any existing tracking labels in labels and

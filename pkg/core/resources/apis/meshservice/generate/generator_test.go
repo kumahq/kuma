@@ -618,6 +618,40 @@ var _ = Describe("MeshService generator", func() {
 			}, "2s", "100ms").Should(Succeed())
 		})
 
+		It("removes a propagated dotted-key Dataplane resource-label when DP stops carrying it", func() {
+			// Same regression as above but exercised via Dataplane metadata labels
+			// (the path reported in the linked issue) instead of inbound tags.
+			dp := builders.Dataplane().
+				WithAddress("127.0.0.1").
+				WithoutInbounds().
+				AddInbound(builders.Inbound().
+					WithPort(80).
+					WithServicePort(8080).
+					WithTags(map[string]string{mesh_proto.ServiceTag: "backend"}),
+				).
+				Build()
+			Expect(resManager.Create(context.Background(), dp,
+				store.CreateByKey("dp-1", model.DefaultMesh),
+				store.CreateWithLabels(map[string]string{"app.example.com/tier": "gold"}),
+			)).To(Succeed())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("app.example.com/tier", "gold"))
+			}, "2s", "100ms").Should(Succeed())
+
+			loaded := core_mesh.NewDataplaneResource()
+			Expect(resManager.Get(context.Background(), loaded, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
+			Expect(resManager.Update(context.Background(), loaded, store.UpdateWithLabels(map[string]string{}))).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).ToNot(HaveKey("app.example.com/tier"))
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("kuma.io/mesh", model.DefaultMesh))
+			}, "2s", "100ms").Should(Succeed())
+		})
+
 		It("does not Update when nothing changes between reconciles", func() {
 			err := samples.DataplaneBackendBuilder().Create(resManager)
 			Expect(err).ToNot(HaveOccurred())
