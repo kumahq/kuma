@@ -11,7 +11,6 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
@@ -167,16 +166,9 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		Resource: envoyAdminCluster,
 	})
 
-	var xdsEndpoint core_xds.Endpoint
-	if proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket) {
-		xdsEndpoint = core_xds.Endpoint{
-			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
-		}
-	} else {
-		xdsEndpoint = core_xds.Endpoint{
-			Target: adminAddress,
-			Port:   readinessPort,
-		}
+	xdsEndpoint := core_xds.Endpoint{
+		Target: adminAddress,
+		Port:   readinessPort,
 	}
 
 	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
