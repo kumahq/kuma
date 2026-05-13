@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -249,8 +249,8 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 
 func SniForBackendRef(
 	backendRef *resolve.RealResourceBackendRef,
-	dest core.Destination,
-	port core.Port,
+	dest core_resources.Destination,
+	port core_resources.Port,
 	systemNamespace string,
 ) string {
 	name := core_model.GetDisplayName(dest.GetMeta())
