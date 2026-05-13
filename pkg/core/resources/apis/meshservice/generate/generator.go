@@ -80,6 +80,8 @@ func New(
 		Name: "component_meshservice_generator_dropped_labels_total",
 		Help: "Number of Dataplane label/tag keys dropped during MeshService generation.",
 	}, []string{"reason"})
+	droppedLabels.WithLabelValues("invalid")
+	droppedLabels.WithLabelValues("inbound_conflict")
 	if err := metrics.Register(droppedLabels); err != nil {
 		return nil, err
 	}

@@ -689,7 +689,13 @@ var _ = Describe("MeshService generator", func() {
 			}, "2s", "100ms").Should(Succeed())
 		})
 
-		It("registers component_meshservice_generator_dropped_labels_total and increments by reason", func() {
+		It("registers component_meshservice_generator_dropped_labels_total before the first drop and increments by reason", func() {
+			for _, reason := range []string{"invalid", "inbound_conflict"} {
+				m := test_metrics.FindMetric(metrics, "component_meshservice_generator_dropped_labels_total", "reason", reason)
+				Expect(m).ToNot(BeNil())
+				Expect(m.GetCounter().GetValue()).To(Equal(0.0))
+			}
+
 			err := builders.Dataplane().WithName("dp-conflict").WithAddress("10.0.0.1").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).
