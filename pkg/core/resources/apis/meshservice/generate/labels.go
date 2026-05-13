@@ -1,8 +1,8 @@
 package generate
 
 import (
+	"crypto/sha256"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -20,38 +20,42 @@ import (
 // operator-managed labels (which must be preserved).
 const propagationTrackingPrefix = "kuma.io/pkey-"
 
+// trackingKeyHash returns an 8-hex-char fingerprint of labelKey. Storing the
+// hash in the label key (instead of the key name in the label value) avoids the
+// label-value character restriction: valid Kubernetes label keys can contain "/"
+// (e.g. "foo.example.com/bar") which is not allowed in label values, causing
+// such keys to be silently skipped and never cleaned up after DP removal.
+func trackingKeyHash(labelKey string) string {
+	h := sha256.Sum256([]byte(labelKey))
+	return fmt.Sprintf("%x", h[:4]) // 8 hex chars, collision negligible for <1000 keys
+}
+
 // addPropagationTracking clears any existing tracking labels in labels and
-// writes a new set recording which keys are present in propagated. Keys whose
-// names are not valid Kubernetes label values are silently skipped; they will
-// be treated as external on the next reconcile.
+// writes one tracking label per key in propagated. The key name is hashed into
+// the label key suffix so that qualified names with "/" are handled correctly.
 func addPropagationTracking(labels map[string]string, propagated map[string]string) {
 	for k := range labels {
 		if strings.HasPrefix(k, propagationTrackingPrefix) {
 			delete(labels, k)
 		}
 	}
-	keys := make([]string, 0, len(propagated))
 	for k := range propagated {
-		if len(validation.IsValidLabelValue(k)) == 0 {
-			keys = append(keys, k)
-		}
-	}
-	sort.Strings(keys)
-	for i, k := range keys {
-		labels[fmt.Sprintf("%s%d", propagationTrackingPrefix, i)] = k
+		labels[propagationTrackingPrefix+trackingKeyHash(k)] = ""
 	}
 }
 
-// extractPropagatedKeys returns the set of non-system label keys that were
-// written by the previous propagation cycle, as recorded by tracking labels.
-func extractPropagatedKeys(labels map[string]string) map[string]bool {
-	out := map[string]bool{}
-	for k, v := range labels {
+// extractPropagatedKeys returns a function that reports whether a given label
+// key was recorded as propagated in the previous reconcile cycle.
+func extractPropagatedKeys(labels map[string]string) func(string) bool {
+	hashes := map[string]bool{}
+	for k := range labels {
 		if strings.HasPrefix(k, propagationTrackingPrefix) {
-			out[v] = true
+			hashes[k[len(propagationTrackingPrefix):]] = true
 		}
 	}
-	return out
+	return func(key string) bool {
+		return hashes[trackingKeyHash(key)]
+	}
 }
 
 // dpContribution computes the non-system labels for an auto-generated

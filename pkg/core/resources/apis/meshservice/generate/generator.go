@@ -280,7 +280,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 				if mesh_proto.IsReservedLabelKey(k) {
 					continue
 				}
-				if prevPropagated[k] {
+				if prevPropagated(k) {
 					continue
 				}
 				if _, inDesired := desired[k]; !inDesired {
