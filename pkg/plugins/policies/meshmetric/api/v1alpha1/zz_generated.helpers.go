@@ -13,7 +13,7 @@ func (x *MeshMetric) GetTargetRef() common_api.TargetRef {
 	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 }
 
-func (x *MeshMetric) GetDefault() any {
+func (x *MeshMetric) GetDefault() interface{} {
 	return x.Default
 }
 
