@@ -18,12 +18,34 @@ func dpContribution(
 	dp *core_mesh.DataplaneResource,
 	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
 	allowSet map[string]struct{},
-	metric prometheus.Counter,
+	droppedLabels *prometheus.CounterVec,
 	log logr.Logger,
+	service string,
 ) map[string]string {
 	out := map[string]string{}
 	if dp == nil {
 		return out
+	}
+
+	drop := func(reason, key string) {
+		droppedLabels.WithLabelValues(reason).Inc()
+		log.Info("dropping label during MeshService generation",
+			"reason", reason,
+			"service", service,
+			"dataplane", dp.GetMeta().GetName(),
+			"mesh", dp.GetMeta().GetMesh(),
+			"key", key,
+		)
+	}
+
+	debugDrop := func(reason, key string) {
+		log.V(1).Info("dropping label during MeshService generation",
+			"reason", reason,
+			"service", service,
+			"dataplane", dp.GetMeta().GetName(),
+			"mesh", dp.GetMeta().GetMesh(),
+			"key", key,
+		)
 	}
 
 	// Step 1: cross-inbound consensus on non-reserved tags.
@@ -52,25 +74,21 @@ func dpContribution(
 	// Step 2: validate and write consensus values.
 	for k, e := range consensus {
 		if e.drop {
-			metric.Inc()
-			log.V(1).Info("dropping inbound tag — intra-DP disagreement", "key", k, "dp", dp.Meta.GetName())
+			drop("inbound_conflict", k)
 			continue
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				metric.Inc()
-				log.V(1).Info("dropping inbound tag not in allow-list", "key", k, "dp", dp.Meta.GetName())
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
 		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid label key", "key", k, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		if errs := validation.IsValidLabelValue(e.value); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid label value", "key", k, "value", e.value, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		out[k] = e.value
@@ -83,19 +101,16 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				metric.Inc()
-				log.V(1).Info("dropping DP label not in allow-list", "key", k, "dp", dp.Meta.GetName())
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
 		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid DP label key", "key", k, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid DP label value", "key", k, "value", v, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		out[k] = v
