@@ -102,8 +102,7 @@ var _ = Describe("Defaulter", func() {
               "apiVersion": "kuma.io/v1alpha1",
               "kind": "Mesh",
               "metadata": {
-				"name": "empty",
-				"creationTimestamp": null
+				"name": "empty"
               },
               "spec": {
 				"metrics": {
@@ -122,7 +121,6 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null,
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -155,8 +153,7 @@ var _ = Describe("Defaulter", func() {
               "apiVersion": "kuma.io/v1alpha1",
               "kind": "Mesh",
               "metadata": {
-				"name": "empty",
-				"creationTimestamp": null
+				"name": "empty"
               },
               "spec": {
 				"metrics": {
@@ -178,7 +175,6 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null,
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -213,7 +209,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/mesh": "my-mesh-1"
                 }
@@ -228,7 +223,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/mesh": "my-mesh-1",
                   "k8s.kuma.io/namespace": "example"
@@ -251,7 +245,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "zone"
                 }
@@ -268,7 +261,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
@@ -296,8 +288,7 @@ var _ = Describe("Defaulter", func() {
               "kind": "MeshTrafficPermission",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               },
               "spec": {
                 "targetRef": {}
@@ -311,7 +302,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
@@ -340,7 +330,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "global"
                 }
@@ -357,7 +346,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "global"
@@ -381,8 +369,7 @@ var _ = Describe("Defaulter", func() {
               "kind": "MeshTrafficPermission",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               },
               "spec": {
                 "targetRef": {}
@@ -396,7 +383,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
@@ -425,8 +411,7 @@ var _ = Describe("Defaulter", func() {
               "mesh":"demo",
               "metadata":{
                 "namespace":"example",
-                "name":"empty",
-                "creationTimestamp":null
+                "name":"empty"
               },
               "spec":{
                 "networking": {
@@ -450,7 +435,6 @@ var _ = Describe("Defaulter", func() {
               "metadata":{
                 "namespace":"example",
                 "name":"empty",
-                "creationTimestamp":null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "demo",
@@ -486,8 +470,7 @@ var _ = Describe("Defaulter", func() {
               "kind": "MeshTrafficPermission",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               },
               "spec": {
                 "targetRef": {}
@@ -501,7 +484,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
@@ -527,7 +509,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "kuma-system",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
@@ -546,7 +527,6 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
                 "namespace": "kuma-system",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",

@@ -1,6 +1,5 @@
 mesh: default
-metadata:
-  creationTimestamp: null
+metadata: {}
 spec:
   metrics:
     conf:
