@@ -9,7 +9,6 @@ import (
 )
 
 var _ = Describe("validation", func() {
-
 	DescribeErrorCases(
 		api.NewMeshLoadBalancingStrategyResource,
 		ErrorCases(
