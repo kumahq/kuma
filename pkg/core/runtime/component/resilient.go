@@ -8,6 +8,11 @@ import (
 	"github.com/sethvargo/go-retry"
 )
 
+const (
+	resilientLogSampleAfterAttempt = 5
+	resilientLogSampleWindow       = 10 * time.Second
+)
+
 type resilientComponent struct {
 	log             logr.Logger
 	component       Component
@@ -25,14 +30,22 @@ func NewResilientComponent(log logr.Logger, component Component, backoffBaseTime
 }
 
 func (r *resilientComponent) Start(stop <-chan struct{}) error {
-	r.log.Info("starting resilient component ...")
+	r.log.Info("starting resilient component")
 	backoff := r.newBackoff()
+	var (
+		lastError      error
+		lastSuccess    = time.Now()
+		nextSampledAt  time.Time
+		suppressedLogs uint64
+		// attempt counts restarts within the current outage and drives sampling.
+		// generationID stays monotonic across stable-run boundaries for cross-outage tracing.
+		attempt uint64
+	)
 	for generationID := uint64(1); ; generationID++ {
 		lastStart := time.Now()
 		errCh := make(chan error, 1)
 		go func(errCh chan<- error) {
 			defer close(errCh)
-			// recover from a panic
 			defer func() {
 				if e := recover(); e != nil {
 					if err, ok := e.(error); ok {
@@ -42,7 +55,6 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 					}
 				}
 			}()
-
 			errCh <- r.component.Start(stop)
 		}(errCh)
 		select {
@@ -51,21 +63,62 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 			return nil
 		case err := <-errCh:
 			if err != nil {
-				// TODO: add per-name rate limiting here analogous to panicLogLimiter in runComponent;
-				// resilientComponent logs every restart, so a tight panic loop produces unbounded log volume.
+				lastError = err
 				r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
+			} else {
+				// Clean exit: don't carry a prior failure into the next restart log.
+				lastError = nil
 			}
 		}
 		if time.Since(lastStart) > r.backoffMaxTime {
-			// reset backoff so in a case of event with the following steps
-			// 1) Component is unhealthy until max backoff is reached
-			// 2) Component is healthy for at least backoff max time
-			// 3) Component is unhealthy
-			// We start backoff from the beginning
+			// Stable run ended: reset backoff, success baseline, and sampling
+			// state so a new outage starts fresh.
 			backoff = r.newBackoff()
+			lastSuccess = time.Now()
+			nextSampledAt = time.Time{}
+			suppressedLogs = 0
+			attempt = 0
+		}
+		// Clean exit: restart immediately without a sampled restart-log line
+		// and without a backoff delay. Operators read "scheduling restart"
+		// as "we hit a failure", so emitting it with no lastError is noise.
+		if lastError == nil {
+			select {
+			case <-stop:
+				r.log.Info("done")
+				return nil
+			default:
+				continue
+			}
 		}
 		dur, _ := backoff.Next()
-		<-time.After(dur)
+		attempt++
+		if attempt <= resilientLogSampleAfterAttempt || !time.Now().Before(nextSampledAt) {
+			fields := []any{
+				"generationID", generationID,
+				"attempt", attempt,
+				"sinceLastSuccess", time.Since(lastSuccess),
+				"nextBackoff", dur,
+				"lastError", lastError.Error(),
+			}
+			if suppressedLogs > 0 {
+				fields = append(fields, "suppressed", suppressedLogs)
+				suppressedLogs = 0
+			}
+			r.log.Info("scheduling component restart", fields...)
+			// Arm the sampling window once we've hit the burst threshold.
+			if attempt >= resilientLogSampleAfterAttempt {
+				nextSampledAt = time.Now().Add(resilientLogSampleWindow)
+			}
+		} else {
+			suppressedLogs++
+		}
+		select {
+		case <-stop:
+			r.log.Info("done")
+			return nil
+		case <-time.After(dur):
+		}
 	}
 }
 
