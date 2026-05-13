@@ -418,7 +418,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if readinessAddr == "" {
 				// When admin is on UDS, bind readiness reporter so K8s
 				// probes (podIP) and PostStart hooks (localhost) can
-				// reach /ready. Only /ready is served on this listener.
+				// reach /ready. In that mode the reporter also reverse-
+				// proxies read-only Envoy admin endpoints on this listener
+				// (mutating endpoints are blocked); see readiness.Reporter.
 				readinessAddr = "0.0.0.0"
 				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
 					readinessAddr = "::"
