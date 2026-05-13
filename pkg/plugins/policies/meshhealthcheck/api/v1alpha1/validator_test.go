@@ -106,6 +106,18 @@ to:
       tcp: # it will pick the protocol as described in 'protocol selection' section
         disabled: true # new, default false, can be disabled for override
 `),
+			Entry("top level Dataplane to MeshExternalService", `
+targetRef:
+  kind: Dataplane
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: external
+    default:
+      interval: 10s
+      tcp:
+        disabled: true
+`),
 		)
 
 		type testCase struct {

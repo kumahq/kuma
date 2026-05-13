@@ -73,11 +73,10 @@ func TestZoneProxyConfig(inputFile string) {
 		Expect(universal.Cluster.Install(YamlUniversal(string(input)))).To(Succeed())
 	}
 
-	// time.Sleep(1 * time.Hour)
 	// then
 	Eventually(func(g Gomega) {
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-demo-client.golden.json", 1)))
-		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxytest-server.golden.json", 1)))
+		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-test-server.golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-ingress")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-ingress.golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-egress")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-egress.golden.json", 1)))
 	}).Should(Succeed())

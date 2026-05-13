@@ -67,7 +67,7 @@ func (p *ProxyConfigInspector) Get(ctx context.Context, name string, shadow bool
 		return nil, err
 	}
 
-	if identity, _ := meshidentity_api.BestMatched(proxy.Dataplane.GetMeta().GetLabels(), p.meshContext.Resources.MeshIdentities().Items); identity != nil && identity.Status.IsInitialized() {
+	if identity, _ := meshidentity_api.BestMatched(proxy.Dataplane.GetMeta().GetLabels(), p.meshContext.Resources.MeshIdentities().Items); identity != nil && identity.Status != nil && identity.Status.IsInitialized() {
 		proxy.WorkloadIdentity = dummyIdentity(identity)
 	}
 
