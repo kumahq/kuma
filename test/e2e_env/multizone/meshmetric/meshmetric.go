@@ -83,13 +83,17 @@ spec:
 	// `inlineString` body of the `_kuma:dynamicconfig` listener's direct
 	// response, so a substring search over the marshaled listeners is enough
 	// to assert on the contract without walking the proto structure.
-	dynConfigJSON := func(appName string) string {
+	// g must come from an Eventually callback so that failures are retryable.
+	dynConfigJSON := func(g Gomega, appName string) string {
 		GinkgoHelper()
 		tnl := multizone.UniZone1.GetAppEnvoyTunnel(appName)
 		cd, err := tnl.GetConfigDump()
-		Expect(err).ToNot(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
+		if cd == nil {
+			return ""
+		}
 		raw, err := util_proto.ToJSON(&cd.Listeners)
-		Expect(err).ToNot(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 		return string(raw)
 	}
 
@@ -99,7 +103,7 @@ spec:
 
 		// then — zone-egress
 		Eventually(func(g Gomega) {
-			payload := dynConfigJSON("zone-proxy-egress")
+			payload := dynConfigJSON(g, "zone-proxy-egress")
 			// MeshMetric reached the proxy and emitted the dynconf listener.
 			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
 			// applications[] must be cleared on a zone-proxy-only DPP.
@@ -116,7 +120,7 @@ spec:
 
 		// then — zone-ingress
 		Eventually(func(g Gomega) {
-			payload := dynConfigJSON("zone-proxy-ingress")
+			payload := dynConfigJSON(g, "zone-proxy-ingress")
 			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
 			g.Expect(payload).To(ContainSubstring(`"applications":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
