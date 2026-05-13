@@ -1,6 +1,5 @@
 mesh: default
 metadata:
-  creationTimestamp: null
   labels:
     app: kuma-egress
     k8s.kuma.io/namespace: kuma-system
