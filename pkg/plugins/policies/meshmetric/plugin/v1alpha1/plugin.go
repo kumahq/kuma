@@ -47,7 +47,55 @@ const (
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
 	WorkloadAttributeKey         = "kuma.workload"
+	ProxyRoleAttributeKey        = "kuma.proxy_role"
+
+	// ProxyRole* are stable enumerated values for the kuma.proxy_role metric label.
+	// Dashboards, alerts, and downstream consumers may key off these strings, so
+	// treat any rename or value change as a breaking metric-contract change.
+	ProxyRoleSidecar     = "sidecar"
+	ProxyRoleZoneEgress  = "zone-egress"
+	ProxyRoleZoneIngress = "zone-ingress"
+	ProxyRoleZoneProxy   = "zone-proxy"
+	ProxyRoleGateway     = "gateway"
+	ProxyRoleMixed       = "mixed"
 )
+
+func deriveProxyRole(networking *mesh_proto.Dataplane_Networking) string {
+	if networking == nil {
+		return ProxyRoleSidecar
+	}
+	hasInbounds := len(networking.GetInbound()) > 0
+	hasGateway := networking.GetGateway() != nil
+	// Gateway precedence: a Dataplane is not allowed to combine a gateway block with
+	// zone proxy listeners (schema-level constraint), so this branch wins unambiguously.
+	if hasGateway {
+		return ProxyRoleGateway
+	}
+	if !networking.HasZoneProxyListeners() {
+		return ProxyRoleSidecar
+	}
+	if hasInbounds {
+		return ProxyRoleMixed
+	}
+	var hasIngress, hasEgress bool
+	for _, l := range networking.GetListeners() {
+		switch l.Type {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			hasIngress = true
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			hasEgress = true
+		}
+	}
+	switch {
+	case hasIngress && hasEgress:
+		return ProxyRoleZoneProxy
+	case hasIngress:
+		return ProxyRoleZoneIngress
+	case hasEgress:
+		return ProxyRoleZoneEgress
+	}
+	return ProxyRoleSidecar
+}
 
 type plugin struct{}
 
@@ -67,7 +115,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	conf := sanitizeConfForProxy(policies.SingleItemRules.Rules[0].Conf.(api.Conf), proxy)
+	rule := policies.SingleItemRules.Rules[0]
+	policyNames := make([]string, 0, len(rule.Origin))
+	for _, o := range rule.Origin {
+		policyNames = append(policyNames, o.GetName())
+	}
+	conf := sanitizeConfForProxy(rule.Conf.(api.Conf), proxy, policyNames)
 
 	if len(pointer.Deref(conf.Backends)) == 0 {
 		return nil
@@ -308,8 +361,14 @@ func createDynamicConfig(
 	if zone := proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.ZoneTag]; zone != "" {
 		extraLabels["zone"] = zone
 	}
-	if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
-		extraLabels[WorkloadAttributeKey] = workloadName
+	isZoneProxyOnly := proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly()
+	extraLabels[ProxyRoleAttributeKey] = deriveProxyRole(proxy.Dataplane.Spec.GetNetworking())
+	// Zone-proxy-only Dataplanes have no co-located workload, so kuma.workload is not meaningful.
+	// kuma.proxy_role identifies the proxy's purpose instead.
+	if !isZoneProxyOnly {
+		if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
+			extraLabels[WorkloadAttributeKey] = workloadName
+		}
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
@@ -318,11 +377,17 @@ func createDynamicConfig(
 			service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
 			// A zone-proxy-only Dataplane has no service tag, so IdentifyingName falls back to "unknown".
 			// Use the Dataplane name instead, which is stable and uniquely identifies the proxy.
-			if service == mesh_proto.ServiceUnknown && proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
+			if service == mesh_proto.ServiceUnknown && isZoneProxyOnly {
 				service = proxy.Dataplane.GetMeta().GetName()
 			}
 			extraLabels["service"] = service
 		}
+	} else if isZoneProxyOnly {
+		// Unified-naming mode strips most identity labels; zone-proxy-only DPPs need
+		// per-proxy identification so dashboards can drill down to an individual
+		// ingress/egress. Emit the DP name as 'dataplane' (kuma.workload is
+		// intentionally not used — there is no co-located workload).
+		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 	}
 
 	return dpapi.MeshMetricDpConfig{
@@ -418,7 +483,8 @@ func backendNameFrom(endpoint string) string {
 
 // sanitizeConfForProxy drops config fields that are meaningless on the target proxy shape.
 // Applications is irrelevant on a zone-proxy-only DPP (no co-located workload); see MADR-103 group 4.
-func sanitizeConfForProxy(conf api.Conf, proxy *core_xds.Proxy) api.Conf {
+// policyNames is used for log attribution only.
+func sanitizeConfForProxy(conf api.Conf, proxy *core_xds.Proxy, policyNames []string) api.Conf {
 	if proxy.Dataplane == nil {
 		return conf
 	}
@@ -431,6 +497,7 @@ func sanitizeConfForProxy(conf api.Conf, proxy *core_xds.Proxy) api.Conf {
 	log.Info("ignoring 'applications' on zone-proxy-only Dataplane; field has no effect (MADR-103 group 4)",
 		"dataplane", proxy.Dataplane.GetMeta().GetName(),
 		"mesh", proxy.Dataplane.GetMeta().GetMesh(),
+		"policy", strings.Join(policyNames, ","),
 	)
 	conf.Applications = nil
 	return conf

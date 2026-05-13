@@ -140,7 +140,7 @@ func (t *MeshMetricResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *MeshMetricResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+	if v, ok := any(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()
