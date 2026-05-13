@@ -49,6 +49,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15006
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         destinationPort: 8080
@@ -69,6 +70,7 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15006
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         destinationPort: 8080
