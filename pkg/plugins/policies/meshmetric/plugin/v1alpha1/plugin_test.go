@@ -614,12 +614,53 @@ var _ = Describe("MeshMetric", func() {
 			// service label falls back to dataplane name (not "unknown").
 			Expect(body).To(ContainSubstring(`"service":"zone-egress-1"`))
 			Expect(body).ToNot(ContainSubstring(`"service":"unknown"`))
+			// dataplane label identifies the individual DPP.
+			Expect(body).To(ContainSubstring(`"dataplane":"zone-egress-1"`))
+			// proxy_role identifies the zone egress.
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
+			// kuma.workload is not set on zone-proxy-only Dataplanes (no co-located workload).
+			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
 		})
 
 		It("zone-ingress-only: uses dataplane name as service label", func() {
 			body := applyAndExtractDynconfBody(buildProxy(zoneIngressOnlyDataplane("zone-ingress-1"), "zone-ingress-1"))
 			Expect(body).To(ContainSubstring(`"service":"zone-ingress-1"`))
 			Expect(body).ToNot(ContainSubstring(`"service":"unknown"`))
+			Expect(body).To(ContainSubstring(`"dataplane":"zone-ingress-1"`))
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-ingress"`))
+			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
+		})
+
+		It("zone-proxy DPP with applications=nil does not emit the ignore-warning path", func() {
+			// Pin the sanitize guard: when applications is empty, sanitizeConfForProxy
+			// must return early so a future refactor cannot accidentally log on every Apply.
+			noAppsProxy := xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithDataplane(zoneEgressOnlyDataplane("zone-egress-1")).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Conf: api.Conf{
+									Applications: nil,
+									Backends: &[]api.Backend{
+										{
+											Type:       api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build()
+			body := applyAndExtractDynconfBody(noAppsProxy)
+			// No applications in payload, service still resolves to DP name.
+			Expect(body).ToNot(ContainSubstring("my-app"))
+			Expect(body).To(ContainSubstring(`"service":"zone-egress-1"`))
 		})
 
 		It("mixed inbound + zone-egress: preserves applications and uses inbound service tag", func() {
@@ -631,6 +672,60 @@ var _ = Describe("MeshMetric", func() {
 			Expect(body).To(ContainSubstring("my-app"))
 			// service label resolves to the inbound's service tag, not "unknown" or the DP name.
 			Expect(body).To(ContainSubstring(`"service":"backend"`))
+			// proxy_role identifies the hybrid shape.
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"mixed"`))
+		})
+
+		It("mixed inbound + zone-egress with workload label: keeps kuma.workload", func() {
+			dp := mixedInboundAndZoneEgressDataplane().WithLabels(workloadLabels())
+			body := applyAndExtractDynconfBody(buildProxy(dp, "backend"))
+			// Workload identity is co-located, so kuma.workload is preserved.
+			Expect(body).To(ContainSubstring(`"kuma.workload":"backend"`))
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"mixed"`))
+		})
+
+		It("zone-egress-only in unified-naming mode: emits dataplane label for per-DPP drill-down", func() {
+			ctx := *xds_builders.Context().WithMeshBuilder(
+				samples.MeshDefaultBuilder().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			).Build()
+			proxy := xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					WorkDir: "/tmp",
+					Features: map[string]bool{
+						xds_types.FeatureUnifiedResourceNaming: true,
+					},
+				}).
+				WithDataplane(zoneEgressOnlyDataplane("zone-egress-1")).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Conf: api.Conf{
+									Backends: &[]api.Backend{
+										{
+											Type:       api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build()
+			resources := core_xds.NewResourceSet()
+			plug := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plug.Apply(resources, ctx, proxy)).To(Succeed())
+			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			body := string(listeners)
+			// In unified-naming mode zone-proxy-only DPPs still need per-DPP identification.
+			Expect(body).To(ContainSubstring(`"dataplane":"zone-egress-1"`))
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
+			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
 		})
 	})
 
@@ -807,4 +902,64 @@ var _ = Describe("MeshMetric", func() {
 			Expect(string(clusters)).To(ContainSubstring("inline-collector"))
 		})
 	})
+
+	DescribeTable("deriveProxyRole",
+		func(networking *mesh_proto.Dataplane_Networking, expected string) {
+			Expect(v1alpha1.DeriveProxyRole(networking)).To(Equal(expected))
+		},
+		Entry("nil networking", (*mesh_proto.Dataplane_Networking)(nil), v1alpha1.ProxyRoleSidecar),
+		Entry("inbounds only",
+			&mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
+			},
+			v1alpha1.ProxyRoleSidecar,
+		),
+		Entry("gateway",
+			&mesh_proto.Dataplane_Networking{
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
+			},
+			v1alpha1.ProxyRoleGateway,
+		),
+		Entry("gateway with inbounds (gateway wins)",
+			&mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
+			},
+			v1alpha1.ProxyRoleGateway,
+		),
+		Entry("zone ingress only",
+			&mesh_proto.Dataplane_Networking{
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneIngress},
+				},
+			},
+			v1alpha1.ProxyRoleZoneIngress,
+		),
+		Entry("zone egress only",
+			&mesh_proto.Dataplane_Networking{
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
+				},
+			},
+			v1alpha1.ProxyRoleZoneEgress,
+		),
+		Entry("both ingress and egress",
+			&mesh_proto.Dataplane_Networking{
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneIngress},
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
+				},
+			},
+			v1alpha1.ProxyRoleZoneProxy,
+		),
+		Entry("inbounds with zone egress (mixed)",
+			&mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
+				},
+			},
+			v1alpha1.ProxyRoleMixed,
+		),
+	)
 })
