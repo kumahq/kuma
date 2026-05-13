@@ -1,0 +1,19 @@
+InboundRules:
+  1.1.1.1:10002:
+  - conf:
+      default:
+        allow:
+        - spiffeID:
+            type: Exact
+            value: spiffe://mesh-1/dp-1
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtp_mesh-1___mtp-listener_
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-listener
+        type: MeshTrafficPermission
+      RuleIndex: 0
+Rules:
+  1.1.1.1:10002: []
