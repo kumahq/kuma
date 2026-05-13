@@ -51,7 +51,7 @@ networking:
 		Expect(YamlUniversal(dp)(universal.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			labels, err := GetMeshServiceLabels(universal.Cluster, meshName, serviceTag)
+			labels, err := GetMeshServiceLabels(universal.Cluster, serviceTag, meshName)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			g.Expect(labels).To(HaveKeyWithValue("color", "blue"))
@@ -87,12 +87,36 @@ networking:
 		Expect(YamlUniversal(dpUpdated)(universal.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			labels, err := GetMeshServiceLabels(universal.Cluster, meshName, serviceTag)
+			labels, err := GetMeshServiceLabels(universal.Cluster, serviceTag, meshName)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(labels).To(HaveKeyWithValue("team", "platform"))
 			g.Expect(labels).ToNot(HaveKeyWithValue("team", "payments"))
 			g.Expect(labels).To(HaveKeyWithValue("tier", "backend"))
 			g.Expect(labels).To(HaveKeyWithValue("color", "blue"))
+		}, "60s", "2s").Should(Succeed())
+	})
+
+	It("removes propagated labels when the Dataplane stops contributing them", func() {
+		dpUpdated := `
+type: Dataplane
+mesh: lp-mesh
+name: lp-dp-1
+networking:
+  address: 192.168.10.10
+  inbound:
+  - port: 80
+    tags:
+      kuma.io/service: lp-svc
+      kuma.io/protocol: http
+`
+		Expect(YamlUniversal(dpUpdated)(universal.Cluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			labels, err := GetMeshServiceLabels(universal.Cluster, serviceTag, meshName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(labels).ToNot(HaveKey("team"))
+			g.Expect(labels).ToNot(HaveKey("tier"))
+			g.Expect(labels).ToNot(HaveKey("color"))
 		}, "60s", "2s").Should(Succeed())
 	})
 }
