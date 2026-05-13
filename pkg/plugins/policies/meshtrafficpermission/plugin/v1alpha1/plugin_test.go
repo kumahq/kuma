@@ -3,6 +3,7 @@ package v1alpha1_test
 import (
 	"path"
 
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -264,6 +265,117 @@ var _ = Describe("RBAC", func() {
 			bytes, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "matching-api.golden.yaml")))
+		})
+	})
+
+	Context("for DPP with ZoneEgress listener", func() {
+		buildZEListener := func(address string, port uint32, name string) func() *core_xds.Resource {
+			return func() *core_xds.Resource {
+				listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, address, port, core_xds.SocketAddressProtocolTCP).
+					WithOverwriteName(name).
+					Configure(
+						listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "mes-1").Configure(
+							listeners.MatchTransportProtocol("tls"),
+							listeners.MatchServerNames("sni.mes-1.default.zone-1.aws.8443"),
+							listeners.DownstreamTlsContext(&envoy_tls.DownstreamTlsContext{}),
+							listeners.TCPProxy("mes-1"),
+						)),
+						listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "mes-2").Configure(
+							listeners.MatchTransportProtocol("tls"),
+							listeners.MatchServerNames("sni.mes-2.default.zone-1.aws.8444"),
+							listeners.DownstreamTlsContext(&envoy_tls.DownstreamTlsContext{}),
+							listeners.HttpConnectionManager("mes-2", false, nil, false),
+						)),
+					).
+					Build()
+				Expect(err).ToNot(HaveOccurred())
+				return &core_xds.Resource{
+					Name:     name,
+					Origin:   metadata.OriginEgress,
+					Resource: listener,
+				}
+			}
+		}
+
+		It("should apply deny-by-default RBAC when no MTP selects the ZE listener", func() {
+			// given
+			rs := core_xds.NewResourceSet()
+			rs.Add(buildZEListener("192.168.0.1", 10002, "ze-listener")())
+
+			ctx := xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				Build()
+
+			proxy := xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
+				Build()
+
+			// when
+			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
+
+			// then
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
+			Expect(err).ToNot(HaveOccurred())
+			bytes, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-ze-listener-no-mtp.golden.yaml")))
+		})
+
+		It("should apply MTP RBAC rules to all ZE listener filter chains", func() {
+			// given
+			rs := core_xds.NewResourceSet()
+			rs.Add(buildZEListener("192.168.0.1", 10002, "ze-listener")())
+
+			ctx := xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				Build()
+
+			proxy := xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
+							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+								{Address: "192.168.0.1", Port: 10002}: {
+									{
+										Conf: &policies_api.Rule{
+											Default: policies_api.RuleConf{
+												Allow: &[]common_api.Match{
+													{
+														SNI: &common_api.SNIMatch{
+															Type:  common_api.SNIExactMatchType,
+															Value: "sni.mes-1.default.zone-1.aws.8443",
+														},
+													},
+												},
+											},
+										},
+										Origin: common.Origin{
+											Resource: &test_model.ResourceMeta{
+												Mesh: "mesh-1",
+												Name: "mtp-1",
+											},
+										},
+									},
+								},
+							},
+						}),
+				).
+				Build()
+
+			// when
+			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
+
+			// then
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
+			Expect(err).ToNot(HaveOccurred())
+			bytes, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-ze-listener-with-mtp.golden.yaml")))
 		})
 	})
 

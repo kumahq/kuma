@@ -53,6 +53,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
+	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
+
+	if err := p.configureZoneEgressListeners(rs, mtp); err != nil {
+		return err
+	}
+
 	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
@@ -60,7 +66,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin != metadata.OriginInbound {
 			continue
@@ -121,6 +126,33 @@ func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key cor
 		}
 		if err := configurer.Configure(filterChain); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (p plugin) configureZoneEgressListeners(rs *core_xds.ResourceSet, mtp core_xds.TypedMatchingPolicies) error {
+	for _, res := range rs.Resources(envoy_resource.ListenerType) {
+		if res.Origin != metadata.OriginEgress {
+			continue
+		}
+		listener := res.Resource.(*envoy_listener.Listener)
+		dpAddress := listener.GetAddress().GetSocketAddress()
+		key := core_rules.InboundListener{
+			Address: dpAddress.GetAddress(),
+			Port:    dpAddress.GetPortValue(),
+		}
+		configurer := &v3.RBACConfigurer{
+			StatsName:    res.Name,
+			InboundRules: mtp.FromRules.InboundRules[key],
+		}
+		for _, filterChain := range listener.FilterChains {
+			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+				continue
+			}
+			if err := configurer.Configure(filterChain); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
