@@ -29,6 +29,7 @@ import (
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
@@ -1138,6 +1139,31 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 				}},
 			},
 			goldenFile: "zone-egress-only-zipkin",
+		}),
+		// When the kuma.io/workload label is set (K8s pod-to-Dataplane mapping
+		// always populates it for zone-proxy DPPs), the unknown-fallback should
+		// prefer the workload name over Dataplane.Name. The Dataplane.Name on K8s
+		// is the pod name (includes pod-hash + random suffix) and churns on every
+		// rollout; the workload label is stable across restarts.
+		Entry("zone-egress-only datadog with workload label", testCase{
+			dp: zoneEgressOnlyDataplane().WithLabels(map[string]string{
+				k8s_metadata.KumaWorkload: "kuma-default-egress",
+			}),
+			resources: []core_xds.Resource{zoneEgressListenerResource()},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							Datadog: &api.DatadogBackend{
+								Url:          "http://datadog-collector.mesh-observability:8126",
+								SplitService: true,
+							},
+						}},
+					},
+				}},
+			},
+			goldenFile: "zone-egress-only-datadog-workload-label",
 		}),
 	)
 })

@@ -11,6 +11,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
@@ -37,7 +38,10 @@ import (
 	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshTrace")
+)
 
 type plugin struct{}
 
@@ -165,6 +169,9 @@ func applyToZoneProxyListeners(ctx xds_context.Context, rules core_rules.SingleI
 		}
 		res, ok := listenerRes[name]
 		if !ok {
+			log.V(1).Info("zone-proxy listener declared on Dataplane but missing from xDS; skipping tracing for this chain",
+				"dataplane", proxy.Dataplane.GetMeta().GetName(),
+				"listener", name)
 			continue
 		}
 		listener, ok := res.Resource.(*envoy_listener.Listener)
@@ -206,9 +213,14 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
 	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
-	// Use the Dataplane name so span service names stay stable.
+	// Prefer the workload label (stable across pod restarts on K8s) and fall back to the
+	// Dataplane name (= pod name on K8s) so span service names remain meaningful.
 	if serviceName == mesh_proto.ServiceUnknown && proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
-		serviceName = proxy.Dataplane.GetMeta().GetName()
+		if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
+			serviceName = workloadName
+		} else {
+			serviceName = proxy.Dataplane.GetMeta().GetName()
+		}
 	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
