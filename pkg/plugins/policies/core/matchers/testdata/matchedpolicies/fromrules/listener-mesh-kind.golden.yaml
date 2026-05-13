@@ -3,9 +3,25 @@ InboundRules:
   - conf:
       default:
         allow:
-        - sni:
+        - spiffeID:
             type: Exact
-            value: sni.mes-1.default.zone-1.aws.8443
+            value: spiffe://mesh-1/dp-1
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtp_mesh-1___mtp-mesh_
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-mesh
+        type: MeshTrafficPermission
+      RuleIndex: 0
+  1.1.1.1:10001:
+  - conf:
+      default:
+        allow:
+        - spiffeID:
+            type: Exact
+            value: spiffe://mesh-1/dp-1
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -19,9 +35,9 @@ InboundRules:
   - conf:
       default:
         allow:
-        - sni:
+        - spiffeID:
             type: Exact
-            value: sni.mes-1.default.zone-1.aws.8443
+            value: spiffe://mesh-1/dp-1
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -33,4 +49,5 @@ InboundRules:
       RuleIndex: 0
 Rules:
   1.1.1.1:8080: []
+  1.1.1.1:10001: []
   1.1.1.1:10002: []

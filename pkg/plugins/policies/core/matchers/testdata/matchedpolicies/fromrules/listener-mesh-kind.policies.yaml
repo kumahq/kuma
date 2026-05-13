@@ -7,6 +7,6 @@ spec:
   rules:
     - default:
         allow:
-          - sni:
+          - spiffeID:
               type: Exact
-              value: sni.mes-1.default.zone-1.aws.8443
+              value: spiffe://mesh-1/dp-1

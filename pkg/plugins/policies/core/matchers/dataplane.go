@@ -185,7 +185,7 @@ func DppSelectedByPolicy(
 	case common_api.Mesh:
 		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(nil, dpp, gateway)
-			inbounds = append(inbounds, zeListenersAsInboundListeners(dpp)...)
+			inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
 			return inbounds, gwListeners, gateway, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
@@ -200,9 +200,6 @@ func DppSelectedByPolicy(
 			})
 			sectionName := pointer.Deref(ref.SectionName)
 			for _, l := range dpp.Spec.GetNetworking().GetListeners() {
-				if l.Type != mesh_proto.Dataplane_Networking_Listener_ZoneEgress {
-					continue
-				}
 				if sectionName != "" && l.GetSectionName() != sectionName {
 					continue
 				}
@@ -421,12 +418,9 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 	return rv
 }
 
-func zeListenersAsInboundListeners(dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
+func embeddedListenersAsInboundListeners(dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
 	var result []core_rules.InboundListener
 	for _, l := range dpp.Spec.GetNetworking().GetListeners() {
-		if l.Type != mesh_proto.Dataplane_Networking_Listener_ZoneEgress {
-			continue
-		}
 		addr := l.GetAddress()
 		if addr == "" {
 			addr = dpp.Spec.GetNetworking().GetAddress()
