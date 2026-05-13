@@ -67,7 +67,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	conf := policies.SingleItemRules.Rules[0].Conf.(api.Conf)
+	conf := sanitizeConfForProxy(policies.SingleItemRules.Rules[0].Conf.(api.Conf), proxy)
 
 	if len(pointer.Deref(conf.Backends)) == 0 {
 		return nil
@@ -315,7 +315,13 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		if extraLabels[WorkloadAttributeKey] == "" {
-			extraLabels["service"] = proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
+			service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
+			// A zone-proxy-only Dataplane has no service tag, so IdentifyingName falls back to "unknown".
+			// Use the Dataplane name instead, which is stable and uniquely identifies the proxy.
+			if service == mesh_proto.ServiceUnknown && proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
+				service = proxy.Dataplane.GetMeta().GetName()
+			}
+			extraLabels["service"] = service
 		}
 	}
 
@@ -408,4 +414,24 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 func backendNameFrom(endpoint string) string {
 	// we need to remove "/" as this name will be used as directory name
 	return strings.ReplaceAll(strings.ReplaceAll(endpoint, "/", ""), ":", "-")
+}
+
+// sanitizeConfForProxy drops config fields that are meaningless on the target proxy shape.
+// Applications is irrelevant on a zone-proxy-only DPP (no co-located workload); see MADR-103 group 4.
+func sanitizeConfForProxy(conf api.Conf, proxy *core_xds.Proxy) api.Conf {
+	if proxy.Dataplane == nil {
+		return conf
+	}
+	if !proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
+		return conf
+	}
+	if len(pointer.Deref(conf.Applications)) == 0 {
+		return conf
+	}
+	log.Info("ignoring 'applications' on zone-proxy-only Dataplane; field has no effect (MADR-103 group 4)",
+		"dataplane", proxy.Dataplane.GetMeta().GetName(),
+		"mesh", proxy.Dataplane.GetMeta().GetMesh(),
+	)
+	conf.Applications = nil
+	return conf
 }

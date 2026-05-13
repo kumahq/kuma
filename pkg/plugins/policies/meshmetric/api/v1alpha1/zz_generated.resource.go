@@ -27,21 +27,21 @@ func init() {
 	if rawOpenAPISpec != nil {
 		// Parse OpenAPI spec to extract the schema
 
-		var openapiSpec map[string]interface{}
+		var openapiSpec map[string]any
 		if err := yaml.Unmarshal(rawOpenAPISpec, &openapiSpec); err != nil {
 			panic(err)
 		}
 
 		// Extract schema from .components.schemas.MeshMetricItem
-		components, ok := openapiSpec["components"].(map[string]interface{})
+		components, ok := openapiSpec["components"].(map[string]any)
 		if !ok {
 			panic(fmt.Errorf("components not found in OpenAPI spec"))
 		}
-		schemas, ok := components["schemas"].(map[string]interface{})
+		schemas, ok := components["schemas"].(map[string]any)
 		if !ok {
 			panic(fmt.Errorf("schemas not found in components"))
 		}
-		schemaItem, ok := schemas["MeshMetricItem"].(map[string]interface{})
+		schemaItem, ok := schemas["MeshMetricItem"].(map[string]any)
 		if !ok {
 			panic(fmt.Errorf("MeshMetricItem schema not found"))
 		}
@@ -140,7 +140,7 @@ func (t *MeshMetricResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *MeshMetricResource) Validate() error {
-	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+	if v, ok := any(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()
