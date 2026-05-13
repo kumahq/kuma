@@ -18,6 +18,9 @@ spec:
   maxReplicas: {{ .Values.controlPlane.autoscaling.maxReplicas }}
   {{ if .Capabilities.APIVersions.Has "autoscaling/v2" }}
   metrics: {{- toYaml .Values.controlPlane.autoscaling.metrics | nindent 4 }}
+  {{- with .Values.controlPlane.autoscaling.behavior }}
+  behavior: {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{ else }}
   targetCPUUtilizationPercentage: {{ .Values.controlPlane.autoscaling.targetCPUUtilizationPercentage }}
   {{- end }}
