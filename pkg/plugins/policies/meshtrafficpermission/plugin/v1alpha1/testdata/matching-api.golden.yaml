@@ -6,7 +6,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8080
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -130,7 +129,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8081
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -182,7 +180,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8082
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -230,7 +227,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8083
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager

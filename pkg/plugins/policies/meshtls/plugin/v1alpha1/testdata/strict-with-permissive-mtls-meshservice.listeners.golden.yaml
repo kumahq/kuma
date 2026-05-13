@@ -7,7 +7,6 @@ resources:
         address: 127.0.0.1
         portValue: 17777
     bindToPort: false
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -67,7 +66,6 @@ resources:
         address: 127.0.0.1
         portValue: 17778
     bindToPort: false
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -126,7 +124,6 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15001
-    enableReusePort: false
     filterChains:
     - filterChainMatch:
         destinationPort: 17777
@@ -154,7 +151,6 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15001
-    enableReusePort: false
     filterChains:
     - filterChainMatch:
         destinationPort: 17777
