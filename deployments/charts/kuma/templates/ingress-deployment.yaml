@@ -82,12 +82,6 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
-{{- if .Values.experimental.envoyAdminUnixSocket }}
-            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
-              value: "true"
-            - name: KUMA_READINESS_PORT
-              value: "9902"
-{{- end }}
           args:
             - run
             - --log-level={{ .Values.ingress.logLevel | default "info" }}

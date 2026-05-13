@@ -278,7 +278,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "2-envoy-config.golden.yaml",
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -314,11 +314,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "3-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureReadinessUnixSocket: true,
-			},
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -358,11 +355,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "4-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureReadinessUnixSocket: true,
-			},
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -391,7 +385,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			expected:        "5-envoy-config.golden.yaml",
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
 			},
 		}),
 	)
