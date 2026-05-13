@@ -78,8 +78,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               }
             }`,
 			expectedPatch: `
@@ -106,8 +105,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "not-existing-mesh",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               }
             }`,
 			expectedMessage: `meshes.kuma.io "not-existing-mesh" not found`,
@@ -119,8 +117,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "kind": "TrafficRoute",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               }
             }`,
 			expectedMessage: `mesh: cannot be empty`,
@@ -132,8 +129,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "kind": "MeshService",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               }
             }`,
 			expectedMessage: "ignored. MeshService has a reference for Service",
@@ -146,8 +142,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "default",
-                "name": "dp-1",
-                "creationTimestamp": null
+                "name": "dp-1"
               }
             }`,
 			expectedPatch: `
@@ -175,8 +170,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "mesh": "default",
               "metadata": {
                 "namespace": "default",
-                "name": "dp-1",
-                "creationTimestamp": null
+                "name": "dp-1"
               }
             }`,
 			expectedPatch: `
@@ -204,8 +198,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "kind": "TrafficRoute",
               "metadata": {
                 "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
+                "name": "empty"
               }
             }`,
 			skipMeshOwnerReference: true,
@@ -221,7 +214,6 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "global"
                 }
@@ -239,7 +231,6 @@ var _ = Describe("OwnerReferenceMutator", func() {
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "zone"
                 }
