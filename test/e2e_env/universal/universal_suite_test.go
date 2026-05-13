@@ -119,6 +119,7 @@ var (
 	_ = Describe("MeshTLS", meshtls.Policy, Ordered)
 	_ = Describe("Envoy Config – Sidecars", envoyconfig.Sidecars, Ordered)
 	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
+	_ = Describe("Envoy Config – Zone Proxies", envoyconfig.ZoneProxies, Ordered)
 	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 	_ = Describe("MeshIdentity - Spire", meshidentity.Spire, Ordered)
 	_ = Describe("MeshIdentity - Rotate CA", meshidentity.Rotate, Ordered)
