@@ -58,7 +58,7 @@ func Setup(rt core_runtime.Runtime) error {
 		deltaServer,
 	)
 	return rt.Add(component.NewResilientComponent(
-		kdsZoneLog.WithName("kds-mux-client"),
+		kdsZoneLog.WithName("kds-mux-client").WithValues("peer", rt.Config().Multizone.Zone.GlobalAddress),
 		muxClient,
 		rt.Config().General.ResilientComponentBaseBackoff.Duration,
 		rt.Config().General.ResilientComponentMaxBackoff.Duration,
