@@ -8,30 +8,6 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
-### MeshService label propagation (Universal, experimental, default off)
-
-A new optional behavior propagates non-reserved Dataplane inbound tags
-and resource labels onto auto-generated MeshService objects.
-
-- Enable via env: `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED=true`, or in
-  `kuma-cp.yaml`:
-
-  ```yaml
-  meshService:
-    labelPropagation:
-      enabled: true
-      allowedLabelKeys: ["team", "tier"]
-  ```
-
-  Empty `allowedLabelKeys` (default) with `enabled: true` propagates all
-  non-reserved keys.
-- Reserved namespaces `kuma.io/*` and `k8s.kuma.io/*` are never propagated.
-- Applies whenever MeshServices are enabled (mesh `meshServices.mode` is not
-  `Disabled`). K8s path is unaffected.
-- Rolling deploys: per-key majority-wins across Dataplanes, newest-tiebreak.
-
-Default remains `false`; behaviour is unchanged for existing deployments.
-
 ### dp-server graceful shutdown is now time-bounded
 
 The dp-server's graceful shutdown is now bounded by a configurable timeout. Previously the HTTP server would wait indefinitely for xDS streams to drain, which could keep the pod from exiting within its `terminationGracePeriodSeconds` and surface as a non-zero exit.

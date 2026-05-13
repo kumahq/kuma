@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshretry"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshservice"
+	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshservicelabelpropagation"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtls"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/mtls"
@@ -80,6 +81,7 @@ var (
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
+	_ = Describe("MeshService Label Propagation", meshservicelabelpropagation.LabelPropagation, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)

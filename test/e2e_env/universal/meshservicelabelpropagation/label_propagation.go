@@ -6,10 +6,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/test/framework"
+	. "github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
-
-var Cluster *framework.UniversalCluster
 
 func LabelPropagation() {
 	const meshName = "lp-mesh"
@@ -17,19 +16,19 @@ func LabelPropagation() {
 	const serviceTag = "lp-svc"
 
 	BeforeAll(func() {
-		Expect(framework.NewClusterSetup().
-			Install(framework.MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
-			Setup(Cluster)).To(Succeed())
-		Expect(framework.WaitForMesh(meshName, []framework.Cluster{Cluster})).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
+			Setup(universal.Cluster)).To(Succeed())
+		Expect(WaitForMesh(meshName, []Cluster{universal.Cluster})).To(Succeed())
 	})
 
-	framework.AfterEachFailure(func() {
-		framework.DebugUniversal(Cluster, meshName)
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
 	})
 
-	framework.E2EAfterAll(func() {
-		_ = Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", dpName, "-m", meshName)
-		Expect(Cluster.DeleteMesh(meshName)).To(Succeed())
+	E2EAfterAll(func() {
+		_ = universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", dpName, "-m", meshName)
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("propagates non-reserved Dataplane tags and labels to auto-generated MeshService", func() {
@@ -49,10 +48,10 @@ networking:
       kuma.io/protocol: http
       team: payments
 `
-		Expect(framework.YamlUniversal(dp)(Cluster)).To(Succeed())
+		Expect(YamlUniversal(dp)(universal.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			labels, err := framework.GetMeshServiceLabels(Cluster, meshName, serviceTag)
+			labels, err := GetMeshServiceLabels(universal.Cluster, meshName, serviceTag)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			g.Expect(labels).To(HaveKeyWithValue("color", "blue"))
@@ -85,10 +84,10 @@ networking:
       team: platform
       tier: backend
 `
-		Expect(framework.YamlUniversal(dpUpdated)(Cluster)).To(Succeed())
+		Expect(YamlUniversal(dpUpdated)(universal.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			labels, err := framework.GetMeshServiceLabels(Cluster, meshName, serviceTag)
+			labels, err := GetMeshServiceLabels(universal.Cluster, meshName, serviceTag)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(labels).To(HaveKeyWithValue("team", "platform"))
 			g.Expect(labels).ToNot(HaveKeyWithValue("team", "payments"))
