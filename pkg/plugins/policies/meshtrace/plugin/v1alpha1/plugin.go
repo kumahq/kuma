@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
@@ -60,6 +61,9 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 		return err
 	}
 	if err := applyToOutbounds(ctx, policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
+		return err
+	}
+	if err := applyToZoneProxyListeners(ctx, policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
 	if err := applyToClusters(ctx, policies.SingleItemRules, rs, proxy); err != nil {
@@ -143,6 +147,36 @@ func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules,
 	return nil
 }
 
+func applyToZoneProxyListeners(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+	if !proxy.Dataplane.Spec.GetNetworking().HasZoneProxyListeners() {
+		return nil
+	}
+	listenerRes := rs.Resources(envoy_resource.ListenerType)
+	for _, l := range proxy.Dataplane.Spec.GetNetworking().GetListeners() {
+		var name string
+		switch l.GetType() {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			name = naming.ContextualZoneIngressListenerName(l.GetSectionName())
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			name = naming.ContextualZoneEgressListenerName(l.GetSectionName())
+		default:
+			continue
+		}
+		res, ok := listenerRes[name]
+		if !ok {
+			continue
+		}
+		listener, ok := res.Resource.(*envoy_listener.Listener)
+		if !ok {
+			continue
+		}
+		if err := configureListener(ctx, rules, proxy, listener, ""); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
@@ -166,6 +200,11 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 
 func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
 	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
+	// A zone-proxy-only Dataplane has no service tag, so IdentifyingName falls back to "unknown".
+	// Use the Dataplane name instead so tracing span service names are stable (MADR-103 group 4).
+	if serviceName == mesh_proto.ServiceUnknown && proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
+		serviceName = proxy.Dataplane.GetMeta().GetName()
+	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
