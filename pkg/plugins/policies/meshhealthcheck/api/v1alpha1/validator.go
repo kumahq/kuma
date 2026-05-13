@@ -11,7 +11,7 @@ func (r *MeshHealthCheckResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -33,7 +33,7 @@ func (r *MeshHealthCheckResource) validateTop(targetRef *common_api.TargetRef) v
 	return targetRefErr
 }
 
-func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)

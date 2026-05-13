@@ -22,7 +22,7 @@ func (r *MeshCircuitBreakerResource) validate() error {
 	}
 	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
 	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
-	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -70,7 +70,7 @@ func validateFrom(from []From) validators.ValidationError {
 	return verr
 }
 
-func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)

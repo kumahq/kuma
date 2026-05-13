@@ -19,16 +19,20 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
-func waitMeshServiceReady(mesh, name string) {
+func waitMeshServiceReady(mesh, name string, spiffeIDs ...string) {
 	Eventually(func(g Gomega) {
 		spec, status, err := GetMeshServiceStatus(universal.Cluster, name, mesh)
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-			{
-				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-				Value: name,
-			},
-		}))
+		g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
+			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+			Value: name,
+		})))
+		for _, spiffeID := range spiffeIDs {
+			g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
+				Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+				Value: spiffeID,
+			})))
+		}
 		g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
 	}, "30s", "1s").Should(Succeed())
 }

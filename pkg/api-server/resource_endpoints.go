@@ -1355,11 +1355,22 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 			}
 
-			getInboundPortName := func(port uint32) *string {
-				if name := dp.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
-					return &name
+			inboundInfoForPort := func(port uint32) (*string, map[string]string) {
+				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+					return nil, dp.Spec.GetNetworking().GetGateway().GetTags()
 				}
-				return nil
+				if inb := dp.Spec.GetNetworking().GetInboundForPort(port); inb != nil {
+					var namePtr *string
+					if name := inb.GetName(); name != "" {
+						namePtr = &name
+					}
+					return namePtr, inb.GetTags()
+				}
+				if lst := dp.Spec.GetNetworking().GetListenerForPort(port); lst != nil {
+					name := lst.GetSectionName()
+					return &name, nil
+				}
+				return nil, nil
 			}
 
 			fromRules := []api_common.FromRule{}
@@ -1377,15 +1388,10 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 							Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, rulesForInbound[i].Origin),
 						}
 					}
-					var tags map[string]string
-					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
-						tags = dp.Spec.Networking.Gateway.Tags
-					} else {
-						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
-					}
+					name, tags := inboundInfoForPort(inbound.Port)
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
-							Name: getInboundPortName(inbound.Port),
+							Name: name,
 							Tags: tags,
 							Port: int(inbound.Port),
 						},
@@ -1409,15 +1415,10 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}
-				var tags map[string]string
-				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
-					tags = dp.Spec.Networking.Gateway.Tags
-				} else {
-					tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
-				}
+				name, tags := inboundInfoForPort(inbound.Port)
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{
-						Name: getInboundPortName(inbound.Port),
+						Name: name,
 						Port: int(inbound.Port),
 						Tags: tags,
 					},

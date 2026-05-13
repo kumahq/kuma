@@ -1,0 +1,25 @@
+type: MeshHealthCheck
+name: mhc-zone-proxy
+mesh: zoneproxy-envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/workload: zone-proxy-egress
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        labels:
+          kuma.io/display-name: mes-zone-proxy
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        http:
+          path: "/health"
+          expectedStatuses:
+          - 200
+          - 201

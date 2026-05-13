@@ -304,6 +304,18 @@ func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Network
 	return nil
 }
 
+// GetListenerForPort returns the zone proxy listener matching the given port,
+// or nil if none. Useful when a port in matched policies refers to a zone
+// proxy listener rather than a regular inbound.
+func (n *Dataplane_Networking) GetListenerForPort(port uint32) *Dataplane_Networking_Listener {
+	for _, l := range n.GetListeners() {
+		if port == l.GetPort() {
+			return l
+		}
+	}
+	return nil
+}
+
 // InboundsSelectedBySectionName returns the list of inbound interfaces selected by sectionName. It returns all inbounds if
 // sectionName is empty
 func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
