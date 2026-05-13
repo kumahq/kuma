@@ -96,7 +96,26 @@ func SNIForResource(resName string, meshName string, resType model.ResourceType,
 //   - Mesh, Name and SectionName are non-empty
 //   - if Namespace is non-empty, Zone must also be non-empty
 //   - no segment contains "."
+//   - each segment length ≤ 63 (DNS label limit)
+//   - total length ≤ 253 (DNS hostname limit)
 func SNIFromKRI(id kri.Identifier) (string, error) {
+	segments, err := sniSegmentsFromKRI(id)
+	if err != nil {
+		return "", err
+	}
+	return strings.Join(segments, "."), nil
+}
+
+// ValidateSNIForKRI returns nil if SNIFromKRI would succeed for the given
+// identifier. It is the single source of truth for "is this resource usable
+// across the new SNI format" — used by status updaters to set the
+// SNICompliant condition without throwing away the resulting SNI string.
+func ValidateSNIForKRI(id kri.Identifier) error {
+	_, err := sniSegmentsFromKRI(id)
+	return err
+}
+
+func sniSegmentsFromKRI(id kri.Identifier) ([]string, error) {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	if err != nil {
 		panic(errors.Wrapf(err, "SNIFromKRI: unknown resource type %q", id.ResourceType))
@@ -109,10 +128,10 @@ func SNIFromKRI(id kri.Identifier) (string, error) {
 		panic(fmt.Sprintf("SNIFromKRI: resource type %q is not supported for SNI", id.ResourceType))
 	}
 	if id.Mesh == "" || id.Name == "" || id.SectionName == "" {
-		return "", errors.Errorf("SNIFromKRI: mesh, name and sectionName must be non-empty: %+v", id)
+		return nil, errors.Errorf("SNIFromKRI: mesh, name and sectionName must be non-empty: %+v", id)
 	}
 	if id.Namespace != "" && id.Zone == "" {
-		return "", errors.Errorf("SNIFromKRI: namespace %q set without zone: %+v", id.Namespace, id)
+		return nil, errors.Errorf("SNIFromKRI: namespace %q set without zone: %+v", id.Namespace, id)
 	}
 
 	segments := []string{sniFormatPrefix, desc.ShortName, id.Mesh}
@@ -124,11 +143,19 @@ func SNIFromKRI(id kri.Identifier) (string, error) {
 	}
 	segments = append(segments, id.Name, id.SectionName)
 
+	total := len(segments) - 1 // dots between segments
 	for _, s := range segments {
 		if strings.ContainsRune(s, '.') {
-			return "", errors.Errorf("SNIFromKRI: segment %q contains '.': %+v", s, id)
+			return nil, errors.Errorf("SNIFromKRI: segment %q contains '.': %+v", s, id)
 		}
+		if len(s) > dnsLabelLimit {
+			return nil, errors.Errorf("SNIFromKRI: segment %q exceeds DNS label limit (%d > %d): %+v", s, len(s), dnsLabelLimit, id)
+		}
+		total += len(s)
+	}
+	if total > dnsHostnameLimit {
+		return nil, errors.Errorf("SNIFromKRI: total length %d exceeds DNS hostname limit %d: %+v", total, dnsHostnameLimit, id)
 	}
 
-	return strings.Join(segments, "."), nil
+	return segments, nil
 }

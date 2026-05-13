@@ -2,6 +2,7 @@ package tls_test
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/google/uuid"
@@ -347,5 +348,73 @@ var _ = Describe("SNI", func() {
 			},
 			expectErr: true,
 		}),
+		// Length limits: 63-char label is allowed.
+		Entry("label exactly 63 chars", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         strings.Repeat("a", 63),
+				SectionName:  "http",
+			},
+			expected: "sni.msvc.default." + strings.Repeat("a", 63) + ".http",
+		}),
+		// Error: 64-char label exceeds DNS label limit.
+		Entry("error label exceeds 63 chars", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         strings.Repeat("a", 64),
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
+		// Error: total > 253 across multiple max-length labels (≥4×64-1).
+		Entry("error total exceeds 253 chars", kriTestCase{
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         strings.Repeat("a", 63),
+				Zone:         strings.Repeat("b", 63),
+				Namespace:    strings.Repeat("c", 63),
+				Name:         strings.Repeat("d", 63),
+				SectionName:  "http",
+			},
+			expectErr: true,
+		}),
 	)
+
+	Describe("ValidateSNIForKRI", func() {
+		It("returns nil for a valid identifier", func() {
+			err := tls.ValidateSNIForKRI(kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         "backend",
+				SectionName:  "http",
+			})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("returns an error when a segment exceeds the DNS label limit", func() {
+			err := tls.ValidateSNIForKRI(kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         strings.Repeat("a", 64),
+				SectionName:  "http",
+			})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("DNS label limit"))
+		})
+
+		It("returns an error when the total hostname exceeds the DNS hostname limit", func() {
+			err := tls.ValidateSNIForKRI(kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         strings.Repeat("a", 63),
+				Zone:         strings.Repeat("b", 63),
+				Namespace:    strings.Repeat("c", 63),
+				Name:         strings.Repeat("d", 63),
+				SectionName:  "http",
+			})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("DNS hostname limit"))
+		})
+	})
 })

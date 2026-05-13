@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -440,6 +441,54 @@ var _ = Describe("Updater", func() {
 	It("should emit metric", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_ms_status_updater")).ToNot(BeNil())
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should set SNICompliant=True on a service whose SNI fits the DNS limits", func() {
+		Expect(samples.MeshServiceBackendBuilder().Create(resManager)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.Status.Conditions).To(ContainElement(WithTransform(func(c common_api.Condition) struct {
+				Type, Reason string
+				Status       kube_meta.ConditionStatus
+			} {
+				return struct {
+					Type, Reason string
+					Status       kube_meta.ConditionStatus
+				}{c.Type, c.Reason, c.Status}
+			}, Equal(struct {
+				Type, Reason string
+				Status       kube_meta.ConditionStatus
+			}{common_api.SNICompliantCondition, common_api.SNICompliantReason, kube_meta.ConditionTrue}))))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should set SNICompliant=False when the resource name contains a dot (SNI segment violation)", func() {
+		// validator allows dots in the name; the SNI generator rejects them
+		// because each SNI segment must be a single DNS label. The KRI uses
+		// the DisplayName label, so override it too.
+		Expect(samples.MeshServiceBackendBuilder().
+			WithName("foo.bar").
+			WithLabels(map[string]string{mesh_proto.DisplayName: "foo.bar"}).
+			Create(resManager)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("foo.bar", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.Status.Conditions).To(ContainElement(WithTransform(func(c common_api.Condition) struct {
+				Type, Reason string
+				Status       kube_meta.ConditionStatus
+			} {
+				return struct {
+					Type, Reason string
+					Status       kube_meta.ConditionStatus
+				}{c.Type, c.Reason, c.Status}
+			}, Equal(struct {
+				Type, Reason string
+				Status       kube_meta.ConditionStatus
+			}{common_api.SNICompliantCondition, common_api.SNINotCompliantReason, kube_meta.ConditionFalse}))))
 		}, "10s", "100ms").Should(Succeed())
 	})
 })

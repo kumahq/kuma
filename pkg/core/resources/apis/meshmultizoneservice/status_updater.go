@@ -17,6 +17,7 @@ import (
 	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
@@ -117,15 +118,18 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			return matched[i].FullyQualifiedName() < matched[j].FullyQualifiedName()
 		})
 
-		condition := buildMeshServicesMatchedCondition(matched)
+		matchedCondition := buildMeshServicesMatchedCondition(matched)
+		sniCondition := resource_status.BuildSNICompliantCondition(kri.From(mzSvc), mzSvc.GetPorts())
 		statusChanged := !reflect.DeepEqual(mzSvc.Status.MeshServices, matched) ||
-			!conditionEquals(mzSvc.Status.Conditions, condition)
+			!resource_status.ConditionEquals(mzSvc.Status.Conditions, matchedCondition) ||
+			!resource_status.ConditionEquals(mzSvc.Status.Conditions, sniCondition)
 
 		if statusChanged {
 			log := s.logger.WithValues("meshmultizoneservice", mzSvc.Meta.GetName())
 			mzSvc.Status.MeshServices = matched
-			mzSvc.Status.Conditions = updateConditions(mzSvc.Status.Conditions, condition)
-			log.V(1).Info("updating matched mesh services", "matchedMeshServices", matched, "condition", condition.Type)
+			mzSvc.Status.Conditions = resource_status.UpdateConditions(mzSvc.Status.Conditions, matchedCondition)
+			mzSvc.Status.Conditions = resource_status.UpdateConditions(mzSvc.Status.Conditions, sniCondition)
+			log.V(1).Info("updating matched mesh services", "matchedMeshServices", matched, "conditions", []string{matchedCondition.Type, sniCondition.Type})
 			if err := s.resManager.Update(ctx, mzSvc); err != nil {
 				if store.IsConflict(err) {
 					log.Info("couldn't update mesh multi zone service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
@@ -166,25 +170,4 @@ func buildMeshServicesMatchedCondition(matched []meshmzservice_api.MatchedMeshSe
 		Reason:  meshmzservice_api.MatchesFoundReason,
 		Message: fmt.Sprintf("Matched %d MeshService(s)", len(matched)),
 	}
-}
-
-func conditionEquals(conditions []common_api.Condition, newCondition common_api.Condition) bool {
-	for _, c := range conditions {
-		if c.Type == newCondition.Type {
-			return c.Status == newCondition.Status &&
-				c.Reason == newCondition.Reason &&
-				c.Message == newCondition.Message
-		}
-	}
-	return false
-}
-
-func updateConditions(conditions []common_api.Condition, newCondition common_api.Condition) []common_api.Condition {
-	for i, c := range conditions {
-		if c.Type == newCondition.Type {
-			conditions[i] = newCondition
-			return conditions
-		}
-	}
-	return append(conditions, newCondition)
 }

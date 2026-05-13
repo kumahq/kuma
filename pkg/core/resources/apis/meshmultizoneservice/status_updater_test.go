@@ -151,6 +151,34 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
+	It("should set SNICompliant=True for an MMZS whose SNI fits the DNS limits", func() {
+		Expect(samples.MeshMultiZoneServiceBackendBuilder().Create(resManager)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+			g.Expect(resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(mzsvc.Status.Conditions).To(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(common_api.SNICompliantCondition),
+				"Status": Equal(kube_meta.ConditionTrue),
+				"Reason": Equal(common_api.SNICompliantReason),
+			})))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should set SNICompliant=False when the MMZS name contains a dot", func() {
+		Expect(samples.MeshMultiZoneServiceBackendBuilder().WithName("foo.bar").Create(resManager)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+			g.Expect(resManager.Get(context.Background(), mzsvc, store.GetByKey("foo.bar", model.DefaultMesh))).To(Succeed())
+			g.Expect(mzsvc.Status.Conditions).To(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(common_api.SNICompliantCondition),
+				"Status": Equal(kube_meta.ConditionFalse),
+				"Reason": Equal(common_api.SNINotCompliantReason),
+			})))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
 	It("should change condition when matches disappear", func() {
 		// given - MMZS with matching MeshService
 		Expect(ms1Builder.Create(resManager)).To(Succeed())

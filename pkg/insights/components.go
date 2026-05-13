@@ -3,6 +3,7 @@ package insights
 import (
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	meshexternalservice_status "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/status"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/status"
@@ -70,6 +71,26 @@ func Setup(rt runtime.Runtime) error {
 		if err := rt.Add(component.NewResilientComponent(
 			logger,
 			workloadUpdater,
+			rt.Config().General.ResilientComponentBaseBackoff.Duration,
+			rt.Config().General.ResilientComponentMaxBackoff.Duration),
+		); err != nil {
+			return err
+		}
+
+		logger = core.Log.WithName("meshexternalservice").WithName("status-updater")
+		mesUpdater, err := meshexternalservice_status.NewStatusUpdater(
+			logger,
+			rt.ReadOnlyResourceManager(),
+			rt.ResourceManager(),
+			rt.Config().CoreResources.Status.MeshServiceInterval.Duration,
+			rt.Metrics(),
+		)
+		if err != nil {
+			return err
+		}
+		if err := rt.Add(component.NewResilientComponent(
+			logger,
+			mesUpdater,
 			rt.Config().General.ResilientComponentBaseBackoff.Duration,
 			rt.Config().General.ResilientComponentMaxBackoff.Duration),
 		); err != nil {
