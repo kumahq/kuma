@@ -90,32 +90,43 @@ func SNIForResource(resName string, meshName string, resType model.ResourceType,
 //	sni.<short>.<mesh>.<name>.<sectionName>                          (5 segments) — global-originated
 //	sni.<short>.<mesh>.<zone>.<name>.<sectionName>                   (6 segments) — zone-originated resource on universal
 //	sni.<short>.<mesh>.<zone>.<namespace>.<name>.<sectionName>       (7 segments) — zone-originated resource on k8s
+func SNIFromKRI(id kri.Identifier) string {
+	return strings.Join(buildSNISegments(id), ".")
+}
+
+// ValidateSNIForKRI returns nil if the SNI that SNIFromKRI would produce
+// satisfies the MADR-101 naming rules:
 //
-// The KRI must satisfy:
-//   - ResourceType is one of MeshService, MeshExternalService, MeshMultiZoneService
 //   - Mesh, Name and SectionName are non-empty
 //   - if Namespace is non-empty, Zone must also be non-empty
 //   - no segment contains "."
 //   - each segment length ≤ 63 (DNS label limit)
 //   - total length ≤ 253 (DNS hostname limit)
-func SNIFromKRI(id kri.Identifier) (string, error) {
-	segments, err := sniSegmentsFromKRI(id)
-	if err != nil {
-		return "", err
-	}
-	return strings.Join(segments, "."), nil
-}
-
-// ValidateSNIForKRI returns nil if SNIFromKRI would succeed for the given
-// identifier. It is the single source of truth for "is this resource usable
-// across the new SNI format" — used by status updaters to set the
-// SNICompliant condition without throwing away the resulting SNI string.
 func ValidateSNIForKRI(id kri.Identifier) error {
-	_, err := sniSegmentsFromKRI(id)
-	return err
+	if id.Mesh == "" || id.Name == "" || id.SectionName == "" {
+		return errors.Errorf("SNI: mesh, name and sectionName must be non-empty: %+v", id)
+	}
+	if id.Namespace != "" && id.Zone == "" {
+		return errors.Errorf("SNI: namespace %q set without zone: %+v", id.Namespace, id)
+	}
+	segments := buildSNISegments(id)
+	total := len(segments) - 1 // dots between segments
+	for _, s := range segments {
+		if strings.ContainsRune(s, '.') {
+			return errors.Errorf("SNI: segment %q contains '.': %+v", s, id)
+		}
+		if len(s) > dnsLabelLimit {
+			return errors.Errorf("SNI: segment %q exceeds DNS label limit (%d > %d): %+v", s, len(s), dnsLabelLimit, id)
+		}
+		total += len(s)
+	}
+	if total > dnsHostnameLimit {
+		return errors.Errorf("SNI: total length %d exceeds DNS hostname limit %d: %+v", total, dnsHostnameLimit, id)
+	}
+	return nil
 }
 
-func sniSegmentsFromKRI(id kri.Identifier) ([]string, error) {
+func buildSNISegments(id kri.Identifier) []string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	if err != nil {
 		panic(errors.Wrapf(err, "SNIFromKRI: unknown resource type %q", id.ResourceType))
@@ -127,12 +138,6 @@ func sniSegmentsFromKRI(id kri.Identifier) ([]string, error) {
 	default:
 		panic(fmt.Sprintf("SNIFromKRI: resource type %q is not supported for SNI", id.ResourceType))
 	}
-	if id.Mesh == "" || id.Name == "" || id.SectionName == "" {
-		return nil, errors.Errorf("SNIFromKRI: mesh, name and sectionName must be non-empty: %+v", id)
-	}
-	if id.Namespace != "" && id.Zone == "" {
-		return nil, errors.Errorf("SNIFromKRI: namespace %q set without zone: %+v", id.Namespace, id)
-	}
 
 	segments := []string{sniFormatPrefix, desc.ShortName, id.Mesh}
 	if id.Zone != "" {
@@ -142,20 +147,5 @@ func sniSegmentsFromKRI(id kri.Identifier) ([]string, error) {
 		segments = append(segments, id.Namespace)
 	}
 	segments = append(segments, id.Name, id.SectionName)
-
-	total := len(segments) - 1 // dots between segments
-	for _, s := range segments {
-		if strings.ContainsRune(s, '.') {
-			return nil, errors.Errorf("SNIFromKRI: segment %q contains '.': %+v", s, id)
-		}
-		if len(s) > dnsLabelLimit {
-			return nil, errors.Errorf("SNIFromKRI: segment %q exceeds DNS label limit (%d > %d): %+v", s, len(s), dnsLabelLimit, id)
-		}
-		total += len(s)
-	}
-	if total > dnsHostnameLimit {
-		return nil, errors.Errorf("SNIFromKRI: total length %d exceeds DNS hostname limit %d: %+v", total, dnsHostnameLimit, id)
-	}
-
-	return segments, nil
+	return segments
 }

@@ -184,16 +184,17 @@ var _ = Describe("SNI", func() {
 		expected  string
 		expectErr bool
 	}
-	DescribeTable("SNIFromKRI",
+	DescribeTable("SNIFromKRI / ValidateSNIForKRI",
 		func(tc kriTestCase) {
-			sni, err := tls.SNIFromKRI(tc.id)
+			err := tls.ValidateSNIForKRI(tc.id)
 			if tc.expectErr {
 				Expect(err).To(HaveOccurred())
-			} else {
-				Expect(err).ToNot(HaveOccurred())
-				Expect(sni).To(Equal(tc.expected))
-				Expect(govalidator.IsDNSName(sni)).To(BeTrue())
+				return
 			}
+			Expect(err).ToNot(HaveOccurred())
+			sni := tls.SNIFromKRI(tc.id)
+			Expect(sni).To(Equal(tc.expected))
+			Expect(govalidator.IsDNSName(sni)).To(BeTrue())
 		},
 		// MeshService — global (no zone, no namespace)
 		Entry("MeshService global", kriTestCase{

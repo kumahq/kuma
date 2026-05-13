@@ -14,6 +14,7 @@ import (
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
@@ -49,16 +50,17 @@ func GenerateClusters(
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
-
+			dest := meshCtx.GetServiceByKRI(service.BackendRef().Resource())
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
 				switch {
 				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
 					if proxy.WorkloadIdentity != nil {
-						sni, err := tls.SNIFromKRI(service.BackendRef().Resource())
-						if err != nil {
-							return nil, err
+						// don't support as egress requires SNI
+						if !resource_status.IsSNICompliant(dest) {
+							continue
 						}
+						sni := tls.SNIFromKRI(service.BackendRef().Resource())
 						// we only want to route when are mesh-scoped zone egresses
 						if len(meshCtx.ZoneEgresses) == 0 {
 							continue
@@ -137,8 +139,8 @@ func GenerateClusters(
 				} else {
 					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
 						tlsReady = true // tls readiness is only relevant for MeshService
+						dest := meshCtx.GetServiceByKRI(realResourceRef.Resource)
 						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							dest := meshCtx.GetServiceByKRI(realResourceRef.Resource)
 							if dest != nil {
 								ms := dest.(*meshservice_api.MeshServiceResource)
 								// we only check TLS status for local service
@@ -152,12 +154,8 @@ func GenerateClusters(
 						sni := SniForBackendRef(realResourceRef, meshCtx, systemNamespace)
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
-							if meshCtx.ZonesWithMeshScopedProxy[realResourceRef.Resource.Zone] {
-								var err error
-								sni, err = tls.SNIFromKRI(realResourceRef.Resource)
-								if err != nil {
-									return nil, err
-								}
+							if meshCtx.ZonesWithMeshScopedProxy[realResourceRef.Resource.Zone] && resource_status.IsSNICompliant(dest) {
+								sni = tls.SNIFromKRI(realResourceRef.Resource)
 							}
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
 							if err != nil {

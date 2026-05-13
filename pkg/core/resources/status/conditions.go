@@ -9,6 +9,9 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 )
 
@@ -70,4 +73,49 @@ func BuildSNICompliantCondition(id kri.Identifier, ports []core.Port) common_api
 		Reason:  common_api.SNICompliantReason,
 		Message: "All ports produce SNIs that satisfy DNS naming and length limits.",
 	}
+}
+
+// IsSNICompliant returns true when the destination's status reports SNI
+// compliance. It is the source of truth for xDS generators that need to
+// decide whether to emit cross-zone (mesh-scoped) constructs for a
+// destination: when this returns false, the resource cannot be reached via
+// the new SNI format and only its local-zone path should be configured.
+//
+// A missing condition is treated as compliant. The status updater runs on the
+// Zone CP on a separate loop, so during the first interval after a resource
+// is created the condition is not yet set; defaulting to true matches the
+// behavior an operator would expect for a fresh, otherwise-valid resource.
+// A misconfigured resource will be marked False on the next status tick and
+// the next xDS snapshot picks that up.
+//
+// Resource types other than MeshService / MeshExternalService /
+// MeshMultiZoneService are also treated as compliant — they don't go through
+// the SNIFromKRI path.
+func IsSNICompliant(res any) bool {
+	var conditions []common_api.Condition
+	switch r := res.(type) {
+	case *meshservice_api.MeshServiceResource:
+		if r == nil {
+			return true
+		}
+		conditions = r.Status.Conditions
+	case *meshexternalservice_api.MeshExternalServiceResource:
+		if r == nil {
+			return true
+		}
+		conditions = r.Status.Conditions
+	case *meshmzservice_api.MeshMultiZoneServiceResource:
+		if r == nil {
+			return true
+		}
+		conditions = r.Status.Conditions
+	default:
+		return true
+	}
+	for _, c := range conditions {
+		if c.Type == common_api.SNICompliantCondition {
+			return c.Status == kube_meta.ConditionTrue
+		}
+	}
+	return true
 }

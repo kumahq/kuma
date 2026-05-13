@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	"github.com/kumahq/kuma/v2/pkg/dns"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -42,21 +43,27 @@ func BuildMeshDestinations(
 	resources xds_context.Resources,
 	realResourceLists ...core_resources.DestinationList,
 ) MeshDestinations {
-	// legacy path never calls SNIFromKRI so BuildRealResourceDestinations cannot error
-	backendRefs, _ := BuildRealResourceDestinations(
-		util_slices.FlatMap(realResourceLists, core_resources.DestinationList.GetDestinations),
-		systemNamespace,
-		false,
-	)
 	return MeshDestinations{
 		KumaIoServices: buildKumaIoServiceDestinations(availableServices, resources),
-		BackendRefs:    backendRefs,
+		BackendRefs: BuildRealResourceDestinations(
+			util_slices.FlatMap(realResourceLists, core_resources.DestinationList.GetDestinations),
+			systemNamespace,
+			false,
+		),
 	}
 }
 
-func BuildRealResourceDestinations(destinations []core_resources.Destination, systemNS string, useNewSNIFormat bool) ([]BackendRefDestination, error) {
+// BuildRealResourceDestinations produces one BackendRefDestination per
+// (destination, port) pair. When useNewSNIFormat is true, destinations whose
+// status reports SNICompliant=False are skipped — the new-format ZI/ZE
+// filter chains can't accept their traffic anyway. The legacy path is
+// unaffected.
+func BuildRealResourceDestinations(destinations []core_resources.Destination, systemNS string, useNewSNIFormat bool) []BackendRefDestination {
 	var result []BackendRefDestination
 	for _, dest := range destinations {
+		if useNewSNIFormat && !resource_status.IsSNICompliant(dest) {
+			continue
+		}
 		origin := kri.From(dest)
 		mesh := dest.GetMeta().GetMesh()
 
@@ -64,13 +71,9 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination, sy
 
 		for _, port := range dest.GetPorts() {
 			id := kri.WithSectionName(origin, port.GetName())
-			sni, err := sniFor(id, port)
-			if err != nil {
-				return nil, err
-			}
 			result = append(result, BackendRefDestination{
 				Mesh:              mesh,
-				SNI:               sni,
+				SNI:               sniFor(id, port),
 				LegacyServiceName: destinationname.ResolveLegacyFromDestination(dest, port),
 				ResolvedBackendRef: resolve.ResolvedBackendRef{
 					Ref: &resolve.RealResourceBackendRef{
@@ -82,12 +85,12 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination, sy
 			})
 		}
 	}
-	return result, nil
+	return result
 }
 
-func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh, systemNS string, useNewSNIFormat bool) func(kri.Identifier, core_resources.Port) (string, error) {
+func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh, systemNS string, useNewSNIFormat bool) func(kri.Identifier, core_resources.Port) string {
 	if useNewSNIFormat {
-		return func(id kri.Identifier, _ core_resources.Port) (string, error) {
+		return func(id kri.Identifier, _ core_resources.Port) string {
 			return tls.SNIFromKRI(id)
 		}
 	}
@@ -98,8 +101,8 @@ func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh,
 	default:
 		rName = core_model.GetDisplayName(dest.GetMeta())
 	}
-	return func(_ kri.Identifier, port core_resources.Port) (string, error) {
-		return tls.SNIForResource(rName, mesh, origin.ResourceType, port.GetValue(), nil), nil
+	return func(_ kri.Identifier, port core_resources.Port) string {
+		return tls.SNIForResource(rName, mesh, origin.ResourceType, port.GetValue(), nil)
 	}
 }
 

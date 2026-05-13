@@ -11,6 +11,7 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
@@ -165,13 +166,15 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
-	var err error
 	sni := meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace)
-	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
-		sni, err = tls.SNIFromKRI(backendRef.Resource)
-	}
-	if err != nil {
-		return nil, "", err
+	// Mirror meshroute/clusters.go: only emit the new SNI format when the
+	// destination zone is mesh-scoped AND the destination resource reports
+	// SNI compliance. Otherwise keep the legacy SNI — local-zone traffic
+	// still works; cross-zone via mesh-scoped ZI is signaled unreachable
+	// via the destination's SNICompliant=False condition.
+	destResource := meshCtx.GetServiceByKRI(backendRef.Resource)
+	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] && resource_status.IsSNICompliant(destResource) {
+		sni = tls.SNIFromKRI(backendRef.Resource)
 	}
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(

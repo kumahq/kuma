@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
@@ -123,7 +124,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 		}
 	}
 
-	backendRefs, err := zoneproxy.BuildRealResourceDestinations(
+	backendRefs := zoneproxy.BuildRealResourceDestinations(
 		util_slices.FlatMap(
 			[]core_resources.DestinationList{localMS, meshResources.MeshMultiZoneServices()},
 			core_resources.DestinationList.GetDestinations,
@@ -131,9 +132,6 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 		cp.SystemNamespace,
 		true,
 	)
-	if err != nil {
-		return nil, err
-	}
 	dest := zoneproxy.MeshDestinations{BackendRefs: backendRefs}
 
 	services := zoneproxy.GetServices(dest, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, nil, true)
@@ -205,11 +203,11 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 			continue
 		}
 		esPort := ports[0]
-		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
-		sni, err := tls.SNIFromKRI(id)
-		if err != nil {
-			return nil, err
+		if !resource_status.IsSNICompliant(dst) {
+			continue
 		}
+		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
+		sni := tls.SNIFromKRI(id)
 		clusterName := id.String()
 		group := endpointMap[clusterName]
 
