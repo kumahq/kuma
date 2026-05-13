@@ -1,7 +1,6 @@
 package hds
 
 import (
-	"context"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -37,7 +36,7 @@ func Setup(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	srv := hds_server.New(user.Ctx(context.Background(), user.ControlPlane), snapshotCache, callbacks)
+	srv := hds_server.New(user.Ctx(rt.AppContext(), user.ControlPlane), snapshotCache, callbacks)
 
 	hdsServerLog.Info("registering Health Discovery Service in Dataplane Server")
 	envoy_service_health.RegisterHealthDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)

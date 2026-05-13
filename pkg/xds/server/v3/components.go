@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"context"
 	"time"
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -65,7 +64,7 @@ func RegisterXDS(
 		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
 	}
 
-	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks)
+	srv := envoy_server.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks)
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
 	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)
