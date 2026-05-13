@@ -15,7 +15,6 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
     prometheus.metrics.kuma.io/path: /custom-metrics
     prometheus.metrics.kuma.io/port: "5678"
-  creationTimestamp: null
   labels:
     kuma.io/mesh: default
     run: busybox

@@ -1,6 +1,5 @@
 mesh: poc-ms
 metadata:
-  creationTimestamp: null
   labels:
     app: sample-ms
     k8s.kuma.io/namespace: demo

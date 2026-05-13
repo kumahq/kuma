@@ -68,8 +68,7 @@ var _ = Describe("Composite Validator", func() {
 			  "mesh": "demo",
 			  "metadata": {
 				"namespace": "example",
-				"name": "empty",
-				"creationTimestamp": null
+				"name": "empty"
 			  },
 			  "spec": {
 				"conf": {
@@ -111,8 +110,7 @@ var _ = Describe("Composite Validator", func() {
 			  "apiVersion": "kuma.io/v1alpha1",
 			  "kind": "Mesh",
 			  "metadata": {
-				"name": "empty",
-				"creationTimestamp": null
+				"name": "empty"
 			  },
 			  "spec": {
 			  }
