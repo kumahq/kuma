@@ -136,7 +136,9 @@ func CreateInboundPassthroughListener(
 	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
-		Configure(envoy_listeners.OriginalDstForwarder())
+		Configure(envoy_listeners.OriginalDstForwarder()).
+		// SO_REUSEPORT so each worker owns its own LISTEN socket; a shared fd can wedge if one worker loses its epoll registration.
+		Configure(envoy_listeners.EnableReusePort(true))
 
 	if useStrictInboundPorts && len(proxy.Dataplane.Spec.Networking.Inbound) > 0 {
 		seenPorts := map[uint32]bool{}
