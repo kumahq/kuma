@@ -1,11 +1,12 @@
 package mesh_test
 
 import (
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
+
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
