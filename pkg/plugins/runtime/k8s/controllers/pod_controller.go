@@ -51,37 +51,50 @@ const (
 	ZoneProxyListenersSkippedReason = "ZoneProxyListenersSkipped"
 )
 
+// errSamplerWindow is the dedup window for parse-error log sampling.
+const errSamplerWindow = time.Minute
+
 // parseSampler rate-limits repeated "failed to parse Dataplane" errors so a
 // single malformed resource does not flood the log on every reconcile.
-var parseSampler = newErrSampler(time.Minute)
+var parseSampler = newErrSampler()
 
-// errSampler allows at most one Error log per unique key per window.
+// errSampler allows at most one Error log per unique key per errSamplerWindow.
 // It prevents tight loops from flooding the log when the same parse error
 // repeats for the same resource across reconcile passes.
+// The key should be a stable identifier (e.g. namespace/name), not include
+// variable error text - that avoids cardinality explosions from embedded
+// resource names in error messages.
 type errSampler struct {
-	window time.Duration
-	mu     sync.Mutex
-	last   map[string]time.Time
+	mu         sync.Mutex
+	last       map[string]time.Time
+	suppressed map[string]int
 }
 
-func newErrSampler(window time.Duration) *errSampler {
-	return &errSampler{window: window, last: map[string]time.Time{}}
+func newErrSampler() *errSampler {
+	return &errSampler{
+		last:       map[string]time.Time{},
+		suppressed: map[string]int{},
+	}
 }
 
-func (s *errSampler) allow(key string) bool {
+// allow reports whether the caller should log for key.
+// The second return value is the number of calls suppressed since the last
+// allowed log (zero on first occurrence in a window).
+func (s *errSampler) allow(key string) (bool, int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now()
-	for existingKey, t := range s.last {
-		if now.Sub(t) >= s.window {
-			delete(s.last, existingKey)
+	if t, ok := s.last[key]; ok {
+		if now.Sub(t) < errSamplerWindow {
+			s.suppressed[key]++
+			return false, 0
 		}
+		// window expired - fall through and re-allow
 	}
-	if _, ok := s.last[key]; ok {
-		return false
-	}
+	suppressed := s.suppressed[key]
 	s.last[key] = now
-	return true
+	s.suppressed[key] = 0
+	return true, suppressed
 }
 
 // PodReconciler reconciles a Pod object
@@ -206,7 +219,7 @@ func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_mode
 		}
 		return errors.Wrapf(err, "could not delete %v %s/%s", object.GetObjectKind(), object.GetName(), object.GetNamespace())
 	}
-	log.V(1).Info("Object deleted")
+	log.Info("Object deleted")
 	return nil
 }
 
@@ -343,8 +356,8 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 		dp := core_mesh.NewDataplaneResource()
 		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
 			name := kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: dataplane.Name}
-			if parseSampler.allow(name.String() + ":" + err.Error()) {
-				converterLog.Error(err, "failed to parse Dataplane", "dataplane", name, "spec", dataplane.Spec)
+			if ok, suppressed := parseSampler.allow(name.String()); ok {
+				converterLog.Error(err, "failed to parse Dataplane", "dataplane_ref", name.String(), "suppressed_count", suppressed)
 			}
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}

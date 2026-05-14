@@ -9,20 +9,43 @@ import (
 
 var _ = Describe("errSampler", func() {
 	It("allows each key once per window", func() {
-		sampler := newErrSampler(time.Minute)
+		sampler := newErrSampler()
 
-		Expect(sampler.allow("demo/dp-1:broken spec")).To(BeTrue())
-		Expect(sampler.allow("demo/dp-1:broken spec")).To(BeFalse())
-		Expect(sampler.allow("demo/dp-2:broken spec")).To(BeTrue())
+		ok, suppressed := sampler.allow("demo/dp-1")
+		Expect(ok).To(BeTrue())
+		Expect(suppressed).To(Equal(0))
+
+		ok, _ = sampler.allow("demo/dp-1")
+		Expect(ok).To(BeFalse())
+
+		ok, suppressed = sampler.allow("demo/dp-2")
+		Expect(ok).To(BeTrue())
+		Expect(suppressed).To(Equal(0))
 	})
 
-	It("prunes expired keys", func() {
-		sampler := newErrSampler(time.Minute)
-		sampler.last["demo/stale:broken spec"] = time.Now().Add(-2 * time.Minute)
-		sampler.last["demo/fresh:broken spec"] = time.Now()
+	It("counts suppressed calls", func() {
+		sampler := newErrSampler()
 
-		Expect(sampler.allow("demo/new:broken spec")).To(BeTrue())
-		Expect(sampler.last).NotTo(HaveKey("demo/stale:broken spec"))
-		Expect(sampler.last).To(HaveKey("demo/fresh:broken spec"))
+		ok, _ := sampler.allow("demo/dp-1")
+		Expect(ok).To(BeTrue())
+
+		_, _ = sampler.allow("demo/dp-1")
+		_, _ = sampler.allow("demo/dp-1")
+
+		// expire the window
+		sampler.last["demo/dp-1"] = time.Now().Add(-2 * errSamplerWindow)
+
+		ok, suppressed := sampler.allow("demo/dp-1")
+		Expect(ok).To(BeTrue())
+		Expect(suppressed).To(Equal(2))
+	})
+
+	It("re-allows after window expires", func() {
+		sampler := newErrSampler()
+		sampler.last["demo/dp-1"] = time.Now().Add(-2 * errSamplerWindow)
+
+		ok, suppressed := sampler.allow("demo/dp-1")
+		Expect(ok).To(BeTrue())
+		Expect(suppressed).To(Equal(0))
 	})
 })
