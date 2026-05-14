@@ -252,12 +252,12 @@ func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer, extraFn c
 	go func() {
 		err := buffer.dispatch(rt, pingHost, pingPort, "start", extraFn)
 		if err != nil {
-			log.V(2).Info("failed sending usage info", "cause", err.Error())
+			log.V(1).Info("failed sending usage info", "cause", err.Error())
 		}
 		for range time.Tick(time.Second * pingInterval) {
 			err := buffer.dispatch(rt, pingHost, pingPort, "ping", extraFn)
 			if err != nil {
-				log.V(2).Info("failed sending usage info", "cause", err.Error())
+				log.V(1).Info("failed sending usage info", "cause", err.Error())
 			}
 		}
 	}()
