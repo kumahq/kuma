@@ -59,11 +59,18 @@ func getConfig(mesh, dpp string) string {
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
 		return item.Op == api_common.Test
 	}))
-	// Redact value for maxDirectResponseBodySizeBytes in diff items
+	// Redact maxDirectResponseBodySizeBytes everywhere: as a standalone diff
+	// path (sidecar case where the listener already existed) and nested inside
+	// a wholesale listener add value (zone-proxy case). The body content +
+	// Etag hash already pin what's actually sent; the byte count is just
+	// len(body) and changes whenever any label does, so zeroing it keeps the
+	// golden churn down to the meaningful bits.
 	for i := range *response.Diff {
 		if strings.HasSuffix((*response.Diff)[i].Path, "maxDirectResponseBodySizeBytes") {
 			(*response.Diff)[i].Value = 0
+			continue
 		}
+		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
 	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
 		return strings.Compare(a.Path, b.Path)
@@ -242,6 +249,27 @@ func normalizeAdminEndpoints(jsonStr string) string {
 		return jsonStr
 	}
 	return string(out)
+}
+
+// zeroMaxDirectResponseBodySizeBytes walks an arbitrary JSON value and sets
+// every "maxDirectResponseBodySizeBytes" field to 0. Used so that goldens for
+// wholesale listener adds don't carry the literal byte count, which is just
+// len(body) and re-derives from the body content the golden already pins.
+func zeroMaxDirectResponseBodySizeBytes(v any) {
+	switch x := v.(type) {
+	case map[string]any:
+		for k, vv := range x {
+			if k == "maxDirectResponseBodySizeBytes" {
+				x[k] = 0
+				continue
+			}
+			zeroMaxDirectResponseBodySizeBytes(vv)
+		}
+	case []any:
+		for _, vv := range x {
+			zeroMaxDirectResponseBodySizeBytes(vv)
+		}
+	}
 }
 
 func normalizeClusterAddress(cluster map[string]any) {

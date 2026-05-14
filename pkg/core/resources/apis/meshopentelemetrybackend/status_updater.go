@@ -437,9 +437,9 @@ func (s *StatusUpdater) updateResourceCondition(
 	log := s.logger.WithValues(logKey, resource.GetMeta().GetName(), "mesh", resource.GetMeta().GetMesh())
 	if err := s.resManager.Update(ctx, resource); err != nil {
 		if store.IsConflict(err) {
-			log.Info(fmt.Sprintf("couldn't update %s, will retry next interval", typeName), "interval", s.interval)
+			log.Info("couldn't update status, will retry next interval", "resourceType", typeName, "interval", s.interval)
 		} else {
-			log.Error(err, fmt.Sprintf("could not update %s status", typeName))
+			log.Error(err, "could not update status", "resourceType", typeName)
 		}
 	}
 }

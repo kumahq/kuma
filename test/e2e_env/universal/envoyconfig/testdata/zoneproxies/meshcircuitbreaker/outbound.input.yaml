@@ -1,6 +1,6 @@
 type: MeshCircuitBreaker
 name: mcb-zone-proxy
-mesh: zoneproxy-envoyconfig
+mesh: envoyconfig-zoneproxies
 labels:
   kuma.io/effect: shadow
 spec:

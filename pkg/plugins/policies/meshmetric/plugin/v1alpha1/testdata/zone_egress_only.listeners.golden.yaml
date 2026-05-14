@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 472
+            maxDirectResponseBodySizeBytes: 191
             virtualHosts:
             - domains:
               - '*'
@@ -31,11 +31,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: aa8bc73d3398765ac177775325beeb539537fcdd5b5684bc66b01db7aed8137d
+                      exact: 9f8e293ee23df3d12ca00ab883337dc59f18e0e95d739f022f5c8a3c873d4df2
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"10s"}}],"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":null,"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"dataplane":"zone-egress-1","kuma.proxy_role":"zone-egress","mesh":"default"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -43,25 +43,22 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: aa8bc73d3398765ac177775325beeb539537fcdd5b5684bc66b01db7aed8137d
+                    value: 9f8e293ee23df3d12ca00ab883337dc59f18e0e95d739f022f5c8a3c873d4df2
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
-- name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
+- name: _kuma:metrics:prometheus:default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
-      pipe:
-        path: /tmp/kuma-otel-otel-collector.observability.svc-4317.sock
+      socketAddress:
+        address: 192.168.0.10
+        portValue: 5670
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
-          - name: envoy.filters.http.grpc_stats
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.grpc_stats.v3.FilterConfig
-              emitFilterState: true
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -74,11 +71,13 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
+              name: _kuma:metrics:prometheus:default-backend
               routes:
               - match:
-                  prefix: /
+                  prefix: /metrics
                 route:
-                  cluster: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
-          statPrefix: _kuma_metrics_opentelemetry_otel-collector_observability_svc-4317
-    name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
+                  cluster: _kuma:metrics:hijacker
+                  prefixRewrite: /meshmetric
+          statPrefix: _kuma_metrics_prometheus_default-backend
+    name: _kuma:metrics:prometheus:default-backend
+    trafficDirection: INBOUND

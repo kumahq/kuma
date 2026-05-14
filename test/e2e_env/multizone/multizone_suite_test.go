@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshhttproute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshidentity"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshmetric"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshmultizoneservice"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshproxy"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshservice"
@@ -96,5 +97,6 @@ var (
 	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
 	_ = Describe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", meshproxy.Connectivity, Ordered)
+	_ = Describe("MeshMetric on Zone Proxy", meshmetric.ZoneProxy, Ordered)
 	_ = Describe("Resource Label Validation", validation.ResourceValidation, Ordered)
 )
