@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -32,6 +34,35 @@ import (
 	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
+
+// errSampler allows at most one Error log per unique message per window.
+// It prevents tight loops from flooding the log when the same parse error
+// repeats for many resources in a single reconcile pass.
+type errSampler struct {
+	window time.Duration
+	mu     sync.Mutex
+	last   map[string]time.Time
+}
+
+func newErrSampler(window time.Duration) *errSampler {
+	return &errSampler{window: window, last: map[string]time.Time{}}
+}
+
+// allow returns true the first time msg is seen and once per window thereafter.
+func (s *errSampler) allow(msg string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	if t, ok := s.last[msg]; ok && now.Sub(t) < s.window {
+		return false
+	}
+	s.last[msg] = now
+	return true
+}
+
+// parseSampler rate-limits repeated "failed to parse Dataplane" errors so a
+// single malformed resource does not flood the log on every reconcile.
+var parseSampler = newErrSampler(time.Minute)
 
 const (
 	// CreatedKumaDataplaneReason is added to an event when
@@ -171,7 +202,7 @@ func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_mode
 		}
 		return errors.Wrapf(err, "could not delete %v %s/%s", object.GetObjectKind(), object.GetName(), object.GetNamespace())
 	}
-	log.Info("Object deleted")
+	log.V(1).Info("Object deleted")
 	return nil
 }
 
@@ -307,7 +338,9 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 		dataplane := allDataplanes.Items[i]
 		dp := core_mesh.NewDataplaneResource()
 		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
-			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
+			if parseSampler.allow(err.Error()) {
+				converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
+			}
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 		if dataplane.Mesh == mesh {
@@ -371,10 +404,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
-		log.Info("Dataplane created")
+		log.V(1).Info("Dataplane created")
 		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Dataplane: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
-		log.Info("Dataplane updated")
+		log.V(1).Info("Dataplane updated")
 		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Dataplane: %s", pod.Name)
 	}
 	return nil
