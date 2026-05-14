@@ -13,6 +13,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
@@ -33,11 +34,17 @@ type PodValidator struct {
 }
 
 func (h *PodValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
+	var resp admission.Response
 	switch req.Operation {
 	case v1.Create, v1.Update:
-		return h.ValidatePod(ctx, req)
+		resp = h.ValidatePod(ctx, req)
+	default:
+		resp = admission.Allowed("")
 	}
-	return admission.Allowed("")
+	if !resp.Allowed {
+		k8s_common.LogWebhookRejection(req, resp)
+	}
+	return resp
 }
 
 func (h *PodValidator) ValidatePod(ctx context.Context, req admission.Request) admission.Response {
