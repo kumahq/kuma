@@ -9,12 +9,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// logLinesCounter holds the registered counter vec, or nil before SetupMetrics is called.
+// logLinesCounter is nil until SetupMetrics is called.
 var logLinesCounter atomic.Pointer[prometheus.CounterVec]
 
-// SetupMetrics registers the kuma_cp_log_lines_total counter with the given
-// Prometheus registerer. Call this once during CP startup, after the metrics
-// registry is ready.
+// SetupMetrics registers the kuma_cp_log_lines_total counter with the given registerer.
 func SetupMetrics(reg prometheus.Registerer) (*prometheus.CounterVec, error) {
 	cv := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "kuma_cp_log_lines_total",
