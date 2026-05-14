@@ -35,7 +35,7 @@ resources:
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":null,"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"dataplane":"zone-ingress-1","kuma.proxy_role":"zone-ingress","mesh":"default","service":"zone-ingress-1"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":null,"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"dataplane":"zone-ingress-1","kuma.proxy_role":"zone-ingress","mesh":"default"}}}}'
                   status: 200
                 match:
                   path: /meshmetric

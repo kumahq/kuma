@@ -75,20 +75,6 @@ func zoneIngressOnlyDataplane(name string) *builders.DataplaneBuilder {
 		})
 }
 
-func mixedInboundAndZoneEgressDataplane() *builders.DataplaneBuilder {
-	return samples.DataplaneBackendBuilder().
-		With(func(d *core_mesh.DataplaneResource) {
-			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
-				{
-					Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
-					Address: "192.168.0.1",
-					Port:    10002,
-					Name:    "ze-port",
-				},
-			}
-		})
-}
-
 var _ = Describe("MeshMetric", func() {
 	type testCase struct {
 		proxy   *core_xds.Proxy
@@ -531,40 +517,6 @@ var _ = Describe("MeshMetric", func() {
 				).
 				Build(),
 		}),
-		Entry("mixed_inbound_and_zone_egress", testCase{
-			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
-			proxy: xds_builders.Proxy().
-				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
-				WithDataplane(mixedInboundAndZoneEgressDataplane().WithLabels(workloadLabels())).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
-									},
-								},
-							},
-						},
-					}),
-				).
-				Build(),
-		}),
 	)
 
 	Describe("dynconf payload on zone-proxy DPPs", func() {
@@ -606,14 +558,13 @@ var _ = Describe("MeshMetric", func() {
 			return string(listeners)
 		}
 
-		It("zone-egress-only: drops applications and uses dataplane name as service label", func() {
+		It("zone-egress-only: drops applications and omits service label when unknown", func() {
 			body := applyAndExtractDynconfBody(buildProxy(zoneEgressOnlyDataplane(), "zone-egress-1"))
 			// Applications cleared by sanitizeConfForProxy.
 			Expect(body).ToNot(ContainSubstring("my-app"))
 			Expect(body).ToNot(ContainSubstring(`"applications":[{`))
-			// service label falls back to dataplane name (not "unknown").
-			Expect(body).To(ContainSubstring(`"service":"zone-egress-1"`))
-			Expect(body).ToNot(ContainSubstring(`"service":"unknown"`))
+			// service label is omitted entirely (no "unknown" fallback) to keep cardinality low.
+			Expect(body).ToNot(ContainSubstring(`"service":`))
 			// dataplane label identifies the individual DPP.
 			Expect(body).To(ContainSubstring(`"dataplane":"zone-egress-1"`))
 			// proxy_role identifies the zone egress.
@@ -622,10 +573,9 @@ var _ = Describe("MeshMetric", func() {
 			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
 		})
 
-		It("zone-ingress-only: uses dataplane name as service label", func() {
+		It("zone-ingress-only: omits service label when unknown", func() {
 			body := applyAndExtractDynconfBody(buildProxy(zoneIngressOnlyDataplane("zone-ingress-1"), "zone-ingress-1"))
-			Expect(body).To(ContainSubstring(`"service":"zone-ingress-1"`))
-			Expect(body).ToNot(ContainSubstring(`"service":"unknown"`))
+			Expect(body).ToNot(ContainSubstring(`"service":`))
 			Expect(body).To(ContainSubstring(`"dataplane":"zone-ingress-1"`))
 			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-ingress"`))
 			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
@@ -658,33 +608,11 @@ var _ = Describe("MeshMetric", func() {
 				).
 				Build()
 			body := applyAndExtractDynconfBody(noAppsProxy)
-			// No applications in payload, service still resolves to DP name.
 			Expect(body).ToNot(ContainSubstring("my-app"))
-			Expect(body).To(ContainSubstring(`"service":"zone-egress-1"`))
+			Expect(body).ToNot(ContainSubstring(`"service":`))
 		})
 
-		It("mixed inbound + zone-egress: preserves applications and uses inbound service tag", func() {
-			dp := mixedInboundAndZoneEgressDataplane().WithLabels(map[string]string{
-				mesh_proto.ZoneTag: "zone-1",
-			})
-			body := applyAndExtractDynconfBody(buildProxy(dp, "backend"))
-			// Applications preserved because the DPP is not zone-proxy-only.
-			Expect(body).To(ContainSubstring("my-app"))
-			// service label resolves to the inbound's service tag, not "unknown" or the DP name.
-			Expect(body).To(ContainSubstring(`"service":"backend"`))
-			// proxy_role identifies the hybrid shape.
-			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"mixed"`))
-		})
-
-		It("mixed inbound + zone-egress with workload label: keeps kuma.workload", func() {
-			dp := mixedInboundAndZoneEgressDataplane().WithLabels(workloadLabels())
-			body := applyAndExtractDynconfBody(buildProxy(dp, "backend"))
-			// Workload identity is co-located, so kuma.workload is preserved.
-			Expect(body).To(ContainSubstring(`"kuma.workload":"backend"`))
-			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"mixed"`))
-		})
-
-		It("zone-egress-only in unified-naming mode: emits dataplane label for per-DPP drill-down", func() {
+		It("zone-egress-only in unified-naming mode: does not emit dataplane label", func() {
 			ctx := *xds_builders.Context().WithMeshBuilder(
 				samples.MeshDefaultBuilder().
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
@@ -722,8 +650,9 @@ var _ = Describe("MeshMetric", func() {
 			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
 			Expect(err).ToNot(HaveOccurred())
 			body := string(listeners)
-			// In unified-naming mode zone-proxy-only DPPs still need per-DPP identification.
-			Expect(body).To(ContainSubstring(`"dataplane":"zone-egress-1"`))
+			// Per-DPP identification is intentionally not auto-added to keep metric cardinality low;
+			// users can opt in via observability labels if needed.
+			Expect(body).ToNot(ContainSubstring(`"dataplane":"zone-egress-1"`))
 			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
 			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
 		})
@@ -951,15 +880,6 @@ var _ = Describe("MeshMetric", func() {
 				},
 			},
 			v1alpha1.ProxyRoleZoneProxy,
-		),
-		Entry("inbounds with zone egress (mixed)",
-			&mesh_proto.Dataplane_Networking{
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
-				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
-					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
-				},
-			},
-			v1alpha1.ProxyRoleMixed,
 		),
 	)
 })

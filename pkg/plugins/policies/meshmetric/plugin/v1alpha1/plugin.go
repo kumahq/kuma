@@ -57,29 +57,17 @@ const (
 	ProxyRoleZoneIngress = "zone-ingress"
 	ProxyRoleZoneProxy   = "zone-proxy"
 	ProxyRoleGateway     = "gateway"
-	// ProxyRoleMixed is emitted when a Dataplane combines sidecar inbounds with
-	// zone proxy listeners on the same proxy. This shape is unusual but permitted
-	// by the schema; the label flags it so operators can distinguish it from a
-	// plain sidecar or a pure zone proxy in dashboards.
-	ProxyRoleMixed = "mixed"
 )
 
 func deriveProxyRole(networking *mesh_proto.Dataplane_Networking) string {
 	if networking == nil {
 		return ProxyRoleSidecar
 	}
-	hasInbounds := len(networking.GetInbound()) > 0
-	hasGateway := networking.GetGateway() != nil
-	// Gateway precedence: a Dataplane is not allowed to combine a gateway block with
-	// zone proxy listeners (schema-level constraint), so this branch wins unambiguously.
-	if hasGateway {
+	if networking.GetGateway() != nil {
 		return ProxyRoleGateway
 	}
 	if !networking.HasZoneProxyListeners() {
 		return ProxyRoleSidecar
-	}
-	if hasInbounds {
-		return ProxyRoleMixed
 	}
 	var hasIngress, hasEgress bool
 	for _, l := range networking.GetListeners() {
@@ -378,20 +366,10 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		if extraLabels[WorkloadAttributeKey] == "" {
-			service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
-			// A zone-proxy-only Dataplane has no service tag, so IdentifyingName falls back to "unknown".
-			// Use the Dataplane name instead, which is stable and uniquely identifies the proxy.
-			if service == mesh_proto.ServiceUnknown && isZoneProxyOnly {
-				service = proxy.Dataplane.GetMeta().GetName()
+			if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
+				extraLabels["service"] = service
 			}
-			extraLabels["service"] = service
 		}
-	} else if isZoneProxyOnly {
-		// Unified-naming mode strips most identity labels; zone-proxy-only DPPs need
-		// per-proxy identification so dashboards can drill down to an individual
-		// ingress/egress. Emit the DP name as 'dataplane' (kuma.workload is
-		// intentionally not used — there is no co-located workload).
-		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 	}
 
 	return dpapi.MeshMetricDpConfig{

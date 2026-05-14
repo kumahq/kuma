@@ -102,15 +102,8 @@ func SetupZoneProxyCluster() {
 	// the insight, `kumactl inspect dataplane --shadow` returns 404 and the
 	// table tests would only see that error during their (shorter) polling
 	// window. Doing the wait here once amortizes the cost over all entries.
-	waitZoneProxyInspectable := func(dpp string) {
-		Eventually(func(g Gomega) {
-			_, err := universal.Cluster.GetKumactlOptions().
-				RunKumactlAndGetOutput("inspect", "dataplane", dpp, "--type", "config", "--mesh", zoneProxyMesh)
-			g.Expect(err).ToNot(HaveOccurred())
-		}, "90s", "2s").Should(Succeed())
-	}
-	waitZoneProxyInspectable(zoneProxyIngressDP)
-	waitZoneProxyInspectable(zoneProxyEgressDP)
+	WaitDataplaneInspectable(universal.Cluster, zoneProxyMesh, zoneProxyIngressDP)
+	WaitDataplaneInspectable(universal.Cluster, zoneProxyMesh, zoneProxyEgressDP)
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
