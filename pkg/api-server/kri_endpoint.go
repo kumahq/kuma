@@ -51,10 +51,10 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			return
 		}
 
-		name := k.getCoreName(identifier, *descriptor)
+		candidates := k.candidateNames(identifier, *descriptor)
 		if err := k.resourceAccess.ValidateGet(
 			request.Request.Context(),
-			core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},
+			core_model.ResourceKey{Mesh: identifier.Mesh, Name: candidates[0]},
 			*descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
@@ -63,8 +63,15 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 		}
 
 		resource := descriptor.NewObject()
-		if err := k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+		var getErr error
+		for _, name := range candidates {
+			getErr = k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh))
+			if getErr == nil || !store.IsNotFound(getErr) {
+				break
+			}
+		}
+		if getErr != nil {
+			rest_errors.HandleError(request.Request.Context(), response, getErr, "Could not retrieve a resource")
 			return
 		}
 
@@ -81,16 +88,24 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 	}
 }
 
-func (k *kriEndpoint) getCoreName(id kri.Identifier, desc core_model.ResourceTypeDescriptor) string {
-	namespace := id.Namespace
-	if id.Namespace == "" {
-		namespace = k.systemNamespace
+// candidateNames returns store names to try when resolving a KRI. Most cases
+// return a single unambiguous name. The empty-zone-on-zone-CP case is
+// ambiguous: the resource may be globally originated and synced down by KDS,
+// or locally admitted with a missing `kuma.io/zone` label (e.g. a policy
+// created on a non-federated zone CP before that label was populated). The
+// hashed-name lookup runs first to preserve existing behavior, with the
+// plain name as fallback.
+func (k *kriEndpoint) candidateNames(id kri.Identifier, desc core_model.ResourceTypeDescriptor) []string {
+	primary := k.getCoreName(id, desc)
+	if k.cpMode != config_core.Global && id.Zone == "" && !id.IsLocallyOriginated(false, k.cpZone) {
+		return []string{primary, k.localName(id, desc)}
 	}
+	return []string{primary}
+}
+
+func (k *kriEndpoint) getCoreName(id kri.Identifier, desc core_model.ResourceTypeDescriptor) string {
 	if id.IsLocallyOriginated(k.cpMode == config_core.Global, k.cpZone) {
-		if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(desc) {
-			return id.Name
-		}
-		return id.Name + "." + namespace
+		return k.localName(id, desc)
 	}
 	// Match HashSuffixMapper in pkg/kds/context/context.go: only include
 	// non-empty label values so the hash is identical to what KDS produces.
@@ -101,11 +116,22 @@ func (k *kriEndpoint) getCoreName(id kri.Identifier, desc core_model.ResourceTyp
 	if id.Namespace != "" {
 		values = append(values, id.Namespace)
 	}
-	hashedName := hash.HashedName(id.Mesh, id.Name, values...)
+	hashed := hash.HashedName(id.Mesh, id.Name, values...)
 	if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(desc) {
-		return hashedName
+		return hashed
 	}
-	return hashedName + "." + k.systemNamespace
+	return hashed + "." + k.systemNamespace
+}
+
+func (k *kriEndpoint) localName(id kri.Identifier, desc core_model.ResourceTypeDescriptor) string {
+	if k.environment == config_core.UniversalEnvironment || k.isClusterScoped(desc) {
+		return id.Name
+	}
+	namespace := id.Namespace
+	if namespace == "" {
+		namespace = k.systemNamespace
+	}
+	return id.Name + "." + namespace
 }
 
 func (k *kriEndpoint) isClusterScoped(desc core_model.ResourceTypeDescriptor) bool {

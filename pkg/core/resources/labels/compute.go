@@ -135,10 +135,14 @@ func Compute(
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
-	if labelsOpts.Mode == config_core.Zone {
+	if labelsOpts.Mode == config_core.Zone && labelsOpts.ZoneName != "" {
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
-		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
-		if rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated.
+		// Plugin-originated policies are always admittable on Zone, so they qualify too —
+		// without this, policies whose descriptor lacks ProvidedByZoneFlag (or whose flag
+		// definition changes over time) would be persisted without a zone label, and the
+		// KRI lookup would 404 because the emitted KRI zone slot is empty. Fixes #15544.
+		if rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) || (rd.IsPolicy && rd.IsPluginOriginated) {
 			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
 				setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)

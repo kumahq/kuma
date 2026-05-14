@@ -166,6 +166,31 @@ var _ = Describe("KRI endpoint", func() {
 		Expect(coreName).To(Equal("zone-1"))
 	})
 
+	It("should fall back to local name when empty-zone KRI on Zone CP misses hashed lookup", func() {
+		// given: Zone CP (non-federated), policy created locally without
+		// `kuma.io/zone` label populated — KRI emits an empty zone slot
+		// even though the resource was admitted locally. Reproduces #15544.
+		endpoint := kriEndpoint{
+			cpMode:          core.Zone,
+			cpZone:          "default",
+			environment:     core.UniversalEnvironment,
+			systemNamespace: "kuma-system",
+		}
+
+		// when: empty zone is treated as ambiguous on Zone CP — both the
+		// hashed (synced-from-global) and the plain (locally-admitted)
+		// names are returned, with plain second so the global path stays
+		// the default.
+		id := kri.MustFromString("kri_mcb_default___mesh-circuit-breaker-all-default_")
+		candidates := endpoint.candidateNames(id, descriptorFor(id))
+
+		// then
+		Expect(candidates).To(Equal([]string{
+			"mesh-circuit-breaker-all-default-w798xv6xczc42cwb",
+			"mesh-circuit-breaker-all-default",
+		}))
+	})
+
 	It("should resolve Mesh resource on Global CP (cluster-scoped, no namespace in core name)", func() {
 		// given: Global CP, Mesh resource is cluster-scoped in K8s
 		endpoint := kriEndpoint{
