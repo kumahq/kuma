@@ -558,7 +558,7 @@
           {
             "filterChainMatch": {
               "serverNames": [
-                "ab33f9258ae5f0e16.mes-zone-proxy.80.envoyconfig-zoneproxies.mes"
+                "sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80"
               ],
               "transportProtocol": "tls"
             },

@@ -220,7 +220,7 @@
                 }
               ]
             },
-            "sni": "ab33f9258ae5f0e16.mes-zone-proxy.80.envoyconfig-zoneproxies.mes"
+            "sni": "sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80"
           }
         },
         "type": "EDS",
@@ -290,7 +290,7 @@
                 }
               ]
             },
-            "sni": "aa819fc4313d20370.zone-proxy-demo-client.3000.envoyconfig-zoneproxies.ms"
+            "sni": "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-demo-client.3000"
           }
         },
         "type": "EDS",
@@ -355,7 +355,7 @@
                 }
               ]
             },
-            "sni": "ac9c43261575daad7.zone-proxy-test-server.80.envoyconfig-zoneproxies.ms"
+            "sni": "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-test-server.80"
           }
         },
         "type": "EDS",

@@ -2,7 +2,7 @@
   "diff": [],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
-      "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-demo-client_3000": {
+      "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000": {
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -10,10 +10,10 @@
             "resourceApiVersion": "V3"
           }
         },
-        "name": "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-demo-client_3000",
+        "name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000",
         "type": "EDS"
       },
-      "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-test-server_80": {
+      "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80": {
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -21,7 +21,7 @@
             "resourceApiVersion": "V3"
           }
         },
-        "name": "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-test-server_80",
+        "name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80",
         "type": "EDS"
       },
       "kuma:envoy:admin": {
@@ -76,8 +76,8 @@
       }
     },
     "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment": {
-      "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-demo-client_3000": {
-        "clusterName": "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-demo-client_3000",
+      "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000": {
+        "clusterName": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000",
         "endpoints": [
           {
             "lbEndpoints": [
@@ -103,7 +103,7 @@
                     },
                     "io.kuma.labels": {
                       "kuma.io/env": "universal",
-                      "kuma.io/mesh": "zoneproxy-envoyconfig",
+                      "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
                       "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-demo-client",
@@ -119,8 +119,8 @@
           }
         ]
       },
-      "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-test-server_80": {
-        "clusterName": "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-test-server_80",
+      "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80": {
+        "clusterName": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80",
         "endpoints": [
           {
             "lbEndpoints": [
@@ -152,7 +152,7 @@
                     },
                     "io.kuma.labels": {
                       "kuma.io/env": "universal",
-                      "kuma.io/mesh": "zoneproxy-envoyconfig",
+                      "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
                       "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-test-server",
@@ -343,7 +343,7 @@
           {
             "filterChainMatch": {
               "serverNames": [
-                "a06a7771eddd94b28.zone-proxy-demo-client.3000.zoneproxy-envoyconfig.ms"
+                "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-demo-client.3000"
               ],
               "transportProtocol": "tls"
             },
@@ -352,7 +352,7 @@
                 "name": "envoy.filters.network.tcp_proxy",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-                  "cluster": "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-demo-client_3000",
+                  "cluster": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
@@ -361,7 +361,7 @@
           {
             "filterChainMatch": {
               "serverNames": [
-                "a38202909cf090027.zone-proxy-test-server.80.zoneproxy-envoyconfig.ms"
+                "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-test-server.80"
               ],
               "transportProtocol": "tls"
             },
@@ -370,7 +370,7 @@
                 "name": "envoy.filters.network.tcp_proxy",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-                  "cluster": "kri_msvc_zoneproxy-envoyconfig_kuma-3__zone-proxy-test-server_80",
+                  "cluster": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
@@ -400,7 +400,7 @@
               "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.SPIFFECertValidatorConfig",
               "trustDomains": [
                 {
-                  "name": "zoneproxy-envoyconfig.kuma-3.mesh.local",
+                  "name": "envoyconfig-zoneproxies.kuma-3.mesh.local",
                   "trustBundle": {
                     "inlineBytes": "CERT_REDACTED"
                   }

@@ -612,7 +612,7 @@
           {
             "filterChainMatch": {
               "serverNames": [
-                "aa819fc4313d20370.zone-proxy-demo-client.3000.envoyconfig-zoneproxies.ms"
+                "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-demo-client.3000"
               ],
               "transportProtocol": "tls"
             },
@@ -630,7 +630,7 @@
           {
             "filterChainMatch": {
               "serverNames": [
-                "ac9c43261575daad7.zone-proxy-test-server.80.envoyconfig-zoneproxies.ms"
+                "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-test-server.80"
               ],
               "transportProtocol": "tls"
             },
