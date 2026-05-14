@@ -312,7 +312,7 @@ func (c *client) startHealthCheck(
 	ticker := time.NewTicker(prevInterval)
 	defer ticker.Stop()
 	for {
-		log.Info("sending health check")
+		log.V(1).Info("sending health check")
 		resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
 		if err != nil && !errors.Is(err, context.Canceled) {
 			if status.Code(err) == codes.Unimplemented {
