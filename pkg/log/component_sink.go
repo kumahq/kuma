@@ -1,10 +1,31 @@
 package log
 
 import (
+	"sync/atomic"
+
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// logLinesCounter holds the registered counter vec, or nil before SetupMetrics is called.
+var logLinesCounter atomic.Pointer[prometheus.CounterVec]
+
+// SetupMetrics registers the kuma_cp_log_lines_total counter with the given
+// Prometheus registerer. Call this once during CP startup, after the metrics
+// registry is ready.
+func SetupMetrics(reg prometheus.Registerer) (*prometheus.CounterVec, error) {
+	cv := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "kuma_cp_log_lines_total",
+		Help: "Total number of log lines emitted by the control plane, by logger name and level.",
+	}, []string{"logger", "level"})
+	if err := reg.Register(cv); err != nil {
+		return nil, err
+	}
+	logLinesCounter.Store(cv)
+	return cv, nil
+}
 
 // componentAwareSink wraps a logr.LogSink to add per-component log level
 // control. It intercepts WithName calls to track the hierarchical component
@@ -57,10 +78,20 @@ func (s *componentAwareSink) Enabled(level int) bool {
 }
 
 func (s *componentAwareSink) Info(level int, msg string, keysAndValues ...any) {
+	if cv := logLinesCounter.Load(); cv != nil {
+		lvl := "info"
+		if level > 0 {
+			lvl = "debug"
+		}
+		cv.WithLabelValues(s.name, lvl).Inc()
+	}
 	s.inner.Info(level, msg, keysAndValues...)
 }
 
 func (s *componentAwareSink) Error(err error, msg string, keysAndValues ...any) {
+	if cv := logLinesCounter.Load(); cv != nil {
+		cv.WithLabelValues(s.name, "error").Inc()
+	}
 	s.inner.Error(err, msg, keysAndValues...)
 }
 
