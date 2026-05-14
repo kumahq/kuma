@@ -7,7 +7,6 @@ resources:
         address: 127.0.0.1
         portValue: 17777
     bindToPort: false
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -27,9 +26,13 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext: {}
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://domain-1/
+                  sanType: URI
               validationContextSdsSecretConfig:
-                name: ca-bundle
+                name: system_trust_bundle
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
@@ -53,7 +56,6 @@ resources:
         address: 127.0.0.1
         portValue: 17778
     bindToPort: false
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -73,9 +75,13 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext: {}
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://domain-1/
+                  sanType: URI
               validationContextSdsSecretConfig:
-                name: ca-bundle
+                name: system_trust_bundle
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
@@ -98,11 +104,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15001
-<<<<<<< HEAD
-    enableReusePort: false
-=======
     enableReusePort: true
->>>>>>> 22cf2a2ac4 (fix(xds): enable reuse_port on inbound:passthrough listener (#16605))
     filterChains:
     - filterChainMatch:
         destinationPort: 17777
@@ -130,11 +132,7 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15001
-<<<<<<< HEAD
-    enableReusePort: false
-=======
     enableReusePort: true
->>>>>>> 22cf2a2ac4 (fix(xds): enable reuse_port on inbound:passthrough listener (#16605))
     filterChains:
     - filterChainMatch:
         destinationPort: 17777

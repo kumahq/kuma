@@ -106,7 +106,11 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15001
+<<<<<<< HEAD
     enableReusePort: false
+=======
+    enableReusePort: true
+>>>>>>> 22cf2a2ac4 (fix(xds): enable reuse_port on inbound:passthrough listener (#16605))
     filterChains:
     - filterChainMatch:
         destinationPort: 17777
@@ -134,7 +138,11 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15001
+<<<<<<< HEAD
     enableReusePort: false
+=======
+    enableReusePort: true
+>>>>>>> 22cf2a2ac4 (fix(xds): enable reuse_port on inbound:passthrough listener (#16605))
     filterChains:
     - filterChainMatch:
         destinationPort: 17777

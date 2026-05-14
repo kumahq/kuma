@@ -876,7 +876,11 @@
             "portValue": 15006
           }
         },
+<<<<<<< HEAD
         "enableReusePort": false,
+=======
+        "enableReusePort": true,
+>>>>>>> 22cf2a2ac4 (fix(xds): enable reuse_port on inbound:passthrough listener (#16605))
         "filterChains": [
           {
             "filterChainMatch": {
@@ -905,7 +909,11 @@
             "portValue": 15006
           }
         },
+<<<<<<< HEAD
         "enableReusePort": false,
+=======
+        "enableReusePort": true,
+>>>>>>> 22cf2a2ac4 (fix(xds): enable reuse_port on inbound:passthrough listener (#16605))
         "filterChains": [
           {
             "filterChainMatch": {
