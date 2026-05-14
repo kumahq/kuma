@@ -1115,13 +1115,20 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 	if err != nil {
 		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
-	inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName)
-	if len(inbounds) == 0 {
+	var inboundKey core_rules.InboundListener
+	if inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName); len(inbounds) > 0 {
+		inboundKey = core_rules.InboundListener{
+			Address: inbounds[0].DataplaneIP,
+			Port:    inbounds[0].DataplanePort,
+		}
+	} else if listeners := dataplane.Spec.GetNetworking().ListenersSelectedBySectionName(inboundKri.SectionName); len(listeners) > 0 {
+		addr := listeners[0].GetAddress()
+		if addr == "" {
+			addr = dataplane.Spec.GetNetworking().GetAddress()
+		}
+		inboundKey = core_rules.InboundListener{Address: addr, Port: listeners[0].GetPort()}
+	} else {
 		return nil, errors.New("inbound not found")
-	}
-	inboundKey := core_rules.InboundListener{
-		Address: inbounds[0].DataplaneIP,
-		Port:    inbounds[0].DataplanePort,
 	}
 
 	conf := []api_common.InboundPolicyConf{}
@@ -1355,22 +1362,11 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 			}
 
-			inboundInfoForPort := func(port uint32) (*string, map[string]string) {
-				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
-					return nil, dp.Spec.GetNetworking().GetGateway().GetTags()
+			getInboundPortName := func(port uint32) *string {
+				if name := dp.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
+					return &name
 				}
-				if inb := dp.Spec.GetNetworking().GetInboundForPort(port); inb != nil {
-					var namePtr *string
-					if name := inb.GetName(); name != "" {
-						namePtr = &name
-					}
-					return namePtr, inb.GetTags()
-				}
-				if lst := dp.Spec.GetNetworking().GetListenerForPort(port); lst != nil {
-					name := lst.GetSectionName()
-					return &name, nil
-				}
-				return nil, nil
+				return nil
 			}
 
 			fromRules := []api_common.FromRule{}
@@ -1388,10 +1384,15 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 							Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, rulesForInbound[i].Origin),
 						}
 					}
-					name, tags := inboundInfoForPort(inbound.Port)
+					var tags map[string]string
+					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+						tags = dp.Spec.Networking.Gateway.Tags
+					} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
+						tags = inb.Tags
+					}
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
-							Name: name,
+							Name: getInboundPortName(inbound.Port),
 							Tags: tags,
 							Port: int(inbound.Port),
 						},
@@ -1415,10 +1416,15 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}
-				name, tags := inboundInfoForPort(inbound.Port)
+				var tags map[string]string
+				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+					tags = dp.Spec.Networking.Gateway.Tags
+				} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
+					tags = inb.Tags
+				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{
-						Name: name,
+						Name: getInboundPortName(inbound.Port),
 						Port: int(inbound.Port),
 						Tags: tags,
 					},
