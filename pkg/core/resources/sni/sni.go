@@ -42,7 +42,6 @@ func FromKRI(id kri.Identifier) string {
 //   - Mesh, Name, Zone and Namespace conform to RFC 1035 ([a-z]([-a-z0-9]*[a-z0-9])?, max 63 chars)
 //   - SectionName conforms to RFC 1035 OR is an all-digit port number (1-5 digits, ≤63 chars)
 //   - total length ≤ 253 (DNS hostname limit)
-//
 func ValidateKRI(id kri.Identifier) []error {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	if err != nil {
@@ -94,7 +93,7 @@ func ValidateKRI(id kri.Identifier) []error {
 // is the decimal port number, which would otherwise fail RFC 1035 because
 // it starts with a digit).
 func validateSectionName(s string) []string {
-	if isAllDigits(s) && len(s) > 0 && len(s) <= 5 {
+	if s != "" && len(s) <= 5 && isAllDigits(s) {
 		return nil
 	}
 	return apimachineryvalidation.NameIsDNS1035Label(s, false)
