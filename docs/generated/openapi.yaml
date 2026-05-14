@@ -12090,7 +12090,9 @@ components:
                             description: >-
                               CrossZone defines locality aware load balancing
                               priorities when dataplane proxies inside local
-                              zone are unavailable. Only valid when targeting
+                              zone
+
+                              are unavailable. Only valid when targeting
                               MeshMultiZoneService.
                             properties:
                               failover:
