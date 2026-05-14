@@ -1570,7 +1570,11 @@ func (c *K8sCluster) loadImages(names ...string) error {
 // kong-mesh-smoke / mink-charts) this is a no-op: those nodes pull from the
 // registry directly and the helper has nothing to shortcut.
 //
-// docker pull is cheap when the image is already present locally.
+// docker pull is cheap when the image is already present locally. Images
+// referenced by `<repo>:<tag>@sha256:<digest>` are also retagged locally to
+// the bare `<repo>:<tag>` form, because `docker pull` of the digest form
+// stores the image with empty RepoTags, which `k3d image import` would then
+// import as `<none>:<none>` and kubelet would still re-pull at runtime.
 func (c *K8sCluster) PreloadImages(images ...string) error {
 	if len(images) == 0 {
 		return nil
@@ -1593,6 +1597,18 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 			pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
 			if out, err := pullCmd.CombinedOutput(); err != nil {
 				pullErrs[i] = errors.Wrapf(err, "docker pull %s: %s", img, strings.TrimSpace(string(out)))
+				return
+			}
+			// If the image is digest-pinned, also tag it locally as the bare
+			// `<repo>:<tag>` form so that `docker save` / `k3d image import`
+			// preserves the tag in the cluster's containerd image store.
+			tagged, digestRef, ok := splitDigestRef(img)
+			if !ok {
+				return
+			}
+			tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
+			if out, err := tagCmd.CombinedOutput(); err != nil {
+				pullErrs[i] = errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
 			}
 		}(i, img)
 	}
@@ -1601,9 +1617,21 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		return errors.Wrap(err, "preload images: failed to pull on host")
 	}
 
+	// Use bare `<repo>:<tag>` form for import; the cluster's containerd will
+	// then have the tagged entry, and kubelet's digest-aware lookup against
+	// it succeeds because content addressability matches.
+	importImages := make([]string, len(images))
+	for i, img := range images {
+		if tagged, _, ok := splitDigestRef(img); ok {
+			importImages[i] = tagged
+		} else {
+			importImages[i] = img
+		}
+	}
+
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
-		args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, images...)
+		args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, importImages...)
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, "k3d", args...)
@@ -1616,7 +1644,7 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 	case KindK8sType:
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
-		for _, img := range images {
+		for _, img := range importImages {
 			cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", img, "--name", c.name)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -1628,6 +1656,28 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 	default:
 		return nil
 	}
+}
+
+// splitDigestRef parses an image reference of the form `<repo>:<tag>@sha256:<digest>`
+// into the bare `<repo>:<tag>` form and the `<repo>@sha256:<digest>` form. The
+// third return value is false when the input has no digest component or no
+// tag component.
+func splitDigestRef(image string) (string, string, bool) {
+	atIdx := strings.LastIndex(image, "@")
+	if atIdx <= 0 {
+		return "", "", false
+	}
+	base, digestPart := image[:atIdx], image[atIdx:]
+	// `<repo>` may contain a port (e.g. `host:5000/repo`) which uses a
+	// colon, so look for the colon to the right of the last slash.
+	slashIdx := strings.LastIndex(base, "/")
+	colonIdx := strings.LastIndex(base[slashIdx+1:], ":")
+	if colonIdx == -1 {
+		return "", "", false
+	}
+	colonIdx += slashIdx + 1
+	repo := base[:colonIdx]
+	return base, repo + digestPart, true
 }
 
 func (c *K8sCluster) DeleteNode(name string) error {
