@@ -263,8 +263,19 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 		effectiveProfile = v1alpha1.ProfileName(profiles[0])
 	}
 
-	hasInclude := sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Include != nil
-	hasExclude := sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Exclude != nil
+	var excludeSelectors, includeSelectors []selectorFunction
+	if sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Exclude != nil {
+		excludeSelectors = make([]selectorFunction, 0, len(*sidecar.Profiles.Exclude))
+		for _, selector := range *sidecar.Profiles.Exclude {
+			excludeSelectors = append(excludeSelectors, selectorToFilterFunction(selector))
+		}
+	}
+	if sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Include != nil {
+		includeSelectors = make([]selectorFunction, 0, len(*sidecar.Profiles.Include))
+		for _, selector := range *sidecar.Profiles.Include {
+			includeSelectors = append(includeSelectors, selectorToFilterFunction(selector))
+		}
+	}
 
 	return func(in map[string]*io_prometheus_client.MetricFamily) error {
 		for key, metricFamily := range in {
@@ -276,21 +287,17 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 				}
 			}
 
-			if hasExclude {
-				for _, selector := range *sidecar.Profiles.Exclude {
-					if selectorToFilterFunction(selector)(*metricFamily.Name) {
-						include = false
-						break
-					}
+			for _, selector := range excludeSelectors {
+				if selector(*metricFamily.Name) {
+					include = false
+					break
 				}
 			}
 
-			if hasInclude {
-				for _, selector := range *sidecar.Profiles.Include {
-					if selectorToFilterFunction(selector)(*metricFamily.Name) {
-						include = true
-						break
-					}
+			for _, selector := range includeSelectors {
+				if selector(*metricFamily.Name) {
+					include = true
+					break
 				}
 			}
 
