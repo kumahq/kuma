@@ -11,6 +11,7 @@ type Observability interface {
 	ZipkinCollectorURL() string
 	OTelCollectorTraceURL() string
 	TracedServices() ([]string, error)
+	TracesForService(service string, limit int) ([]Trace, error)
 	Name() string
 }
 

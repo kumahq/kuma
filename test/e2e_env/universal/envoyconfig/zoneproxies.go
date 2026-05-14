@@ -23,6 +23,7 @@ import (
 	meshtimeout "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtls "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
 	meshtrafficpermission "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	meshtrace "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
@@ -66,12 +67,14 @@ func ZoneProxies() {
 		meshhttproute.MeshHTTPRouteResourceTypeDescriptor,
 		meshretry.MeshRetryResourceTypeDescriptor,
 		meshloadbalancing.MeshLoadBalancingStrategyResourceTypeDescriptor,
+		meshtrace.MeshTraceResourceTypeDescriptor,
 		meshmetric.MeshMetricResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config for zone proxies",
 		TestZoneProxyConfig,
+		test.EntriesForFolder(filepath.Join("zoneproxies", "meshtrace"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshmetric"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshcircuitbreaker"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshhealthcheck"), "envoyconfig"),
