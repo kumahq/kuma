@@ -4025,8 +4025,8 @@ spec:
                 properties:
                   applications:
                     description: |-
-                      Applications is a list of application that Dataplane Proxy will scrape.
-                      Ignored on zone-proxy-only Dataplanes (zone ingress/egress without a co-located workload).
+                      Applications is a list of applications that Dataplane Proxy will scrape.
+                      Ignored on zone-proxy-only Dataplanes (zone ingress/egress exist without a co-located workload).
                     items:
                       properties:
                         address:
