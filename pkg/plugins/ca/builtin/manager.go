@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -130,7 +131,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 	var notAfter string
 	if block, _ := pem.Decode(keyPair.CertPEM); block != nil {
 		if cert, err := x509.ParseCertificate(block.Bytes); err == nil {
-			notAfter = cert.NotAfter.UTC().Format("2006-01-02T15:04:05Z")
+			notAfter = cert.NotAfter.UTC().Format(time.RFC3339)
 		}
 	}
 	log.Info("CA created", "mesh", meshName, "backend", backend.Name, "notAfter", notAfter)

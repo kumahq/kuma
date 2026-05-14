@@ -100,7 +100,6 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	}
 }
 
-// logWebhookRejection emits one Info per rejected admission request.
 // Not called on allowed responses to avoid per-request spam.
 func logWebhookRejection(req admission.Request, resp admission.Response) {
 	reason := ""

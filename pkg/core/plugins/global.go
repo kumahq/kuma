@@ -17,7 +17,6 @@ func Register(name PluginName, plugin Plugin) {
 	log.Info("plugin registered", "name", name, "kind", pluginKind(plugin))
 }
 
-// pluginKind returns the type string for a plugin, reusing the constants from registry.go.
 func pluginKind(p Plugin) string {
 	switch p.(type) {
 	case BootstrapPlugin:
