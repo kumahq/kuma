@@ -134,14 +134,19 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 		log.V(1).Info("CA secret key already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)
 	}
 
-	block, _ := pem.Decode(keyPair.CertPEM)
+	persisted, err := b.getCa(ctx, meshName, backend.Name)
+	if err != nil {
+		log.V(1).Info("could not read persisted CA to derive notAfter", "mesh", meshName, "backend", backend.Name, "error", err)
+		return time.Time{}, nil
+	}
+	block, _ := pem.Decode(persisted.CertPEM)
 	if block == nil {
-		log.V(1).Info("could not decode CA cert PEM to read notAfter", "mesh", meshName, "backend", backend.Name)
+		log.V(1).Info("could not decode persisted CA cert PEM to read notAfter", "mesh", meshName, "backend", backend.Name)
 		return time.Time{}, nil
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		log.V(1).Info("could not parse CA cert to read notAfter", "mesh", meshName, "backend", backend.Name, "error", err)
+		log.V(1).Info("could not parse persisted CA cert to read notAfter", "mesh", meshName, "backend", backend.Name, "error", err)
 		return time.Time{}, nil
 	}
 	return cert.NotAfter.UTC(), nil

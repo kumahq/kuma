@@ -18,8 +18,10 @@ const (
 	runtimePlugin       pluginType = "runtime"
 	caPlugin            pluginType = "ca"
 	authnAPIServer      pluginType = "authn-api-server"
-	policyPlugin        pluginType = "policy"
-	proxyPlugin         pluginType = "proxy"
+	policyPlugin           pluginType = "policy"
+	proxyPlugin            pluginType = "proxy"
+	coreResourcePlugin     pluginType = "core-resource"
+	identityProviderPlugin pluginType = "identity-provider"
 )
 
 type PluginName string
@@ -228,13 +230,13 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 	}
 	if coreRes, ok := plugin.(CoreResourcePlugin); ok {
 		if old, exists := r.registeredResources[name]; exists {
-			return pluginAlreadyRegisteredError(proxyPlugin, name, old, coreRes)
+			return pluginAlreadyRegisteredError(coreResourcePlugin, name, old, coreRes)
 		}
 		r.registeredResources[name] = coreRes
 	}
 	if identityProvider, ok := plugin.(IdentityProviderPlugin); ok {
 		if old, exists := r.registeredIdentityProviders[name]; exists {
-			return pluginAlreadyRegisteredError(proxyPlugin, name, old, identityProvider)
+			return pluginAlreadyRegisteredError(identityProviderPlugin, name, old, identityProvider)
 		}
 		r.registeredIdentityProviders[name] = identityProvider
 	}

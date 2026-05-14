@@ -53,6 +53,10 @@ func pluginKind(p Plugin) string {
 		return string(policyPlugin)
 	case ProxyPlugin:
 		return string(proxyPlugin)
+	case CoreResourcePlugin:
+		return string(coreResourcePlugin)
+	case IdentityProviderPlugin:
+		return string(identityProviderPlugin)
 	default:
 		return "unknown"
 	}
