@@ -59,9 +59,12 @@ func GenerateClusters(
 					if !ok {
 						continue
 					}
-					sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 					if proxy.WorkloadIdentity != nil {
-						sni := tls.SNIFromKRI(service.BackendRef().Resource())
+						kriID := service.BackendRef().Resource()
+						if err := tls.ValidateSNIForKRI(kriID); err != nil {
+							continue
+						}
+						sni := tls.SNIFromKRI(kriID)
 						// we only want to route when are mesh-scoped zone egresses
 						if len(meshCtx.ZoneEgresses) == 0 {
 							continue
@@ -78,6 +81,7 @@ func GenerateClusters(
 							Configure(envoy_clusters.EdsCluster()).
 							Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 					} else {
+						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						edsClusterBuilder.
 							Configure(envoy_clusters.EdsCluster()).
 							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
@@ -150,14 +154,19 @@ func GenerateClusters(
 							tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 							protocol = port.GetProtocol()
 						}
-						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
+						zone := realResourceRef.Resource.Zone
+						zoneMeshScoped := zone == "" || meshCtx.ZonesWithMeshScopedProxy[zone]
+						var sni string
+						if zoneMeshScoped && proxy.WorkloadIdentity != nil {
+							if err := tls.ValidateSNIForKRI(realResourceRef.Resource); err != nil {
+								continue
+							}
+							sni = tls.SNIFromKRI(realResourceRef.Resource)
+						} else {
+							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
+						}
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
-							zone := realResourceRef.Resource.Zone
-							zoneMeshScoped := zone == "" || meshCtx.ZonesWithMeshScopedProxy[zone]
-							if zoneMeshScoped {
-								sni = tls.SNIFromKRI(realResourceRef.Resource)
-							}
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
 							if err != nil {
 								return nil, err
