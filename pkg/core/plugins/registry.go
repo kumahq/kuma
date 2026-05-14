@@ -11,13 +11,13 @@ import (
 type pluginType string
 
 const (
-	bootstrapPlugin     pluginType = "bootstrap"
-	resourceStorePlugin pluginType = "resource-store"
-	secretStorePlugin   pluginType = "secret-store"
-	configStorePlugin   pluginType = "config-store"
-	runtimePlugin       pluginType = "runtime"
-	caPlugin            pluginType = "ca"
-	authnAPIServer      pluginType = "authn-api-server"
+	bootstrapPlugin        pluginType = "bootstrap"
+	resourceStorePlugin    pluginType = "resource-store"
+	secretStorePlugin      pluginType = "secret-store"
+	configStorePlugin      pluginType = "config-store"
+	runtimePlugin          pluginType = "runtime"
+	caPlugin               pluginType = "ca"
+	authnAPIServer         pluginType = "authn-api-server"
 	policyPlugin           pluginType = "policy"
 	proxyPlugin            pluginType = "proxy"
 	coreResourcePlugin     pluginType = "core-resource"
