@@ -1557,6 +1557,63 @@ func (c *K8sCluster) loadImages(names ...string) error {
 	}
 }
 
+// PreloadImages pulls each fully-qualified image with `docker pull` (in
+// parallel) and imports them into the cluster's container runtime so pods
+// never need to fetch them at runtime. Use this before installing Helm charts
+// whose pods reference external images — it removes the dominant flake mode
+// on CI runners where ghcr.io / docker.io return slow or cancel the request,
+// surfacing as ImagePullBackOff after the test's wait budget is exhausted.
+//
+// docker pull is cheap when the image is already present locally.
+func (c *K8sCluster) PreloadImages(images ...string) error {
+	if len(images) == 0 {
+		return nil
+	}
+
+	var wg sync.WaitGroup
+	pullErrs := make([]error, len(images))
+	for i, img := range images {
+		wg.Add(1)
+		go func(i int, img string) {
+			defer wg.Done()
+			pullCmd := exec.Command("docker", "pull", "--quiet", img)
+			if out, err := pullCmd.CombinedOutput(); err != nil {
+				pullErrs[i] = errors.Wrapf(err, "docker pull %s: %s", img, strings.TrimSpace(string(out)))
+			}
+		}(i, img)
+	}
+	wg.Wait()
+	if err := std_errors.Join(pullErrs...); err != nil {
+		return errors.Wrap(err, "preload images: failed to pull on host")
+	}
+
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType:
+		args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, images...)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "k3d", args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return errors.Wrap(err, "preload images: k3d image import")
+		}
+		return nil
+	case KindK8sType:
+		for _, img := range images {
+			cmd := exec.Command("kind", "load", "docker-image", img, "--name", c.name)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return errors.Wrapf(err, "preload images: kind load %s", img)
+			}
+		}
+		return nil
+	default:
+		return errors.Errorf("preloading external images not supported for %s", Config.K8sType)
+	}
+}
+
 func (c *K8sCluster) DeleteNode(name string) error {
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
