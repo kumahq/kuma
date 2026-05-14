@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -79,28 +78,28 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 	serviceAccountAuthErr := errors.Errorf("invalid service account token")
 	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
 	if len(userInfo) != 4 {
-		log.Info(fmt.Sprintf("[WARNING] invalid service account token: username inside TokenReview response has unexpected format: %q",
-			tokenReview.Status.User.Username), "proxy", resourceName, "serviceAccountName", serviceAccountName)
+		log.Info("[WARNING] invalid service account token: username inside TokenReview response has unexpected format",
+			"username", tokenReview.Status.User.Username, "proxy", resourceName, "serviceAccountName", serviceAccountName)
 		return serviceAccountAuthErr
 	}
 
 	if userInfo[0] != "system" || userInfo[1] != "serviceaccount" {
-		log.Info(fmt.Sprintf("[WARNING] invalid service account token: user %q is not a service account", tokenReview.Status.User.Username),
-			"proxy", resourceName, "serviceAccountName", serviceAccountName)
+		log.Info("[WARNING] invalid service account token: user is not a service account",
+			"username", tokenReview.Status.User.Username, "proxy", resourceName, "serviceAccountName", serviceAccountName)
 		return serviceAccountAuthErr
 	}
 
 	tokenSANamespace := userInfo[2]
 	if tokenSANamespace != podNamespace {
-		log.Info(fmt.Sprintf("[WARNING] invalid service account token: token belongs to a namespace %q different from proxyId %q", tokenSANamespace, podNamespace),
-			"proxy", resourceName, "serviceAccountName", serviceAccountName)
+		log.Info("[WARNING] invalid service account token: token namespace does not match proxy namespace",
+			"tokenNamespace", tokenSANamespace, "proxyNamespace", podNamespace, "proxy", resourceName, "serviceAccountName", serviceAccountName)
 		return serviceAccountAuthErr
 	}
 
 	tokenSAName := userInfo[3]
 	if tokenSAName != serviceAccountName {
-		log.Info(fmt.Sprintf("[WARNING] invalid service account token: service account name in token %q does not match pod service account", tokenSAName),
-			"proxy", resourceName, "serviceAccountName", serviceAccountName)
+		log.Info("[WARNING] invalid service account token: service account name in token does not match pod service account",
+			"tokenServiceAccount", tokenSAName, "proxy", resourceName, "serviceAccountName", serviceAccountName)
 		return serviceAccountAuthErr
 	}
 

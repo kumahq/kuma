@@ -869,6 +869,7 @@ meshService:
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":             "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":         "9903",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":               "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":               "4321",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":    "13s",
@@ -1170,7 +1171,6 @@ meshService:
 				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":                                              "9903",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

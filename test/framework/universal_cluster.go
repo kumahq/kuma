@@ -347,9 +347,10 @@ func (c *UniversalCluster) CreateZoneEgress(
 
 // CreateDataplaneProxy starts kuma-dp for an app registered as a regular
 // Dataplane. The dpyaml must be a Dataplane resource manifest that may include
-// a listeners section.
-func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpyaml, token string) error {
-	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, nil, false, ""); err != nil {
+// a listeners section. envs is optional kuma-dp environment overrides; pass
+// nil to use defaults.
+func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpyaml, token string, envs map[string]string) error {
+	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, envs, false, ""); err != nil {
 		return err
 	}
 	c.mutex.Lock()
@@ -376,6 +377,20 @@ func (c *UniversalCluster) GetAppEnvoyTunnelE(name string) (envoy_admin.Tunnel, 
 		return nil, errors.Errorf("no tunnel with name %+q", name)
 	}
 	return t, nil
+}
+
+// RegisterAppEnvoyTunnel creates an Envoy admin tunnel for an already-deployed
+// app. Call this explicitly for apps where you need Envoy admin access.
+func (c *UniversalCluster) RegisterAppEnvoyTunnel(name string) error {
+	app := c.GetApp(name)
+	if app == nil {
+		return errors.Errorf("app %q not found", name)
+	}
+	c.mutex.Lock()
+	c.networking[name] = app.universalNetworking
+	c.createEnvoyTunnel(name)
+	c.mutex.Unlock()
+	return nil
 }
 
 func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {

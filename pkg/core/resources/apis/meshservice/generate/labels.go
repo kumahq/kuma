@@ -1,6 +1,9 @@
 package generate
 
 import (
+	"crypto/sha256"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -11,6 +14,66 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 )
 
+// propagationTrackingPrefix is the prefix for labels that record which
+// non-system keys were written by the previous propagation cycle. Used to
+// distinguish previously-propagated labels (candidates for removal) from
+// operator-managed labels (which must be preserved).
+const propagationTrackingPrefix = "kuma.io/pkey-"
+
+// trackingKeyHash returns a 16-hex-char fingerprint of labelKey. Storing the
+// hash in the label key (instead of the key name in the label value) avoids the
+// label-value character restriction: valid Kubernetes label keys can contain "/"
+// (e.g. "foo.example.com/bar") which is not allowed in label values, causing
+// such keys to be silently skipped and never cleaned up after DP removal.
+//
+// 16 hex chars (64 bits) keeps the suffix short while shrinking the collision
+// probability low enough that an unrelated external label cannot accidentally
+// match a tracking entry and get dropped during cleanup.
+func trackingKeyHash(labelKey string) string {
+	h := sha256.Sum256([]byte(labelKey))
+	return fmt.Sprintf("%x", h[:8]) // 16 hex chars, still short enough for a label key suffix
+}
+
+// addPropagationTracking clears any existing tracking labels in labels and
+// writes one tracking label per key in propagated. The key name is hashed into
+// the label key suffix so that qualified names with "/" are handled correctly.
+func addPropagationTracking(labels map[string]string, propagated map[string]string) {
+	for k := range labels {
+		if strings.HasPrefix(k, propagationTrackingPrefix) {
+			delete(labels, k)
+		}
+	}
+	for k := range propagated {
+		labels[propagationTrackingPrefix+trackingKeyHash(k)] = ""
+	}
+}
+
+// extractPropagatedKeys returns a function that reports whether a given label
+// key was recorded as propagated in the previous reconcile cycle.
+//
+// Handles two formats for backward compatibility during upgrades:
+//   - New format (current): kuma.io/pkey-<8hexchars> = ""  (key is hashed)
+//   - Old format (pre-hash): kuma.io/pkey-N = "<label-key>"  (key stored as value)
+func extractPropagatedKeys(labels map[string]string) func(string) bool {
+	hashes := map[string]bool{}
+	oldKeys := map[string]bool{}
+	for k, v := range labels {
+		if !strings.HasPrefix(k, propagationTrackingPrefix) {
+			continue
+		}
+		if v == "" {
+			// New format: suffix is a hash of the label key.
+			hashes[k[len(propagationTrackingPrefix):]] = true
+		} else {
+			// Old format: value holds the label key directly.
+			oldKeys[v] = true
+		}
+	}
+	return func(key string) bool {
+		return hashes[trackingKeyHash(key)] || oldKeys[key]
+	}
+}
+
 // dpContribution computes the non-system labels for an auto-generated
 // MeshService from a single DataplaneResource and its inbounds.
 // It never mutates its inputs and always returns a non-nil map.
@@ -18,12 +81,34 @@ func dpContribution(
 	dp *core_mesh.DataplaneResource,
 	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
 	allowSet map[string]struct{},
-	metric prometheus.Counter,
+	droppedLabels *prometheus.CounterVec,
 	log logr.Logger,
+	service string,
 ) map[string]string {
 	out := map[string]string{}
 	if dp == nil {
 		return out
+	}
+
+	drop := func(reason, key string) {
+		droppedLabels.WithLabelValues(reason).Inc()
+		log.Info("dropping label during MeshService generation",
+			"reason", reason,
+			"service", service,
+			"dataplane", dp.GetMeta().GetName(),
+			"mesh", dp.GetMeta().GetMesh(),
+			"key", key,
+		)
+	}
+
+	debugDrop := func(reason, key string) {
+		log.V(1).Info("dropping label during MeshService generation",
+			"reason", reason,
+			"service", service,
+			"dataplane", dp.GetMeta().GetName(),
+			"mesh", dp.GetMeta().GetMesh(),
+			"key", key,
+		)
 	}
 
 	// Step 1: cross-inbound consensus on non-reserved tags.
@@ -52,25 +137,21 @@ func dpContribution(
 	// Step 2: validate and write consensus values.
 	for k, e := range consensus {
 		if e.drop {
-			metric.Inc()
-			log.V(1).Info("dropping inbound tag — intra-DP disagreement", "key", k, "dp", dp.Meta.GetName())
+			drop("inbound_conflict", k)
 			continue
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				metric.Inc()
-				log.V(1).Info("dropping inbound tag not in allow-list", "key", k, "dp", dp.Meta.GetName())
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
 		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid label key", "key", k, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		if errs := validation.IsValidLabelValue(e.value); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid label value", "key", k, "value", e.value, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		out[k] = e.value
@@ -83,19 +164,16 @@ func dpContribution(
 		}
 		if allowSet != nil {
 			if _, ok := allowSet[k]; !ok {
-				metric.Inc()
-				log.V(1).Info("dropping DP label not in allow-list", "key", k, "dp", dp.Meta.GetName())
+				debugDrop("not_allowed", k)
 				continue
 			}
 		}
 		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid DP label key", "key", k, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
-			metric.Inc()
-			log.V(1).Info("dropping invalid DP label value", "key", k, "value", v, "dp", dp.Meta.GetName())
+			drop("invalid", k)
 			continue
 		}
 		out[k] = v

@@ -168,6 +168,27 @@ func Compute(
 		if ok {
 			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
 		}
+		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
+			hasIngress, hasEgress := false, false
+			for _, l := range dp.GetNetworking().GetListeners() {
+				switch l.Type {
+				case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+					hasIngress = true
+				case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+					hasEgress = true
+				}
+			}
+			if hasIngress {
+				set(mesh_proto.ListenerZoneIngressLabel, "enabled")
+			} else {
+				delete(labels, mesh_proto.ListenerZoneIngressLabel)
+			}
+			if hasEgress {
+				set(mesh_proto.ListenerZoneEgressLabel, "enabled")
+			} else {
+				delete(labels, mesh_proto.ListenerZoneEgressLabel)
+			}
+		}
 	}
 
 	if labelsOpts.IsK8s {

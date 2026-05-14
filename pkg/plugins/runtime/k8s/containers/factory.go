@@ -302,14 +302,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: i.ControlPlaneCACert,
 		},
 	}
-	if i.envoyAdminUnixSocket {
-		// When admin is on UDS, force readiness reporter to use TCP so
-		// K8s probes (which only support TCP/HTTP) can reach it.
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
-		}
-	}
 	if i.deltaXdsEnabled {
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
@@ -437,15 +429,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars[envName] = kube_core.EnvVar{
 			Name:  envName,
 			Value: envVal,
-		}
-	}
-
-	// Re-assert readiness env var after user overrides — overriding this
-	// would desync kuma-dp from the injected probes and break readiness.
-	if i.envoyAdminUnixSocket {
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
 		}
 	}
 

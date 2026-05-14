@@ -27,11 +27,10 @@ resources:
       socketAddress:
         address: 10.0.0.1
         portValue: 10002
-    enableReusePort: false
     filterChains:
     - filterChainMatch:
         serverNames:
-        - afce62f771ed74b78.example.9000.default.mes
+        - sni.extsvc.default.example.9000
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager

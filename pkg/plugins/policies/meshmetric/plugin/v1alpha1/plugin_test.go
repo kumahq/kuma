@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -23,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
@@ -37,6 +39,40 @@ func workloadLabels() map[string]string {
 		mesh_proto.ZoneTag:          "zone-1",
 		mesh_proto.KubeNamespaceTag: "kuma-demo",
 	}
+}
+
+func zoneEgressOnlyDataplane() *builders.DataplaneBuilder {
+	return builders.Dataplane().
+		WithName("zone-egress-1").
+		WithAddress("192.168.0.10").
+		WithoutInbounds().
+		With(func(d *core_mesh.DataplaneResource) {
+			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+				{
+					Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+					Address: "192.168.0.10",
+					Port:    10002,
+					Name:    "ze-port",
+				},
+			}
+		})
+}
+
+func zoneIngressOnlyDataplane(name string) *builders.DataplaneBuilder {
+	return builders.Dataplane().
+		WithName(name).
+		WithAddress("192.168.0.11").
+		WithoutInbounds().
+		With(func(d *core_mesh.DataplaneResource) {
+			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+				{
+					Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+					Address: "192.168.0.11",
+					Port:    10001,
+					Name:    "zi-port",
+				},
+			}
+		})
 }
 
 var _ = Describe("MeshMetric", func() {
@@ -419,7 +455,208 @@ var _ = Describe("MeshMetric", func() {
 				).
 				Build(),
 		}),
+		Entry("zone_egress_only", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithDataplane(zoneEgressOnlyDataplane()).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Conf: api.Conf{
+									Applications: &[]api.Application{
+										{
+											Path: "/metrics",
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
+		Entry("zone_ingress_only", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "zone-ingress-1")).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithDataplane(zoneIngressOnlyDataplane("zone-ingress-1")).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Conf: api.Conf{
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
 	)
+
+	Describe("dynconf payload on zone-proxy DPPs", func() {
+		buildProxy := func(dp *builders.DataplaneBuilder, name string) *core_xds.Proxy {
+			return xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", name)).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithDataplane(dp).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Conf: api.Conf{
+									Applications: &[]api.Application{
+										{Name: pointer.To("my-app"), Path: "/metrics", Port: 8080},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type:       api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build()
+		}
+
+		applyAndExtractDynconfBody := func(proxy *core_xds.Proxy) string {
+			resources := core_xds.NewResourceSet()
+			plug := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+			ctx := *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build()
+			Expect(plug.Apply(resources, ctx, proxy)).To(Succeed())
+			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			return string(listeners)
+		}
+
+		It("zone-egress-only: drops applications and omits service label when unknown", func() {
+			body := applyAndExtractDynconfBody(buildProxy(zoneEgressOnlyDataplane(), "zone-egress-1"))
+			// Applications cleared by sanitizeConfForProxy.
+			Expect(body).ToNot(ContainSubstring("my-app"))
+			Expect(body).ToNot(ContainSubstring(`"applications":[{`))
+			// service label is omitted entirely (no "unknown" fallback) to keep cardinality low.
+			Expect(body).ToNot(ContainSubstring(`"service":`))
+			// dataplane label identifies the individual DPP.
+			Expect(body).To(ContainSubstring(`"dataplane":"zone-egress-1"`))
+			// proxy_role identifies the zone egress.
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
+			// kuma.workload is not set on zone-proxy-only Dataplanes (no co-located workload).
+			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
+		})
+
+		It("zone-ingress-only: omits service label when unknown", func() {
+			body := applyAndExtractDynconfBody(buildProxy(zoneIngressOnlyDataplane("zone-ingress-1"), "zone-ingress-1"))
+			Expect(body).ToNot(ContainSubstring(`"service":`))
+			Expect(body).To(ContainSubstring(`"dataplane":"zone-ingress-1"`))
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-ingress"`))
+			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
+		})
+
+		It("zone-proxy DPP with applications=nil does not emit the ignore-warning path", func() {
+			// Pin the sanitize guard: when applications is empty, sanitizeConfForProxy
+			// must return early so a future refactor cannot accidentally log on every Apply.
+			noAppsProxy := xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithDataplane(zoneEgressOnlyDataplane()).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Conf: api.Conf{
+									Applications: nil,
+									Backends: &[]api.Backend{
+										{
+											Type:       api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build()
+			body := applyAndExtractDynconfBody(noAppsProxy)
+			Expect(body).ToNot(ContainSubstring("my-app"))
+			Expect(body).ToNot(ContainSubstring(`"service":`))
+		})
+
+		It("zone-egress-only in unified-naming mode: does not emit dataplane label", func() {
+			ctx := *xds_builders.Context().WithMeshBuilder(
+				samples.MeshDefaultBuilder().
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			).Build()
+			proxy := xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					WorkDir: "/tmp",
+					Features: map[string]bool{
+						xds_types.FeatureUnifiedResourceNaming: true,
+					},
+				}).
+				WithDataplane(zoneEgressOnlyDataplane()).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []subsetutils.Tag{},
+								Conf: api.Conf{
+									Backends: &[]api.Backend{
+										{
+											Type:       api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build()
+			resources := core_xds.NewResourceSet()
+			plug := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plug.Apply(resources, ctx, proxy)).To(Succeed())
+			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+			Expect(err).ToNot(HaveOccurred())
+			body := string(listeners)
+			// Per-DPP identification is intentionally not auto-added to keep metric cardinality low;
+			// users can opt in via observability labels if needed.
+			Expect(body).ToNot(ContainSubstring(`"dataplane":"zone-egress-1"`))
+			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
+			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
+		})
+	})
 
 	Describe("pipe mode (FeatureOtelViaKumaDp)", func() {
 		const (
@@ -594,4 +831,55 @@ var _ = Describe("MeshMetric", func() {
 			Expect(string(clusters)).To(ContainSubstring("inline-collector"))
 		})
 	})
+
+	DescribeTable("deriveProxyRole",
+		func(networking *mesh_proto.Dataplane_Networking, expected string) {
+			Expect(v1alpha1.DeriveProxyRole(networking)).To(Equal(expected))
+		},
+		Entry("nil networking", (*mesh_proto.Dataplane_Networking)(nil), v1alpha1.ProxyRoleSidecar),
+		Entry("inbounds only",
+			&mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
+			},
+			v1alpha1.ProxyRoleSidecar,
+		),
+		Entry("gateway",
+			&mesh_proto.Dataplane_Networking{
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
+			},
+			v1alpha1.ProxyRoleGateway,
+		),
+		Entry("gateway with inbounds (gateway wins)",
+			&mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
+			},
+			v1alpha1.ProxyRoleGateway,
+		),
+		Entry("zone ingress only",
+			&mesh_proto.Dataplane_Networking{
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneIngress},
+				},
+			},
+			v1alpha1.ProxyRoleZoneIngress,
+		),
+		Entry("zone egress only",
+			&mesh_proto.Dataplane_Networking{
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
+				},
+			},
+			v1alpha1.ProxyRoleZoneEgress,
+		),
+		Entry("both ingress and egress",
+			&mesh_proto.Dataplane_Networking{
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneIngress},
+					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
+				},
+			},
+			v1alpha1.ProxyRoleZoneProxy,
+		),
+	)
 })

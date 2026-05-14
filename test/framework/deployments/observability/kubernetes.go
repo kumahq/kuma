@@ -30,6 +30,10 @@ func (t *k8SDeployment) TracedServices() ([]string, error) {
 	return tracedServices(fmt.Sprintf("http://%s", t.jaegerApiTunnel.Endpoint()))
 }
 
+func (t *k8SDeployment) TracesForService(service string, limit int) ([]Trace, error) {
+	return tracesForService(fmt.Sprintf("http://%s", t.jaegerApiTunnel.Endpoint()), service, limit)
+}
+
 func (t *k8SDeployment) Name() string {
 	return t.deploymentName
 }

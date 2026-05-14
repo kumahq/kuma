@@ -96,6 +96,12 @@ const (
 	// DeletionGracePeriodStartedLabel is used when generating MeshServices on
 	// universal, it's here to avoid import cycles
 	DeletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
+
+	// ListenerZoneIngressLabel is auto-computed when a Dataplane has at least one ZoneIngress listener.
+	ListenerZoneIngressLabel = "kuma.io/listener-zoneingress"
+
+	// ListenerZoneEgressLabel is auto-computed when a Dataplane has at least one ZoneEgress listener.
+	ListenerZoneEgressLabel = "kuma.io/listener-zoneegress"
 )
 
 type ResourceOrigin string

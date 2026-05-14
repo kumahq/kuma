@@ -20,11 +20,10 @@ resources:
       socketAddress:
         address: 10.0.0.1
         portValue: 10001
-    enableReusePort: false
     filterChains:
     - filterChainMatch:
         serverNames:
-        - a601e0c00295a9fbe.backend.80.default.ms
+        - sni.msvc.default.east.backend.80
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy

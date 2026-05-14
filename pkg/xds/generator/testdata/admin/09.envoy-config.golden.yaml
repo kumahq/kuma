@@ -23,8 +23,9 @@ resources:
       - lbEndpoints:
         - endpoint:
             address:
-              pipe:
-                path: kuma-readiness-reporter.sock
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 9902
     name: system_probe_readiness
     type: STATIC
 - name: system_envoy_admin
@@ -34,7 +35,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 9901
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager

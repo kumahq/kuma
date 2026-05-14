@@ -81,7 +81,7 @@ func (d *universalDeployment) deployProxy(uniCluster *framework.UniversalCluster
 		return errors.Wrapf(err, "failed to generate DP token for %q", name)
 	}
 
-	return uniCluster.CreateDataplaneProxy(app, name, ip, dpYAML, token)
+	return uniCluster.CreateDataplaneProxy(app, name, ip, dpYAML, token, d.opts.DpEnvs)
 }
 
 func (d *universalDeployment) ingressName() string {

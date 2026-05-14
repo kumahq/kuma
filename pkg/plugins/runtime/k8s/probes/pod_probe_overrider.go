@@ -110,7 +110,7 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
 		return nil
 	}
 
-	log.V(1).Info(fmt.Sprintf("overriding %s probe", probeName), "container", containerName)
+	log.V(1).Info("overriding probe", "probe", probeName, "container", containerName)
 
 	namedPortResolver(probe.ProbeHandler)
 

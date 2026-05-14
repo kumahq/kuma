@@ -154,7 +154,7 @@ func (v *Validator) RunClient(
 		retry.WithMaxRetries(retries, retry.NewConstant(v.ClientRetryInterval)), // backoff
 		func(context.Context) error {
 			if err := runLocalClient(v.ClientConnectIP, serverPort); err != nil {
-				v.Logger.Info("failed to connect to the server, retrying...", "error", err)
+				v.Logger.Info("failed to connect to the server, retrying", "error", err)
 				return retry.RetryableError(err)
 			}
 			v.Logger.Info("client successfully connected to the server")

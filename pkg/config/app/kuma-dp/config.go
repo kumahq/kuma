@@ -143,10 +143,7 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
-	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
-	// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
-	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
-	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
+	// Port that exposes kuma-dp readiness status on localhost. Must be in (0, 65535]; 0 is rejected.
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
 	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
@@ -366,8 +363,8 @@ func (d *Dataplane) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
-	if d.ReadinessPort > 65353 || d.ReadinessPort == 0 {
-		errs = multierr.Append(errs, errors.Errorf(".ReadinessPort has to be in (0, 65353] range"))
+	if d.ReadinessPort > 65535 || d.ReadinessPort == 0 {
+		errs = multierr.Append(errs, errors.Errorf(".ReadinessPort has to be in (0, 65535] range"))
 	}
 
 	return errs
