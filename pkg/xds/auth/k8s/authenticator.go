@@ -91,8 +91,8 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 
 	tokenSANamespace := userInfo[2]
 	if tokenSANamespace != podNamespace {
-		log.Info("[WARNING] invalid service account token: token namespace does not match proxyId",
-			"tokenNamespace", tokenSANamespace, "proxyId", podNamespace, "proxy", resourceName, "serviceAccountName", serviceAccountName)
+		log.Info("[WARNING] invalid service account token: token namespace does not match proxy namespace",
+			"tokenNamespace", tokenSANamespace, "proxyNamespace", podNamespace, "proxy", resourceName, "serviceAccountName", serviceAccountName)
 		return serviceAccountAuthErr
 	}
 
