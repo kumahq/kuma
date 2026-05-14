@@ -1,0 +1,21 @@
+resources:
+- name: self_zoneingress_dp_zi-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.11
+        portValue: 10001
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - backend{mesh=default}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: backend
+          statPrefix: backend
+    name: self_zoneingress_dp_zi-port
+    trafficDirection: INBOUND
