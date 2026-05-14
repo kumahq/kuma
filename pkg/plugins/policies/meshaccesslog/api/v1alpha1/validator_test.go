@@ -122,6 +122,22 @@ from:
               labels:
                 app: otel-collector
 `),
+			Entry("openTelemetry with valid attributes", `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "service.version"
+                value: "%KUMA_MESH%"
+`),
 		)
 
 		type testCase struct {
@@ -531,6 +547,50 @@ from:
 violations:
   - field: spec.from[0].default.backends[0].openTelemetry.backendRef
     message: "backendRef must have exactly one defined: name, labels"`,
+			}),
+			Entry("openTelemetry attribute key with spaces", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "my custom attribute"
+                value: "%KUMA_MESH%"
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: must start with a lowercase letter, use only lowercase letters, digits, '.' or '_', avoid consecutive delimiters, and end with a letter or digit`,
+			}),
+			Entry("openTelemetry attribute key with placeholders", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "%KUMA_ZONE%"
+                value: "%KUMA_MESH%"
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: "must be a static OpenTelemetry attribute name; placeholders are only supported in values"`,
 			}),
 			Entry("MeshGateway and invalid to kind", testCase{
 				inputYaml: `

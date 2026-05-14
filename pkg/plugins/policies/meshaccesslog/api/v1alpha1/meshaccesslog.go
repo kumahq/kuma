@@ -81,7 +81,8 @@ type TCPBackend struct {
 
 // Defines an OpenTelemetry logging backend.
 type OtelBackend struct {
-	// Attributes can contain placeholders available on
+	// Attributes defines custom OpenTelemetry attributes. Keys must be static
+	// OpenTelemetry attribute names. Values can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={{key: "mesh", value: "%KUMA_MESH%"}}
 	Attributes *[]JsonValue `json:"attributes,omitempty"`

@@ -857,7 +857,7 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"inbound_route_tags_disabled.listener.golden.yaml"},
 		}),
-		Entry("outbound otel backend with workload identity", sidecarTestCase{
+		Entry("outbound otel backend with workload identity and legacy placeholder key", sidecarTestCase{
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
@@ -889,7 +889,8 @@ var _ = Describe("MeshAccessLog", func() {
 											{Key: "mesh", Value: "%KUMA_MESH%"},
 											{Key: "zone", Value: "%KUMA_ZONE%"},
 											{Key: "workload", Value: "%KUMA_WORKLOAD%"},
-											{Key: "%KUMA_ZONE%", Value: "static-zone-value"},
+											{Key: "static.zone", Value: "static-zone-value"},
+											{Key: "%KUMA_ZONE%", Value: "legacy-zone-key"},
 										},
 									},
 								}},

@@ -15,6 +15,11 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 )
 
+var (
+	BandwidthRegex         = regexp.MustCompile(`^(\d*)\s?([GMk]+bps)$`)
+	otelAttributeNameRegex = regexp.MustCompile(`^[a-z](?:[a-z0-9]|[._][a-z0-9])*$`)
+)
+
 func ValidateDurationNotNegative(path PathBuilder, duration *k8s.Duration) ValidationError {
 	var err ValidationError
 	if duration == nil {
@@ -224,8 +229,6 @@ func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32)
 	return err
 }
 
-var BandwidthRegex = regexp.MustCompile(`^(\d*)\s?([GMk]+bps)$`)
-
 func ValidateBandwidth(path PathBuilder, value string) ValidationError {
 	var err ValidationError
 	if value == "" {
@@ -234,6 +237,34 @@ func ValidateBandwidth(path PathBuilder, value string) ValidationError {
 	}
 	if matched := BandwidthRegex.MatchString(value); !matched {
 		err.AddViolationAt(path, MustHaveBPSUnit)
+	}
+	return err
+}
+
+// ValidateOtelAttributeName enforces the MeshAccessLog OpenTelemetry attribute
+// key grammar: lowercase letters, digits, `_` and `.`, starting with a letter,
+// ending with an alphanumeric, without consecutive delimiters, and without the
+// reserved `otel.` prefix. `%...%` placeholders are rejected because only
+// values may be interpolated.
+func ValidateOtelAttributeName(path PathBuilder, value string) ValidationError {
+	var err ValidationError
+	if value == "" {
+		err.AddViolationAt(path, MustBeDefined)
+		return err
+	}
+	if strings.Contains(value, "%") {
+		err.AddViolationAt(path, "must be a static OpenTelemetry attribute name; placeholders are only supported in values")
+		return err
+	}
+	if strings.HasPrefix(value, "otel.") {
+		err.AddViolationAt(path, "must not use the reserved OpenTelemetry prefix 'otel.'")
+		return err
+	}
+	if !otelAttributeNameRegex.MatchString(value) {
+		err.AddViolationAt(
+			path,
+			"must start with a lowercase letter, use only lowercase letters, digits, '.' or '_', avoid consecutive delimiters, and end with a letter or digit",
+		)
 	}
 	return err
 }
