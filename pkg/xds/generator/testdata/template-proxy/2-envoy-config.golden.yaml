@@ -103,7 +103,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15006
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy

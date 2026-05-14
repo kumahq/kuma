@@ -7,7 +7,6 @@ resources:
         address: 127.0.0.1
         portValue: 17777
     bindToPort: false
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -27,7 +26,11 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext: {}
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://domain-1/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: system_trust_bundle
                 sdsConfig:
@@ -53,7 +56,6 @@ resources:
         address: 127.0.0.1
         portValue: 17778
     bindToPort: false
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -73,7 +75,11 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext: {}
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://domain-1/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: system_trust_bundle
                 sdsConfig:
