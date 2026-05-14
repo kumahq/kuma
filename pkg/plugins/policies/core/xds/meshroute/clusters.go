@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -50,7 +50,6 @@ func GenerateClusters(
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
-
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
 				switch {
@@ -60,10 +59,16 @@ func GenerateClusters(
 					if !ok {
 						continue
 					}
-					sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 					if proxy.WorkloadIdentity != nil {
-						// MeshExternalService is only routable through zone egress in workload-identity mode.
-						// Skip cluster generation if no zone egress SANs are available.
+						kriID := service.BackendRef().Resource()
+						if err := tls.ValidateSNIForKRI(kriID); err != nil {
+							continue
+						}
+						sni := tls.SNIFromKRI(kriID)
+						// we only want to route when are mesh-scoped zone egresses
+						if len(meshCtx.ZoneEgresses) == 0 {
+							continue
+						}
 						egressSANs := meshCtx.ZoneEgressSANs()
 						if len(egressSANs) == 0 {
 							continue
@@ -76,6 +81,7 @@ func GenerateClusters(
 							Configure(envoy_clusters.EdsCluster()).
 							Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 					} else {
+						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						edsClusterBuilder.
 							Configure(envoy_clusters.EdsCluster()).
 							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
@@ -148,7 +154,17 @@ func GenerateClusters(
 							tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 							protocol = port.GetProtocol()
 						}
-						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
+						zone := realResourceRef.Resource.Zone
+						zoneMeshScoped := zone == "" || meshCtx.ZonesWithMeshScopedProxy[zone]
+						var sni string
+						if zoneMeshScoped && proxy.WorkloadIdentity != nil {
+							if err := tls.ValidateSNIForKRI(realResourceRef.Resource); err != nil {
+								continue
+							}
+							sni = tls.SNIFromKRI(realResourceRef.Resource)
+						} else {
+							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
+						}
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
@@ -236,8 +252,8 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 
 func SniForBackendRef(
 	backendRef *resolve.RealResourceBackendRef,
-	dest core.Destination,
-	port core.Port,
+	dest core_resources.Destination,
+	port core_resources.Port,
 	systemNamespace string,
 ) string {
 	name := core_model.GetDisplayName(dest.GetMeta())
