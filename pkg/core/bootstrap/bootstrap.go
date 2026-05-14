@@ -87,6 +87,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	log.Info("policy plugins loaded in order", "policies", policyNames)
 	core_plugins.InitAllIf(cfg.CoreResources.Enabled, "meshidentities", meshidentity.NameToModule)
+	core_plugins.LogRegistered()
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {

@@ -53,7 +53,6 @@ func (h *MeshValidator) ValidateDelete(ctx context.Context, req admission.Reques
 	if !h.unsafeDelete {
 		if err := h.validator.ValidateDelete(ctx, req.Name); err != nil {
 			resp := admission.Errored(http.StatusBadRequest, err)
-			logWebhookRejection(req, resp)
 			return resp
 		}
 	}
@@ -72,11 +71,9 @@ func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Reques
 	if err := h.validator.ValidateCreate(ctx, req.Name, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
 			resp := convertSpecValidationError(kumaErr, false, k8sRes)
-			logWebhookRejection(req, resp)
 			return resp
 		}
 		resp := admission.Denied(err.Error())
-		logWebhookRejection(req, resp)
 		return resp
 	}
 	return admission.Allowed("")
@@ -104,11 +101,9 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 	if err := h.validator.ValidateUpdate(ctx, oldCoreRes, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
 			resp := convertSpecValidationError(kumaErr, false, k8sRes)
-			logWebhookRejection(req, resp)
 			return resp
 		}
 		resp := admission.Denied(err.Error())
-		logWebhookRejection(req, resp)
 		return resp
 	}
 	return admission.Allowed("")

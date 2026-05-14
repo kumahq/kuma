@@ -6,6 +6,15 @@ var log = core.Log.WithName("plugins")
 
 var global = NewRegistry()
 
+var registeredPlugins []registeredPlugin
+
+var loggedRegisteredPlugins int
+
+type registeredPlugin struct {
+	name PluginName
+	kind string
+}
+
 func Plugins() Registry {
 	return global
 }
@@ -14,7 +23,14 @@ func Register(name PluginName, plugin Plugin) {
 	if err := global.Register(name, plugin); err != nil {
 		panic(err)
 	}
-	log.Info("plugin registered", "name", name, "kind", pluginKind(plugin))
+	registeredPlugins = append(registeredPlugins, registeredPlugin{name: name, kind: pluginKind(plugin)})
+}
+
+func LogRegistered() {
+	for _, plugin := range registeredPlugins[loggedRegisteredPlugins:] {
+		log.Info("plugin registered", "name", plugin.name, "kind", plugin.kind)
+	}
+	loggedRegisteredPlugins = len(registeredPlugins)
 }
 
 func pluginKind(p Plugin) string {

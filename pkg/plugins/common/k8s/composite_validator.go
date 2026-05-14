@@ -6,7 +6,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/kumahq/kuma/v2/pkg/core"
 )
+
+var webhookLog = core.Log.WithName("webhooks")
 
 type AdmissionValidator interface {
 	webhook.AdmissionHandler
@@ -35,6 +39,7 @@ func (c *CompositeValidator) IntoWebhook(scheme *runtime.Scheme) *admission.Webh
 				if validator.Supports(req) {
 					resp := validator.Handle(ctx, req)
 					if !resp.Allowed {
+						LogWebhookRejection(req, resp)
 						return resp
 					}
 					warnings = append(warnings, resp.Warnings...)
@@ -43,4 +48,19 @@ func (c *CompositeValidator) IntoWebhook(scheme *runtime.Scheme) *admission.Webh
 			return admission.Allowed("").WithWarnings(warnings...)
 		}),
 	}
+}
+
+// LogWebhookRejection records only non-allowed responses to avoid per-request spam.
+func LogWebhookRejection(req admission.Request, resp admission.Response) {
+	reason := ""
+	if resp.Result != nil {
+		reason = resp.Result.Message
+	}
+	webhookLog.Info("webhook rejected resource",
+		"kind", req.Kind.Kind,
+		"name", req.Name,
+		"namespace", req.Namespace,
+		"operation", req.Operation,
+		"reason", reason,
+	)
 }

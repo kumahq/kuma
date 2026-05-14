@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
@@ -20,8 +19,6 @@ import (
 	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 )
-
-var webhookLog = core.Log.WithName("webhooks")
 
 func NewValidatingWebhook(
 	converter k8s_common.Converter,
@@ -62,7 +59,6 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, req.Namespace); !resp.Allowed {
-		logWebhookRejection(req, resp)
 		return resp
 	}
 
@@ -73,13 +69,11 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 		var warnings []string
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 			resp := convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
-			logWebhookRejection(req, resp)
 			return resp
 		}
 
 		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {
 			resp := convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
-			logWebhookRejection(req, resp)
 			return resp
 		}
 
@@ -87,32 +81,15 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
 				resp := convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
-				logWebhookRejection(req, resp)
 				return resp
 			}
 			resp := admission.Denied(err.Error())
-			logWebhookRejection(req, resp)
 			return resp
 		}
 
 		warnings = append(warnings, core_model.Deprecations(coreRes)...)
 		return admission.Allowed("").WithWarnings(warnings...)
 	}
-}
-
-// Not called on allowed responses to avoid per-request spam.
-func logWebhookRejection(req admission.Request, resp admission.Response) {
-	reason := ""
-	if resp.Result != nil {
-		reason = resp.Result.Message
-	}
-	webhookLog.Info("webhook rejected resource",
-		"kind", req.Kind.Kind,
-		"name", req.Name,
-		"namespace", req.Namespace,
-		"operation", req.Operation,
-		"reason", reason,
-	)
 }
 
 func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, k8s_model.KubernetesObject, error) {
