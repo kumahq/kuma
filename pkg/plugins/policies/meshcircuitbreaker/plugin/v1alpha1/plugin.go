@@ -74,14 +74,8 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules, core_xds.NonMeshExternalService); err != nil {
+	if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules); err != nil {
 		return err
-	}
-
-	if len(proxy.Dataplane.Spec.GetNetworking().GetReadyZoneEgressListeners()) > 0 {
-		if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules, core_xds.MeshExternalServiceOnly); err != nil {
-			return err
-		}
 	}
 
 	return nil

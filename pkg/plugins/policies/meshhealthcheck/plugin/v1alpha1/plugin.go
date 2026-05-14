@@ -61,14 +61,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet(), core_xds.NonMeshExternalService); err != nil {
+	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet()); err != nil {
 		return err
-	}
-
-	if len(proxy.Dataplane.Spec.GetNetworking().GetReadyZoneEgressListeners()) > 0 {
-		if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet(), core_xds.MeshExternalServiceOnly); err != nil {
-			return err
-		}
 	}
 
 	return nil

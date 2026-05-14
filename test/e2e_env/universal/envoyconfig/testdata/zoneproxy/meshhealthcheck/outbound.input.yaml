@@ -7,7 +7,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/workload: zone-proxy-egress
+      kuma.io/listener-zoneegress: enabled
   to:
     - targetRef:
         kind: MeshExternalService
