@@ -2,20 +2,21 @@
   "diff": [
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/_kuma:metrics:hijacker",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/meshtrace:opentelemetry",
       "value": {
-        "altStatName": "_kuma_metrics_hijacker",
+        "altStatName": "meshtrace_opentelemetry",
         "connectTimeout": "5s",
         "loadAssignment": {
-          "clusterName": "_kuma:metrics:hijacker",
+          "clusterName": "meshtrace:opentelemetry",
           "endpoints": [
             {
               "lbEndpoints": [
                 {
                   "endpoint": {
                     "address": {
-                      "pipe": {
-                        "path": "/tmp/kuma-mh-zone-proxy-demo-client-envoyconfig-zoneproxies.sock"
+                      "socketAddress": {
+                        "address": "otel-collector.observability",
+                        "portValue": 4317
                       }
                     }
                   }
@@ -24,146 +25,63 @@
             }
           ]
         },
-        "name": "_kuma:metrics:hijacker",
-        "type": "STATIC"
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
-      "value": {
-        "directResponse": {
-          "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":[{\"name\":\"ignored-on-zone-proxy\",\"path\":\"/metrics\",\"port\":8888,\"address\":\"\"}],\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-demo-client\",\"kuma.proxy_role\":\"sidecar\",\"kuma.workload\":\"zone-proxy-demo-client\",\"kuma_io_service\":\"zone-proxy-demo-client\",\"kuma_io_services\":\",zone-proxy-demo-client,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig-zoneproxies\",\"team\":\"client-owners\",\"teams\":\",client-owners,\",\"zone\":\"kuma-3\"}}}}"
-          },
-          "status": 200
-        },
-        "match": {
-          "path": "/meshmetric"
-        },
-        "name": "_kuma:dynamicconfig:/meshmetric",
-        "responseHeadersToAdd": [
-          {
-            "header": {
-              "key": "Etag",
-              "value": "60706f44f35783d3b7bcc164de88f7f63fa78b4dc172230331e7870c7f74c78e"
+        "name": "meshtrace:opentelemetry",
+        "type": "STRICT_DNS",
+        "typedExtensionProtocolOptions": {
+          "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+            "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+            "explicitHttpConfig": {
+              "http2ProtocolOptions": {}
             }
           }
-        ]
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
-      "value": {
-        "directResponse": {
-          "status": 304
-        },
-        "match": {
-          "headers": [
-            {
-              "name": "If-None-Match",
-              "stringMatch": {
-                "exact": "60706f44f35783d3b7bcc164de88f7f63fa78b4dc172230331e7870c7f74c78e"
-              }
-            }
-          ],
-          "path": "/meshmetric"
         }
       }
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:metrics:prometheus:default-backend",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/tracing",
       "value": {
-        "address": {
-          "socketAddress": {
-            "address": "IP_REDACTED",
-            "portValue": 5670
-          }
-        },
-        "filterChains": [
+        "customTags": [
           {
-            "filters": [
-              {
-                "name": "envoy.filters.network.http_connection_manager",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                  "httpFilters": [
-                    {
-                      "name": "envoy.filters.http.router",
-                      "typedConfig": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
-                      }
-                    }
-                  ],
-                  "internalAddressConfig": {
-                    "cidrRanges": [
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 32
-                      }
-                    ]
-                  },
-                  "routeConfig": {
-                    "validateClusters": false,
-                    "virtualHosts": [
-                      {
-                        "domains": [
-                          "*"
-                        ],
-                        "name": "_kuma:metrics:prometheus:default-backend",
-                        "routes": [
-                          {
-                            "match": {
-                              "prefix": "/metrics"
-                            },
-                            "route": {
-                              "cluster": "_kuma:metrics:hijacker",
-                              "prefixRewrite": "/meshmetric"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              }
-            ]
+            "literal": {
+              "value": "envoyconfig-zoneproxies"
+            },
+            "tag": "kuma.mesh"
+          },
+          {
+            "literal": {
+              "value": "kuma-3"
+            },
+            "tag": "kuma.zone"
+          },
+          {
+            "literal": {
+              "value": "kri_wl_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_"
+            },
+            "tag": "kuma.workload"
           }
         ],
-        "name": "_kuma:metrics:prometheus:default-backend",
-        "trafficDirection": "INBOUND"
+        "overallSampling": {
+          "value": 100
+        },
+        "provider": {
+          "name": "envoy.tracers.opentelemetry",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig",
+            "grpcService": {
+              "envoyGrpc": {
+                "clusterName": "meshtrace:opentelemetry"
+              }
+            },
+            "serviceName": "zone-proxy-demo-client"
+          }
+        },
+        "spawnUpstreamSpan": false
       }
     }
   ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
-      "_kuma:metrics:hijacker": {
-        "altStatName": "_kuma_metrics_hijacker",
-        "connectTimeout": "5s",
-        "loadAssignment": {
-          "clusterName": "_kuma:metrics:hijacker",
-          "endpoints": [
-            {
-              "lbEndpoints": [
-                {
-                  "endpoint": {
-                    "address": {
-                      "pipe": {
-                        "path": "/tmp/kuma-mh-zone-proxy-demo-client-envoyconfig-zoneproxies.sock"
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "name": "_kuma:metrics:hijacker",
-        "type": "STATIC"
-      },
       "envoyconfig-zoneproxies_mes-zone-proxy__kuma-3_extsvc_80": {
         "connectTimeout": "5s",
         "edsClusterConfig": {
@@ -470,6 +388,39 @@
           }
         }
       },
+      "meshtrace:opentelemetry": {
+        "altStatName": "meshtrace_opentelemetry",
+        "connectTimeout": "5s",
+        "loadAssignment": {
+          "clusterName": "meshtrace:opentelemetry",
+          "endpoints": [
+            {
+              "lbEndpoints": [
+                {
+                  "endpoint": {
+                    "address": {
+                      "socketAddress": {
+                        "address": "otel-collector.observability",
+                        "portValue": 4317
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "name": "meshtrace:opentelemetry",
+        "type": "STRICT_DNS",
+        "typedExtensionProtocolOptions": {
+          "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+            "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+            "explicitHttpConfig": {
+              "http2ProtocolOptions": {}
+            }
+          }
+        }
+      },
       "outbound:passthrough:ipv4": {
         "altStatName": "outbound_passthrough_ipv4",
         "connectTimeout": "5s",
@@ -629,67 +580,6 @@
       }
     },
     "type.googleapis.com/envoy.config.listener.v3.Listener": {
-      "_kuma:metrics:prometheus:default-backend": {
-        "address": {
-          "socketAddress": {
-            "address": "IP_REDACTED",
-            "portValue": 5670
-          }
-        },
-        "filterChains": [
-          {
-            "filters": [
-              {
-                "name": "envoy.filters.network.http_connection_manager",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                  "httpFilters": [
-                    {
-                      "name": "envoy.filters.http.router",
-                      "typedConfig": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
-                      }
-                    }
-                  ],
-                  "internalAddressConfig": {
-                    "cidrRanges": [
-                      {
-                        "addressPrefix": "IP_REDACTED",
-                        "prefixLen": 32
-                      }
-                    ]
-                  },
-                  "routeConfig": {
-                    "validateClusters": false,
-                    "virtualHosts": [
-                      {
-                        "domains": [
-                          "*"
-                        ],
-                        "name": "_kuma:metrics:prometheus:default-backend",
-                        "routes": [
-                          {
-                            "match": {
-                              "prefix": "/metrics"
-                            },
-                            "route": {
-                              "cluster": "_kuma:metrics:hijacker",
-                              "prefixRewrite": "/meshmetric"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              }
-            ]
-          }
-        ],
-        "name": "_kuma:metrics:prometheus:default-backend",
-        "trafficDirection": "INBOUND"
-      },
       "inbound:IP_REDACTED:3000": {
         "address": {
           "socketAddress": {
