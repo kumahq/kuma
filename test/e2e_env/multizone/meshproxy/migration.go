@@ -29,173 +29,189 @@ import (
 func Migration() {
 	namespace := "meshproxy-migration"
 
-	type crossZoneRoute struct {
-		fromCluster      func() *K8sCluster
-		fromClientName   string
-		toCluster        func() *K8sCluster
-		toServiceName    string
-		expectedInstance string
+	const (
+		redMeshName  = "meshproxymig-red"
+		blueMeshName = "meshproxymig-blue"
+
+		redClientZone1  = "democlient-red-zone1"
+		blueClientZone1 = "democlient-blue-zone1"
+
+		redServerZone2  = "testserver-red-zone2"
+		blueServerZone2 = "testserver-blue-zone2"
+	)
+
+	type trafficCheck struct {
+		meshName          string
+		clientName        string
+		destinationServer string
+		expectedInstance  string
 	}
 
-	type meshScenario struct {
-		meshName string
-		route    crossZoneRoute
+	redTraffic := trafficCheck{
+		meshName:          redMeshName,
+		clientName:        redClientZone1,
+		destinationServer: redServerZone2,
+		expectedInstance:  redServerZone2,
 	}
-
-	scenarios := []meshScenario{
-		{
-			meshName: "meshproxymig-red",
-			route: crossZoneRoute{
-				fromCluster:      func() *K8sCluster { return multizone.KubeZone1 },
-				fromClientName:   "democlient-red-zone1",
-				toCluster:        func() *K8sCluster { return multizone.KubeZone2 },
-				toServiceName:    "testserver-red-zone2",
-				expectedInstance: "testserver-red-zone2",
-			},
-		},
-		{
-			meshName: "meshproxymig-blue",
-			route: crossZoneRoute{
-				fromCluster:      func() *K8sCluster { return multizone.KubeZone1 },
-				fromClientName:   "democlient-blue-zone1",
-				toCluster:        func() *K8sCluster { return multizone.KubeZone2 },
-				toServiceName:    "testserver-blue-zone2",
-				expectedInstance: "testserver-blue-zone2",
-			},
-		},
+	blueTraffic := trafficCheck{
+		meshName:          blueMeshName,
+		clientName:        blueClientZone1,
+		destinationServer: blueServerZone2,
+		expectedInstance:  blueServerZone2,
 	}
 
 	var (
-		crossZoneAddress            func(route crossZoneRoute) string
-		expectCrossZoneTraffic      func(g Gomega, route crossZoneRoute)
-		assertAllMeshesReachable    func()
+		crossZoneAddress            func(check trafficCheck) string
+		collectInstances            func(check trafficCheck, requests int) (map[string]int, error)
+		assertCrossZoneTraffic      func(g Gomega, check trafficCheck)
+		assertTrafficForBothMeshes  func()
 		deployMeshScopedZoneProxies func(meshName string)
-		assertMeshScopedProxyUsed   func(scenario meshScenario)
-		runDuringMigration          func(ctx context.Context, routes []crossZoneRoute, do func())
+		assertMeshScopedProxyUsed   func(check trafficCheck)
+		runDuringMigration          func(ctx context.Context, checks []trafficCheck, do func())
 		setupMeshIdentity           func(meshName string)
+		installSpiffeMTP            func(meshName string)
 	)
 
-	It("should migrate traffic to mesh-scoped zone proxies without request drops for two meshes", func(ctx SpecContext) {
-		assertAllMeshesReachable()
-
-		routes := make([]crossZoneRoute, 0, len(scenarios))
-		for _, scenario := range scenarios {
-			routes = append(routes, scenario.route)
-		}
-
-		runDuringMigration(ctx, routes, func() {
-			for _, scenario := range scenarios {
-				deployMeshScopedZoneProxies(scenario.meshName)
-				assertAllMeshesReachable()
-				assertMeshScopedProxyUsed(scenario)
-			}
-		})
-	})
-
 	BeforeAll(func() {
-		setup := NewClusterSetup()
-		for _, scenario := range scenarios {
-			setup.
-				Install(Yaml(
-					builders.Mesh().
-						WithName(scenario.meshName).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
-				)).
-				Install(MeshTrafficPermissionAllowAllUniversal(scenario.meshName))
-		}
-		Expect(setup.Setup(multizone.Global)).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(Yaml(
+				builders.Mesh().
+					WithName(redMeshName).
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			)).
+			Install(Yaml(
+				builders.Mesh().
+					WithName(blueMeshName).
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+			)).
+			Setup(multizone.Global)).To(Succeed())
 
-		for _, scenario := range scenarios {
-			Expect(WaitForMesh(scenario.meshName, multizone.Zones())).To(Succeed())
-		}
-
-		kubeZone1Install := []InstallFunc{}
-		kubeZone2Install := []InstallFunc{}
-		for _, scenario := range scenarios {
-			kubeZone1Install = append(kubeZone1Install,
-				democlient.Install(
-					democlient.WithNamespace(namespace),
-					democlient.WithMesh(scenario.meshName),
-					democlient.WithName(scenario.route.fromClientName),
-				),
-			)
-			kubeZone2Install = append(kubeZone2Install,
-				testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(scenario.meshName),
-					testserver.WithName(scenario.route.toServiceName),
-					testserver.WithEchoArgs("echo", "--instance", scenario.route.expectedInstance),
-				),
-			)
-		}
+		Expect(WaitForMesh(redMeshName, multizone.Zones())).To(Succeed())
+		Expect(WaitForMesh(blueMeshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(kubeZone1Install...)).
+			Install(Parallel(
+				democlient.Install(
+					democlient.WithNamespace(namespace),
+					democlient.WithMesh(redMeshName),
+					democlient.WithName(redClientZone1),
+				),
+				democlient.Install(
+					democlient.WithNamespace(namespace),
+					democlient.WithMesh(blueMeshName),
+					democlient.WithName(blueClientZone1),
+				),
+			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Parallel(kubeZone2Install...)).
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(redMeshName),
+					testserver.WithName(redServerZone2),
+					testserver.WithEchoArgs("echo", "--instance", redServerZone2),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(blueMeshName),
+					testserver.WithName(blueServerZone2),
+					testserver.WithEchoArgs("echo", "--instance", blueServerZone2),
+				),
+			)).
 			SetupInGroup(multizone.KubeZone2, &group)
-
 		Expect(group.Wait()).To(Succeed())
 
-		for _, scenario := range scenarios {
-			setupMeshIdentity(scenario.meshName)
-		}
+		setupMeshIdentity(redMeshName)
+		setupMeshIdentity(blueMeshName)
+
+		installSpiffeMTP(redMeshName)
+		installSpiffeMTP(blueMeshName)
 	})
 
 	AfterEachFailure(func() {
-		for _, scenario := range scenarios {
-			DebugUniversal(multizone.Global, scenario.meshName)
-			DebugKube(multizone.KubeZone1, scenario.meshName, namespace)
-			DebugKube(multizone.KubeZone2, scenario.meshName, namespace)
-		}
+		DebugUniversal(multizone.Global, redMeshName)
+		DebugUniversal(multizone.Global, blueMeshName)
+		DebugKube(multizone.KubeZone1, redMeshName, namespace)
+		DebugKube(multizone.KubeZone1, blueMeshName, namespace)
+		DebugKube(multizone.KubeZone2, redMeshName, namespace)
+		DebugKube(multizone.KubeZone2, blueMeshName, namespace)
 	})
 
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
-		for _, scenario := range scenarios {
-			Expect(multizone.Global.DeleteMesh(scenario.meshName)).To(Succeed())
-		}
+		Expect(multizone.Global.DeleteMesh(redMeshName)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(blueMeshName)).To(Succeed())
 	})
 
-	crossZoneAddress = func(route crossZoneRoute) string {
+	It("should deploy zone proxies to meshproxymig-red with no interruptions for meshproxymig-blue", func(ctx SpecContext) {
+		assertTrafficForBothMeshes()
+
+		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
+			deployMeshScopedZoneProxies(redMeshName)
+			assertTrafficForBothMeshes()
+			assertMeshScopedProxyUsed(redTraffic)
+		})
+	})
+
+	It("should deploy zone proxies to meshproxymig-blue with no interruptions for meshproxymig-red", func(ctx SpecContext) {
+		assertTrafficForBothMeshes()
+
+		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
+			deployMeshScopedZoneProxies(blueMeshName)
+			assertTrafficForBothMeshes()
+			assertMeshScopedProxyUsed(blueTraffic)
+		})
+	})
+
+	crossZoneAddress = func(check trafficCheck) string {
 		GinkgoHelper()
-		toCluster := route.toCluster()
 
 		return fmt.Sprintf(
 			"http://%s.%s.svc.%s.mesh.local:80",
-			route.toServiceName,
+			check.destinationServer,
 			namespace,
-			toCluster.ZoneName(),
+			multizone.KubeZone2.ZoneName(),
 		)
 	}
 
-	expectCrossZoneTraffic = func(g Gomega, route crossZoneRoute) {
+	collectInstances = func(check trafficCheck, requests int) (map[string]int, error) {
 		GinkgoHelper()
-		fromCluster := route.fromCluster()
 
-		response, err := client.CollectEchoResponse(
-			fromCluster,
-			route.fromClientName,
-			crossZoneAddress(route),
-			client.FromKubernetesPod(namespace, route.fromClientName),
+		return client.CollectResponsesByInstance(
+			multizone.KubeZone1,
+			check.clientName,
+			crossZoneAddress(check),
+			client.FromKubernetesPod(namespace, check.clientName),
+			client.WithNumberOfRequests(uint(requests)),
 		)
+	}
+
+	assertCrossZoneTraffic = func(g Gomega, check trafficCheck) {
+		GinkgoHelper()
+
+		const requests = 10
+
+		instances, err := collectInstances(check, requests)
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(response.Instance).To(Equal(route.expectedInstance))
+		g.Expect(instances).To(HaveLen(1))
+		g.Expect(instances).To(HaveKey(check.expectedInstance))
+		g.Expect(instances[check.expectedInstance]).To(Equal(requests))
 	}
 
-	assertAllMeshesReachable = func() {
+	assertTrafficForBothMeshes = func() {
 		GinkgoHelper()
 
-		for _, scenario := range scenarios {
-			Eventually(func(g Gomega) {
-				expectCrossZoneTraffic(g, scenario.route)
-			}, "60s", "1s").MustPassRepeatedly(3).Should(Succeed())
-		}
+		Eventually(func(g Gomega) {
+			assertCrossZoneTraffic(g, redTraffic)
+		}, "60s", "1s").MustPassRepeatedly(3).Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			assertCrossZoneTraffic(g, blueTraffic)
+		}, "60s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	}
 
 	deployMeshScopedZoneProxies = func(meshName string) {
@@ -229,22 +245,21 @@ func Migration() {
 
 	// assertMeshScopedProxyUsed verifies that the destination zone's new
 	// mesh-scoped ingress receives cross-zone requests once deployed.
-	assertMeshScopedProxyUsed = func(scenario meshScenario) {
+	assertMeshScopedProxyUsed = func(check trafficCheck) {
 		GinkgoHelper()
-		toCluster := scenario.route.toCluster()
 
-		ingressApp := fmt.Sprintf("mesh-zone-proxy-%s-ingress", scenario.meshName)
+		ingressApp := fmt.Sprintf("mesh-zone-proxy-%s-ingress", check.meshName)
 		ingressFilter := fmt.Sprintf(
 			"cluster.kri_msvc_%s_%s_%s_%s_main.upstream_rq_total",
-			scenario.meshName,
-			toCluster.ZoneName(),
+			check.meshName,
+			multizone.KubeZone2.ZoneName(),
 			namespace,
-			scenario.route.toServiceName,
+			check.destinationServer,
 		)
 
 		Eventually(func(g Gomega) {
-			expectCrossZoneTraffic(g, scenario.route)
-			stat, err := toCluster.GetEnvoyAdminTunnel(ingressApp, namespace).GetStats(ingressFilter)
+			assertCrossZoneTraffic(g, check)
+			stat, err := multizone.KubeZone2.GetEnvoyAdminTunnel(ingressApp, namespace).GetStats(ingressFilter)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stat).To(stats.BeGreaterThanZero())
 		}, "60s", "1s").Should(Succeed())
@@ -252,7 +267,7 @@ func Migration() {
 
 	// runDuringMigration runs `do` while background goroutines continuously
 	// send cross-zone requests and then verifies no request errors occurred.
-	runDuringMigration = func(ctx context.Context, routes []crossZoneRoute, do func()) {
+	runDuringMigration = func(ctx context.Context, checks []trafficCheck, do func()) {
 		GinkgoHelper()
 
 		migrationCtx, cancel := context.WithCancel(ctx)
@@ -263,7 +278,19 @@ func Migration() {
 			mu       sync.Mutex
 			firstErr error
 		)
-		for _, route := range routes {
+		setFirstErr := func(err error) {
+			if err == nil {
+				return
+			}
+			mu.Lock()
+			if firstErr == nil {
+				firstErr = err
+			}
+			mu.Unlock()
+		}
+
+		for _, check := range checks {
+
 			wg.Add(1)
 			go func() {
 				defer GinkgoRecover()
@@ -276,19 +303,19 @@ func Migration() {
 					default:
 					}
 
-					fromCluster := route.fromCluster()
-					_, err := client.CollectEchoResponse(
-						fromCluster,
-						route.fromClientName,
-						crossZoneAddress(route),
-						client.FromKubernetesPod(namespace, route.fromClientName),
-					)
+					const requests = 5
+					instances, err := collectInstances(check, requests)
 					if err != nil {
-						mu.Lock()
-						if firstErr == nil {
-							firstErr = err
-						}
-						mu.Unlock()
+						setFirstErr(err)
+					} else if len(instances) != 1 || instances[check.expectedInstance] != requests {
+						setFirstErr(fmt.Errorf(
+							"unexpected instances for mesh %q traffic from %q to %q: got=%v expected=%q",
+							check.meshName,
+							check.clientName,
+							check.destinationServer,
+							instances,
+							check.expectedInstance,
+						))
 					}
 
 					select {
@@ -389,5 +416,28 @@ spec:
 
 		trustZone2 := getMeshTrust(multizone.KubeZone2.Name(), Config.KumaNamespace)
 		installTrustToGlobal(trustZone2, multizone.KubeZone2.Name())
+	}
+
+	installSpiffeMTP = func(meshName string) {
+		GinkgoHelper()
+
+		meshTrafficPermission := fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-all-spiffe-%[1]s
+mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://%[1]s.
+`, meshName)
+
+		Expect(NewClusterSetup().
+			Install(YamlUniversal(meshTrafficPermission)).
+			Setup(multizone.Global)).To(Succeed())
 	}
 }
