@@ -5,7 +5,7 @@ info:
   description: Kuma API
 paths:
   /meshes/{mesh}/meshloadbalancingstrategies/{name}:
-    get
+    get:
       operationId: getMeshLoadBalancingStrategy
       summary: Returns MeshLoadBalancingStrategy entity
       tags: ["MeshLoadBalancingStrategy"]
