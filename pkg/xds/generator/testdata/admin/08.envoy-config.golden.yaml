@@ -1,10 +1,11 @@
 resources:
-- name: system_envoy_admin
+- name: kuma:envoy:admin
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: kuma_envoy_admin
     connectTimeout: 5s
     loadAssignment:
-      clusterName: system_envoy_admin
+      clusterName: kuma:envoy:admin
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -12,30 +13,30 @@ resources:
               socketAddress:
                 address: 127.0.0.1
                 portValue: 9901
-    name: system_envoy_admin
+    name: kuma:envoy:admin
     type: STATIC
-- name: system_probe_readiness
+- name: kuma:readiness
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: kuma_readiness
     connectTimeout: 5s
     loadAssignment:
-      clusterName: system_probe_readiness
+      clusterName: kuma:readiness
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               pipe:
                 path: kuma-readiness-reporter.sock
-    name: system_probe_readiness
+    name: kuma:readiness
     type: STATIC
-- name: system_envoy_admin
+- name: kuma:envoy:admin
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.1
         portValue: 9901
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -56,14 +57,14 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: system_envoy_admin
+              name: kuma:envoy:admin
               routes:
               - match:
                   prefix: /ready
                 route:
-                  cluster: system_probe_readiness
+                  cluster: kuma:readiness
                   prefixRewrite: /ready
-          statPrefix: system_envoy_admin
+          statPrefix: kuma_envoy_admin
     - filterChainMatch:
         transportProtocol: tls
       filters:
@@ -85,19 +86,19 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: system_envoy_admin
+              name: kuma:envoy:admin
               routes:
               - match:
                   prefix: /ready
                 route:
-                  cluster: system_probe_readiness
+                  cluster: kuma:readiness
                   prefixRewrite: /ready
               - match:
                   prefix: /
                 route:
-                  cluster: system_envoy_admin
+                  cluster: kuma:envoy:admin
                   prefixRewrite: /
-          statPrefix: system_envoy_admin
+          statPrefix: kuma_envoy_admin
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -120,5 +121,5 @@ resources:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    name: system_envoy_admin
+    name: kuma:envoy:admin
     trafficDirection: INBOUND

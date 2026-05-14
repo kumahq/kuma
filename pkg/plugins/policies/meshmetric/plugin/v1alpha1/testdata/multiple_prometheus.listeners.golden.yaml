@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 327
+            maxDirectResponseBodySizeBytes: 355
             virtualHosts:
             - domains:
               - '*'
@@ -31,11 +31,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: ac93c7b3b4f5b4f6053b228c1f68400a2597b38060a6e7f14331f4920bf7125b
+                      exact: 03282959788b7fa4a49421e6e72acfa756ffcf8f69284d1064c7b4117ea156c1
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -43,7 +43,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: ac93c7b3b4f5b4f6053b228c1f68400a2597b38060a6e7f14331f4920bf7125b
+                    value: 03282959788b7fa4a49421e6e72acfa756ffcf8f69284d1064c7b4117ea156c1
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
 - name: _kuma:metrics:prometheus:first-backend
@@ -53,7 +53,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 5670
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -89,7 +88,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 5671
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
