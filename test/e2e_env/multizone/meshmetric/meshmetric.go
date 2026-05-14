@@ -111,7 +111,8 @@ spec:
 			// so internal quotes appear as \" in the payload string.
 			g.Expect(payload).To(ContainSubstring(`\"applications\":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
-			// proxy_role label identifies the proxy's purpose.
+			// Dynconf uses kuma.proxy_role to identify the proxy purpose.
+			// Scraped Prometheus output exposes the label as kuma_proxy_role.
 			g.Expect(payload).To(ContainSubstring(`\"kuma.proxy_role\":\"zone-egress\"`))
 			// service label falls back to the DPP name, never to ServiceUnknown.
 			g.Expect(payload).To(ContainSubstring(`\"service\":\"zone-proxy-egress\"`))

@@ -57,7 +57,11 @@ const (
 	ProxyRoleZoneIngress = "zone-ingress"
 	ProxyRoleZoneProxy   = "zone-proxy"
 	ProxyRoleGateway     = "gateway"
-	ProxyRoleMixed       = "mixed"
+	// ProxyRoleMixed is emitted when a Dataplane combines sidecar inbounds with
+	// zone proxy listeners on the same proxy. This shape is unusual but permitted
+	// by the schema; the label flags it so operators can distinguish it from a
+	// plain sidecar or a pure zone proxy in dashboards.
+	ProxyRoleMixed = "mixed"
 )
 
 func deriveProxyRole(networking *mesh_proto.Dataplane_Networking) string {
@@ -482,7 +486,8 @@ func backendNameFrom(endpoint string) string {
 }
 
 // sanitizeConfForProxy drops config fields that are meaningless on the target proxy shape.
-// Applications is irrelevant on a zone-proxy-only DPP (no co-located workload); see MADR-103 group 4.
+// Applications is irrelevant on a zone-proxy-only DPP because there is no co-located
+// workload to scrape — zone ingress/egress only carry mesh traffic.
 // policyNames is used for log attribution only.
 func sanitizeConfForProxy(conf api.Conf, proxy *core_xds.Proxy, policyNames []string) api.Conf {
 	if proxy.Dataplane == nil {
@@ -494,7 +499,8 @@ func sanitizeConfForProxy(conf api.Conf, proxy *core_xds.Proxy, policyNames []st
 	if len(pointer.Deref(conf.Applications)) == 0 {
 		return conf
 	}
-	log.Info("ignoring 'applications' on zone-proxy-only Dataplane; field has no effect (MADR-103 group 4)",
+	// V(1) because Apply runs on every xDS recompute; logging at default level would flood the log.
+	log.V(1).Info("ignoring 'applications' on zone-proxy-only Dataplane; field has no effect without a co-located workload",
 		"dataplane", proxy.Dataplane.GetMeta().GetName(),
 		"mesh", proxy.Dataplane.GetMeta().GetMesh(),
 		"policy", strings.Join(policyNames, ","),

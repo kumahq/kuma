@@ -22,8 +22,8 @@ type MeshMetric struct {
 type Conf struct {
 	// Sidecar metrics collection configuration
 	Sidecar *Sidecar `json:"sidecar,omitempty"`
-	// Applications is a list of application that Dataplane Proxy will scrape.
-	// Ignored on zone-proxy-only Dataplanes (zone ingress/egress without a co-located workload).
+	// Applications is a list of applications that Dataplane Proxy will scrape.
+	// Ignored on zone-proxy-only Dataplanes (zone ingress/egress exist without a co-located workload).
 	Applications *[]Application `json:"applications,omitempty"`
 	// Backends list that will be used to collect metrics.
 	Backends *[]Backend `json:"backends,omitempty"`
