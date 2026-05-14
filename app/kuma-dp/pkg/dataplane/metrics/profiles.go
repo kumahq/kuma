@@ -253,7 +253,7 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 				effectiveSelectors = append(effectiveSelectors, neverSelect)
 			case string(v1alpha1.BasicProfileName):
 				effectiveSelectors = append(effectiveSelectors, basicProfile...)
-				effectiveLabelsSelectors = append(effectiveSelectors, basicProfileLabels...)
+				effectiveLabelsSelectors = append(effectiveLabelsSelectors, basicProfileLabels...)
 			}
 		}
 
