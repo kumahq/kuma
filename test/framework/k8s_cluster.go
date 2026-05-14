@@ -1570,13 +1570,15 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		return nil
 	}
 
+	pullCtx, cancelPull := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancelPull()
 	var wg sync.WaitGroup
 	pullErrs := make([]error, len(images))
 	for i, img := range images {
 		wg.Add(1)
 		go func(i int, img string) {
 			defer wg.Done()
-			pullCmd := exec.Command("docker", "pull", "--quiet", img)
+			pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
 			if out, err := pullCmd.CombinedOutput(); err != nil {
 				pullErrs[i] = errors.Wrapf(err, "docker pull %s: %s", img, strings.TrimSpace(string(out)))
 			}
@@ -1600,8 +1602,10 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		}
 		return nil
 	case KindK8sType:
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
 		for _, img := range images {
-			cmd := exec.Command("kind", "load", "docker-image", img, "--name", c.name)
+			cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", img, "--name", c.name)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
