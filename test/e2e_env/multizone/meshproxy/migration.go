@@ -86,8 +86,8 @@ func Migration() {
 			)).
 			Setup(multizone.Global)).To(Succeed())
 
-		Expect(WaitForMesh(redMeshName, multizone.Zones())).To(Succeed())
-		Expect(WaitForMesh(blueMeshName, multizone.Zones())).To(Succeed())
+		Expect(WaitForMesh(redMeshName, []Cluster{multizone.KubeZone1, multizone.KubeZone2})).To(Succeed())
+		Expect(WaitForMesh(blueMeshName, []Cluster{multizone.KubeZone1, multizone.KubeZone2})).To(Succeed())
 
 		group := errgroup.Group{}
 		NewClusterSetup().
@@ -290,7 +290,6 @@ func Migration() {
 		}
 
 		for _, check := range checks {
-
 			wg.Add(1)
 			go func() {
 				defer GinkgoRecover()
