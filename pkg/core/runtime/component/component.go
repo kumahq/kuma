@@ -98,9 +98,14 @@ type Manager interface {
 
 var _ Manager = &manager{}
 
-func NewManager(leaderElector LeaderElector) Manager {
+func NewManager(leaderElector LeaderElector, instanceId ...string) Manager {
+	id := ""
+	if len(instanceId) > 0 {
+		id = instanceId[0]
+	}
 	return &manager{
 		leaderElector: leaderElector,
+		instanceId:    id,
 		panicLimiter:  newPanicLogLimiter(10 * time.Second),
 	}
 }
@@ -141,6 +146,7 @@ func (p *panicLogLimiter) shouldLog(name string) (bool, int) {
 
 type manager struct {
 	leaderElector LeaderElector
+	instanceId    string
 	panicLimiter  *panicLogLimiter
 
 	sync.Mutex // protects access to fields below
@@ -286,7 +292,7 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 
 	cm.leaderElector.AddCallbacks(LeaderCallbacks{
 		OnStartedLeading: func() {
-			log.Info("leader acquired")
+			log.Info("leader acquired", "leaderId", cm.instanceId)
 			mutex.Lock()
 			defer mutex.Unlock()
 			leaderStopCh = make(chan struct{})
@@ -300,7 +306,7 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 			}
 		},
 		OnStoppedLeading: func() {
-			log.Info("leader lost")
+			log.Info("leader lost", "leaderId", cm.instanceId)
 			closeLeaderCh()
 		},
 	})

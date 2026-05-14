@@ -2,6 +2,8 @@ package builtin
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 
 	"github.com/asaskevich/govalidator"
@@ -54,7 +56,6 @@ func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh core_model.R
 		if err := b.create(ctx, mesh, backend); err != nil {
 			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
 		}
-		log.Info("CA created", "mesh", meshName)
 	}
 	return nil
 }
@@ -125,6 +126,14 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 		}
 		log.V(1).Info("CA secret key already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)
 	}
+
+	var notAfter string
+	if block, _ := pem.Decode(keyPair.CertPEM); block != nil {
+		if cert, err := x509.ParseCertificate(block.Bytes); err == nil {
+			notAfter = cert.NotAfter.UTC().Format("2006-01-02T15:04:05Z")
+		}
+	}
+	log.Info("CA created", "mesh", meshName, "backend", backend.Name, "notAfter", notAfter)
 	return nil
 }
 
