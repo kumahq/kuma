@@ -25,7 +25,7 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - afce62f771ed74b78.example.9000.default.mes
+        - sni.extsvc.default.example.9000
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy

@@ -379,6 +379,20 @@ func (c *UniversalCluster) GetAppEnvoyTunnelE(name string) (envoy_admin.Tunnel, 
 	return t, nil
 }
 
+// RegisterAppEnvoyTunnel creates an Envoy admin tunnel for an already-deployed
+// app. Call this explicitly for apps where you need Envoy admin access.
+func (c *UniversalCluster) RegisterAppEnvoyTunnel(name string) error {
+	app := c.GetApp(name)
+	if app == nil {
+		return errors.Errorf("app %q not found", name)
+	}
+	c.mutex.Lock()
+	c.networking[name] = app.universalNetworking
+	c.createEnvoyTunnel(name)
+	c.mutex.Unlock()
+	return nil
+}
+
 func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	var opts appDeploymentOptions
 	opts.apply(opt...)
