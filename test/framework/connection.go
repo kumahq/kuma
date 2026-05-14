@@ -3,6 +3,7 @@ package framework
 import (
 	"fmt"
 	"net"
+	"sync/atomic"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,6 +27,7 @@ import (
 func HoldConnection(cluster *UniversalCluster, srcApp, dstApp string, dstPort uint32) func() {
 	GinkgoHelper()
 
+	Expect(cluster.GetApp(srcApp)).ToNot(BeNil(), "source app %q not found", srcApp)
 	dst := cluster.GetApp(dstApp)
 	Expect(dst).ToNot(BeNil(), "destination app %q not found", dstApp)
 	dstIP := dst.GetIP()
@@ -38,15 +40,25 @@ func HoldConnection(cluster *UniversalCluster, srcApp, dstApp string, dstPort ui
 		addr, dstIP, dstPort,
 	)
 
+	// execErr captures a fast-fail from ncat startup (missing binary, ssh
+	// failure, etc.). When non-nil the next Eventually iteration aborts
+	// with the underlying error instead of waiting for the 30s timeout
+	// with a misleading message.
+	var execErr atomic.Value
 	go func() {
 		defer GinkgoRecover()
-		_, _, _ = cluster.Exec("", "", srcApp, cmd)
+		if _, _, err := cluster.Exec("", "", srcApp, cmd); err != nil {
+			execErr.Store(err)
+		}
 	}()
 
 	// Envoy names its listener stats by bound address: listener.<ip>_<port>.*
 	listenerStat := fmt.Sprintf(`listener\..*_%d\.downstream_cx_active`, dstPort)
 	dstAdmin := dst.GetEnvoyAdminTunnel()
 	Eventually(func(g Gomega) {
+		if v := execErr.Load(); v != nil {
+			g.Expect(v.(error)).ToNot(HaveOccurred(), "ncat exec on %q failed", srcApp)
+		}
 		s, err := dstAdmin.GetStats(listenerStat)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(s).To(stats.BeGreaterThanZero())
