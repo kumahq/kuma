@@ -35,34 +35,6 @@ import (
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
-// errSampler allows at most one Error log per unique message per window.
-// It prevents tight loops from flooding the log when the same parse error
-// repeats for many resources in a single reconcile pass.
-type errSampler struct {
-	window time.Duration
-	mu     sync.Mutex
-	last   map[string]time.Time
-}
-
-func newErrSampler(window time.Duration) *errSampler {
-	return &errSampler{window: window, last: map[string]time.Time{}}
-}
-
-func (s *errSampler) allow(msg string) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	now := time.Now()
-	if t, ok := s.last[msg]; ok && now.Sub(t) < s.window {
-		return false
-	}
-	s.last[msg] = now
-	return true
-}
-
-// parseSampler rate-limits repeated "failed to parse Dataplane" errors so a
-// single malformed resource does not flood the log on every reconcile.
-var parseSampler = newErrSampler(time.Minute)
-
 const (
 	// CreatedKumaDataplaneReason is added to an event when
 	// a new Dataplane is successfully created.
@@ -78,6 +50,39 @@ const (
 	// so listener generation is skipped.
 	ZoneProxyListenersSkippedReason = "ZoneProxyListenersSkipped"
 )
+
+// parseSampler rate-limits repeated "failed to parse Dataplane" errors so a
+// single malformed resource does not flood the log on every reconcile.
+var parseSampler = newErrSampler(time.Minute)
+
+// errSampler allows at most one Error log per unique key per window.
+// It prevents tight loops from flooding the log when the same parse error
+// repeats for the same resource across reconcile passes.
+type errSampler struct {
+	window time.Duration
+	mu     sync.Mutex
+	last   map[string]time.Time
+}
+
+func newErrSampler(window time.Duration) *errSampler {
+	return &errSampler{window: window, last: map[string]time.Time{}}
+}
+
+func (s *errSampler) allow(key string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	for existingKey, t := range s.last {
+		if now.Sub(t) >= s.window {
+			delete(s.last, existingKey)
+		}
+	}
+	if _, ok := s.last[key]; ok {
+		return false
+	}
+	s.last[key] = now
+	return true
+}
 
 // PodReconciler reconciles a Pod object
 type PodReconciler struct {
@@ -337,8 +342,9 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 		dataplane := allDataplanes.Items[i]
 		dp := core_mesh.NewDataplaneResource()
 		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
-			if parseSampler.allow(err.Error()) {
-				converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
+			name := kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: dataplane.Name}
+			if parseSampler.allow(name.String() + ":" + err.Error()) {
+				converterLog.Error(err, "failed to parse Dataplane", "dataplane", name, "spec", dataplane.Spec)
 			}
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
