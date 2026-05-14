@@ -1564,9 +1564,21 @@ func (c *K8sCluster) loadImages(names ...string) error {
 // on CI runners where ghcr.io / docker.io return slow or cancel the request,
 // surfacing as ImagePullBackOff after the test's wait budget is exhausted.
 //
+// Only k3d (incl. calico variant) and kind are supported because
+// `k3d image import` / `kind load docker-image` are local-runtime operations.
+// On other cluster types (AWS/Azure, used in downstream smoke tests like
+// kong-mesh-smoke / mink-charts) this is a no-op: those nodes pull from the
+// registry directly and the helper has nothing to shortcut.
+//
 // docker pull is cheap when the image is already present locally.
 func (c *K8sCluster) PreloadImages(images ...string) error {
 	if len(images) == 0 {
+		return nil
+	}
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType, KindK8sType:
+		// supported, continue
+	default:
 		return nil
 	}
 
@@ -1614,7 +1626,7 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		}
 		return nil
 	default:
-		return errors.Errorf("preloading external images not supported for %s", Config.K8sType)
+		return nil
 	}
 }
 
