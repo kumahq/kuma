@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
@@ -114,11 +114,11 @@ type Verification struct {
 	// SubjectAltNames list of names to verify in the certificate.
 	SubjectAltNames *[]SANMatch `json:"subjectAltNames,omitempty"`
 	// CaCert defines a certificate of CA.
-	CaCert *common_api.DataSource `json:"caCert,omitempty"`
+	CaCert *v1alpha1.DataSource `json:"caCert,omitempty"`
 	// ClientCert defines a certificate of a client.
-	ClientCert *common_api.DataSource `json:"clientCert,omitempty"`
+	ClientCert *v1alpha1.DataSource `json:"clientCert,omitempty"`
 	// ClientKey defines a client private key.
-	ClientKey *common_api.DataSource `json:"clientKey,omitempty"`
+	ClientKey *v1alpha1.DataSource `json:"clientKey,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;Prefix
