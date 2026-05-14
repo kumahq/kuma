@@ -48,7 +48,6 @@ func newErrSampler(window time.Duration) *errSampler {
 	return &errSampler{window: window, last: map[string]time.Time{}}
 }
 
-// allow returns true the first time msg is seen and once per window thereafter.
 func (s *errSampler) allow(msg string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
