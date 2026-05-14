@@ -61,7 +61,7 @@
                     ]
                   },
                   "routeConfig": {
-                    "maxDirectResponseBodySizeBytes": 257,
+                    "maxDirectResponseBodySizeBytes": 0,
                     "virtualHosts": [
                       {
                         "domains": [
@@ -78,7 +78,7 @@
                                 {
                                   "name": "If-None-Match",
                                   "stringMatch": {
-                                    "exact": "d6c0f5fa66bef630937d041a7727cbd852792e1240392fae208f5f222e4deb3a"
+                                    "exact": "7d67b95dc410e186df54d52446c6154e7e8d98d953fd5c6f19af39110f97b082"
                                   }
                                 }
                               ],
@@ -88,7 +88,7 @@
                           {
                             "directResponse": {
                               "body": {
-                                "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-egress\",\"kuma.proxy_role\":\"zone-egress\",\"mesh\":\"envoyconfig-zoneproxies\",\"service\":\"zone-proxy-egress\",\"zone\":\"kuma-3\"}}}}"
+                                "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-egress\",\"kuma.proxy_role\":\"zone-egress\",\"mesh\":\"envoyconfig-zoneproxies\",\"zone\":\"kuma-3\"}}}}"
                               },
                               "status": 200
                             },
@@ -100,7 +100,7 @@
                               {
                                 "header": {
                                   "key": "Etag",
-                                  "value": "d6c0f5fa66bef630937d041a7727cbd852792e1240392fae208f5f222e4deb3a"
+                                  "value": "7d67b95dc410e186df54d52446c6154e7e8d98d953fd5c6f19af39110f97b082"
                                 }
                               }
                             ]

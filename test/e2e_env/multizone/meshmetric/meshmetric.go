@@ -97,7 +97,7 @@ spec:
 		return string(raw)
 	}
 
-	It("MeshMetric on zone-proxy-only DPP clears applications and uses DPP name as service label", func() {
+	It("MeshMetric on zone-proxy-only DPP clears applications and tags with proxy_role", func() {
 		// given
 		Expect(multizone.Global.Install(YamlUniversal(policyWithApplications))).To(Succeed())
 
@@ -114,9 +114,9 @@ spec:
 			// Dynconf uses kuma.proxy_role to identify the proxy purpose.
 			// Scraped Prometheus output exposes the label as kuma_proxy_role.
 			g.Expect(payload).To(ContainSubstring(`\"kuma.proxy_role\":\"zone-egress\"`))
-			// service label falls back to the DPP name, never to ServiceUnknown.
-			g.Expect(payload).To(ContainSubstring(`\"service\":\"zone-proxy-egress\"`))
-			g.Expect(payload).ToNot(ContainSubstring(`\"service\":\"unknown\"`))
+			// service label is omitted on zone-proxy-only DPPs (no co-located
+			// workload, IdentifyingName returns 'unknown' so the label is skipped).
+			g.Expect(payload).ToNot(ContainSubstring(`\"service\":`))
 			// kuma.workload is suppressed: there is no co-located workload.
 			g.Expect(payload).ToNot(ContainSubstring(`\"kuma.workload\":`))
 		}, "60s", "2s").Should(Succeed())
@@ -128,8 +128,7 @@ spec:
 			g.Expect(payload).To(ContainSubstring(`\"applications\":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
 			g.Expect(payload).To(ContainSubstring(`\"kuma.proxy_role\":\"zone-ingress\"`))
-			g.Expect(payload).To(ContainSubstring(`\"service\":\"zone-proxy-ingress\"`))
-			g.Expect(payload).ToNot(ContainSubstring(`\"service\":\"unknown\"`))
+			g.Expect(payload).ToNot(ContainSubstring(`\"service\":`))
 			g.Expect(payload).ToNot(ContainSubstring(`\"kuma.workload\":`))
 		}, "60s", "2s").Should(Succeed())
 	})

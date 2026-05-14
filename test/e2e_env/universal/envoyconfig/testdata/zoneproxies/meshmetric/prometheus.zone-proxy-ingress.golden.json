@@ -61,7 +61,7 @@
                     ]
                   },
                   "routeConfig": {
-                    "maxDirectResponseBodySizeBytes": 260,
+                    "maxDirectResponseBodySizeBytes": 0,
                     "virtualHosts": [
                       {
                         "domains": [
@@ -78,7 +78,7 @@
                                 {
                                   "name": "If-None-Match",
                                   "stringMatch": {
-                                    "exact": "e5bfb299ce349e1187d2cafc625d635bccca0cb1f56b7e481708e0fde5d68105"
+                                    "exact": "17c55352c69d44643bb9c982cbb3883dbd3e0c7c9c89f425b1d29e34c185b6c6"
                                   }
                                 }
                               ],
@@ -88,7 +88,7 @@
                           {
                             "directResponse": {
                               "body": {
-                                "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-ingress\",\"kuma.proxy_role\":\"zone-ingress\",\"mesh\":\"envoyconfig-zoneproxies\",\"service\":\"zone-proxy-ingress\",\"zone\":\"kuma-3\"}}}}"
+                                "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-ingress\",\"kuma.proxy_role\":\"zone-ingress\",\"mesh\":\"envoyconfig-zoneproxies\",\"zone\":\"kuma-3\"}}}}"
                               },
                               "status": 200
                             },
@@ -100,7 +100,7 @@
                               {
                                 "header": {
                                   "key": "Etag",
-                                  "value": "e5bfb299ce349e1187d2cafc625d635bccca0cb1f56b7e481708e0fde5d68105"
+                                  "value": "17c55352c69d44643bb9c982cbb3883dbd3e0c7c9c89f425b1d29e34c185b6c6"
                                 }
                               }
                             ]
