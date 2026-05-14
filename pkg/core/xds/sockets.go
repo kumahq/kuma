@@ -29,6 +29,12 @@ func AdminSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-envoy-admin"))
 }
 
+// ReadinessReporterSocketName generates a socket path that will fit the Unix socket path limitation of 104 chars.
+// Kept for backward compatibility with older DPs that still advertise FeatureReadinessUnixSocket; new DPs use TCP.
+func ReadinessReporterSocketName(workdir string) string {
+	return socketName(filepath.Join(workdir, "kuma-readiness-reporter"))
+}
+
 func socketName(s string) string {
 	trimLen := min(len(s), 98)
 	return s[:trimLen] + ".sock"

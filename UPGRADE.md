@@ -28,7 +28,7 @@ The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/read
 
 **What changed:**
 - Removed config field `dataplane.readinessUnixSocketDisabled` and env var `KUMA_READINESS_UNIX_SOCKET_DISABLED`.
-- Removed the `feature-readiness-unix-socket` DP feature flag.
+- New DPs no longer advertise the `feature-readiness-unix-socket` flag. The CP still honors it for older DPs during CP-first upgrades; the flag will be removed in a future release.
 - The K8s injector no longer injects `KUMA_READINESS_UNIX_SOCKET_DISABLED=true` (the env var is now a no-op).
 - The Helm ingress/egress chart templates no longer set these env vars.
 

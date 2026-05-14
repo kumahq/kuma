@@ -416,14 +416,24 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				// When admin is on UDS, bind readiness reporter so K8s
-				// probes (podIP) and PostStart hooks (localhost) can
-				// reach /ready. In that mode the reporter also reverse-
+				// When admin is on UDS, the readiness reporter also reverse-
 				// proxies read-only Envoy admin endpoints on this listener
 				// (mutating endpoints are blocked); see readiness.Reporter.
-				readinessAddr = "0.0.0.0"
-				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+				// On Kubernetes the listener must accept probes from the
+				// kubelet (podIP), so we bind wildcard. Outside Kubernetes
+				// we default to loopback to avoid exposing admin info on the
+				// host network. POD_NAME is set by the sidecar injector.
+				_, inKubernetes := os.LookupEnv("POD_NAME")
+				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
+				switch {
+				case inKubernetes && ipv6:
 					readinessAddr = "::"
+				case inKubernetes:
+					readinessAddr = "0.0.0.0"
+				case ipv6:
+					readinessAddr = "::1"
+				default:
+					readinessAddr = "127.0.0.1"
 				}
 			}
 			readinessReporter := readiness.NewReporter(
