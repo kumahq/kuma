@@ -136,6 +136,7 @@ var _ = Describe("log volume counter", Serial, func() {
 		Expect(err).NotTo(HaveOccurred())
 		buf = &bytes.Buffer{}
 		clr = kuma_log.NewComponentLevelRegistry()
+		DeferCleanup(kuma_log.ResetMetrics)
 	})
 
 	newLogger := func() logr.Logger {

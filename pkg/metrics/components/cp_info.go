@@ -53,7 +53,9 @@ func Setup(rt runtime.Runtime) error {
 	}
 
 	if _, err := kuma_log.SetupMetrics(rt.Metrics()); err != nil {
-		return err
+		if !isDuplicatedError(err) {
+			return err
+		}
 	}
 
 	// We don't want to use cached ResourceManager because the cache is just for a couple of seconds
