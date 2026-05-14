@@ -68,23 +68,19 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	default:
 		var warnings []string
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
-			resp := convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
-			return resp
+			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
 		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {
-			resp := convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
-			return resp
+			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
 		if err := validator.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
-				resp := convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
-				return resp
+				return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
 			}
-			resp := admission.Denied(err.Error())
-			return resp
+			return admission.Denied(err.Error())
 		}
 
 		warnings = append(warnings, core_model.Deprecations(coreRes)...)
