@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
@@ -19,7 +18,6 @@ import (
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
@@ -167,12 +165,6 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		if ms.Spec.State != state {
 			changeReasons = append(changeReasons, "availability state")
 			ms.Spec.State = state
-		}
-
-		sniCondition := resource_status.BuildSNICompliantCondition(kri.From(ms), ms.GetPorts())
-		if !resource_status.ConditionEquals(ms.Status.Conditions, sniCondition) {
-			changeReasons = append(changeReasons, "sni compliance")
-			ms.Status.Conditions = resource_status.UpdateConditions(ms.Status.Conditions, sniCondition)
 		}
 
 		if len(changeReasons) > 0 {

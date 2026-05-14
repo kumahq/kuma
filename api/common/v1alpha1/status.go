@@ -8,13 +8,6 @@ import (
 const (
 	GeneratedCondition           string = "Generated"
 	BackendRefsResolvedCondition string = "BackendRefsResolved"
-	// SNICompliantCondition indicates whether the SNI derived from this
-	// resource's KRI satisfies the MADR-101 naming rules (DNS label / hostname
-	// limits, no dot-in-segment, all required fields present). When the
-	// condition is False the resource is reachable only from within its own
-	// zone — cross-zone constructs that depend on the new SNI format are
-	// silently skipped by xDS generators.
-	SNICompliantCondition string = "SNICompliant"
 )
 
 const (
@@ -23,8 +16,6 @@ const (
 	CollisionReason              string = "Collision"
 	AllBackendRefsResolvedReason string = "AllBackendRefsResolved"
 	UnresolvedBackendRefsReason  string = "UnresolvedBackendRefs"
-	SNICompliantReason           string = "SNICompliant"
-	SNINotCompliantReason        string = "SNINotCompliant"
 )
 
 type Condition struct {

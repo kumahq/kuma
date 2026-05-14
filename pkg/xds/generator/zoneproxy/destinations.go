@@ -11,7 +11,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	"github.com/kumahq/kuma/v2/pkg/dns"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -54,16 +53,10 @@ func BuildMeshDestinations(
 }
 
 // BuildRealResourceDestinations produces one BackendRefDestination per
-// (destination, port) pair. When useNewSNIFormat is true, destinations whose
-// status reports SNICompliant=False are skipped — the new-format ZI/ZE
-// filter chains can't accept their traffic anyway. The legacy path is
-// unaffected.
+// (destination, port) pair.
 func BuildRealResourceDestinations(destinations []core_resources.Destination, systemNS string, useNewSNIFormat bool) []BackendRefDestination {
 	var result []BackendRefDestination
 	for _, dest := range destinations {
-		if useNewSNIFormat && !resource_status.IsSNICompliant(dest) {
-			continue
-		}
 		origin := kri.From(dest)
 		mesh := dest.GetMeta().GetMesh()
 

@@ -144,8 +144,6 @@ type MeshExternalServiceStatus struct {
 	// Addresses section for generated domains
 	Addresses          []hostnamegenerator_api.Address                 `json:"addresses,omitempty"`
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
-	// Conditions is an array of current conditions of the MeshExternalService.
-	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 // +kubebuilder:validation:Enum=Kuma

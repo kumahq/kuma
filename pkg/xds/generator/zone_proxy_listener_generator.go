@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
@@ -203,9 +202,6 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 			continue
 		}
 		esPort := ports[0]
-		if !resource_status.IsSNICompliant(dst) {
-			continue
-		}
 		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
 		sni := tls.SNIFromKRI(id)
 		clusterName := id.String()

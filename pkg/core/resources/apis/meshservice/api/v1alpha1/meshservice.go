@@ -87,8 +87,6 @@ type MeshServiceStatus struct {
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
 	// Data plane proxies statistics selected by this MeshService.
 	DataplaneProxies DataplaneProxies `json:"dataplaneProxies,omitempty"`
-	// Conditions is an array of current conditions of the MeshService.
-	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 // +kubebuilder:validation:Enum=ServiceTag;SpiffeID

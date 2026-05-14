@@ -15,7 +15,6 @@ import (
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
@@ -62,10 +61,6 @@ func GenerateClusters(
 					}
 					sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 					if proxy.WorkloadIdentity != nil {
-						// don't support as egress requires SNI
-						if !resource_status.IsSNICompliant(dest) {
-							continue
-						}
 						sni := tls.SNIFromKRI(service.BackendRef().Resource())
 						// we only want to route when are mesh-scoped zone egresses
 						if len(meshCtx.ZoneEgresses) == 0 {
@@ -160,7 +155,7 @@ func GenerateClusters(
 						if proxy.WorkloadIdentity != nil {
 							zone := realResourceRef.Resource.Zone
 							zoneMeshScoped := zone == "" || meshCtx.ZonesWithMeshScopedProxy[zone]
-							if zoneMeshScoped && resource_status.IsSNICompliant(dest) {
+							if zoneMeshScoped {
 								sni = tls.SNIFromKRI(realResourceRef.Resource)
 							}
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))

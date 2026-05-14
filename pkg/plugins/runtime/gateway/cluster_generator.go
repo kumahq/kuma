@@ -11,7 +11,6 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	resource_status "github.com/kumahq/kuma/v2/pkg/core/resources/status"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
@@ -167,8 +166,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 
 	service := destinationname.MustResolve(false, dest, port)
 	sni := meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
-	destResource := meshCtx.GetServiceByKRI(backendRef.Resource)
-	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] && resource_status.IsSNICompliant(destResource) {
+	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
 		sni = tls.SNIFromKRI(backendRef.Resource)
 	}
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
