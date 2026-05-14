@@ -23,6 +23,7 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	core_matchers "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
@@ -809,9 +810,9 @@ func zoneIngressOnlyDataplane(name string) *builders.DataplaneBuilder {
 		})
 }
 
-func mixedInboundAndZoneEgressDataplane(name string) *builders.DataplaneBuilder {
+func mixedInboundAndZoneEgressDataplane() *builders.DataplaneBuilder {
 	return builders.Dataplane().
-		WithName(name).
+		WithName("backend").
 		WithAddress("192.168.0.1").
 		AddInbound(builders.Inbound().
 			WithService("backend").
@@ -1041,7 +1042,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			goldenFile: "zone-ingress-only-otel",
 		}),
 		Entry("mixed inbound and zone egress zipkin", testCase{
-			dp:        mixedInboundAndZoneEgressDataplane("backend"),
+			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
@@ -1060,7 +1061,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			goldenFile: "mixed-inbound-and-zone-egress-zipkin",
 		}),
 		Entry("mixed inbound and zone egress datadog", testCase{
-			dp:        mixedInboundAndZoneEgressDataplane("backend"),
+			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
@@ -1078,7 +1079,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			goldenFile: "mixed-inbound-and-zone-egress-datadog",
 		}),
 		Entry("mixed inbound and zone egress opentelemetry", testCase{
-			dp:        mixedInboundAndZoneEgressDataplane("backend"),
+			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
@@ -1166,4 +1167,73 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			goldenFile: "zone-egress-only-datadog-workload-label",
 		}),
 	)
+})
+
+var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func() {
+	// A MeshTrace policy that targets only the zone egress section name must apply tracing
+	// to that listener and leave the regular inbound untouched. Exercises the matcher path
+	// (not a hand-built SingleItemRules), so it catches the per-section filtering in Apply.
+	It("only configures the targeted zone listener", func() {
+		dpp := mixedInboundAndZoneEgressDataplane().Build()
+
+		mt := &api.MeshTraceResource{
+			Meta: &test_model.ResourceMeta{Mesh: "default", Name: "mt-section"},
+			Spec: &api.MeshTrace{
+				TargetRef: &common_api.TargetRef{
+					Kind:        common_api.Dataplane,
+					SectionName: pointer.To("ze-port"),
+				},
+				Default: api.Conf{
+					Backends: &[]api.Backend{{
+						Zipkin: &api.ZipkinBackend{
+							Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+							SharedSpanContext: true,
+							TraceId128Bit:     true,
+						},
+					}},
+				},
+			},
+		}
+
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[api.MeshTraceType] = &api.MeshTraceResourceList{
+			Items: []*api.MeshTraceResource{mt},
+		}
+
+		matched, err := core_matchers.MatchedPolicies(api.MeshTraceType, dpp, meshResources)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(matched.DataplanePolicies).To(HaveLen(1), "matcher must include the MeshTrace policy")
+		Expect(matched.SingleItemRules.Rules).To(HaveLen(1), "matcher must produce a single-item rule")
+
+		rs := core_xds.NewResourceSet()
+		for _, res := range mixedInboundAndZoneEgressResources() {
+			r := res
+			rs.Add(&r)
+		}
+
+		xdsCtx := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder()).Build()
+		proxy := xds_builders.Proxy().
+			WithDataplane(mixedInboundAndZoneEgressDataplane()).
+			WithMetadata(&core_xds.DataplaneMetadata{}).
+			WithZone("zone-1").
+			Build()
+		proxy.Policies.Dynamic = map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+			api.MeshTraceType: matched,
+		}
+
+		Expect(plugin.NewPlugin().(core_plugins.PolicyPlugin).Apply(rs, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		out := string(listenerYaml)
+
+		// The targeted zone listener must contain the tracing provider.
+		Expect(out).To(ContainSubstring("self_zoneegress_dp_ze-port"))
+		Expect(out).To(ContainSubstring("envoy.tracers.zipkin"))
+
+		// The regular inbound must NOT be configured with tracing — exactly one
+		// `tracing:` block (on the zone listener) is expected.
+		Expect(strings.Count(out, "tracing:")).To(Equal(1),
+			"regular inbound must stay untouched when targetRef.sectionName scopes the policy to a zone listener")
+	})
 })

@@ -10,6 +10,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
@@ -20,6 +21,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -62,13 +64,13 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToInbounds(ctx, policies.SingleItemRules, listeners.Inbound, proxy); err != nil {
+	if err := applyToInbounds(ctx, policies, listeners.Inbound, proxy); err != nil {
 		return err
 	}
 	if err := applyToOutbounds(ctx, policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToZoneProxyListeners(ctx, policies.SingleItemRules, rs, proxy); err != nil {
+	if err := applyToZoneProxyListeners(ctx, policies, rs, proxy); err != nil {
 		return err
 	}
 	if err := applyToClusters(ctx, policies.SingleItemRules, rs, proxy); err != nil {
@@ -121,14 +123,32 @@ func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, g
 	return nil
 }
 
-func applyToInbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
-	for _, inboundListener := range inboundListeners {
-		if err := configureListener(ctx, rules, proxy, inboundListener, "", inboundListener.TrafficDirection); err != nil {
+func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
+	sectionNames := inboundSectionNames(proxy.Dataplane.Spec.GetNetworking())
+	for key, inboundListener := range inboundListeners {
+		listenerRules, err := buildListenerScopedSingleItemRules(policies, sectionNames[key])
+		if err != nil {
+			return err
+		}
+		if len(listenerRules.Rules) == 0 {
+			continue
+		}
+		if err := configureListener(ctx, listenerRules, proxy, inboundListener, "", inboundListener.TrafficDirection); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func inboundSectionNames(n *mesh_proto.Dataplane_Networking) map[core_rules.InboundListener]string {
+	result := map[core_rules.InboundListener]string{}
+	for _, inb := range n.GetInbound() {
+		iface := n.ToInboundInterface(inb)
+		key := core_rules.InboundListener{Address: iface.DataplaneIP, Port: iface.DataplanePort}
+		result[key] = inb.GetSectionName()
+	}
+	return result
 }
 
 func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy) error {
@@ -152,7 +172,7 @@ func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules,
 	return nil
 }
 
-func applyToZoneProxyListeners(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchingPolicies, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	if !proxy.Dataplane.Spec.GetNetworking().HasZoneProxyListeners() {
 		return nil
 	}
@@ -178,14 +198,46 @@ func applyToZoneProxyListeners(ctx xds_context.Context, rules core_rules.SingleI
 		if !ok {
 			continue
 		}
+		listenerRules, err := buildListenerScopedSingleItemRules(policies, l.GetSectionName())
+		if err != nil {
+			return err
+		}
+		if len(listenerRules.Rules) == 0 {
+			continue
+		}
 		// Zone-proxy listener TrafficDirection is INBOUND on the wire (Envoy receives
 		// from local sidecars), but a zone-egress span represents an outbound hop. Pass
 		// UNSPECIFIED so Datadog SplitService skips the misleading "_INBOUND" suffix.
-		if err := configureListener(ctx, rules, proxy, listener, "", envoy_core.TrafficDirection_UNSPECIFIED); err != nil {
+		if err := configureListener(ctx, listenerRules, proxy, listener, "", envoy_core.TrafficDirection_UNSPECIFIED); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// buildListenerScopedSingleItemRules returns rules scoped to the given embedded listener.
+// Policies with `kind: Dataplane` and a non-empty `sectionName` that does not match the
+// listener are excluded; everything else (including the matcher's proxy-wide rule when no
+// per-policy info is available) is preserved.
+func buildListenerScopedSingleItemRules(policies xds.TypedMatchingPolicies, sectionName string) (core_rules.SingleItemRules, error) {
+	if len(policies.DataplanePolicies) == 0 {
+		return policies.SingleItemRules, nil
+	}
+	filtered := make([]core_model.Resource, 0, len(policies.DataplanePolicies))
+	for _, p := range policies.DataplanePolicies {
+		policy, ok := p.GetSpec().(core_model.Policy)
+		if !ok {
+			continue
+		}
+		targetRef := policy.GetTargetRef()
+		if targetRef.Kind == common_api.Dataplane {
+			if sn := pointer.Deref(targetRef.SectionName); sn != "" && sn != sectionName {
+				continue
+			}
+		}
+		filtered = append(filtered, p)
+	}
+	return core_rules.BuildSingleItemRules(filtered)
 }
 
 func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
