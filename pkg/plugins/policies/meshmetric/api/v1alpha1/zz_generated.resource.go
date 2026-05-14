@@ -27,21 +27,21 @@ func init() {
 	if rawOpenAPISpec != nil {
 		// Parse OpenAPI spec to extract the schema
 
-		var openapiSpec map[string]any
+		var openapiSpec map[string]interface{}
 		if err := yaml.Unmarshal(rawOpenAPISpec, &openapiSpec); err != nil {
 			panic(err)
 		}
 
 		// Extract schema from .components.schemas.MeshMetricItem
-		components, ok := openapiSpec["components"].(map[string]any)
+		components, ok := openapiSpec["components"].(map[string]interface{})
 		if !ok {
 			panic(fmt.Errorf("components not found in OpenAPI spec"))
 		}
-		schemas, ok := components["schemas"].(map[string]any)
+		schemas, ok := components["schemas"].(map[string]interface{})
 		if !ok {
 			panic(fmt.Errorf("schemas not found in components"))
 		}
-		schemaItem, ok := schemas["MeshMetricItem"].(map[string]any)
+		schemaItem, ok := schemas["MeshMetricItem"].(map[string]interface{})
 		if !ok {
 			panic(fmt.Errorf("MeshMetricItem schema not found"))
 		}
