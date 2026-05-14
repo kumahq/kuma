@@ -22,6 +22,21 @@ None for valid label keys. Labels with `/` or `.` in the key that were leaked on
 kubectl -n kuma-system label meshservice <name> app.example.com/tier-
 ```
 
+### Readiness reporter is now TCP-only
+
+The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/ready` is served exclusively on TCP `KUMA_READINESS_PORT` (default `9902`) in both Kubernetes and Universal mode.
+
+**What changed:**
+- Removed config field `dataplane.readinessUnixSocketDisabled` and env var `KUMA_READINESS_UNIX_SOCKET_DISABLED`.
+- New DPs no longer advertise the `feature-readiness-unix-socket` flag. The CP still honors it for older DPs during CP-first upgrades; the flag will be removed in a future release.
+- The K8s injector no longer injects `KUMA_READINESS_UNIX_SOCKET_DISABLED=true` (the env var is now a no-op).
+- The Helm ingress/egress chart templates no longer set these env vars.
+
+**Action required:**
+
+- Universal-mode operators who probed readiness via the Unix socket must switch to TCP loopback: `curl http://localhost:9902/ready`.
+- Custom manifests that still set `KUMA_READINESS_UNIX_SOCKET_DISABLED` can leave the env var in place — it is ignored — or remove it.
+
 ### dp-server graceful shutdown is now time-bounded
 
 The dp-server's graceful shutdown is now bounded by a configurable timeout. Previously the HTTP server would wait indefinitely for xDS streams to drain, which could keep the pod from exiting within its `terminationGracePeriodSeconds` and surface as a non-zero exit.
@@ -501,9 +516,9 @@ These endpoints were deprecated, and are now removed. You can achieve the same f
 
 ### Deprecation of readiness reporter TCP port in favor of Unix socket
 
-The readiness reporter TCP port is deprecated and will be removed in a future release. It is also no longer possible to disable the readiness reporter, which means TCP port 0 is now not allowed to be used.
+> **Note:** This deprecation was reversed in `2.14.x`. The readiness reporter is now TCP-only and the Unix socket has been removed. See the `2.14.x` notes above.
 
-The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_DISABLED:true` for `kuma-dp` to disable the Unix socket.
+It is no longer possible to disable the readiness reporter, which means TCP port 0 is not allowed to be used.
 
 ## Upgrade to `2.11.x`
 
