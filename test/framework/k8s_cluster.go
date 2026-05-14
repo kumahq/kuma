@@ -1629,28 +1629,36 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		}
 	}
 
+	// Match `LoadImages` retry strategy: a single transient docker / k3d
+	// hiccup shouldn't fail the whole preload. 5 attempts with 5s backoff.
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
-		args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, importImages...)
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, "k3d", args...)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return errors.Wrapf(err, "preload images: k3d image import (images=%v): %s", importImages, strings.TrimSpace(string(out)))
-		}
-		return nil
-	case KindK8sType:
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		for _, img := range importImages {
-			cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", img, "--name", c.name)
+		_, err := retry.DoWithRetryE(c.GetTesting(), "k3d image import", 5, 5*time.Second, func() (string, error) {
+			args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, importImages...)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, "k3d", args...)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				return errors.Wrapf(err, "preload images: kind load %s: %s", img, strings.TrimSpace(string(out)))
+				return "", errors.Wrapf(err, "k3d image import (images=%v): %s", importImages, strings.TrimSpace(string(out)))
 			}
-		}
-		return nil
+			return "imported " + strings.Join(importImages, ", "), nil
+		})
+		return err
+	case KindK8sType:
+		_, err := retry.DoWithRetryE(c.GetTesting(), "kind load docker-image", 5, 5*time.Second, func() (string, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			for _, img := range importImages {
+				cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", img, "--name", c.name)
+				out, err := cmd.CombinedOutput()
+				if err != nil {
+					return "", errors.Wrapf(err, "kind load %s: %s", img, strings.TrimSpace(string(out)))
+				}
+			}
+			return "loaded " + strings.Join(importImages, ", "), nil
+		})
+		return err
 	default:
 		return nil
 	}
