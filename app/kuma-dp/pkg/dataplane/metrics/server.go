@@ -300,16 +300,22 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
+var openMetricsEOFSuffix = []byte("# EOF")
+
 func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 	buf := new(bytes.Buffer)
 
 	for metrics := range contents {
-		// remove the EOF marker from the metrics, because we are
-		// merging multiple metrics into one response.
-		metrics = bytes.ReplaceAll(metrics, []byte("# EOF"), []byte(""))
+		// OpenMetrics bodies end with "# EOF" (optionally followed by a
+		// newline). Drop the trailing sentinel from each body so the
+		// concatenation stays valid; the final marker is re-added below
+		// when the negotiated content type is OpenMetrics.
+		metrics = bytes.TrimRight(metrics, "\n")
+		metrics = bytes.TrimSuffix(metrics, openMetricsEOFSuffix)
+		metrics = bytes.TrimRight(metrics, "\n")
 
 		buf.Write(metrics)
-		buf.WriteString("\n")
+		buf.WriteByte('\n')
 	}
 
 	processedMetrics := append(processNewlineChars(buf.Bytes()), '\n')
@@ -327,11 +333,10 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 // processNewlineChars takes byte data and returns a new byte slice
 // after trimming and deduplicating the newline characters.
 func processNewlineChars(input []byte) []byte {
-	var deduped []byte
-
 	if len(input) == 0 {
 		return nil
 	}
+	deduped := make([]byte, 0, len(input))
 	last := input[0]
 
 	for i := 1; i < len(input); i++ {
