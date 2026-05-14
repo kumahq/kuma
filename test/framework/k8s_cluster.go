@@ -1635,10 +1635,9 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, "k3d", args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return errors.Wrap(err, "preload images: k3d image import")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return errors.Wrapf(err, "preload images: k3d image import (images=%v): %s", importImages, strings.TrimSpace(string(out)))
 		}
 		return nil
 	case KindK8sType:
@@ -1646,10 +1645,9 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		defer cancel()
 		for _, img := range importImages {
 			cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", img, "--name", c.name)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				return errors.Wrapf(err, "preload images: kind load %s", img)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				return errors.Wrapf(err, "preload images: kind load %s: %s", img, strings.TrimSpace(string(out)))
 			}
 		}
 		return nil
