@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	meshtrace "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -25,10 +26,10 @@ const (
 	zoneProxyEgressDP  = "zone-proxy-egress"
 )
 
-// zoneProxyDpEnvs pins the kuma-dp socket directory. Without this,
-// kuma-dp creates a randomized per-PID socket directory each run and
-// that suffix would leak into the generated socket paths in the
-// goldens, making the test flaky.
+// zoneProxyDpEnvs pins the kuma-dp socket directory to /tmp. Without this,
+// kuma-dp creates a randomized /tmp/kuma-dp-<N>/ directory each run and that
+// random suffix would leak into the generated socket paths in the goldens,
+// making the test flaky.
 var zoneProxyDpEnvs = map[string]string{
 	"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
 	"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
@@ -43,11 +44,13 @@ func ZoneProxies() {
 
 	E2EAfterEach(CleanupAfterZoneProxyTest(
 		meshtrace.MeshTraceResourceTypeDescriptor,
+		meshmetric.MeshMetricResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config for zone proxies",
 		TestZoneProxyConfig,
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshtrace"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("zoneproxies", "meshmetric"), "envoyconfig"),
 	)
 }
 
@@ -102,15 +105,8 @@ func SetupZoneProxyCluster() {
 	// the insight, `kumactl inspect dataplane --shadow` returns 404 and the
 	// table tests would only see that error during their (shorter) polling
 	// window. Doing the wait here once amortizes the cost over all entries.
-	waitZoneProxyInspectable := func(dpp string) {
-		Eventually(func(g Gomega) {
-			_, err := universal.Cluster.GetKumactlOptions().
-				RunKumactlAndGetOutput("inspect", "dataplane", dpp, "--type", "config", "--mesh", zoneProxyMesh)
-			g.Expect(err).ToNot(HaveOccurred())
-		}, "90s", "2s").Should(Succeed())
-	}
-	waitZoneProxyInspectable(zoneProxyIngressDP)
-	waitZoneProxyInspectable(zoneProxyEgressDP)
+	WaitDataplaneInspectable(universal.Cluster, zoneProxyMesh, zoneProxyIngressDP)
+	WaitDataplaneInspectable(universal.Cluster, zoneProxyMesh, zoneProxyEgressDP)
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {

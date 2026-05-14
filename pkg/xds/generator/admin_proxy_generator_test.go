@@ -140,15 +140,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 		}),
-		Entry("should generate admin resources, readiness with Unix socket", testCase{
-			dataplaneFile:    "08.dataplane.input.yaml",
-			expected:         "08.envoy-config.golden.yaml",
-			adminAddress:     "127.0.0.1",
-			readinessPort:    9902,
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+		Entry("should generate admin resources, legacy DP advertising readiness Unix socket", testCase{
+			dataplaneFile: "08.dataplane.input.yaml",
+			expected:      "08.envoy-config.golden.yaml",
+			adminAddress:  "127.0.0.1",
+			readinessPort: 9902,
 			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
+				xds_types.FeatureReadinessUnixSocket: true,
 			},
 		}),
 		Entry("should generate admin resources, admin with Unix socket", testCase{
@@ -160,7 +158,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
 			},
 		}),
 	)
@@ -213,7 +210,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 9902,
 		}),
 		Entry("should return error when readiness port is 0", testCase{
-			expected:      "ReadinessPort has to be in (0, 65353] range",
+			expected:      "ReadinessPort has to be in (0, 65535] range",
 			adminAddress:  "127.0.0.1",
 			readinessPort: 0,
 		}),
