@@ -10,6 +10,7 @@ import (
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshproxypatch "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	meshtrace "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -45,12 +46,14 @@ func ZoneProxies() {
 	E2EAfterEach(CleanupAfterZoneProxyTest(
 		meshtrace.MeshTraceResourceTypeDescriptor,
 		meshmetric.MeshMetricResourceTypeDescriptor,
+		meshproxypatch.MeshProxyPatchResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config for zone proxies",
 		TestZoneProxyConfig,
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshtrace"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshmetric"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("zoneproxies", "meshproxypatch"), "envoyconfig"),
 	)
 }
 

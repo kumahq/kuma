@@ -1,0 +1,35 @@
+resources:
+- name: kuma:envoy:admin
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    name: kuma:envoy:admin
+- name: self_zoneegress_dp_ze-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.10
+        portValue: 10002
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - sni.extsvc.default.zone-1.aws-aurora.8443
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
+          statPrefix: mes-http
+      name: mes-http
+    name: self_zoneegress_dp_ze-port
+    trafficDirection: INBOUND
