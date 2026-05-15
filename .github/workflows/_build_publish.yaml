@@ -45,12 +45,7 @@ env:
 jobs:
   build-binaries:
     timeout-minutes: 40
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_7_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write
       contents: read
@@ -95,7 +90,7 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    runs-on: >-
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || '>-' }}
       ${{
         vars.RUNS_ON_RELEASE_2_7_AMD64
         || vars.RUNS_ON_AMD64
@@ -199,12 +194,7 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_7_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
@@ -222,12 +212,7 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_7_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:

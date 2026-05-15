@@ -23,12 +23,7 @@ env:
 jobs:
   package:
     name: Package
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_7_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     outputs:
       filename: ${{ steps.package.outputs.filename }}
     steps:
