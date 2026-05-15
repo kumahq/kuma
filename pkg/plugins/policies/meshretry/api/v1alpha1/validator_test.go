@@ -209,6 +209,18 @@ to:
       kind: Mesh
     default:
       grpc:
+        retryOn:
+          - 500
+          - 409
+`),
+			Entry("grpc.retryOn with http retry conditions", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      grpc:
         retryOn: 
           - 5xx
           - GatewayError
