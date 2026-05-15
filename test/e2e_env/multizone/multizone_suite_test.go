@@ -97,6 +97,7 @@ var (
 	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
 	_ = Describe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", meshproxy.Connectivity, Ordered)
+	_ = Describe("MeshProxy Migration", meshproxy.Migration, Ordered)
 	_ = Describe("MeshMetric on Zone Proxy", meshmetric.ZoneProxy, Ordered)
-	_ = Describe("Resource Label Validation", validation.ResourceValidation, Ordered)
+	_ = Describe("Resource Label Validation", Label("golden-files-e2e"), validation.ResourceValidation, Ordered)
 )
