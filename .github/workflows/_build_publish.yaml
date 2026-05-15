@@ -90,7 +90,8 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-22.04 # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution' }}
+    # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-22.04' }}
     permissions:
       id-token: write # Required for image signing
       contents: read
