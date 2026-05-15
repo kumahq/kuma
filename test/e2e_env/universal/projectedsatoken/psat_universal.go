@@ -46,6 +46,7 @@ func ProjectedServiceAccountToken() {
 		}, "60s", "1s").Should(BeTrue())
 
 		// when restart control-plane
+		Expect(uniCluster.Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 		Expect(kumaCP.ReStart()).Should(Succeed())
 
 		// then should not have demo-client in dataplanes
