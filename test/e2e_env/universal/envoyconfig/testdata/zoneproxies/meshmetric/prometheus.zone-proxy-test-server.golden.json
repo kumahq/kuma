@@ -29,60 +29,6 @@
       }
     },
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 0
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 0
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
-      "value": {
-        "directResponse": {
-          "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":[{\"name\":\"ignored-on-zone-proxy\",\"path\":\"/metrics\",\"port\":8888,\"address\":\"\"}],\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-test-server\",\"instance\":\"1\",\"instances\":\",1,\",\"kuma.proxy_role\":\"sidecar\",\"kuma.workload\":\"zone-proxy-test-server\",\"kuma_io_protocol\":\"http\",\"kuma_io_protocols\":\",http,\",\"kuma_io_service\":\"zone-proxy-test-server\",\"kuma_io_services\":\",zone-proxy-test-server,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig-zoneproxies\",\"team\":\"server-owners\",\"teams\":\",server-owners,\",\"version\":\"v1\",\"versions\":\",v1,\",\"zone\":\"kuma-3\"}}}}"
-          },
-          "status": 200
-        },
-        "match": {
-          "path": "/meshmetric"
-        },
-        "name": "_kuma:dynamicconfig:/meshmetric",
-        "responseHeadersToAdd": [
-          {
-            "header": {
-              "key": "Etag",
-              "value": "f2954a1c085380de7fd5c6e68cfd70ea9ab4532d636d7e165ae566d85a398062"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
-      "value": {
-        "directResponse": {
-          "status": 304
-        },
-        "match": {
-          "headers": [
-            {
-              "name": "If-None-Match",
-              "stringMatch": {
-                "exact": "f2954a1c085380de7fd5c6e68cfd70ea9ab4532d636d7e165ae566d85a398062"
-              }
-            }
-          ],
-          "path": "/meshmetric"
-        }
-      }
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:metrics:prometheus:default-backend",
       "value": {

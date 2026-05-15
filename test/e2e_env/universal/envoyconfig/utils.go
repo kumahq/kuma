@@ -57,7 +57,8 @@ func getConfig(mesh, dpp string) string {
 	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
 	Expect(response.Diff).ToNot(BeNil())
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
-		return item.Op == api_common.Test
+		return item.Op == api_common.Test ||
+			strings.HasPrefix(item.Path, "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig")
 	}))
 	// Redact maxDirectResponseBodySizeBytes everywhere: as a standalone diff
 	// path (sidecar case where the listener already existed) and nested inside

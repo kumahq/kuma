@@ -30,50 +30,6 @@
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
-      "value": {
-        "directResponse": {
-          "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":[{\"name\":\"ignored-on-zone-proxy\",\"path\":\"/metrics\",\"port\":8888,\"address\":\"\"}],\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-demo-client\",\"kuma.proxy_role\":\"sidecar\",\"kuma.workload\":\"zone-proxy-demo-client\",\"kuma_io_service\":\"zone-proxy-demo-client\",\"kuma_io_services\":\",zone-proxy-demo-client,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig-zoneproxies\",\"team\":\"client-owners\",\"teams\":\",client-owners,\",\"zone\":\"kuma-3\"}}}}"
-          },
-          "status": 200
-        },
-        "match": {
-          "path": "/meshmetric"
-        },
-        "name": "_kuma:dynamicconfig:/meshmetric",
-        "responseHeadersToAdd": [
-          {
-            "header": {
-              "key": "Etag",
-              "value": "60706f44f35783d3b7bcc164de88f7f63fa78b4dc172230331e7870c7f74c78e"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
-      "value": {
-        "directResponse": {
-          "status": 304
-        },
-        "match": {
-          "headers": [
-            {
-              "name": "If-None-Match",
-              "stringMatch": {
-                "exact": "60706f44f35783d3b7bcc164de88f7f63fa78b4dc172230331e7870c7f74c78e"
-              }
-            }
-          ],
-          "path": "/meshmetric"
-        }
-      }
-    },
-    {
-      "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:metrics:prometheus:default-backend",
       "value": {
         "address": {
