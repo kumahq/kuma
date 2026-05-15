@@ -125,15 +125,29 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			},
 			expectErr: true,
 		}),
-		Entry("error namespace without zone", kriTestCase{
+		Entry("namespace ignored when zone is empty (global k8s)", kriTestCase{
+			// Global-originated resource carries the kube namespace label but no zone,
+			// so the SNI must collapse to the 5-segment global form.
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "default",
-				Namespace:    "app-ns",
+				Namespace:    "kuma-system",
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expected: "sni.msvc.default.backend.http",
+		}),
+		Entry("invalid namespace ignored when zone is empty", kriTestCase{
+			// A non-RFC-1035 namespace value must not produce a warning when the
+			// resource is global-originated, since the segment never reaches the SNI.
+			id: kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Namespace:    "Bad_NS",
+				Name:         "backend",
+				SectionName:  "http",
+			},
+			expected: "sni.msvc.default.backend.http",
 		}),
 		Entry("error mesh contains dot", kriTestCase{
 			id: kri.Identifier{
@@ -535,18 +549,5 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 		Expect(errs[0].Error()).To(ContainSubstring("mesh"))
 		Expect(errs[0].Error()).To(ContainSubstring("de.fault"))
 		Expect(errs[0].Error()).To(ContainSubstring("RFC 1035"))
-	})
-
-	It("flags namespace set without zone independently of length", func() {
-		errs := sni.ValidateKRI(kri.Identifier{
-			ResourceType: meshservice_api.MeshServiceType,
-			Mesh:         "default",
-			Namespace:    "ns",
-			Name:         "backend",
-			SectionName:  "http",
-		})
-		Expect(errs).To(HaveLen(1))
-		Expect(errs[0].Error()).To(ContainSubstring("namespace"))
-		Expect(errs[0].Error()).To(ContainSubstring("zone"))
 	})
 })

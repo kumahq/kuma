@@ -27,9 +27,13 @@ var sniCapableShortNames = map[string]struct{}{
 //
 // The format is:
 //
-//	sni.<short>.<mesh>.<name>.<sectionName>                          (5 segments) — global-originated
-//	sni.<short>.<mesh>.<zone>.<name>.<sectionName>                   (6 segments) — zone-originated resource on universal
-//	sni.<short>.<mesh>.<zone>.<namespace>.<name>.<sectionName>       (7 segments) — zone-originated resource on k8s
+//	sni.<short>.<mesh>.<name>.<sectionName>                          (5 segments) — global-originated (k8s or universal)
+//	sni.<short>.<mesh>.<zone>.<name>.<sectionName>                   (6 segments) — zone-originated on universal
+//	sni.<short>.<mesh>.<zone>.<namespace>.<name>.<sectionName>       (7 segments) — zone-originated on k8s
+//
+// Namespace is only emitted when the resource is also zone-scoped: a
+// global-originated resource (zone == "") drops the namespace segment even
+// if the k8s label is present.
 func FromKRI(id kri.Identifier) string {
 	return strings.Join(buildSegments(id), ".")
 }
@@ -38,7 +42,6 @@ func FromKRI(id kri.Identifier) string {
 // not satisfy MADR-101 / DNS-1035 naming rules:
 //
 //   - Mesh, Name and SectionName are non-empty
-//   - if Namespace is non-empty, Zone must also be non-empty
 //   - Mesh, Name, Zone and Namespace conform to RFC 1035 ([a-z]([-a-z0-9]*[a-z0-9])?, max 63 chars)
 //   - SectionName conforms to RFC 1035 OR is an all-digit port number (1-5 digits, ≤63 chars)
 //   - total length ≤ 253 (DNS hostname limit)
@@ -55,9 +58,6 @@ func ValidateKRI(id kri.Identifier) []error {
 	}
 
 	var errs []error
-	if id.Namespace != "" && id.Zone == "" {
-		errs = append(errs, fmt.Errorf("namespace %q is set without a zone", id.Namespace))
-	}
 
 	type field struct {
 		name, value string
@@ -68,9 +68,9 @@ func ValidateKRI(id kri.Identifier) []error {
 	}
 	if id.Zone != "" {
 		fields = append(fields, field{"zone", id.Zone})
-	}
-	if id.Namespace != "" {
-		fields = append(fields, field{"namespace", id.Namespace})
+		if id.Namespace != "" {
+			fields = append(fields, field{"namespace", id.Namespace})
+		}
 	}
 	for _, f := range fields {
 		if msgs := apimachineryvalidation.NameIsDNS1035Label(f.value, false); len(msgs) > 0 {
@@ -120,9 +120,9 @@ func buildSegments(id kri.Identifier) []string {
 	segments := []string{sniFormatPrefix, desc.ShortName, id.Mesh}
 	if id.Zone != "" {
 		segments = append(segments, id.Zone)
-	}
-	if id.Namespace != "" {
-		segments = append(segments, id.Namespace)
+		if id.Namespace != "" {
+			segments = append(segments, id.Namespace)
+		}
 	}
 	segments = append(segments, id.Name, id.SectionName)
 	return segments
