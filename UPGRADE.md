@@ -30,19 +30,26 @@ Existing policies with invalid keys keep their current runtime behavior until th
 
 **Action required:**
 
-Before the next apply, export the `MeshAccessLog` resources you manage. On Kubernetes, run `kubectl get meshaccesslogs -A -o yaml > meshaccesslogs.yaml`. On Universal, run `kumactl get meshaccesslogs --mesh <mesh> -o yaml > meshaccesslogs.yaml` for each mesh you manage.
+Before the next apply, export the `MeshAccessLog` resources you manage. On Kubernetes, run `kubectl get meshaccesslogs -A -o yaml > meshaccesslogs-kubernetes.yaml`. On Universal, run `kumactl get meshaccesslogs --mesh <mesh> -o yaml > meshaccesslogs-<mesh>.yaml` for each mesh you manage.
 
 Then audit the exported resources with the full runtime rule:
 
 ```sh
-yq ea -o=tsv '
-  (select(has("items")).items[]?, select(.kind == "MeshAccessLog")) as $policy |
-  ($policy.spec.from[]?.default.backends[]?, $policy.spec.to[]?.default.backends[]?, $policy.spec.rules[]?.default.backends[]?) |
+yq eval-all -o=tsv '
+  (select(has("items")).items[]?, select(.kind == "MeshAccessLog" or .type == "MeshAccessLog")) as $resource |
+  ($resource.spec // $resource) as $policy |
+  ($policy.from[]?.default.backends[]?, $policy.to[]?.default.backends[]?, $policy.rules[]?.default.backends[]?) |
   .openTelemetry.attributes[]? |
-  [($policy.metadata.namespace // "-"), ($policy.metadata.labels."kuma.io/mesh" // "-"), $policy.metadata.name, .key] |
+  [
+    ($resource.metadata.namespace // $resource.labels."k8s.kuma.io/namespace" // "-"),
+    ($resource.metadata.labels."kuma.io/mesh" // $resource.mesh // $resource.labels."kuma.io/mesh" // "-"),
+    ($resource.metadata.name // $resource.labels."kuma.io/display-name" // $resource.name // "-"),
+    .key
+  ] |
   @tsv
-' meshaccesslogs.yaml | \
-awk -F'\t' '$4 ~ /^otel\./ || $4 ~ /%/ || $4 !~ /^[a-z]([a-z0-9]|[._][a-z0-9])*$/ { printf "namespace=%s mesh=%s name=%s key=%s\n", $1, $2, $3, $4 }'
+' meshaccesslogs-*.yaml | \
+awk -F'\t' '$4 ~ /^otel\./ || $4 ~ /%/ || $4 !~ /^[a-z]([a-z0-9]|[._][a-z0-9])*$/ { printf "namespace=%s mesh=%s name=%s key=%s\n", $1, $2, $3, $4 }' | \
+sort -u
 ```
 
 Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, and keep the dynamic content in the value instead:
