@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
 	core_managers "github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -28,6 +29,8 @@ type MeshReconciler struct {
 	K8sStore                   bool
 	CaManagers                 core_ca.Managers
 	SystemNamespace            string
+	CpMode                     config_core.CpMode
+	CpZone                     string
 }
 
 func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -68,6 +71,9 @@ func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_
 		r.CreateMeshRoutingResources,
 		r.K8sStore,
 		r.SystemNamespace,
+		r.CpMode,
+		r.CpZone,
+		false, // create missing default resources
 	); err != nil {
 		return errors.Wrap(err, "could not create default mesh resources")
 	}

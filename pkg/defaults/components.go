@@ -20,12 +20,13 @@ import (
 
 var log = core.Log.WithName("defaults")
 
-type EnsureDefaultFunc = func(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error
+type EnsureDefaultFunc = func(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config, extensions context.Context) error
 
 var EnsureDefaultFuncs = []EnsureDefaultFunc{
 	EnsureEnvoyAdminCaExists,
 	EnsureOnlyOneZoneExists,
 	EnsureDefaultMeshExists,
+	EnsureDefaultMeshResourcesUpToDate,
 	EnsureZoneTokenSigningKeyExists,
 	EnsureHostnameGeneratorExists,
 }
@@ -61,7 +62,7 @@ func (e *DefaultComponent) Start(stop <-chan struct{}) error {
 	go func() {
 		errChan <- retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
 			for _, fn := range e.Funcs {
-				if err := fn(ctx, e.ResManager, logger, e.CpConfig); err != nil {
+				if err := fn(ctx, e.ResManager, logger, e.CpConfig, e.Extensions); err != nil {
 					logger.V(1).Info("could not ensure default resources. Retrying.", "err", err)
 					return retry.RetryableError(err)
 				}
@@ -81,7 +82,7 @@ func (e DefaultComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func EnsureZoneTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
+func EnsureZoneTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config, extensions context.Context) error {
 	if cfg.IsFederatedZoneCP() {
 		return nil
 	}

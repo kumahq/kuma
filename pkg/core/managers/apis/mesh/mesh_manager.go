@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
 	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -36,6 +37,8 @@ func NewMeshManager(
 		unsafeDelete:               config.Store.UnsafeDelete,
 		extensions:                 extensions,
 		createMeshRoutingResources: config.Defaults.CreateMeshRoutingResources,
+		cpMode:                     config.Mode,
+		cpZone:                     config.Multizone.Zone.Name,
 	}
 	if config.Store.Type == config_store.KubernetesStore {
 		meshManager.k8sStore = true
@@ -55,6 +58,8 @@ type meshManager struct {
 	createMeshRoutingResources bool
 	k8sStore                   bool
 	systemNamespace            string
+	cpMode                     config_core.CpMode
+	cpZone                     string
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -105,6 +110,9 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 		m.createMeshRoutingResources,
 		m.k8sStore,
 		m.systemNamespace,
+		m.cpMode,
+		m.cpZone,
+		false, // create missing default resources
 	); err != nil {
 		return err
 	}
