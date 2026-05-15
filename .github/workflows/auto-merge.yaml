@@ -13,7 +13,12 @@ permissions:
 jobs:
   approve-and-auto-merge:
     timeout-minutes: 10
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_9_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     if: contains(github.event.pull_request.labels.*.name, 'ci/auto-merge')
     permissions:
       pull-requests: write

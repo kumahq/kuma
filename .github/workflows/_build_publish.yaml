@@ -45,7 +45,12 @@ env:
 jobs:
   build-binaries:
     timeout-minutes: 40
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_9_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     permissions:
       id-token: write
       contents: read
@@ -90,7 +95,12 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    runs-on: ubuntu-22.04 # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_9_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-22.04 # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution'
+      }}
     permissions:
       id-token: write # Required for image signing
       contents: read
@@ -189,7 +199,12 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_9_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
@@ -207,7 +222,12 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_9_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
