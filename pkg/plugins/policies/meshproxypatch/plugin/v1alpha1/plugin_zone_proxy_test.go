@@ -150,6 +150,12 @@ func newMeshProxyPatch(name string, targetRef *common_api.TargetRef, mods []api.
 	}
 }
 
+// MeshProxyPatch on a zone proxy Dataplane flows through the same
+// SingleItemRules path as a regular Dataplane — the matcher (#16584)
+// is what makes Dataplane-targeted policies reach the embedded zone
+// proxy listeners. MeshProxyPatch itself is proxy-wide; scoping to a
+// specific zone proxy DPP is done with computed labels on `targetRef`,
+// exercised end-to-end by the universal envoyconfig suite.
 var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 	type testCase struct {
 		dp         *builders.DataplaneBuilder
@@ -202,146 +208,38 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 					{Listener: &api.ListenerMod{
 						Operation: api.ModOpPatch,
 						Match:     &api.ListenerMatch{Name: pointer.To(naming.ContextualZoneEgressListenerName("ze-port"))},
-						Value:     pointer.To("statPrefix: patched_by_name\n"),
+						Value:     pointer.To("statPrefix: patched_egress\n"),
 					}},
 				}),
 			},
-			goldenFile: "zone-egress-listener-by-name",
+			goldenFile: "zone-egress-listener-patch",
 		}),
-		Entry("zone egress, listener patch scoped by sectionName", testCase{
-			dp:        zoneEgressOnlyDataplane(),
-			resources: []core_xds.Resource{zoneEgressListenerResource()},
-			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-section", &common_api.TargetRef{
-					Kind:        common_api.Dataplane,
-					SectionName: pointer.To("ze-port"),
-				}, []api.Modification{
-					{Listener: &api.ListenerMod{
-						Operation: api.ModOpPatch,
-						Value:     pointer.To("statPrefix: patched_by_section\n"),
-					}},
-				}),
-			},
-			goldenFile: "zone-egress-listener-by-section",
-		}),
-		Entry("zone ingress, listener patch scoped by sectionName", testCase{
+		Entry("zone ingress, listener patch matched by explicit name", testCase{
 			dp:        zoneIngressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-section", &common_api.TargetRef{
-					Kind:        common_api.Dataplane,
-					SectionName: pointer.To("zi-port"),
-				}, []api.Modification{
+				newMeshProxyPatch("by-name", &common_api.TargetRef{Kind: common_api.Mesh}, []api.Modification{
 					{Listener: &api.ListenerMod{
 						Operation: api.ModOpPatch,
+						Match:     &api.ListenerMatch{Name: pointer.To(naming.ContextualZoneIngressListenerName("zi-port"))},
 						Value:     pointer.To("statPrefix: patched_ingress\n"),
 					}},
 				}),
 			},
-			goldenFile: "zone-ingress-listener-by-section",
+			goldenFile: "zone-ingress-listener-patch",
 		}),
-		Entry("mixed inbound + zone egress, listener patch scoped to zone egress only", testCase{
+		Entry("mixed inbound + zone egress, cluster added by Dataplane targetRef", testCase{
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-section", &common_api.TargetRef{
-					Kind:        common_api.Dataplane,
-					SectionName: pointer.To("ze-port"),
-				}, []api.Modification{
-					{Listener: &api.ListenerMod{
-						Operation: api.ModOpPatch,
-						Value:     pointer.To("statPrefix: only_zone_egress\n"),
-					}},
-				}),
-			},
-			goldenFile: "mixed-listener-scoped-to-egress",
-		}),
-		Entry("zone egress, cluster patch with sectionName applies globally", testCase{
-			dp: zoneEgressOnlyDataplane(),
-			resources: []core_xds.Resource{
-				zoneEgressListenerResource(),
-				{
-					Name:     "kuma:envoy:admin",
-					Origin:   metadata.OriginAdmin,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "kuma:envoy:admin").MustBuild(),
-				},
-			},
-			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("cluster-scoped", &common_api.TargetRef{
-					Kind:        common_api.Dataplane,
-					SectionName: pointer.To("ze-port"),
-				}, []api.Modification{
+				newMeshProxyPatch("add-cluster", &common_api.TargetRef{Kind: common_api.Dataplane}, []api.Modification{
 					{Cluster: &api.ClusterMod{
 						Operation: api.ModOpAdd,
 						Value:     pointer.To("name: extra-cluster\nconnectTimeout: 7s\n"),
 					}},
 				}),
 			},
-			goldenFile: "zone-egress-cluster-mod-scoped",
-		}),
-		Entry("zone egress, http filter patch scoped by sectionName", testCase{
-			dp:        zoneEgressOnlyDataplane(),
-			resources: []core_xds.Resource{zoneEgressListenerResource()},
-			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("http-filter", &common_api.TargetRef{
-					Kind:        common_api.Dataplane,
-					SectionName: pointer.To("ze-port"),
-				}, []api.Modification{
-					{HTTPFilter: &api.HTTPFilterMod{
-						Operation: api.ModOpAddFirst,
-						Value: pointer.To(`name: envoy.filters.http.lua
-typedConfig:
-  '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-  defaultSourceCode:
-    inlineString: |
-      function envoy_on_request(handle) end
-`),
-					}},
-				}),
-			},
-			goldenFile: "zone-egress-http-filter-by-section",
-		}),
-		Entry("mixed inbound + zone egress, network filter patch scoped to zone egress only", testCase{
-			dp:        mixedInboundAndZoneEgressDataplane(),
-			resources: mixedInboundAndZoneEgressResources(),
-			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("network-filter", &common_api.TargetRef{
-					Kind:        common_api.Dataplane,
-					SectionName: pointer.To("ze-port"),
-				}, []api.Modification{
-					{NetworkFilter: &api.NetworkFilterMod{
-						Operation: api.ModOpPatch,
-						Match: &api.NetworkFilterMatch{
-							Name: pointer.To("envoy.filters.network.http_connection_manager"),
-						},
-						Value: pointer.To(`name: envoy.filters.network.http_connection_manager
-typedConfig:
-  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-  statPrefix: patched_ze_only
-`),
-					}},
-				}),
-			},
-			goldenFile: "mixed-network-filter-scoped-to-egress",
-		}),
-		Entry("mixed inbound + zone egress, virtual host mod with sectionName applies globally", testCase{
-			dp:        mixedInboundAndZoneEgressDataplane(),
-			resources: mixedInboundAndZoneEgressResources(),
-			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("virtual-host", &common_api.TargetRef{
-					Kind:        common_api.Dataplane,
-					SectionName: pointer.To("ze-port"),
-				}, []api.Modification{
-					{VirtualHost: &api.VirtualHostMod{
-						Operation: api.ModOpAdd,
-						Value: pointer.To(`name: mpp-extra-vhost
-domains:
-- extra.example.com
-`),
-					}},
-				}),
-			},
-			goldenFile: "mixed-virtual-host-mod-global",
+			goldenFile: "mixed-cluster-add",
 		}),
 	)
 })

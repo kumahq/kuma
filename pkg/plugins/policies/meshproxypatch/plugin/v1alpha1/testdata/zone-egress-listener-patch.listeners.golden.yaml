@@ -16,12 +16,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
-          - name: envoy.filters.http.lua
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-              defaultSourceCode:
-                inlineString: |
-                  function envoy_on_request(handle) end
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -34,4 +28,5 @@ resources:
           statPrefix: mes-http
       name: mes-http
     name: self_zoneegress_dp_ze-port
+    statPrefix: patched_egress
     trafficDirection: INBOUND
