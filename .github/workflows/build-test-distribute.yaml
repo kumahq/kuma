@@ -104,13 +104,13 @@ jobs:
           config: .syft.yaml
           upload-sbom-release-assets: true
   resolve_runners:
-    runs-on: ${{ github.event.pull_request.head.repo.fork == true && 'ubuntu-24.04' || fromJSON(vars.RUNS_ON || '{}')[github.event_name == 'pull_request' && github.base_ref || github.ref_name].amd64 || fromJSON(vars.RUNS_ON || '{}').default.amd64 || 'ubuntu-latest-kong' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNS_ON || '{}')[github.event_name == 'pull_request' && github.base_ref || github.ref_name].amd64 || fromJSON(vars.RUNS_ON || '{}').default.amd64 || 'ubuntu-latest-kong' }}
     outputs:
       by_arch: ${{ steps.compute.outputs.by_arch }}
     env:
       RUNS_ON: ${{ vars.RUNS_ON }}
       BRANCH: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
-      IS_FORK: ${{ github.event.pull_request.head.repo.fork == true }}
+      IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
       FORK_FALLBACK: '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}'
     steps:
       - id: compute
