@@ -81,15 +81,11 @@ spec:
 	GatewayIP := func(name string) string {
 		var ip string
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(namespace),
-				"get", "gateway", name, "-ojsonpath={.status.addresses[0].value}",
-			)
+			out, err := kubernetes.Cluster.GetLBIngressIP(name, namespace)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(BeEmpty())
 			ip = out
-		}, "120s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
+		}, "120s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway Service")
 		return ip
 	}
 
