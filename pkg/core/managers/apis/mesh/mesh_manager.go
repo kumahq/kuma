@@ -28,6 +28,10 @@ func NewMeshManager(
 	extensions context.Context,
 	config kuma_cp.Config,
 ) core_manager.ResourceManager {
+	var cpZone string
+	if config.Multizone != nil {
+		cpZone = config.Multizone.Zone.Name
+	}
 	meshManager := &meshManager{
 		store:                      store,
 		otherManagers:              otherManagers,
@@ -38,7 +42,7 @@ func NewMeshManager(
 		extensions:                 extensions,
 		createMeshRoutingResources: config.Defaults.CreateMeshRoutingResources,
 		cpMode:                     config.Mode,
-		cpZone:                     config.Multizone.Zone.Name,
+		cpZone:                     cpZone,
 	}
 	if config.Store.Type == config_store.KubernetesStore {
 		meshManager.k8sStore = true
