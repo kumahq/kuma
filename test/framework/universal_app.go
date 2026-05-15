@@ -304,7 +304,15 @@ func (s *UniversalApp) waitMainAppProcessStopped(pattern string) error {
 }
 
 func (s *UniversalApp) mainAppProcessRegex(pattern string) string {
-	return "^" + regexp.QuoteMeta(pattern)
+	executable, args, found := strings.Cut(pattern, " ")
+	if strings.Contains(executable, "/") {
+		return "^" + regexp.QuoteMeta(pattern)
+	}
+	prefix := "^(.*/)?" + regexp.QuoteMeta(executable)
+	if !found {
+		return prefix
+	}
+	return prefix + `[[:space:]]+` + regexp.QuoteMeta(args)
 }
 
 func isExitStatus(err error, status int) bool {
