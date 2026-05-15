@@ -11,7 +11,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_record "k8s.io/client-go/tools/record"
+	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,7 +48,7 @@ const (
 // PodReconciler reconciles a Pod object
 type PodReconciler struct {
 	kube_client.Client
-	kube_record.EventRecorder
+	kube_events.EventRecorder
 	Scheme                       *kube_runtime.Scheme
 	Log                          logr.Logger
 	PodConverter                 PodConverter
@@ -350,7 +350,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
-			r.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
+			r.Eventf(pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Failed to generate Kuma Dataplane: %s", err.Error())
 		}
 
 		return err
@@ -358,10 +358,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
 		log.Info("Dataplane created")
-		r.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", pod.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Dataplane: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("Dataplane updated")
-		r.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", pod.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Dataplane: %s", pod.Name)
 	}
 	return nil
 }
@@ -386,16 +386,16 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
 		log.Error(err, "unable to create/update Ingress", "operationResult", operationResult)
-		r.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Ingress: %s", err.Error())
+		r.Eventf(pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Failed to generate Kuma Ingress: %s", err.Error())
 		return err
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
 		log.Info("ZoneIngress created")
-		r.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Ingress: %s", pod.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Ingress: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("ZoneIngress updated")
-		r.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Ingress: %s", pod.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Ingress: %s", pod.Name)
 	}
 	return nil
 }
@@ -420,16 +420,16 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
 		log.Error(err, "unable to create/update Egress", "operationResult", operationResult)
-		r.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Egress: %s", err.Error())
+		r.Eventf(pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Failed to generate Kuma Egress: %s", err.Error())
 		return err
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
 		log.Info("ZoneEgress created")
-		r.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Egress: %s", pod.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Egress: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("ZoneEgress updated")
-		r.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Egress: %s", pod.Name)
+		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Egress: %s", pod.Name)
 	}
 	return nil
 }

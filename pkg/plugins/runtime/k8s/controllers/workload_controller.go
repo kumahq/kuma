@@ -9,7 +9,7 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_record "k8s.io/client-go/tools/record"
+	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -32,7 +32,7 @@ const (
 // WorkloadReconciler reconciles Workload resources based on Dataplane labels
 type WorkloadReconciler struct {
 	kube_client.Client
-	kube_record.EventRecorder
+	kube_events.EventRecorder
 	Log logr.Logger
 }
 
@@ -103,7 +103,7 @@ func (r *WorkloadReconciler) handleMultipleMeshesDetected(ctx context.Context, n
 	if err := r.Get(ctx, kube_types.NamespacedName{Name: namespace}, ns); err != nil {
 		log.V(1).Info("unable to fetch namespace for event emission", "error", err)
 	} else {
-		r.Eventf(ns, kube_core.EventTypeWarning, MultipleMeshesDetectedReason,
+		r.Eventf(ns, nil, kube_core.EventTypeWarning, MultipleMeshesDetectedReason, "MultipleMeshesDetected",
 			"Skipping Workload generation: namespace %s has pods in multiple meshes (%d meshes) for workload %s. This configuration is not supported.",
 			namespace, meshCount, workloadName)
 	}
