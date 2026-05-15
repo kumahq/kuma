@@ -10,8 +10,8 @@ permissions:
   contents: read
 jobs:
   pr_comments:
-    timeout-minutes: 45
-    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/tproxy_golden_files'))
+    timeout-minutes: 120
+    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || (contains(github.event.comment.body, '/golden_files') && !contains(github.event.comment.body, '/golden_files_e2e')) || contains(github.event.comment.body, '/golden_files_e2e') || contains(github.event.comment.body, '/tproxy_golden_files'))
     runs-on: ubuntu-24.04
     env:
       IPV6: "true"
@@ -55,10 +55,46 @@ jobs:
         run: make clean/generated check
         continue-on-error: true
 
-      # Update all golden files except transparent proxy tests if /golden_files is in the comment
-      - name: "Update golden files (excluding transparent proxy)"
-        if: contains(github.event.comment.body, '/golden_files')
+      # Update unit-test golden files if /golden_files is in the comment
+      - name: "Update golden files (excluding transparent proxy and e2e)"
+        if: contains(github.event.comment.body, '/golden_files') && !contains(github.event.comment.body, '/golden_files_e2e')
         run: make test UPDATE_GOLDEN_FILES=true
+
+      - name: "Free up disk space for E2E golden files"
+        if: contains(github.event.comment.body, '/golden_files_e2e')
+        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+
+      # Update only the e2e suites that generate golden files if /golden_files_e2e is in the comment
+      - name: "Update e2e golden files"
+        if: contains(github.event.comment.body, '/golden_files_e2e')
+        env:
+          DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
+        run: |
+          did_login=false
+
+          on_exit() {
+            if [[ "$did_login" == "true" ]]; then
+              docker logout docker.io
+            fi
+          }
+
+          if [[ "$DOCKERHUB_PULL_CREDENTIAL" != "" ]]; then
+            DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
+            DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
+            echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
+            did_login=true
+            trap on_exit EXIT
+          fi
+
+          make dev/set-kuma-helm-repo
+          make -j images && make -j docker/save
+          make CI=true UPDATE_GOLDEN_FILES=true GINKGO_E2E_TEST_FLAGS=--focus=Envoy.+Config test/e2e-universal
+          KUMA_DEFAULT_RETRIES=60 KUMA_DEFAULT_TIMEOUT=6s \
+            make CI=true UPDATE_GOLDEN_FILES=true GINKGO_E2E_TEST_FLAGS=--focus=Resource.+Label.+Validation test/e2e-multizone
 
       # Enable IPv6 for transparent proxy tests
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
@@ -90,7 +126,7 @@ jobs:
           else
             git config user.name "${GH_USER}"
             git config user.email "${GH_EMAIL}"
-            git commit -s -m "fix(ci): format files" .
+            git commit -s -m "ci(pr-comments): apply requested updates" .
             git push
           fi
       - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
