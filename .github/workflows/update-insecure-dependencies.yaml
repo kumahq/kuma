@@ -7,7 +7,12 @@ permissions: read-all
 jobs:
   build-matrix:
     timeout-minutes: 10
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_11_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     outputs:
       branches: ${{ steps.generate-matrix.outputs.branches }}
     steps:
@@ -28,7 +33,12 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.build-matrix.outputs.branches) }}
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_11_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     steps:
       - name: Set Swap Space
         uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761

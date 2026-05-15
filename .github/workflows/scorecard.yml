@@ -14,7 +14,12 @@ jobs:
   analysis:
     timeout-minutes: 10
     name: Scorecard analysis
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_11_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     permissions:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
