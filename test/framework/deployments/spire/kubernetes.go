@@ -11,7 +11,13 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework"
 )
 
-const spireChartRepo = "https://spiffe.github.io/helm-charts-hardened/"
+const (
+	spireChartRepo        = "https://spiffe.github.io/helm-charts-hardened/"
+	spireChartName        = "spire"
+	spireChartVersion     = "0.28.4"
+	spireCRDsChartName    = "spire-crds"
+	spireCRDsChartVersion = "0.5.0"
+)
 
 type k8sDeployment struct {
 	namespace      string
@@ -44,16 +50,35 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--set", "global.spire.tools.kubectl.tag=" + t.kubectlVersion,
 	}
 
+	spireCRDsChart, err := framework.HelmChartFromRepoE(
+		cluster.GetTesting(),
+		spireChartRepo,
+		spireCRDsChartName,
+		spireCRDsChartVersion,
+	)
+	if err != nil {
+		return err
+	}
+	spireChart, err := framework.HelmChartFromRepoE(
+		cluster.GetTesting(),
+		spireChartRepo,
+		spireChartName,
+		spireChartVersion,
+	)
+	if err != nil {
+		return err
+	}
+
 	// Preload chart images into the cluster's container runtime so pod startup
 	// does not hit ghcr.io / docker.io at test time. Transient registry
 	// timeouts during runtime pulls are the dominant cause of ImagePullBackOff
 	// flakes on this BeforeAll.
 	if k8sCluster, ok := cluster.(*framework.K8sCluster); ok {
-		images, err := chartImages(cluster, "spire-crds", &opts, "spire-crds")
+		images, err := chartImages(cluster, "spire-crds", &opts, spireCRDsChart)
 		if err != nil {
 			return errors.Wrap(err, "render spire-crds chart")
 		}
-		more, err := chartImages(cluster, "spire", &opts, "spire", spireSetValues...)
+		more, err := chartImages(cluster, "spire", &opts, spireChart, spireSetValues...)
 		if err != nil {
 			return errors.Wrap(err, "render spire chart")
 		}
@@ -64,18 +89,16 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 
 	if _, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", "spire-crds",
 		"--namespace", t.namespace,
-		"--repo", spireChartRepo,
-		"spire-crds",
+		spireCRDsChart,
 	); err != nil {
 		return err
 	}
 
 	installArgs := []string{
 		"--namespace", t.namespace,
-		"--repo", spireChartRepo,
 	}
 	installArgs = append(installArgs, spireSetValues...)
-	installArgs = append(installArgs, "spire")
+	installArgs = append(installArgs, spireChart)
 	if _, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", append([]string{"spire"}, installArgs...)...); err != nil {
 		return err
 	}
@@ -96,7 +119,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 // chartImages renders the named chart with `helm template` and returns the
 // distinct container images referenced in the resulting manifests.
 func chartImages(cluster framework.Cluster, releaseName string, opts *helm.Options, chart string, extraArgs ...string) ([]string, error) {
-	args := []string{releaseName, chart, "--repo", spireChartRepo}
+	args := []string{releaseName, chart}
 	args = append(args, extraArgs...)
 	out, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), opts, "template", args...)
 	if err != nil {

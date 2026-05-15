@@ -669,7 +669,17 @@ func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 		KubectlOptions: c.GetKubectlOptions(Config.KumaNamespace),
 	}
 
-	if c.opts.helmChartVersion != "" {
+	if c.opts.helmChartVersion != "" && helmChart == Config.HelmChartName {
+		helmChart, err = HelmChartFromRepoE(
+			c.t,
+			Config.HelmRepoUrl,
+			filepath.Base(Config.HelmChartName),
+			c.opts.helmChartVersion,
+		)
+		if err != nil {
+			return err
+		}
+	} else if c.opts.helmChartVersion != "" {
 		helmOpts.Version = c.opts.helmChartVersion
 	}
 
