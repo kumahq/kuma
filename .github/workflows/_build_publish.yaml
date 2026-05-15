@@ -45,7 +45,12 @@ env:
 jobs:
   build-binaries:
     timeout-minutes: 40
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_7_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     permissions:
       id-token: write
       contents: read
@@ -90,7 +95,12 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    runs-on: ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_7_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment'
+      }}
     permissions:
       id-token: write # Required for image signing
       contents: write # needed to upload SBOM assets to GitHub releases
@@ -189,7 +199,12 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_7_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
@@ -207,7 +222,12 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_7_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     steps:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:

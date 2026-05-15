@@ -20,7 +20,12 @@ permissions:
 jobs:
   generate-docs:
     timeout-minutes: 10
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_RELEASE_2_7_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     steps:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
