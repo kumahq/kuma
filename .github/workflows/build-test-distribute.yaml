@@ -115,16 +115,7 @@ jobs:
       #   4. default                          -> the standard self-hosted Kong pool
       # Branch slug is hardcoded because GitHub var names can't contain '-' or '.',
       # and inline expressions can't sanitize `github.ref_name`.
-      RUNNERS_BY_ARCH: >-
-        ${{
-          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
-          && '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}'
-          || format(
-              '{"amd64":"{0}","arm64":"{1}"}',
-              vars.RUNS_ON_RELEASE_2_11_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-latest-kong',
-              vars.RUNS_ON_RELEASE_2_11_ARM64 || vars.RUNS_ON_ARM64 || 'ubuntu-latest-arm64-kong'
-            )
-        }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}' || format('{"amd64":"{0}","arm64":"{1}"}', vars.RUNS_ON_RELEASE_2_11_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-latest-kong', vars.RUNS_ON_RELEASE_2_11_ARM64 || vars.RUNS_ON_ARM64 || 'ubuntu-latest-arm64-kong') }}
     secrets: inherit
   build_publish:
     permissions:
