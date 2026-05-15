@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.active-branches.outputs.out) }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - name: Set Swap Space
         uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761

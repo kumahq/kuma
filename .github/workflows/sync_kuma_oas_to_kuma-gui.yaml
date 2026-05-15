@@ -17,7 +17,7 @@ permissions: {}
 
 jobs:
   dispatch-event:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
       TARGET_REPO: kuma-gui

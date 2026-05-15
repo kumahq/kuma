@@ -25,7 +25,7 @@ jobs:
 
   trigger-build-test-distribute:
     needs: active-branches
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       actions: write # required to trigger workflows
       checks: read # required to list workflow runs

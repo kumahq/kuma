@@ -43,7 +43,7 @@ concurrency:
 jobs:
   workflows:
     name: "Validate Workflows"
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.run_actionlint ||
@@ -74,7 +74,7 @@ jobs:
 
   shellcheck:
     name: "Validate Shell Scripts"
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.run_shellcheck ||
