@@ -24,25 +24,13 @@ kubectl -n kuma-system label meshservice <name> app.example.com/tier-
 
 ### MeshAccessLog OpenTelemetry attribute keys are now validated
 
-`MeshAccessLog` now validates `openTelemetry.attributes[].key` against the
-access-log attribute-key grammar used by this policy. Keys must start with a
-lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid
-consecutive delimiters, end with a letter or digit, and must not use the
-reserved `otel.` prefix. `%...%` placeholders remain supported in attribute
-values, but are no longer accepted in keys.
+`MeshAccessLog` now validates `openTelemetry.attributes[].key` against the access-log attribute-key grammar used by this policy. Keys must start with a lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid consecutive delimiters, end with a letter or digit, and must not use the reserved `otel.` prefix. `%...%` placeholders remain supported in attribute values, but are no longer accepted in keys.
 
-Existing policies with invalid keys keep their current runtime behavior until
-they are updated or reapplied. In particular, placeholder-based keys continue
-to emit the same interpolated key after a control-plane upgrade. After that,
-any create or update using an invalid key is rejected until the key is renamed
-to a static value.
+Existing policies with invalid keys keep their current runtime behavior until they are updated or reapplied. In particular, placeholder-based keys continue to emit the same interpolated key after a control-plane upgrade. After that, any create or update using an invalid key is rejected until the key is renamed to a static value.
 
 **Action required:**
 
-If you have existing `MeshAccessLog` policies with keys such as
-`%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, rename the
-key and keep the dynamic content in the value instead. On Kubernetes you can
-find placeholder-based keys before the next apply with:
+If you have existing `MeshAccessLog` policies with keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, rename the key and keep the dynamic content in the value instead. On Kubernetes you can find placeholder-based keys before the next apply with:
 
 ```sh
 kubectl get meshaccesslogs -A -o yaml | grep -B1 'key: .*%'
