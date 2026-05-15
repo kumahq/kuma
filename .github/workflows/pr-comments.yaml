@@ -16,6 +16,8 @@ jobs:
     env:
       IPV6: "true"
     steps:
+      # Commands are additive: one comment can request multiple actions, and all
+      # matching steps below will run in order.
       - name: Parse PR comment commands
         id: parse-commands
         env:
