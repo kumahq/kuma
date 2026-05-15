@@ -6,12 +6,7 @@ permissions: {}
 jobs:
   pr-check:
     timeout-minutes: 10
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_13_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - name: Check PR title
         # Check PR title against the Conventional Commits format using commitlint.
