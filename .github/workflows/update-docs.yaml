@@ -31,6 +31,9 @@ jobs:
           ref: master
           path: repo
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
+          version: 2026.5.7
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: "sync docs" # loop over all the branches and generate the docs
