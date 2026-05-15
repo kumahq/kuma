@@ -1,11 +1,14 @@
 package v1alpha1_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	meshaccesslog_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 )
 
@@ -565,10 +568,10 @@ from:
               - key: "my custom attribute"
                 value: "%KUMA_MESH%"
 `,
-				expected: `
+				expected: fmt.Sprintf(`
 violations:
   - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
-    message: must start with a lowercase letter, use only lowercase letters, digits, '.' or '_', avoid consecutive delimiters, and end with a letter or digit`,
+    message: %s`, validators.MustMatchOtelAttributeNameFormat),
 			}),
 			Entry("openTelemetry attribute key with placeholders", testCase{
 				inputYaml: `
@@ -587,10 +590,58 @@ from:
               - key: "%KUMA_ZONE%"
                 value: "%KUMA_MESH%"
 `,
-				expected: `
+				expected: fmt.Sprintf(`
 violations:
   - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
-    message: "must be a static OpenTelemetry attribute name; placeholders are only supported in values"`,
+    message: "%s"`, validators.MustBeStaticOtelAttributeName),
+			}),
+			Entry("openTelemetry attribute key with reserved prefix", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "otel.attribute"
+                value: "%KUMA_MESH%"
+`,
+				expected: fmt.Sprintf(`
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: "%s"`, validators.MustNotUseReservedOtelPrefix),
+			}),
+			Entry("openTelemetry attribute keys accumulate violations", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "bad key"
+                value: "%KUMA_MESH%"
+              - key: "%KUMA_ZONE%"
+                value: "%KUMA_ZONE%"
+`,
+				expected: fmt.Sprintf(`
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: %s
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[1].key
+    message: "%s"`, validators.MustMatchOtelAttributeNameFormat, validators.MustBeStaticOtelAttributeName),
 			}),
 			Entry("MeshGateway and invalid to kind", testCase{
 				inputYaml: `

@@ -18,7 +18,7 @@ func validationError(msg string) validators.ValidationError {
 
 var _ = Describe("Common validators", func() {
 	path := validators.RootedAt("path")
-	invalidOtelAttributeName := validationError("must start with a lowercase letter, use only lowercase letters, digits, '.' or '_', avoid consecutive delimiters, and end with a letter or digit")
+	invalidOtelAttributeName := validationError(validators.MustMatchOtelAttributeNameFormat)
 
 	DescribeTable("ValidateBandwidth",
 		func(input string, expected validators.ValidationError) {
@@ -48,8 +48,8 @@ var _ = Describe("Common validators", func() {
 		Entry("dotted segments", "service.version", validators.ValidationError{}),
 		Entry("underscored segment", "process_command_args", validators.ValidationError{}),
 		Entry("mixed dotted and underscored segments", "process.command_args", validators.ValidationError{}),
-		Entry("placeholder key", "%KUMA_ZONE%", validationError("must be a static OpenTelemetry attribute name; placeholders are only supported in values")),
-		Entry("reserved prefix", "otel.attribute", validationError("must not use the reserved OpenTelemetry prefix 'otel.'")),
+		Entry("placeholder key", "%KUMA_ZONE%", validationError(validators.MustBeStaticOtelAttributeName)),
+		Entry("reserved prefix", "otel.attribute", validationError(validators.MustNotUseReservedOtelPrefix)),
 		Entry("space", "my custom attribute", invalidOtelAttributeName),
 		Entry("uppercase segment", "service.Version", invalidOtelAttributeName),
 		Entry("hyphenated segment", "request-id", invalidOtelAttributeName),

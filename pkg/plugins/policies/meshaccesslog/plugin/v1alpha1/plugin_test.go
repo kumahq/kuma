@@ -885,7 +885,7 @@ var _ = Describe("MeshAccessLog", func() {
 										Body: &apiextensionsv1.JSON{
 											Raw: []byte("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
 										},
-										Attributes: &[]api.JsonValue{
+										Attributes: &[]api.OtelAttribute{
 											{Key: "mesh", Value: "%KUMA_MESH%"},
 											{Key: "zone", Value: "%KUMA_ZONE%"},
 											{Key: "workload", Value: "%KUMA_WORKLOAD%"},

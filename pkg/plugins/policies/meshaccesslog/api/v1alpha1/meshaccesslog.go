@@ -85,7 +85,7 @@ type OtelBackend struct {
 	// OpenTelemetry attribute names. Values can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={{key: "mesh", value: "%KUMA_MESH%"}}
-	Attributes *[]JsonValue `json:"attributes,omitempty"`
+	Attributes *[]OtelAttribute `json:"attributes,omitempty"`
 	// Body is a raw string or an OTLP any value as described at
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
 	// It can contain placeholders available on
@@ -136,6 +136,14 @@ type Format struct {
 
 type JsonValue struct {
 	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type OtelAttribute struct {
+	// Key is the OpenTelemetry attribute name.
+	// +kubebuilder:validation:Pattern=`^[a-z]([a-z0-9]|[._][a-z0-9])*$`
+	Key string `json:"key"`
+	// Value can contain Kuma placeholders.
 	Value string `json:"value"`
 }
 

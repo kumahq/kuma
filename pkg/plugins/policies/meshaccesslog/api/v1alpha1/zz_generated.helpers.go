@@ -18,7 +18,7 @@ func (x *From) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
 
-func (x *From) GetDefault() interface{} {
+func (x *From) GetDefault() any {
 	return x.Default
 }
 
@@ -35,7 +35,7 @@ func (x *To) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
 
-func (x *To) GetDefault() interface{} {
+func (x *To) GetDefault() any {
 	return x.Default
 }
 
@@ -48,7 +48,7 @@ func (x *MeshAccessLog) GetToList() []core_model.PolicyItem {
 	return result
 }
 
-func (x *Rule) GetDefault() interface{} {
+func (x *Rule) GetDefault() any {
 	return x.Default
 }
 

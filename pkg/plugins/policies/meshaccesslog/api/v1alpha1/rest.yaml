@@ -227,8 +227,11 @@ components:
                                   items:
                                     properties:
                                       key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                         type: string
                                       value:
+                                        description: Value can contain Kuma placeholders.
                                         type: string
                                     required:
                                       - key
@@ -482,8 +485,11 @@ components:
                                   items:
                                     properties:
                                       key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                         type: string
                                       value:
+                                        description: Value can contain Kuma placeholders.
                                         type: string
                                     required:
                                       - key
@@ -737,8 +743,11 @@ components:
                                   items:
                                     properties:
                                       key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                         type: string
                                       value:
+                                        description: Value can contain Kuma placeholders.
                                         type: string
                                     required:
                                       - key

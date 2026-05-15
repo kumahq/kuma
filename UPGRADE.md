@@ -26,17 +26,26 @@ kubectl -n kuma-system label meshservice <name> app.example.com/tier-
 
 `MeshAccessLog` now validates `openTelemetry.attributes[].key` against the access-log attribute-key grammar used by this policy. Keys must start with a lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid consecutive delimiters, end with a letter or digit, and must not use the reserved `otel.` prefix. `%...%` placeholders remain supported in attribute values, but are no longer accepted in keys.
 
-Existing policies with invalid keys keep their current runtime behavior until they are updated or reapplied. In particular, placeholder-based keys continue to emit the same interpolated key after a control-plane upgrade. After that, any create or update using an invalid key is rejected until the key is renamed to a static value.
+Existing policies with invalid keys keep their current runtime behavior until they are updated or reapplied. In particular, placeholder-based keys continue to emit the same interpolated key after a control-plane upgrade. GitOps or other reconcilers that re-apply `MeshAccessLog` resources after the upgrade hit the same validation path immediately, so invalid keys must be fixed before the next reconcile. Any create or update using an invalid key is rejected until the key is renamed to a static value.
 
 **Action required:**
 
-If you have existing `MeshAccessLog` policies with keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, rename the key and keep the dynamic content in the value instead. On Kubernetes you can find placeholder-based keys before the next apply with:
+Before the next apply, export the `MeshAccessLog` resources you manage. On Kubernetes, run `kubectl get meshaccesslogs -A -o yaml > meshaccesslogs.yaml`. On Universal, run `kumactl get meshaccesslogs --mesh <mesh> -o yaml > meshaccesslogs.yaml` for each mesh you manage.
+
+Then audit the exported resources with the full runtime rule:
 
 ```sh
-kubectl get meshaccesslogs -A -o yaml | grep -B1 'key: .*%'
+yq ea -o=tsv '
+  (select(has("items")).items[]?, select(.kind == "MeshAccessLog")) as $policy |
+  ($policy.spec.from[]?.default.backends[]?, $policy.spec.to[]?.default.backends[]?, $policy.spec.rules[]?.default.backends[]?) |
+  .openTelemetry.attributes[]? |
+  [($policy.metadata.namespace // "-"), ($policy.metadata.labels."kuma.io/mesh" // "-"), $policy.metadata.name, .key] |
+  @tsv
+' meshaccesslogs.yaml | \
+awk -F'\t' '$4 ~ /^otel\./ || $4 ~ /%/ || $4 !~ /^[a-z]([a-z0-9]|[._][a-z0-9])*$/ { printf "namespace=%s mesh=%s name=%s key=%s\n", $1, $2, $3, $4 }'
 ```
 
-Then migrate them like this:
+Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, and keep the dynamic content in the value instead:
 
 ```yaml
 attributes:

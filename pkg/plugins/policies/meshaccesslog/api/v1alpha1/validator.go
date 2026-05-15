@@ -166,7 +166,7 @@ func validateBackend(backend Backend) validators.ValidationError {
 	return verr
 }
 
-func validateOtelAttributes(attributes []JsonValue) validators.ValidationError {
+func validateOtelAttributes(attributes []OtelAttribute) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, attribute := range attributes {
 		path := validators.RootedAt("attributes").Index(idx)

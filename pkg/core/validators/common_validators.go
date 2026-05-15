@@ -253,18 +253,15 @@ func ValidateOtelAttributeName(path PathBuilder, value string) ValidationError {
 		return err
 	}
 	if strings.Contains(value, "%") {
-		err.AddViolationAt(path, "must be a static OpenTelemetry attribute name; placeholders are only supported in values")
+		err.AddViolationAt(path, MustBeStaticOtelAttributeName)
 		return err
 	}
 	if strings.HasPrefix(value, "otel.") {
-		err.AddViolationAt(path, "must not use the reserved OpenTelemetry prefix 'otel.'")
+		err.AddViolationAt(path, MustNotUseReservedOtelPrefix)
 		return err
 	}
 	if !otelAttributeNameRegex.MatchString(value) {
-		err.AddViolationAt(
-			path,
-			"must start with a lowercase letter, use only lowercase letters, digits, '.' or '_', avoid consecutive delimiters, and end with a letter or digit",
-		)
+		err.AddViolationAt(path, MustMatchOtelAttributeNameFormat)
 	}
 	return err
 }
