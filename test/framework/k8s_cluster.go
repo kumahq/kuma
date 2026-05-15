@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1514,6 +1515,95 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 }
 
 func (c *K8sCluster) WaitControlPlaneLeader() error {
+	if c.usesUniversalLeaderElection() {
+		return c.waitUniversalControlPlaneLeader()
+	}
+	return c.waitKubernetesControlPlaneLeader()
+}
+
+func (c *K8sCluster) usesUniversalLeaderElection() bool {
+	return c.opts.helmOpts["controlPlane.environment"] == "universal"
+}
+
+func (c *K8sCluster) waitUniversalControlPlaneLeader() error {
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for universal control-plane leader",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods, err := k8s.ListPodsE(c.t,
+				c.GetKubectlOptions(Config.KumaNamespace),
+				metav1.ListOptions{
+					LabelSelector: "app=" + Config.KumaServiceName,
+				},
+			)
+			if err != nil {
+				return "", err
+			}
+			if len(pods) == 0 {
+				return "", errors.New("no control-plane pods found")
+			}
+
+			var checkedPods []string
+			for _, pod := range pods {
+				fwd, err := c.PortForward(k8s.ResourceTypePod, pod.Name, pod.Namespace, 5680)
+				if err != nil {
+					return "", err
+				}
+
+				metrics, metricsErr := getControlPlaneMetrics(fwd.Endpoint)
+				fwd.Close()
+				if metricsErr != nil {
+					return "", metricsErr
+				}
+				if hasLeaderMetric(metrics) {
+					return pod.Name, nil
+				}
+				checkedPods = append(checkedPods, pod.Name)
+			}
+
+			return "", errors.Errorf("no universal control-plane leader found in metrics for pods: %s", strings.Join(checkedPods, ","))
+		})
+	if err != nil {
+		deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
+		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
+	}
+	return nil
+}
+
+func getControlPlaneMetrics(endpoint string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+endpoint+"/metrics", http.NoBody)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Errorf("unexpected metrics status code: %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func hasLeaderMetric(metrics string) bool {
+	for line := range strings.SplitSeq(metrics, "\n") {
+		if strings.HasPrefix(line, "leader{") && strings.HasSuffix(line, "} 1") {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *K8sCluster) waitKubernetesControlPlaneLeader() error {
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for control-plane leader",
 		c.defaultRetries,
