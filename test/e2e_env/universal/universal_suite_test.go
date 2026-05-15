@@ -95,6 +95,7 @@ var (
 	_ = Describe("RateLimit", ratelimit.Policy, Ordered)
 	_ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
+	_ = Describe("MeshProxyPatch on Zone Proxy", meshproxypatch.ZoneProxy, Ordered)
 	_ = Describe("Matching", matching.Matching, Ordered)
 	_ = Describe("Mtls", mtls.Policy, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
