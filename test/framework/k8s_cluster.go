@@ -764,6 +764,9 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
 		return errors.Wrap(err, "Kuma control-plane failed to start")
 	}
+	if err := c.WaitControlPlaneLeader(); err != nil {
+		return errors.Wrap(err, "Kuma control-plane failed to become leader")
+	}
 
 	var wg sync.WaitGroup
 	var appsToInstall []appInstallation
@@ -902,6 +905,9 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	}
 
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+	if err := c.WaitControlPlaneLeader(); err != nil {
 		return err
 	}
 
@@ -1063,6 +1069,9 @@ func (c *K8sCluster) RestartControlPlane() error {
 		return err
 	}
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+	if err := c.WaitControlPlaneLeader(); err != nil {
 		return err
 	}
 
@@ -1500,6 +1509,64 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 			podDetails := ExtractPodDetails(c.t, c.GetKubectlOptions(namespace), pods[i].Name)
 			return &K8sDecoratedError{Err: podError, Details: podDetails}
 		}
+	}
+	return nil
+}
+
+func (c *K8sCluster) WaitControlPlaneLeader() error {
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for control-plane leader",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods, err := k8s.ListPodsE(c.t,
+				c.GetKubectlOptions(Config.KumaNamespace),
+				metav1.ListOptions{
+					LabelSelector: "app=" + Config.KumaServiceName,
+				},
+			)
+			if err != nil {
+				return "", err
+			}
+			if len(pods) == 0 {
+				return "", errors.New("no control-plane pods found")
+			}
+
+			podNames := make([]string, 0, len(pods))
+			for _, pod := range pods {
+				podNames = append(podNames, pod.Name)
+			}
+
+			holder, err := k8s.RunKubectlAndGetOutputE(
+				c.t,
+				c.GetKubectlOptions(Config.KumaNamespace),
+				"get", "lease", "cp-leader-lease", "-ojsonpath={.spec.holderIdentity}",
+			)
+			if err != nil {
+				return "", err
+			}
+
+			for _, podName := range podNames {
+				if strings.HasPrefix(holder, podName+"_") {
+					return holder, nil
+				}
+			}
+			if holder == "" {
+				return "", errors.Errorf("control-plane lease has no holder, want one of current pods: %s", strings.Join(podNames, ","))
+			}
+
+			if err := k8s.RunKubectlE(
+				c.t,
+				c.GetKubectlOptions(Config.KumaNamespace),
+				"delete", "lease", "cp-leader-lease",
+			); err != nil {
+				return "", err
+			}
+			return "", errors.Errorf("control-plane lease held by %q, want one of current pods: %s", holder, strings.Join(podNames, ","))
+		})
+	if err != nil {
+		deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
+		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
 	}
 	return nil
 }
