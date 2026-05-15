@@ -145,12 +145,33 @@ jobs:
           dir: .
           config: .syft.yaml
           upload-sbom-release-assets: true
+  resolve_runners:
+    runs-on: ubuntu-24.04
+    outputs:
+      by_arch: ${{ steps.compute.outputs.by_arch }}
+    env:
+      RUNS_ON: ${{ vars.RUNS_ON }}
+      BRANCH: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
+      IS_FORK: ${{ github.event.pull_request.head.repo.fork == true }}
+      FORK_FALLBACK: '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}'
+    steps:
+      - id: compute
+        run: |
+          if [[ "${IS_FORK}" == "true" ]]; then
+            echo "by_arch=${FORK_FALLBACK}" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          by_arch=$(jq -nc --argjson cfg "${RUNS_ON:-null}" --arg b "$BRANCH" '{
+            amd64: ($cfg[$b].amd64 // $cfg.default.amd64 // "ubuntu-latest-kong"),
+            arm64: ($cfg[$b].arm64 // $cfg.default.arm64 // "ubuntu-latest-arm64-kong")
+          }')
+          echo "by_arch=${by_arch}" >>"$GITHUB_OUTPUT"
   test:
-    needs: ["check"]
+    needs: ["check", "resolve_runners"]
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}' }}
+      RUNNERS_BY_ARCH: ${{ needs.resolve_runners.outputs.by_arch }}
     secrets: inherit
   build_publish:
     permissions:
