@@ -45,12 +45,7 @@ env:
 jobs:
   build-binaries:
     timeout-minutes: 70
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_12_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_12_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write
       contents: read
@@ -99,12 +94,7 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_12_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_12_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write # Required for image signing
       contents: write # needed to upload SBOM assets to GitHub releases
@@ -203,12 +193,7 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_12_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_12_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
@@ -227,12 +212,7 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_12_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_12_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
