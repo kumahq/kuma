@@ -35,6 +35,7 @@ func (c *CompositeValidator) IntoWebhook(scheme *runtime.Scheme) *admission.Webh
 				if validator.Supports(req) {
 					resp := validator.Handle(ctx, req)
 					if !resp.Allowed {
+						LogWebhookRejection(req, resp)
 						return resp
 					}
 					warnings = append(warnings, resp.Warnings...)

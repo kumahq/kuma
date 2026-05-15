@@ -105,6 +105,10 @@ type MeshContext struct {
 	// DataplaneZoneEgressEndpointMap is the shared endpoint map for embedded zone egress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
 	DataplaneZoneEgressEndpointMap xds.EgressEndpointMap
+	// ZonesWithMeshScopedProxy is the set of zones that have at least one
+	// MeshZoneAddress, meaning their zone ingress uses the new mesh-scoped zone proxy.
+	// Clusters targeting services in these zones must use the KRI-derived SNI format (MADR 101).
+	ZonesWithMeshScopedProxy map[string]bool
 }
 
 type ServiceInformation struct {

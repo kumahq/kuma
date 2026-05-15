@@ -11,7 +11,7 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
@@ -61,7 +61,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	adminPort := proxy.Metadata.GetAdminPort()
 	readinessPort := proxy.Metadata.GetReadinessPort()
 	if readinessPort == 0 {
-		return nil, errors.New("ReadinessPort has to be in (0, 65353] range")
+		return nil, errors.New("ReadinessPort has to be in (0, 65535] range")
 	}
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
 	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
@@ -168,7 +168,10 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	var xdsEndpoint core_xds.Endpoint
-	if proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket) {
+	if proxy.Metadata.HasFeature(xds_types.FeatureReadinessUnixSocket) {
+		// Legacy: older DPs still advertise the UDS readiness feature.
+		// New DPs no longer set this; they expose readiness via TCP.
+		// TODO: remove when FeatureReadinessUnixSocket is removed.
 		xdsEndpoint = core_xds.Endpoint{
 			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}

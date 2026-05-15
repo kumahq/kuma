@@ -8,6 +8,94 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### MeshService propagation tracking switched to hashed keys
+
+Auto-generated `MeshService` resources track which non-system labels were copied from a `Dataplane` so that the next reconcile can remove labels whose source has gone away. Previously the tracking entry stored the raw key name as a Kubernetes label *value*, which silently skipped any qualified-name key containing `/` or `.` (e.g. `app.example.com/tier`). Such labels were copied onto the `MeshService` but never tracked, so they persisted after the carrier `Dataplane` was removed.
+
+The control plane now stores a SHA-256 hash of the label key in the tracking label key (`kuma.io/pkey-<16hex>`). The old plain-value format is still recognised on read for one reconcile so the upgrade is seamless for keys the previous version was already able to track.
+
+**Action required:**
+
+None for valid label keys. Labels with `/` or `.` in the key that were leaked onto an auto-generated `MeshService` by the previous code cannot be reattributed retroactively — they have no tracking record at all and the new code preserves them as operator-managed. Remove any such leaked labels by hand if needed:
+
+```sh
+kubectl -n kuma-system label meshservice <name> app.example.com/tier-
+```
+
+### Readiness reporter is now TCP-only
+
+The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/ready` is served exclusively on TCP `KUMA_READINESS_PORT` (default `9902`) in both Kubernetes and Universal mode.
+
+**What changed:**
+- Removed config field `dataplane.readinessUnixSocketDisabled` and env var `KUMA_READINESS_UNIX_SOCKET_DISABLED`.
+- New DPs no longer advertise the `feature-readiness-unix-socket` flag. The CP still honors it for older DPs during CP-first upgrades; the flag will be removed in a future release.
+- The K8s injector no longer injects `KUMA_READINESS_UNIX_SOCKET_DISABLED=true` (the env var is now a no-op).
+- The Helm ingress/egress chart templates no longer set these env vars.
+
+**Action required:**
+
+- Universal-mode operators who probed readiness via the Unix socket must switch to TCP loopback: `curl http://localhost:9902/ready`.
+- Custom manifests that still set `KUMA_READINESS_UNIX_SOCKET_DISABLED` can leave the env var in place — it is ignored — or remove it.
+
+### dp-server graceful shutdown is now time-bounded
+
+The dp-server's graceful shutdown is now bounded by a configurable timeout. Previously the HTTP server would wait indefinitely for xDS streams to drain, which could keep the pod from exiting within its `terminationGracePeriodSeconds` and surface as a non-zero exit.
+
+**What changed:**
+- New config: `dpServer.gracefulShutdownTimeout` (default `10s`).
+- Env var: `KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT`.
+- Once the timeout expires, dp-server force-stops the gRPC server (aborting any stream whose handler ignored cancellation) and lets the pod exit cleanly.
+
+**Action required:**
+
+None for default deployments. The 10s default sits inside controller-runtime's 30s shutdown budget and the chart's `controlPlane.terminationGracePeriodSeconds=30`.
+
+If you previously raised `terminationGracePeriodSeconds` to absorb long xDS drains, raise this timeout in lockstep, e.g.:
+
+```sh
+KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT=60s
+```
+
+Keep it strictly smaller than `terminationGracePeriodSeconds` so the bounded shutdown can run before the pod is killed.
+
+### `MeshMultiZoneService` names longer than 63 characters are deprecated
+
+`MeshService` and `MeshExternalService` already reject names longer than 63 characters.
+`MeshMultiZoneService` (MMZS) historically allowed up to 253, but its name is used to render DNS hostnames through `HostnameGenerator` (e.g. `{{ .DisplayName }}.mzsvc.mesh.local`), so any name longer than 63 produces an invalid RFC 1035 label.
+
+The control plane now emits a deprecation warning in the API response when an MMZS is created or updated with a name longer than 63 characters.
+This will become a hard validation error in 3.0.
+
+**Action required:**
+
+Rename any `MeshMultiZoneService` whose name exceeds 63 characters.
+
+### Kubernetes native sidecar containers enabled by default
+
+The `experimental.sidecarContainers` feature (K8s native sidecar containers via init containers with `restartPolicy: Always`) is now **enabled by default**.
+
+**What changed:**
+- `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` defaults to `true`
+- Helm value: `experimental.sidecarContainers` (default `true`)
+- Requires Kubernetes 1.29+ (native sidecar container support is GA)
+
+**Action required:**
+
+None for Kubernetes 1.29+. Native sidecars start before app containers and outlive them, improving graceful shutdown and startup ordering.
+
+To revert to the old behavior (init-based injection without `restartPolicy: Always`):
+
+**Kubernetes (Helm)**
+```yaml
+experimental:
+  sidecarContainers: false
+```
+
+**Control plane environment variable**
+```sh
+KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
+```
+
 ### DNS server domain must not start with a dot
 
 The control plane now rejects a DNS server domain configuration that begins with a `.` (e.g., `.mesh`). Previously such a value was silently accepted and produced broken hostname generation.
@@ -428,9 +516,9 @@ These endpoints were deprecated, and are now removed. You can achieve the same f
 
 ### Deprecation of readiness reporter TCP port in favor of Unix socket
 
-The readiness reporter TCP port is deprecated and will be removed in a future release. It is also no longer possible to disable the readiness reporter, which means TCP port 0 is now not allowed to be used.
+> **Note:** This deprecation was reversed in `2.14.x`. The readiness reporter is now TCP-only and the Unix socket has been removed. See the `2.14.x` notes above.
 
-The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_DISABLED:true` for `kuma-dp` to disable the Unix socket.
+It is no longer possible to disable the readiness reporter, which means TCP port 0 is not allowed to be used.
 
 ## Upgrade to `2.11.x`
 

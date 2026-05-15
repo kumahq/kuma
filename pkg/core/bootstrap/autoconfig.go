@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -121,8 +120,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	if cfg.General.TlsCertFile != "" {
 		return nil
 	}
-	autoconfigureLog.Info(fmt.Sprintf("directory %v will be used as a working directory, "+
-		"it could be changed using KUMA_GENERAL_WORK_DIR environment variable", cfg.General.WorkDir))
+	autoconfigureLog.Info("directory will be used as a working directory, it could be changed using KUMA_GENERAL_WORK_DIR environment variable", "workDir", cfg.General.WorkDir)
 
 	if crtFile, keyFile, err := tryReadKeyPair(workDir(cfg.General.WorkDir)); err == nil {
 		cfg.General.TlsCertFile = crtFile
