@@ -13,8 +13,6 @@ jobs:
     timeout-minutes: 120
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/golden_files_e2e') || contains(github.event.comment.body, '/tproxy_golden_files'))
     runs-on: ubuntu-24.04
-    env:
-      IPV6: "true"
     steps:
       # Commands are additive: one comment can request multiple actions, and all
       # matching steps below will run in order.
@@ -80,8 +78,17 @@ jobs:
       - id: get-branch
         if: steps.parse-commands.outputs.has_command == 'true'
         run: |
-          echo "BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> "$GITHUB_ENV"
-          echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> "$GITHUB_ENV"
+          BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')
+          REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')
+          IS_CROSS_REPOSITORY=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json isCrossRepository --jq '.isCrossRepository')
+
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+          echo "REPO=$REPO" >> "$GITHUB_ENV"
+          {
+            echo "branch_name=$BRANCH_NAME"
+            echo "repo=$REPO"
+            echo "is_cross_repository=$IS_CROSS_REPOSITORY"
+          } >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -95,6 +102,11 @@ jobs:
         if: steps.parse-commands.outputs.has_command == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: "Reject e2e golden refresh on fork PRs"
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository == 'true'
+        run: |
+          echo "/golden_files_e2e is not allowed on fork PRs because it would expose repository secrets to PR-controlled code."
+          exit 1
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
         if: steps.parse-commands.outputs.format == 'true'
@@ -107,7 +119,7 @@ jobs:
         run: make test UPDATE_GOLDEN_FILES=true
 
       - name: "Free up disk space for E2E golden files"
-        if: steps.parse-commands.outputs.golden_files_e2e == 'true'
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository != 'true'
         uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
         with:
           remove_android: true
@@ -116,7 +128,7 @@ jobs:
 
       # Update the labeled e2e golden-file suites if /golden_files_e2e is in the comment
       - name: "Update e2e golden files"
-        if: steps.parse-commands.outputs.golden_files_e2e == 'true'
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository != 'true'
         env:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
         run: |
@@ -148,6 +160,8 @@ jobs:
       # Update only transparent proxy golden files if /tproxy_golden_files is in the comment
       - name: "Update transparent proxy golden files"
         if: steps.parse-commands.outputs.tproxy_golden_files == 'true'
+        env:
+          IPV6: "true"
         run: make test/transparentproxy UPDATE_GOLDEN_FILES=true
 
       - name: commit and push fixes
