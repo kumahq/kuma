@@ -61,7 +61,6 @@ var _ = Describe("ProtocolParameter", func() {
 			),
 		)
 
-
 		DescribeTable("Tcp",
 			func(parameters []*TcpUdpParameter, verbose bool, want []string) {
 				// when

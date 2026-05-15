@@ -103,7 +103,6 @@ func NotDestinationPort[T ~uint16](port T) *TcpUdpParameter {
 	return destinationPort(port, true)
 }
 
-
 func sourcePort[T ~uint16](port T, negative bool) *TcpUdpParameter {
 	return &TcpUdpParameter{
 		long:     "--source-port",
