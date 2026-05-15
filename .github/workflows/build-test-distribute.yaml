@@ -75,33 +75,22 @@ jobs:
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
-  resolve_runners:
-    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNS_ON || '{}')[github.event_name == 'pull_request' && github.base_ref || github.ref_name].amd64 || fromJSON(vars.RUNS_ON || '{}').default.amd64 || 'ubuntu-latest-kong' }}
-    outputs:
-      by_arch: ${{ steps.compute.outputs.by_arch }}
-    env:
-      RUNS_ON: ${{ vars.RUNS_ON }}
-      BRANCH: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
-      IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-      FORK_FALLBACK: '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}'
-    steps:
-      - id: compute
-        run: |
-          if [[ "${IS_FORK}" == "true" ]]; then
-            echo "by_arch=${FORK_FALLBACK}" >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
-          by_arch=$(jq -nc --argjson cfg "${RUNS_ON:-null}" --arg b "$BRANCH" '{
-            amd64: ($cfg[$b].amd64 // $cfg.default.amd64 // "ubuntu-latest-kong"),
-            arm64: ($cfg[$b].arm64 // $cfg.default.arm64 // "ubuntu-latest-arm64-kong")
-          }')
-          echo "by_arch=${by_arch}" >>"$GITHUB_OUTPUT"
   test:
-    needs: ["check", "resolve_runners"]
+    needs: ["check"]
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ needs.resolve_runners.outputs.by_arch }}
+      # Pick runners in this order:
+      #   1. fork PR    -> free GitHub-hosted runners (security)
+      #   2. vars.RUNS_ON if set -> overrides (e.g. switch to fastrak pool during a priority release)
+      #   3. default    -> the standard self-hosted Kong pool
+      RUNNERS_BY_ARCH: >-
+        ${{
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+          && '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}'
+          || vars.RUNS_ON
+          || '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}'
+        }}
     secrets: inherit
   build_publish:
     permissions:
