@@ -76,7 +76,7 @@ jobs:
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
   resolve_runners:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.event.pull_request.head.repo.fork == true && 'ubuntu-24.04' || fromJSON(vars.RUNS_ON || '{}')[github.event_name == 'pull_request' && github.base_ref || github.ref_name].amd64 || fromJSON(vars.RUNS_ON || '{}').default.amd64 || 'ubuntu-latest-kong' }}
     outputs:
       by_arch: ${{ steps.compute.outputs.by_arch }}
     env:
