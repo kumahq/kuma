@@ -9,12 +9,7 @@ permissions: {}
 
 jobs:
   analyze:
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_11_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_11_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     timeout-minutes: 30
     permissions:
       contents: read

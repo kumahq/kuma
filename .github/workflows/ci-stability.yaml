@@ -19,12 +19,7 @@ env:
 permissions: {}
 jobs:
   trigger-ci:
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_RELEASE_2_11_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_11_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - name: Generate GitHub app token
         id: github-app-token
