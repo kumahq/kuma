@@ -9,7 +9,7 @@ jobs:
   analyze:
     timeout-minutes: 30
     name: Analyze
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       actions: read
       security-events: write
