@@ -45,8 +45,7 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				}
 			}
 
-			outPath := filepath.Join(rootArgs.pluginDir, "zz_generated.plugin.go")
-			return commontemplate.GoTemplate(pluginGoTemplate, struct {
+			data := struct {
 				Package           string
 				Versions          []string
 				Name              string
@@ -62,7 +61,14 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				ResourceDir:       rootArgs.pluginDir,
 				IsPolicy:          pconfig.IsPolicy,
 				RegisterGenerator: pconfig.RegisterGenerator,
-			}, outPath)
+			}
+
+			outPath := filepath.Join(rootArgs.pluginDir, "zz_generated.plugin.go")
+			if err := commontemplate.GoTemplate(pluginGoTemplate, data, outPath); err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 

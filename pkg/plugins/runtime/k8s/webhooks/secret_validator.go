@@ -29,13 +29,19 @@ type SecretValidator struct {
 }
 
 func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
+	var resp admission.Response
 	switch req.Operation {
 	case admissionv1.Delete:
-		return v.handleDelete(ctx, req)
+		resp = v.handleDelete(ctx, req)
 	case admissionv1.Create, admissionv1.Update:
-		return v.handleUpdate(ctx, req)
+		resp = v.handleUpdate(ctx, req)
+	default:
+		resp = admission.Allowed("")
 	}
-	return admission.Allowed("")
+	if !resp.Allowed {
+		common_k8s.LogWebhookRejection(req, resp)
+	}
+	return resp
 }
 
 func (v *SecretValidator) handleUpdate(ctx context.Context, req admission.Request) admission.Response {

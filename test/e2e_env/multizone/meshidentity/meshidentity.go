@@ -104,7 +104,7 @@ func Identity() {
 			trust, err = getMeshTrust(hashValues...)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(trust).ToNot(BeNil())
-		}, "30s", "1s").Should(Succeed())
+		}, "60s", "1s").Should(Succeed())
 		return trust
 	}
 

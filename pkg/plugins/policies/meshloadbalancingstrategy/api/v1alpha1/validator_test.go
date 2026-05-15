@@ -18,10 +18,6 @@ var _ = Describe("validation", func() {
 					Field:   "spec.targetRef.kind",
 					Message: "value 'MeshGatewayRoute' is not supported",
 				},
-				{
-					Field:   "spec.to",
-					Message: "needs at least one item",
-				},
 			},
 			`
 type: MeshLoadBalancingStrategy
@@ -701,6 +697,18 @@ to:
                 type: None
           failoverThreshold:
             percentage: 70
+`),
+		Entry(
+			"empty 'to' allowed as override to disable inherited rules",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Dataplane
+  labels:
+    app: web
+to: []
 `),
 		Entry(
 			"top level MeshGateway",

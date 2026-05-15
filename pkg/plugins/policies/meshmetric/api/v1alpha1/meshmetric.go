@@ -9,6 +9,7 @@ import (
 
 // MeshMetric enables collection and export of service mesh metrics. It configures sidecar and application metrics scraping, allows customization of which metrics are published, and supports exporting to Prometheus or OpenTelemetry backends for monitoring and observability.
 // +kuma:policy:has_status=true
+// +kuma:policy:order=1500
 type MeshMetric struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -21,7 +22,8 @@ type MeshMetric struct {
 type Conf struct {
 	// Sidecar metrics collection configuration
 	Sidecar *Sidecar `json:"sidecar,omitempty"`
-	// Applications is a list of application that Dataplane Proxy will scrape
+	// Applications is a list of applications that Dataplane Proxy will scrape.
+	// Ignored on zone-proxy-only Dataplanes (zone ingress/egress exist without a co-located workload).
 	Applications *[]Application `json:"applications,omitempty"`
 	// Backends list that will be used to collect metrics.
 	Backends *[]Backend `json:"backends,omitempty"`

@@ -200,8 +200,7 @@ apiServer:
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
-  corsAllowedDomains:
-    - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
+  corsAllowedDomains: [] # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
   # Can be used if you use a reverse proxy
   rootUrl: "" # ENV: KUMA_API_SERVER_ROOT_URL
   # The path to serve the API from
@@ -214,6 +213,14 @@ apiServer:
     rootUrl: "" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
     # The path to serve the GUI from
     basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
+  # The amount of time allowed to read request headers
+  readHeaderTimeout: 1s # ENV: KUMA_API_SERVER_READ_HEADER_TIMEOUT
+  # The maximum duration for reading the entire request
+  readTimeout: 10s # ENV: KUMA_API_SERVER_READ_TIMEOUT
+  # The maximum duration before timing out writes of the response
+  writeTimeout: 30s # ENV: KUMA_API_SERVER_WRITE_TIMEOUT
+  # The maximum amount of time to wait for the next request when keep-alives are enabled
+  idleTimeout: 2m0s # ENV: KUMA_API_SERVER_IDLE_TIMEOUT
 # Environment-specific configuration
 runtime:
   # Kubernetes-specific configuration
@@ -316,8 +323,8 @@ runtime:
             memory: 64Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
           # Maximum amount of compute resources allowed.
           limits:
-            # CPU, in cores. (500m = .5 cores)
-            cpu: 1000m # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
+            # CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+            cpu: "0" # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
             # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
         # Additional environment variables that can be placed on Kuma DP sidecar
@@ -329,6 +336,36 @@ runtime:
       initContainer:
         # Image name.
         image: kuma/kuma-init:latest # ENV: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+        # Compute resource requirements.
+        resources:
+          # Minimum amount of compute resources required.
+          requests:
+            # CPU, in cores. (500m = .5 cores)
+            cpu: 20m # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 20M # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
+          # Maximum amount of compute resources allowed.
+          limits:
+            # CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+            cpu: "0" # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 50M # ENV: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
+      # ValidationContainer defines configuration of the Kuma validation init container
+      validationContainer:
+        # Compute resource requirements.
+        resources:
+          # Minimum amount of compute resources required.
+          requests:
+            # CPU, in cores. (500m = .5 cores)
+            cpu: 20m # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 20M # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_REQUESTS_MEMORY
+          # Maximum amount of compute resources allowed.
+          limits:
+            # CPU, in cores. (500m = .5 cores). Set to 0 to disable CPU limit.
+            cpu: "0" # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 50M # ENV: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
       # ContainerPatches is an optional list of ContainerPatch names which will be applied
       # to init and sidecar containers if workload is not annotated with a patch list.
       containerPatches: [] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES
@@ -487,6 +524,9 @@ metrics:
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
+  openTelemetry:
+    # If true, CP metrics will be pushed via OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set
+    enabled: true # ENV: KUMA_METRICS_OPENTELEMETRY_ENABLED
 # Reports configuration
 reports:
   # If true then usage stats will be reported
@@ -558,6 +598,8 @@ multizone:
       # Response backoff is a time Global CP waits before sending ACK/NACK.
       # This is a way to slow down Zone CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
+      # If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
+      logPayloads: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_LOG_PAYLOADS
       tracing:
         # Defines whether tracing is enabled for all gRPC methods
         # of GlobalKDSServer and KDSSyncService or completely disabled
@@ -585,6 +627,8 @@ multizone:
       # Response backoff is a time Zone CP waits before sending ACK/NACK.
       # This is a way to slow down Global CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
+      # If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
+      logPayloads: false # ENV: KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
     # IngressUpdateInterval is the interval between the CP updating the list of
@@ -632,6 +676,10 @@ dpServer:
   # Tokens e2e tests, which started flaking a lot after introducing explicit
   # 1s timeout)
   readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
+  # GracefulShutdownTimeout should be smaller than controller-runtime's
+  # shutdown budget (30s upstream default) and the pod's
+  # terminationGracePeriodSeconds.
+  gracefulShutdownTimeout: 10s # ENV: KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT
   # Authn defines an authentication configuration for the DP Server
   authn:
     # Configuration for data plane proxy authentication.
@@ -807,7 +855,7 @@ experimental:
   autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
   # Enables sidecar containers in Kubernetes if supported by the Kubernetes
   # environment.
-  sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+  sidecarContainers: true # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   # If true uses Delta xDS to deliver changes to sidecars.
   deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
 proxy:
@@ -892,3 +940,9 @@ meshService:
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
+  # Controls propagation of user-defined labels from MeshService to generated resources.
+  labelPropagation:
+    # If true, propagate allowed user-defined labels from MeshService to generated resources.
+    enabled: false # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED
+    # List of non-reserved label keys eligible for propagation. When empty and enabled is true, all non-reserved labels are propagated. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
+    allowedLabelKeys: [] # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS

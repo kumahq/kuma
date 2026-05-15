@@ -8,6 +8,217 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### MeshService propagation tracking switched to hashed keys
+
+Auto-generated `MeshService` resources track which non-system labels were copied from a `Dataplane` so that the next reconcile can remove labels whose source has gone away. Previously the tracking entry stored the raw key name as a Kubernetes label *value*, which silently skipped any qualified-name key containing `/` or `.` (e.g. `app.example.com/tier`). Such labels were copied onto the `MeshService` but never tracked, so they persisted after the carrier `Dataplane` was removed.
+
+The control plane now stores a SHA-256 hash of the label key in the tracking label key (`kuma.io/pkey-<16hex>`). The old plain-value format is still recognised on read for one reconcile so the upgrade is seamless for keys the previous version was already able to track.
+
+**Action required:**
+
+None for valid label keys. Labels with `/` or `.` in the key that were leaked onto an auto-generated `MeshService` by the previous code cannot be reattributed retroactively — they have no tracking record at all and the new code preserves them as operator-managed. Remove any such leaked labels by hand if needed:
+
+```sh
+kubectl -n kuma-system label meshservice <name> app.example.com/tier-
+```
+
+### MeshAccessLog OpenTelemetry attribute keys are now validated
+
+`MeshAccessLog` now validates `openTelemetry.attributes[].key` against the access-log attribute-key grammar used by this policy. Keys must start with a lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid consecutive delimiters, end with a letter or digit, and must not use the reserved `otel.` prefix. `%...%` placeholders remain supported in attribute values, but are no longer accepted in keys.
+
+Existing policies with invalid keys keep their current runtime behavior until they are updated or reapplied. In particular, placeholder-based keys continue to emit the same interpolated key after a control-plane upgrade. GitOps or other reconcilers that re-apply `MeshAccessLog` resources after the upgrade hit the same validation path immediately, so invalid keys must be fixed before the next reconcile. Any create or update using an invalid key is rejected until the key is renamed to a static value.
+
+**Action required:**
+
+Before the next apply, review the `MeshAccessLog` resources you manage using the tooling and workflow standard for your environment. On Kubernetes, audit `MeshAccessLog` resources across all namespaces. On Universal, audit the resources for each mesh you manage. If GitOps or another reconciler is the source of truth, review the manifests that will be re-applied as well.
+
+When auditing `openTelemetry.attributes[].key`, flag any key that:
+
+- starts with the reserved `otel.` prefix
+- contains `%...%` placeholders
+- does not start with a lowercase letter
+- contains characters other than lowercase letters, digits, `_`, or `.`
+- contains consecutive delimiters
+- ends with a delimiter
+
+Capture enough context to update each invalid policy before the next reconcile, for example the Kubernetes namespace, mesh, and resource name.
+
+Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, and keep the dynamic content in the value instead:
+
+```yaml
+attributes:
+  - key: service.zone
+    value: "%KUMA_ZONE%"
+```
+
+### Readiness reporter is now TCP-only
+
+The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/ready` is served exclusively on TCP `KUMA_READINESS_PORT` (default `9902`) in both Kubernetes and Universal mode.
+
+**What changed:**
+- Removed config field `dataplane.readinessUnixSocketDisabled` and env var `KUMA_READINESS_UNIX_SOCKET_DISABLED`.
+- New DPs no longer advertise the `feature-readiness-unix-socket` flag. The CP still honors it for older DPs during CP-first upgrades; the flag will be removed in a future release.
+- The K8s injector no longer injects `KUMA_READINESS_UNIX_SOCKET_DISABLED=true` (the env var is now a no-op).
+- The Helm ingress/egress chart templates no longer set these env vars.
+
+**Action required:**
+
+- Universal-mode operators who probed readiness via the Unix socket must switch to TCP loopback: `curl http://localhost:9902/ready`.
+- Custom manifests that still set `KUMA_READINESS_UNIX_SOCKET_DISABLED` can leave the env var in place — it is ignored — or remove it.
+
+### dp-server graceful shutdown is now time-bounded
+
+The dp-server's graceful shutdown is now bounded by a configurable timeout. Previously the HTTP server would wait indefinitely for xDS streams to drain, which could keep the pod from exiting within its `terminationGracePeriodSeconds` and surface as a non-zero exit.
+
+**What changed:**
+- New config: `dpServer.gracefulShutdownTimeout` (default `10s`).
+- Env var: `KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT`.
+- Once the timeout expires, dp-server force-stops the gRPC server (aborting any stream whose handler ignored cancellation) and lets the pod exit cleanly.
+
+**Action required:**
+
+None for default deployments. The 10s default sits inside controller-runtime's 30s shutdown budget and the chart's `controlPlane.terminationGracePeriodSeconds=30`.
+
+If you previously raised `terminationGracePeriodSeconds` to absorb long xDS drains, raise this timeout in lockstep, e.g.:
+
+```sh
+KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT=60s
+```
+
+Keep it strictly smaller than `terminationGracePeriodSeconds` so the bounded shutdown can run before the pod is killed.
+
+### `MeshMultiZoneService` names longer than 63 characters are deprecated
+
+`MeshService` and `MeshExternalService` already reject names longer than 63 characters.
+`MeshMultiZoneService` (MMZS) historically allowed up to 253, but its name is used to render DNS hostnames through `HostnameGenerator` (e.g. `{{ .DisplayName }}.mzsvc.mesh.local`), so any name longer than 63 produces an invalid RFC 1035 label.
+
+The control plane now emits a deprecation warning in the API response when an MMZS is created or updated with a name longer than 63 characters.
+This will become a hard validation error in 3.0.
+
+**Action required:**
+
+Rename any `MeshMultiZoneService` whose name exceeds 63 characters.
+
+### Kubernetes native sidecar containers enabled by default
+
+The `experimental.sidecarContainers` feature (K8s native sidecar containers via init containers with `restartPolicy: Always`) is now **enabled by default**.
+
+**What changed:**
+- `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` defaults to `true`
+- Helm value: `experimental.sidecarContainers` (default `true`)
+- Requires Kubernetes 1.29+ (native sidecar container support is GA)
+
+**Action required:**
+
+None for Kubernetes 1.29+. Native sidecars start before app containers and outlive them, improving graceful shutdown and startup ordering.
+
+To revert to the old behavior (init-based injection without `restartPolicy: Always`):
+
+**Kubernetes (Helm)**
+```yaml
+experimental:
+  sidecarContainers: false
+```
+
+**Control plane environment variable**
+```sh
+KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
+```
+
+### DNS server domain must not start with a dot
+
+The control plane now rejects a DNS server domain configuration that begins with a `.` (e.g., `.mesh`). Previously such a value was silently accepted and produced broken hostname generation.
+
+**Action required:**
+
+If you have `KUMA_DNS_SERVER_DOMAIN` or `dnsServer.domain` set to a value starting with `.`, remove the leading dot:
+
+```yaml
+# kuma-cp config
+dnsServer:
+  domain: mesh   # was: .mesh
+```
+
+Or via environment variable: `KUMA_DNS_SERVER_DOMAIN=mesh`
+
+### HostnameGenerator templates that produce invalid DNS names now fail explicitly
+
+`HostnameGenerator` templates that evaluate to an invalid DNS subdomain (e.g., starting with a dot, containing uppercase letters, or having consecutive dots) now return an error instead of silently generating a broken hostname.
+
+**Action required:**
+
+Review your `HostnameGenerator` resources and ensure their `spec.template` values produce valid [RFC 1123](https://tools.ietf.org/html/rfc1123) DNS subdomains for all inputs.
+
+### localhost-admin is restricted to direct loopback; CORS is now opt-in
+
+The defaults have been tightened:
+
+- `LocalhostIsAdmin` still defaults to `true`, but only direct loopback requests are promoted to admin.
+- `CorsAllowedDomains` now defaults to `[]` / empty (was `[".*"]`).
+
+The `LocalhostIsAdmin` restriction also applies to release branches as a security fix: the authenticator now only grants admin when the request is a **direct** loopback call (loopback `RemoteAddr`, loopback `Host`, no proxy-hop headers, and a matching `Origin` if present). Browsers connecting over loopback from a non-localhost page are no longer promoted to admin.
+
+**Action required:**
+
+_Local bootstrap / development (Universal mode)_
+
+If you rely on `LocalhostIsAdmin` for initial kumactl setup, keep using direct loopback access or switch to token-based authentication with `kumactl config control-planes add --auth-type=tokens`.
+
+_Reverse-proxy / CORS users_
+
+If your deployment relies on cross-origin API access (e.g., a custom GUI on a different port), set the allowed domains explicitly:
+
+```yaml
+# kuma-cp config
+apiServer:
+  corsAllowedDomains:
+    - "https://my-gui.example.com"
+```
+
+or via environment variable:
+
+```sh
+KUMA_API_SERVER_CORS_ALLOWED_DOMAINS=https://my-gui.example.com
+```
+
+The Helm chart already sets `KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN=false` and is not affected by the `LocalhostIsAdmin` default.
+
+### CPU limits removed from `kuma-init` and `kuma-sidecar` containers
+
+The default CPU limit for injected `kuma-init`, `kuma-sidecar` and `kuma-validation` containers has been removed (set to `0`, meaning no limit). Previously the defaults were `100m` and `1000m` respectively.
+
+**Why:** 
+
+CPU limits cause throttling even when CPU is available, which increases latency under load. Removing the limit allows the containers to burst during startup and high-traffic periods.
+
+**Action required:** 
+
+None for most users. If your cluster enforces CPU limits, either relax those policies or set explicit limits:
+
+**Kubernetes (Helm)**
+```yaml
+dataPlane:
+  initContainer:
+    resources:
+      limits:
+        cpu: 100m
+  sidecarContainer:
+    resources:
+      limits:
+        cpu: 1000m
+  validationContainer:
+    resources:
+      limits:
+        cpu: 100m
+```
+
+**Control plane environment variables**
+```sh
+KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU=100m
+KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU=1000m
+KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU=100m
+```
+
 ### Envoy admin API now uses Unix domain socket by default
 
 The Envoy admin API (`localhost:9901`) now binds to a Unix domain socket instead of TCP by default. This eliminates the shared-network-namespace attack vector where a compromised app container could reach the admin API to kill the sidecar, dump config, or modify runtime behavior.
@@ -36,6 +247,27 @@ experimental:
 ```sh
 KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET=false kuma-cp run
 ```
+
+### Observability: CP metrics OTLP push enabled by default
+
+When `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the control plane now automatically pushes all CP Prometheus metrics to the configured OTLP collector. This is enabled by default.
+
+**What changed:**
+- A new config field `metrics.openTelemetry.enabled` (default `true`) gates CP metrics OTLP push.
+- If you already set `OTEL_EXPORTER_OTLP_ENDPOINT` for tracing, metrics will now also be pushed to that endpoint.
+
+**Action required:**
+
+If you use `OTEL_EXPORTER_OTLP_ENDPOINT` for tracing only and do not want CP metrics pushed via OTLP, disable it:
+
+```yaml
+# kuma-cp config
+metrics:
+  openTelemetry:
+    enabled: false
+```
+
+Or via environment variable: `KUMA_METRICS_OPENTELEMETRY_ENABLED=false`
 
 ### Observability: Prometheus metrics migration from Summary to Histogram
 
@@ -313,9 +545,9 @@ These endpoints were deprecated, and are now removed. You can achieve the same f
 
 ### Deprecation of readiness reporter TCP port in favor of Unix socket
 
-The readiness reporter TCP port is deprecated and will be removed in a future release. It is also no longer possible to disable the readiness reporter, which means TCP port 0 is now not allowed to be used.
+> **Note:** This deprecation was reversed in `2.14.x`. The readiness reporter is now TCP-only and the Unix socket has been removed. See the `2.14.x` notes above.
 
-The Unix socket is introduced to the readiness reporter, and it is enabled by default. If you want to keep using the TCP port, you can set the environment variable `KUMA_READINESS_UNIX_SOCKET_DISABLED:true` for `kuma-dp` to disable the Unix socket.
+It is no longer possible to disable the readiness reporter, which means TCP port 0 is not allowed to be used.
 
 ## Upgrade to `2.11.x`
 

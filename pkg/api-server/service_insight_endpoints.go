@@ -10,7 +10,6 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	rest_unversioned "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
@@ -58,7 +57,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 		res.Spec = stat
 		removeDisplayNameLabel(res)
 		if err := response.WriteAsJson(res); err != nil {
-			core.Log.Error(err, "Could not write the response")
+			log.Error(err, "Could not write the response")
 		}
 	}
 }
@@ -177,6 +176,9 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 		o, err := strconv.Atoi(page.offset)
 		if err != nil {
 			return store.ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
+		}
+		if o < 0 {
+			return store.ErrorInvalid("invalid offset: must be non-negative")
 		}
 		offset = o
 	}

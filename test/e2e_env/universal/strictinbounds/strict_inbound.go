@@ -255,7 +255,9 @@ func StrictInboundPorts() {
 				universal.Cluster, "demo-client-not-in-mesh", serviceAddress,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Exitcode).To(Or(Equal(52)))
+			// 52 = CURLE_GOT_NOTHING (TLS alert, clean close)
+			// 56 = CURLE_RECV_ERROR (TCP RST when no filter chain matches)
+			g.Expect(resp.Exitcode).To(Or(Equal(52), Equal(56)))
 		}, "30s", "1s").Should(Succeed())
 
 		// and

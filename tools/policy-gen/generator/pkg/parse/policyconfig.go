@@ -48,6 +48,7 @@ type PolicyConfig struct {
 	IsFromAsRules                bool
 	RegisterGenerator            bool
 	Description                  string
+	Order                        int
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -223,6 +224,14 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		res.ShortName = string(result)
 	}
 	res.Path = strings.ToLower(res.Plural)
+
+	if v, ok := markers["kuma:policy:order"]; ok {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return res, errors.Errorf("couldn't parse %s as int for kuma:policy:order", v)
+		}
+		res.Order = n
+	}
 
 	return res, nil
 }

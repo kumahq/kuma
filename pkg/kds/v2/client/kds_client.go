@@ -2,7 +2,6 @@ package client
 
 import (
 	std_errors "errors"
-	"io"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -14,6 +13,7 @@ import (
 
 type UpstreamResponse struct {
 	ControlPlaneId      string
+	Nonce               string
 	Type                core_model.ResourceType
 	AddedResources      core_model.ResourceList
 	InvalidResourcesKey []core_model.ResourceKey
@@ -37,6 +37,7 @@ func (u *UpstreamResponse) Validate() error {
 
 type Callbacks struct {
 	OnResourcesReceived func(upstream UpstreamResponse) (error, error)
+	OnNACK              func(resourceType core_model.ResourceType) // optional; called each time a NACK is sent
 }
 
 // All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
@@ -45,10 +46,17 @@ type DeltaKDSStream interface {
 	Receive() (UpstreamResponse, error)
 	ACK(resourceType core_model.ResourceType) error
 	NACK(resourceType core_model.ResourceType, err error) error
+	CloseSend() error
 }
 
 type KDSSyncClient interface {
 	Receive() error
+}
+
+// SyncClientConfig configures runtime behavior of the KDS receive loop.
+type SyncClientConfig struct {
+	ResponseBackoff time.Duration
+	LogPayloads     bool
 }
 
 type kdsSyncClient struct {
@@ -57,6 +65,7 @@ type kdsSyncClient struct {
 	callbacks       *Callbacks
 	kdsStream       DeltaKDSStream
 	responseBackoff time.Duration
+	logPayloads     bool
 }
 
 func NewKDSSyncClient(
@@ -64,14 +73,15 @@ func NewKDSSyncClient(
 	rt []core_model.ResourceType,
 	kdsStream DeltaKDSStream,
 	cb *Callbacks,
-	responseBackoff time.Duration,
+	cfg SyncClientConfig,
 ) KDSSyncClient {
 	return &kdsSyncClient{
 		log:             log,
 		resourceTypes:   rt,
 		kdsStream:       kdsStream,
 		callbacks:       cb,
-		responseBackoff: responseBackoff,
+		responseBackoff: cfg.ResponseBackoff,
+		logPayloads:     cfg.LogPayloads,
 	}
 }
 
@@ -86,30 +96,21 @@ func (s *kdsSyncClient) Receive() error {
 	for {
 		received, err := s.kdsStream.Receive()
 		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
-		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
+		s.logReceivedResponse(received)
 		validationErrors := received.Validate()
 
 		if s.callbacks == nil {
 			if validationErrors != nil {
-				s.log.Info("received resource is invalid, sending NACK", "err", validationErrors)
+				s.log.Info("received resource is invalid, sending NACK", "err", validationErrors, "nonce", received.Nonce)
 				if err := s.kdsStream.NACK(received.Type, validationErrors); err != nil {
-					if err == io.EOF {
-						return nil
-					}
 					return errors.Wrap(err, "failed to NACK a discovery response")
 				}
 				continue
 			}
-			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
+			s.log.Info("no callback set, sending ACK", "type", string(received.Type), "nonce", received.Nonce)
 			if err := s.kdsStream.ACK(received.Type); err != nil {
-				if err == io.EOF {
-					return nil
-				}
 				return errors.Wrap(err, "failed to ACK a discovery response")
 			}
 			continue
@@ -120,11 +121,11 @@ func (s *kdsSyncClient) Receive() error {
 		}
 		if nackError != nil || validationErrors != nil {
 			combinedErrors := std_errors.Join(nackError, validationErrors)
-			s.log.Info("received resource is invalid, sending NACK", "err", combinedErrors)
+			s.log.Info("received resource is invalid, sending NACK", "err", combinedErrors, "nonce", received.Nonce)
+			if s.callbacks.OnNACK != nil {
+				s.callbacks.OnNACK(received.Type)
+			}
 			if err := s.kdsStream.NACK(received.Type, combinedErrors); err != nil {
-				if err == io.EOF {
-					return nil
-				}
 				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
 			continue
@@ -134,12 +135,32 @@ func (s *kdsSyncClient) Receive() error {
 			// When client first connects, the server sends empty DeltaDiscoveryResponse for every resource type.
 			time.Sleep(s.responseBackoff)
 		}
-		s.log.V(1).Info("sending ACK", "type", received.Type)
+		s.log.V(1).Info("sending ACK", "type", received.Type, "nonce", received.Nonce)
 		if err := s.kdsStream.ACK(received.Type); err != nil {
-			if err == io.EOF {
-				return nil
-			}
 			return errors.Wrap(err, "failed to ACK a discovery response")
 		}
 	}
+}
+
+func (s *kdsSyncClient) logReceivedResponse(received UpstreamResponse) {
+	if s.logPayloads {
+		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
+		return
+	}
+
+	s.log.V(1).Info(
+		"DeltaDiscoveryResponse received",
+		"type", received.Type,
+		"nonce", received.Nonce,
+		"addedResourcesCount", resourceCount(received.AddedResources),
+		"removedResourcesCount", len(received.RemovedResourcesKey),
+	)
+}
+
+func resourceCount(resources core_model.ResourceList) int {
+	if resources == nil {
+		return 0
+	}
+
+	return len(resources.GetItems())
 }

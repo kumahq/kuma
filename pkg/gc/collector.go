@@ -106,7 +106,7 @@ func (d *collector) cleanup(ctx context.Context, now time.Time, insightType Insi
 		}
 	}
 	for rk, age := range onDelete {
-		d.log.Info(fmt.Sprintf("deleting %s which is offline for %v", resourceType, age), "name", rk.Name, "mesh", rk.Mesh)
+		d.log.Info("deleting resource which is offline", "resourceType", resourceType, "offlineFor", age, "name", rk.Name, "mesh", rk.Mesh)
 		resource := registry.Global().MustNewObject(core_model.ResourceType(resourceType))
 		if err := d.rm.Delete(ctx, resource, store.DeleteBy(rk)); err != nil {
 			d.log.Error(err, "unable to delete", "resourceType", resourceType, "name", rk.Name, "mesh", rk.Mesh)

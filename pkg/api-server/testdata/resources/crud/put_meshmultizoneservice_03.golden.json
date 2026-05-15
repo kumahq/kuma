@@ -1,0 +1,5 @@
+{
+ "warnings": [
+  "Invalid MeshMultiZoneService resource name: 'this-is-a-very-long-meshmultizoneservice-name-exceeding-sixty-three'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: must be no more than 63 characters"
+ ]
+}

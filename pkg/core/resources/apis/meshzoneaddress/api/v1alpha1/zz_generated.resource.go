@@ -200,4 +200,5 @@ var MeshZoneAddressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mza",
 	IsFromAsRules:                false,
+	Order:                        0,
 }

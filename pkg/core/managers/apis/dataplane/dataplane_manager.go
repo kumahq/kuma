@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -62,15 +63,15 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	m.setInboundsClusterTag(dp, owner)
 	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
-	labels, err := core_model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		resource.Descriptor(),
 		resource.GetSpec(),
 		opts.Labels,
 		opts.Mesh,
-		core_model.WithNamespace(core_model.UnsetNamespace),
-		core_model.WithMode(m.mode),
-		core_model.WithK8s(m.isK8s),
-		core_model.WithZone(m.zone),
+		resource_labels.WithNamespace(resource_labels.UnsetNamespace),
+		resource_labels.WithMode(m.mode),
+		resource_labels.WithK8s(m.isK8s),
+		resource_labels.WithZone(m.zone),
 	)
 	if err != nil {
 		return err
@@ -103,15 +104,15 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 	m.setGatewayClusterTag(dp)
 
 	opts := core_store.NewUpdateOptions(fs...)
-	labels, err := core_model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		resource.Descriptor(),
 		resource.GetSpec(),
 		opts.Labels,
 		resource.GetMeta().GetMesh(),
-		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), m.systemNamespace)),
-		core_model.WithMode(m.mode),
-		core_model.WithK8s(m.isK8s),
-		core_model.WithZone(m.zone),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), m.systemNamespace)),
+		resource_labels.WithMode(m.mode),
+		resource_labels.WithK8s(m.isK8s),
+		resource_labels.WithZone(m.zone),
 	)
 	if err != nil {
 		return err

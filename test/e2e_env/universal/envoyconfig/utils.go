@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v2/api/openapi/types"
@@ -52,11 +53,18 @@ func getConfig(mesh, dpp string) string {
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
 		return item.Op == api_common.Test
 	}))
-	// Redact value for maxDirectResponseBodySizeBytes in diff items
+	// Redact maxDirectResponseBodySizeBytes everywhere: as a standalone diff
+	// path (sidecar case where the listener already existed) and nested inside
+	// a wholesale listener add value (zone-proxy case). The body content +
+	// Etag hash already pin what's actually sent; the byte count is just
+	// len(body) and changes whenever any label does, so zeroing it keeps the
+	// golden churn down to the meaningful bits.
 	for i := range *response.Diff {
 		if strings.HasSuffix((*response.Diff)[i].Path, "maxDirectResponseBodySizeBytes") {
 			(*response.Diff)[i].Value = 0
+			continue
 		}
+		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
 	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
 		return strings.Compare(a.Path, b.Path)
@@ -195,6 +203,27 @@ func normalizeAdminEndpoints(jsonStr string) string {
 	return string(out)
 }
 
+// zeroMaxDirectResponseBodySizeBytes walks an arbitrary JSON value and sets
+// every "maxDirectResponseBodySizeBytes" field to 0. Used so that goldens for
+// wholesale listener adds don't carry the literal byte count, which is just
+// len(body) and re-derives from the body content the golden already pins.
+func zeroMaxDirectResponseBodySizeBytes(v any) {
+	switch x := v.(type) {
+	case map[string]any:
+		for k, vv := range x {
+			if k == "maxDirectResponseBodySizeBytes" {
+				x[k] = 0
+				continue
+			}
+			zeroMaxDirectResponseBodySizeBytes(vv)
+		}
+	case []any:
+		for _, vv := range x {
+			zeroMaxDirectResponseBodySizeBytes(vv)
+		}
+	}
+}
+
 func normalizeClusterAddress(cluster map[string]any) {
 	if cluster == nil {
 		return
@@ -223,9 +252,40 @@ func normalizeClusterAddress(cluster map[string]any) {
 	}
 }
 
-func cleanupAfterTest(mesh string, policies ...core_model.ResourceTypeDescriptor) func() {
+func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
+	GinkgoHelper()
 	return func() {
+		GinkgoHelper()
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
 		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
+		// Wait for the dataplane xDS configs to settle before letting the next
+		// spec start. Without this the next test races envoy convergence: a
+		// resource (e.g. an OpenTelemetry cluster from the previous meshmetric
+		// test) lingers in the snapshot for a few seconds after its parent
+		// policy was deleted, which makes the next golden-file comparison
+		// flake.
+		for _, dpp := range dpps {
+			waitConfigStable(mesh, dpp)
+		}
 	}
+}
+
+// waitConfigStable polls the dataplane xDS config until three consecutive
+// snapshots taken 1s apart are identical (that is, two consecutive equality
+// checks pass), with a generous total budget. This is a cheap way to make
+// sure no async push is in flight before the next test captures its baseline.
+func waitConfigStable(mesh, dpp string) {
+	GinkgoHelper()
+	var prev string
+	stable := 0
+	Eventually(func(g Gomega) {
+		cur := getConfig(mesh, dpp)
+		if cur == prev {
+			stable++
+		} else {
+			stable = 0
+		}
+		prev = cur
+		g.Expect(stable).To(BeNumerically(">=", 2), "dataplane %s xDS not yet stable", dpp)
+	}, "30s", "1s").Should(Succeed())
 }

@@ -6,7 +6,6 @@ resources:
       socketAddress:
         address: 127.0.0.1
         portValue: 10002
-    enableReusePort: false
     filterChains:
     - filterChainMatch:
         serverNames:

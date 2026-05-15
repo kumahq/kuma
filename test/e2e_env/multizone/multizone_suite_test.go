@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/cni"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/connectivity"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/defaults"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/externalservices"
@@ -16,7 +17,9 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshhttproute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshidentity"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshmetric"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshmultizoneservice"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshproxy"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshservice"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshtcproute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshtimeout"
@@ -30,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/unifiednaming"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/validation"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/virtualoutbound"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/zoneegress"
@@ -91,4 +95,9 @@ var (
 	_ = Describe("MeshIdentity", meshidentity.Identity, Ordered)
 	_ = Describe("Unified Resource Naming", unifiednaming.UnifiedNaming, Ordered)
 	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
+	_ = Describe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
+	_ = Describe("MeshProxy", meshproxy.Connectivity, Ordered)
+	_ = Describe("MeshProxy Migration", meshproxy.Migration, Ordered)
+	_ = Describe("MeshMetric on Zone Proxy", meshmetric.ZoneProxy, Ordered)
+	_ = Describe("Resource Label Validation", Label("golden-files-e2e"), validation.ResourceValidation, Ordered)
 )

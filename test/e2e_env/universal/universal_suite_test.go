@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshretry"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshservice"
+	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshservicelabelpropagation"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtls"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/mtls"
@@ -68,6 +69,7 @@ var (
 	_ = Describe("Offline Auth", auth.OfflineAuth, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
+	_ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 	_ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 	_ = Describe("HealthCheck", healthcheck.Policy)
 	_ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
@@ -79,6 +81,7 @@ var (
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
+	_ = Describe("MeshService Label Propagation", meshservicelabelpropagation.LabelPropagation, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
@@ -114,8 +117,9 @@ var (
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
 	_ = Describe("MeshTLS", meshtls.Policy, Ordered)
-	_ = Describe("Envoy Config – Sidecars", envoyconfig.Sidecars, Ordered)
-	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
+	_ = Describe("Envoy Config – Sidecars", Label("golden-files-e2e"), envoyconfig.Sidecars, Ordered)
+	_ = Describe("Envoy Config – Builtin Gateway", Label("golden-files-e2e"), envoyconfig.BuiltinGateway, Ordered)
+	_ = Describe("Envoy Config – Zone Proxies", Label("golden-files-e2e"), envoyconfig.ZoneProxies, Ordered)
 	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 	_ = Describe("MeshIdentity - Spire", meshidentity.Spire, Ordered)
 	_ = Describe("MeshIdentity - Rotate CA", meshidentity.Rotate, Ordered)

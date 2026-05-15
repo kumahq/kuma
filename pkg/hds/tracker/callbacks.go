@@ -109,7 +109,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 
 	proxyId, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
 	if err != nil {
-		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamid", streamID, "req", req)
+		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamID", streamID, "req", req)
 		return nil
 	}
 
@@ -133,7 +133,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 			defer cancel()
 			watchdog.Start(ctx)
 		}()
-		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
+		t.log.V(1).Info("started Watchdog for a Dataplane", "streamID", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 	}
 	t.dpStreams[dataplaneKey] = streams
 	t.streamsAssociation[streamID] = dataplaneKey

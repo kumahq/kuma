@@ -125,8 +125,9 @@ resources:
       - lbEndpoints:
         - endpoint:
             address:
-              pipe:
-                path: /tmp/kuma-readiness-reporter.sock
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 9903
     name: kuma:readiness
     type: STATIC
 - name: localhost:8080
@@ -189,7 +190,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 80
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -265,7 +265,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 9902
-    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -359,7 +358,6 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 1234
-    enableReusePort: false
     filterChains:
     - filterChainMatch:
         sourcePrefixRanges:

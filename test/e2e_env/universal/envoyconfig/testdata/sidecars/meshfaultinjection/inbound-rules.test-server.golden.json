@@ -452,6 +452,13 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -493,6 +500,13 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -514,7 +528,6 @@
           }
         },
         "bindToPort": false,
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -821,7 +834,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -850,7 +863,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -879,7 +892,6 @@
             "portValue": 0
           }
         },
-        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -1120,7 +1132,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/protocol=http&&kuma.io/service=test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "\u0026instance=1\u0026\u0026kuma.io/protocol=http\u0026\u0026kuma.io/service=test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
                         }
                       }
                     ],

@@ -1,0 +1,11 @@
+type: MeshTimeout
+name: mt-no-labels
+mesh: multizone-label-validation
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

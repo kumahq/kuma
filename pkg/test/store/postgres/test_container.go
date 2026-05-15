@@ -137,7 +137,7 @@ func (v *PostgresContainer) Config() (pg_config.PostgresStoreConfig, error) {
 		return pg_config.PostgresStoreConfig{}, err
 	}
 	cfg.Host = ip
-	cfg.Port = port.Int()
+	cfg.Port = int(port.Num())
 	rDir := resourceDir()
 	if v.WithTLS {
 		cfg.TLS.Mode = pg_config.VerifyCa

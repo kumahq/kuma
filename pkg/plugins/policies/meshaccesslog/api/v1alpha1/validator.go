@@ -158,10 +158,20 @@ func validateBackend(backend Backend) validators.ValidationError {
 			backend.OpenTelemetry.Endpoint,
 			backend.OpenTelemetry.BackendRef,
 		))
+		verr.AddErrorAt(root, validateOtelAttributes(pointer.Deref(backend.OpenTelemetry.Attributes)))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
+	return verr
+}
+
+func validateOtelAttributes(attributes []OtelAttribute) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, attribute := range attributes {
+		path := validators.RootedAt("attributes").Index(idx)
+		verr.Add(validators.ValidateOtelAttributeName(path.Field("key"), attribute.Key))
+	}
 	return verr
 }
 

@@ -41,7 +41,7 @@ var _ = Describe("Gateway Route", func() {
 		if err != nil {
 			return nil, err
 		}
-		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
+		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks, nil)
 
 		// We expect there to be a Dataplane fixture named
 		// "default" in the current mesh.

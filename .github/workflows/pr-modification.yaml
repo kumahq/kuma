@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: read
   find-prs:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     needs: active-branches
     permissions:
       contents: read
@@ -51,7 +51,7 @@ jobs:
 
   pr-comment:
     needs: find-prs
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     if: needs.find-prs.outputs.recent_prs != '[]'
     strategy:
       matrix: 
@@ -60,7 +60,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: marocchino/sticky-pull-request-comment@d4d6b0936434b21bc8345ad45a440c5f7d2c40ff # v3.0.3
+      - uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
         with:
           header: PR reviewer checklist
           only_create: true

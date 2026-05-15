@@ -109,7 +109,7 @@ func (l *MeshTrustList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTrust{}, &MeshTrustList{})
+	knownTypes = append(knownTypes, &MeshTrust{}, &MeshTrustList{})
 	registry.RegisterObjectType(&policy.MeshTrust{}, &MeshTrust{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

@@ -49,6 +49,41 @@ import (
 
 var runLog = dataplaneLog.WithName("run")
 
+// dnsProxyAddresses returns the bind addresses for the embedded DNS proxy
+// based on the transparent proxy configuration. Without transparent proxy,
+// we fall back to 0.0.0.0 for backward compatibility. With VNet (virtual
+// networks), we bind to all interfaces since PREROUTING REDIRECT sends
+// traffic to the interface IP. We always bind IPv4 and IPv6 separately
+// rather than relying on a single :: socket, because nodes with
+// net.ipv6.bindv6only=1 would silently drop IPv4 traffic. Without VNet,
+// we bind to loopback only since OUTPUT chain REDIRECT sends to 127.0.0.1
+// (IPv4) and ::1 (IPv6).
+func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
+	if tpCfg == nil {
+		return []string{net.JoinHostPort("0.0.0.0", port)}
+	}
+
+	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4
+	vnet := tpCfg.HasVNet()
+
+	switch {
+	case vnet && dualStack:
+		return []string{
+			net.JoinHostPort("0.0.0.0", port),
+			net.JoinHostPort("::", port),
+		}
+	case vnet:
+		return []string{net.JoinHostPort("0.0.0.0", port)}
+	case dualStack:
+		return []string{
+			net.JoinHostPort("127.0.0.1", port),
+			net.JoinHostPort("::1", port),
+		}
+	default:
+		return []string{net.JoinHostPort("127.0.0.1", port)}
+	}
+}
+
 // PersistentPreRunE in root command sets the logger and initial config
 // PreRunE loads the Kuma DP config
 // PostRunE actually runs all the components with loaded config
@@ -186,6 +221,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
+			if cfg.DataplaneRuntime.SocketDir != "" && cfg.DataplaneRuntime.SocketDir != tmpDir {
+				if err := os.MkdirAll(cfg.DataplaneRuntime.SocketDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to create socket directory")
+					return err
+				}
+			}
+
 			if cfg.DataplaneRuntime.SystemCaPath == "" {
 				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath()
 			}
@@ -232,9 +275,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
-			}
-			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
 			}
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
@@ -313,6 +353,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}
 			}
 
+			var dnsConfigReady <-chan struct{}
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
@@ -325,15 +366,17 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
 				if dnsOpts.Config.DNS.ProxyPort != 0 {
-					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
-					// Using embedded DNS
-					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort("0.0.0.0", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
+					portStr := strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))
+					addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
+					runLog.Info("Running with embedded DNS proxy", "port", dnsOpts.Config.DNS.ProxyPort, "addresses", addresses)
+					dnsproxyServer, err := dnsproxy.NewServer(addresses)
 					if err != nil {
 						return err
 					}
 					if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
 						return err
 					}
+					dnsConfigReady = dnsproxyServer.ConfigReady()
 					components = append(components, dnsproxyServer)
 				} else {
 					dnsServer, err := dnsserver.New(dnsOpts)
@@ -373,21 +416,31 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				// When admin is on UDS, bind readiness reporter so K8s
-				// probes (podIP) and PostStart hooks (localhost) can
-				// reach /ready. Only /ready is served on this listener.
-				readinessAddr = "0.0.0.0"
-				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+				// When admin is on UDS, the readiness reporter also reverse-
+				// proxies read-only Envoy admin endpoints on this listener
+				// (mutating endpoints are blocked); see readiness.Reporter.
+				// On Kubernetes the listener must accept probes from the
+				// kubelet (podIP), so we bind wildcard. Outside Kubernetes
+				// we default to loopback to avoid exposing admin info on the
+				// host network. POD_NAME is set by the sidecar injector.
+				_, inKubernetes := os.LookupEnv("POD_NAME")
+				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
+				switch {
+				case inKubernetes && ipv6:
 					readinessAddr = "::"
+				case inKubernetes:
+					readinessAddr = "0.0.0.0"
+				case ipv6:
+					readinessAddr = "::1"
+				default:
+					readinessAddr = "127.0.0.1"
 				}
 			}
 			readinessReporter := readiness.NewReporter(
-				cfg.Dataplane.ReadinessUnixSocketDisabled,
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort,
-				adminSocketPath)
+				adminSocketPath,
+				dnsConfigReady)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

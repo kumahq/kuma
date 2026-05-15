@@ -82,6 +82,7 @@ var _ = Describe("MeshAccessLog", func() {
 		dataplaneLabels     map[string]string
 		inboundTagsDisabled bool
 		inboundName         string
+		extraInbounds       []*builders.InboundBuilder
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -123,6 +124,9 @@ var _ = Describe("MeshAccessLog", func() {
 				WithName("backend").
 				WithMesh("default").
 				AddInbound(inboundBuilder)
+			for _, extra := range given.extraInbounds {
+				dpBuilder = dpBuilder.AddInbound(extra)
+			}
 			if given.dataplaneLabels != nil {
 				dpBuilder = dpBuilder.WithLabels(given.dataplaneLabels)
 			}
@@ -738,6 +742,65 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
 		}),
+		Entry("inbound with two services on the same port does not duplicate access log", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			extraInbounds: []*builders.InboundBuilder{
+				builders.Inbound().
+					WithService("backend-canary").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Subset: subsetutils.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: &api.Rule{Default: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						}},
+					}},
+				},
+			},
+			expectedListeners: []string{"inbound_route_duplicate_port.listener.golden.yaml"},
+		}),
 		Entry("inbound route with inbound tags disabled", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
@@ -794,7 +857,7 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"inbound_route_tags_disabled.listener.golden.yaml"},
 		}),
-		Entry("outbound otel backend with workload identity", sidecarTestCase{
+		Entry("outbound otel backend with workload identity and legacy placeholder key", sidecarTestCase{
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
@@ -822,11 +885,12 @@ var _ = Describe("MeshAccessLog", func() {
 										Body: &apiextensionsv1.JSON{
 											Raw: []byte("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
 										},
-										Attributes: &[]api.JsonValue{
+										Attributes: &[]api.OtelAttribute{
 											{Key: "mesh", Value: "%KUMA_MESH%"},
 											{Key: "zone", Value: "%KUMA_ZONE%"},
 											{Key: "workload", Value: "%KUMA_WORKLOAD%"},
-											{Key: "%KUMA_ZONE%", Value: "static-zone-value"},
+											{Key: "static.zone", Value: "static-zone-value"},
+											{Key: "%KUMA_ZONE%", Value: "legacy-zone-key"},
 										},
 									},
 								}},

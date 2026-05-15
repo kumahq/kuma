@@ -170,6 +170,21 @@ func SetupAndGetState() []byte {
 
 	wg.Wait()
 
+	// Wait until every zone CP has registered with Global as Online before
+	// returning. Without this gate the test BeforeAll can race the KDS
+	// connection: a zone CP pod that's already Ready locally may not yet
+	// have its zone-to-global stream up, which leaves Global without the
+	// zone's DPs/policies and produces transient 503s on cross-zone
+	// requests during the first ~30s of the suite.
+	for _, z := range []string{
+		KubeZone1.ZoneName(),
+		KubeZone2.ZoneName(),
+		UniZone1.ZoneName(),
+		UniZone2.ZoneName(),
+	} {
+		Expect(WaitForZoneOnline(Global, z)).To(Succeed())
+	}
+
 	zeSpec := portforward.Spec{
 		AppName:    Config.ZoneEgressApp,
 		Namespace:  Config.KumaNamespace,

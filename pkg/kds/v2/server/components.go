@@ -38,14 +38,14 @@ func New(
 	filter reconcile_v2.ResourceFilter,
 	mapper reconcile_v2.ResourceMapper,
 	nackBackoff time.Duration,
-) (delta.Server, error) {
+) (delta.Server, *Metrics, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), filter, mapper)
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta", kdsVersionExtractor)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	syncTracker, err := newSyncTracker(
+	syncTracker, kdsMetrics, err := newSyncTracker(
 		log,
 		reconcile_v2.NewReconciler(hasher, cache, generator, rt.GetMode(), statsCallbacks, rt.Tenants(), providedTypes),
 		refresh,
@@ -55,7 +55,7 @@ func New(
 		rt.Extensions(),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	callbacks := util_xds_v3.CallbacksChain{
 		NewTenancyCallbacks(rt.Tenants()),
@@ -70,7 +70,7 @@ func New(
 	// Default resource types are length of XDS types. With KDS we have much more types.
 	// If we don't adjust this value, we can hit KDS deadlock.
 	// We could count exactly how many types we have, but overhead of larger map size is negligible for potential mistake here.
-	return delta.NewServer(context.Background(), cache, callbacks, delta.WithDistinctResourceTypes(1000)), nil
+	return delta.NewServer(context.Background(), cache, callbacks, delta.WithDistinctResourceTypes(1000)), kdsMetrics, nil
 }
 
 func newSyncTracker(
@@ -81,10 +81,10 @@ func newSyncTracker(
 	eventBus events.EventBus,
 	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
 	extensions context.Context,
-) (envoy_xds.Callbacks, error) {
+) (envoy_xds.Callbacks, *Metrics, error) {
 	kdsMetrics, err := NewMetrics(metrics)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	changedTypes := map[model.ResourceType]struct{}{}
 	for _, typ := range reconciler.SupportedTypes() {
@@ -152,7 +152,7 @@ func newSyncTracker(
 				}
 			},
 		}, nil
-	}), nil
+	}), kdsMetrics, nil
 }
 
 func kdsVersionExtractor(metadata *structpb.Struct) string {

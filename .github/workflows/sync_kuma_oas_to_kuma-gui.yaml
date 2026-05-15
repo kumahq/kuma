@@ -17,13 +17,13 @@ permissions: {}
 
 jobs:
   dispatch-event:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
       TARGET_REPO: kuma-gui
       EVENT_TYPE: SYNC_KUMA_OAS
     steps:
-      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
           script: |

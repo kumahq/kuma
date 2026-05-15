@@ -185,6 +185,7 @@ func DppSelectedByPolicy(
 	case common_api.Mesh:
 		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(nil, dpp, gateway)
+			inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
 			return inbounds, gwListeners, gateway, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
@@ -197,6 +198,17 @@ func DppSelectedByPolicy(
 			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
 				return core_rules.InboundListener{Address: i.DataplaneIP, Port: i.DataplanePort}
 			})
+			sectionName := pointer.Deref(ref.SectionName)
+			for _, l := range dpp.Spec.GetNetworking().GetListeners() {
+				if sectionName != "" && l.GetSectionName() != sectionName {
+					continue
+				}
+				addr := l.GetAddress()
+				if addr == "" {
+					addr = dpp.Spec.GetNetworking().GetAddress()
+				}
+				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
+			}
 			return inbounds, nil, dpp.Spec.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
@@ -325,9 +337,6 @@ func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppTyp
 func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool) {
 	inbounds := []core_rules.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-		if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
-			continue
-		}
 		if tagsSelector.Matches(inbound.Tags) {
 			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
 			inbounds = append(inbounds, core_rules.InboundListener{
@@ -407,4 +416,16 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 		_ = rv.AddItem(r)
 	}
 	return rv
+}
+
+func embeddedListenersAsInboundListeners(dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
+	var result []core_rules.InboundListener
+	for _, l := range dpp.Spec.GetNetworking().GetListeners() {
+		addr := l.GetAddress()
+		if addr == "" {
+			addr = dpp.Spec.GetNetworking().GetAddress()
+		}
+		result = append(result, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
+	}
+	return result
 }

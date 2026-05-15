@@ -6,17 +6,22 @@ import (
 	net_url "net/url"
 	"strconv"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -35,9 +40,14 @@ import (
 	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshTrace")
+)
 
 type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshTraceResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
@@ -54,10 +64,13 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToInbounds(ctx, policies.SingleItemRules, listeners.Inbound, proxy); err != nil {
+	if err := applyToInbounds(ctx, policies, listeners.Inbound, proxy); err != nil {
 		return err
 	}
 	if err := applyToOutbounds(ctx, policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
+		return err
+	}
+	if err := applyToZoneProxyListeners(ctx, policies, rs, proxy); err != nil {
 		return err
 	}
 	if err := applyToClusters(ctx, policies.SingleItemRules, rs, proxy); err != nil {
@@ -102,7 +115,7 @@ func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, g
 			continue
 		}
 
-		if err := configureListener(ctx, rules, proxy, listener, ""); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, "", listener.TrafficDirection); err != nil {
 			return err
 		}
 	}
@@ -110,14 +123,32 @@ func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, g
 	return nil
 }
 
-func applyToInbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
-	for _, inboundListener := range inboundListeners {
-		if err := configureListener(ctx, rules, proxy, inboundListener, ""); err != nil {
+func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
+	sectionNames := inboundSectionNames(proxy.Dataplane.Spec.GetNetworking())
+	for key, inboundListener := range inboundListeners {
+		listenerRules, err := buildListenerScopedSingleItemRules(policies, sectionNames[key])
+		if err != nil {
+			return err
+		}
+		if len(listenerRules.Rules) == 0 {
+			continue
+		}
+		if err := configureListener(ctx, listenerRules, proxy, inboundListener, "", inboundListener.TrafficDirection); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func inboundSectionNames(n *mesh_proto.Dataplane_Networking) map[core_rules.InboundListener]string {
+	result := map[core_rules.InboundListener]string{}
+	for _, inb := range n.GetInbound() {
+		iface := n.ToInboundInterface(inb)
+		key := core_rules.InboundListener{Address: iface.DataplaneIP, Port: iface.DataplanePort}
+		result[key] = inb.GetSectionName()
+	}
+	return result
 }
 
 func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy) error {
@@ -133,12 +164,80 @@ func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules,
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureListener(ctx, rules, proxy, listener, serviceName); err != nil {
+		if err := configureListener(ctx, rules, proxy, listener, serviceName, listener.TrafficDirection); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchingPolicies, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+	if !proxy.Dataplane.Spec.GetNetworking().HasZoneProxyListeners() {
+		return nil
+	}
+	listenerRes := rs.Resources(envoy_resource.ListenerType)
+	for _, l := range proxy.Dataplane.Spec.GetNetworking().GetListeners() {
+		var name string
+		switch l.GetType() {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			name = naming.ContextualZoneIngressListenerName(l.GetSectionName())
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			name = naming.ContextualZoneEgressListenerName(l.GetSectionName())
+		default:
+			continue
+		}
+		res, ok := listenerRes[name]
+		if !ok {
+			log.V(1).Info("zone-proxy listener declared on Dataplane but missing from xDS; skipping tracing for this chain",
+				"dataplane", proxy.Dataplane.GetMeta().GetName(),
+				"listener", name)
+			continue
+		}
+		listener, ok := res.Resource.(*envoy_listener.Listener)
+		if !ok {
+			continue
+		}
+		listenerRules, err := buildListenerScopedSingleItemRules(policies, l.GetSectionName())
+		if err != nil {
+			return err
+		}
+		if len(listenerRules.Rules) == 0 {
+			continue
+		}
+		// Zone-proxy listener TrafficDirection is INBOUND on the wire (Envoy receives
+		// from local sidecars), but a zone-egress span represents an outbound hop. Pass
+		// UNSPECIFIED so Datadog SplitService skips the misleading "_INBOUND" suffix.
+		if err := configureListener(ctx, listenerRules, proxy, listener, "", envoy_core.TrafficDirection_UNSPECIFIED); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// buildListenerScopedSingleItemRules returns rules scoped to the given embedded listener.
+// Policies with `kind: Dataplane` and a non-empty `sectionName` that does not match the
+// listener are excluded; everything else (including the matcher's proxy-wide rule when no
+// per-policy info is available) is preserved.
+func buildListenerScopedSingleItemRules(policies xds.TypedMatchingPolicies, sectionName string) (core_rules.SingleItemRules, error) {
+	if len(policies.DataplanePolicies) == 0 {
+		return policies.SingleItemRules, nil
+	}
+	filtered := make([]core_model.Resource, 0, len(policies.DataplanePolicies))
+	for _, p := range policies.DataplanePolicies {
+		policy, ok := p.GetSpec().(core_model.Policy)
+		if !ok {
+			continue
+		}
+		targetRef := policy.GetTargetRef()
+		if targetRef.Kind == common_api.Dataplane {
+			if sn := pointer.Deref(targetRef.SectionName); sn != "" && sn != sectionName {
+				continue
+			}
+		}
+		filtered = append(filtered, p)
+	}
+	return core_rules.BuildSingleItemRules(filtered)
 }
 
 func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
@@ -152,7 +251,8 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 		for typ, resources := range resType {
 			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
-					if err := configureListener(ctx, rules, proxy, listener.Resource.(*envoy_listener.Listener), destinationname.MustResolve(false, service, port)); err != nil {
+					l := listener.Resource.(*envoy_listener.Listener)
+					if err := configureListener(ctx, rules, proxy, l, destinationname.MustResolve(false, service, port), l.TrafficDirection); err != nil {
 						return err
 					}
 				}
@@ -162,8 +262,18 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 	return nil
 }
 
-func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string) error {
+func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
 	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
+	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
+	// Prefer the workload label (stable across pod restarts on K8s) and fall back to the
+	// Dataplane name (= pod name on K8s) so span service names remain meaningful.
+	if serviceName == mesh_proto.ServiceUnknown && proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
+		if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
+			serviceName = workloadName
+		} else {
+			serviceName = proxy.Dataplane.GetMeta().GetName()
+		}
+	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
@@ -183,7 +293,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	configurer := plugin_xds.Configurer{
 		Conf:                  conf,
 		Service:               serviceName,
-		TrafficDirection:      listener.TrafficDirection,
+		TrafficDirection:      direction,
 		Destination:           destination,
 		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
 		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),

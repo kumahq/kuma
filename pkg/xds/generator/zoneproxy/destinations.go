@@ -35,6 +35,7 @@ type BackendRefDestination struct {
 	LegacyServiceName string
 }
 
+// BuildMeshDestinations builds destinations for legacy zone proxies using the hash-based SNI format.
 func BuildMeshDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	systemNamespace string,
@@ -43,41 +44,59 @@ func BuildMeshDestinations(
 ) MeshDestinations {
 	return MeshDestinations{
 		KumaIoServices: buildKumaIoServiceDestinations(availableServices, resources),
-		BackendRefs: buildRealResourceDestinations(
+		BackendRefs: BuildRealResourceDestinations(
 			util_slices.FlatMap(realResourceLists, core_resources.DestinationList.GetDestinations),
 			systemNamespace,
+			false,
 		),
 	}
 }
 
-func buildRealResourceDestinations(destinations []core_resources.Destination, systemNS string) []BackendRefDestination {
-	return util_slices.FlatMap(destinations, func(dest core_resources.Destination) []BackendRefDestination {
+// BuildRealResourceDestinations produces one BackendRefDestination per
+// (destination, port) pair.
+func BuildRealResourceDestinations(destinations []core_resources.Destination, systemNS string, useNewSNIFormat bool) []BackendRefDestination {
+	var result []BackendRefDestination
+	for _, dest := range destinations {
 		origin := kri.From(dest)
 		mesh := dest.GetMeta().GetMesh()
 
-		var rName string
-		switch r := any(dest).(type) {
-		case *meshservice_api.MeshServiceResource:
-			rName = r.SNIName(systemNS)
-		default:
-			rName = core_model.GetDisplayName(dest.GetMeta())
-		}
+		sniFor := newSNIBuilder(dest, origin, mesh, systemNS, useNewSNIFormat)
 
-		return util_slices.Map(dest.GetPorts(), func(port core_resources.Port) BackendRefDestination {
-			return BackendRefDestination{
+		for _, port := range dest.GetPorts() {
+			id := kri.WithSectionName(origin, port.GetName())
+			result = append(result, BackendRefDestination{
 				Mesh:              mesh,
-				SNI:               tls.SNIForResource(rName, mesh, origin.ResourceType, port.GetValue(), nil),
+				SNI:               sniFor(id, port),
 				LegacyServiceName: destinationname.ResolveLegacyFromDestination(dest, port),
 				ResolvedBackendRef: resolve.ResolvedBackendRef{
 					Ref: &resolve.RealResourceBackendRef{
-						Resource: kri.WithSectionName(origin, port.GetName()),
+						Resource: id,
 						Origin:   origin,
 						Weight:   1,
 					},
 				},
-			}
-		})
-	})
+			})
+		}
+	}
+	return result
+}
+
+func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh, systemNS string, useNewSNIFormat bool) func(kri.Identifier, core_resources.Port) string {
+	if useNewSNIFormat {
+		return func(id kri.Identifier, _ core_resources.Port) string {
+			return tls.SNIFromKRI(id)
+		}
+	}
+	var rName string
+	switch r := any(dest).(type) {
+	case *meshservice_api.MeshServiceResource:
+		rName = r.SNIName(systemNS)
+	default:
+		rName = core_model.GetDisplayName(dest.GetMeta())
+	}
+	return func(_ kri.Identifier, port core_resources.Port) string {
+		return tls.SNIForResource(rName, mesh, origin.ResourceType, port.GetValue(), nil)
+	}
 }
 
 func buildKumaIoServiceDestinations(

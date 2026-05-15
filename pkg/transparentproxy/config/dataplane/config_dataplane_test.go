@@ -90,6 +90,29 @@ var _ = Describe("DataplaneConfig functions", func() {
 		})
 	})
 
+	Describe("HasVNet", func() {
+		It("should return false for nil config", func() {
+			var cfg *tproxy_dp.DataplaneConfig
+			Expect(cfg.HasVNet()).To(BeFalse())
+		})
+
+		It("should return false when no networks are configured", func() {
+			cfg := &tproxy_dp.DataplaneConfig{}
+			Expect(cfg.HasVNet()).To(BeFalse())
+		})
+
+		It("should return true when networks are configured", func() {
+			cfg := &tproxy_dp.DataplaneConfig{
+				Redirect: tproxy_dp.DataplaneRedirect{
+					VNet: tproxy_dp.DataplaneVNet{
+						Networks: []string{"docker0:172.17.0.0/16"},
+					},
+				},
+			}
+			Expect(cfg.HasVNet()).To(BeTrue())
+		})
+	})
+
 	Describe("GetDataplaneConfig", func() {
 		It("should return fallback if nil", func() {
 			cfg := tproxy_dp.GetDataplaneConfig(nil, nil)

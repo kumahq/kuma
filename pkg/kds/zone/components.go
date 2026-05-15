@@ -1,6 +1,8 @@
 package zone
 
 import (
+	"net/url"
+
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
@@ -23,7 +25,7 @@ func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Zone.Name
 	kdsCtx := rt.KDSContext()
 
-	deltaServer, err := kds_server.New(
+	deltaServer, _, err := kds_server.New(
 		kdsZoneLog,
 		rt,
 		kdsCtx.TypesSentByZone,
@@ -57,8 +59,12 @@ func Setup(rt core_runtime.Runtime) error {
 		rt,
 		deltaServer,
 	)
+	peer := rt.Config().Multizone.Zone.GlobalAddress
+	if u, err := url.Parse(peer); err == nil {
+		peer = u.Redacted()
+	}
 	return rt.Add(component.NewResilientComponent(
-		kdsZoneLog.WithName("kds-mux-client"),
+		kdsZoneLog.WithName("kds-mux-client").WithValues("peer", peer),
 		muxClient,
 		rt.Config().General.ResilientComponentBaseBackoff.Duration,
 		rt.Config().General.ResilientComponentMaxBackoff.Duration,

@@ -2,6 +2,7 @@ package context_test
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path"
 	"strings"
@@ -32,6 +33,11 @@ var _ = Describe("Full sync tests", func() {
 		zones := make(map[string]store.ResourceStore)
 		wg := sync.WaitGroup{}
 		done := make(chan struct{})
+		closeOnce := sync.Once{}
+		DeferCleanup(func() {
+			closeOnce.Do(func() { close(done) })
+			wg.Wait()
+		})
 
 		for _, file := range files {
 			if before, ok := strings.CutSuffix(file.Name(), ".input.yaml"); ok {
@@ -62,6 +68,19 @@ var _ = Describe("Full sync tests", func() {
 			defer GinkgoRecover()
 			Expect(rt.Start(done)).To(Succeed())
 		})
+		// Wait for the Global KDS listener to accept connections before
+		// starting zones. Otherwise zones can race Global's bind and
+		// hit "connection refused", which triggers the resilient
+		// component's 5s backoff — roughly the same as the test's
+		// 5s sync window, so the retry never lands in time.
+		Eventually(func() error {
+			c, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", globalPort), time.Second)
+			if err != nil {
+				return err
+			}
+			_ = c.Close()
+			return nil
+		}, "10s", "50ms").Should(Succeed())
 		// start zones
 		for zoneName, zoneStore := range zones {
 			if zoneName == "global" {
@@ -81,16 +100,21 @@ var _ = Describe("Full sync tests", func() {
 			})
 		}
 
-		// Wait for some time to ensure sync was complete
-		time.Sleep(time.Second * 5)
-		close(done)
-		wg.Wait()
-
-		// Compare golden files
+		// Wait until all stores converge to their expected golden state.
+		// Using Eventually instead of a fixed sleep avoids flakes on
+		// slow CI runners where 5s may not be enough for full sync.
+		// When regenerating golden files, Eventually writes partial state on
+		// the first match — sleep first to let full sync complete.
+		if os.Getenv("UPDATE_GOLDEN_FILES") != "" {
+			time.Sleep(5 * time.Second)
+		}
 		for zoneName, zoneStore := range zones {
-			out, err := test_store.ExtractResources(ctx, zoneStore)
-			Expect(err).To(Succeed())
-			Expect(out).To(matchers.MatchGoldenEqual(folder, zoneName+".golden.yaml"), "zone %s", zoneName)
+			goldenFile := zoneName + ".golden.yaml"
+			Eventually(func(g Gomega) {
+				out, err := test_store.ExtractResources(ctx, zoneStore)
+				g.Expect(err).To(Succeed())
+				g.Expect(out).To(matchers.MatchGoldenEqual(folder, goldenFile), "zone %s", zoneName)
+			}, "30s", "250ms").Should(Succeed())
 		}
 	}, test.EntriesAsFolder("full_sync"))
 })

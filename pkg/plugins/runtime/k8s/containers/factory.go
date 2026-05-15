@@ -41,6 +41,7 @@ type DataplaneProxyFactory struct {
 	unifiedResourceNamingEnabled bool
 	otelPipeEnabled              bool
 	spireEnabled                 bool
+	deltaXdsEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -58,6 +59,7 @@ func NewDataplaneProxyFactory(
 	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
+	deltaXdsEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -74,7 +76,20 @@ func NewDataplaneProxyFactory(
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		otelPipeEnabled:              otelPipeEnabled,
 		spireEnabled:                 spireEnabled,
+		deltaXdsEnabled:              deltaXdsEnabled,
 	}
+}
+
+func sidecarLimits(limits runtime_k8s.SidecarResourceLimits) kube_core.ResourceList {
+	result := kube_core.ResourceList{
+		kube_core.ResourceMemory:           kube_api.MustParse(limits.Memory),
+		kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
+	}
+	cpu := kube_api.MustParse(limits.CPU)
+	if !cpu.IsZero() {
+		result[kube_core.ResourceCPU] = cpu
+	}
+	return result
 }
 
 func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]string) (int64, error) {
@@ -83,13 +98,13 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 		return int64(count), err
 	}
 
-	// Note that validation requires the resource limit is not empty.
-	cpuRequest := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
+	cpuLimit := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
+	if cpuLimit.IsZero() {
+		return 0, nil
+	}
 	// Only autotune to down to 2 to mitigate the latency
 	// risk if a worker thread blocks.
-	ncpu := max(cpuRequest.MilliValue()/1000, 2)
-
-	return ncpu, nil
+	return max(cpuLimit.MilliValue()/1000, 2), nil
 }
 
 func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
@@ -199,11 +214,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
 				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(50, kube_api.Mega)),
 			},
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
-				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
-				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
-			},
+			Limits: sidecarLimits(i.ContainerConfig.Resources.Limits),
 		},
 	}
 	if i.sidecarContainersEnabled {
@@ -291,12 +302,10 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: i.ControlPlaneCACert,
 		},
 	}
-	if i.envoyAdminUnixSocket {
-		// When admin is on UDS, force readiness reporter to use TCP so
-		// K8s probes (which only support TCP/HTTP) can reach it.
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
+	if i.deltaXdsEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+			Value: "DELTA_GRPC",
 		}
 	}
 	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
@@ -420,15 +429,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars[envName] = kube_core.EnvVar{
 			Name:  envName,
 			Value: envVal,
-		}
-	}
-
-	// Re-assert readiness env var after user overrides — overriding this
-	// would desync kuma-dp from the injected probes and break readiness.
-	if i.envoyAdminUnixSocket {
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
 		}
 	}
 

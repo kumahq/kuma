@@ -36,6 +36,8 @@ type ToRouteRule struct {
 
 type plugin struct{}
 
+func (p plugin) Order() int { return api.MeshHTTPRouteResourceTypeDescriptor.Order }
+
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }

@@ -113,3 +113,7 @@ func (u *universalDeployment) OTelCollectorTraceURL() string {
 func (u *universalDeployment) TracedServices() ([]string, error) {
 	return tracedServices(fmt.Sprintf("http://localhost:%d", u.ports[16686]))
 }
+
+func (u *universalDeployment) TracesForService(service string, limit int) ([]Trace, error) {
+	return tracesForService(fmt.Sprintf("http://localhost:%d", u.ports[16686]), service, limit)
+}
