@@ -16,7 +16,7 @@ jobs:
     env:
       LOOK_BACK: ${{ github.event.inputs.lookback || '10 minutes' }}
       GH_TOKEN: ${{ github.token }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_12_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     outputs:
       recent_prs: ${{ steps.get-recent-prs.outputs.out }}
       active_branches: ${{ steps.active-branches.outputs.out }}
@@ -50,7 +50,7 @@ jobs:
 
   pr-comment:
     needs: find-prs
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_12_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     if: needs.find-prs.outputs.recent_prs != '[]'
     strategy:
       matrix: 
