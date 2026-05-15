@@ -14,12 +14,7 @@ jobs:
     permissions:
       contents: read
   find-prs:
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_MASTER_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     needs: active-branches
     permissions:
       contents: read
@@ -56,12 +51,7 @@ jobs:
 
   pr-comment:
     needs: find-prs
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_MASTER_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     if: needs.find-prs.outputs.recent_prs != '[]'
     strategy:
       matrix: 

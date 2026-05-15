@@ -22,12 +22,7 @@ env:
   GH_REPO: ${{ github.repository }}
 jobs:
   pr-info:
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_MASTER_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     outputs:
       pr_title: ${{ steps.get-pr-info.outputs.pr_title }}
       pr_change_log: ${{ steps.get-pr-info.outputs.pr_change_log }}
@@ -106,12 +101,7 @@ jobs:
       branches: ${{ inputs.branches }}
   open-prs:
     needs: [pr-info, active-branches]
-    runs-on: >-
-      ${{
-        vars.RUNS_ON_MASTER_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-24.04'
-      }}
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
