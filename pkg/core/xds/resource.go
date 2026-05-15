@@ -183,6 +183,10 @@ func NonMeshExternalService(r *Resource) bool {
 	return r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType
 }
 
+func MeshExternalServiceOnly(r *Resource) bool {
+	return r.ResourceOrigin.ResourceType == meshexternalservice_api.MeshExternalServiceType
+}
+
 func NonGatewayResources(r *Resource) bool {
 	return r.ResourceOrigin.IsEmpty() || r.Origin != metadata.OriginGateway
 }
