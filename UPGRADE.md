@@ -24,9 +24,20 @@ kubectl -n kuma-system label meshservice <name> app.example.com/tier-
 
 ### MeshAccessLog OpenTelemetry attribute keys are now validated
 
-`MeshAccessLog` now validates `openTelemetry.attributes[].key` against the access-log attribute-key grammar used by this policy. Keys must start with a lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid consecutive delimiters, end with a letter or digit, and must not use the reserved `otel.` prefix. `%...%` placeholders remain supported in attribute values, but are no longer accepted in keys.
+`MeshAccessLog` now validates `openTelemetry.attributes[].key` against the
+access-log attribute-key grammar used by this policy. Keys must start with a
+lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid
+consecutive delimiters, end with a letter or digit, and must not use the
+reserved `otel.` prefix. `%...%` placeholders remain supported in attribute
+values, but are no longer accepted in keys.
 
-Existing policies with invalid keys keep their current runtime behavior until they are updated or reapplied. In particular, placeholder-based keys continue to emit the same interpolated key after a control-plane upgrade. GitOps or other reconcilers that re-apply `MeshAccessLog` resources after the upgrade hit the same validation path immediately, so invalid keys must be fixed before the next reconcile. Any create or update using an invalid key is rejected until the key is renamed to a static value.
+Existing policies with invalid keys keep their current runtime behavior until
+they are updated or reapplied. In particular, placeholder-based keys continue
+to emit the same interpolated key after a control-plane upgrade. GitOps or
+other reconcilers that re-apply `MeshAccessLog` resources after the upgrade hit
+the same validation path immediately, so invalid keys must be fixed before the
+next reconcile. Any create or update using an invalid key is rejected until the
+key is renamed to a static value.
 
 **Action required:**
 
@@ -48,7 +59,9 @@ When auditing `openTelemetry.attributes[].key`, flag any key that:
 Capture enough context to update each invalid policy before the next reconcile,
 for example the Kubernetes namespace, mesh, and resource name.
 
-Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, and keep the dynamic content in the value instead:
+Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`,
+`Service.Version`, or `otel.attribute`, and keep the dynamic content in the
+value instead:
 
 ```yaml
 attributes:
