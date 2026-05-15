@@ -90,12 +90,8 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || '>-' }}
-      ${{
-        vars.RUNS_ON_RELEASE_2_7_AMD64
-        || vars.RUNS_ON_AMD64
-        || 'ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment'
-      }}
+    # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-22.04' }}
     permissions:
       id-token: write # Required for image signing
       contents: write # needed to upload SBOM assets to GitHub releases
