@@ -23,7 +23,7 @@ jobs:
   generate-docs:
     needs: active-branches
     timeout-minutes: 10
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
