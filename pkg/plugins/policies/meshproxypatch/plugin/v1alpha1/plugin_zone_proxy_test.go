@@ -301,5 +301,47 @@ typedConfig:
 			},
 			goldenFile: "zone-egress-http-filter-by-section",
 		}),
+		Entry("mixed inbound + zone egress, network filter patch scoped to zone egress only", testCase{
+			dp:        mixedInboundAndZoneEgressDataplane(),
+			resources: mixedInboundAndZoneEgressResources(),
+			policies: []*api.MeshProxyPatchResource{
+				newMeshProxyPatch("network-filter", &common_api.TargetRef{
+					Kind:        common_api.Dataplane,
+					SectionName: pointer.To("ze-port"),
+				}, []api.Modification{
+					{NetworkFilter: &api.NetworkFilterMod{
+						Operation: api.ModOpPatch,
+						Match: &api.NetworkFilterMatch{
+							Name: pointer.To("envoy.filters.network.http_connection_manager"),
+						},
+						Value: pointer.To(`name: envoy.filters.network.http_connection_manager
+typedConfig:
+  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+  statPrefix: patched_ze_only
+`),
+					}},
+				}),
+			},
+			goldenFile: "mixed-network-filter-scoped-to-egress",
+		}),
+		Entry("mixed inbound + zone egress, virtual host mod with sectionName applies globally", testCase{
+			dp:        mixedInboundAndZoneEgressDataplane(),
+			resources: mixedInboundAndZoneEgressResources(),
+			policies: []*api.MeshProxyPatchResource{
+				newMeshProxyPatch("virtual-host", &common_api.TargetRef{
+					Kind:        common_api.Dataplane,
+					SectionName: pointer.To("ze-port"),
+				}, []api.Modification{
+					{VirtualHost: &api.VirtualHostMod{
+						Operation: api.ModOpAdd,
+						Value: pointer.To(`name: mpp-extra-vhost
+domains:
+- extra.example.com
+`),
+					}},
+				}),
+			},
+			goldenFile: "mixed-virtual-host-mod-global",
+		}),
 	)
 })

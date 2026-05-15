@@ -1,12 +1,13 @@
 type: MeshProxyPatch
-name: mpp-section-egress
+name: mpp-label-egress
 mesh: envoyconfig-zoneproxies
 labels:
   kuma.io/effect: shadow
 spec:
   targetRef:
     kind: Dataplane
-    sectionName: zone-proxy-egress
+    labels:
+      kuma.io/listener-zoneegress: enabled
   default:
     appendModifications:
       - cluster:
@@ -17,14 +18,15 @@ spec:
             type: STATIC
 ---
 type: MeshProxyPatch
-name: mpp-section-ingress
+name: mpp-label-ingress
 mesh: envoyconfig-zoneproxies
 labels:
   kuma.io/effect: shadow
 spec:
   targetRef:
     kind: Dataplane
-    sectionName: zone-proxy-ingress
+    labels:
+      kuma.io/listener-zoneingress: enabled
   default:
     appendModifications:
       - cluster:

@@ -51,12 +51,19 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 	return ApplyMods(rs, pointer.Deref(conf.AppendModifications))
 }
 
-// applyZoneProxyDataplane walks matched policies in order and applies each
-// policy's modifications with sectionName-aware scoping: when `targetRef`
-// is `kind: Dataplane` and `sectionName` matches an embedded zone proxy
-// listener, listener / network-filter / http-filter modifications are
-// narrowed to that listener. Cluster and virtual-host modifications have
-// no listener anchor and apply globally regardless of `sectionName`.
+// applyZoneProxyDataplane walks matched policies in the order produced by
+// SortByTargetRef (most-specific last, reverse-lex on display name as the
+// final tie-break) and applies each policy's modifications with
+// sectionName-aware scoping: when `targetRef` is `kind: Dataplane` and
+// `sectionName` matches an embedded zone proxy listener, listener /
+// network-filter / http-filter modifications are narrowed to that
+// listener. Cluster and virtual-host modifications have no listener
+// anchor and apply globally regardless of `sectionName`.
+//
+// Error behavior is all-or-nothing per call: the first modification
+// that errors aborts the loop and the partial ResourceSet is returned
+// unchanged for the remaining policies. Earlier policies' successful
+// modifications are NOT rolled back — the caller owns rollback semantics.
 func applyZoneProxyDataplane(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, policies core_xds.TypedMatchingPolicies) error {
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	for _, p := range policies.DataplanePolicies {
