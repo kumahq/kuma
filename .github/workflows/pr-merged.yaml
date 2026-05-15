@@ -12,7 +12,12 @@ jobs:
   notify-about-merged-pr:
     timeout-minutes: 10
     name: "Notify about merged PR"
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{
+        vars.RUNS_ON_MASTER_AMD64
+        || vars.RUNS_ON_AMD64
+        || 'ubuntu-24.04'
+      }}
     steps:
       - name: "Send repository dispatch event"
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
