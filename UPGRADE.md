@@ -30,27 +30,23 @@ Existing policies with invalid keys keep their current runtime behavior until th
 
 **Action required:**
 
-Before the next apply, export the `MeshAccessLog` resources you manage. On Kubernetes, run `kubectl get meshaccesslogs -A -o yaml > meshaccesslogs-kubernetes.yaml`. On Universal, run `kumactl get meshaccesslogs --mesh <mesh> -o yaml > meshaccesslogs-<mesh>.yaml` for each mesh you manage.
+Before the next apply, review the `MeshAccessLog` resources you manage using
+the tooling and workflow standard for your environment. On Kubernetes, audit
+`MeshAccessLog` resources across all namespaces. On Universal, audit the
+resources for each mesh you manage. If GitOps or another reconciler is the
+source of truth, review the manifests that will be re-applied as well.
 
-Then audit the exported resources with the full runtime rule:
+When auditing `openTelemetry.attributes[].key`, flag any key that:
 
-```sh
-yq eval-all -o=tsv '
-  (select(has("items")).items[]?, select(.kind == "MeshAccessLog" or .type == "MeshAccessLog")) as $resource |
-  ($resource.spec // $resource) as $policy |
-  ($policy.from[]?.default.backends[]?, $policy.to[]?.default.backends[]?, $policy.rules[]?.default.backends[]?) |
-  .openTelemetry.attributes[]? |
-  [
-    ($resource.metadata.namespace // $resource.labels."k8s.kuma.io/namespace" // "-"),
-    ($resource.metadata.labels."kuma.io/mesh" // $resource.mesh // $resource.labels."kuma.io/mesh" // "-"),
-    ($resource.metadata.name // $resource.labels."kuma.io/display-name" // $resource.name // "-"),
-    .key
-  ] |
-  @tsv
-' meshaccesslogs-*.yaml | \
-awk -F'\t' '$4 ~ /^otel\./ || $4 ~ /%/ || $4 !~ /^[a-z]([a-z0-9]|[._][a-z0-9])*$/ { printf "namespace=%s mesh=%s name=%s key=%s\n", $1, $2, $3, $4 }' | \
-sort -u
-```
+- starts with the reserved `otel.` prefix
+- contains `%...%` placeholders
+- does not start with a lowercase letter
+- contains characters other than lowercase letters, digits, `_`, or `.`
+- contains consecutive delimiters
+- ends with a delimiter
+
+Capture enough context to update each invalid policy before the next reconcile,
+for example the Kubernetes namespace, mesh, and resource name.
 
 Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, and keep the dynamic content in the value instead:
 
