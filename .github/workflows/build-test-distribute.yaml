@@ -150,16 +150,22 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      # Pick runners in this order:
-      #   1. fork PR    -> free GitHub-hosted runners (security)
-      #   2. vars.RUNS_ON if set -> overrides (e.g. switch to fastrak pool during a priority release)
-      #   3. default    -> the standard self-hosted Kong pool
+      # Per-arch lookup (each side independent):
+      #   1. fork PR                    -> free GitHub-hosted runners (security)
+      #   2. vars.RUNS_ON_MASTER_<ARCH> -> per-branch + per-arch override
+      #   3. vars.RUNS_ON_<ARCH>        -> global per-arch override
+      #   4. default                    -> the standard self-hosted Kong pool
+      # Branch slug is hardcoded because GitHub var names can't contain '-' or '.',
+      # and inline expressions can't sanitize `github.ref_name`.
       RUNNERS_BY_ARCH: >-
         ${{
           (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
           && '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}'
-          || vars.RUNS_ON
-          || '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}'
+          || format(
+              '{"amd64":"{0}","arm64":"{1}"}',
+              vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-latest-kong',
+              vars.RUNS_ON_MASTER_ARM64 || vars.RUNS_ON_ARM64 || 'ubuntu-latest-arm64-kong'
+            )
         }}
     secrets: inherit
   build_publish:
