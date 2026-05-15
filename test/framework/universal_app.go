@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -268,8 +269,8 @@ func (s *UniversalApp) CreateMainApp(cmd string) {
 
 func (s *UniversalApp) mainAppProcessPattern() string {
 	lines := strings.Split(s.mainAppCmd, "\n")
-	for i := len(lines) - 1; i >= 0; i-- {
-		line := strings.TrimSpace(lines[i])
+	for _, line := range slices.Backward(lines) {
+		line := strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
