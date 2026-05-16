@@ -22,6 +22,9 @@ const (
 	WhenDefinedHasToBeValidPath       = "must be a valid path when defined"
 	StringHasToBeValidNumber          = "string must be a valid number"
 	MustHaveBPSUnit                   = "must be in kbps/Mbps/Gbps units"
+	MustBeStaticOtelAttributeName     = "must be a static OpenTelemetry attribute name; placeholders are only supported in values"
+	MustNotUseReservedOtelPrefix      = "must not use the reserved OpenTelemetry prefix 'otel.'"
+	MustMatchOtelAttributeNameFormat  = "must start with a lowercase letter, use only lowercase letters, digits, '.' or '_', avoid consecutive delimiters, and end with a letter or digit"
 )
 
 var (

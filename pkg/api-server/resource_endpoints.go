@@ -1115,13 +1115,20 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 	if err != nil {
 		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
-	inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName)
-	if len(inbounds) == 0 {
+	var inboundKey core_rules.InboundListener
+	if inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName); len(inbounds) > 0 {
+		inboundKey = core_rules.InboundListener{
+			Address: inbounds[0].DataplaneIP,
+			Port:    inbounds[0].DataplanePort,
+		}
+	} else if listeners := dataplane.Spec.GetNetworking().ListenersSelectedBySectionName(inboundKri.SectionName); len(listeners) > 0 {
+		addr := listeners[0].GetAddress()
+		if addr == "" {
+			addr = dataplane.Spec.GetNetworking().GetAddress()
+		}
+		inboundKey = core_rules.InboundListener{Address: addr, Port: listeners[0].GetPort()}
+	} else {
 		return nil, errors.New("inbound not found")
-	}
-	inboundKey := core_rules.InboundListener{
-		Address: inbounds[0].DataplaneIP,
-		Port:    inbounds[0].DataplanePort,
 	}
 
 	conf := []api_common.InboundPolicyConf{}
@@ -1380,8 +1387,8 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					var tags map[string]string
 					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
 						tags = dp.Spec.Networking.Gateway.Tags
-					} else {
-						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+					} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
+						tags = inb.Tags
 					}
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
@@ -1412,8 +1419,8 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				var tags map[string]string
 				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
 					tags = dp.Spec.Networking.Gateway.Tags
-				} else {
-					tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+				} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
+					tags = inb.Tags
 				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{
