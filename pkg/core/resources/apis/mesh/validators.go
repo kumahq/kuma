@@ -10,6 +10,7 @@ import (
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -470,6 +471,10 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 		}
 		if match.SNI.Value == "" {
 			verr.AddViolation("sni.value", "must be set")
+		} else {
+			for _, violation := range k8s_validation.IsDNS1123Subdomain(match.SNI.Value) {
+				verr.AddViolation("sni.value", violation)
+			}
 		}
 	}
 	return verr

@@ -250,11 +250,17 @@ rules:
       deny:
         - sni:
             type: Exact
+      allowWithShadowDeny:
+        - sni:
+            type: Exact
+            value: "not_valid"
 `,
 				expected: `
 violations:
   - field: spec.rules[0].allow[0].sni.value
     message: must be set
+  - field: spec.rules[0].allowWithShadowDeny[0].sni.value
+    message: a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
   - field: spec.rules[0].deny[0].sni.value
     message: must be set
 `,
