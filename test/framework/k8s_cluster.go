@@ -1244,6 +1244,14 @@ func (c *K8sCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 	return c.controlplane.kumactl
 }
 
+func (c *K8sCluster) RefreshKumaCPPortForwards() error {
+	if c.controlplane == nil {
+		return nil
+	}
+
+	return c.controlplane.RefreshPortForwards()
+}
+
 func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
 	options := &k8s.KubectlOptions{
 		ConfigPath: c.kubeconfig,
