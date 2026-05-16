@@ -44,6 +44,27 @@ spec:
 `, meshName, Config.KumaNamespace)
 }
 
+func meshTraceZoneProxyMTP(meshName string) string {
+	return fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: allow-all-ze-%[1]s
+  namespace: %[2]s
+  labels:
+    kuma.io/mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s.default.mesh.local"
+`, meshName, Config.KumaNamespace)
+}
+
 func meshTraceZoneProxyMES(meshName, extNamespace string) string {
 	return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -117,7 +138,7 @@ func ZoneProxyPluginTest() {
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(Namespace(extNs)).
 			Install(MeshWithMeshServicesKubernetes(mesh, "Exclusive")).
-			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
+			Install(YamlK8s(meshTraceZoneProxyMTP(mesh))).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),
 				testserver.Install(
