@@ -30,6 +30,96 @@
     },
     {
       "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig",
+      "value": {
+        "address": {
+          "pipe": {
+            "path": "/tmp/kuma-mesh-metric-config.sock"
+          }
+        },
+        "filterChains": [
+          {
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      }
+                    ]
+                  },
+                  "routeConfig": {
+                    "maxDirectResponseBodySizeBytes": 0,
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
+                        ],
+                        "name": "_kuma:dynamicconfig",
+                        "routes": [
+                          {
+                            "directResponse": {
+                              "status": 304
+                            },
+                            "match": {
+                              "headers": [
+                                {
+                                  "name": "If-None-Match",
+                                  "stringMatch": {
+                                    "exact": "7d67b95dc410e186df54d52446c6154e7e8d98d953fd5c6f19af39110f97b082"
+                                  }
+                                }
+                              ],
+                              "path": "/meshmetric"
+                            }
+                          },
+                          {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"extraLabels\":{\"dataplane\":\"zone-proxy-egress\",\"kuma.proxy_role\":\"zone-egress\",\"mesh\":\"envoyconfig-zoneproxies\",\"zone\":\"kuma-3\"}}}}"
+                              },
+                              "status": 200
+                            },
+                            "match": {
+                              "path": "/meshmetric"
+                            },
+                            "name": "_kuma:dynamicconfig:/meshmetric",
+                            "responseHeadersToAdd": [
+                              {
+                                "header": {
+                                  "key": "Etag",
+                                  "value": "7d67b95dc410e186df54d52446c6154e7e8d98d953fd5c6f19af39110f97b082"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED"
+                }
+              }
+            ]
+          }
+        ],
+        "name": "_kuma:dynamicconfig"
+      }
+    },
+    {
+      "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:metrics:prometheus:default-backend",
       "value": {
         "address": {
