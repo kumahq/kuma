@@ -59,9 +59,9 @@ spec:
   rules:
     - default:
         allow:
-          - spiffeID:
-              type: Prefix
-              value: "spiffe://%[1]s.default.mesh.local"
+          - sni:
+              type: Exact
+              value: "sni.extsvc.%[1]s.default.%[2]s.external-server-%[1]s.80"
 `, meshName, Config.KumaNamespace)
 }
 
