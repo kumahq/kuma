@@ -1,0 +1,18 @@
+resources:
+- name: meshtrace:datadog
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshtrace_datadog
+    connectTimeout: 5s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshtrace:datadog
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: ingest.datadog.eu
+                portValue: 8126
+    name: meshtrace:datadog
+    type: STRICT_DNS

@@ -13,6 +13,7 @@ import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -206,6 +207,67 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					},
 				},
 				expected: "ingress-meshservice-filtered.envoy.golden.yaml",
+			}
+		}()),
+		Entry("ingress: MeshMultiZoneService", func() testCase {
+			mzs := builders.MeshMultiZoneService().
+				WithMesh("default").
+				WithName("global-svc").
+				WithServiceLabelSelector(map[string]string{"app": "backend"}).
+				AddIntPort(80, core_meta.ProtocolHTTP).
+				Build()
+
+			// LegacyServiceName used as endpoint map key: default_global-svc___mzsvc_80
+			// Cluster name (unified naming): kri_mzsvc_default___global-svc_80
+			// Filter chain SNI: sni.mzsvc.default.global-svc.80
+			const legacyMZSSvcName = "default_global-svc___mzsvc_80"
+
+			dp := samples.DataplaneBackendBuilder().
+				With(func(r *core_mesh.DataplaneResource) {
+					r.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+							Address: "10.0.0.1",
+							Port:    10001,
+							Name:    "zone-ingress-port",
+						},
+					}
+				}).
+				Build()
+
+			return testCase{
+				proxy: &core_xds.Proxy{
+					Id:         *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion: envoy_common.APIV3,
+					Dataplane:  dp,
+					Metadata: &core_xds.DataplaneMetadata{
+						Features: map[string]bool{
+							xds_types.FeatureUnifiedResourceNaming: true,
+						},
+					},
+					InternalAddresses: DummyInternalAddresses,
+				},
+				meshContext: xds_context.MeshContext{
+					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
+						legacyMZSSvcName: []core_xds.Endpoint{
+							{
+								Target: "192.168.0.1",
+								Port:   8080,
+								Tags:   map[string]string{mesh_proto.ServiceTag: "backend"},
+								Weight: 1,
+							},
+						},
+					},
+					Resources: xds_context.Resources{
+						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+							meshmultizoneservice_api.MeshMultiZoneServiceType: &meshmultizoneservice_api.MeshMultiZoneServiceResourceList{
+								Items: []*meshmultizoneservice_api.MeshMultiZoneServiceResource{mzs},
+							},
+						},
+					},
+				},
+				expected: "ingress-meshmultizoneservice.envoy.golden.yaml",
 			}
 		}()),
 		Entry("egress: no WorkloadIdentity → no resources generated", func() testCase {

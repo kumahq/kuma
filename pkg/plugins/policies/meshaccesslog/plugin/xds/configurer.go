@@ -323,6 +323,8 @@ func OtelAttributes(backend *api.OtelBackend, values listeners_v3.KumaValues) Co
 	return func(a *access_loggers_otel.OpenTelemetryAccessLogConfig) error {
 		attributes := &otlp.KeyValueList{}
 		for _, kv := range pointer.Deref(backend.Attributes) {
+			// Keep key interpolation for legacy resources stored before
+			// MeshAccessLog started rejecting placeholder-based attribute keys.
 			attributes.Values = append(attributes.Values, &otlp.KeyValue{
 				Key: listeners_v3.InterpolateKumaValues(kv.Key, values),
 				Value: &otlp.AnyValue{

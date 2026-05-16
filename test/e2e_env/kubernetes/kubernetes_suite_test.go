@@ -69,6 +69,7 @@ var (
 	_ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
+	_ = Describe("MeshTrace Zone Proxy", observability.ZoneProxyPluginTest, Ordered)
 	_ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)

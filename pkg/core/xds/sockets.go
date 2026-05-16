@@ -24,14 +24,15 @@ func OpenTelemetrySocketName(workdir string, backendName string) string {
 	return socketName(filepath.Join(workdir, "kuma-otel-"+backendName))
 }
 
-// ReadinessReporterSocketName generates a socket path that will fit the Unix socket path limitation of 104 chars
-func ReadinessReporterSocketName(workdir string) string {
-	return socketName(filepath.Join(workdir, "kuma-readiness-reporter"))
-}
-
 // AdminSocketName generates a socket path for the Envoy admin API that will fit the Unix socket path limitation of 104 chars
 func AdminSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-envoy-admin"))
+}
+
+// ReadinessReporterSocketName generates a socket path that will fit the Unix socket path limitation of 104 chars.
+// Kept for backward compatibility with older DPs that still advertise FeatureReadinessUnixSocket; new DPs use TCP.
+func ReadinessReporterSocketName(workdir string) string {
+	return socketName(filepath.Join(workdir, "kuma-readiness-reporter"))
 }
 
 func socketName(s string) string {

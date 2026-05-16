@@ -4043,8 +4043,9 @@ spec:
                 description: MeshMetric configuration.
                 properties:
                   applications:
-                    description: Applications is a list of application that Dataplane
-                      Proxy will scrape
+                    description: |-
+                      Applications is a list of applications that Dataplane Proxy will scrape.
+                      Ignored on zone-proxy-only Dataplanes (zone ingress/egress exist without a co-located workload).
                     items:
                       properties:
                         address:
@@ -10143,7 +10144,8 @@ spec:
                                 properties:
                                   attributes:
                                     description: |-
-                                      Attributes can contain placeholders available on
+                                      Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                      OpenTelemetry attribute names. Values can contain placeholders available on
                                       https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     example:
                                     - key: mesh
@@ -10151,8 +10153,12 @@ spec:
                                     items:
                                       properties:
                                         key:
+                                          description: Key is the OpenTelemetry attribute
+                                            name.
+                                          pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                           type: string
                                         value:
+                                          description: Value can contain Kuma placeholders.
                                           type: string
                                       required:
                                       - key
@@ -10401,7 +10407,8 @@ spec:
                                 properties:
                                   attributes:
                                     description: |-
-                                      Attributes can contain placeholders available on
+                                      Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                      OpenTelemetry attribute names. Values can contain placeholders available on
                                       https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     example:
                                     - key: mesh
@@ -10409,8 +10416,12 @@ spec:
                                     items:
                                       properties:
                                         key:
+                                          description: Key is the OpenTelemetry attribute
+                                            name.
+                                          pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                           type: string
                                         value:
+                                          description: Value can contain Kuma placeholders.
                                           type: string
                                       required:
                                       - key
@@ -10659,7 +10670,8 @@ spec:
                                 properties:
                                   attributes:
                                     description: |-
-                                      Attributes can contain placeholders available on
+                                      Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                      OpenTelemetry attribute names. Values can contain placeholders available on
                                       https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     example:
                                     - key: mesh
@@ -10667,8 +10679,12 @@ spec:
                                     items:
                                       properties:
                                         key:
+                                          description: Key is the OpenTelemetry attribute
+                                            name.
+                                          pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                           type: string
                                         value:
+                                          description: Value can contain Kuma placeholders.
                                           type: string
                                       required:
                                       - key

@@ -78,5 +78,10 @@ var _ = Describe("Profiles", func() {
 			expected: "mixed.golden",
 			profiles: "mixed.yaml",
 		}),
+		Entry("Basic must not treat name-selectors as label-value selectors", testCase{
+			input:    "basic_user_labels.in",
+			expected: "basic_user_labels.golden",
+			profiles: "basic_user_labels.yaml",
+		}),
 	)
 })

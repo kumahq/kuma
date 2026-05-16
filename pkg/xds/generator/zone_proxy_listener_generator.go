@@ -19,6 +19,7 @@ import (
 	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
+	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
@@ -122,13 +123,15 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 		}
 	}
 
-	dest := zoneproxy.BuildMeshDestinations(
-		nil, // no legacy available services
+	backendRefs := zoneproxy.BuildRealResourceDestinations(
+		util_slices.FlatMap(
+			[]core_resources.DestinationList{localMS, meshResources.MeshMultiZoneServices()},
+			core_resources.DestinationList.GetDestinations,
+		),
 		cp.SystemNamespace,
-		meshResources,
-		localMS,
-		meshResources.MeshMultiZoneServices(),
+		true,
 	)
+	dest := zoneproxy.MeshDestinations{BackendRefs: backendRefs}
 
 	services := zoneproxy.GetServices(dest, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, nil, true)
 	clusters := services.Clusters()
@@ -200,7 +203,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		}
 		esPort := ports[0]
 		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
-		sni := tls.SNIForResource(id.Name, id.Mesh, id.ResourceType, esPort.GetValue(), nil)
+		sni := tls.SNIFromKRI(id)
 		clusterName := id.String()
 		group := endpointMap[clusterName]
 

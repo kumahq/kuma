@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 )
 
 const (
@@ -34,13 +33,11 @@ const (
 // Envoy admin listens on a Unix domain socket. Mutating endpoints
 // (/quitquitquit, /drain_listeners, /runtime_modify) are blocked.
 type Reporter struct {
-	unixSocketDisabled bool
-	socketDir          string
-	localListenAddr    string
-	localListenPort    uint32
-	adminSocketPath    string
-	adminClient        *http.Client
-	isTerminating      atomic.Bool
+	localListenAddr string
+	localListenPort uint32
+	adminSocketPath string
+	adminClient     *http.Client
+	isTerminating   atomic.Bool
 	// dnsConfigReady, when non-nil, blocks /ready until the DNS proxy has
 	// loaded its first configuration from Envoy. Closed by the DNS proxy
 	// server after the first successful ReloadMap call.
@@ -51,23 +48,21 @@ type Reporter struct {
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}) *Reporter {
+func NewReporter(localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}) *Reporter {
 	var deadline time.Time
 	if dnsConfigReady != nil {
 		deadline = time.Now().Add(dnsConfigGateTimeout)
 	}
-	return newReporterWithDeadline(unixSocketDisabled, socketDir, localIPAddr, localListenPort, adminSocketPath, dnsConfigReady, deadline)
+	return newReporterWithDeadline(localIPAddr, localListenPort, adminSocketPath, dnsConfigReady, deadline)
 }
 
-func newReporterWithDeadline(unixSocketDisabled bool, socketDir string, localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}, dnsConfigDeadline time.Time) *Reporter {
+func newReporterWithDeadline(localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}, dnsConfigDeadline time.Time) *Reporter {
 	r := &Reporter{
-		unixSocketDisabled: unixSocketDisabled,
-		socketDir:          socketDir,
-		localListenPort:    localListenPort,
-		localListenAddr:    localIPAddr,
-		adminSocketPath:    adminSocketPath,
-		dnsConfigReady:     dnsConfigReady,
-		dnsConfigDeadline:  dnsConfigDeadline,
+		localListenPort:   localListenPort,
+		localListenAddr:   localIPAddr,
+		adminSocketPath:   adminSocketPath,
+		dnsConfigReady:    dnsConfigReady,
+		dnsConfigDeadline: dnsConfigDeadline,
 	}
 	if adminSocketPath != "" {
 		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
@@ -77,25 +72,16 @@ func newReporterWithDeadline(unixSocketDisabled bool, socketDir string, localIPA
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
-	var lis net.Listener
-	var protocol, addr string
-	if r.unixSocketDisabled {
-		// Use "tcp" (not "tcp6") so that when localListenAddr is the IPv6
-		// wildcard "::", Linux gives a dual-stack listener that accepts
-		// both IPv4 and IPv6 probes. "tcp6" sets IPV6_V6ONLY and would
-		// refuse IPv4 probes. For concrete addresses the family is
-		// determined by the address itself.
-		protocol = "tcp"
-		if govalidator.IsIPv6(r.localListenAddr) {
-			addr = fmt.Sprintf("[%s]:%d", r.localListenAddr, r.localListenPort)
-		} else {
-			addr = fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
-		}
-	} else {
-		protocol = "unix"
-		addr = core_xds.ReadinessReporterSocketName(r.socketDir)
+	// Use "tcp" (not "tcp6") so that when localListenAddr is the IPv6
+	// wildcard "::", Linux gives a dual-stack listener that accepts
+	// both IPv4 and IPv6 probes. "tcp6" sets IPV6_V6ONLY and would
+	// refuse IPv4 probes. For concrete addresses the family is
+	// determined by the address itself.
+	addr := fmt.Sprintf("%s:%d", r.localListenAddr, r.localListenPort)
+	if govalidator.IsIPv6(r.localListenAddr) {
+		addr = fmt.Sprintf("[%s]:%d", r.localListenAddr, r.localListenPort)
 	}
-	lis, err := (&net.ListenConfig{}).Listen(context.Background(), protocol, addr)
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", addr)
 	if err != nil {
 		return err
 	}
