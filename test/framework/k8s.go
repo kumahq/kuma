@@ -130,7 +130,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 			return out, err
 		}
 		for _, resource := range []string{"gatewayclasses", "gateways", "httproutes", "referencegrants"} {
-			if !strings.Contains(out, fmt.Sprintf(`"name":"%s"`, resource)) {
+			if !strings.Contains(out, fmt.Sprintf(`"name":%q`, resource)) {
 				return out, errors.Errorf("Gateway API discovery missing %s", resource)
 			}
 		}
