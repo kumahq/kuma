@@ -22,6 +22,10 @@ type Rule struct {
 	Default RuleConf `json:"default"`
 }
 
+func (r *Rule) GetMatches() []common_api.Match {
+	return nil
+}
+
 type RuleConf struct {
 	// Deny defines a list of matches for which access will be denied
 	Deny *[]common_api.Match `json:"deny,omitempty"`

@@ -249,32 +249,30 @@ var _ = Describe("MeshFaultInjection", func() {
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {
 						{
-							Conf: &api.Rule{
-								Matches: &[]common_api.Match{
-									{
-										SpiffeID: &common_api.SpiffeIDMatch{
-											Type:  common_api.PrefixMatchType,
-											Value: "spiffe://trust-domain.mesh/",
-										},
+							Matches: []common_api.Match{
+								{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffe://trust-domain.mesh/",
 									},
 								},
-								Default: api.Conf{
-									Http: &[]api.FaultInjectionConf{
-										{
-											Abort: &api.AbortConf{
-												HttpStatus: int32(444),
-												Percentage: intstr.FromString("12"),
-											},
+							},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{
+									{
+										Abort: &api.AbortConf{
+											HttpStatus: int32(444),
+											Percentage: intstr.FromString("12"),
 										},
-										{
-											Delay: &api.DelayConf{
-												Value:      *test.ParseDuration("55s"),
-												Percentage: intstr.FromString("55"),
-											},
-											ResponseBandwidth: &api.ResponseBandwidthConf{
-												Limit:      "111Mbps",
-												Percentage: intstr.FromString("62.9"),
-											},
+									},
+									{
+										Delay: &api.DelayConf{
+											Value:      *test.ParseDuration("55s"),
+											Percentage: intstr.FromString("55"),
+										},
+										ResponseBandwidth: &api.ResponseBandwidthConf{
+											Limit:      "111Mbps",
+											Percentage: intstr.FromString("62.9"),
 										},
 									},
 								},
@@ -284,30 +282,28 @@ var _ = Describe("MeshFaultInjection", func() {
 					},
 					{Address: "127.0.0.1", Port: 17778}: {
 						{
-							Conf: &api.Rule{
-								Matches: &[]common_api.Match{
-									{
-										SpiffeID: &common_api.SpiffeIDMatch{
-											Type:  common_api.PrefixMatchType,
-											Value: "spiffe://trust-domain.mesh/",
-										},
+							Matches: []common_api.Match{
+								{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffe://trust-domain.mesh/",
 									},
 								},
-								Default: api.Conf{
-									Http: &[]api.FaultInjectionConf{
-										{
-											Abort: &api.AbortConf{
-												HttpStatus: int32(444),
-												Percentage: intstr.FromString("12"),
-											},
-											Delay: &api.DelayConf{
-												Value:      *test.ParseDuration("55s"),
-												Percentage: intstr.FromString("55"),
-											},
-											ResponseBandwidth: &api.ResponseBandwidthConf{
-												Limit:      "111Mbps",
-												Percentage: intstr.FromString("62.9"),
-											},
+							},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{
+									{
+										Abort: &api.AbortConf{
+											HttpStatus: int32(444),
+											Percentage: intstr.FromString("12"),
+										},
+										Delay: &api.DelayConf{
+											Value:      *test.ParseDuration("55s"),
+											Percentage: intstr.FromString("55"),
+										},
+										ResponseBandwidth: &api.ResponseBandwidthConf{
+											Limit:      "111Mbps",
+											Percentage: intstr.FromString("62.9"),
 										},
 									},
 								},

@@ -27,6 +27,10 @@ type Rule struct {
 	Default Conf `json:"default,omitempty"`
 }
 
+func (r *Rule) GetMatches() []common_api.Match {
+	return nil
+}
+
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.

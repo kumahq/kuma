@@ -1,10 +1,9 @@
 rules:
 - conf:
-    default:
-      connectionTimeout: 1m41s
-      http:
-        requestTimeout: 1m42s
-      idleTimeout: 1m40s
+    connectionTimeout: 1m41s
+    http:
+      requestTimeout: 1m42s
+    idleTimeout: 1m40s
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
@@ -15,10 +14,9 @@ rules:
       type: MeshTimeout
     RuleIndex: 0
 - conf:
-    default:
-      http:
-        requestTimeout: 12s
-      idleTimeout: 10s
+    http:
+      requestTimeout: 12s
+    idleTimeout: 10s
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"

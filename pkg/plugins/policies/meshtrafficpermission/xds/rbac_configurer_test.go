@@ -60,14 +60,12 @@ var _ = Describe("RBACConfigurer", func() {
 			stats: "allow_all_prefix",
 			inboundRules: []*inbound.Rule{
 				{
-					Conf: &v1alpha1.Rule{
-						Default: v1alpha1.RuleConf{
-							Allow: &[]common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.PrefixMatchType,
-										Value: "spiffe://trust-domain.mesh/",
-									},
+					Conf: v1alpha1.RuleConf{
+						Allow: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/",
 								},
 							},
 						},
@@ -110,14 +108,12 @@ filters:
 			stats: "deny_all_prefix",
 			inboundRules: []*inbound.Rule{
 				{
-					Conf: &v1alpha1.Rule{
-						Default: v1alpha1.RuleConf{
-							Deny: &[]common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.PrefixMatchType,
-										Value: "spiffe://trust-domain.mesh/",
-									},
+					Conf: v1alpha1.RuleConf{
+						Deny: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/",
 								},
 							},
 						},
@@ -161,20 +157,18 @@ filters:
 			stats: "allow_2_services_prefix",
 			inboundRules: []*inbound.Rule{
 				{
-					Conf: &v1alpha1.Rule{
-						Default: v1alpha1.RuleConf{
-							Allow: &[]common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.ExactMatchType,
-										Value: "spiffe://trust-domain.mesh/ns/backend/v1",
-									},
+					Conf: v1alpha1.RuleConf{
+						Allow: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.ExactMatchType,
+									Value: "spiffe://trust-domain.mesh/ns/backend/v1",
 								},
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.ExactMatchType,
-										Value: "spiffe://trust-domain.mesh/ns/backend/v2",
-									},
+							},
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.ExactMatchType,
+									Value: "spiffe://trust-domain.mesh/ns/backend/v2",
 								},
 							},
 						},
@@ -226,14 +220,12 @@ filters:
 			stats: "rules_from_merged",
 			inboundRules: []*inbound.Rule{
 				{
-					Conf: &v1alpha1.Rule{
-						Default: v1alpha1.RuleConf{
-							Deny: &[]common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.ExactMatchType,
-										Value: "spiffe://trust-domain.mesh/ns/backend/v1",
-									},
+					Conf: v1alpha1.RuleConf{
+						Deny: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.ExactMatchType,
+									Value: "spiffe://trust-domain.mesh/ns/backend/v1",
 								},
 							},
 						},
@@ -241,14 +233,12 @@ filters:
 					Origin: mtpOrigin("mtp-1"),
 				},
 				{
-					Conf: &v1alpha1.Rule{
-						Default: v1alpha1.RuleConf{
-							Allow: &[]common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.PrefixMatchType,
-										Value: "spiffe://trust-domain.mesh/ns/backend",
-									},
+					Conf: v1alpha1.RuleConf{
+						Allow: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/ns/backend",
 								},
 							},
 						},
@@ -306,14 +296,12 @@ filters:
 			stats: "shadow_deny",
 			inboundRules: []*inbound.Rule{
 				{
-					Conf: &v1alpha1.Rule{
-						Default: v1alpha1.RuleConf{
-							AllowWithShadowDeny: &[]common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.PrefixMatchType,
-										Value: "spiffe://trust-domain.mesh/",
-									},
+					Conf: v1alpha1.RuleConf{
+						AllowWithShadowDeny: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/",
 								},
 							},
 						},
@@ -381,24 +369,22 @@ filters:
 			stats: "sni_match_prefix",
 			inboundRules: []*inbound.Rule{
 				{
-					Conf: &v1alpha1.Rule{
-						Default: v1alpha1.RuleConf{
-							Allow: &[]common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.ExactMatchType,
-										Value: "spiffe://default/ns/backend-ns/sa/backend",
-									},
-									SNI: &common_api.SNIMatch{
-										Type:  common_api.SNIExactMatchType,
-										Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
-									},
+					Conf: v1alpha1.RuleConf{
+						Allow: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.ExactMatchType,
+									Value: "spiffe://default/ns/backend-ns/sa/backend",
 								},
-								{
-									SNI: &common_api.SNIMatch{
-										Type:  common_api.SNIExactMatchType,
-										Value: "sni.extsvc.default.zone-1.aws-rds.8443",
-									},
+								SNI: &common_api.SNIMatch{
+									Type:  common_api.SNIExactMatchType,
+									Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+								},
+							},
+							{
+								SNI: &common_api.SNIMatch{
+									Type:  common_api.SNIExactMatchType,
+									Value: "sni.extsvc.default.zone-1.aws-rds.8443",
 								},
 							},
 						},

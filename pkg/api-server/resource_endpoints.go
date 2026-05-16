@@ -1142,7 +1142,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 		for _, rule := range rules {
 			policyRules = append(policyRules, api_common.PolicyRule{
 				Kri:  pointer.To(originToKRI(rule.Origin.Resource, matched.Type).Kri),
-				Conf: rule.Conf.GetDefault(),
+				Conf: rule.Conf,
 			})
 		}
 
@@ -1412,8 +1412,9 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				rs := make([]api_common.InboundRule, len(rulesForInbound))
 				for i := range rulesForInbound {
 					rs[i] = api_common.InboundRule{
-						Conf:   []any{rulesForInbound[i].Conf.GetDefault()},
-						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
+						Conf:    []any{rulesForInbound[i].Conf},
+						Matches: rulesForInbound[i].Matches,
+						Origin:  oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}
 				var tags map[string]string

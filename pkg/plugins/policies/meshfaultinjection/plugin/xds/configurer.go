@@ -36,20 +36,20 @@ func (c *Configurer) addFaultFilters(hcm *envoy_hcm.HttpConnectionManager) error
 	var fiFilters []*envoy_hcm.HttpFilter
 
 	for _, rule := range c.Rules {
-		matchesConf := rule.Conf.(*policies_api.Rule)
+		matchesConf := rule.Conf.(policies_api.Conf)
 		matcher := bldrs_matchers.Matcher(
 			bldrs_matchers.NewMatcherBuilder().Configure(
 				bldrs_matchers.FieldMatcher(
 					bldrs_matchers.NewFieldMatcher().Configure(
 						bldrs_matchers.NotMatches(
-							pointer.Deref(matchesConf.Matches),
+							rule.Matches,
 							bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.SkipFilterAction()),
 						),
 					),
 				)),
 		)
 
-		for _, fault := range pointer.Deref(matchesConf.Default.Http) {
+		for _, fault := range pointer.Deref(matchesConf.Http) {
 			faultConfig, _ := configureFault(fault)
 			faultFilter, err := util_proto.MarshalAnyDeterministic(faultConfig)
 			if err != nil {
