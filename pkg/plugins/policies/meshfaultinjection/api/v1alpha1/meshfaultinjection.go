@@ -33,13 +33,6 @@ type Rule struct {
 	Default Conf `json:"default"`
 }
 
-func (r *Rule) GetMatches() []common_api.Match {
-	if r.Matches == nil {
-		return nil
-	}
-	return *r.Matches
-}
-
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.

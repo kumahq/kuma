@@ -18,57 +18,47 @@ func Sort[T common.PolicyAttributes](list []T) {
 
 func SortRules(list []*Rule) {
 	slices.SortStableFunc(list, func(a, b *Rule) int {
-		if less := CompareByMatches(a.Matches, b.Matches); less != 0 {
-			return less
-		}
-		return 0
+		return CompareByMatches(a.Matches, b.Matches)
 	})
 }
 
 func CompareByMatches(a, b []common_api.Match) int {
-	return compareSingleMatch(firstMatch(a), firstMatch(b))
+	var ma, mb common_api.Match
+	if len(a) > 0 {
+		ma = a[0]
+	}
+	if len(b) > 0 {
+		mb = b[0]
+	}
+	return CompareMatch(ma, mb)
 }
 
-func firstMatch(matches []common_api.Match) *common_api.Match {
-	if len(matches) == 0 {
-		return nil
+func CompareMatch(a, b common_api.Match) int {
+	if c := compareSpiffeID(a.SpiffeID, b.SpiffeID); c != 0 {
+		return c
 	}
-	return &matches[0]
-}
-
-func compareSingleMatch(a, b *common_api.Match) int {
-	if less := compareSpiffeID(matchSpiffeID(a), matchSpiffeID(b)); less != 0 {
-		return less
-	}
-	if less := compareSNI(matchSNI(a), matchSNI(b)); less != 0 {
-		return less
+	if c := compareSNI(a.SNI, b.SNI); c != 0 {
+		return c
 	}
 	return 0
 }
 
-func matchSpiffeID(match *common_api.Match) *common_api.SpiffeIDMatch {
-	if match == nil {
-		return nil
-	}
-	return match.SpiffeID
-}
-
-func matchSNI(match *common_api.Match) *common_api.SNIMatch {
-	if match == nil {
-		return nil
-	}
-	return match.SNI
-}
-
 func compareSpiffeID(a, b *common_api.SpiffeIDMatch) int {
+	switch {
+	case a != nil && b == nil:
+		return -1
+	case a == nil && b != nil:
+		return 1
+	case a == nil && b == nil:
+		return 0
+	}
+
 	score := func(m *common_api.SpiffeIDMatch) int {
-		switch {
-		case m == nil:
-			return 0
-		case m.Type == common_api.ExactMatchType:
-			return 3
-		case m.Type == common_api.PrefixMatchType:
+		switch m.Type {
+		case common_api.ExactMatchType:
 			return 2
+		case common_api.PrefixMatchType:
+			return 1
 		default:
 			return 0
 		}
@@ -77,11 +67,11 @@ func compareSpiffeID(a, b *common_api.SpiffeIDMatch) int {
 }
 
 func compareSNI(a, b *common_api.SNIMatch) int {
-	score := func(m *common_api.SNIMatch) int {
-		if m == nil {
-			return 0
-		}
+	switch {
+	case a != nil && b == nil:
+		return -1
+	case a == nil && b != nil:
 		return 1
 	}
-	return cmp.Compare(score(b), score(a))
+	return 0
 }
