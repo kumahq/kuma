@@ -243,6 +243,51 @@ var _ = Describe("MeshRetry", func() {
 			},
 			goldenFilePrefix: "grpc_0_numretries",
 		}),
+		Entry("grpc retry http status codes", testCase{
+			resources: []core_xds.Resource{{
+				Name:     "outbound",
+				Origin:   metadata.OriginOutbound,
+				Resource: httpListenerWithSimpleRoute(10002),
+			}},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: subsetutils.Subset{subsetutils.Tag{
+							Key:   mesh_proto.ServiceTag,
+							Value: "grpc-service",
+						}},
+						Conf: api.Conf{
+							GRPC: &api.GRPC{
+								NumRetries:    pointer.To[uint32](11),
+								PerTryTimeout: test.ParseDuration("12s"),
+								BackOff: &api.BackOff{
+									BaseInterval: test.ParseDuration("13s"),
+									MaxInterval:  test.ParseDuration("14s"),
+								},
+								RateLimitedBackOff: &api.RateLimitedBackOff{
+									MaxInterval: test.ParseDuration("15s"),
+									ResetHeaders: &[]api.ResetHeader{
+										{
+											Name:   "retry-after-grpc",
+											Format: "Seconds",
+										},
+										{
+											Name:   "x-retry-after-grpc",
+											Format: "UnixTimestamp",
+										},
+									},
+								},
+								RetryOn: &[]api.GRPCRetryOn{
+									"429",
+									"500",
+								},
+							},
+						},
+					},
+				},
+			},
+			goldenFilePrefix: "grpc_http_status_code",
+		}),
 		Entry("tcp retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
