@@ -228,6 +228,17 @@ to:
           - 500
           - 409
 `),
+			Entry("grpc.retryOn with http string conditions", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      grpc:
+        retryOn: 
+          - 5xx
+`),
 			Entry("target MeshHTTPRoute", `
 targetRef:
   kind: MeshHTTPRoute
