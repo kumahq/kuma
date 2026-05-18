@@ -24,7 +24,7 @@ func (t *MeshExternalServiceResource) Deprecations() []string {
 	id := kri.WithSectionName(kri.From(t), t.Spec.Match.GetName())
 	for _, err := range sni.ValidateKRI(id) {
 		deprecations = append(deprecations, fmt.Sprintf(
-			"Invalid %s SNI: %s. It does not conform to the DNS format (RFC 1035). This is deprecated.",
+			"Invalid %s SNI: %s. It does not conform to the DNS format (RFC 1123). This is deprecated.",
 			MeshExternalServiceResourceTypeDescriptor.Name, err))
 	}
 

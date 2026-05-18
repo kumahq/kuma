@@ -26,7 +26,7 @@ func (t *MeshMultiZoneServiceResource) Deprecations() []string {
 	for _, port := range t.Spec.Ports {
 		for _, err := range sni.ValidateKRI(kri.WithSectionName(base, port.GetName())) {
 			msg := fmt.Sprintf(
-				"Invalid %s SNI: %s. It does not conform to the DNS format (RFC 1035). This is deprecated.",
+				"Invalid %s SNI: %s. It does not conform to the DNS format (RFC 1123). This is deprecated.",
 				MeshMultiZoneServiceResourceTypeDescriptor.Name, err)
 			if _, ok := seen[msg]; ok {
 				continue
