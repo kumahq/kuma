@@ -32,6 +32,7 @@ runs:
         version: 2026.5.7
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
     - run: make build
       shell: bash
     - run: make -j build/distributions

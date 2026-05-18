@@ -94,7 +94,10 @@ test/e2e/list:
 	@echo $(ALL_TESTS)
 
 .PHONY: test/e2e/k8s/start
-test/e2e/k8s/start: $(K8SCLUSTERS_START_TARGETS)
+test/e2e/k8s/start:
+	$(Q)for cluster in $(K8SCLUSTERS); do \
+		$(MAKE) test/e2e/k8s/start/cluster/$$cluster || exit $$?; \
+	done
 	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # execute after start targets
 
 .PHONY: test/e2e/k8s/stop
