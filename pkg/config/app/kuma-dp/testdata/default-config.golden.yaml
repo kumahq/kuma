@@ -20,7 +20,7 @@ dataplaneRuntime:
   metrics: {}
   otelPipeEnabled: true
   resources: {}
-  reusePortsEnabled: true
+  reusePortEnabled: true
   spire: {}
   strictInboundPortsEnabled: true
 dns:
