@@ -64,6 +64,7 @@ The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/read
 **Action required:**
 
 - Universal-mode operators who probed readiness via the Unix socket must switch to TCP loopback: `curl http://localhost:9902/ready`.
+- Universal-mode hosts running more than one `kuma-dp` instance must assign a distinct `KUMA_READINESS_PORT` per instance. Instances previously shared a Unix socket; they now all default to TCP `9902` and will fail to bind on conflict.
 - Custom manifests that still set `KUMA_READINESS_UNIX_SOCKET_DISABLED` can leave the env var in place — it is ignored — or remove it.
 
 ### dp-server graceful shutdown is now time-bounded
