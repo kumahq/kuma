@@ -30,8 +30,8 @@ var kumactlConnectionErrorSubstrings = []string{
 }
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
-	_, err := retry.DoWithRetryE(
-		cluster.GetTesting(),
+	_, err := retry.DoWithRetryContextE(
+		cluster.GetTesting(), context.Background(),
 		"delete mesh resources",
 		10,
 		time.Second,
@@ -54,15 +54,15 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 }
 
 func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string, mesh ...string) error {
-	_, err := retry.DoWithRetryE(
-		cluster.GetTesting(),
+	_, err := retry.DoWithRetryContextE(
+		cluster.GetTesting(), context.Background(),
 		"delete policy",
 		10,
 		time.Second,
 		func() (string, error) {
 			if _, ok := cluster.(*K8sCluster); ok {
-				return k8s.RunKubectlAndGetOutputE(
-					cluster.GetTesting(),
+				return k8s.RunKubectlAndGetOutputContextE(
+					cluster.GetTesting(), context.Background(),
 					cluster.GetKubectlOptions(Config.KumaNamespace),
 					"delete",
 					descriptor.KumactlArg,
@@ -107,7 +107,7 @@ func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_m
 	if resource.IsPluginOriginated {
 		// because all new policies have a mesh label, we can just delete by selecting a label
 		args = append(args, "--all-namespaces", "--selector", fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh))
-		if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), args...); err != nil {
+		if err := k8s.RunKubectlContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), args...); err != nil {
 			return err
 		}
 	} else {
@@ -117,7 +117,7 @@ func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_m
 		}
 		for _, item := range list.GetItems() {
 			itemDelArgs := append(args, item.GetMeta().GetName())
-			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
+			if err := k8s.RunKubectlContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
 				return err
 			}
 		}
@@ -135,8 +135,8 @@ func WaitForMesh(mesh string, clusters []Cluster) error {
 // to ensure KDS registration and MeshService propagation have completed
 // before running cross-zone assertions.
 func WaitForZoneOnline(global Cluster, zoneName string) error {
-	_, err := retry.DoWithRetryE(
-		global.GetTesting(),
+	_, err := retry.DoWithRetryContextE(
+		global.GetTesting(), context.Background(),
 		fmt.Sprintf("wait for zone %s online", zoneName),
 		// 120 retries * 3s = 6 min. Cold-start KDS connection on
 		// IPv6 kindIpv6 clusters can take 60-90s; the previous 60s
@@ -166,7 +166,7 @@ func WaitForZoneOnline(global Cluster, zoneName string) error {
 
 func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_model.ResourceKey, clusters ...Cluster) error {
 	for _, c := range clusters {
-		_, err := retry.DoWithRetryE(c.GetTesting(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
+		_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				args := []string{"get", descriptor.KumactlArg, key.Name}
 				if key.Mesh != "" {

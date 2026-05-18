@@ -53,7 +53,7 @@ func TestConformance(t *testing.T) {
 
 	t.Cleanup(func() {
 		var meshNamespaces []string
-		clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
+		clientset, err := k8s.GetKubernetesClientFromOptionsContextE(t, context.Background(), opts)
 		if err == nil {
 			if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
 				metav1.ListOptions{

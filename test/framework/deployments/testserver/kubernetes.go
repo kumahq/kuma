@@ -349,10 +349,10 @@ func (k *k8SDeployment) Delete(c framework.Cluster) error {
 	// then we can rely on code below to delete tht deployment.
 
 	// TODO(lukidzi): https://github.com/kumahq/kuma/issues/8245
-	// if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "service", k.opts.Name); err != nil {
+	// if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(k.opts.Namespace), "delete", "service", k.opts.Name); err != nil {
 	// 	return err
 	// }
-	// if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "deployment", k.opts.Name); err != nil {
+	// if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(k.opts.Namespace), "delete", "deployment", k.opts.Name); err != nil {
 	// 	return err
 	// }
 	return nil

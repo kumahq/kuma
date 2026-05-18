@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -105,8 +106,8 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	if err := k8s.KubectlApplyFromStringE(
-		cluster.GetTesting(),
+	if err := k8s.KubectlApplyFromStringContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.options.namespace),
 		dbSecrets(
 			t.options.namespace,
@@ -125,8 +126,8 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 
 	// Helm's --wait flag doesn't wait for custom resources to be ready, so we
 	// explicitly wait for the CNPG Cluster to reach Ready condition
-	return k8s.RunKubectlE(
-		cluster.GetTesting(),
+	return k8s.RunKubectlContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.options.namespace),
 		"wait",
 		"--for=condition=Ready",

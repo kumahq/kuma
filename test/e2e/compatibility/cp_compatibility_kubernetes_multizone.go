@@ -1,10 +1,12 @@
 package compatibility
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +16,25 @@ import (
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
 )
+
+// Ensure that the upstream Kuma help repository is configured
+// and refreshed. This is needed for helm to be able to pull the
+// OldChart version of the Kuma helm chart.
+var _ = E2ESynchronizedBeforeSuite(
+	func() []byte {
+		t := NewTestingT()
+		opts := helm.Options{}
+
+		// Adding the same repo multiple times is idempotent. The
+		// `--force-update` flag prevents helm emitting an error
+		// in this case.
+		Expect(helm.RunHelmCommandAndGetOutputContextE(t, context.Background(), &opts,
+			"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().ToNot(HaveOccurred())
+
+		Expect(helm.RunHelmCommandAndGetOutputContextE(t, context.Background(), &opts, "repo", "update")).Error().ToNot(HaveOccurred())
+		return nil
+	},
+	func(_ []byte) {})
 
 func CpCompatibilityMultizoneKubernetes() {
 	var globalCluster Cluster
@@ -34,7 +55,7 @@ func CpCompatibilityMultizoneKubernetes() {
 
 		globalReleaseName = fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		// Zone CP
@@ -49,7 +70,7 @@ func CpCompatibilityMultizoneKubernetes() {
 
 		zoneReleaseName = fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 	})
 
@@ -95,7 +116,7 @@ metadata:
 		// then the resource is synchronized when old remote is connected (KDS is backwards compatible)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
-			return k8s.RunKubectlAndGetOutputE(zoneCluster.GetTesting(), zoneCluster.GetKubectlOptions(), "get", "meshes")
+			return k8s.RunKubectlAndGetOutputContextE(zoneCluster.GetTesting(), context.Background(), zoneCluster.GetKubectlOptions(), "get", "meshes")
 		}, "30s", "1s").Should(ContainSubstring("demo"))
 
 		// when new resources is created on Zone
@@ -104,7 +125,7 @@ metadata:
 		// then resource is synchronized to Global
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
-			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("kuma-system"), "get", "dataplanes")
+			return k8s.RunKubectlAndGetOutputContextE(globalCluster.GetTesting(), context.Background(), globalCluster.GetKubectlOptions("kuma-system"), "get", "dataplanes")
 		}, "30s", "1s").Should(ContainSubstring("demo-client"))
 	},
 		EntryDescription("from version: %s"),

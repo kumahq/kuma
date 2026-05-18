@@ -2,6 +2,7 @@ package framework
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -134,7 +135,7 @@ func (c *K8sControlPlane) RefreshPortForwards() error {
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
-	return k8s.ListPods(c.t,
+	return k8s.ListPodsContext(c.t, context.Background(),
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + Config.KumaServiceName,
@@ -143,7 +144,7 @@ func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 }
 
 func (c *K8sControlPlane) GetKumaCPSvc() v1.Service {
-	return k8s.ListServices(c.t,
+	return k8s.ListServicesContext(c.t, context.Background(),
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			FieldSelector: "metadata.name=" + Config.KumaServiceName,
@@ -152,7 +153,7 @@ func (c *K8sControlPlane) GetKumaCPSvc() v1.Service {
 }
 
 func (c *K8sControlPlane) GetKumaCPSyncSvc() v1.Service {
-	return k8s.ListServices(c.t,
+	return k8s.ListServicesContext(c.t, context.Background(),
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			FieldSelector: "metadata.name=" + Config.KumaGlobalZoneSyncServiceName,
@@ -174,8 +175,9 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 		res := strings.Split(header, "=")
 		headers[res[0]] = res[1]
 	}
-	_, err := http_helper.HTTPDoWithRetryE(
+	_, err := http_helper.HTTPDoWithRetryContextE(
 		c.t,
+		context.Background(),
 		"GET",
 		c.GetAPIServerAddress()+"/zones/_overview",
 		nil,
@@ -193,8 +195,9 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 		return nil
 	}
 
-	return http_helper.HttpGetWithRetryWithCustomValidationE(
+	return http_helper.HTTPGetWithRetryWithCustomValidationContextE(
 		c.t,
+		context.Background(),
 		c.GetAPIServerAddress()+"/gui",
 		&tls.Config{MinVersion: tls.VersionTLS12},
 		3,
@@ -257,8 +260,8 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		return ExtractSecretDataFromResponse(body)
 	}
 
-	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sec, err := k8s.GetSecretE(c.t, c.GetKubectlOptions(Config.KumaNamespace), "admin-user-token")
+	return retry.DoWithRetryContextE(c.t, context.Background(), "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sec, err := k8s.GetSecretContextE(c.t, context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "admin-user-token")
 		if err != nil {
 			return "", err
 		}
@@ -344,8 +347,9 @@ func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, erro
 		return "", errors.New("MADS port forward wasn't setup!")
 	}
 
-	return http_helper.HTTPDoWithRetryE(
+	return http_helper.HTTPDoWithRetryContextE(
 		c.t,
+		context.Background(),
 		http.MethodPost,
 		fmt.Sprintf("http://%s/v3/discovery:monitoringassignments", c.madsFwd.Endpoint),
 		fmt.Appendf(nil, `{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId),
@@ -371,8 +375,9 @@ func (c *K8sControlPlane) generateToken(
 		return "", err
 	}
 
-	return http_helper.HTTPDoWithRetryE(
+	return http_helper.HTTPDoWithRetryContextE(
 		c.t,
+		context.Background(),
 		"POST",
 		c.GetAPIServerAddress()+"/tokens"+tokenPath,
 		[]byte(data),

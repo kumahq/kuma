@@ -63,7 +63,7 @@ func UpgradingWithHelmChartMultizone() {
 	})
 	DescribeTable("upgrade helm multizone",
 		func(version string) {
-			releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
+			releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueID()))
 			By("Install global with version: " + version)
 			err := NewClusterSetup().
 				Install(Kuma(core.Global,

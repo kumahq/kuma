@@ -1,6 +1,7 @@
 package localityawarelb
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -418,10 +419,10 @@ func resetCounter(cluster Cluster, name string, namespace string) error {
 
 // TODO(lukidzi): use test-server implementation: https://github.com/kumahq/kuma/issues/8245
 func DeleteK8sApp(c Cluster, name string, namespace string) error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "service", name); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), "delete", "service", name); err != nil {
 		return err
 	}
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "deployment", name); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), "delete", "deployment", name); err != nil {
 		return err
 	}
 	return nil

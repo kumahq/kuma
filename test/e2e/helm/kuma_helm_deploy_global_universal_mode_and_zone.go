@@ -32,7 +32,7 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		err = NewClusterSetup().

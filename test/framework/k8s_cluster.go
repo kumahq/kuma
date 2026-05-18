@@ -177,7 +177,7 @@ func (c *K8sCluster) PortForward(
 	namespace string,
 	remotePort int,
 ) (portforward.Tunnel, error) {
-	localPort, err := k8s.GetAvailablePortE(c.t)
+	localPort, err := k8s.GetAvailablePortContextE(c.t, context.Background())
 	if err != nil {
 		return portforward.Tunnel{}, errors.Wrapf(
 			err,
@@ -300,14 +300,14 @@ func (c *K8sCluster) Deployment(name string) Deployment {
 func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service string, yamlPath string) error {
 	options := c.GetKubectlOptions(namespace)
 
-	err := k8s.KubectlApplyE(c.t,
+	err := k8s.KubectlApplyContextE(c.t, context.Background(),
 		options,
 		yamlPath)
 	if err != nil {
 		return err
 	}
 
-	k8s.WaitUntilServiceAvailable(c.t,
+	k8s.WaitUntilServiceAvailableContext(c.t, context.Background(),
 		options,
 		service,
 		c.defaultRetries,
@@ -317,12 +317,12 @@ func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service s
 }
 
 func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
-	retry.DoWithRetry(c.t,
+	retry.DoWithRetryContext(c.t, context.Background(),
 		"Wait the Kuma Namespace to terminate.",
 		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
-			_, err := k8s.GetNamespaceE(c.t,
+			_, err := k8s.GetNamespaceContextE(c.t, context.Background(),
 				c.GetKubectlOptions(),
 				namespace)
 			if err != nil {
@@ -339,12 +339,12 @@ func WaitNamespaceDelete(cluster Cluster, namespace string) error {
 		return errors.New("cluster is not a K8sCluster")
 	}
 
-	_, err := retry.DoWithRetryE(c.t,
+	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
 		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
 		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
-			nsObject, err := k8s.GetNamespaceE(c.t,
+			nsObject, err := k8s.GetNamespaceContextE(c.t, context.Background(),
 				c.GetKubectlOptions(),
 				namespace)
 			if err != nil {
@@ -362,23 +362,23 @@ func WaitNamespaceDelete(cluster Cluster, namespace string) error {
 		})
 	if err != nil {
 		var namespaceStr string
-		nsObject, err := k8s.GetNamespaceE(c.t, c.GetKubectlOptions(), namespace)
+		nsObject, err := k8s.GetNamespaceContextE(c.t, context.Background(), c.GetKubectlOptions(), namespace)
 		if err == nil {
 			namespaceStr = "namespace object: " + nsObject.String()
 		}
-		all, _ := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(namespace), "get", "all")
+		all, _ := k8s.RunKubectlAndGetOutputContextE(c.t, context.Background(), c.GetKubectlOptions(namespace), "get", "all")
 		return errors.Wrapf(err, "debug data: %s, all in namespace: %s", namespaceStr, all)
 	}
 	return err
 }
 
 func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
-	return retry.DoWithRetryE(c.t,
+	return retry.DoWithRetryContextE(c.t, context.Background(),
 		fmt.Sprintf("Wait for %s node to terminate.", node),
 		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
-			nodes, err := k8s.GetNodesE(c.t, c.GetKubectlOptions())
+			nodes, err := k8s.GetNodesContextE(c.t, context.Background(), c.GetKubectlOptions())
 			if err != nil {
 				return "Error getting node " + node, err
 			}
@@ -399,7 +399,7 @@ func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
 
 func (c *K8sCluster) GetPodLogs(pod v1.Pod, podLogOpts v1.PodLogOptions) (string, error) {
 	// creates the clientset
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	clientset, err := k8s.GetKubernetesClientFromOptionsContextE(c.t, context.Background(), c.GetKubectlOptions())
 	if err != nil {
 		return "", errors.Wrapf(err, "error in getting access to K8S")
 	}
@@ -435,7 +435,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string) error {
 		return err
 	}
 
-	return k8s.KubectlApplyFromStringE(c.t,
+	return k8s.KubectlApplyFromStringContextE(c.t, context.Background(),
 		c.GetKubectlOptions(),
 		yaml)
 }
@@ -455,7 +455,7 @@ func (c *K8sCluster) installCRDs() error {
 	defer os.Remove(crdFile)
 	// --server-side --force-conflicts handles CRDs left over from a previous
 	// suite that were created without the last-applied-configuration annotation.
-	if err := k8s.RunKubectlE(c.t, c.GetKubectlOptions(),
+	if err := k8s.RunKubectlContextE(c.t, context.Background(), c.GetKubectlOptions(),
 		"apply", "--server-side", "--force-conflicts", "-f", crdFile); err != nil {
 		return err
 	}
@@ -470,7 +470,7 @@ func (c *K8sCluster) installCRDs() error {
 	for _, match := range matches {
 		if len(match) > 1 {
 			crdName := match[1]
-			err := k8s.RunKubectlE(c.t, c.GetKubectlOptions(), "wait", "--for", "condition=established", "--timeout=60s", "crd/"+crdName)
+			err := k8s.RunKubectlContextE(c.t, context.Background(), c.GetKubectlOptions(), "wait", "--for", "condition=established", "--timeout=60s", "crd/"+crdName)
 			if err != nil {
 				return err
 			}
@@ -651,7 +651,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 	return prefixedValues
 }
 
-type helmFn func(testing.TestingT, *helm.Options, string, string) error
+type helmFn func(testing.TestingT, context.Context, *helm.Options, string, string) error
 
 func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 	// run from test/e2e
@@ -689,30 +689,30 @@ func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 	if releaseName == "" {
 		releaseName = fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 	}
 
 	// create the namespace if it does not exist
-	if _, err = k8s.GetNamespaceE(c.t, c.GetKubectlOptions(), Config.KumaNamespace); err != nil {
-		if err := k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), Config.KumaNamespace); err != nil {
+	if _, err = k8s.GetNamespaceContextE(c.t, context.Background(), c.GetKubectlOptions(), Config.KumaNamespace); err != nil {
+		if err := k8s.CreateNamespaceContextE(c.t, context.Background(), c.GetKubectlOptions(), Config.KumaNamespace); err != nil {
 			return err
 		}
 	}
 
-	return fn(c.t, helmOpts, helmChart, releaseName)
+	return fn(c.t, context.Background(), helmOpts, helmChart, releaseName)
 }
 
 // deployKumaViaHelm uses Helm to install kuma
 // using the kuma helm chart
 func (c *K8sCluster) deployKumaViaHelm(mode string) error {
-	return c.processViaHelm(mode, helm.InstallE)
+	return c.processViaHelm(mode, helm.InstallContextE)
 }
 
 // upgradeKumaViaHelm uses Helm to upgrade kuma
 // using the kuma helm chart
 func (c *K8sCluster) upgradeKumaViaHelm(mode string) error {
-	return c.processViaHelm(mode, helm.UpgradeE)
+	return c.processViaHelm(mode, helm.UpgradeContextE)
 }
 
 func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
@@ -750,7 +750,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		err = c.deployKumaViaKubectl(mode)
 	case HelmInstallationMode:
 		if mode == core.Global && Config.HelmGlobalExtraYaml != "" {
-			if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), Config.HelmGlobalExtraYaml); err != nil {
+			if err := k8s.KubectlApplyFromStringContextE(c.t, context.Background(), c.GetKubectlOptions(), Config.HelmGlobalExtraYaml); err != nil {
 				return nil
 			}
 		}
@@ -833,12 +833,12 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 
 	if !c.opts.skipDefaultMesh {
 		// wait for the mesh
-		_, err = retry.DoWithRetryE(c.t,
+		_, err = retry.DoWithRetryContextE(c.t, context.Background(),
 			"get default mesh",
 			c.defaultRetries,
 			c.defaultTimeout,
 			func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+				return k8s.RunKubectlAndGetOutputContextE(c.t, context.Background(), c.GetKubectlOptions(), "get", "mesh", "default")
 			})
 		if err != nil {
 			deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
@@ -921,12 +921,12 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 
 	if !c.opts.skipDefaultMesh {
 		// wait for the mesh
-		_, err := retry.DoWithRetryE(c.t,
+		_, err := retry.DoWithRetryContextE(c.t, context.Background(),
 			"get default mesh",
 			c.defaultRetries,
 			c.defaultTimeout,
 			func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+				return k8s.RunKubectlAndGetOutputContextE(c.t, context.Background(), c.GetKubectlOptions(), "get", "mesh", "default")
 			})
 		if err != nil {
 			return err
@@ -942,7 +942,7 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 
 // StartZoneIngress scales the replicas of a zone ingress to 1 and wait for it to complete.
 func (c *K8sCluster) StartZoneIngress() error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
 		return err
 	}
 	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
@@ -961,7 +961,7 @@ func (c *K8sCluster) StartZoneIngress() error {
 
 // StopZoneIngress scales the replicas of a zone ingress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through ingress but there is no instance.
 func (c *K8sCluster) StopZoneIngress() error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
 		return err
 	}
 
@@ -970,7 +970,7 @@ func (c *K8sCluster) StopZoneIngress() error {
 		Namespace: Config.KumaNamespace,
 	})
 
-	_, err := retry.DoWithRetryE(c.t,
+	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
 		"wait for zone ingress to be down",
 		c.defaultRetries,
 		c.defaultTimeout,
@@ -991,7 +991,7 @@ func (c *K8sCluster) StopZoneIngress() error {
 
 // StartZoneEngress scales the replicas of a zone engress to 1 and wait for it to complete.
 func (c *K8sCluster) StartZoneEgress() error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
 		return err
 	}
 	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
@@ -1010,7 +1010,7 @@ func (c *K8sCluster) StartZoneEgress() error {
 
 // StopZoneEgress scales the replicas of a zone egress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through egress but there is no instance.
 func (c *K8sCluster) StopZoneEgress() error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
 		return err
 	}
 
@@ -1019,7 +1019,7 @@ func (c *K8sCluster) StopZoneEgress() error {
 		Namespace: Config.KumaNamespace,
 	})
 
-	_, err := retry.DoWithRetryE(c.t,
+	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
 		"wait for zone egress to be down",
 		c.defaultRetries,
 		c.defaultTimeout,
@@ -1040,10 +1040,10 @@ func (c *K8sCluster) StopZoneEgress() error {
 
 // StopControlPlane scales the replicas of a control plane to 0 and wait for it to complete. Useful for testing restarts in combination with RestartControlPlane.
 func (c *K8sCluster) StopControlPlane() error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.KumaServiceName)); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.KumaServiceName)); err != nil {
 		return err
 	}
-	_, err := retry.DoWithRetryE(c.t,
+	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
 		"wait for control-plane to be down",
 		c.defaultRetries,
 		c.defaultTimeout,
@@ -1067,7 +1067,7 @@ func (c *K8sCluster) RestartControlPlane() error {
 	if c.controlplane.replicas == 0 {
 		return errors.New("replica count is 0, can't restart the control-plane")
 	}
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", fmt.Sprintf("--replicas=%d", c.controlplane.replicas), fmt.Sprintf("deployment/%s", Config.KumaServiceName)); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", fmt.Sprintf("--replicas=%d", c.controlplane.replicas), fmt.Sprintf("deployment/%s", Config.KumaServiceName)); err != nil {
 		return err
 	}
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, c.controlplane.replicas); err != nil {
@@ -1133,13 +1133,13 @@ func (c *K8sCluster) VerifyKuma() error {
 		return err
 	}
 
-	k8s.WaitUntilServiceAvailable(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName, DefaultRetries, DefaultTimeout)
+	k8s.WaitUntilServiceAvailableContext(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName, DefaultRetries, DefaultTimeout)
 
 	return nil
 }
 
 func (c *K8sCluster) deleteCRDs() error {
-	out, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "name")
+	out, err := k8s.RunKubectlAndGetOutputContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(), "get", "crds", "-o", "name")
 	if err != nil {
 		return err
 	}
@@ -1154,8 +1154,8 @@ func (c *K8sCluster) deleteCRDs() error {
 		return nil
 	}
 
-	if err := k8s.RunKubectlE(
-		c.GetTesting(),
+	if err := k8s.RunKubectlContextE(
+		c.GetTesting(), context.Background(),
 		c.GetKubectlOptions(),
 		slices.Concat([]string{"delete"}, kumaCRDs)...,
 	); err != nil {
@@ -1163,8 +1163,8 @@ func (c *K8sCluster) deleteCRDs() error {
 	}
 
 	// Wait for CRDs to be fully removed so the next suite can install cleanly
-	return k8s.RunKubectlE(
-		c.GetTesting(),
+	return k8s.RunKubectlContextE(
+		c.GetTesting(), context.Background(),
 		c.GetKubectlOptions(),
 		slices.Concat([]string{"wait", "--for=delete", "--timeout=60s"}, kumaCRDs)...,
 	)
@@ -1180,7 +1180,7 @@ func (c *K8sCluster) deleteKumaViaHelm() error {
 	}
 
 	var errs error
-	if err := helm.DeleteE(c.t, helmOpts, c.opts.helmReleaseName, true); err != nil {
+	if err := helm.DeleteContextE(c.t, context.Background(), helmOpts, c.opts.helmReleaseName, true); err != nil {
 		errs = multierr.Append(errs, err)
 	}
 
@@ -1201,7 +1201,7 @@ func (c *K8sCluster) deleteKumaViaHelm() error {
 }
 
 func (c *K8sCluster) getPods(namespace string, appName string) []v1.Pod {
-	return k8s.ListPods(c.t,
+	return k8s.ListPodsContext(c.t, context.Background(),
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + appName,
@@ -1215,7 +1215,7 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 		return err
 	}
 
-	_ = k8s.KubectlDeleteFromStringE(c.t, c.GetKubectlOptions(), yaml)
+	_ = k8s.KubectlDeleteFromStringContextE(c.t, context.Background(), c.GetKubectlOptions(), yaml)
 
 	if err := WaitNamespaceDelete(c, Config.KumaNamespace); err != nil {
 		return err
@@ -1266,7 +1266,7 @@ func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions 
 }
 
 func (c *K8sCluster) GetK8sVersion() (*semver.Version, error) {
-	v, err := k8s.GetKubernetesClusterVersionWithOptionsE(c.GetTesting(), c.GetKubectlOptions())
+	v, err := k8s.GetKubernetesClusterVersionWithOptionsContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions())
 	if err != nil {
 		return nil, err
 	}
@@ -1290,7 +1290,7 @@ func (c *K8sCluster) GetK8sVersion() (*semver.Version, error) {
 }
 
 func (c *K8sCluster) CreateNamespace(namespace string) error {
-	err := k8s.CreateNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+	err := k8s.CreateNamespaceContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(), namespace)
 	if err != nil {
 		return err
 	}
@@ -1304,8 +1304,8 @@ func DeleteAllResources(kinds string, flags ...string) NamespaceDeleteHookFunc {
 	return func(c Cluster, namespace string) error {
 		baseArgs := []string{"delete", "--all", kinds}
 
-		return k8s.RunKubectlE(
-			c.GetTesting(),
+		return k8s.RunKubectlContextE(
+			c.GetTesting(), context.Background(),
 			c.GetKubectlOptions(namespace),
 			slices.Concat(baseArgs, flags)...,
 		)
@@ -1335,7 +1335,7 @@ func (c *K8sCluster) TriggerDeleteNamespace(namespace string, hooks ...Namespace
 // to TriggerDeleteNamespace, which removes resources aggressively to speed up the process.
 // Custom hooks can be provided to run additional actions after deletion.
 func (c *K8sCluster) TriggerDeleteNamespaceCustomHooks(namespace string, hooks ...NamespaceDeleteHookFunc) error {
-	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+	if err := k8s.DeleteNamespaceContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(), namespace); err != nil {
 		if k8s_errors.IsNotFound(err) {
 			return nil
 		}
@@ -1352,17 +1352,17 @@ func (c *K8sCluster) TriggerDeleteNamespaceCustomHooks(namespace string, hooks .
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {
 	now := time.Now()
-	_, err := retry.DoWithRetryE(c.GetTesting(), "remove mesh", c.defaultRetries, c.defaultTimeout,
+	_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "remove mesh", c.defaultRetries, c.defaultTimeout,
 		func() (string, error) {
-			return "", k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+			return "", k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(), "delete", "mesh", mesh)
 		})
 	Logf("%s", "mesh: "+mesh+" deleted in: "+time.Since(now).String())
 	return err
 }
 
 func (c *K8sCluster) GetClusterIP(serviceName, namespace string) (string, error) {
-	service, err := k8s.GetServiceE(
-		c.t,
+	service, err := k8s.GetServiceContextE(
+		c.t, context.Background(),
 		c.GetKubectlOptions(namespace),
 		serviceName,
 	)
@@ -1373,8 +1373,8 @@ func (c *K8sCluster) GetClusterIP(serviceName, namespace string) (string, error)
 }
 
 func (c *K8sCluster) GetLBIngressIP(serviceName, namespace string) (string, error) {
-	service, err := k8s.GetServiceE(
-		c.t,
+	service, err := k8s.GetServiceContextE(
+		c.t, context.Background(),
 		c.GetKubectlOptions(namespace),
 		serviceName,
 	)
@@ -1396,27 +1396,27 @@ func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
 	namespace := opts.namespace
 	appname := opts.appname
 
-	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", c.defaultRetries, c.defaultTimeout,
+	retry.DoWithRetryContext(c.GetTesting(), context.Background(), "apply "+appname+" svc", c.defaultRetries, c.defaultTimeout,
 		func() (string, error) {
-			err := k8s.KubectlApplyE(c.GetTesting(),
+			err := k8s.KubectlApplyContextE(c.GetTesting(), context.Background(),
 				c.GetKubectlOptions(namespace),
 				filepath.Join("testdata", appname+"-svc.yaml"))
 			return "", err
 		})
 
-	k8s.WaitUntilServiceAvailable(c.GetTesting(),
+	k8s.WaitUntilServiceAvailableContext(c.GetTesting(), context.Background(),
 		c.GetKubectlOptions(namespace),
 		appname, c.defaultRetries, c.defaultTimeout)
 
-	retry.DoWithRetry(c.GetTesting(), "apply "+appname, c.defaultRetries, c.defaultTimeout,
+	retry.DoWithRetryContext(c.GetTesting(), context.Background(), "apply "+appname, c.defaultRetries, c.defaultTimeout,
 		func() (string, error) {
-			err := k8s.KubectlApplyE(c.GetTesting(),
+			err := k8s.KubectlApplyContextE(c.GetTesting(), context.Background(),
 				c.GetKubectlOptions(namespace),
 				filepath.Join("testdata", appname+".yaml"))
 			return "", err
 		})
 
-	k8s.WaitUntilNumPodsCreated(c.GetTesting(),
+	k8s.WaitUntilNumPodsCreatedContext(c.GetTesting(), context.Background(),
 		c.GetKubectlOptions(),
 		metav1.ListOptions{
 			LabelSelector: "app=" + appname,
@@ -1427,14 +1427,14 @@ func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
 }
 
 func (c *K8sCluster) DeleteApp(namespace, appname string) error {
-	err := k8s.KubectlDeleteE(c.GetTesting(),
+	err := k8s.KubectlDeleteContextE(c.GetTesting(), context.Background(),
 		c.GetKubectlOptions(namespace),
 		filepath.Join("testdata", appname+"-svc.yaml"))
 	if err != nil {
 		return err
 	}
 
-	err = k8s.KubectlDeleteE(c.GetTesting(),
+	err = k8s.KubectlDeleteContextE(c.GetTesting(), context.Background(),
 		c.GetKubectlOptions(namespace),
 		filepath.Join("testdata", appname+".yaml"))
 	if err != nil {
@@ -1485,7 +1485,7 @@ func (c *K8sCluster) DeleteDeployment(name string) error {
 }
 
 func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
-	err := k8s.WaitUntilNumPodsCreatedE(c.t,
+	err := k8s.WaitUntilNumPodsCreatedContextE(c.t, context.Background(),
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + name,
@@ -1498,7 +1498,7 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
 	}
 
-	pods := k8s.ListPods(c.t,
+	pods := k8s.ListPodsContext(c.t, context.Background(),
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + name,
@@ -1509,7 +1509,7 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	}
 
 	for i := range replicas {
-		podError := k8s.WaitUntilPodAvailableE(c.t,
+		podError := k8s.WaitUntilPodAvailableContextE(c.t, context.Background(),
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
 			c.defaultRetries,
@@ -1735,7 +1735,7 @@ func (c *K8sCluster) LoadImages(names ...string) error {
 	// daemon hiccup blew through all attempts before recovery. Bumped to
 	// 5 attempts with 5s backoff so a brief image-import failure does
 	// not fail the whole test suite.
-	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 5, 5*time.Second, func() (string, error) {
+	_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "load images", 5, 5*time.Second, func() (string, error) {
 		err := c.loadImages(names...)
 		return "Loaded images " + strings.Join(names, ", "), err
 	})
@@ -1922,7 +1922,7 @@ func (c *K8sCluster) DeleteNode(name string) error {
 }
 
 func (c *K8sCluster) DeleteNodeViaApi(node string) error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	clientset, err := k8s.GetKubernetesClientFromOptionsContextE(c.t, context.Background(), c.GetKubectlOptions())
 	if err != nil {
 		return errors.Wrapf(err, "error in getting access to K8S")
 	}
@@ -1937,7 +1937,7 @@ func (c *K8sCluster) KillAppPod(app, namespace string) error {
 		return err
 	}
 
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pod", pod); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), "delete", "pod", pod); err != nil {
 		return err
 	}
 

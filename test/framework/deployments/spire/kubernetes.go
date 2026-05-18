@@ -1,6 +1,7 @@
 package spire
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
@@ -87,7 +88,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		}
 	}
 
-	if _, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", "spire-crds",
+	if _, err := helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", "spire-crds",
 		"--namespace", t.namespace,
 		spireCRDsChart,
 	); err != nil {
@@ -99,7 +100,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	}
 	installArgs = append(installArgs, spireSetValues...)
 	installArgs = append(installArgs, spireChart)
-	if _, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", append([]string{"spire"}, installArgs...)...); err != nil {
+	if _, err := helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", append([]string{"spire"}, installArgs...)...); err != nil {
 		return err
 	}
 
@@ -121,7 +122,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 func chartImages(cluster framework.Cluster, releaseName string, opts *helm.Options, chart string, extraArgs ...string) ([]string, error) {
 	args := []string{releaseName, chart}
 	args = append(args, extraArgs...)
-	out, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), opts, "template", args...)
+	out, err := helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), opts, "template", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +160,7 @@ func dedupe(images []string) []string {
 }
 
 func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) error {
-	err := k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
+	err := k8s.WaitUntilNumPodsCreatedContextE(cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.namespace),
 		metav1.ListOptions{
 			LabelSelector: selector,
@@ -171,7 +172,7 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 		return err
 	}
 
-	pods := k8s.ListPods(cluster.GetTesting(),
+	pods := k8s.ListPodsContext(cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.namespace),
 		metav1.ListOptions{
 			LabelSelector: selector,
@@ -182,7 +183,7 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 	}
 
 	for _, pod := range pods {
-		if err := k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
+		if err := k8s.WaitUntilPodAvailableContextE(cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(t.namespace),
 			pod.Name,
 			framework.DefaultRetries*3, // spire is fetched from the internet. Increase the timeout to prevent long downloads of images.
