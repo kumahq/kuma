@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -120,7 +121,7 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 	defaultKubeOptions := *cluster.GetKubectlOptions("default") // copy to not override fields globally
 	defaultKubeOptions.Logger = logger.Discard
 	var errs error
-	out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "get", "pods", "-A")
+	out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &defaultKubeOptions, "get", "pods", "-A")
 	if err != nil {
 		errs = multierr.Combine(errs, fmt.Errorf("failed to get pods, %w", err))
 	} else {
@@ -128,7 +129,7 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 	}
 
 	Logf("debug nodes and print resource usage of cluster %q", cluster.Name())
-	nodes, err := k8s.GetNodesE(cluster.GetTesting(), &defaultKubeOptions)
+	nodes, err := k8s.GetNodesContextE(cluster.GetTesting(), context.Background(), &defaultKubeOptions)
 	if err != nil {
 		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err.Error())
 		errs = multierr.Combine(errs, fmt.Errorf("failed to get nodes, %w", err))
@@ -140,7 +141,7 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 			report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "nodes.json"), nodesJson)
 		}
 		for _, node := range nodes {
-			out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
+			out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &defaultKubeOptions, "describe", "node", node.Name)
 			if err != nil {
 				errs = multierr.Combine(errs, fmt.Errorf("failed to describe node %s, %w", node.Name, err))
 			} else {
@@ -162,13 +163,13 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	var errs error
 	kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
 	kubeOptions.Logger = logger.Discard                  // to not print on stdout
-	out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
+	out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "all,kuma", "-oyaml")
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("kubectl get for namespace %s failed with error: %w", namespace, err))
 	}
 
 	// Ignore it if we don't have Gateway API resources installed
-	gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
+	gatewayAPIOut, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "gateway-api", "-oyaml")
 	if err == nil {
 		out += gatewayAPIOut
 	} else {
@@ -176,7 +177,7 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	}
 	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
 
-	deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+	deployments, err := k8s.ListDeploymentsContextE(cluster.GetTesting(), context.Background(), &kubeOptions, kube_meta.ListOptions{})
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to list deployments in namespace %s, %w", namespace, err))
 	} else {

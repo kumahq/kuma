@@ -92,7 +92,7 @@ func ApplicationProbeProxy() {
 
 		By("second, assert probes are converted to HTTPGet")
 		Eventually(func(g Gomega) {
-			httpPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), httpAppPodName)
+			httpPod, err := k8s.GetPodContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), httpAppPodName)
 			g.Expect(err).ToNot(HaveOccurred(), "failed to get details of pod '%s'", httpAppPodName)
 			g.Expect(httpPod).ToNot(BeNil())
 
@@ -109,7 +109,7 @@ func ApplicationProbeProxy() {
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			tcpPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), tcpAppPodName)
+			tcpPod, err := k8s.GetPodContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), tcpAppPodName)
 			g.Expect(err).ToNot(HaveOccurred(), "failed to get details of pod '%s'", tcpAppPodName)
 
 			container := getAppContainer(tcpPod, tcpAppName)
@@ -119,7 +119,7 @@ func ApplicationProbeProxy() {
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			grpcPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), grpcAppPodName)
+			grpcPod, err := k8s.GetPodContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), grpcAppPodName)
 			g.Expect(err).ToNot(HaveOccurred(), "failed to get details of pod '%s'", grpcAppPodName)
 
 			container := getAppContainer(grpcPod, gRPCAppName)
@@ -174,7 +174,7 @@ func ApplicationProbeProxy() {
 		var nextRevPodName string
 		// assert the Pod has application probe proxy disabled and virtual probes replaces
 		Eventually(func(g Gomega) {
-			httpPods, err := k8s.ListPodsE(kubernetes.Cluster.GetTesting(), kubectlOptsApps,
+			httpPods, err := k8s.ListPodsContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubectlOptsApps,
 				metav1.ListOptions{LabelSelector: "pod-template-hash=" + nextTemplateHash})
 
 			g.Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to list new pods of '%s'", httpAppName))
@@ -212,7 +212,7 @@ func getAppContainer(pod *corev1.Pod, appName string) *corev1.Container {
 }
 
 func patchAndWait(t testing.TestingT, g Gomega, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string, jsonPatch string) string {
-	kubeClient, err := k8s.GetKubernetesClientFromOptionsE(t, kubectlOpts)
+	kubeClient, err := k8s.GetKubernetesClientFromOptionsContextE(t, context.Background(), kubectlOpts)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	prevDeployObj, err := kubeClient.AppsV1().Deployments(kubectlOpts.Namespace).
@@ -224,7 +224,7 @@ func patchAndWait(t testing.TestingT, g Gomega, cluster Cluster, kubectlOpts *k8
 	nextRevision := strconv.Itoa(prevRevisionNum + 1)
 	var nextRS *appsv1.ReplicaSet
 	Eventually(func() error {
-		rsList := k8s.ListReplicaSets(t, kubectlOpts, metav1.ListOptions{LabelSelector: "app=" + appName})
+		rsList := k8s.ListReplicaSetsContext(t, context.Background(), kubectlOpts, metav1.ListOptions{LabelSelector: "app=" + appName})
 		for _, rs := range rsList {
 			if rs.Annotations["deployment.kubernetes.io/revision"] == nextRevision {
 				nextRS = &rs
@@ -244,7 +244,7 @@ func patchAndWait(t testing.TestingT, g Gomega, cluster Cluster, kubectlOpts *k8
 }
 
 func checkIfAppReady(t testing.TestingT, kubectlOpts *k8s.KubectlOptions, podName, appName string) error {
-	pod, err := k8s.GetPodE(t, kubectlOpts, podName)
+	pod, err := k8s.GetPodContextE(t, context.Background(), kubectlOpts, podName)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", podName))
 	}
