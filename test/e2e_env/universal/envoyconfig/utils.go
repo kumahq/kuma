@@ -57,19 +57,19 @@ func getConfig(mesh, dpp string) string {
 	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
 	Expect(response.Diff).ToNot(BeNil())
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
-		return item.Op == api_common.Test
+		// Drop Test ops (they only assert preconditions) and any standalone
+		// maxDirectResponseBodySizeBytes op. The byte count is just len(body);
+		// the shadow and the running Envoy can briefly disagree on it while
+		// the rest of the route is identical, producing a spurious remove/add
+		// pair that no golden expects. The body content + Etag hash already
+		// pin what's actually sent, so an op about only the byte count is
+		// pure noise.
+		return item.Op == api_common.Test ||
+			strings.HasSuffix(item.Path, "maxDirectResponseBodySizeBytes")
 	}))
-	// Redact maxDirectResponseBodySizeBytes everywhere: as a standalone diff
-	// path (sidecar case where the listener already existed) and nested inside
-	// a wholesale listener add value (zone-proxy case). The body content +
-	// Etag hash already pin what's actually sent; the byte count is just
-	// len(body) and changes whenever any label does, so zeroing it keeps the
-	// golden churn down to the meaningful bits.
+	// Zero maxDirectResponseBodySizeBytes nested inside wholesale listener add
+	// values: the byte count re-derives from the body the golden already pins.
 	for i := range *response.Diff {
-		if strings.HasSuffix((*response.Diff)[i].Path, "maxDirectResponseBodySizeBytes") {
-			(*response.Diff)[i].Value = 0
-			continue
-		}
 		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
 	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
