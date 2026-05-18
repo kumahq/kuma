@@ -3,8 +3,10 @@ package framework
 import (
 	"bytes"
 	"context"
+	std_errors "errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,6 +24,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -509,7 +512,17 @@ func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 		KubectlOptions: c.GetKubectlOptions(Config.KumaNamespace),
 	}
 
-	if c.opts.helmChartVersion != "" {
+	if c.opts.helmChartVersion != "" && helmChart == Config.HelmChartName {
+		helmChart, err = HelmChartFromRepoE(
+			c.t,
+			Config.HelmRepoUrl,
+			filepath.Base(Config.HelmChartName),
+			c.opts.helmChartVersion,
+		)
+		if err != nil {
+			return err
+		}
+	} else if c.opts.helmChartVersion != "" {
 		helmOpts.Version = c.opts.helmChartVersion
 	}
 
@@ -594,6 +607,9 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
 		return errors.Wrap(err, "Kuma control-plane failed to start")
+	}
+	if err := c.WaitControlPlaneLeader(); err != nil {
+		return errors.Wrap(err, "Kuma control-plane failed to become leader")
 	}
 
 	var wg sync.WaitGroup
@@ -729,6 +745,9 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	}
 
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+	if err := c.WaitControlPlaneLeader(); err != nil {
 		return err
 	}
 
@@ -870,6 +889,9 @@ func (c *K8sCluster) RestartControlPlane() error {
 		return err
 	}
 	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+	if err := c.WaitControlPlaneLeader(); err != nil {
 		return err
 	}
 
@@ -1018,6 +1040,14 @@ func (c *K8sCluster) DeleteKuma() error {
 
 func (c *K8sCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 	return c.controlplane.kumactl
+}
+
+func (c *K8sCluster) RefreshKumaCPPortForwards() error {
+	if c.controlplane == nil {
+		return nil
+	}
+
+	return c.controlplane.RefreshPortForwards()
 }
 
 func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
@@ -1253,6 +1283,187 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	return nil
 }
 
+func (c *K8sCluster) WaitControlPlaneLeader() error {
+	if c.usesUniversalLeaderElection() {
+		return c.waitUniversalControlPlaneLeader()
+	}
+	return c.waitKubernetesControlPlaneLeader()
+}
+
+func (c *K8sCluster) usesUniversalLeaderElection() bool {
+	return c.opts.helmOpts["controlPlane.environment"] == "universal"
+}
+
+func (c *K8sCluster) waitUniversalControlPlaneLeader() error {
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for universal control-plane leader",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods, err := k8s.ListPodsE(c.t,
+				c.GetKubectlOptions(Config.KumaNamespace),
+				metav1.ListOptions{
+					LabelSelector: "app=" + Config.KumaServiceName,
+				},
+			)
+			if err != nil {
+				return "", err
+			}
+			if len(pods) == 0 {
+				return "", errors.New("no control-plane pods found")
+			}
+
+			var checkedPods []string
+			for _, pod := range pods {
+				fwd := k8s.NewTunnel(c.GetKubectlOptions(pod.Namespace), k8s.ResourceTypePod, pod.Name, 0, 5680)
+				fwd.ForwardPort(c.t)
+
+				metrics, metricsErr := getControlPlaneMetrics(fwd.Endpoint())
+				fwd.Close()
+				if metricsErr != nil {
+					return "", metricsErr
+				}
+				if hasLeaderMetric(metrics) {
+					return pod.Name, nil
+				}
+				checkedPods = append(checkedPods, pod.Name)
+			}
+
+			return "", errors.Errorf("no universal control-plane leader found in metrics for pods: %s", strings.Join(checkedPods, ","))
+		})
+	if err != nil {
+		deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
+		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
+	}
+	return nil
+}
+
+func getControlPlaneMetrics(endpoint string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+endpoint+"/metrics", http.NoBody)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Errorf("unexpected metrics status code: %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func hasLeaderMetric(metrics string) bool {
+	for line := range strings.SplitSeq(metrics, "\n") {
+		if strings.HasPrefix(line, "leader{") && strings.HasSuffix(line, "} 1") {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *K8sCluster) waitKubernetesControlPlaneLeader() error {
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return errors.Wrapf(err, "error in getting access to K8S")
+	}
+
+	_, err = retry.DoWithRetryE(c.t,
+		"wait for control-plane leader",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods, err := k8s.ListPodsE(c.t,
+				c.GetKubectlOptions(Config.KumaNamespace),
+				metav1.ListOptions{
+					LabelSelector: "app=" + Config.KumaServiceName,
+				},
+			)
+			if err != nil {
+				return "", err
+			}
+			if len(pods) == 0 {
+				return "", errors.New("no control-plane pods found")
+			}
+
+			podNames := make([]string, 0, len(pods))
+			for _, pod := range pods {
+				podNames = append(podNames, pod.Name)
+			}
+
+			lease, err := clientset.CoordinationV1().Leases(Config.KumaNamespace).Get(
+				context.Background(),
+				"cp-leader-lease",
+				metav1.GetOptions{},
+			)
+			if err != nil {
+				return "", err
+			}
+
+			holder := lease.Spec.HolderIdentity
+			if leaseHeldByCurrentPod(holder, podNames) {
+				return *holder, nil
+			}
+			if holder == nil || *holder == "" {
+				return "", errors.Errorf("control-plane lease has no holder, want one of current pods: %s", strings.Join(podNames, ","))
+			}
+
+			if controlPlaneLeaseExpired(lease, time.Now()) {
+				if err := clientset.CoordinationV1().Leases(Config.KumaNamespace).Delete(
+					context.Background(),
+					lease.Name,
+					controlPlaneLeaseDeleteOptions(lease),
+				); err != nil {
+					return "", err
+				}
+				return "", errors.Errorf("deleted stale control-plane lease held by %q, want one of current pods: %s", *holder, strings.Join(podNames, ","))
+			}
+			return "", errors.Errorf("control-plane lease held by %q is not expired yet, want one of current pods: %s", *holder, strings.Join(podNames, ","))
+		})
+	if err != nil {
+		deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
+		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
+	}
+	return nil
+}
+
+func leaseHeldByCurrentPod(holder *string, podNames []string) bool {
+	if holder == nil {
+		return false
+	}
+	for _, podName := range podNames {
+		if strings.HasPrefix(*holder, podName+"_") {
+			return true
+		}
+	}
+	return false
+}
+
+func controlPlaneLeaseExpired(lease *coordinationv1.Lease, now time.Time) bool {
+	if lease.Spec.RenewTime == nil || lease.Spec.LeaseDurationSeconds == nil {
+		return false
+	}
+	deadline := lease.Spec.RenewTime.Add(time.Duration(*lease.Spec.LeaseDurationSeconds) * time.Second)
+	return !deadline.After(now)
+}
+
+func controlPlaneLeaseDeleteOptions(lease *coordinationv1.Lease) metav1.DeleteOptions {
+	resourceVersion := lease.ResourceVersion
+	return metav1.DeleteOptions{
+		Preconditions: &metav1.Preconditions{
+			ResourceVersion: &resourceVersion,
+		},
+	}
+}
+
 func (c *K8sCluster) Install(fn InstallFunc) error {
 	return fn(c)
 }
@@ -1310,6 +1521,139 @@ func (c *K8sCluster) loadImages(names ...string) error {
 	default:
 		return errors.New("unknown kubernetes type")
 	}
+}
+
+// PreloadImages pulls each fully-qualified image with `docker pull` (in
+// parallel) and imports them into the cluster's container runtime so pods
+// never need to fetch them at runtime. Use this before installing Helm charts
+// whose pods reference external images — it removes the dominant flake mode
+// on CI runners where ghcr.io / docker.io return slow or cancel the request,
+// surfacing as ImagePullBackOff after the test's wait budget is exhausted.
+//
+// Only k3d (incl. calico variant) and kind are supported because
+// `k3d image import` / `kind load docker-image` are local-runtime operations.
+// On other cluster types (AWS/Azure, used in downstream smoke tests like
+// kong-mesh-smoke / mink-charts) this is a no-op: those nodes pull from the
+// registry directly and the helper has nothing to shortcut.
+//
+// docker pull is cheap when the image is already present locally. Images
+// referenced by `<repo>:<tag>@sha256:<digest>` are also retagged locally to
+// the bare `<repo>:<tag>` form, because `docker pull` of the digest form
+// stores the image with empty RepoTags, which `k3d image import` would then
+// import as `<none>:<none>` and kubelet would still re-pull at runtime.
+func (c *K8sCluster) PreloadImages(images ...string) error {
+	if len(images) == 0 {
+		return nil
+	}
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType, KindK8sType:
+		// supported, continue
+	default:
+		return nil
+	}
+
+	pullCtx, cancelPull := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancelPull()
+	var wg sync.WaitGroup
+	pullErrs := make([]error, len(images))
+	for i, img := range images {
+		wg.Add(1)
+		go func(i int, img string) {
+			defer wg.Done()
+			_, err := retry.DoWithRetryE(c.GetTesting(), "pull image "+img, 5, 5*time.Second, func() (string, error) {
+				pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
+				out, err := pullCmd.CombinedOutput()
+				return strings.TrimSpace(string(out)), err
+			})
+			if err != nil {
+				pullErrs[i] = errors.Wrapf(err, "docker pull %s", img)
+				return
+			}
+			// If the image is digest-pinned, also tag it locally as the bare
+			// `<repo>:<tag>` form so that `docker save` / `k3d image import`
+			// preserves the tag in the cluster's containerd image store.
+			tagged, digestRef, ok := splitDigestRef(img)
+			if !ok {
+				return
+			}
+			tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
+			if out, err := tagCmd.CombinedOutput(); err != nil {
+				pullErrs[i] = errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
+			}
+		}(i, img)
+	}
+	wg.Wait()
+	if err := std_errors.Join(pullErrs...); err != nil {
+		return errors.Wrap(err, "preload images: failed to pull on host")
+	}
+
+	// Use bare `<repo>:<tag>` form for import; the cluster's containerd will
+	// then have the tagged entry, and kubelet's digest-aware lookup against
+	// it succeeds because content addressability matches.
+	importImages := make([]string, len(images))
+	for i, img := range images {
+		if tagged, _, ok := splitDigestRef(img); ok {
+			importImages[i] = tagged
+		} else {
+			importImages[i] = img
+		}
+	}
+
+	// Match `LoadImages` retry strategy: a single transient docker / k3d
+	// hiccup shouldn't fail the whole preload. 5 attempts with 5s backoff.
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType:
+		_, err := retry.DoWithRetryE(c.GetTesting(), "k3d image import", 5, 5*time.Second, func() (string, error) {
+			args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, importImages...)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, "k3d", args...)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				return "", errors.Wrapf(err, "k3d image import (images=%v): %s", importImages, strings.TrimSpace(string(out)))
+			}
+			return "imported " + strings.Join(importImages, ", "), nil
+		})
+		return err
+	case KindK8sType:
+		_, err := retry.DoWithRetryE(c.GetTesting(), "kind load docker-image", 5, 5*time.Second, func() (string, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			for _, img := range importImages {
+				cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", img, "--name", c.name)
+				out, err := cmd.CombinedOutput()
+				if err != nil {
+					return "", errors.Wrapf(err, "kind load %s: %s", img, strings.TrimSpace(string(out)))
+				}
+			}
+			return "loaded " + strings.Join(importImages, ", "), nil
+		})
+		return err
+	default:
+		return nil
+	}
+}
+
+// splitDigestRef parses an image reference of the form `<repo>:<tag>@sha256:<digest>`
+// into the bare `<repo>:<tag>` form and the `<repo>@sha256:<digest>` form. The
+// third return value is false when the input has no digest component or no
+// tag component.
+func splitDigestRef(image string) (string, string, bool) {
+	atIdx := strings.LastIndex(image, "@")
+	if atIdx <= 0 {
+		return "", "", false
+	}
+	base, digestPart := image[:atIdx], image[atIdx:]
+	// `<repo>` may contain a port (e.g. `host:5000/repo`) which uses a
+	// colon, so look for the colon to the right of the last slash.
+	slashIdx := strings.LastIndex(base, "/")
+	colonIdx := strings.LastIndex(base[slashIdx+1:], ":")
+	if colonIdx == -1 {
+		return "", "", false
+	}
+	colonIdx += slashIdx + 1
+	repo := base[:colonIdx]
+	return base, repo + digestPart, true
 }
 
 func (c *K8sCluster) DeleteNode(name string) error {

@@ -214,6 +214,15 @@ k3d/configure/metallb:
 k3d/wait:
 	@TIMES_TRIED=0; \
 	MAX_ALLOWED_TRIES=30; \
+	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get --raw=/readyz --request-timeout=5s >/dev/null 2>&1; do \
+		echo "Waiting for the cluster API to come up" && sleep 1; \
+		TIMES_TRIED=$$((TIMES_TRIED+1)); \
+		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then \
+			docker logs k3d-$(KIND_CLUSTER_NAME)-server-0 || true; \
+			exit 1; \
+		fi; \
+	done; \
+	TIMES_TRIED=0; \
 	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
     	echo "Waiting for the cluster to come up" && sleep 1; \
   		TIMES_TRIED=$$((TIMES_TRIED+1)); \
