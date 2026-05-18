@@ -126,6 +126,18 @@
           }
         }
       }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:3000/listenerFilters",
+      "value": [
+        {
+          "name": "envoy.filters.listener.tls_inspector",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
+          }
+        }
+      ]
     }
   ],
   "xds": {
@@ -641,6 +653,14 @@
                 },
                 "requireClientCertificate": true
               }
+            }
+          }
+        ],
+        "listenerFilters": [
+          {
+            "name": "envoy.filters.listener.tls_inspector",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
             }
           }
         ],
