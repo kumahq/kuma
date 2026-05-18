@@ -375,15 +375,6 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			},
 			expectErr: true,
 		}),
-		Entry("error name starts with digit", kriTestCase{
-			id: kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Mesh:         "default",
-				Name:         "1backend",
-				SectionName:  "http",
-			},
-			expectErr: true,
-		}),
 		Entry("error name starts with dash", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -432,26 +423,23 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			},
 			expectErr: true,
 		}),
-		Entry("error sectionName mixes digits with letters starting with digit", kriTestCase{
-			// "8080x" — not all-digits (so the numeric carve-out doesn't apply)
-			// and starts with a digit (so it fails RFC 1035).
+		Entry("sectionName mixing digits and letters is valid", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "default",
 				Name:         "backend",
 				SectionName:  "8080x",
 			},
-			expectErr: true,
+			expected: "sni.msvc.default.backend.8080x",
 		}),
-		Entry("error sectionName numeric but too long", kriTestCase{
-			// 6 digits exceeds the 5-digit (max port) numeric carve-out.
+		Entry("sectionName six digits is valid", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
 				Mesh:         "default",
 				Name:         "backend",
 				SectionName:  "123456",
 			},
-			expectErr: true,
+			expected: "sni.msvc.default.backend.123456",
 		}),
 		Entry("sectionName with letters then digits is valid", kriTestCase{
 			id: kri.Identifier{
@@ -464,7 +452,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 		}),
 	)
 
-	It("reports an RFC 1035 violation for an over-long label", func() {
+	It("reports an RFC 1123 violation for an over-long label", func() {
 		errs := sni.ValidateKRI(kri.Identifier{
 			ResourceType: meshservice_api.MeshServiceType,
 			Mesh:         "default",
@@ -472,7 +460,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			SectionName:  "http",
 		})
 		Expect(errs).ToNot(BeEmpty())
-		Expect(errs[0].Error()).To(ContainSubstring("RFC 1035"))
+		Expect(errs[0].Error()).To(ContainSubstring("RFC 1123"))
 	})
 
 	It("reports a DNS hostname limit violation", func() {
@@ -512,7 +500,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 		})
 		labelErrs := 0
 		for _, e := range errs {
-			if strings.Contains(e.Error(), "RFC 1035") {
+			if strings.Contains(e.Error(), "RFC 1123") {
 				labelErrs++
 			}
 		}
@@ -548,6 +536,6 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 		Expect(errs).To(HaveLen(1))
 		Expect(errs[0].Error()).To(ContainSubstring("mesh"))
 		Expect(errs[0].Error()).To(ContainSubstring("de.fault"))
-		Expect(errs[0].Error()).To(ContainSubstring("RFC 1035"))
+		Expect(errs[0].Error()).To(ContainSubstring("RFC 1123"))
 	})
 })
