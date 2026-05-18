@@ -26,6 +26,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1612,7 +1613,12 @@ func hasLeaderMetric(metrics string) bool {
 }
 
 func (c *K8sCluster) waitKubernetesControlPlaneLeader() error {
-	_, err := retry.DoWithRetryE(c.t,
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return errors.Wrapf(err, "error in getting access to K8S")
+	}
+
+	_, err = retry.DoWithRetryE(c.t,
 		"wait for control-plane leader",
 		c.defaultRetries,
 		c.defaultTimeout,
@@ -1635,38 +1641,69 @@ func (c *K8sCluster) waitKubernetesControlPlaneLeader() error {
 				podNames = append(podNames, pod.Name)
 			}
 
-			holder, err := k8s.RunKubectlAndGetOutputE(
-				c.t,
-				c.GetKubectlOptions(Config.KumaNamespace),
-				"get", "lease", "cp-leader-lease", "-ojsonpath={.spec.holderIdentity}",
+			lease, err := clientset.CoordinationV1().Leases(Config.KumaNamespace).Get(
+				context.Background(),
+				"cp-leader-lease",
+				metav1.GetOptions{},
 			)
 			if err != nil {
 				return "", err
 			}
 
-			for _, podName := range podNames {
-				if strings.HasPrefix(holder, podName+"_") {
-					return holder, nil
-				}
+			holder := lease.Spec.HolderIdentity
+			if leaseHeldByCurrentPod(holder, podNames) {
+				return *holder, nil
 			}
-			if holder == "" {
+			if holder == nil || *holder == "" {
 				return "", errors.Errorf("control-plane lease has no holder, want one of current pods: %s", strings.Join(podNames, ","))
 			}
 
-			if err := k8s.RunKubectlE(
-				c.t,
-				c.GetKubectlOptions(Config.KumaNamespace),
-				"delete", "lease", "cp-leader-lease",
-			); err != nil {
-				return "", err
+			if controlPlaneLeaseExpired(lease, time.Now()) {
+				if err := clientset.CoordinationV1().Leases(Config.KumaNamespace).Delete(
+					context.Background(),
+					lease.Name,
+					controlPlaneLeaseDeleteOptions(lease),
+				); err != nil {
+					return "", err
+				}
+				return "", errors.Errorf("deleted stale control-plane lease held by %q, want one of current pods: %s", *holder, strings.Join(podNames, ","))
 			}
-			return "", errors.Errorf("control-plane lease held by %q, want one of current pods: %s", holder, strings.Join(podNames, ","))
+			return "", errors.Errorf("control-plane lease held by %q is not expired yet, want one of current pods: %s", *holder, strings.Join(podNames, ","))
 		})
 	if err != nil {
 		deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
 		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
 	}
 	return nil
+}
+
+func leaseHeldByCurrentPod(holder *string, podNames []string) bool {
+	if holder == nil {
+		return false
+	}
+	for _, podName := range podNames {
+		if strings.HasPrefix(*holder, podName+"_") {
+			return true
+		}
+	}
+	return false
+}
+
+func controlPlaneLeaseExpired(lease *coordinationv1.Lease, now time.Time) bool {
+	if lease.Spec.RenewTime == nil || lease.Spec.LeaseDurationSeconds == nil {
+		return false
+	}
+	deadline := lease.Spec.RenewTime.Add(time.Duration(*lease.Spec.LeaseDurationSeconds) * time.Second)
+	return !deadline.After(now)
+}
+
+func controlPlaneLeaseDeleteOptions(lease *coordinationv1.Lease) metav1.DeleteOptions {
+	resourceVersion := lease.ResourceVersion
+	return metav1.DeleteOptions{
+		Preconditions: &metav1.Preconditions{
+			ResourceVersion: &resourceVersion,
+		},
+	}
 }
 
 func (c *K8sCluster) Install(fn InstallFunc) error {
