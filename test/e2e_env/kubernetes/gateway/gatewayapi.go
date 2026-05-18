@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -81,15 +82,22 @@ spec:
 	GatewayIP := func(name string) string {
 		var ip string
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
+			out, err := kubernetes.Cluster.GetLBIngressIP(name, namespace)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).ToNot(BeEmpty())
+			ip = out
+		}, "120s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway Service")
+
+		Eventually(func(g Gomega) {
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				kubernetes.Cluster.GetTesting(), context.Background(),
 				kubernetes.Cluster.GetKubectlOptions(namespace),
 				"get", "gateway", name, "-ojsonpath={.status.addresses[0].value}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).ToNot(BeEmpty())
-			ip = out
-		}, "120s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
+			g.Expect(out).To(Equal(ip))
+		}, "120s", "1s").Should(Succeed(), "Gateway status did not report the Service LoadBalancer IP")
+
 		return ip
 	}
 
@@ -138,9 +146,9 @@ spec:
 			Expect(WaitPodsAvailable(namespace, gatewayName)(kubernetes.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
-			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
-			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gatewayclass", "ha-kuma")).To(Succeed())
-			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "meshgatewayconfig", "ha-config")).To(Succeed())
+			Expect(k8s.RunKubectlContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
+			Expect(k8s.RunKubectlContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gatewayclass", "ha-kuma")).To(Succeed())
+			Expect(k8s.RunKubectlContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "meshgatewayconfig", "ha-config")).To(Succeed())
 		})
 
 		It("should create the right number of pods", func() {
@@ -191,7 +199,7 @@ spec:
 			DebugKube(kubernetes.Cluster, meshName, namespace)
 		})
 		E2EAfterAll(func() {
-			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
+			Expect(k8s.RunKubectlContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 		})
 
 		It("should send default static payload for no route", func() {
@@ -256,8 +264,8 @@ spec:
 				g.Expect(resp.Instance).To(Equal("test-server-2"))
 			}, "30s", "1s").Should(Succeed())
 
-			Expect(k8s.KubectlDeleteFromStringE(
-				kubernetes.Cluster.GetTesting(),
+			Expect(k8s.KubectlDeleteFromStringContextE(
+				kubernetes.Cluster.GetTesting(), context.Background(),
 				kubernetes.Cluster.GetKubectlOptions(namespace),
 				route,
 			)).To(Succeed())
@@ -319,8 +327,8 @@ spec:
 				g.Expect(resp.Instance).To(Equal("test-server-2"))
 			}, "30s", "1s").Should(Succeed())
 
-			Expect(k8s.KubectlDeleteFromStringE(
-				kubernetes.Cluster.GetTesting(),
+			Expect(k8s.KubectlDeleteFromStringContextE(
+				kubernetes.Cluster.GetTesting(), context.Background(),
 				kubernetes.Cluster.GetKubectlOptions(namespace),
 				routes,
 			)).To(Succeed())
@@ -360,8 +368,8 @@ spec:
 				g.Expect(resp.Instance).To(Equal("external-service"))
 			}, "30s", "1s").Should(Succeed())
 
-			Expect(k8s.KubectlDeleteFromStringE(
-				kubernetes.Cluster.GetTesting(),
+			Expect(k8s.KubectlDeleteFromStringContextE(
+				kubernetes.Cluster.GetTesting(), context.Background(),
 				kubernetes.Cluster.GetKubectlOptions(namespace),
 				routes,
 			)).To(Succeed())
@@ -419,7 +427,7 @@ spec:
 			Expect(WaitPodsAvailable(namespace, gatewayName)(kubernetes.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
-			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
+			Expect(k8s.RunKubectlContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 		})
 
 		It("should route the traffic using TLS", func() {
@@ -463,8 +471,8 @@ spec:
 				g.Expect(resp.Instance).To(Equal("test-server-1"))
 			}, "30s", "1s").Should(Succeed())
 
-			Expect(k8s.KubectlDeleteFromStringE(
-				kubernetes.Cluster.GetTesting(),
+			Expect(k8s.KubectlDeleteFromStringContextE(
+				kubernetes.Cluster.GetTesting(), context.Background(),
 				kubernetes.Cluster.GetKubectlOptions(namespace),
 				route,
 			)).To(Succeed())
@@ -505,7 +513,7 @@ data:
 			}, "30s", "1s").Should(Succeed())
 
 			// when original secret is removed
-			err = k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "secret", "secret-tls")
+			err = k8s.RunKubectlContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "secret", "secret-tls")
 
 			// then copied secret is removed
 			Expect(err).ToNot(HaveOccurred())
