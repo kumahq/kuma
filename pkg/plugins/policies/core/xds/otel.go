@@ -201,8 +201,8 @@ func BuildSignalRuntimePlan(
 	signal core_xds.OtelSignal,
 	options AddResolvedBackendOptions,
 ) core_xds.OtelSignalRuntimePlan {
-	mode := motb_api.EnvModeOptional
-	allowOverrides := false
+	mode := motb_api.DefaultEnvMode
+	allowOverrides := motb_api.DefaultAllowSignalOverrides
 	if envPolicy != nil {
 		mode = envPolicy.Mode
 		allowOverrides = envPolicy.AllowSignalOverrides
