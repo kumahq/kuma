@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -111,7 +112,7 @@ spec:
 }
 
 func gatewayAddress(instanceName, instanceNamespace string, port int) string {
-	services, err := k8s.ListServicesE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(instanceNamespace), metav1.ListOptions{})
+	services, err := k8s.ListServicesContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(instanceNamespace), metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
 	var rawIP string

@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -91,7 +92,7 @@ func (u *universalDeployment) updatePublishedPorts(t testing.TestingT) error {
 }
 
 func (u *universalDeployment) Delete(cluster framework.Cluster) error {
-	retry.DoWithRetry(cluster.GetTesting(), "stop "+u.container, framework.DefaultRetries, framework.DefaultTimeout,
+	retry.DoWithRetryContext(cluster.GetTesting(), context.Background(), "stop "+u.container, framework.DefaultRetries, framework.DefaultTimeout,
 		func() (string, error) {
 			_, err := u.dockerBackend.StopE(cluster.GetTesting(), []string{u.container}, &docker.StopOptions{Time: 1})
 			if err == nil {

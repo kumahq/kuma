@@ -1,6 +1,7 @@
 package workload
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -147,8 +148,8 @@ spec:
 `, namespace, mesh)
 
 		// when trying to create pod with manual workload label
-		err := k8s.KubectlApplyFromStringE(
-			kubernetes.Cluster.GetTesting(),
+		err := k8s.KubectlApplyFromStringContextE(
+			kubernetes.Cluster.GetTesting(), context.Background(),
 			kubernetes.Cluster.GetKubectlOptions(namespace),
 			podYAML,
 		)
@@ -193,8 +194,8 @@ spec:
 		}).Should(Succeed())
 
 		// when delete the deployment
-		err = k8s.RunKubectlE(
-			kubernetes.Cluster.GetTesting(),
+		err = k8s.RunKubectlContextE(
+			kubernetes.Cluster.GetTesting(), context.Background(),
 			kubernetes.Cluster.GetKubectlOptions(namespace),
 			"delete", "deployment", appName,
 		)

@@ -1,6 +1,7 @@
 package kic
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -45,7 +46,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	opts := helm.Options{
 		KubectlOptions: cluster.GetKubectlOptions(t.ingressNamespace),
 	}
-	_, err = helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", t.name,
+	_, err = helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", t.name,
 		"--namespace", t.ingressNamespace,
 		"--repo", "https://charts.konghq.com",
 		"--set", "controller.ingressController.watchNamespaces={"+watchNamespacesVal+"}",
@@ -59,7 +60,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	for _, app := range []string{fmt.Sprintf("%s-controller", t.name), fmt.Sprintf("%s-gateway", t.name)} {
-		err := k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
+		err := k8s.WaitUntilNumPodsCreatedContextE(cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(t.ingressNamespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
@@ -71,7 +72,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			return err
 		}
 
-		pods := k8s.ListPods(cluster.GetTesting(),
+		pods := k8s.ListPodsContext(cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(t.ingressNamespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
@@ -81,7 +82,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			return errors.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
 		}
 
-		err = k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
+		err = k8s.WaitUntilPodAvailableContextE(cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(t.ingressNamespace),
 			pods[0].Name,
 			framework.DefaultRetries*3, // KIC is fetched from the internet. Increase the timeout to prevent long downloads of images.
@@ -98,14 +99,14 @@ func (t *k8sDeployment) Delete(cluster framework.Cluster) error {
 }
 
 func (t *k8sDeployment) IP(namespace string) (string, error) {
-	ip, err := retry.DoWithRetryInterfaceE(
-		kubernetes.Cluster.GetTesting(),
+	ip, err := retry.DoWithRetryInterfaceContextE(
+		kubernetes.Cluster.GetTesting(), context.Background(),
 		"get the clusterIP of the Kong Ingress Controller Service",
 		60,
 		time.Second,
 		func() (any, error) {
-			svc, err := k8s.GetServiceE(
-				kubernetes.Cluster.GetTesting(),
+			svc, err := k8s.GetServiceContextE(
+				kubernetes.Cluster.GetTesting(), context.Background(),
 				kubernetes.Cluster.GetKubectlOptions(namespace),
 				"gateway",
 			)

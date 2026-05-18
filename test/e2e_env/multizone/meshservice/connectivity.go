@@ -1,6 +1,7 @@
 package meshservice
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -219,7 +220,7 @@ spec:
 		Expect(group.Wait()).To(Succeed())
 
 		Expect(multizone.KubeZone1.WaitApp("statefulset-test-server", namespace, 1)).To(Succeed())
-		for _, pod := range k8s.ListPods(multizone.KubeZone1.GetTesting(),
+		for _, pod := range k8s.ListPodsContext(multizone.KubeZone1.GetTesting(), context.Background(),
 			multizone.KubeZone1.GetKubectlOptions(namespace),
 			kube_meta.ListOptions{
 				LabelSelector: "app=statefulset-test-server",

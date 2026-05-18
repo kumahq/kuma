@@ -1,6 +1,7 @@
 package spire
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -80,7 +81,7 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 	containerID := u.container.GetID()
 
-	retry.DoWithRetry(t, "health-check "+containerID, framework.DefaultRetries, framework.DefaultTimeout,
+	retry.DoWithRetryContext(t, context.Background(), "health-check "+containerID, framework.DefaultRetries, framework.DefaultTimeout,
 		func() (string, error) {
 			// Check Spire server health endpoint - just check status code
 			args := []string{
