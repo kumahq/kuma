@@ -1,6 +1,7 @@
 package kumactl
 
 import (
+	"context"
 	"encoding/json"
 	"net/url"
 	"os"
@@ -84,7 +85,7 @@ func (k *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 		command.Logger = logger.Discard
 	}
 
-	return shell.RunCommandAndGetStdOutE(k.t, command)
+	return shell.RunCommandContextAndGetStdOutE(k.t, context.Background(), &command)
 }
 
 func (k *KumactlOptions) KumactlVersion() (string, error) {
@@ -170,7 +171,7 @@ func (k *KumactlOptions) KumactlInstallObservability(namespace string, component
 }
 
 func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string, headers []string) error {
-	_, err := retry.DoWithRetryE(k.t, "kumactl config control-planes add", k.Retries, k.Timeout,
+	_, err := retry.DoWithRetryContextE(k.t, context.Background(), "kumactl config control-planes add", k.Retries, k.Timeout,
 		func() (string, error) {
 			args := []string{
 				"config", "control-planes", "add",

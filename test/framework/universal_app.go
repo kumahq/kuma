@@ -77,7 +77,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 		verbose:       runOptions.Verbose,
 		mesh:          mesh,
 		appName:       appName,
-		containerName: fmt.Sprintf("%s_%s_%s", clusterName, appName, random.UniqueId()),
+		containerName: fmt.Sprintf("%s_%s_%s", clusterName, appName, random.UniqueID()),
 		concurrency:   runOptions.DPConcurrency,
 		clusterName:   clusterName,
 		dockerBackend: runOptions.DockerBackend,
