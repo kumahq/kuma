@@ -455,6 +455,27 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 		Expect(plan.BlockedReasons).To(BeEmpty())
 	})
 
+	It("should allow per-signal overrides when env block is omitted", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					EndpointPresent: true,
+				},
+				Traces: &core_xds.OtelSignalEnvInventory{
+					OverrideKinds: []string{"endpoint"},
+				},
+			},
+			nil,
+			core_xds.OtelSignalTraces,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.Enabled).To(BeTrue())
+		Expect(plan.EnvInputPresent).To(BeTrue())
+		Expect(plan.OverrideKinds).To(ConsistOf("endpoint"))
+		Expect(plan.BlockedReasons).NotTo(ContainElement(core_xds.OtelBlockedReasonSignalOverridesBlocked))
+	})
+
 	It("should mark disabled env mode with env input as blocked by policy", func() {
 		plan := policies_xds.BuildSignalRuntimePlan(
 			&core_xds.OtelBootstrapInventory{
