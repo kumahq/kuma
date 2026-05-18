@@ -1,6 +1,7 @@
 package container_patch
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -80,7 +81,7 @@ spec:
 		// pod without container patch
 		podName, err := PodNameOfApp(kubernetes.Cluster, appName, namespace)
 		Expect(err).ToNot(HaveOccurred())
-		pod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
+		pod, err := k8s.GetPodContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -109,7 +110,7 @@ spec:
 		// pod with patch
 		podName, err = PodNameOfApp(kubernetes.Cluster, appNameWithPatch, namespace)
 		Expect(err).ToNot(HaveOccurred())
-		pod, err = k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
+		pod, err = k8s.GetPodContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -139,7 +140,7 @@ spec:
 
 	It("should reject ContainerPatch in non-system namespace", func() {
 		// when
-		err := k8s.KubectlApplyFromStringE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), containerPatch(namespace))
+		err := k8s.KubectlApplyFromStringContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(), containerPatch(namespace))
 
 		// then
 		Expect(err).To(HaveOccurred())

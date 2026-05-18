@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"net"
@@ -537,7 +538,7 @@ func (c *UniversalCluster) DeleteApp(appname string) error {
 
 func (c *UniversalCluster) DeleteMesh(mesh string) error {
 	now := time.Now()
-	_, err := retry.DoWithRetryE(c.t, "remove mesh", DefaultRetries, 1*time.Second,
+	_, err := retry.DoWithRetryContextE(c.t, context.Background(), "remove mesh", DefaultRetries, 1*time.Second,
 		func() (string, error) {
 			return "", c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
 		})

@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -49,8 +50,8 @@ func (t *k8SDeployment) Name() string {
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	extraArgs := map[string][]string{"upgrade": {"--create-namespace", "--install", "--wait"}}
 
-	if err := helm.UpgradeE(
-		cluster.GetTesting(),
+	if err := helm.UpgradeContextE(
+		cluster.GetTesting(), context.Background(),
 		&helm.Options{
 			KubectlOptions: cluster.GetKubectlOptions(t.options.namespace),
 			ExtraArgs:      extraArgs,
@@ -61,8 +62,8 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	if err := k8s.KubectlApplyFromStringE(
-		cluster.GetTesting(),
+	if err := k8s.KubectlApplyFromStringContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.options.namespace),
 		dbSecrets(
 			t.options.namespace,
@@ -94,14 +95,14 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		opts.SetValues[fmt.Sprintf("cluster.initdb.postInitSQL[%d]", i)] = script
 	}
 
-	if err := helm.UpgradeE(cluster.GetTesting(), opts, clusterChart, t.options.primaryName); err != nil {
+	if err := helm.UpgradeContextE(cluster.GetTesting(), context.Background(), opts, clusterChart, t.options.primaryName); err != nil {
 		return err
 	}
 
 	// Helm's --wait flag doesn't wait for custom resources to be ready, so we
 	// explicitly wait for the CNPG Cluster to reach Ready condition
-	return k8s.RunKubectlE(
-		cluster.GetTesting(),
+	return k8s.RunKubectlContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.options.namespace),
 		"wait",
 		"--for=condition=Ready",

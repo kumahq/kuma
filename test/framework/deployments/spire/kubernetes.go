@@ -1,6 +1,8 @@
 package spire
 
 import (
+	"context"
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
@@ -36,7 +38,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		KubectlOptions: cluster.GetKubectlOptions(t.namespace),
 	}
 	// install crds
-	_, err = helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", "spire-crds",
+	_, err = helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", "spire-crds",
 		"--namespace", t.namespace,
 		"--repo", "https://spiffe.github.io/helm-charts-hardened/",
 		"spire-crds",
@@ -45,7 +47,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	_, err = helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", "spire",
+	_, err = helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", "spire",
 		"--namespace", t.namespace,
 		"--repo", "https://spiffe.github.io/helm-charts-hardened/",
 		"--set", "global.spire.trustDomain="+t.trustDomain,
@@ -77,7 +79,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) error {
-	err := k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
+	err := k8s.WaitUntilNumPodsCreatedContextE(cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.namespace),
 		metav1.ListOptions{
 			LabelSelector: selector,
@@ -89,7 +91,7 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 		return err
 	}
 
-	pods := k8s.ListPods(cluster.GetTesting(),
+	pods := k8s.ListPodsContext(cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.namespace),
 		metav1.ListOptions{
 			LabelSelector: selector,
@@ -100,7 +102,7 @@ func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) e
 	}
 
 	for _, pod := range pods {
-		if err := k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
+		if err := k8s.WaitUntilPodAvailableContextE(cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(t.namespace),
 			pod.Name,
 			framework.DefaultRetries*3, // spire is fetched from the internet. Increase the timeout to prevent long downloads of images.
