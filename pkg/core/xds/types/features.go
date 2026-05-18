@@ -50,3 +50,8 @@ const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
 // traces and access logs. When present, the CP routes the OTel cluster to a Unix
 // socket instead of connecting directly to the collector.
 const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
+
+// FeatureReusePorts indicates that the DP wants Envoy listeners generated
+// with SO_REUSEPORT enabled. When absent, the CP sets it to false to not break
+// upgrade, as `enableReusePorts` cannot be changed during runtime.
+const FeatureReusePorts = "feature-reuse-ports"

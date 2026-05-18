@@ -70,6 +70,7 @@ resources:
         address: 192.168.0.1
         portValue: 80
     bindToPort: false
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -118,7 +119,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15006
-    enableReusePort: true
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy

@@ -251,7 +251,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "egress-listener",
 					Origin: metadata.OriginEgress,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).
@@ -390,7 +390,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "egress-listener",
 					Origin: metadata.OriginEgress,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).

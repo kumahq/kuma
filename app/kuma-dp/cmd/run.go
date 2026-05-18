@@ -279,6 +279,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
+			if cfg.DataplaneRuntime.ReusePortsEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePorts)
+			}
 
 			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
 				rootCtx.BootstrapDynamicMetadata[core_xds.FieldDynamicHostIP] = hostIP

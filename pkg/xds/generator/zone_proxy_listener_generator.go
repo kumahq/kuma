@@ -13,6 +13,7 @@ import (
 	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
@@ -106,7 +107,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	listenerName := naming.ContextualZoneIngressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePorts))).
 		Configure(envoy_listeners.StatPrefix(listenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
@@ -185,7 +186,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, zoneEgressListenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePorts))).
 		Configure(envoy_listeners.StatPrefix(zoneEgressListenerName)).
 		Configure(envoy_listeners.TLSInspector())
 

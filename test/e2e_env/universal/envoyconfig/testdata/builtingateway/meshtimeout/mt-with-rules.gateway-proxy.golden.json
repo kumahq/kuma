@@ -310,6 +310,7 @@
             "portValue": 0
           }
         },
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [

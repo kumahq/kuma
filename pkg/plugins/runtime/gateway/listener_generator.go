@@ -2,6 +2,7 @@ package gateway
 
 import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 )
@@ -59,6 +60,7 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 		address,
 		port,
 		core_xds.SocketAddressProtocolTCP,
+		info.Proxy.Metadata.HasFeature(xds_types.FeatureReusePorts),
 	).
 		WithOverwriteName(name).
 		Configure(
