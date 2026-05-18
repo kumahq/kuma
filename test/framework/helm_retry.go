@@ -3,6 +3,7 @@ package framework
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,7 +32,7 @@ var helmChartPathRE = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
 
 func helmRunWithRetryE(t testing.TestingT, opts *helm.Options, args ...string) (string, error) {
 	if len(args) == 0 {
-		return "", retry.FatalError{Underlying: fmt.Errorf("helm command args are empty")}
+		return "", retry.FatalError{Underlying: errors.New("helm command args are empty")}
 	}
 
 	command := args[0]
@@ -49,12 +50,26 @@ func helmRunWithRetryE(t testing.TestingT, opts *helm.Options, args ...string) (
 	)
 }
 
+func HelmUpgradeWithRetryE(t testing.TestingT, opts *helm.Options, chart, releaseName string) error {
+	_, err := retry.DoWithRetryableErrorsE(
+		t,
+		"helm upgrade "+releaseName,
+		transientHelmErrors,
+		5,
+		10*time.Second,
+		func() (string, error) {
+			return "", helm.UpgradeE(t, opts, chart, releaseName)
+		},
+	)
+	return err
+}
+
 func HelmChartFromRepoE(t testing.TestingT, repoURL, chartName, version string) (string, error) {
 	if repoURL == "" {
-		return "", retry.FatalError{Underlying: fmt.Errorf("helm chart repo URL is empty")}
+		return "", retry.FatalError{Underlying: errors.New("helm chart repo URL is empty")}
 	}
 	if chartName == "" {
-		return "", retry.FatalError{Underlying: fmt.Errorf("helm chart name is empty")}
+		return "", retry.FatalError{Underlying: errors.New("helm chart name is empty")}
 	}
 
 	cacheRoot := os.Getenv("KUMA_E2E_HELM_CHART_CACHE")
@@ -103,7 +118,7 @@ func HelmChartFromRepoE(t testing.TestingT, repoURL, chartName, version string) 
 		return "", err
 	}
 	if len(pulledCharts) != 1 {
-		return "", fmt.Errorf("expected one pulled helm chart, got %d", len(pulledCharts))
+		return "", errors.New("expected one pulled helm chart, got " + fmt.Sprint(len(pulledCharts)))
 	}
 
 	if _, err := os.Stat(cachePath); err == nil {

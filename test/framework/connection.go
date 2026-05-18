@@ -3,6 +3,7 @@ package framework
 import (
 	"fmt"
 	"net"
+	"sync"
 	"sync/atomic"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -65,7 +66,12 @@ func HoldConnection(cluster *UniversalCluster, srcApp, dstApp string, dstPort ui
 	}, "30s", "1s").Should(Succeed(),
 		"ncat from %q did not establish a connection to %s:%d", srcApp, dstIP, dstPort)
 
-	return func() {
-		Expect(cluster.Kill(srcApp, "ncat")).To(Succeed())
+	var once sync.Once
+	cleanup := func() {
+		once.Do(func() {
+			Expect(cluster.Kill(srcApp, "ncat")).To(Succeed())
+		})
 	}
+	DeferCleanup(cleanup)
+	return cleanup
 }

@@ -1769,9 +1769,13 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		wg.Add(1)
 		go func(i int, img string) {
 			defer wg.Done()
-			pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
-			if out, err := pullCmd.CombinedOutput(); err != nil {
-				pullErrs[i] = errors.Wrapf(err, "docker pull %s: %s", img, strings.TrimSpace(string(out)))
+			_, err := retry.DoWithRetryE(c.GetTesting(), "pull image "+img, 5, 5*time.Second, func() (string, error) {
+				pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
+				out, err := pullCmd.CombinedOutput()
+				return strings.TrimSpace(string(out)), err
+			})
+			if err != nil {
+				pullErrs[i] = errors.Wrapf(err, "docker pull %s", img)
 				return
 			}
 			// If the image is digest-pinned, also tag it locally as the bare

@@ -86,6 +86,17 @@ spec:
 			g.Expect(out).ToNot(BeEmpty())
 			ip = out
 		}, "120s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway Service")
+
+		Eventually(func(g Gomega) {
+			out, err := k8s.RunKubectlAndGetOutputE(
+				kubernetes.Cluster.GetTesting(),
+				kubernetes.Cluster.GetKubectlOptions(namespace),
+				"get", "gateway", name, "-ojsonpath={.status.addresses[0].value}",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(Equal(ip))
+		}, "120s", "1s").Should(Succeed(), "Gateway status did not report the Service LoadBalancer IP")
+
 		return ip
 	}
 

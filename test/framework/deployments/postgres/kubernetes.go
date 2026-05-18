@@ -93,7 +93,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		}
 	}
 
-	if err := helm.UpgradeE(
+	if err := framework.HelmUpgradeWithRetryE(
 		cluster.GetTesting(),
 		&helm.Options{
 			KubectlOptions: cluster.GetKubectlOptions(t.options.namespace),
@@ -119,7 +119,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	if err := helm.UpgradeE(cluster.GetTesting(), opts, clusterChart, t.options.primaryName); err != nil {
+	if err := framework.HelmUpgradeWithRetryE(cluster.GetTesting(), opts, clusterChart, t.options.primaryName); err != nil {
 		return err
 	}
 
