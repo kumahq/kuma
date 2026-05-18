@@ -1535,12 +1535,14 @@ func (c *K8sCluster) usesUniversalLeaderElection() bool {
 }
 
 func (c *K8sCluster) waitUniversalControlPlaneLeader() error {
-	_, err := retry.DoWithRetryE(c.t,
+	_, err := retry.DoWithRetryContextE(c.t,
+		context.Background(),
 		"wait for universal control-plane leader",
 		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
-			pods, err := k8s.ListPodsE(c.t,
+			pods, err := k8s.ListPodsContextE(c.t,
+				context.Background(),
 				c.GetKubectlOptions(Config.KumaNamespace),
 				metav1.ListOptions{
 					LabelSelector: "app=" + Config.KumaServiceName,
@@ -1613,17 +1615,19 @@ func hasLeaderMetric(metrics string) bool {
 }
 
 func (c *K8sCluster) waitKubernetesControlPlaneLeader() error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	clientset, err := k8s.GetKubernetesClientFromOptionsContextE(c.t, context.Background(), c.GetKubectlOptions())
 	if err != nil {
 		return errors.Wrapf(err, "error in getting access to K8S")
 	}
 
-	_, err = retry.DoWithRetryE(c.t,
+	_, err = retry.DoWithRetryContextE(c.t,
+		context.Background(),
 		"wait for control-plane leader",
 		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
-			pods, err := k8s.ListPodsE(c.t,
+			pods, err := k8s.ListPodsContextE(c.t,
+				context.Background(),
 				c.GetKubectlOptions(Config.KumaNamespace),
 				metav1.ListOptions{
 					LabelSelector: "app=" + Config.KumaServiceName,
@@ -1806,7 +1810,7 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		wg.Add(1)
 		go func(i int, img string) {
 			defer wg.Done()
-			_, err := retry.DoWithRetryE(c.GetTesting(), "pull image "+img, 5, 5*time.Second, func() (string, error) {
+			_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "pull image "+img, 5, 5*time.Second, func() (string, error) {
 				pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
 				out, err := pullCmd.CombinedOutput()
 				return strings.TrimSpace(string(out)), err
@@ -1849,7 +1853,7 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 	// hiccup shouldn't fail the whole preload. 5 attempts with 5s backoff.
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
-		_, err := retry.DoWithRetryE(c.GetTesting(), "k3d image import", 5, 5*time.Second, func() (string, error) {
+		_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "k3d image import", 5, 5*time.Second, func() (string, error) {
 			args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, importImages...)
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 			defer cancel()
@@ -1862,7 +1866,7 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		})
 		return err
 	case KindK8sType:
-		_, err := retry.DoWithRetryE(c.GetTesting(), "kind load docker-image", 5, 5*time.Second, func() (string, error) {
+		_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "kind load docker-image", 5, 5*time.Second, func() (string, error) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 			defer cancel()
 			for _, img := range importImages {

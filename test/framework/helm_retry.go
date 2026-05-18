@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -38,27 +39,29 @@ func helmRunWithRetryE(t testing.TestingT, opts *helm.Options, args ...string) (
 	command := args[0]
 	commandArgs := args[1:]
 
-	return retry.DoWithRetryableErrorsE(
+	return retry.DoWithRetryableErrorsContextE(
 		t,
+		context.Background(),
 		"helm "+strings.Join(args, " "),
 		transientHelmErrors,
 		5,
 		10*time.Second,
 		func() (string, error) {
-			return helm.RunHelmCommandAndGetStdOutE(t, opts, command, commandArgs...)
+			return helm.RunHelmCommandAndGetStdOutContextE(t, context.Background(), opts, command, commandArgs...)
 		},
 	)
 }
 
 func HelmUpgradeWithRetryE(t testing.TestingT, opts *helm.Options, chart, releaseName string) error {
-	_, err := retry.DoWithRetryableErrorsE(
+	_, err := retry.DoWithRetryableErrorsContextE(
 		t,
+		context.Background(),
 		"helm upgrade "+releaseName,
 		transientHelmErrors,
 		5,
 		10*time.Second,
 		func() (string, error) {
-			return "", helm.UpgradeE(t, opts, chart, releaseName)
+			return "", helm.UpgradeContextE(t, context.Background(), opts, chart, releaseName)
 		},
 	)
 	return err

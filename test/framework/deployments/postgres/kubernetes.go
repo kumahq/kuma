@@ -148,7 +148,7 @@ func renderChartImages(cluster framework.Cluster, opts *helm.Options, chart, rel
 	if opts != nil {
 		templateOpts.SetValues = opts.SetValues
 	}
-	out, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), templateOpts, "template", release, chart)
+	out, err := helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), templateOpts, "template", release, chart)
 	if err != nil {
 		return nil, err
 	}

@@ -113,17 +113,17 @@ func GatewayAPICRDs(cluster Cluster) error {
 		"referencegrants.gateway.networking.k8s.io",
 	}
 	for _, crd := range crds {
-		if err := k8s.RunKubectlE(
-			cluster.GetTesting(),
+		if err := k8s.RunKubectlContextE(
+			cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(),
 			"wait", "--for", "condition=established", "--timeout=60s", "crd/"+crd); err != nil {
 			return err
 		}
 	}
 
-	_, err := retry.DoWithRetryE(cluster.GetTesting(), "wait for Gateway API discovery", 20, 3*time.Second, func() (string, error) {
-		out, err := k8s.RunKubectlAndGetOutputE(
-			cluster.GetTesting(),
+	_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "wait for Gateway API discovery", 20, 3*time.Second, func() (string, error) {
+		out, err := k8s.RunKubectlAndGetOutputContextE(
+			cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(),
 			"get", "--raw", "/apis/gateway.networking.k8s.io/v1beta1")
 		if err != nil {
