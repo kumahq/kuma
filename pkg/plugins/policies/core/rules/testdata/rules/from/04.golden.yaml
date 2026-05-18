@@ -1,17 +1,13 @@
 InboundRules:
   127.0.0.1:80:
   - conf:
-      BaseEntry:
-        default:
-          backends:
-          - file:
-              path: /tmp/log/1
-            type: File
-          - file:
-              path: /tmp/log/2
-            type: File
-        targetRef:
-          kind: Mesh
+      backends:
+      - file:
+          path: /tmp/log/1
+        type: File
+      - file:
+          path: /tmp/log/2
+        type: File
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -22,11 +18,7 @@ InboundRules:
         type: MeshAccessLog
       RuleIndex: 0
   - conf:
-      BaseEntry:
-        default:
-          backends: []
-        targetRef:
-          kind: Mesh
+      backends: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"

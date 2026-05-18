@@ -1411,9 +1411,13 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 				rs := make([]api_common.InboundRule, len(rulesForInbound))
 				for i := range rulesForInbound {
+					matches := rulesForInbound[i].Matches
+					if matches == nil {
+						matches = []common_api.Match{}
+					}
 					rs[i] = api_common.InboundRule{
 						Conf:    []any{rulesForInbound[i].Conf},
-						Matches: rulesForInbound[i].Matches,
+						Matches: matches,
 						Origin:  oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}

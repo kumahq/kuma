@@ -1,13 +1,9 @@
 InboundRules:
   :0:
   - conf:
-      BaseEntry:
-        default:
-          connectionTimeout: 22s
-          http:
-            requestTimeout: 22s
-        targetRef:
-          kind: Mesh
+      connectionTimeout: 22s
+      http:
+        requestTimeout: 22s
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -18,13 +14,9 @@ InboundRules:
         type: MeshTimeout
       RuleIndex: 0
   - conf:
-      BaseEntry:
-        default:
-          connectionTimeout: 33s
-          http:
-            requestTimeout: 33s
-        targetRef:
-          kind: Mesh
+      connectionTimeout: 33s
+      http:
+        requestTimeout: 33s
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
