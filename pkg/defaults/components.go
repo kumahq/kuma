@@ -20,6 +20,8 @@ import (
 
 var log = core.Log.WithName("defaults")
 
+// EnsureDefaultFunc is invoked at CP boot to ensure default resources exist.
+// `extensions` carries logger fields propagated through the boot pipeline.
 type EnsureDefaultFunc = func(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config, extensions context.Context) error
 
 var EnsureDefaultFuncs = []EnsureDefaultFunc{

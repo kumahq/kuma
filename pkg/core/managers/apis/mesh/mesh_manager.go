@@ -116,7 +116,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 		m.systemNamespace,
 		m.cpMode,
 		m.cpZone,
-		false, // create missing default resources
+		false, // reconcileExistingOnly
 	); err != nil {
 		return err
 	}

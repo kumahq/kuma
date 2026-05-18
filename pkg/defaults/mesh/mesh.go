@@ -146,9 +146,7 @@ func ensureDefaultResource(
 		if maps.Equal(res.GetMeta().GetLabels(), desired) {
 			return nil, false
 		}
-		// Reconcile labels on a default resource created by an older CP
-		// version that predates computed labels. Without 'kuma.io/zone' the
-		// resource's KRI carries an empty zone slot and /_kri lookups fail.
+		// Older CP versions persisted these without computed labels. Rewrite them in place.
 		if err := resManager.Update(ctx, res, store.UpdateWithLabels(desired)); err != nil {
 			return errors.Wrap(err, "could not reconcile labels of a default resource"), false
 		}
