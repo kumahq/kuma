@@ -263,7 +263,7 @@ type DataplaneRuntime struct {
 	// ReusePortEnabled controls whether kuma-dp advertises FeatureReusePort to the CP.
 	// When true, the CP generates Envoy listeners with enable_reuse_port=true so each worker
 	// owns its own LISTEN socket. Default: true.
-	ReusePortEnabled bool `json:"reusePortsEnabled" envconfig:"kuma_dataplane_runtime_reuse_port_enabled"`
+	ReusePortEnabled bool `json:"reusePortEnabled" envconfig:"kuma_dataplane_runtime_reuse_port_enabled"`
 }
 
 type Spire struct {
