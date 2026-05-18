@@ -3,7 +3,9 @@ package v1alpha1_test
 import (
 	"path"
 
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -265,6 +267,115 @@ var _ = Describe("RBAC", func() {
 			bytes, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "matching-api.golden.yaml")))
+		})
+
+		It("should add TLS inspector to inbound listener when rules match on SNI", func() {
+			// given
+			rs := core_xds.NewResourceSet()
+			ctx := xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				Build()
+
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   metadata.OriginInbound,
+				Resource: listener,
+			})
+
+			proxy := xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
+							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+								{Address: "192.168.0.1", Port: 8080}: {
+									{
+										Conf: &policies_api.Rule{
+											Default: policies_api.RuleConf{
+												Allow: &[]common_api.Match{
+													{SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: "sni.example"}},
+												},
+											},
+										},
+										Origin: common.Origin{
+											Resource: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "mtp-1"},
+										},
+									},
+								},
+							},
+						}),
+				).
+				Build()
+
+			// when
+			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
+
+			// then
+			gotListener := rs.ListOf(envoy_resource.ListenerType)[0].Resource.(*envoy_listener.Listener)
+			Expect(gotListener.ListenerFilters).To(HaveLen(1))
+			Expect(gotListener.ListenerFilters[0].Name).To(Equal("envoy.filters.listener.tls_inspector"))
+		})
+
+		It("should not add TLS inspector to inbound listener when no SNI matcher is used", func() {
+			// given
+			rs := core_xds.NewResourceSet()
+			ctx := xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				Build()
+
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   metadata.OriginInbound,
+				Resource: listener,
+			})
+
+			proxy := xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
+							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+								{Address: "192.168.0.1", Port: 8080}: {
+									{
+										Conf: &policies_api.Rule{
+											Default: policies_api.RuleConf{
+												Allow: &[]common_api.Match{
+													{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh-1/svc"}},
+												},
+											},
+										},
+										Origin: common.Origin{
+											Resource: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "mtp-1"},
+										},
+									},
+								},
+							},
+						}),
+				).
+				Build()
+
+			// when
+			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
+
+			// then
+			gotListener := rs.ListOf(envoy_resource.ListenerType)[0].Resource.(*envoy_listener.Listener)
+			Expect(gotListener.ListenerFilters).To(BeEmpty())
 		})
 	})
 
