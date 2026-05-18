@@ -83,7 +83,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 			"127.0.0.1",
 			uint32(tp.Redirect.DNS.Port),
 			core_xds.SocketAddressProtocolUDP,
-			proxy.Metadata.HasFeature(xds_types.FeatureReusePorts),
+			proxy.Metadata.HasFeature(xds_types.FeatureReusePort),
 		).
 		WithOverwriteName(
 			getNameOrDefault(

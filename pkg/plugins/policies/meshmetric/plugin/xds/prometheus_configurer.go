@@ -80,7 +80,7 @@ func (pc *PrometheusConfigurer) providedTlsListener(proxy *core_xds.Proxy) (envo
 }
 
 func (pc *PrometheusConfigurer) unsecuredListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
-	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePorts)).
+	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(pc.ListenerName).
 		Configure(envoy_listeners.StatPrefix(pc.StatPrefix)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
@@ -90,7 +90,7 @@ func (pc *PrometheusConfigurer) unsecuredListener(proxy *core_xds.Proxy) (envoy_
 }
 
 func (pc *PrometheusConfigurer) baseSecuredListenerBuilder(proxy *core_xds.Proxy, match envoy_listeners.FilterChainBuilderOpt) *envoy_listeners.ListenerBuilder {
-	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePorts)).
+	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(pc.ListenerName).
 		Configure(envoy_listeners.StatPrefix(pc.StatPrefix)).
 		// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)

@@ -184,9 +184,9 @@ spec:
 			WithServiceName("zone-proxy-test-server-no-reusable-ports"),
 			WithWorkload("zone-proxy-test-server-no-reusable-ports"),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":          "/tmp",
-				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED":        "false",
-				"KUMA_DATAPLANE_RUNTIME_REUSE_PORTS_ENABLED": "false",
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":         "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED":       "false",
+				"KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED": "false",
 			})),
 		).
 		Setup(universal.Cluster)

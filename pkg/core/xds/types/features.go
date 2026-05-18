@@ -51,7 +51,7 @@ const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
 // socket instead of connecting directly to the collector.
 const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
 
-// FeatureReusePorts indicates that the DP wants Envoy listeners generated
+// FeatureReusePort indicates that the DP wants Envoy listeners generated
 // with SO_REUSEPORT enabled. When absent, the CP sets it to false to not break
 // upgrade, as `enableReusePorts` cannot be changed during runtime.
-const FeatureReusePorts = "feature-reuse-ports"
+const FeatureReusePort = "feature-reuse-ports"

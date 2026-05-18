@@ -59,7 +59,7 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _
 		}
 	}
 
-	probeListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePorts)).
+	probeListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(metadata.ProbeListenerName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.HttpConnectionManager(metadata.ProbeListenerName, false, nil, proxy.Metadata.GetIPv6Enabled())).

@@ -60,7 +60,7 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 		address,
 		port,
 		core_xds.SocketAddressProtocolTCP,
-		info.Proxy.Metadata.HasFeature(xds_types.FeatureReusePorts),
+		info.Proxy.Metadata.HasFeature(xds_types.FeatureReusePort),
 	).
 		WithOverwriteName(name).
 		Configure(

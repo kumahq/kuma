@@ -279,8 +279,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
-			if cfg.DataplaneRuntime.ReusePortsEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePorts)
+			if cfg.DataplaneRuntime.ReusePortEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePort)
 			}
 
 			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {

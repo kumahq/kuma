@@ -107,7 +107,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	listenerName := naming.ContextualZoneIngressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePorts))).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(listenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
@@ -186,7 +186,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, zoneEgressListenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePorts))).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(zoneEgressListenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
