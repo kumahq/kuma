@@ -17,6 +17,12 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
 )
 
+const (
+	kicChartRepo    = "https://charts.konghq.com"
+	kicChartName    = "ingress"
+	kicChartVersion = "0.24.0"
+)
+
 type k8sDeployment struct {
 	ingressNamespace string
 	watchNamespaces  []string
@@ -46,14 +52,24 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	opts := helm.Options{
 		KubectlOptions: cluster.GetKubectlOptions(t.ingressNamespace),
 	}
+
+	chartPath, err := framework.HelmChartFromRepoE(
+		cluster.GetTesting(),
+		kicChartRepo,
+		kicChartName,
+		kicChartVersion,
+	)
+	if err != nil {
+		return err
+	}
+
 	_, err = helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", t.name,
 		"--namespace", t.ingressNamespace,
-		"--repo", "https://charts.konghq.com",
 		"--set", "controller.ingressController.watchNamespaces={"+watchNamespacesVal+"}",
 		"--set", "controller.ingressController.ingressClass="+t.name,
 		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
 		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,
-		"ingress",
+		chartPath,
 	)
 	if err != nil {
 		return err

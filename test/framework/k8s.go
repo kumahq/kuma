@@ -99,10 +99,44 @@ func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) 
 }
 
 func GatewayAPICRDs(cluster Cluster) error {
-	return k8s.RunKubectlContextE(
+	if err := k8s.RunKubectlContextE(
 		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml"); err != nil {
+		return err
+	}
+
+	crds := []string{
+		"gatewayclasses.gateway.networking.k8s.io",
+		"gateways.gateway.networking.k8s.io",
+		"httproutes.gateway.networking.k8s.io",
+		"referencegrants.gateway.networking.k8s.io",
+	}
+	for _, crd := range crds {
+		if err := k8s.RunKubectlContextE(
+			cluster.GetTesting(), context.Background(),
+			cluster.GetKubectlOptions(),
+			"wait", "--for", "condition=established", "--timeout=60s", "crd/"+crd); err != nil {
+			return err
+		}
+	}
+
+	_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "wait for Gateway API discovery", 20, 3*time.Second, func() (string, error) {
+		out, err := k8s.RunKubectlAndGetOutputContextE(
+			cluster.GetTesting(), context.Background(),
+			cluster.GetKubectlOptions(),
+			"get", "--raw", "/apis/gateway.networking.k8s.io/v1beta1")
+		if err != nil {
+			return out, err
+		}
+		for _, resource := range []string{"gatewayclasses", "gateways", "httproutes", "referencegrants"} {
+			if !strings.Contains(out, fmt.Sprintf(`"name":%q`, resource)) {
+				return out, errors.Errorf("Gateway API discovery missing %s", resource)
+			}
+		}
+		return out, nil
+	})
+	return err
 }
 
 func UpdateKubeObject(
