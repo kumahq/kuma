@@ -5,6 +5,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
@@ -14,11 +15,14 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	envoy_listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
@@ -53,6 +57,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
+	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
+
 	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
@@ -60,7 +66,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
+	if err := p.configureZoneEgressListeners(rs, mtp); err != nil {
+		return err
+	}
+
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin != metadata.OriginInbound {
 			continue
@@ -90,6 +99,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 					continue
 				}
 				if err := configurer.Configure(filterChain); err != nil {
+					return err
+				}
+			}
+			if hasSNIMatch(inboundRules) {
+				if err := ensureTLSInspector(listener); err != nil {
 					return err
 				}
 			}
@@ -124,6 +138,63 @@ func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key cor
 		}
 	}
 	return nil
+}
+
+func (p plugin) configureZoneEgressListeners(rs *core_xds.ResourceSet, mtp core_xds.TypedMatchingPolicies) error {
+	for _, res := range rs.Resources(envoy_resource.ListenerType) {
+		if res.Origin != metadata.OriginEgress {
+			continue
+		}
+		listener := res.Resource.(*envoy_listener.Listener)
+		dpAddress := listener.GetAddress().GetSocketAddress()
+		key := core_rules.InboundListener{
+			Address: dpAddress.GetAddress(),
+			Port:    dpAddress.GetPortValue(),
+		}
+		configurer := &v3.RBACConfigurer{
+			StatsName:    res.Name,
+			InboundRules: mtp.FromRules.InboundRules[key],
+		}
+		for _, filterChain := range listener.FilterChains {
+			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+				continue
+			}
+			if err := configurer.Configure(filterChain); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func hasSNIMatch(rules []*inbound.Rule) bool {
+	hasSNI := func(matches *[]common_api.Match) bool {
+		for _, m := range pointer.Deref(matches) {
+			if m.SNI != nil {
+				return true
+			}
+		}
+		return false
+	}
+	for _, rule := range rules {
+		conf, ok := rule.Conf.GetDefault().(api.RuleConf)
+		if !ok {
+			continue
+		}
+		if hasSNI(conf.Deny) || hasSNI(conf.Allow) || hasSNI(conf.AllowWithShadowDeny) {
+			return true
+		}
+	}
+	return false
+}
+
+func ensureTLSInspector(listener *envoy_listener.Listener) error {
+	for _, lf := range listener.ListenerFilters {
+		if lf.Name == envoy_listeners_v3.TlsInspectorName {
+			return nil
+		}
+	}
+	return (&envoy_listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
 }
 
 func (p plugin) denyRules() core_rules.Rules {
