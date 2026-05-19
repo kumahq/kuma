@@ -1,0 +1,139 @@
+resources:
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    filterChainMatcher:
+      matcherTree:
+        exactMatchMap:
+          map:
+            raw_buffer:
+              matcher:
+                matcherList:
+                  matchers:
+                  - onMatch:
+                      matcher:
+                        matcherTree:
+                          exactMatchMap:
+                            map:
+                              "3306":
+                                action:
+                                  name: meshpassthrough_tcp_172.12.2.2_3306
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_tcp_172.12.2.2_3306
+                          input:
+                            name: envoy.matching.inputs.destination_port
+                            typedConfig:
+                              '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+                    predicate:
+                      singlePredicate:
+                        customMatch:
+                          name: envoy.matching.matchers.ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
+                            cidrRanges:
+                            - addressPrefix: 172.12.2.2
+                              prefixLen: 32
+                            statPrefix: 172.12.2.2
+                        input:
+                          name: envoy.matching.inputs.destination_ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
+                  - onMatch:
+                      matcher:
+                        matcherTree:
+                          exactMatchMap:
+                            map:
+                              "3307":
+                                action:
+                                  name: meshpassthrough_tcp_172.12.2.2/24_3307
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_tcp_172.12.2.2/24_3307
+                          input:
+                            name: envoy.matching.inputs.destination_port
+                            typedConfig:
+                              '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+                    predicate:
+                      singlePredicate:
+                        customMatch:
+                          name: envoy.matching.matchers.ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
+                            cidrRanges:
+                            - addressPrefix: 172.12.2.0
+                              prefixLen: 24
+                            statPrefix: 172.12.2.2/24
+                        input:
+                          name: envoy.matching.inputs.destination_ip
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
+        input:
+          name: envoy.matching.inputs.transport_protocol
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.TransportProtocolInput
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_tcp_172.12.2.2_3306
+          statPrefix: meshpassthrough_tcp_172_12_2_2_3306
+      name: meshpassthrough_tcp_172.12.2.2_3306
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_tcp_172.12.2.2/24_3307
+          statPrefix: meshpassthrough_tcp_172_12_2_2_24_3307
+      name: meshpassthrough_tcp_172.12.2.2/24_3307
+    listenerFilters:
+    - name: envoy.filters.listener.original_dst
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.original_dst.v3.OriginalDst
+    - filterDisabled:
+        orMatch:
+          rules:
+          - destinationPortRange:
+              end: 3307
+              start: 3306
+          - destinationPortRange:
+              end: 3308
+              start: 3307
+      name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    - filterDisabled:
+        orMatch:
+          rules:
+          - destinationPortRange:
+              end: 3307
+              start: 3306
+          - destinationPortRange:
+              end: 3308
+              start: 3307
+      name: envoy.filters.listener.http_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
+    name: outbound:passthrough:ipv4
+    trafficDirection: OUTBOUND
+- name: outbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: '::'
+        portValue: 15001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: outbound:passthrough:ipv6
+          statPrefix: outbound_passthrough_ipv6
+    name: outbound:passthrough:ipv6
+    trafficDirection: OUTBOUND
