@@ -347,11 +347,11 @@
         "name": "kuma:readiness",
         "type": "STATIC"
       },
-      "localhost:3000": {
-        "altStatName": "localhost_3000",
+      "localhost:8080": {
+        "altStatName": "localhost_8080",
         "connectTimeout": "5s",
         "loadAssignment": {
-          "clusterName": "localhost:3000",
+          "clusterName": "localhost:8080",
           "endpoints": [
             {
               "lbEndpoints": [
@@ -360,7 +360,7 @@
                     "address": {
                       "socketAddress": {
                         "address": "IP_REDACTED",
-                        "portValue": 3000
+                        "portValue": 8080
                       }
                     }
                   }
@@ -369,8 +369,21 @@
             }
           ]
         },
-        "name": "localhost:3000",
+        "name": "localhost:8080",
         "type": "STATIC",
+        "typedExtensionProtocolOptions": {
+          "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+            "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+            "commonHttpProtocolOptions": {
+              "idleTimeout": "3600s",
+              "maxConnectionDuration": "0s",
+              "maxStreamDuration": "0s"
+            },
+            "explicitHttpConfig": {
+              "httpProtocolOptions": {}
+            }
+          }
+        },
         "upstreamBindConfig": {
           "sourceAddress": {
             "address": "IP_REDACTED",
@@ -586,48 +599,109 @@
       }
     },
     "type.googleapis.com/envoy.config.listener.v3.Listener": {
-      "inbound:IP_REDACTED:3000": {
+      "inbound:IP_REDACTED:80": {
         "address": {
           "socketAddress": {
             "address": "IP_REDACTED",
-            "portValue": 3000
+            "portValue": 80
           }
         },
         "bindToPort": false,
-        "enableReusePort": true,
+        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
               {
-                "name": "envoy.filters.network.rbac",
+                "name": "envoy.filters.network.http_connection_manager",
                 "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC",
-                  "rules": {
-                    "policies": {
-                      "MeshTrafficPermission": {
-                        "permissions": [
-                          {
-                            "any": true
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "commonHttpProtocolOptions": {
+                    "idleTimeout": "0s"
+                  },
+                  "forwardClientCertDetails": "SANITIZE_SET",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.rbac",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC",
+                        "rules": {
+                          "policies": {
+                            "MeshTrafficPermission": {
+                              "permissions": [
+                                {
+                                  "any": true
+                                }
+                              ],
+                              "principals": [
+                                {
+                                  "any": true
+                                }
+                              ]
+                            }
                           }
+                        }
+                      }
+                    },
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 8
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 16
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 12
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      }
+                    ]
+                  },
+                  "requestHeadersTimeout": "0s",
+                  "routeConfig": {
+                    "name": "inbound:zone-proxy-test-server-no-reusable-ports",
+                    "requestHeadersToRemove": [
+                      "x-kuma-tags"
+                    ],
+                    "validateClusters": false,
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
                         ],
-                        "principals": [
+                        "name": "zone-proxy-test-server-no-reusable-ports",
+                        "routes": [
                           {
-                            "any": true
+                            "match": {
+                              "prefix": "/"
+                            },
+                            "route": {
+                              "cluster": "localhost:8080",
+                              "idleTimeout": "1800s",
+                              "timeout": "15s"
+                            }
                           }
                         ]
                       }
-                    }
+                    ]
                   },
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              },
-              {
-                "name": "envoy.filters.network.tcp_proxy",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-                  "cluster": "localhost:3000",
-                  "idleTimeout": "3600s",
-                  "statPrefix": "STAT_PREFIX_REDACTED"
+                  "setCurrentClientCertDetails": {
+                    "uri": true
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED",
+                  "streamIdleTimeout": "3600s"
                 }
               }
             ],
@@ -673,13 +747,16 @@
         "metadata": {
           "filterMetadata": {
             "io.kuma.tags": {
-              "kuma.io/service": "zone-proxy-demo-client",
+              "instance": "1",
+              "kuma.io/protocol": "http",
+              "kuma.io/service": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/zone": "kuma-3",
-              "team": "client-owners"
+              "team": "server-owners",
+              "version": "v1"
             }
           }
         },
-        "name": "inbound:IP_REDACTED:3000",
+        "name": "inbound:IP_REDACTED:80",
         "trafficDirection": "INBOUND"
       },
       "inbound:passthrough:ipv4": {
@@ -689,11 +766,11 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": true,
+        "enableReusePort": false,
         "filterChains": [
           {
             "filterChainMatch": {
-              "destinationPort": 3000
+              "destinationPort": 80
             },
             "filters": [
               {
@@ -718,11 +795,11 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": true,
+        "enableReusePort": false,
         "filterChains": [
           {
             "filterChainMatch": {
-              "destinationPort": 3000
+              "destinationPort": 80
             },
             "filters": [
               {
@@ -747,7 +824,7 @@
             "portValue": 0
           }
         },
-        "enableReusePort": true,
+        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
