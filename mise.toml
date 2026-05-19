@@ -25,8 +25,8 @@ yq = "4.47.1"
 "go:sigs.k8s.io/controller-runtime/tools/setup-envtest" = "v0.0.0-20250828001511-fc84a60eaaae"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
+#     .github/actions/run-e2e/action.yml
 #     .github/workflows/_build_publish.yaml
-#     .github/workflows/_e2e.yaml
 #     .github/workflows/_test.yaml
 #     .github/workflows/build-test-distribute.yaml
 #     .github/workflows/merge-release-to-master.yaml
