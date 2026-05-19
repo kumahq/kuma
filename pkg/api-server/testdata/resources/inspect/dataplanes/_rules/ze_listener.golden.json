@@ -1,0 +1,75 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "labels": {},
+  "mesh": "mesh-1",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "inboundRules": [
+    {
+     "inbound": {
+      "name": "main-port",
+      "port": 8080,
+      "tags": {
+       "kuma.io/service": "foo"
+      }
+     },
+     "rules": [
+      {
+       "conf": [
+        {
+         "idleTimeout": "7s"
+        }
+       ],
+       "origin": [
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "mesh-1",
+          "name": "global",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "inbound": {
+      "port": 10002,
+      "tags": null
+     },
+     "rules": [
+      {
+       "conf": [
+        {
+         "idleTimeout": "7s"
+        }
+       ],
+       "origin": [
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "mesh-1",
+          "name": "global",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "toResourceRules": [],
+   "toRules": [],
+   "type": "MeshTimeout",
+   "warnings": []
+  }
+ ]
+}

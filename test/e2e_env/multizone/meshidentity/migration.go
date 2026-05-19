@@ -1,6 +1,7 @@
 package meshidentity
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -135,7 +136,7 @@ spec:
 	}
 
 	isMeshIdentityReady := func(cluster *K8sCluster, name string, hasSelector bool) (bool, error) {
-		output, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
+		output, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
 		if err != nil {
 			return false, err
 		}
