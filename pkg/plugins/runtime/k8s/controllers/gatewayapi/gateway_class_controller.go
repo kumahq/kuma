@@ -14,8 +14,11 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	kube_event "sigs.k8s.io/controller-runtime/pkg/event"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -59,14 +62,17 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		return kube_ctrl.Result{}, err
 	}
 
+	var finalizerUpdated bool
 	if len(gateways.Items) > 0 {
-		controllerutil.AddFinalizer(class, gatewayapi_v1.GatewayClassFinalizerGatewaysExist)
+		finalizerUpdated = controllerutil.AddFinalizer(class, gatewayapi_v1.GatewayClassFinalizerGatewaysExist)
 	} else {
-		controllerutil.RemoveFinalizer(class, gatewayapi_v1.GatewayClassFinalizerGatewaysExist)
+		finalizerUpdated = controllerutil.RemoveFinalizer(class, gatewayapi_v1.GatewayClassFinalizerGatewaysExist)
 	}
 
-	if err := r.Update(ctx, class); err != nil {
-		return kube_ctrl.Result{}, err
+	if finalizerUpdated {
+		if err := r.Update(ctx, class); err != nil {
+			return kube_ctrl.Result{}, err
+		}
 	}
 
 	// Prepare modified object for patching status
@@ -214,6 +220,8 @@ func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_hand
 }
 
 func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+	startupEvents := make(chan kube_event.GenericEvent, 1)
+
 	// Add an index to Gateways for use in Reconcile
 	indexLog := r.Log.WithName("gatewayClassNameIndexer")
 
@@ -248,9 +256,30 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		return err
 	}
 
+	if err := mgr.Add(kube_manager.RunnableFunc(func(ctx context.Context) error {
+		if !mgr.GetCache().WaitForCacheSync(ctx) {
+			return nil
+		}
+
+		select {
+		case startupEvents <- kube_event.GenericEvent{}:
+		case <-ctx.Done():
+			return nil
+		}
+
+		<-ctx.Done()
+		return nil
+	})); err != nil {
+		return err
+	}
+
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-gateway-class-controller").
 		For(&gatewayapi.GatewayClass{}).
+		WatchesRawSource(kube_source.Channel(
+			startupEvents,
+			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
+		)).
 		// When something changes with Gateways, we want to reconcile
 		// GatewayClasses
 		Watches(
