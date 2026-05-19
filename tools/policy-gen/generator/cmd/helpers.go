@@ -117,7 +117,7 @@ func (x *Rule) GetDefault() interface{} {
 
 func (x *Rule) GetMatches() []common_api.Match {
 {{- if .ruleHasMatches }}
-	return pointer.Deref(x.Matches)
+	return pointer.DerefOr(x.Matches, []common_api.Match{})
 {{- else }}
 	return []common_api.Match{}
 {{- end }}
