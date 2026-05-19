@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -229,8 +231,6 @@ func (s *UniversalApp) ReStart() error {
 	if err := s.KillMainApp(); err != nil {
 		return err
 	}
-	// No needed but this just in case kill -9 is not instant
-	time.Sleep(1 * time.Second)
 	return s.StartMainApp()
 }
 
@@ -240,7 +240,15 @@ func (s *UniversalApp) KillMainApp() error {
 	if err != nil {
 		return err
 	}
-	return nil
+
+	pattern := s.mainAppProcessPattern()
+	if pattern == "" {
+		return nil
+	}
+	if err := s.killMainAppProcess(pattern); err != nil {
+		return err
+	}
+	return s.waitMainAppProcessStopped(pattern)
 }
 
 func (s *UniversalApp) StartMainApp() error {
@@ -257,6 +265,59 @@ func (s *UniversalApp) CreateMainApp(cmd string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (s *UniversalApp) mainAppProcessPattern() string {
+	lines := strings.Split(s.mainAppCmd, "\n")
+	for _, line := range slices.Backward(lines) {
+		line := strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		return line
+	}
+	return strings.TrimSpace(s.mainAppCmd)
+}
+
+func (s *UniversalApp) killMainAppProcess(pattern string) error {
+	_, _, err := s.universalNetworking.RunCommand(fmt.Sprintf("pkill -9 -f %q", s.mainAppProcessRegex(pattern)))
+	if isExitStatus(err, 1) {
+		return nil
+	}
+	return err
+}
+
+func (s *UniversalApp) waitMainAppProcessStopped(pattern string) error {
+	cmd := fmt.Sprintf("pgrep -f %q", s.mainAppProcessRegex(pattern))
+	for range 20 {
+		out, _, err := s.universalNetworking.RunCommand(cmd)
+		if isExitStatus(err, 1) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		Logf("App:%q process still running: %q", s.appName, strings.TrimSpace(out))
+		time.Sleep(500 * time.Millisecond)
+	}
+	return errors.Errorf("timed out waiting for app:%q process to stop", s.appName)
+}
+
+func (s *UniversalApp) mainAppProcessRegex(pattern string) string {
+	executable, args, found := strings.Cut(pattern, " ")
+	if strings.Contains(executable, "/") {
+		return "^" + regexp.QuoteMeta(pattern)
+	}
+	prefix := "^(.*/)?" + regexp.QuoteMeta(executable)
+	if !found {
+		return prefix
+	}
+	return prefix + `[[:space:]]+` + regexp.QuoteMeta(args)
+}
+
+func isExitStatus(err error, status int) bool {
+	var exitError *ssh.ExitError
+	return errors.As(err, &exitError) && exitError.ExitStatus() == status
 }
 
 func (s *UniversalApp) CreateSpireAgent(
