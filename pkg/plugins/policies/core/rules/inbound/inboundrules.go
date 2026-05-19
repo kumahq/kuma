@@ -59,7 +59,7 @@ func (r *ruleEntryAdapter[T]) GetDefault() any {
 }
 
 func (r *ruleEntryAdapter[T]) GetMatches() []common_api.Match {
-	return nil
+	return []common_api.Match{}
 }
 
 type PolicyWithRules interface {

@@ -36,7 +36,7 @@ func (x *Rule) GetDefault() interface{} {
 }
 
 func (x *Rule) GetMatches() []common_api.Match {
-	return nil
+	return []common_api.Match{}
 }
 
 func (x *MeshTrafficPermission) GetRules() []inbound.RuleEntry {

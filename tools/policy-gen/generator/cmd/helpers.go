@@ -119,7 +119,7 @@ func (x *Rule) GetMatches() []common_api.Match {
 {{- if .ruleHasMatches }}
 	return pointer.Deref(x.Matches)
 {{- else }}
-	return nil
+	return []common_api.Match{}
 {{- end }}
 }
 
