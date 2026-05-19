@@ -177,7 +177,7 @@ func hasSNIMatch(rules []*inbound.Rule) bool {
 		return false
 	}
 	for _, rule := range rules {
-		conf, ok := rule.Conf.GetDefault().(api.RuleConf)
+		conf, ok := rule.Conf.(api.RuleConf)
 		if !ok {
 			continue
 		}
