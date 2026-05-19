@@ -45,4 +45,32 @@ var _ = Describe("gatewayToClassMapper", func() {
 			NamespacedName: kube_types.NamespacedName{Name: "kuma"},
 		}))
 	})
+
+	It("maps startup GatewayClass events to the class", func() {
+		class := &gatewayapi.GatewayClass{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "kuma"},
+			Spec: gatewayapi.GatewayClassSpec{
+				ControllerName: common.ControllerName,
+			},
+		}
+
+		requests := gatewayToClassMapper(logr.Discard(), nil)(context.Background(), class)
+
+		Expect(requests).To(ConsistOf(kube_reconcile.Request{
+			NamespacedName: kube_types.NamespacedName{Name: "kuma"},
+		}))
+	})
+
+	It("ignores startup GatewayClass events for other controllers", func() {
+		class := &gatewayapi.GatewayClass{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "other"},
+			Spec: gatewayapi.GatewayClassSpec{
+				ControllerName: gatewayapi.GatewayController("other.example/controller"),
+			},
+		}
+
+		requests := gatewayToClassMapper(logr.Discard(), nil)(context.Background(), class)
+
+		Expect(requests).To(BeEmpty())
+	})
 })
