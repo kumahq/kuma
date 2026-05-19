@@ -33,7 +33,10 @@ var sniCapableShortNames = map[string]struct{}{
 //
 // Namespace is only emitted when the resource is also zone-scoped: a
 // global-originated resource (zone == "") drops the namespace segment even
-// if the k8s label is present.
+// if the k8s label is present. A global-originated resource can only
+// originate from Global CP, so namespace collisions across zones aren't
+// possible — universal has no namespace, and k8s would always be
+// kuma-system on Global.
 func FromKRI(id kri.Identifier) string {
 	return strings.Join(buildSegments(id), ".")
 }
@@ -48,7 +51,7 @@ func FromKRI(id kri.Identifier) string {
 func ValidateKRI(id kri.Identifier) []error {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	if err != nil {
-		return nil
+		return []error{fmt.Errorf("unknown resource type %q: %w", id.ResourceType, err)}
 	}
 	if _, ok := sniCapableShortNames[desc.ShortName]; !ok {
 		return nil
@@ -78,11 +81,11 @@ func ValidateKRI(id kri.Identifier) []error {
 		}
 	}
 	if msgs := k8s_validation.IsDNS1123Label(id.SectionName); len(msgs) > 0 {
-		errs = append(errs, fmt.Errorf("port %q does not conform to RFC 1123: %s", id.SectionName, strings.Join(msgs, "; ")))
+		errs = append(errs, fmt.Errorf("%s", strings.Join(msgs, "; ")))
 	}
 
 	if sni := FromKRI(id); len(sni) > dnsHostnameLimit {
-		errs = append(errs, fmt.Errorf("computed SNI for port %q is %d characters which exceeds the DNS hostname limit (%d)", id.SectionName, len(sni), dnsHostnameLimit))
+		errs = append(errs, fmt.Errorf("computed SNI is %d characters which exceeds the DNS hostname limit (%d)", len(sni), dnsHostnameLimit))
 	}
 	return errs
 }

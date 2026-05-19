@@ -5,6 +5,5 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
-- 'Invalid MeshService SNI: port "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-  does not conform to RFC 1123: must be no more than 63 characters. It does not conform
-  to the DNS format (RFC 1123). This is deprecated.'
+- 'Invalid MeshService SNI (port "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"):
+  must be no more than 63 characters. This is deprecated.'

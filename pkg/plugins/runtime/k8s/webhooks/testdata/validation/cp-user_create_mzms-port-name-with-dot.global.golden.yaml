@@ -5,6 +5,5 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
-- 'Invalid MeshMultiZoneService SNI: port "bad.port" does not conform to RFC 1123:
-  must not contain dots. It does not conform to the DNS format (RFC 1123). This is
-  deprecated.'
+- 'Invalid MeshMultiZoneService SNI (port "bad.port"): must not contain dots. This
+  is deprecated.'

@@ -16,17 +16,28 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/sni"
 )
 
+const (
+	regex1123 = "a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')"
+	maxLen63  = "must be no more than 63 characters"
+	noDots    = "must not contain dots"
+	emptyMsg  = "mesh, name and sectionName must be non-empty"
+)
+
 var _ = Describe("FromKRI / ValidateKRI", func() {
 	type kriTestCase struct {
-		id        kri.Identifier
-		expected  string
-		expectErr bool
+		id           kri.Identifier
+		expected     string
+		expectedErrs []string // exact error texts; empty = expect no errors
 	}
 	DescribeTable("",
 		func(tc kriTestCase) {
 			errs := sni.ValidateKRI(tc.id)
-			if tc.expectErr {
-				Expect(errs).ToNot(BeEmpty())
+			if len(tc.expectedErrs) > 0 {
+				actual := make([]string, 0, len(errs))
+				for _, e := range errs {
+					actual = append(actual, e.Error())
+				}
+				Expect(actual).To(ConsistOf(tc.expectedErrs))
 				return
 			}
 			Expect(errs).To(BeEmpty())
@@ -107,7 +118,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{emptyMsg},
 		}),
 		Entry("error empty name", kriTestCase{
 			id: kri.Identifier{
@@ -115,7 +126,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Mesh:         "default",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{emptyMsg},
 		}),
 		Entry("error empty sectionName", kriTestCase{
 			id: kri.Identifier{
@@ -123,7 +134,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Mesh:         "default",
 				Name:         "backend",
 			},
-			expectErr: true,
+			expectedErrs: []string{emptyMsg},
 		}),
 		Entry("namespace ignored when zone is empty (global k8s)", kriTestCase{
 			// Global-originated resource carries the kube namespace label but no zone,
@@ -156,7 +167,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`mesh "de.fault" does not conform to RFC 1123: ` + noDots},
 		}),
 		Entry("error name contains dot", kriTestCase{
 			id: kri.Identifier{
@@ -165,7 +176,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "back.end",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`name "back.end" does not conform to RFC 1123: ` + noDots},
 		}),
 		Entry("error zone contains dot", kriTestCase{
 			id: kri.Identifier{
@@ -175,7 +186,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`zone "east.zone" does not conform to RFC 1123: ` + noDots},
 		}),
 		Entry("error sectionName contains dot", kriTestCase{
 			id: kri.Identifier{
@@ -184,7 +195,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http.port",
 			},
-			expectErr: true,
+			expectedErrs: []string{noDots},
 		}),
 		Entry("label exactly 63 chars", kriTestCase{
 			id: kri.Identifier{
@@ -202,7 +213,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         strings.Repeat("a", 64),
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`name "` + strings.Repeat("a", 64) + `" does not conform to RFC 1123: ` + maxLen63},
 		}),
 		Entry("error total exceeds 253 chars", kriTestCase{
 			id: kri.Identifier{
@@ -213,7 +224,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         strings.Repeat("d", 63),
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{"computed SNI is 269 characters which exceeds the DNS hostname limit (253)"},
 		}),
 		Entry("error namespace contains dot", kriTestCase{
 			id: kri.Identifier{
@@ -224,7 +235,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`namespace "app.ns" does not conform to RFC 1123: ` + noDots},
 		}),
 		Entry("error namespace exceeds 63 chars", kriTestCase{
 			id: kri.Identifier{
@@ -235,7 +246,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`namespace "` + strings.Repeat("a", 64) + `" does not conform to RFC 1123: ` + maxLen63},
 		}),
 		Entry("error zone exceeds 63 chars", kriTestCase{
 			id: kri.Identifier{
@@ -245,7 +256,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`zone "` + strings.Repeat("z", 64) + `" does not conform to RFC 1123: ` + maxLen63},
 		}),
 		Entry("error mesh exceeds 63 chars", kriTestCase{
 			id: kri.Identifier{
@@ -254,7 +265,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`mesh "` + strings.Repeat("m", 64) + `" does not conform to RFC 1123: ` + maxLen63},
 		}),
 		Entry("zone exactly 63 chars", kriTestCase{
 			id: kri.Identifier{
@@ -302,20 +313,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  strings.Repeat("p", 64),
 			},
-			expectErr: true,
-		}),
-		Entry("total length just under 253 chars passes", kriTestCase{
-			// 4 + 1 + 4 + 1 + 60 + 1 + 60 + 1 + 60 + 1 + 60 + 1 + 4 = 258 — still > 253
-			// trim to fit: 4 + 1 + 4 + 1 + 58 + 1 + 58 + 1 + 58 + 1 + 58 + 1 + 4 = 250
-			id: kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Mesh:         strings.Repeat("a", 58),
-				Zone:         strings.Repeat("b", 58),
-				Namespace:    strings.Repeat("c", 58),
-				Name:         strings.Repeat("d", 58),
-				SectionName:  "http",
-			},
-			expected: "sni.msvc." + strings.Repeat("a", 58) + "." + strings.Repeat("b", 58) + "." + strings.Repeat("c", 58) + "." + strings.Repeat("d", 58) + ".http",
+			expectedErrs: []string{maxLen63},
 		}),
 		Entry("MeshExternalService zone with namespace", kriTestCase{
 			id: kri.Identifier{
@@ -348,15 +346,6 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			},
 			expected: "sni.msvc.default.back-end-service.http",
 		}),
-		Entry("numeric-only sectionName is valid", kriTestCase{
-			id: kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Mesh:         "default",
-				Name:         "backend",
-				SectionName:  "65535",
-			},
-			expected: "sni.msvc.default.backend.65535",
-		}),
 		Entry("error mesh contains uppercase", kriTestCase{
 			id: kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
@@ -364,7 +353,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`mesh "Default" does not conform to RFC 1123: ` + regex1123},
 		}),
 		Entry("error name contains underscore", kriTestCase{
 			id: kri.Identifier{
@@ -373,7 +362,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "back_end",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`name "back_end" does not conform to RFC 1123: ` + regex1123},
 		}),
 		Entry("error name starts with dash", kriTestCase{
 			id: kri.Identifier{
@@ -382,7 +371,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "-backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`name "-backend" does not conform to RFC 1123: ` + regex1123},
 		}),
 		Entry("error name ends with dash", kriTestCase{
 			id: kri.Identifier{
@@ -391,7 +380,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend-",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`name "backend-" does not conform to RFC 1123: ` + regex1123},
 		}),
 		Entry("error zone contains uppercase", kriTestCase{
 			id: kri.Identifier{
@@ -401,7 +390,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`zone "East" does not conform to RFC 1123: ` + regex1123},
 		}),
 		Entry("error namespace contains underscore", kriTestCase{
 			id: kri.Identifier{
@@ -412,7 +401,7 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "http",
 			},
-			expectErr: true,
+			expectedErrs: []string{`namespace "app_ns" does not conform to RFC 1123: ` + regex1123},
 		}),
 		Entry("error sectionName contains uppercase", kriTestCase{
 			id: kri.Identifier{
@@ -421,46 +410,37 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 				Name:         "backend",
 				SectionName:  "HTTP",
 			},
-			expectErr: true,
-		}),
-		Entry("sectionName mixing digits and letters is valid", kriTestCase{
-			id: kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Mesh:         "default",
-				Name:         "backend",
-				SectionName:  "8080x",
-			},
-			expected: "sni.msvc.default.backend.8080x",
-		}),
-		Entry("sectionName six digits is valid", kriTestCase{
-			id: kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Mesh:         "default",
-				Name:         "backend",
-				SectionName:  "123456",
-			},
-			expected: "sni.msvc.default.backend.123456",
-		}),
-		Entry("sectionName with letters then digits is valid", kriTestCase{
-			id: kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Mesh:         "default",
-				Name:         "backend",
-				SectionName:  "http2",
-			},
-			expected: "sni.msvc.default.backend.http2",
+			expectedErrs: []string{regex1123},
 		}),
 	)
 
+	DescribeTable("valid sectionName forms",
+		func(sectionName string) {
+			id := kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         "default",
+				Name:         "backend",
+				SectionName:  sectionName,
+			}
+			Expect(sni.ValidateKRI(id)).To(BeEmpty())
+			Expect(sni.FromKRI(id)).To(Equal("sni.msvc.default.backend." + sectionName))
+		},
+		Entry("numeric only", "65535"),
+		Entry("six digits", "123456"),
+		Entry("digits then letter", "8080x"),
+		Entry("letters then digits", "http2"),
+	)
+
 	It("reports an RFC 1123 violation for an over-long label", func() {
+		longName := strings.Repeat("a", 64)
 		errs := sni.ValidateKRI(kri.Identifier{
 			ResourceType: meshservice_api.MeshServiceType,
 			Mesh:         "default",
-			Name:         strings.Repeat("a", 64),
+			Name:         longName,
 			SectionName:  "http",
 		})
-		Expect(errs).ToNot(BeEmpty())
-		Expect(errs[0].Error()).To(ContainSubstring("RFC 1123"))
+		Expect(errs).To(HaveLen(1))
+		Expect(errs[0]).To(MatchError(`name "` + longName + `" does not conform to RFC 1123: ` + maxLen63))
 	})
 
 	It("reports a DNS hostname limit violation", func() {
@@ -472,12 +452,8 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			Name:         strings.Repeat("d", 63),
 			SectionName:  "http",
 		})
-		Expect(errs).ToNot(BeEmpty())
-		var joined strings.Builder
-		for _, e := range errs {
-			joined.WriteString(e.Error() + "\n")
-		}
-		Expect(joined.String()).To(ContainSubstring("DNS hostname limit"))
+		Expect(errs).To(HaveLen(1))
+		Expect(errs[0]).To(MatchError(`computed SNI is 269 characters which exceeds the DNS hostname limit (253)`))
 	})
 
 	It("reports multiple independent violations at once", func() {
@@ -487,7 +463,9 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			Name:         "foo.bar",               // dot in name
 			SectionName:  strings.Repeat("a", 64), // port > 63 chars
 		})
-		Expect(len(errs)).To(BeNumerically(">=", 2))
+		Expect(errs).To(HaveLen(2))
+		Expect(errs[0]).To(MatchError(`name "foo.bar" does not conform to RFC 1123: ` + noDots))
+		Expect(errs[1]).To(MatchError(maxLen63))
 	})
 
 	It("reports separate errors for each non-conforming label", func() {
@@ -498,22 +476,26 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			Name:         strings.Repeat("c", 64),
 			SectionName:  "http",
 		})
-		labelErrs := 0
+		actual := make([]string, 0, len(errs))
 		for _, e := range errs {
-			if strings.Contains(e.Error(), "RFC 1123") {
-				labelErrs++
-			}
+			actual = append(actual, e.Error())
 		}
-		Expect(labelErrs).To(BeNumerically(">=", 3))
+		Expect(actual).To(ContainElements(
+			`mesh "`+strings.Repeat("a", 64)+`" does not conform to RFC 1123: `+maxLen63,
+			`zone "`+strings.Repeat("b", 64)+`" does not conform to RFC 1123: `+maxLen63,
+			`name "`+strings.Repeat("c", 64)+`" does not conform to RFC 1123: `+maxLen63,
+		))
 	})
 
-	It("returns nil for an unknown resource type", func() {
-		Expect(sni.ValidateKRI(kri.Identifier{
+	It("surfaces an error for an unknown resource type", func() {
+		errs := sni.ValidateKRI(kri.Identifier{
 			ResourceType: model.ResourceType("DoesNotExist"),
 			Mesh:         "default",
 			Name:         "backend",
 			SectionName:  "http",
-		})).To(BeNil())
+		})
+		Expect(errs).To(HaveLen(1))
+		Expect(errs[0].Error()).To(HavePrefix(`unknown resource type "DoesNotExist"`))
 	})
 
 	It("returns nil for a registered but non-SNI resource type", func() {
@@ -534,8 +516,6 @@ var _ = Describe("FromKRI / ValidateKRI", func() {
 			SectionName:  "http",
 		})
 		Expect(errs).To(HaveLen(1))
-		Expect(errs[0].Error()).To(ContainSubstring("mesh"))
-		Expect(errs[0].Error()).To(ContainSubstring("de.fault"))
-		Expect(errs[0].Error()).To(ContainSubstring("RFC 1123"))
+		Expect(errs[0]).To(MatchError(`mesh "de.fault" does not conform to RFC 1123: ` + noDots))
 	})
 })

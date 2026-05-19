@@ -5,5 +5,5 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
-- 'Invalid MeshExternalService SNI: zone "east.1" does not conform to RFC 1123: must
-  not contain dots. It does not conform to the DNS format (RFC 1123). This is deprecated.'
+- 'Invalid MeshExternalService SNI (port "80"): zone "east.1" does not conform to
+  RFC 1123: must not contain dots. This is deprecated.'

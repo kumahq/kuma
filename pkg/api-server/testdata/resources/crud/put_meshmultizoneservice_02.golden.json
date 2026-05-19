@@ -1,6 +1,6 @@
 {
  "warnings": [
   "Invalid MeshMultiZoneService resource name: 'http.bin'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')",
-  "Invalid MeshMultiZoneService SNI: name \"http.bin\" does not conform to RFC 1123: must not contain dots. It does not conform to the DNS format (RFC 1123). This is deprecated."
+  "Invalid MeshMultiZoneService SNI (port \"8080\"): name \"http.bin\" does not conform to RFC 1123: must not contain dots. This is deprecated."
  ]
 }

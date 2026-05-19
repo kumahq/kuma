@@ -22,17 +22,11 @@ func (t *MeshServiceResource) Deprecations() []string {
 	}
 
 	base := kri.From(t)
-	seen := map[string]struct{}{}
 	for _, port := range t.Spec.Ports {
 		for _, err := range sni.ValidateKRI(kri.WithSectionName(base, port.GetName())) {
-			msg := fmt.Sprintf(
-				"Invalid %s SNI: %s. It does not conform to the DNS format (RFC 1123). This is deprecated.",
-				MeshServiceResourceTypeDescriptor.Name, err)
-			if _, ok := seen[msg]; ok {
-				continue
-			}
-			seen[msg] = struct{}{}
-			deprecations = append(deprecations, msg)
+			deprecations = append(deprecations, fmt.Sprintf(
+				"Invalid %s SNI (port %q): %s. This is deprecated.",
+				MeshServiceResourceTypeDescriptor.Name, port.GetName(), err))
 		}
 	}
 

@@ -10,6 +10,5 @@ warnings:
   consist of lower case alphanumeric characters or ''-'', start with an alphabetic
   character, and end with an alphanumeric character (e.g. ''my-name'',  or ''abc-123'',
   regex used for validation is ''[a-z]([-a-z0-9]*[a-z0-9])?'')'
-- 'Invalid MeshMultiZoneService SNI: name "global.backend" does not conform to RFC
-  1123: must not contain dots. It does not conform to the DNS format (RFC 1123). This
-  is deprecated.'
+- 'Invalid MeshMultiZoneService SNI (port "http"): name "global.backend" does not
+  conform to RFC 1123: must not contain dots. This is deprecated.'
