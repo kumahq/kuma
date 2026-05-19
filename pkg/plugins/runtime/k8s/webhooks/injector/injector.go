@@ -102,6 +102,7 @@ func New(
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	systemNamespace string,
+	deltaXdsEnabled bool,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -121,7 +122,7 @@ func New(
 			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
-			cfg.Spire.Enabled,
+			cfg.Spire.Enabled, deltaXdsEnabled,
 		),
 		systemNamespace: systemNamespace,
 	}, nil
