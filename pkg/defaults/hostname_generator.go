@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/k8s"
 )
 
-func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
+func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config, extensions context.Context) error {
 	if cfg.Defaults.SkipHostnameGenerators {
 		log.V(1).Info("skip ensuring default hostname generators because SkipHostnameGenerators is set to true")
 		return nil
