@@ -730,13 +730,13 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
@@ -789,13 +789,13 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
@@ -845,13 +845,13 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
@@ -1242,15 +1242,14 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 8080}: {
-						{Conf: &api.Rule{
-							Default: api.Conf{
-								Backends: &[]api.Backend{{
-									File: &api.FileBackend{
-										Path: "/tmp/from-log",
-									},
-								}},
-							},
-						}},
+						{Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/from-log",
+								},
+							}},
+						},
+						},
 					},
 				},
 				ToRules: core_rules.GatewayToRules{

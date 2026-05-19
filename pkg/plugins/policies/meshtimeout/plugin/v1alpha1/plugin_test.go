@@ -253,7 +253,7 @@ var _ = Describe("MeshTimeout", func() {
 						Address: "127.0.0.1",
 						Port:    80,
 					}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
 							Http: &api.Http{
@@ -262,7 +262,7 @@ var _ = Describe("MeshTimeout", func() {
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
 							},
-						}},
+						},
 					}},
 				},
 			},
@@ -416,7 +416,7 @@ var _ = Describe("MeshTimeout", func() {
 						Address: "127.0.0.1",
 						Port:    80,
 					}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
 							Http: &api.Http{
@@ -425,7 +425,7 @@ var _ = Describe("MeshTimeout", func() {
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
 							},
-						}},
+						},
 					}},
 				},
 			},
@@ -699,18 +699,17 @@ var _ = Describe("MeshTimeout", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "192.168.0.1", Port: 8080}: {
-						{Conf: &api.Rule{
-							Default: api.Conf{
-								IdleTimeout: test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("311s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-									RequestHeadersTimeout: test.ParseDuration("99s"),
-								},
+						{Conf: api.Conf{
+							IdleTimeout: test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("311s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+								RequestHeadersTimeout: test.ParseDuration("99s"),
 							},
-						}},
+						},
+						},
 					},
 				},
 				ToRules: core_rules.GatewayToRules{
