@@ -1242,13 +1242,14 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 8080}: {
-						{Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								File: &api.FileBackend{
-									Path: "/tmp/from-log",
-								},
-							}},
-						},
+						{
+							Conf: api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/from-log",
+									},
+								}},
+							},
 						},
 					},
 				},
