@@ -8,6 +8,7 @@ InboundRules:
       - file:
           path: /tmp/log/2
         type: File
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -22,6 +23,7 @@ InboundRules:
       - tcp:
           address: logging:8080
         type: Tcp
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"

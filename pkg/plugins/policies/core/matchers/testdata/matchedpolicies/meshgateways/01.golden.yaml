@@ -51,6 +51,7 @@ InboundRules:
       - file:
           path: /from-gateway
         type: File
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -66,6 +67,7 @@ InboundRules:
       - file:
           path: /from-gateway
         type: File
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -81,6 +83,7 @@ InboundRules:
       - file:
           path: /from-gateway
         type: File
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"

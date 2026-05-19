@@ -10,24 +10,24 @@ import (
 )
 
 type Rule struct {
-	Matches []common_api.Match `json:"matches,omitempty"`
+	Matches []common_api.Match `json:"matches"`
 	Conf    any                `json:"conf"`
 	Origin  common.Origin      `json:"origin"`
 }
 
 func MatchesAllIncomingTraffic[T any](rules []*Rule) T {
 	var result T
-	if len(rules) > 0 {
-		confs := util_slices.Map(rules, func(a *Rule) any {
-			return a.Conf
-		})
-		conf, err := merge.Confs(confs)
-		if err != nil {
-			return result
-		}
-		if len(conf) > 0 {
-			result = conf[0].(T)
-		}
+	catchAll := util_slices.Filter(rules, func(r *Rule) bool { return len(r.Matches) == 0 })
+	if len(catchAll) == 0 {
+		return result
+	}
+	confs := util_slices.Map(catchAll, func(a *Rule) any { return a.Conf })
+	conf, err := merge.Confs(confs)
+	if err != nil {
+		return result
+	}
+	if len(conf) > 0 {
+		result = conf[0].(T)
 	}
 	return result
 }

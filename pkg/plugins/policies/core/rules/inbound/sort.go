@@ -22,6 +22,9 @@ func SortRules(list []*Rule) {
 	})
 }
 
+// CompareByMatches compares the match keys of two rules. It assumes each rule
+// has at most one match — the invariant established by buildRules, which splits
+// multi-match rules into one rule per match before sorting.
 func CompareByMatches(a, b []common_api.Match) int {
 	var ma, mb common_api.Match
 	if len(a) > 0 {

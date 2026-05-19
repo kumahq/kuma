@@ -5,6 +5,7 @@ InboundRules:
       - spiffeID:
           type: Exact
           value: spiffe://mesh-1/dp-1
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -20,6 +21,7 @@ InboundRules:
       - spiffeID:
           type: Exact
           value: spiffe://mesh-1/dp-1
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -35,6 +37,7 @@ InboundRules:
       - spiffeID:
           type: Exact
           value: spiffe://mesh-1/dp-1
+    matches: []
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
