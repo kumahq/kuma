@@ -23,7 +23,7 @@ var _ = Describe("Envoy Admin CA defaults", func() {
 		manager := core_manager.NewResourceManager(store)
 
 		// when
-		err := defaults.EnsureEnvoyAdminCaExists(context.Background(), manager, logr.Discard(), kuma_cp.Config{})
+		err := defaults.EnsureEnvoyAdminCaExists(context.Background(), manager, logr.Discard(), kuma_cp.Config{}, context.Background())
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
