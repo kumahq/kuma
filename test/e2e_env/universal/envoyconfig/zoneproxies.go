@@ -78,6 +78,7 @@ func ZoneProxies() {
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshmetric"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshcircuitbreaker"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshhealthcheck"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("zoneproxies", "meshtrafficpermission"), "envoyconfig"),
 	)
 }
 

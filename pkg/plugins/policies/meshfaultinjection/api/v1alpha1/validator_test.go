@@ -198,6 +198,29 @@ rules:
           limit: 1000
           percentage: 1111
 `),
+		ErrorCases("matches sni is not supported",
+			[]validators.Violation{
+				{
+					Field:   "spec.rules[0].matches[0].sni",
+					Message: "is not supported on MeshFaultInjection",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - sni:
+          type: Exact
+          value: sni.extsvc.default.zone-1.aws-aurora.8443
+    default:
+      http:
+      - responseBandwidth:
+          limit: 1000Mbps
+          percentage: 50
+`),
 		ErrorCases("matches spiffeID incorrect",
 			[]validators.Violation{
 				{

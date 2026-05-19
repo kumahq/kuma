@@ -37,6 +37,7 @@ var _ = Describe("Ensure Hostname Generators", func() {
 				resManager,
 				logr.Discard(),
 				given.cpConfig,
+				context.Background(),
 			)
 
 			// then

@@ -19,6 +19,7 @@ func EnsureOnlyOneZoneExists(
 	resManager manager.ResourceManager,
 	logger logr.Logger,
 	cfg kuma_cp.Config,
+	extensions context.Context,
 ) error {
 	if cfg.Mode == config_core.Global {
 		return nil // Zone creation on Zone CP is local to the specific zone
