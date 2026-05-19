@@ -276,7 +276,7 @@ var _ = Describe("RBAC", func() {
 				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
 				Build()
 
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -331,7 +331,7 @@ var _ = Describe("RBAC", func() {
 				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
 				Build()
 
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -382,7 +382,7 @@ var _ = Describe("RBAC", func() {
 	Context("for DPP with ZoneEgress listener", func() {
 		buildZEListener := func(address string, port uint32, name string) func() *core_xds.Resource {
 			return func() *core_xds.Resource {
-				listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, address, port, core_xds.SocketAddressProtocolTCP).
+				listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, address, port, core_xds.SocketAddressProtocolTCP, true).
 					WithOverwriteName(name).
 					Configure(
 						listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "mes-1").Configure(
