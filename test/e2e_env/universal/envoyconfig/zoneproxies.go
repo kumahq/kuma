@@ -222,10 +222,14 @@ spec:
 		_, err := client.CollectEchoResponse(universal.Cluster, "zone-proxy-demo-client", "zone-proxy-test-server.svc.mesh.local")
 		g.Expect(err).ToNot(HaveOccurred())
 	}).Should(Succeed())
+	Eventually(func(g Gomega) {
+		_, err := client.CollectEchoResponse(universal.Cluster, "zone-proxy-demo-client", "zone-proxy-test-server-no-reusable-ports.svc.mesh.local")
+		g.Expect(err).ToNot(HaveOccurred())
+	}).Should(Succeed())
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP}, policies...)
+	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
 }
 
 func CleanupAfterZoneProxySuite() {
