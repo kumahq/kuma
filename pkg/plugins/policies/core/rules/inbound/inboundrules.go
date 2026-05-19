@@ -19,7 +19,7 @@ func MatchesAllIncomingTraffic[T any](rules []*Rule) T {
 	var result T
 	if len(rules) > 0 {
 		confs := util_slices.Map(rules, func(a *Rule) any {
-			return effectiveConf(a.Conf)
+			return a.Conf
 		})
 		conf, err := merge.Confs(confs)
 		if err != nil {
@@ -30,13 +30,6 @@ func MatchesAllIncomingTraffic[T any](rules []*Rule) T {
 		}
 	}
 	return result
-}
-
-func effectiveConf(conf any) any {
-	if entry, ok := conf.(common.BaseEntry); ok {
-		return entry.GetDefault()
-	}
-	return conf
 }
 
 type RuleEntry interface {
