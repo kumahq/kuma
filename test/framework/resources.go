@@ -17,6 +17,15 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/kumactl"
 )
 
+var kumactlConnectionErrorSubstrings = []string{
+	"connect: connection refused",
+	"connection reset by peer",
+	"EOF",
+	"failed to retrieve server version",
+	"use of closed network connection",
+	"unexpected EOF",
+}
+
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
 	_, err := retry.DoWithRetryE(
 		cluster.GetTesting(),
@@ -122,7 +131,14 @@ func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_mode
 				if key.Mesh != "" {
 					args = append(args, "-m", key.Mesh)
 				}
-				_, err := c.GetKumactlOptions().RunKumactlAndGetOutput(args...)
+				out, err := c.GetKumactlOptions().RunKumactlAndGetOutput(args...)
+				if err != nil && isKumactlConnectionError(out, err) {
+					if cluster, ok := c.(*K8sCluster); ok {
+						if refreshErr := cluster.RefreshKumaCPPortForwards(); refreshErr != nil {
+							return "", errors.Join(err, refreshErr)
+						}
+					}
+				}
 				return "", err
 			})
 		if err != nil {
@@ -130,6 +146,20 @@ func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_mode
 		}
 	}
 	return nil
+}
+
+func isKumactlConnectionError(output string, err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := output + "\n" + err.Error()
+	for _, substring := range kumactlConnectionErrorSubstrings {
+		if strings.Contains(msg, substring) {
+			return true
+		}
+	}
+	return false
 }
 
 func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (int, error) {

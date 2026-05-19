@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -36,6 +37,7 @@ type K8sControlPlane struct {
 	verbose    bool
 	replicas   int
 	apiHeaders []string
+	refreshMu  sync.Mutex
 }
 
 func NewK8sControlPlane(
@@ -98,6 +100,25 @@ func (c *K8sControlPlane) ClosePortForwards() {
 	if c.portFwd.apiServerTunnel != nil {
 		c.portFwd.apiServerTunnel.Close()
 	}
+}
+
+func (c *K8sControlPlane) RefreshPortForwards() error {
+	c.refreshMu.Lock()
+	defer c.refreshMu.Unlock()
+
+	c.ClosePortForwards()
+	c.PortForwardKumaCP()
+
+	if !c.cluster.opts.setupKumactl {
+		return nil
+	}
+
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return err
+	}
+
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token, c.apiHeaders)
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
