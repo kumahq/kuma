@@ -1,8 +1,12 @@
 package framework
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -15,6 +19,15 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v2/test/framework/kumactl"
 )
+
+var kumactlConnectionErrorSubstrings = []string{
+	"connect: connection refused",
+	"connection reset by peer",
+	"EOF",
+	"failed to retrieve server version",
+	"use of closed network connection",
+	"unexpected EOF",
+}
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
 	var errs []error
@@ -112,7 +125,14 @@ func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_mode
 				if key.Mesh != "" {
 					args = append(args, "-m", key.Mesh)
 				}
-				_, err := c.GetKumactlOptions().RunKumactlAndGetOutput(args...)
+				out, err := c.GetKumactlOptions().RunKumactlAndGetOutput(args...)
+				if err != nil && isKumactlConnectionError(out, err) {
+					if cluster, ok := c.(*K8sCluster); ok {
+						if refreshErr := cluster.RefreshKumaCPPortForwards(); refreshErr != nil {
+							return "", errors.Join(err, refreshErr)
+						}
+					}
+				}
 				return "", err
 			})
 		if err != nil {
@@ -120,4 +140,59 @@ func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_mode
 		}
 	}
 	return nil
+}
+
+func isKumactlConnectionError(output string, err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := output + "\n" + err.Error()
+	for _, substring := range kumactlConnectionErrorSubstrings {
+		if strings.Contains(msg, substring) {
+			return true
+		}
+	}
+	return false
+}
+
+func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (int, error) {
+	output, err := c.GetKumactlOptions().RunKumactlAndGetOutput("get", resource.KumactlListArg, "-o", "json")
+	if err != nil {
+		return 0, err
+	}
+	t := struct {
+		Total int `json:"total"`
+	}{}
+	if err := json.Unmarshal([]byte(output), &t); err != nil {
+		return 0, err
+	}
+	return t.Total, nil
+}
+
+// NumberOfResourcesByPath counts resources by querying the cluster's REST API
+// directly at the given path (e.g. "/zone-ingresses"). Use this instead of
+// NumberOfResources when the cluster runs an old CP that may not support the
+// current kumactl endpoint names.
+func NumberOfResourcesByPath(c Cluster, path string) (int, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.GetKuma().GetAPIServerAddress()+path, http.NoBody)
+	if err != nil {
+		return 0, err
+	}
+	r, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = r.Body.Close() }()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return 0, err
+	}
+	t := struct {
+		Total int `json:"total"`
+	}{}
+	if err := json.Unmarshal(body, &t); err != nil {
+		return 0, err
+	}
+	return t.Total, nil
 }
