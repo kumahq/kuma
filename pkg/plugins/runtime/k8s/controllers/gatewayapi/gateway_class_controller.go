@@ -175,9 +175,21 @@ func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 			return req
 		}
 
+		class, ok := obj.(*gatewayapi.GatewayClass)
+		if ok {
+			if class.Spec.ControllerName != common.ControllerName {
+				return nil
+			}
+
+			return []kube_reconcile.Request{
+				{NamespacedName: kube_client.ObjectKeyFromObject(class)},
+			}
+		}
+
 		gateway, ok := obj.(*gatewayapi.Gateway)
 		if !ok {
 			l.Error(nil, "could not convert to Gateway", "object", obj)
+			return nil
 		}
 
 		return []kube_reconcile.Request{
@@ -220,7 +232,7 @@ func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_hand
 }
 
 func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	startupEvents := make(chan kube_event.GenericEvent, 1)
+	startupEvents := make(chan kube_event.GenericEvent, 16)
 
 	// Add an index to Gateways for use in Reconcile
 	indexLog := r.Log.WithName("gatewayClassNameIndexer")
@@ -261,10 +273,23 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 			return nil
 		}
 
-		select {
-		case startupEvents <- kube_event.GenericEvent{}:
-		case <-ctx.Done():
+		classes := &gatewayapi.GatewayClassList{}
+		if err := r.Client.List(ctx, classes); err != nil {
+			r.Log.Error(err, "failed to list GatewayClasses on startup")
 			return nil
+		}
+
+		for i := range classes.Items {
+			class := classes.Items[i]
+			if class.Spec.ControllerName != common.ControllerName {
+				continue
+			}
+
+			select {
+			case startupEvents <- kube_event.GenericEvent{Object: class.DeepCopy()}:
+			case <-ctx.Done():
+				return nil
+			}
 		}
 
 		<-ctx.Done()
