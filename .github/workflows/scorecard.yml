@@ -17,7 +17,7 @@ jobs:
     # Must be a literal Ubuntu label; the scorecard-action publish step
     # rejects expression-based runs-on values during workflow verification.
     # See https://github.com/ossf/scorecard-action#workflow-restrictions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
