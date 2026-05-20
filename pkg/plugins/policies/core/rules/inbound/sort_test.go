@@ -30,6 +30,31 @@ var _ = Describe("SortRules", func() {
 		}))
 	})
 
+	It("ranks AND-combined matches (SNI + SpiffeID) higher than single-field matches", func() {
+		// given
+		rules := []*inbound.Rule{
+			spiffeRule("spiffe-exact", common_api.ExactMatchType, "spiffe://default/ns/backend/sa/app"),
+			sniAndSpiffeRule("sni-and-spiffe-exact", "backend.mesh", common_api.ExactMatchType, "spiffe://default/ns/backend/sa/app"),
+			spiffeRule("spiffe-prefix", common_api.PrefixMatchType, "spiffe://default/ns/backend"),
+			sniAndSpiffeRule("sni-and-spiffe-prefix", "backend.mesh", common_api.PrefixMatchType, "spiffe://default/ns/backend"),
+			sniRule("sni", "backend.mesh"),
+			catchAllRule("catch-all"),
+		}
+
+		// when
+		inbound.SortRules(rules)
+
+		// then
+		Expect(ruleNames(rules)).To(Equal([]string{
+			"sni-and-spiffe-exact",
+			"spiffe-exact",
+			"sni-and-spiffe-prefix",
+			"spiffe-prefix",
+			"sni",
+			"catch-all",
+		}))
+	})
+
 	It("keeps stable order for rules with the same match specificity", func() {
 		// given
 		rules := []*inbound.Rule{
@@ -62,6 +87,22 @@ func spiffeRule(name string, matchType common_api.SpiffeIDMatchType, value strin
 			SpiffeID: &common_api.SpiffeIDMatch{
 				Type:  matchType,
 				Value: value,
+			},
+		},
+		Conf: name,
+	}
+}
+
+func sniAndSpiffeRule(name string, sni string, matchType common_api.SpiffeIDMatchType, spiffe string) *inbound.Rule {
+	return &inbound.Rule{
+		Match: &common_api.Match{
+			SNI: &common_api.SNIMatch{
+				Type:  common_api.SNIExactMatchType,
+				Value: sni,
+			},
+			SpiffeID: &common_api.SpiffeIDMatch{
+				Type:  matchType,
+				Value: spiffe,
 			},
 		},
 		Conf: name,
