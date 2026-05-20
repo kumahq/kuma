@@ -35,7 +35,7 @@ to: []
 				Message: "value 'MeshServiceSubset' is not supported",
 			}, {
 				Field:   "spec.to[1].default.localityAwareness.crossZone",
-				Message: "must not be set: MeshService traffic is local",
+				Message: "must not be set: crossZone is only supported when targeting MeshMultiZoneService",
 			}},
 			`
 type: MeshLoadBalancingStrategy
@@ -243,7 +243,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -323,7 +323,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -345,7 +345,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -393,7 +393,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -669,7 +669,7 @@ targetRef:
   name: svc-1
 to: 
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-2
     default:
       localityAwareness:
@@ -728,6 +728,26 @@ to:
     default:
       localityAwareness:
         disabled: true
+`),
+		Entry(
+			"valid crossZone with MeshMultiZoneService target",
+			`
+type: MeshLoadBalancingStrategy
+name: crosszone-valid
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshMultiZoneService
+    name: backend
+  default:
+    localityAwareness:
+      crossZone:
+        failover:
+        - from:
+            zones: ["zone-1"]
+          to:
+            type: Any
 `),
 	)
 })

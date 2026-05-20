@@ -6016,7 +6016,7 @@ spec:
                             crossZone:
                               description: |-
                                 CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
-                                are unavailable
+                                are unavailable. Only valid when targeting MeshMultiZoneService.
                               properties:
                                 failover:
                                   description: Failover defines list of load balancing
