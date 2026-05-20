@@ -23,11 +23,12 @@ func StatPrefix(prefix string) ListenerBuilderOpt {
 	})
 }
 
-func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
+func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol, enableReusedPorts bool) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.InboundListenerConfigurer{
-		Protocol: protocol,
-		Address:  address,
-		Port:     port,
+		Protocol:          protocol,
+		Address:           address,
+		Port:              port,
+		EnableReusedPorts: enableReusedPorts,
 	})
 }
 

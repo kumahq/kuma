@@ -8,6 +8,67 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.x`
 
+### Inbound listeners now use SO_REUSEPORT by default
+
+The data plane now advertises the `feature-reuse-port` capability to the control plane, which causes inbound Envoy listeners to be generated with `enable_reuse_port: true`. This lets each Envoy worker thread own its own listen socket, improving connection distribution under load.
+
+**Note:** `enable_reuse_port` cannot be changed on a running Envoy listener. If a data plane is upgraded and the flag later toggled, the listener will not pick up the change until the data plane restarts.
+
+**Action required:**
+
+None for most users. If your environment has known issues with `SO_REUSEPORT` (e.g. certain Linux kernel versions or network configurations), disable the feature before upgrading using the instructions below.
+
+**Kubernetes — injected sidecars**
+
+Create a `ContainerPatch`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  name: disable-reuse-port
+  namespace: kuma-system
+spec:
+  sidecarPatch:
+  - op: add
+    path: /env/-
+    value: '{
+      \"name\": \"KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED\",
+      \"value\": \"false\"
+    }'
+```
+
+Then set the annotation `kuma.io/container-patches` on deployments where it should be disabled:
+
+```yaml
+"kuma.io/container-patches": "disable-reuse-port"
+```
+
+or globally for all injected sidecars via control-plane configuration:
+
+```
+KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES="disable-reuse-port"
+```
+
+**Kubernetes — ZoneIngress and ZoneEgress**
+
+`ContainerPatch` only applies to sidecars injected into user pods. The Helm chart does not expose an env-var override for the `kuma-ingress`/`kuma-egress` Deployments, so patch them directly:
+
+```bash
+kubectl -n kuma-system set env deployment/kuma-ingress KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false
+kubectl -n kuma-system set env deployment/kuma-egress  KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false
+```
+
+If you manage Helm releases declaratively, add the env var via a kustomize patch or post-render step targeting the same Deployments.
+
+**Universal**
+
+Set the environment variable when running `kuma-dp` (data plane, zone ingress, or zone egress):
+
+```bash
+KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false kuma-dp run ...
+```
+
 ### MeshService propagation tracking switched to hashed keys
 
 Auto-generated `MeshService` resources track which non-system labels were copied from a `Dataplane` so that the next reconcile can remove labels whose source has gone away. Previously the tracking entry stored the raw key name as a Kubernetes label *value*, which silently skipped any qualified-name key containing `/` or `.` (e.g. `app.example.com/tier`). Such labels were copied onto the `MeshService` but never tracked, so they persisted after the carrier `Dataplane` was removed.

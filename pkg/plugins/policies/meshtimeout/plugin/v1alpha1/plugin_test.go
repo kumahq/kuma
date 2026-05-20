@@ -877,7 +877,7 @@ func httpListenerWithSeveralMeshHTTPRoutes(service string, meshHTTPRoute kri.Ide
 
 func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
-		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
+		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true),
 		HttpInboundRoutes(
 			envoy_names.GetInboundRouteName("backend"),
 			"backend",
