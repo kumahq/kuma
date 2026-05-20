@@ -16049,11 +16049,11 @@ components:
               type: array
             rules:
               description: >-
-                Rules defines inbound timeout configurations. Currently limited
-                to exactly one rule containing
+                Rules defines inbound timeout configurations. When matches are
+                present, the rule is applied only
 
-                default timeouts that apply to all inbound traffic, as L7
-                matching is not yet implemented.
+                to traffic selected by the given source and destination
+                matchers.
               items:
                 properties:
                   default:
@@ -16136,6 +16136,58 @@ components:
                           1h.
                         type: string
                     type: object
+                  matches:
+                    description: >-
+                      Matches define predicates for selecting traffic this
+                      configuration applies to.
+                    items:
+                      properties:
+                        sni:
+                          description: >-
+                            SNI defines a matcher configuration for matching by
+                            SNI value carried on the TLS connection
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match traffic by SNI. Only
+                                `Exact` is supported.
+                              enum:
+                                - Exact
+                              type: string
+                            value:
+                              description: >-
+                                Value is the SNI carried on the TLS connection
+                                that needs to match for the configuration to be
+                                applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                        spiffeID:
+                          description: >-
+                            SpiffeID defines a matcher configuration for
+                            SpiffeID matching
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match incoming traffic by
+                                SpiffeID. `Exact` or `Prefix` are allowed.
+                              enum:
+                                - Exact
+                                - Prefix
+                              type: string
+                            value:
+                              description: >-
+                                Value is SpiffeId of a client that needs to
+                                match for the configuration to be applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                      type: object
+                    type: array
                 type: object
               type: array
             targetRef:
