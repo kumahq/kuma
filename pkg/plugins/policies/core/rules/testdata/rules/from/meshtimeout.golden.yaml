@@ -1,14 +1,11 @@
 InboundRules:
   127.0.0.1:80:
   - conf:
-      BaseEntry:
-        default:
-          connectionTimeout: 2s
-          http:
-            requestTimeout: 5s
-          idleTimeout: 20s
-        targetRef:
-          kind: Mesh
+      connectionTimeout: 2s
+      http:
+        requestTimeout: 5s
+      idleTimeout: 20s
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -19,11 +16,8 @@ InboundRules:
         type: MeshTimeout
       RuleIndex: 0
   - conf:
-      BaseEntry:
-        default:
-          connectionTimeout: 20s
-        targetRef:
-          kind: Mesh
+      connectionTimeout: 20s
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"

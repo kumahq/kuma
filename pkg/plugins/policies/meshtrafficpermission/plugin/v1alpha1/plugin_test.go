@@ -212,30 +212,28 @@ var _ = Describe("RBAC", func() {
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Deny: &[]common_api.Match{
-													{
-														SpiffeID: &common_api.SpiffeIDMatch{
-															Type:  common_api.ExactMatchType,
-															Value: "spiffe://trust-domain.mesh/ns/backend/v1",
-														},
+										Conf: policies_api.RuleConf{
+											Deny: &[]common_api.Match{
+												{
+													SpiffeID: &common_api.SpiffeIDMatch{
+														Type:  common_api.ExactMatchType,
+														Value: "spiffe://trust-domain.mesh/ns/backend/v1",
 													},
 												},
-												AllowWithShadowDeny: &[]common_api.Match{
-													{
-														SpiffeID: &common_api.SpiffeIDMatch{
-															Type:  common_api.ExactMatchType,
-															Value: "spiffe://trust-domain.mesh/ns/backend/v2",
-														},
+											},
+											AllowWithShadowDeny: &[]common_api.Match{
+												{
+													SpiffeID: &common_api.SpiffeIDMatch{
+														Type:  common_api.ExactMatchType,
+														Value: "spiffe://trust-domain.mesh/ns/backend/v2",
 													},
 												},
-												Allow: &[]common_api.Match{
-													{
-														SpiffeID: &common_api.SpiffeIDMatch{
-															Type:  common_api.PrefixMatchType,
-															Value: "spiffe://trust-domain.mesh/ns/backend/",
-														},
+											},
+											Allow: &[]common_api.Match{
+												{
+													SpiffeID: &common_api.SpiffeIDMatch{
+														Type:  common_api.PrefixMatchType,
+														Value: "spiffe://trust-domain.mesh/ns/backend/",
 													},
 												},
 											},
@@ -297,13 +295,12 @@ var _ = Describe("RBAC", func() {
 							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 								{Address: "192.168.0.1", Port: 8080}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Allow: &[]common_api.Match{
-													{SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: "sni.example"}},
-												},
+										Conf: policies_api.RuleConf{
+											Allow: &[]common_api.Match{
+												{SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: "sni.example"}},
 											},
 										},
+
 										Origin: common.Origin{
 											Resource: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "mtp-1"},
 										},
@@ -352,13 +349,12 @@ var _ = Describe("RBAC", func() {
 							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 								{Address: "192.168.0.1", Port: 8080}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Allow: &[]common_api.Match{
-													{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh-1/svc"}},
-												},
+										Conf: policies_api.RuleConf{
+											Allow: &[]common_api.Match{
+												{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh-1/svc"}},
 											},
 										},
+
 										Origin: common.Origin{
 											Resource: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "mtp-1"},
 										},
@@ -452,14 +448,12 @@ var _ = Describe("RBAC", func() {
 							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 								{Address: "192.168.0.1", Port: 10002}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Allow: &[]common_api.Match{
-													{
-														SNI: &common_api.SNIMatch{
-															Type:  common_api.SNIExactMatchType,
-															Value: "sni.mes-1.default.zone-1.aws.8443",
-														},
+										Conf: policies_api.RuleConf{
+											Allow: &[]common_api.Match{
+												{
+													SNI: &common_api.SNIMatch{
+														Type:  common_api.SNIExactMatchType,
+														Value: "sni.mes-1.default.zone-1.aws.8443",
 													},
 												},
 											},
