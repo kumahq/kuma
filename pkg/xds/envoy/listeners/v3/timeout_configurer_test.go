@@ -343,7 +343,7 @@ trafficDirection: OUTBOUND`,
 
 	It("should set timeouts for inbound TCP listener", func() {
 		// given
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolTCP)))).
@@ -371,13 +371,13 @@ filterChains:
       statPrefix: localhost_8080
 name: inbound:192.168.0.1:8080
 trafficDirection: INBOUND
-`
+enableReusePort: true`
 		Expect(actual).To(MatchYAML(expected))
 	})
 
 	It("should set timeouts for inbound HTTP listener", func() {
 		// given
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)))).
@@ -416,7 +416,7 @@ filterChains:
             prefixLen: 128
 name: inbound:192.168.0.1:8080
 trafficDirection: INBOUND
-`
+enableReusePort: true`
 		Expect(actual).To(MatchYAML(expected))
 	})
 })

@@ -225,6 +225,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
 			}
+			if cfg.DataplaneRuntime.ReusePortEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePort)
+			}
 
 			return nil
 		},

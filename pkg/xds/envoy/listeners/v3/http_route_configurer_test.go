@@ -13,7 +13,7 @@ import (
 
 var _ = Describe("HttpDynamicRouteConfigurer", func() {
 	It("should generate proper Envoy config", func() {
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP, true).
 			WithOverwriteName("inbound").
 			Configure(
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(
@@ -55,13 +55,13 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
                   prefixLen: 128
       name: inbound
       trafficDirection: INBOUND
-`))
+      enableReusePort: true`))
 	})
 })
 
 var _ = Describe("HttpScopedRouteConfigurer", func() {
 	It("should fail", func() {
-		_, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
+		_, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP, true).
 			WithOverwriteName("inbound").
 			Configure(
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(

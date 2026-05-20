@@ -29,7 +29,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)).
 					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permission)))).
@@ -110,7 +110,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
                   statPrefix: localhost_8080
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
-`,
+            enableReusePort: true`,
 		}),
 		Entry("basic tcp_proxy with network RBAC disabled", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
@@ -149,6 +149,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1

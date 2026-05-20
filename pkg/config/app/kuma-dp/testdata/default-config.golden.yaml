@@ -19,6 +19,7 @@ dataplaneRuntime:
     refreshInterval: 1s
   metrics: {}
   resources: {}
+  reusePortEnabled: true
   spire: {}
   strictInboundPortsEnabled: true
 dns:

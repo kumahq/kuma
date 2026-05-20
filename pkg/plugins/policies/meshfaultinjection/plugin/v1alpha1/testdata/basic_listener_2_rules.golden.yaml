@@ -2,7 +2,11 @@ address:
   socketAddress:
     address: 127.0.0.1
     portValue: 17778
+<<<<<<< HEAD
 enableReusePort: false
+=======
+enableReusePort: true
+>>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
 filterChains:
 - filters:
   - name: envoy.filters.network.tcp_proxy

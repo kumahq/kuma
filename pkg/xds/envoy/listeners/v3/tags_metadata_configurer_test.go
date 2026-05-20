@@ -23,7 +23,7 @@ var _ = Describe("TagsMetadataConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				WithOverwriteName(given.listenerName).
 				Configure(TagsMetadata(given.tags)).
 				Build()
@@ -54,7 +54,8 @@ var _ = Describe("TagsMetadataConfigurer", func() {
                 io.kuma.tags:
                   kuma.io/service: backend
                   version: v2
-            trafficDirection: INBOUND`,
+            trafficDirection: INBOUND
+            enableReusePort: true`,
 		}),
 	)
 })

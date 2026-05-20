@@ -106,7 +106,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15001
-    enableReusePort: true
+    enableReusePort: false
     filterChains:
     - filterChainMatch:
         destinationPort: 17777
@@ -134,7 +134,7 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15001
-    enableReusePort: true
+    enableReusePort: false
     filterChains:
     - filterChainMatch:
         destinationPort: 17777

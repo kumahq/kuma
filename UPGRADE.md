@@ -6,7 +6,136 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+<<<<<<< HEAD
 ## Upgrade to `2.13.x`
+=======
+## Upgrade to `2.14.x`
+
+### Inbound listeners now use SO_REUSEPORT by default
+
+The data plane now advertises the `feature-reuse-port` capability to the control plane, which causes inbound Envoy listeners to be generated with `enable_reuse_port: true`. This lets each Envoy worker thread own its own listen socket, improving connection distribution under load.
+
+**Note:** `enable_reuse_port` cannot be changed on a running Envoy listener. If a data plane is upgraded and the flag later toggled, the listener will not pick up the change until the data plane restarts.
+
+**Action required:**
+
+None for most users. If your environment has known issues with `SO_REUSEPORT` (e.g. certain Linux kernel versions or network configurations), disable the feature before upgrading using the instructions below.
+
+**Kubernetes — injected sidecars**
+
+Create a `ContainerPatch`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  name: disable-reuse-port
+  namespace: kuma-system
+spec:
+  sidecarPatch:
+  - op: add
+    path: /env/-
+    value: '{
+      \"name\": \"KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED\",
+      \"value\": \"false\"
+    }'
+```
+
+Then set the annotation `kuma.io/container-patches` on deployments where it should be disabled:
+
+```yaml
+"kuma.io/container-patches": "disable-reuse-port"
+```
+
+or globally for all injected sidecars via control-plane configuration:
+
+```
+KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES="disable-reuse-port"
+```
+
+**Kubernetes — ZoneIngress and ZoneEgress**
+
+`ContainerPatch` only applies to sidecars injected into user pods. The Helm chart does not expose an env-var override for the `kuma-ingress`/`kuma-egress` Deployments, so patch them directly:
+
+```bash
+kubectl -n kuma-system set env deployment/kuma-ingress KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false
+kubectl -n kuma-system set env deployment/kuma-egress  KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false
+```
+
+If you manage Helm releases declaratively, add the env var via a kustomize patch or post-render step targeting the same Deployments.
+
+**Universal**
+
+Set the environment variable when running `kuma-dp` (data plane, zone ingress, or zone egress):
+
+```bash
+KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false kuma-dp run ...
+```
+
+### MeshService propagation tracking switched to hashed keys
+
+Auto-generated `MeshService` resources track which non-system labels were copied from a `Dataplane` so that the next reconcile can remove labels whose source has gone away. Previously the tracking entry stored the raw key name as a Kubernetes label *value*, which silently skipped any qualified-name key containing `/` or `.` (e.g. `app.example.com/tier`). Such labels were copied onto the `MeshService` but never tracked, so they persisted after the carrier `Dataplane` was removed.
+
+The control plane now stores a SHA-256 hash of the label key in the tracking label key (`kuma.io/pkey-<16hex>`). The old plain-value format is still recognised on read for one reconcile so the upgrade is seamless for keys the previous version was already able to track.
+
+**Action required:**
+
+None for valid label keys. Labels with `/` or `.` in the key that were leaked onto an auto-generated `MeshService` by the previous code cannot be reattributed retroactively — they have no tracking record at all and the new code preserves them as operator-managed. Remove any such leaked labels by hand if needed:
+
+```sh
+kubectl -n kuma-system label meshservice <name> app.example.com/tier-
+```
+
+### MeshAccessLog OpenTelemetry attribute keys are now validated
+
+`MeshAccessLog` now validates `openTelemetry.attributes[].key` against the access-log attribute-key grammar used by this policy. Keys must start with a lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid consecutive delimiters, end with a letter or digit, and must not use the reserved `otel.` prefix. `%...%` placeholders remain supported in attribute values, but are no longer accepted in keys.
+
+Existing policies with invalid keys keep their current runtime behavior until they are updated or reapplied. In particular, placeholder-based keys continue to emit the same interpolated key after a control-plane upgrade. GitOps or other reconcilers that re-apply `MeshAccessLog` resources after the upgrade hit the same validation path immediately, so invalid keys must be fixed before the next reconcile. Any create or update using an invalid key is rejected until the key is renamed to a static value.
+
+**Action required:**
+
+Before the next apply, review the `MeshAccessLog` resources you manage using the tooling and workflow standard for your environment. On Kubernetes, audit `MeshAccessLog` resources across all namespaces. On Universal, audit the resources for each mesh you manage. If GitOps or another reconciler is the source of truth, review the manifests that will be re-applied as well.
+
+When auditing `openTelemetry.attributes[].key`, flag any key that:
+
+- starts with the reserved `otel.` prefix
+- contains `%...%` placeholders
+- does not start with a lowercase letter
+- contains characters other than lowercase letters, digits, `_`, or `.`
+- contains consecutive delimiters
+- ends with a delimiter
+
+Capture enough context to update each invalid policy before the next reconcile, for example the Kubernetes namespace, mesh, and resource name.
+
+Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, and keep the dynamic content in the value instead:
+
+```yaml
+attributes:
+  - key: service.zone
+    value: "%KUMA_ZONE%"
+```
+
+### Readiness reporter is now TCP-only
+
+The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/ready` is served exclusively on TCP `KUMA_READINESS_PORT` (default `9902`) in both Kubernetes and Universal mode.
+
+**What changed:**
+- Removed config field `dataplane.readinessUnixSocketDisabled` and env var `KUMA_READINESS_UNIX_SOCKET_DISABLED`.
+- New DPs no longer advertise the `feature-readiness-unix-socket` flag. The CP still honors it for older DPs during CP-first upgrades; the flag will be removed in a future release.
+- The K8s injector no longer injects `KUMA_READINESS_UNIX_SOCKET_DISABLED=true` (the env var is now a no-op).
+- The Helm ingress/egress chart templates no longer set these env vars.
+
+**Action required:**
+
+- Universal-mode operators who probed readiness via the Unix socket must switch to TCP loopback: `curl http://localhost:9902/ready`.
+- Universal-mode hosts running more than one `kuma-dp` instance must assign a distinct `KUMA_READINESS_PORT` per instance. Each instance previously used its own Unix socket; they now all default to TCP `9902` and will fail to bind on conflict:
+
+  ```sh
+  KUMA_READINESS_PORT=9902 kuma-dp run ...   # instance 1
+  KUMA_READINESS_PORT=9903 kuma-dp run ...   # instance 2
+  ```
+- Custom manifests that still set `KUMA_READINESS_UNIX_SOCKET_DISABLED` can leave the env var in place — it is ignored — or remove it.
+>>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
 
 ### dp-server graceful shutdown is now time-bounded
 
