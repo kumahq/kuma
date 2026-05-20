@@ -19,21 +19,6 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
 )
 
-func MTLSMeshUniversalEgress(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-routing:
-  zoneEgress: true
-`, name)
-	return YamlUniversal(mesh)
-}
-
 func CrossMeshGatewayOnMultizone() {
 	const gatewayClientNamespaceOtherMesh = "cross-mesh-kuma-client-other"
 	const gatewayClientNamespaceSameMesh = "cross-mesh-kuma-client"

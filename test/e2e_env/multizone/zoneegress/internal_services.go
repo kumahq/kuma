@@ -3,6 +3,7 @@ package zoneegress
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -19,22 +20,15 @@ func InternalServices() {
 	const meshName = "ze-internal"
 	const namespace = "ze-internal"
 
-	mesh := `
-type: Mesh
-name: ze-internal
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-routing:
-  zoneEgress: true
-`
-
+	mesh := builders.Mesh().
+		WithName(meshName).
+		WithBuiltinMTLSBackend("ca-1").
+		WithRoutingZoneEgress(true).
+		Build()
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
-			Install(YamlUniversal(mesh)).
+			Install(ResourceUniversal(mesh)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())

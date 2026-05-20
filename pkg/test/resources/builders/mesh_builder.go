@@ -3,6 +3,7 @@ package builders
 import (
 	"context"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -65,6 +66,41 @@ func (m *MeshBuilder) WithBuiltinMTLSBackend(name string) *MeshBuilder {
 		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
 	}
 	return m.AddBuiltinMTLSBackend(name)
+}
+
+func (m *MeshBuilder) WithNetworkingPassThrough(b bool) *MeshBuilder {
+	if m.res.Spec.Networking == nil {
+		m.res.Spec.Networking = &mesh_proto.Networking{
+			Outbound: &mesh_proto.Networking_Outbound{
+				Passthrough: &wrapperspb.BoolValue{Value: b},
+			},
+		}
+	}
+	return m
+}
+
+func (m *MeshBuilder) WithRoutingZoneEgress(b bool) *MeshBuilder {
+	if m.res.Spec.Routing == nil {
+		m.res.Spec.Routing = &mesh_proto.Routing{}
+	}
+	m.res.Spec.Routing.ZoneEgress = b
+	return m
+}
+
+func (m *MeshBuilder) WithRoutingLocalityAwareLoadBalancing(b bool) *MeshBuilder {
+	if m.res.Spec.Routing == nil {
+		m.res.Spec.Routing = &mesh_proto.Routing{}
+	}
+	m.res.Spec.Routing.LocalityAwareLoadBalancing = b
+	return m
+}
+
+func (m *MeshBuilder) WithRoutingDefaultForbidMeshExternalServiceAccess(b bool) *MeshBuilder {
+	if m.res.Spec.Routing == nil {
+		m.res.Spec.Routing = &mesh_proto.Routing{}
+	}
+	m.res.Spec.Routing.DefaultForbidMeshExternalServiceAccess = b
+	return m
 }
 
 func (m *MeshBuilder) WithoutBackendValidation() *MeshBuilder {

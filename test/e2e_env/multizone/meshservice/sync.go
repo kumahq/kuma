@@ -3,6 +3,8 @@ package meshservice
 import (
 	"fmt"
 
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -19,48 +21,30 @@ import (
 func Sync() {
 	meshName := "meshservice"
 	namespace := "meshservice"
-
+	meshMultiZone := builders.MeshMultiZoneService().
+		WithName("backend").
+		WithMesh(meshName).
+		WithLabels(map[string]string{"test-name": "mssync"}).
+		WithServiceLabelSelector(map[string]string{"test-name": "backend"}).
+		AddIntPortWithName(80, core_meta.ProtocolHTTP, "80").Build()
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(YamlUniversal(`
-type: MeshMultiZoneService
-name: backend
-mesh: meshservice
-labels:
-  test-name: mssync
-spec:
-  selector:
-    meshService:
-      matchLabels:
-        test-name: backend
-  ports:
-  - port: 80
-    appProtocol: http
-`)).
+			Install(ResourceUniversal(meshMultiZone)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
-
+		meshService := builders.MeshService().
+			WithName("backend").
+			WithMesh(meshName).
+			WithLabels(map[string]string{"test-name": "backend", "kuma.io/origin": "zone"}).
+			WithDataplaneTagsSelector(map[string]string{"kuma.io/service": "test-server"}).
+			AddIntPortWithName(80, 80, core_meta.ProtocolHTTP, "80").
+			Build()
 		NewClusterSetup().
-			Install(YamlUniversal(`
-type: MeshService
-name: backend
-mesh: meshservice
-labels:
-  kuma.io/origin: zone
-  test-name: backend
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`)).
+			Install(ResourceUniversal(meshService)).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceVersion("v1"),
@@ -68,46 +52,19 @@ spec:
 			SetupInGroup(multizone.UniZone1, &group)
 
 		NewClusterSetup().
-			Install(YamlUniversal(`
-type: MeshService
-name: backend
-mesh: meshservice
-labels:
-  kuma.io/origin: zone
-  test-name: backend
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`)).
+			Install(ResourceUniversal(meshService)).
 			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
 			SetupInGroup(multizone.UniZone2, &group)
-
-		veryLongNamedService := `
-kind: MeshService
-apiVersion: kuma.io/v1alpha1
-metadata:
-  name: this-service-has-a-name-thats-the-exact-length-allowed-for-svcs
-  namespace: meshservice
-  labels:
-    kuma.io/mesh: meshservice
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: some-service
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`
+		veryLongNamedService := builders.MeshService().
+			WithName("this-service-has-a-name-thats-the-exact-length-allowed-for-svcs").
+			WithLabels(map[string]string{"kuma.io/mesh": "meshservice"}).
+			WithDataplaneTagsSelector(map[string]string{"kuma.io/service": "some-service"}).
+			AddIntPortWithName(80, 80, core_meta.ProtocolHTTP, "80").
+			Build()
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(YamlK8s(veryLongNamedService)).
+			Install(ResourceUniversal(veryLongNamedService)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			SetupInGroup(multizone.KubeZone2, &group)
 
