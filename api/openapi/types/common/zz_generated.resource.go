@@ -109,8 +109,8 @@ type InboundRule struct {
 	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
 	Conf []interface{} `json:"conf"`
 
-	// Matches The list of incoming traffic matches represented by this effective rule. Each item is ANDed internally, and the list is ORed before the common inbound rule expansion splits it into individual effective rules.
-	Matches []common_api.Match `json:"matches"`
+	// Match The incoming traffic match for this effective rule. Null means the rule matches all incoming traffic (catch-all).
+	Match *common_api.Match `json:"match,omitempty"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
 	Origin []ResourceRuleOrigin `json:"origin"`

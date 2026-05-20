@@ -4982,7 +4982,6 @@ components:
       type: object
       required:
         - conf
-        - matches
         - origin
       properties:
         conf:
@@ -4999,20 +4998,16 @@ components:
             type: object
             additionalProperties: true
             x-go-type: interface{}
-        matches:
-          type: array
+        match:
           description: >-
-            The list of incoming traffic matches represented by this effective
-            rule. Each item is ANDed internally, and the list is ORed before the
-            common inbound rule expansion splits it into individual effective
-            rules.
-          items:
-            type: object
-            additionalProperties: true
-            x-go-type: common_api.Match
-            x-go-type-import:
-              name: common_api
-              path: github.com/kumahq/kuma/v2/api/common/v1alpha1
+            The incoming traffic match for this effective rule. Null means the
+            rule matches all incoming traffic (catch-all).
+          type: object
+          additionalProperties: true
+          x-go-type: common_api.Match
+          x-go-type-import:
+            name: common_api
+            path: github.com/kumahq/kuma/v2/api/common/v1alpha1
         origin:
           type: array
           description: >-

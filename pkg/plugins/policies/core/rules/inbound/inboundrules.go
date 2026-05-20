@@ -10,14 +10,14 @@ import (
 )
 
 type Rule struct {
-	Matches []common_api.Match `json:"matches"`
-	Conf    any                `json:"conf"`
-	Origin  common.Origin      `json:"origin"`
+	Match  *common_api.Match `json:"match"`
+	Conf   any               `json:"conf"`
+	Origin common.Origin     `json:"origin"`
 }
 
 func MatchesAllIncomingTraffic[T any](rules []*Rule) T {
 	var result T
-	catchAll := util_slices.Filter(rules, func(r *Rule) bool { return len(r.Matches) == 0 })
+	catchAll := util_slices.Filter(rules, func(r *Rule) bool { return r.Match == nil })
 	if len(catchAll) == 0 {
 		return result
 	}
@@ -120,37 +120,32 @@ func buildRules[T interface {
 
 	Sort(list)
 
-	// Build rules one entry at a time so the origin stays tied to the policy that produced the config.
-	rules := make([]*Rule, 0, len(list))
+	// Build rules, expanding multi-match entries so each Rule carries exactly one match.
+	var rules []*Rule
 	for _, entry := range list {
-		rules = append(rules, &Rule{
-			Matches: entry.GetEntry().GetMatches(),
-			Conf:    entry.GetEntry().GetDefault(),
-			Origin: common.Origin{
-				Resource:  entry.GetResourceMeta(),
-				RuleIndex: entry.GetRuleIndex(),
-			},
-		})
-	}
-
-	// Split multi-match rules so sorting and xDS generation can handle each match independently.
-	var expanded []*Rule
-	for _, rule := range rules {
-		if len(rule.Matches) == 0 {
-			expanded = append(expanded, rule)
-			continue
+		origin := common.Origin{
+			Resource:  entry.GetResourceMeta(),
+			RuleIndex: entry.GetRuleIndex(),
 		}
-		for _, match := range rule.Matches {
-			expanded = append(expanded, &Rule{
-				Matches: []common_api.Match{match},
-				Conf:    rule.Conf,
-				Origin:  rule.Origin,
+		matches := entry.GetEntry().GetMatches()
+		if len(matches) == 0 {
+			rules = append(rules, &Rule{
+				Conf:   entry.GetEntry().GetDefault(),
+				Origin: origin,
 			})
+		} else {
+			for k := range matches {
+				rules = append(rules, &Rule{
+					Match:  &matches[k],
+					Conf:   entry.GetEntry().GetDefault(),
+					Origin: origin,
+				})
+			}
 		}
 	}
-	SortRules(expanded)
 
-	return expanded, nil
+	SortRules(rules)
+	return rules, nil
 }
 
 func AffectsInbounds(p core_model.Policy) bool {

@@ -8,7 +8,7 @@ InboundRules:
       - file:
           path: /tmp/log/2
         type: File
-    matches: []
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -20,7 +20,7 @@ InboundRules:
       RuleIndex: 0
   - conf:
       backends: []
-    matches: []
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"

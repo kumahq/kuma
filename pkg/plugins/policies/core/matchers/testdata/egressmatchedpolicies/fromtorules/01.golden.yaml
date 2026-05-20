@@ -4,7 +4,7 @@ InboundRules:
       connectionTimeout: 22s
       http:
         requestTimeout: 22s
-    matches: []
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -18,7 +18,7 @@ InboundRules:
       connectionTimeout: 33s
       http:
         requestTimeout: 33s
-    matches: []
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"

@@ -3,7 +3,7 @@ rules:
     connectionTimeout: 11s
     http:
       requestTimeout: 12s
-  matches: []
+  match: null
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
@@ -19,7 +19,7 @@ rules:
     connectionTimeout: 3m31s
     http:
       requestTimeout: 3m29s
-  matches: []
+  match: null
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
@@ -32,7 +32,7 @@ rules:
 - conf:
     connectionTimeout: 1m51s
     idleTimeout: 1m49s
-  matches: []
+  match: null
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"

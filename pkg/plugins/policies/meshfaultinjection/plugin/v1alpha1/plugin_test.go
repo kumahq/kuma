@@ -249,12 +249,10 @@ var _ = Describe("MeshFaultInjection", func() {
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {
 						{
-							Matches: []common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.PrefixMatchType,
-										Value: "spiffe://trust-domain.mesh/",
-									},
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/",
 								},
 							},
 							Conf: api.Conf{
@@ -282,12 +280,10 @@ var _ = Describe("MeshFaultInjection", func() {
 					},
 					{Address: "127.0.0.1", Port: 17778}: {
 						{
-							Matches: []common_api.Match{
-								{
-									SpiffeID: &common_api.SpiffeIDMatch{
-										Type:  common_api.PrefixMatchType,
-										Value: "spiffe://trust-domain.mesh/",
-									},
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/",
 								},
 							},
 							Conf: api.Conf{

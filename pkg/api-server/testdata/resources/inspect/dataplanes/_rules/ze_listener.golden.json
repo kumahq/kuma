@@ -25,7 +25,6 @@
          "idleTimeout": "7s"
         }
        ],
-       "matches": [],
        "origin": [
         {
          "resourceMeta": {
@@ -52,7 +51,6 @@
          "idleTimeout": "7s"
         }
        ],
-       "matches": [],
        "origin": [
         {
          "resourceMeta": {

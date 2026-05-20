@@ -31,7 +31,6 @@
          }
         }
        ],
-       "matches": [],
        "origin": [
         {
          "resourceMeta": {
@@ -65,7 +64,6 @@
          }
         }
        ],
-       "matches": [],
        "origin": [
         {
          "resourceMeta": {
@@ -86,7 +84,6 @@
          }
         }
        ],
-       "matches": [],
        "origin": [
         {
          "resourceMeta": {
@@ -120,7 +117,6 @@
          }
         }
        ],
-       "matches": [],
        "origin": [
         {
          "resourceMeta": {
@@ -139,7 +135,6 @@
          "connectionTimeout": "3s"
         }
        ],
-       "matches": [],
        "origin": [
         {
          "resourceMeta": {

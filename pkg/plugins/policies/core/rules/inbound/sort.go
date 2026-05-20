@@ -18,20 +18,17 @@ func Sort[T common.PolicyAttributes](list []T) {
 
 func SortRules(list []*Rule) {
 	slices.SortStableFunc(list, func(a, b *Rule) int {
-		return CompareByMatches(a.Matches, b.Matches)
+		return CompareByMatch(a.Match, b.Match)
 	})
 }
 
-// CompareByMatches compares the match keys of two rules. It assumes each rule
-// has at most one match — the invariant established by buildRules, which splits
-// multi-match rules into one rule per match before sorting.
-func CompareByMatches(a, b []common_api.Match) int {
+func CompareByMatch(a, b *common_api.Match) int {
 	var ma, mb common_api.Match
-	if len(a) > 0 {
-		ma = a[0]
+	if a != nil {
+		ma = *a
 	}
-	if len(b) > 0 {
-		mb = b[0]
+	if b != nil {
+		mb = *b
 	}
 	return CompareMatch(ma, mb)
 }

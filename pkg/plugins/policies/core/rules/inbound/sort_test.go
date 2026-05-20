@@ -58,24 +58,24 @@ var _ = Describe("SortRules", func() {
 
 func spiffeRule(name string, matchType common_api.SpiffeIDMatchType, value string) *inbound.Rule {
 	return &inbound.Rule{
-		Matches: []common_api.Match{{
+		Match: &common_api.Match{
 			SpiffeID: &common_api.SpiffeIDMatch{
 				Type:  matchType,
 				Value: value,
 			},
-		}},
+		},
 		Conf: name,
 	}
 }
 
 func sniRule(name string, value string) *inbound.Rule {
 	return &inbound.Rule{
-		Matches: []common_api.Match{{
+		Match: &common_api.Match{
 			SNI: &common_api.SNIMatch{
 				Type:  common_api.SNIExactMatchType,
 				Value: value,
 			},
-		}},
+		},
 		Conf: name,
 	}
 }
