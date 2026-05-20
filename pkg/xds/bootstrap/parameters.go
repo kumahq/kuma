@@ -72,10 +72,11 @@ type configParameters struct {
 	// Context: https://github.com/kumahq/kuma/issues/13885
 	AppProbeProxyEnabled bool
 	AdminAccessLogPath   string
-	XdsHost              string
-	XdsPort              uint32
-	XdsConnectTimeout    time.Duration
-	Workdir              string
+	XdsHost                       string
+	XdsPort                       uint32
+	XdsConnectTimeout             time.Duration
+	XdsGrpcMaxReceiveMessageBytes uint32
+	Workdir                       string
 	MetricsCertPath      string
 	MetricsKeyPath       string
 	DataplaneToken       string

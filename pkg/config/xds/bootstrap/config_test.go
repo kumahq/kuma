@@ -34,6 +34,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 		Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 		Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 		Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
+		Expect(cfg.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
 		Expect(cfg.Params.CorefileTemplatePath).To(Equal("/tmp/corefile"))
 	})
 
@@ -62,6 +63,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":              "kuma-control-plane.internal",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":              "10101",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":   "2s",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES": "33554432",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -83,6 +85,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 			Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 			Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 			Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
+			Expect(cfg.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
 		})
 	})
 
