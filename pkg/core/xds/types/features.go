@@ -44,3 +44,8 @@ const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
 
 // FeatureStrictInboundPorts indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
 const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
+
+// FeatureReusePort indicates that the DP wants Envoy listeners generated
+// with SO_REUSEPORT enabled. When absent, the CP sets it to false to not break
+// upgrade, as `enable_reuse_port` cannot be changed during runtime.
+const FeatureReusePort = "feature-reuse-port"

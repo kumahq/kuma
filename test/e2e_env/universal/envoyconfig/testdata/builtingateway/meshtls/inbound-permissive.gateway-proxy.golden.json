@@ -275,7 +275,7 @@
             "portValue": 9901
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [

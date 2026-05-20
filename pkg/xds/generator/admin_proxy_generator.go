@@ -11,7 +11,7 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
@@ -137,7 +137,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 
-		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP).
+		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 			WithOverwriteName(envoyAdminListenerName).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(filterChains...).
@@ -159,7 +159,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	var xdsEndpoint core_xds.Endpoint
-	if proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket) {
+	if proxy.Metadata.HasFeature(xds_types.FeatureReadinessUnixSocket) {
 		xdsEndpoint = core_xds.Endpoint{
 			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}

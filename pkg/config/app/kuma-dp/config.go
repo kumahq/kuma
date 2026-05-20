@@ -42,6 +42,7 @@ var DefaultConfig = func() Config {
 			},
 			IPv6Enabled:               true,
 			StrictInboundPortsEnabled: true,
+			ReusePortEnabled:          true,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -257,6 +258,10 @@ type DataplaneRuntime struct {
 	Spire Spire `json:"spire,omitempty"`
 	// StrictInboundPortsEnabled indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
 	StrictInboundPortsEnabled bool `json:"strictInboundPortsEnabled" envconfig:"kuma_dataplane_runtime_strict_inbound_ports_enabled"`
+	// ReusePortEnabled controls whether kuma-dp advertises FeatureReusePort to the CP.
+	// When true, the CP generates Envoy listeners with enable_reuse_port=true so each worker
+	// owns its own LISTEN socket. Default: true.
+	ReusePortEnabled bool `json:"reusePortEnabled" envconfig:"kuma_dataplane_runtime_reuse_port_enabled"`
 }
 
 type Spire struct {
