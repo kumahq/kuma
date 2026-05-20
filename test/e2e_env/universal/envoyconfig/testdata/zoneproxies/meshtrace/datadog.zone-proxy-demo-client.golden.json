@@ -61,7 +61,7 @@
           "typedConfig": {
             "@type": "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
             "collectorCluster": "meshtrace:datadog",
-            "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server__kuma-3_msvc_80"
+            "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server-no-reusable-ports__kuma-3_msvc_80"
           }
         },
         "spawnUpstreamSpan": false
@@ -99,7 +99,7 @@
           "typedConfig": {
             "@type": "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
             "collectorCluster": "meshtrace:datadog",
-            "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server-no-reusable-ports__kuma-3_msvc_80"
+            "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server__kuma-3_msvc_80"
           }
         },
         "spawnUpstreamSpan": false
