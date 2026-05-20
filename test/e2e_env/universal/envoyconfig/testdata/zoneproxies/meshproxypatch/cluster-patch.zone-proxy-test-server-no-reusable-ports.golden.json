@@ -1,5 +1,16 @@
 {
-  "diff": [],
+  "diff": [
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kuma:envoy:admin/connectTimeout",
+      "value": "5s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kuma:envoy:admin/connectTimeout",
+      "value": "12s"
+    }
+  ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig-zoneproxies_mes-zone-proxy__kuma-3_extsvc_80": {
@@ -299,7 +310,7 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
-        "connectTimeout": "5s",
+        "connectTimeout": "12s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
           "endpoints": [
@@ -607,6 +618,7 @@
           }
         },
         "bindToPort": false,
+        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
@@ -670,7 +682,7 @@
                   },
                   "requestHeadersTimeout": "0s",
                   "routeConfig": {
-                    "name": "inbound:zone-proxy-test-server",
+                    "name": "inbound:zone-proxy-test-server-no-reusable-ports",
                     "requestHeadersToRemove": [
                       "x-kuma-tags"
                     ],
@@ -680,7 +692,7 @@
                         "domains": [
                           "*"
                         ],
-                        "name": "zone-proxy-test-server",
+                        "name": "zone-proxy-test-server-no-reusable-ports",
                         "routes": [
                           {
                             "match": {
@@ -748,7 +760,7 @@
             "io.kuma.tags": {
               "instance": "1",
               "kuma.io/protocol": "http",
-              "kuma.io/service": "zone-proxy-test-server",
+              "kuma.io/service": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
               "version": "v1"
@@ -765,7 +777,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": true,
+        "enableReusePort": false,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -794,7 +806,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": true,
+        "enableReusePort": false,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -823,6 +835,7 @@
             "portValue": 0
           }
         },
+        "enableReusePort": false,
         "filterChains": [
           {
             "filters": [
