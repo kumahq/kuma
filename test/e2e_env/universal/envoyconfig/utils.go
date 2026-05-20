@@ -73,7 +73,14 @@ func getConfig(mesh, dpp string) string {
 		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
 	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
-		return strings.Compare(a.Path, b.Path)
+		if cmp := strings.Compare(a.Path, b.Path); cmp != 0 {
+			return cmp
+		}
+		// Secondary: sort by value JSON so entries with identical redacted paths
+		// (e.g. two outbound:IP_REDACTED:80 listeners) are ordered deterministically.
+		aVal, _ := json.Marshal(a.Value)
+		bVal, _ := json.Marshal(b.Value)
+		return strings.Compare(string(aVal), string(bVal))
 	})
 
 	result, err := json.MarshalIndent(response, "", "  ")
