@@ -52,3 +52,7 @@ default:
   - type: IP
     value: 172.1.1.1
     protocol: mysql
+  - type: Domain
+    value: "*.hello@world"
+    port: 443
+    protocol: tls
