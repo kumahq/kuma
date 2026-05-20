@@ -23,7 +23,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
@@ -49,6 +49,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			expected: `
         name: inbound:192.168.0.1:8080
         trafficDirection: INBOUND
+        enableReusePort: true
         address:
           socketAddress:
             address: 192.168.0.1
@@ -96,7 +97,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
                     - name: db-1
                       weight: 90
             name: inbound:127.0.0.1:5432
-            trafficDirection: INBOUND`,
+            trafficDirection: INBOUND
+            enableReusePort: true`,
 		}),
 	)
 })

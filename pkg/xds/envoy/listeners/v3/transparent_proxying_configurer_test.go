@@ -23,7 +23,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(TransparentProxying(given.transparentProxying)).
 				Build()
 			// then
@@ -47,6 +47,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -61,6 +62,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1

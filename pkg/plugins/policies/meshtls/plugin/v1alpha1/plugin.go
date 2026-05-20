@@ -369,7 +369,7 @@ func configureListener(
 	clusterName := getName(inboundContextualID, legacyClusterName)
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
-		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(inbound.GetTags()))
