@@ -1,14 +1,14 @@
 {
   "diff": [
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/connectTimeout",
-      "value": "5s"
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/connectTimeout",
       "value": "51s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/connectTimeout",
+      "value": "5s"
     },
     {
       "op": "remove",
