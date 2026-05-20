@@ -16,12 +16,8 @@ type InboundListenerConfigurer struct {
 }
 
 func (c *InboundListenerConfigurer) Configure(l *envoy_listener.Listener) error {
-<<<<<<< HEAD
-	l.EnableReusePort = util_proto.Bool(c.Protocol == core_xds.SocketAddressProtocolUDP)
-=======
 	// UDP always needs SO_REUSEPORT for multi-worker correctness; TCP follows the DP feature.
 	l.EnableReusePort = util_proto.Bool(c.Protocol == core_xds.SocketAddressProtocolUDP || c.EnableReusedPorts)
->>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
 	l.TrafficDirection = envoy_core.TrafficDirection_INBOUND
 	l.Address = &envoy_core.Address{
 		Address: &envoy_core.Address_SocketAddress{

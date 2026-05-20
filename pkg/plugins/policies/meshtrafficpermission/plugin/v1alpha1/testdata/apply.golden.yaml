@@ -6,11 +6,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8080
-<<<<<<< HEAD
-    enableReusePort: false
-=======
     enableReusePort: true
->>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -70,11 +66,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8081
-<<<<<<< HEAD
-    enableReusePort: false
-=======
     enableReusePort: true
->>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -126,11 +118,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8082
-<<<<<<< HEAD
-    enableReusePort: false
-=======
     enableReusePort: true
->>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -178,11 +166,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 8083
-<<<<<<< HEAD
-    enableReusePort: false
-=======
     enableReusePort: true
->>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager

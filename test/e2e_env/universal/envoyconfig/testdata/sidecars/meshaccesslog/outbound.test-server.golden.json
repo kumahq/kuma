@@ -392,11 +392,7 @@
           }
         },
         "bindToPort": false,
-<<<<<<< HEAD
-        "enableReusePort": false,
-=======
         "enableReusePort": true,
->>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
         "filterChains": [
           {
             "filters": [
@@ -613,11 +609,7 @@
             "portValue": 9901
           }
         },
-<<<<<<< HEAD
-        "enableReusePort": false,
-=======
         "enableReusePort": true,
->>>>>>> 0f37c0f224 (fix(xds): add a feature flag to enable reuse ports (#16677))
         "filterChains": [
           {
             "filters": [

@@ -6,10 +6,7 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-<<<<<<< HEAD
 ## Upgrade to `2.13.x`
-=======
-## Upgrade to `2.14.x`
 
 ### Inbound listeners now use SO_REUSEPORT by default
 
