@@ -14,7 +14,7 @@ require (
 	github.com/containernetworking/plugins v1.9.0
 	github.com/emicklei/go-restful/v3 v3.13.0
 	github.com/envoyproxy/go-control-plane v0.14.0
-	github.com/envoyproxy/go-control-plane/contrib v1.32.4
+	github.com/envoyproxy/go-control-plane/contrib v1.36.0
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0
 	github.com/envoyproxy/protoc-gen-validate v1.3.0
 	github.com/evanphx/json-patch/v5 v5.9.11
