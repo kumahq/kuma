@@ -134,6 +134,21 @@ to:
     default:
       http:
         requestTimeout: 1s`),
+			Entry("matched inbound rule with route timeouts", `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://default/client
+        sni:
+          type: Exact
+          value: backend.mesh
+    default:
+      http:
+        requestTimeout: 1s
+        streamIdleTimeout: 2s`),
 		)
 
 		type testCase struct {
@@ -427,6 +442,29 @@ rules:
 violations:
   - field: spec.rules[0].default
     message: at least one timeout should be configured`,
+			}),
+			Entry("spiffeID match with unsupported timeout fields", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://default/client
+    default:
+      connectionTimeout: 10s
+      http:
+        requestHeadersTimeout: 2s
+        maxStreamDuration: 3s`,
+				expected: `
+violations:
+  - field: spec.rules[0].default.connectionTimeout
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity
+  - field: spec.rules[0].default.http.requestHeadersTimeout
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity
+  - field: spec.rules[0].default.http.maxStreamDuration
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity`,
 			}),
 		)
 	})

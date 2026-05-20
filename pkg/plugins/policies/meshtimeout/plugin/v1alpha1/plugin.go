@@ -1,16 +1,23 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
@@ -54,6 +61,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	routes := xds.GatherRoutes(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToZoneProxyListeners(policies, rs, proxy); err != nil {
 		return err
 	}
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
@@ -103,10 +113,12 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		inboundRules := fromRules.InboundRules[listenerKey]
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
 		configurer := plugin_xds.ListenerConfigurer{
 			Conf:     conf,
 			Protocol: protocol,
+			Rules:    inboundRules,
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -187,7 +199,8 @@ func applyToGateway(
 			Port:    listenerInfo.Listener.Port,
 		}
 
-		inboundConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](gatewayRules.InboundRules[key])
+		inboundRules := gatewayRules.InboundRules[key]
+		inboundConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
 		if err := plugin_xds.ConfigureGatewayListener(
 			inboundConf,
 			listenerInfo.Listener.Protocol,
@@ -195,17 +208,15 @@ func applyToGateway(
 		); err != nil {
 			return err
 		}
-
-		toRules, ok := gatewayRules.ToRules.ByListener[key]
-		if !ok {
-			continue
+		if err := plugin_xds.EnsureMatchFilterState(gatewayListeners[key], inboundRules); err != nil {
+			return err
 		}
 
+		toRules, hasToRules := gatewayRules.ToRules.ByListener[key]
 		conf, commonOk := getConf(toRules.Rules, subsetutils.MeshElement())
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
 			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
-
-			if ok {
+			if ok && hasToRules {
 				for _, vh := range route.VirtualHosts {
 					for _, r := range vh.Routes {
 						routeConf, routeOk := getConf(toRules.Rules, subsetutils.MeshElement().WithKeyValue(core_rules.RuleMatchesHashTag, r.Name))
@@ -224,6 +235,15 @@ func applyToGateway(
 					}
 				}
 			}
+			if ok {
+				if err := plugin_xds.ConfigureMatchedRoutes(route, inboundRules); err != nil {
+					return err
+				}
+			}
+		}
+
+		if !hasToRules {
+			continue
 		}
 
 		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
@@ -254,6 +274,212 @@ func applyToGateway(
 	}
 
 	return nil
+}
+
+func applyToZoneProxyListeners(
+	policies core_xds.TypedMatchingPolicies,
+	rs *core_xds.ResourceSet,
+	proxy *core_xds.Proxy,
+) error {
+	networking := proxy.Dataplane.Spec.GetNetworking()
+	if !networking.HasZoneProxyListeners() {
+		return nil
+	}
+
+	listenerResources := rs.Resources(envoy_resource.ListenerType)
+	clusterResources := map[string]*envoy_cluster.Cluster{}
+	for name, resource := range rs.Resources(envoy_resource.ClusterType) {
+		cluster, ok := resource.Resource.(*envoy_cluster.Cluster)
+		if !ok {
+			continue
+		}
+		clusterResources[name] = cluster
+	}
+
+	for _, listener := range networking.GetListeners() {
+		var listenerName string
+		switch listener.GetType() {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			listenerName = naming.ContextualZoneIngressListenerName(listener.GetSectionName())
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			listenerName = naming.ContextualZoneEgressListenerName(listener.GetSectionName())
+		default:
+			continue
+		}
+
+		resource, ok := listenerResources[listenerName]
+		if !ok {
+			continue
+		}
+		envoyListener, ok := resource.Resource.(*envoy_listener.Listener)
+		if !ok {
+			continue
+		}
+
+		inboundRules, err := buildListenerScopedInboundRules(policies, listener.GetSectionName())
+		if err != nil {
+			return err
+		}
+		if len(inboundRules) == 0 {
+			continue
+		}
+
+		if err := applyToZoneProxyListener(envoyListener, clusterResources, inboundRules); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToZoneProxyListener(
+	listener *envoy_listener.Listener,
+	clusters map[string]*envoy_cluster.Cluster,
+	inboundRules []*rules_inbound.Rule,
+) error {
+	commonConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+	for _, filterChain := range listener.FilterChains {
+		if err := plugin_xds.ConfigureFilterChain(commonConf, filterChain); err != nil {
+			return err
+		}
+		if err := applyZoneProxyClusterConf(clusters, filterChain, commonConf); err != nil {
+			return err
+		}
+
+		for _, rule := range inboundRules {
+			if !matchesZoneProxyFilterChain(rule, filterChain) {
+				continue
+			}
+			conf, ok := rule.Conf.(api.Conf)
+			if !ok {
+				continue
+			}
+			if err := plugin_xds.ConfigureFilterChain(conf, filterChain); err != nil {
+				return err
+			}
+			if err := applyZoneProxyClusterConf(clusters, filterChain, conf); err != nil {
+				return err
+			}
+		}
+
+		if err := plugin_xds.ConfigureMatchedRoutesOnFilterChain(filterChain, inboundRules); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyZoneProxyClusterConf(
+	clusters map[string]*envoy_cluster.Cluster,
+	filterChain *envoy_listener.FilterChain,
+	conf api.Conf,
+) error {
+	clusterName := zoneProxyClusterName(filterChain)
+	if clusterName == "" {
+		return nil
+	}
+	cluster, ok := clusters[clusterName]
+	if !ok {
+		return nil
+	}
+
+	configurer := plugin_xds.ClusterConfigurerFromConf(conf, zoneProxyProtocol(filterChain))
+	return configurer.Configure(cluster)
+}
+
+func zoneProxyClusterName(filterChain *envoy_listener.FilterChain) string {
+	var clusterName string
+	_ = listeners_v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+		routeConfig := hcm.GetRouteConfig()
+		if routeConfig == nil {
+			return nil
+		}
+		for _, virtualHost := range routeConfig.VirtualHosts {
+			for _, route := range virtualHost.Routes {
+				if name := route.GetRoute().GetCluster(); name != "" {
+					clusterName = name
+					return nil
+				}
+			}
+		}
+		return nil
+	})
+	if clusterName != "" {
+		return clusterName
+	}
+
+	_ = listeners_v3.UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
+		clusterName = proxy.GetCluster()
+		return nil
+	})
+	return clusterName
+}
+
+func zoneProxyProtocol(filterChain *envoy_listener.FilterChain) core_meta.Protocol {
+	protocol := core_meta.ProtocolUnknown
+	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, func(*envoy_hcm.HttpConnectionManager) error {
+		protocol = core_meta.ProtocolHTTP
+		return nil
+	}); err == nil {
+		return protocol
+	}
+	_ = listeners_v3.UpdateTCPProxy(filterChain, func(*envoy_tcp.TcpProxy) error {
+		protocol = core_meta.ProtocolTCP
+		return nil
+	})
+	return protocol
+}
+
+func matchesZoneProxyFilterChain(rule *rules_inbound.Rule, filterChain *envoy_listener.FilterChain) bool {
+	if len(rule.Matches) == 0 {
+		return false
+	}
+	serverNames := filterChain.GetFilterChainMatch().GetServerNames()
+	if len(serverNames) == 0 {
+		return false
+	}
+	for _, match := range rule.Matches {
+		if match.SpiffeID != nil || match.SNI == nil {
+			return false
+		}
+		if !containsString(serverNames, match.SNI.Value) {
+			return false
+		}
+	}
+	return true
+}
+
+func containsString(values []string, value string) bool {
+	return slices.Contains(values, value)
+}
+
+func buildListenerScopedInboundRules(
+	policies core_xds.TypedMatchingPolicies,
+	sectionName string,
+) ([]*rules_inbound.Rule, error) {
+	if len(policies.DataplanePolicies) == 0 {
+		return nil, nil
+	}
+
+	filtered := api.MeshTimeoutResourceTypeDescriptor.NewList()
+	for _, resource := range policies.DataplanePolicies {
+		policy, ok := resource.GetSpec().(core_model.Policy)
+		if !ok {
+			continue
+		}
+		targetRef := policy.GetTargetRef()
+		if targetRef.Kind == common_api.Dataplane {
+			if sn := pointer.Deref(targetRef.SectionName); sn != "" && sn != sectionName {
+				continue
+			}
+		}
+		if err := filtered.AddItem(resource); err != nil {
+			return nil, err
+		}
+	}
+
+	return rules_inbound.BuildRules(filtered)
 }
 
 func getConf(
