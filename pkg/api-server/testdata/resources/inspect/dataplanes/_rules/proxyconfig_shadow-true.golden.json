@@ -58,7 +58,8 @@
       }
      }
     },
-    "trafficDirection": "INBOUND"
+    "trafficDirection": "INBOUND",
+    "enableReusePort": false
    }
   }
  }

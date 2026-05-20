@@ -24,7 +24,7 @@ var _ = Describe("ServerSideStaticTLS", func() {
 		)
 
 		// when
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
 				Configure(ServerSideStaticTLS(certs)).
 				Configure(TcpProxyDeprecated("localhost:8080", cluster)))).
@@ -57,6 +57,7 @@ var _ = Describe("ServerSideStaticTLS", func() {
                       privateKey:
                         filename: "/tmp/key.pem"
             name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND`))
+            trafficDirection: INBOUND
+            enableReusePort: true`))
 	})
 })

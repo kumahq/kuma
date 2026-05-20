@@ -26,10 +26,6 @@ func Setup(rt runtime.Runtime) error {
 		logger.Info("MeshServices are not enabled. Skip starting generator for MeshServices.")
 		return nil
 	}
-	if rt.Config().Experimental.InboundTagsDisabled {
-		logger.Info("Inbound tags are disabled. Skip starting generator for MeshService. Users should create MeshService manually.")
-		return nil
-	}
 	generator, err := New(
 		logger,
 		rt.Config().MeshService.GenerationInterval.Duration,

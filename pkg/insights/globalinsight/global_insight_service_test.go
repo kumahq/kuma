@@ -45,6 +45,10 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = createServiceInsight("si-2", "payments", rs)
 		Expect(err).ToNot(HaveOccurred())
+		err = createHostnameGenerator("default-hg", rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createHostnameGenerator("payments-hg", rs)
+		Expect(err).ToNot(HaveOccurred())
 		err = createZoneInsight("zi-1", true, rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createZoneInsight("zi-2", false, rs)
@@ -107,6 +111,16 @@ func createServiceInsight(name string, mesh string, rs store.ResourceStore) erro
 		AddService("test-delegated-gateway", &mesh_proto.ServiceInsight_Service{
 			ServiceType: mesh_proto.ServiceInsight_Service_gateway_delegated,
 			Status:      mesh_proto.ServiceInsight_Service_offline,
+		}).
+		Create(rs)
+}
+
+func createHostnameGenerator(name string, rs store.ResourceStore) error {
+	return builders.HostnameGenerator().
+		WithName(name).
+		WithTemplate("%s.mesh").
+		WithMeshServiceMatchLabels(map[string]string{
+			"kuma.io/service": name,
 		}).
 		Create(rs)
 }

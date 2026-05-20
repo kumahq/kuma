@@ -222,6 +222,7 @@ resources:
         address: 192.168.0.1
         portValue: 80
     bindToPort: false
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -297,7 +298,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15006
-    enableReusePort: true
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
@@ -315,6 +316,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 9902
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -408,6 +410,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 1234
+    enableReusePort: false
     filterChains:
     - filterChainMatch:
         sourcePrefixRanges:
