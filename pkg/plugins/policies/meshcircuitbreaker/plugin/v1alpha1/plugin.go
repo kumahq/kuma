@@ -265,8 +265,9 @@ func applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
 	rules outbound.ResourceRules,
+	filters ...func(*core_xds.Resource) bool,
 ) error {
-	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+	for uri, resType := range rs.IndexByOrigin(filters...) {
 		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
 			return err
 		}

@@ -36,6 +36,7 @@ func zoneEgressOnlyDataplane() *builders.DataplaneBuilder {
 		WithName("zone-egress-1").
 		WithAddress("192.168.0.10").
 		WithoutInbounds().
+		WithLabels(map[string]string{mesh_proto.ListenerZoneEgressLabel: "enabled"}).
 		With(func(d *core_mesh.DataplaneResource) {
 			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
 				{
@@ -53,6 +54,7 @@ func zoneIngressOnlyDataplane() *builders.DataplaneBuilder {
 		WithName("zone-ingress-1").
 		WithAddress("192.168.0.11").
 		WithoutInbounds().
+		WithLabels(map[string]string{mesh_proto.ListenerZoneIngressLabel: "enabled"}).
 		With(func(d *core_mesh.DataplaneResource) {
 			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
 				{
@@ -73,6 +75,7 @@ func mixedInboundAndZoneEgressDataplane() *builders.DataplaneBuilder {
 			WithService("backend").
 			WithAddress("192.168.0.1").
 			WithPort(17777)).
+		WithLabels(map[string]string{mesh_proto.ListenerZoneEgressLabel: "enabled"}).
 		With(func(d *core_mesh.DataplaneResource) {
 			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
 				{
@@ -200,11 +203,14 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("testdata", given.goldenFile+".clusters.golden.yaml")))
 		},
-		Entry("zone egress, listener patch matched by explicit name", testCase{
+		Entry("zone egress, scoped by listener-zoneegress label on Dataplane targetRef", testCase{
 			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-name", &common_api.TargetRef{Kind: common_api.Mesh}, []api.Modification{
+				newMeshProxyPatch("by-label", &common_api.TargetRef{
+					Kind:   common_api.Dataplane,
+					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneEgressLabel: "enabled"}),
+				}, []api.Modification{
 					{Listener: &api.ListenerMod{
 						Operation: api.ModOpPatch,
 						Match:     &api.ListenerMatch{Name: pointer.To(naming.ContextualZoneEgressListenerName("ze-port"))},
@@ -214,11 +220,14 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			},
 			goldenFile: "zone-egress-listener-patch",
 		}),
-		Entry("zone ingress, listener patch matched by explicit name", testCase{
+		Entry("zone ingress, scoped by listener-zoneingress label on Dataplane targetRef", testCase{
 			dp:        zoneIngressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-name", &common_api.TargetRef{Kind: common_api.Mesh}, []api.Modification{
+				newMeshProxyPatch("by-label", &common_api.TargetRef{
+					Kind:   common_api.Dataplane,
+					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneIngressLabel: "enabled"}),
+				}, []api.Modification{
 					{Listener: &api.ListenerMod{
 						Operation: api.ModOpPatch,
 						Match:     &api.ListenerMatch{Name: pointer.To(naming.ContextualZoneIngressListenerName("zi-port"))},
@@ -228,18 +237,28 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			},
 			goldenFile: "zone-ingress-listener-patch",
 		}),
-		Entry("mixed inbound + zone egress, cluster added by Dataplane targetRef", testCase{
+		Entry("mixed inbound + zone egress, Dataplane targetRef patches both listeners", testCase{
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("add-cluster", &common_api.TargetRef{Kind: common_api.Dataplane}, []api.Modification{
+				newMeshProxyPatch("patch-both", &common_api.TargetRef{Kind: common_api.Dataplane}, []api.Modification{
+					{Listener: &api.ListenerMod{
+						Operation: api.ModOpPatch,
+						Match:     &api.ListenerMatch{Name: pointer.To("inbound:192.168.0.1:17777")},
+						Value:     pointer.To("statPrefix: patched_inbound\n"),
+					}},
+					{Listener: &api.ListenerMod{
+						Operation: api.ModOpPatch,
+						Match:     &api.ListenerMatch{Name: pointer.To(naming.ContextualZoneEgressListenerName("ze-port"))},
+						Value:     pointer.To("statPrefix: patched_egress\n"),
+					}},
 					{Cluster: &api.ClusterMod{
 						Operation: api.ModOpAdd,
 						Value:     pointer.To("name: extra-cluster\nconnectTimeout: 7s\n"),
 					}},
 				}),
 			},
-			goldenFile: "mixed-cluster-add",
+			goldenFile: "mixed-patch-both",
 		}),
 	)
 })

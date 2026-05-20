@@ -1,6 +1,7 @@
 package defaults
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -28,7 +29,7 @@ func Defaults() {
 
 	policyCreated := func(typ, name string, namespace ...string) func() bool {
 		return func() bool {
-			output, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace...), "get", typ)
+			output, err := k8s.RunKubectlAndGetOutputContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace...), "get", typ)
 			if err != nil {
 				return false
 			}

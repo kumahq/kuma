@@ -22,6 +22,35 @@ None for valid label keys. Labels with `/` or `.` in the key that were leaked on
 kubectl -n kuma-system label meshservice <name> app.example.com/tier-
 ```
 
+### MeshAccessLog OpenTelemetry attribute keys are now validated
+
+`MeshAccessLog` now validates `openTelemetry.attributes[].key` against the access-log attribute-key grammar used by this policy. Keys must start with a lowercase letter, use only lowercase letters, digits, `_` or `.`, avoid consecutive delimiters, end with a letter or digit, and must not use the reserved `otel.` prefix. `%...%` placeholders remain supported in attribute values, but are no longer accepted in keys.
+
+Existing policies with invalid keys keep their current runtime behavior until they are updated or reapplied. In particular, placeholder-based keys continue to emit the same interpolated key after a control-plane upgrade. GitOps or other reconcilers that re-apply `MeshAccessLog` resources after the upgrade hit the same validation path immediately, so invalid keys must be fixed before the next reconcile. Any create or update using an invalid key is rejected until the key is renamed to a static value.
+
+**Action required:**
+
+Before the next apply, review the `MeshAccessLog` resources you manage using the tooling and workflow standard for your environment. On Kubernetes, audit `MeshAccessLog` resources across all namespaces. On Universal, audit the resources for each mesh you manage. If GitOps or another reconciler is the source of truth, review the manifests that will be re-applied as well.
+
+When auditing `openTelemetry.attributes[].key`, flag any key that:
+
+- starts with the reserved `otel.` prefix
+- contains `%...%` placeholders
+- does not start with a lowercase letter
+- contains characters other than lowercase letters, digits, `_`, or `.`
+- contains consecutive delimiters
+- ends with a delimiter
+
+Capture enough context to update each invalid policy before the next reconcile, for example the Kubernetes namespace, mesh, and resource name.
+
+Then rename invalid keys such as `%KUMA_ZONE%`, `request-id`, `Service.Version`, or `otel.attribute`, and keep the dynamic content in the value instead:
+
+```yaml
+attributes:
+  - key: service.zone
+    value: "%KUMA_ZONE%"
+```
+
 ### Readiness reporter is now TCP-only
 
 The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/ready` is served exclusively on TCP `KUMA_READINESS_PORT` (default `9902`) in both Kubernetes and Universal mode.
@@ -35,6 +64,12 @@ The kuma-dp readiness reporter no longer listens on a Unix domain socket. `/read
 **Action required:**
 
 - Universal-mode operators who probed readiness via the Unix socket must switch to TCP loopback: `curl http://localhost:9902/ready`.
+- Universal-mode hosts running more than one `kuma-dp` instance must assign a distinct `KUMA_READINESS_PORT` per instance. Each instance previously used its own Unix socket; they now all default to TCP `9902` and will fail to bind on conflict:
+
+  ```sh
+  KUMA_READINESS_PORT=9902 kuma-dp run ...   # instance 1
+  KUMA_READINESS_PORT=9903 kuma-dp run ...   # instance 2
+  ```
 - Custom manifests that still set `KUMA_READINESS_UNIX_SOCKET_DISABLED` can leave the env var in place — it is ignored — or remove it.
 
 ### dp-server graceful shutdown is now time-bounded

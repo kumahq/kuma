@@ -12,6 +12,7 @@ import (
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
@@ -106,13 +107,19 @@ type meshServicesResult struct {
 }
 
 func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
+	if g.inboundTagsDisabled {
+		return g.workloadMeshServiceForDataplane(dataplane)
+	}
+	return g.serviceTagMeshServicesForDataplane(dataplane)
+}
+
+// serviceTagMeshServicesForDataplane generates MeshServices grouped by the
+// kuma.io/service inbound tag. Used when inbound tags are enabled.
+func (g *Generator) serviceTagMeshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
 	inboundsByService := map[string][]*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		if g.inboundTagsDisabled && len(inbound.GetTags()) == 0 {
-			continue
-		}
 		serviceTagValue := inbound.GetTags()[mesh_proto.ServiceTag]
 		allErrs := apimachineryvalidation.NameIsDNS1035Label(serviceTagValue, false)
 		if len(allErrs) != 0 {
@@ -162,6 +169,67 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 	}
 
 	return meshServicesResult{services: services, labelContributions: contributions}
+}
+
+// workloadMeshServiceForDataplane generates a single MeshService per
+// kuma.io/workload label value. Used when inbound tags are disabled: inbounds
+// no longer carry tags, so service identity is derived from the workload the
+// Dataplane belongs to, producing a 1:1 workload-to-MeshService mapping.
+func (g *Generator) workloadMeshServiceForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
+	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
+
+	workloadName, ok := dataplane.GetMeta().GetLabels()[metadata.KumaWorkload]
+	if !ok || workloadName == "" {
+		return meshServicesResult{}
+	}
+	if allErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(allErrs) != 0 {
+		log.Info("couldn't generate MeshService from kuma.io/workload, contains invalid characters", "value", workloadName, "error", allErrs)
+		return meshServicesResult{}
+	}
+
+	var ports []meshservice_api.Port
+	inbounds := dataplane.Spec.GetNetworking().GetInbound()
+	for _, inbound := range inbounds {
+		port := meshservice_api.Port{
+			Name:        &inbound.Name,
+			Port:        int32(inbound.Port),
+			TargetPort:  pointer.To(intstr.FromInt32(int32(inbound.Port))),
+			AppProtocol: core_meta.ProtocolTCP,
+		}
+		if name := pointer.Deref(port.Name); name == "" {
+			port.Name = pointer.To(fmt.Sprintf("%d", port.Port))
+		}
+		if proto := inbound.GetProtocol(); proto != "" {
+			if p := core_meta.ParseProtocol(proto); p != core_meta.ProtocolUnknown {
+				port.AppProtocol = p
+			}
+		}
+		ports = append(ports, port)
+	}
+	if len(ports) == 0 {
+		return meshServicesResult{}
+	}
+
+	ms := meshservice_api.MeshService{
+		Selector: meshservice_api.Selector{
+			DataplaneLabels: &common_api.LabelSelector{
+				MatchLabels: &map[string]string{
+					metadata.KumaWorkload: workloadName,
+				},
+			},
+		},
+		Ports: ports,
+	}
+
+	contributions := map[string]map[string]string{}
+	if g.labelPropagationEnabled {
+		contributions[workloadName] = dpContribution(dataplane, inbounds, g.allowSet, g.droppedLabels, g.logger, workloadName)
+	}
+
+	return meshServicesResult{
+		services:           map[string]*meshservice_api.MeshService{workloadName: &ms},
+		labelContributions: contributions,
+	}
 }
 
 type dataplaneAndMeshService struct {
@@ -256,7 +324,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			dps = append(dps, dp.dataplane.GetMeta().GetName())
 		}
 		if len(conflicting) > 0 {
-			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
+			log.Info("Port conflict, ports must be identical across Dataplane inbounds grouped into a single MeshService", "dps", dps)
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
 		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
@@ -359,7 +427,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			dps = append(dps, dp.dataplane.GetMeta().GetName())
 		}
 		if len(conflicting) > 0 {
-			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
+			log.Info("Port conflict, ports must be identical across Dataplane inbounds grouped into a single MeshService", "dps", dps)
 		}
 		propagated := propagatedLabelsFor(meshServices)
 		createLabels := desiredLabels(mesh, name, g.zone, propagated)

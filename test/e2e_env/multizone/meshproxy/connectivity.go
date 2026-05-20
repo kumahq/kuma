@@ -60,7 +60,26 @@ func Connectivity() {
 					WithName(meshName).
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(YamlUniversal(fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-all-ze-%[1]s
+mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s.%[2]s.mesh.local"
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s.%[3]s.mesh.local"
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s.%[4]s.mesh.local"
+`, meshName, multizone.KubeZone1.ZoneName(), multizone.KubeZone2.ZoneName(), multizone.UniZone1.ZoneName()))).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

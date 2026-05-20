@@ -1,6 +1,7 @@
 package trafficpermission
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -175,7 +176,7 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 
 		// and when Kubernetes pod is labeled
-		err = k8s.RunKubectlE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
+		err = k8s.RunKubectlContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

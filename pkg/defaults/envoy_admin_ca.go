@@ -18,6 +18,7 @@ func EnsureEnvoyAdminCaExists(
 	resManager manager.ResourceManager,
 	logger logr.Logger,
 	cfg kuma_cp.Config,
+	extensions context.Context,
 ) error {
 	if cfg.Mode == config_core.Global {
 		return nil // Envoy Admin CA is not synced in multizone env and not needed in Global CP.

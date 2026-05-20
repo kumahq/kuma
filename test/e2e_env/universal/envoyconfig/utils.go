@@ -19,16 +19,20 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
-func waitMeshServiceReady(mesh, name string) {
+func waitMeshServiceReady(mesh, name string, spiffeIDs ...string) {
 	Eventually(func(g Gomega) {
 		spec, status, err := GetMeshServiceStatus(universal.Cluster, name, mesh)
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-			{
-				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-				Value: name,
-			},
-		}))
+		g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
+			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+			Value: name,
+		})))
+		for _, spiffeID := range spiffeIDs {
+			g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
+				Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+				Value: spiffeID,
+			})))
+		}
 		g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
 	}, "30s", "1s").Should(Succeed())
 }
@@ -41,7 +45,9 @@ func getConfig(mesh, dpp string) string {
 		redactStatPrefixes(
 			redactIPs(
 				normalizeAdminEndpoints(
-					redactKumaDynamicConfig(output),
+					redactSpiffeTrustBundles(
+						redactKumaDynamicConfig(output),
+					),
 				),
 			),
 		),
@@ -51,19 +57,19 @@ func getConfig(mesh, dpp string) string {
 	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
 	Expect(response.Diff).ToNot(BeNil())
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
-		return item.Op == api_common.Test
+		// Drop Test ops (they only assert preconditions) and any standalone
+		// maxDirectResponseBodySizeBytes op. The byte count is just len(body);
+		// the shadow and the running Envoy can briefly disagree on it while
+		// the rest of the route is identical, producing a spurious remove/add
+		// pair that no golden expects. The body content + Etag hash already
+		// pin what's actually sent, so an op about only the byte count is
+		// pure noise.
+		return item.Op == api_common.Test ||
+			strings.HasSuffix(item.Path, "maxDirectResponseBodySizeBytes")
 	}))
-	// Redact maxDirectResponseBodySizeBytes everywhere: as a standalone diff
-	// path (sidecar case where the listener already existed) and nested inside
-	// a wholesale listener add value (zone-proxy case). The body content +
-	// Etag hash already pin what's actually sent; the byte count is just
-	// len(body) and changes whenever any label does, so zeroing it keeps the
-	// golden churn down to the meaningful bits.
+	// Zero maxDirectResponseBodySizeBytes nested inside wholesale listener add
+	// values: the byte count re-derives from the body the golden already pins.
 	for i := range *response.Diff {
-		if strings.HasSuffix((*response.Diff)[i].Path, "maxDirectResponseBodySizeBytes") {
-			(*response.Diff)[i].Value = 0
-			continue
-		}
 		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
 	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
@@ -126,6 +132,48 @@ var dnsLookupRegex = regexp.MustCompile(`,\s*"dnsLookupFamily":\s*"[^"]*"`)
 // and in the case of ipv6 this field is default, so it is missing in the config.
 func redactDnsLookupFamily(jsonStr string) string {
 	return dnsLookupRegex.ReplaceAllString(jsonStr, "")
+}
+
+// redactSpiffeTrustBundles replaces inlineBytes in SPIFFE trust domain bundles
+// with a placeholder. The bytes contain real CA certs that change every test run.
+func redactSpiffeTrustBundles(jsonStr string) string {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		return jsonStr
+	}
+
+	xds, _ := data["xds"].(map[string]any)
+	if xds == nil {
+		return jsonStr
+	}
+
+	secrets, _ := xds["type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret"].(map[string]any)
+	for _, v := range secrets {
+		secret, _ := v.(map[string]any)
+		if secret == nil {
+			continue
+		}
+		vc, _ := secret["validationContext"].(map[string]any)
+		cvc, _ := vc["customValidatorConfig"].(map[string]any)
+		tc, _ := cvc["typedConfig"].(map[string]any)
+		domains, _ := tc["trustDomains"].([]any)
+		for _, d := range domains {
+			dm, _ := d.(map[string]any)
+			if dm == nil {
+				continue
+			}
+			tb, _ := dm["trustBundle"].(map[string]any)
+			if tb != nil {
+				tb["inlineBytes"] = "CERT_REDACTED"
+			}
+		}
+	}
+
+	out, err := json.Marshal(data)
+	if err != nil {
+		return jsonStr
+	}
+	return string(out)
 }
 
 var dynamicConfigJsonPatch = []byte(`[{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" }]`)

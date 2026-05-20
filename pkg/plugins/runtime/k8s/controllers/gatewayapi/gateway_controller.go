@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -17,7 +16,6 @@ import (
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -68,13 +66,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 
-	if !kube_apimeta.IsStatusConditionTrue(class.Status.Conditions, string(gatewayapi_v1.GatewayClassConditionStatusAccepted)) {
-		return kube_ctrl.Result{}, nil
-	}
-
-	config, err := r.meshGatewayConfigFromClass(ctx, class)
+	config, accepted, err := r.meshGatewayConfigFromClass(ctx, class)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Config from GatewayClass")
+	}
+	if !accepted {
+		return kube_ctrl.Result{}, nil
 	}
 
 	ns := kube_core.Namespace{}
@@ -112,10 +109,14 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	return kube_ctrl.Result{}, nil
 }
 
-func (r *GatewayReconciler) meshGatewayConfigFromClass(ctx context.Context, class *gatewayapi.GatewayClass) (mesh_k8s.MeshGatewayConfigSpec, error) {
-	ref, _, err := getParametersRef(ctx, r.Client, class.Spec.ParametersRef)
+func (r *GatewayReconciler) meshGatewayConfigFromClass(ctx context.Context, class *gatewayapi.GatewayClass) (mesh_k8s.MeshGatewayConfigSpec, bool, error) {
+	ref, condition, err := getParametersRef(ctx, r.Client, class.Spec.ParametersRef)
 	if err != nil {
-		return mesh_k8s.MeshGatewayConfigSpec{}, errors.Wrap(err, "unable to fetch parameters for GatewayClass")
+		return mesh_k8s.MeshGatewayConfigSpec{}, false, errors.Wrap(err, "unable to fetch parameters for GatewayClass")
+	}
+
+	if condition != nil {
+		return mesh_k8s.MeshGatewayConfigSpec{}, false, nil
 	}
 
 	if ref != nil {
@@ -123,7 +124,7 @@ func (r *GatewayReconciler) meshGatewayConfigFromClass(ctx context.Context, clas
 			ref.Spec.ServiceType = kube_core.ServiceTypeClusterIP
 		}
 
-		return ref.Spec, nil
+		return ref.Spec, true, nil
 	}
 
 	return mesh_k8s.MeshGatewayConfigSpec{
@@ -131,7 +132,7 @@ func (r *GatewayReconciler) meshGatewayConfigFromClass(ctx context.Context, clas
 			ServiceType: kube_core.ServiceTypeLoadBalancer,
 			Replicas:    1,
 		},
-	}, nil
+	}, true, nil
 }
 
 func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh string, gateway *gatewayapi.Gateway, config mesh_k8s.MeshGatewayConfigSpec) (*mesh_k8s.MeshGatewayInstance, error) {

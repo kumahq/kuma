@@ -18,7 +18,7 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   release:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -33,6 +33,9 @@ jobs:
             exit 1
           fi
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
+          version: 2026.5.7
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - run: |
@@ -59,7 +62,7 @@ jobs:
           fi
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
