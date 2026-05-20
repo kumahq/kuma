@@ -130,5 +130,5 @@ None specific to the downstream project. The 2.14-to-3.0 migration applies unifo
 
 ## Decision
 
-Not generating MeshService on Universal is most clean solution. It removes all the ambiguities that come with MeshService generation.
-It leaves full control over MeshService to mesh operator, they can label it as they need for grouping in MeshMultizoneService.
+We go with a combined approach favoring Option B: generate one `MeshService` per `kuma.io/workload` value, giving a one-to-one mapping between `Workload` and `MeshService`. Users needing more complex setups (blue/green, port carve-out, aggregation) author `MeshService` manually. 
+This keeps the auto-generation path narrow and unambiguous, removes the ambiguities of inbound-tag-driven generation for complex cases, and leaves full control over non-trivial `MeshService` shapes to the mesh operator.
