@@ -52,6 +52,10 @@ func (x *Rule) GetDefault() interface{} {
 	return x.Default
 }
 
+func (x *Rule) GetMatches() []common_api.Match {
+	return pointer.DerefOr(x.Matches, []common_api.Match{})
+}
+
 func (x *MeshFaultInjection) GetRules() []inbound.RuleEntry {
 	var result []inbound.RuleEntry
 	for _, itm := range pointer.Deref(x.Rules) {

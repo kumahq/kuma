@@ -5,6 +5,7 @@ import (
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	bldrs_matchers "github.com/kumahq/kuma/v2/pkg/envoy/builders/xds/matchers"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
@@ -36,20 +37,24 @@ func (c *Configurer) addFaultFilters(hcm *envoy_hcm.HttpConnectionManager) error
 	var fiFilters []*envoy_hcm.HttpFilter
 
 	for _, rule := range c.Rules {
-		matchesConf := rule.Conf.(*policies_api.Rule)
+		matchesConf := rule.Conf.(policies_api.Conf)
+		matches := []common_api.Match{}
+		if rule.Match != nil {
+			matches = []common_api.Match{pointer.Deref(rule.Match)}
+		}
 		matcher := bldrs_matchers.Matcher(
 			bldrs_matchers.NewMatcherBuilder().Configure(
 				bldrs_matchers.FieldMatcher(
 					bldrs_matchers.NewFieldMatcher().Configure(
 						bldrs_matchers.NotMatches(
-							pointer.Deref(matchesConf.Matches),
+							matches,
 							bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.SkipFilterAction()),
 						),
 					),
 				)),
 		)
 
-		for _, fault := range pointer.Deref(matchesConf.Default.Http) {
+		for _, fault := range pointer.Deref(matchesConf.Http) {
 			faultConfig, _ := configureFault(fault)
 			faultFilter, err := util_proto.MarshalAnyDeterministic(faultConfig)
 			if err != nil {

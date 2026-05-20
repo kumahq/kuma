@@ -103,6 +103,7 @@ func TestZoneProxyConfig(inputFile string) {
 	Eventually(func(g Gomega) {
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-demo-client.golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-test-server.golden.json", 1)))
+		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-test-server-no-reusable-ports")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-test-server-no-reusable-ports.golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyIngressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyIngressDP+".golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyEgressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyEgressDP+".golden.json", 1)))
 	}, "90s", "2s").Should(Succeed())
@@ -182,6 +183,16 @@ spec:
 			WithWorkload("zone-proxy-test-server"),
 			WithDpEnvs(dppEnvs)),
 		).
+		Install(TestServerUniversal("zone-proxy-test-server-no-reusable-ports", zoneProxyMeshName,
+			WithArgs([]string{"echo", "--instance", "no-reusable-ports"}),
+			WithServiceName("zone-proxy-test-server-no-reusable-ports"),
+			WithWorkload("zone-proxy-test-server-no-reusable-ports"),
+			WithDpEnvs(map[string]string{
+				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":         "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED":       "false",
+				"KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED": "false",
+			})),
+		).
 		Setup(universal.Cluster)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -208,15 +219,20 @@ spec:
 
 	waitMeshServiceReady(zoneProxyMeshName, "zone-proxy-demo-client", fmt.Sprintf("spiffe://%s.%s.mesh.local/workload/zone-proxy-demo-client", zoneProxyMeshName, universal.Cluster.ZoneName()))
 	waitMeshServiceReady(zoneProxyMeshName, "zone-proxy-test-server", fmt.Sprintf("spiffe://%s.%s.mesh.local/workload/zone-proxy-test-server", zoneProxyMeshName, universal.Cluster.ZoneName()))
+	waitMeshServiceReady(zoneProxyMeshName, "zone-proxy-test-server-no-reusable-ports", fmt.Sprintf("spiffe://%s.%s.mesh.local/workload/zone-proxy-test-server-no-reusable-ports", zoneProxyMeshName, universal.Cluster.ZoneName()))
 
 	Eventually(func(g Gomega) {
 		_, err := client.CollectEchoResponse(universal.Cluster, "zone-proxy-demo-client", "zone-proxy-test-server.svc.mesh.local")
 		g.Expect(err).ToNot(HaveOccurred())
 	}).Should(Succeed())
+	Eventually(func(g Gomega) {
+		_, err := client.CollectEchoResponse(universal.Cluster, "zone-proxy-demo-client", "zone-proxy-test-server-no-reusable-ports.svc.mesh.local")
+		g.Expect(err).ToNot(HaveOccurred())
+	}).Should(Succeed())
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP}, policies...)
+	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
 }
 
 func CleanupAfterZoneProxySuite() {

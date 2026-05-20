@@ -696,7 +696,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
@@ -730,13 +730,13 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
@@ -746,7 +746,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
@@ -789,13 +789,13 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
@@ -805,7 +805,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
@@ -845,13 +845,13 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
@@ -1242,15 +1242,15 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 8080}: {
-						{Conf: &api.Rule{
-							Default: api.Conf{
+						{
+							Conf: api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
 										Path: "/tmp/from-log",
 									},
 								}},
 							},
-						}},
+						},
 					},
 				},
 				ToRules: core_rules.GatewayToRules{

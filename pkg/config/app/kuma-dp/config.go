@@ -43,6 +43,7 @@ var DefaultConfig = func() Config {
 			IPv6Enabled:               true,
 			StrictInboundPortsEnabled: true,
 			OtelPipeEnabled:           true,
+			ReusePortEnabled:          true,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -259,6 +260,10 @@ type DataplaneRuntime struct {
 	// When false, observability policy backendRefs (MeshTrace, MeshAccessLog, MeshMetric)
 	// use direct Envoy clusters instead of routing through kuma-dp Unix sockets. Default: true.
 	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_dataplane_runtime_otel_pipe_enabled"`
+	// ReusePortEnabled controls whether kuma-dp advertises FeatureReusePort to the CP.
+	// When true, the CP generates Envoy listeners with enable_reuse_port=true so each worker
+	// owns its own LISTEN socket. Default: true.
+	ReusePortEnabled bool `json:"reusePortEnabled" envconfig:"kuma_dataplane_runtime_reuse_port_enabled"`
 }
 
 type Spire struct {

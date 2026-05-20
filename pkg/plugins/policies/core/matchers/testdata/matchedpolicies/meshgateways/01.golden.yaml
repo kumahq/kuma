@@ -47,14 +47,11 @@ FromRules:
 InboundRules:
   127.0.0.1:8080:
   - conf:
-      BaseEntry:
-        default:
-          backends:
-          - file:
-              path: /from-gateway
-            type: File
-        targetRef:
-          kind: Mesh
+      backends:
+      - file:
+          path: /from-gateway
+        type: File
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -66,14 +63,11 @@ InboundRules:
       RuleIndex: 0
   127.0.0.1:8081:
   - conf:
-      BaseEntry:
-        default:
-          backends:
-          - file:
-              path: /from-gateway
-            type: File
-        targetRef:
-          kind: Mesh
+      backends:
+      - file:
+          path: /from-gateway
+        type: File
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
@@ -85,14 +79,11 @@ InboundRules:
       RuleIndex: 0
   127.0.0.1:8082:
   - conf:
-      BaseEntry:
-        default:
-          backends:
-          - file:
-              path: /from-gateway
-            type: File
-        targetRef:
-          kind: Mesh
+      backends:
+      - file:
+          path: /from-gateway
+        type: File
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"

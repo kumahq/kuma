@@ -253,7 +253,7 @@ var _ = Describe("MeshTimeout", func() {
 						Address: "127.0.0.1",
 						Port:    80,
 					}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
 							Http: &api.Http{
@@ -262,7 +262,7 @@ var _ = Describe("MeshTimeout", func() {
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
 							},
-						}},
+						},
 					}},
 				},
 			},
@@ -416,7 +416,7 @@ var _ = Describe("MeshTimeout", func() {
 						Address: "127.0.0.1",
 						Port:    80,
 					}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
 							Http: &api.Http{
@@ -425,7 +425,7 @@ var _ = Describe("MeshTimeout", func() {
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
 							},
-						}},
+						},
 					}},
 				},
 			},
@@ -699,8 +699,8 @@ var _ = Describe("MeshTimeout", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "192.168.0.1", Port: 8080}: {
-						{Conf: &api.Rule{
-							Default: api.Conf{
+						{
+							Conf: api.Conf{
 								IdleTimeout: test.ParseDuration("1h"),
 								Http: &api.Http{
 									RequestTimeout:        test.ParseDuration("311s"),
@@ -710,7 +710,7 @@ var _ = Describe("MeshTimeout", func() {
 									RequestHeadersTimeout: test.ParseDuration("99s"),
 								},
 							},
-						}},
+						},
 					},
 				},
 				ToRules: core_rules.GatewayToRules{
@@ -877,7 +877,7 @@ func httpListenerWithSeveralMeshHTTPRoutes(service string, meshHTTPRoute kri.Ide
 
 func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
-		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
+		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true),
 		HttpInboundRoutes(
 			envoy_names.GetInboundRouteName("backend"),
 			"backend",
