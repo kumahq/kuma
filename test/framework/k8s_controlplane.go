@@ -350,7 +350,7 @@ func (c *K8sControlPlane) GetMetrics() (string, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/metrics", tnl.Endpoint), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/metrics", tnl.Endpoint), http.NoBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to build CP metrics request: %w", err)
 	}
