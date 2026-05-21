@@ -76,7 +76,7 @@ func getConfig(mesh, dpp string) string {
 		if cmp := strings.Compare(a.Path, b.Path); cmp != 0 {
 			return cmp
 		}
-		if cmp := strings.Compare(string(a.Op), string(b.Op)); cmp != 0 {
+		if cmp := strings.Compare(jsonPatchOpKey(a.Op), jsonPatchOpKey(b.Op)); cmp != 0 {
 			return cmp
 		}
 		return strings.Compare(jsonPatchValueKey(a.Value), jsonPatchValueKey(b.Value))
@@ -85,6 +85,16 @@ func getConfig(mesh, dpp string) string {
 	result, err := json.MarshalIndent(response, "", "  ")
 	Expect(err).ToNot(HaveOccurred())
 	return string(result)
+}
+
+func jsonPatchOpKey(op api_common.JsonPatchItemOp) string {
+	if op == api_common.Remove {
+		return "0"
+	}
+	if op == api_common.Add {
+		return "1"
+	}
+	return string(op)
 }
 
 func jsonPatchValueKey(value any) string {
