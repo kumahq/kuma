@@ -24,7 +24,7 @@ import (
 type EnvoyAdminClient interface {
 	PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error
 
-	Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error)
+	Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat, usedOnly bool) ([]byte, error)
 	Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error)
 	ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error)
 }
@@ -133,10 +133,13 @@ func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.Da
 	return nil
 }
 
-func (a *envoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
+func (a *envoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	query := url.Values{}
 	if format == v1alpha1.AdminOutputFormat_JSON {
 		query.Add("format", "json")
+	}
+	if usedOnly {
+		query.Add("usedonly", "")
 	}
 	return a.executeRequest(ctx, proxy, "stats", query)
 }

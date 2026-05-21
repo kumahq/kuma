@@ -190,7 +190,13 @@ func (cl *inspectClient) inspectProxy(request *restful.Request, response *restfu
 			contentType = restful.MIME_JSON
 			format = v1alpha1.AdminOutputFormat_JSON
 		}
-		res, err = cl.adminClient.Stats(ctx, proxy, format)
+		usedOnly := true
+		if v := request.QueryParameter("usedonly"); v != "" {
+			if parsed, perr := strconv.ParseBool(v); perr == nil {
+				usedOnly = parsed
+			}
+		}
+		res, err = cl.adminClient.Stats(ctx, proxy, format, usedOnly)
 	}
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
