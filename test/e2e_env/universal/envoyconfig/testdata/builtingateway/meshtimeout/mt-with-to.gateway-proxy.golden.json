@@ -41,14 +41,14 @@
       "value": "54s"
     },
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8080:*/virtualHosts/0/routes/0/route/idleTimeout",
-      "value": "5s"
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8080:*/virtualHosts/0/routes/0/route/idleTimeout",
       "value": "53s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8080:*/virtualHosts/0/routes/0/route/idleTimeout",
+      "value": "5s"
     },
     {
       "op": "add",
@@ -56,14 +56,14 @@
       "value": "52s"
     },
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8080:*/virtualHosts/0/routes/1/route/idleTimeout",
-      "value": "5s"
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8080:*/virtualHosts/0/routes/1/route/idleTimeout",
       "value": "53s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8080:*/virtualHosts/0/routes/1/route/idleTimeout",
+      "value": "5s"
     },
     {
       "op": "add",
