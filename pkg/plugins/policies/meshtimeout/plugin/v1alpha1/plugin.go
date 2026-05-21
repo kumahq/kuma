@@ -116,9 +116,8 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		inboundRules := fromRules.InboundRules[listenerKey]
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:     conf,
-			Protocol: protocol,
-			Rules:    inboundRules,
+			Conf:  conf,
+			Rules: inboundRules,
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -490,7 +489,7 @@ func getConf(
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
-		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf(), Protocol: r.Protocol}
+		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf()}
 		if err := configurer.ConfigureListener(envoyResource); err != nil {
 			return err
 		}

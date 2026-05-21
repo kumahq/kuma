@@ -912,6 +912,19 @@ var _ = Describe("MeshTimeout", func() {
 									},
 								},
 							},
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client-stream",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										StreamIdleTimeout: test.ParseDuration("4s"),
+									},
+								},
+							},
 						},
 					},
 				})).

@@ -57,6 +57,16 @@ resources:
                   idleTimeout: 3s
                   timeout: 2s
               - match:
+                  filterState:
+                  - key: kuma.mesh_timeout.match.spiffe_id
+                    stringMatch:
+                      exact: spiffe://default/client-stream
+                  prefix: /
+                route:
+                  cluster: backend
+                  idleTimeout: 4s
+                  timeout: 5s
+              - match:
                   prefix: /
                 route:
                   cluster: backend

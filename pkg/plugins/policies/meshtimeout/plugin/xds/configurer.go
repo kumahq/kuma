@@ -324,9 +324,8 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 }
 
 type ListenerConfigurer struct {
-	Conf     api.Conf
-	Protocol core_meta.Protocol
-	Rules    []*rules_inbound.Rule
+	Conf  api.Conf
+	Rules []*rules_inbound.Rule
 }
 
 func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -403,7 +402,7 @@ func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []*rules_inbo
 			continue
 		}
 		clone.Match.FilterState = append(clone.Match.FilterState, routeFilterStateMatchers(rule.Match)...)
-		ConfigureRouteAction(
+		ConfigureMatchedRouteAction(
 			clone.GetRoute(),
 			pointer.Deref(conf.Http).RequestTimeout,
 			pointer.Deref(conf.Http).StreamIdleTimeout,
@@ -411,6 +410,22 @@ func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []*rules_inbo
 		duplicated = append(duplicated, clone)
 	}
 	return duplicated
+}
+
+func ConfigureMatchedRouteAction(
+	routeAction *envoy_route.RouteAction,
+	httpRequestTimeout *kube_meta.Duration,
+	httpStreamIdleTimeout *kube_meta.Duration,
+) {
+	if routeAction == nil {
+		return
+	}
+	if httpRequestTimeout != nil {
+		routeAction.Timeout = util_proto.Duration(httpRequestTimeout.Duration)
+	}
+	if httpStreamIdleTimeout != nil {
+		routeAction.IdleTimeout = util_proto.Duration(httpStreamIdleTimeout.Duration)
+	}
 }
 
 func routeFilterStateMatchers(match *common_api.Match) []*envoy_matcher.FilterStateMatcher {
