@@ -115,14 +115,6 @@ CP no longer generates. Operators run `kumactl apply -f meshservice.yaml`.
 * Good. No new fields on `Dataplane` spec.
 * Bad. Blocks the restricted-network operator entirely.
 * Bad. Universal users must run a parallel CI/GitOps surface for MeshService.
-* Bad. The tactical label-propagation patch cannot ship under it.
-
-## Tactical patch (independent, ships in 2.14)
-
-The "tactical patch" is a small immediate change that ships ahead of the structural decision and closes the user-reported issue (the field report). It is independent of which option (A-D) is ultimately chosen.
-
-- Generator propagates non-`kuma.io/*` keys from `Dataplane.metadata.labels` to `MeshService.metadata.labels`, first-DP-wins. Closes the field report. Inbound tags do not propagate, which signals deprecation. Once shipped, MeshMultizoneService selectors in the wild depend on it.
-- A silent MeshMultizoneService selector miss (the selector resolves to zero MeshServices) is the dominant failure. CP emits a structured warning and metric whenever this happens in a zone. Lands with the tactical patch.
 
 ## Implications for Kong Mesh
 
@@ -130,5 +122,5 @@ None specific to the downstream project. The 2.14-to-3.0 migration applies unifo
 
 ## Decision
 
-We go with a combined approach favoring Option B: generate one `MeshService` per `kuma.io/workload` value, giving a one-to-one mapping between `Workload` and `MeshService`. Users needing more complex setups (blue/green, port carve-out, aggregation) author `MeshService` manually. 
+We go with a combined approach favoring Option B + D: generate one `MeshService` per `kuma.io/workload` value, giving a one-to-one mapping between `Workload` and `MeshService`. Users needing more complex setups (blue/green, port carve-out, aggregation) author `MeshService` manually. 
 This keeps the auto-generation path narrow and unambiguous, removes the ambiguities of inbound-tag-driven generation for complex cases, and leaves full control over non-trivial `MeshService` shapes to the mesh operator.
