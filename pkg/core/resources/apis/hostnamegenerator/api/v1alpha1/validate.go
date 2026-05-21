@@ -1,9 +1,12 @@
 package v1alpha1
 
 import (
+	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 )
@@ -39,12 +42,36 @@ func validateTemplate(tmpl string) validators.ValidationError {
 	var verr validators.ValidationError
 	if tmpl == "" {
 		verr.AddViolationAt(validators.Root(), validators.MustNotBeEmpty)
+		return verr
 	}
-	_, err := template.New("").
-		Funcs(map[string]any{"label": func(key string) (string, error) { return "", nil }}).
+	parsed, err := template.New("").
+		Funcs(map[string]any{"label": func(string) (string, error) { return "label", nil }}).
 		Parse(tmpl)
 	if err != nil {
 		verr.AddViolationAt(validators.Root(), errors.Wrap(err, "couldn't parse template").Error())
+		return verr
+	}
+	stub := struct {
+		Name        string
+		DisplayName string
+		Namespace   string
+		Mesh        string
+		Zone        string
+	}{
+		Name:        "name",
+		DisplayName: "displayname",
+		Namespace:   "namespace",
+		Mesh:        "mesh",
+		Zone:        "zone",
+	}
+	var sb strings.Builder
+	if err := parsed.Execute(&sb, stub); err != nil {
+		verr.AddViolationAt(validators.Root(), errors.Wrap(err, "couldn't render template with stub values").Error())
+		return verr
+	}
+	rendered := sb.String()
+	if violations := k8s_validation.IsDNS1123Subdomain(rendered); len(violations) > 0 {
+		verr.AddViolationAt(validators.Root(), fmt.Sprintf("template renders to %q which is not a valid DNS name: %s", rendered, strings.Join(violations, ", ")))
 	}
 	return verr
 }
