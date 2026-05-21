@@ -36,6 +36,10 @@
                         }
                     ],
                     "title": "Admin Output Format"
+                },
+                "used_only": {
+                    "type": "boolean",
+                    "description": "used_only filters out stats that have never been written to. Envoy pre-registers stats for every configured cluster/listener, so for dataplanes with many unused upstreams this dramatically shrinks the response and keeps it under the KDS gRPC message size cap."
                 }
             },
             "additionalProperties": true,
