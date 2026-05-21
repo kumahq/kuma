@@ -2,28 +2,13 @@
  "diff": [
   {
    "op": "test",
-   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/connectTimeout",
-   "value": "10s"
-  },
-  {
-   "op": "remove",
-   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/connectTimeout",
-   "value": "10s"
-  },
-  {
-   "op": "add",
-   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/connectTimeout",
-   "value": "5s"
-  },
-  {
-   "op": "test",
    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:127.0.0.1:8080/filterChains/0/filters/0/typedConfig/idleTimeout",
-   "value": "7200s"
+   "value": "3600s"
   },
   {
    "op": "remove",
    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:127.0.0.1:8080/filterChains/0/filters/0/typedConfig/idleTimeout",
-   "value": "7200s"
+   "value": "3600s"
   },
   {
    "op": "add",

@@ -3,7 +3,7 @@
     {
       "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:3000/connectTimeout",
-      "value": "10s"
+      "value": "5s"
     },
     {
       "op": "add",
@@ -13,7 +13,7 @@
     {
       "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:3000/filterChains/0/filters/1/typedConfig/idleTimeout",
-      "value": "7200s"
+      "value": "3600s"
     },
     {
       "op": "add",

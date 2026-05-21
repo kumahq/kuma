@@ -366,7 +366,7 @@
       },
       "localhost:3000": {
         "altStatName": "localhost_3000",
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:3000",
           "endpoints": [
@@ -611,7 +611,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "localhost:3000",
-                  "idleTimeout": "7200s",
+                  "idleTimeout": "3600s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
