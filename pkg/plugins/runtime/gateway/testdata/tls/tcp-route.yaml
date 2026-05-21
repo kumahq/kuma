@@ -173,6 +173,7 @@ Listeners:
         - name: envoy.filters.network.tcp_proxy
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+            idleTimeout: 300s
             maxConnectAttempts: 5
             statPrefix: gateway-default
             weightedClusters:
@@ -202,6 +203,7 @@ Listeners:
         - name: envoy.filters.network.tcp_proxy
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+            idleTimeout: 300s
             maxConnectAttempts: 5
             statPrefix: gateway-default
             weightedClusters:
