@@ -115,7 +115,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 
 		inboundRules := fromRules.InboundRules[listenerKey]
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
-		applyCommonConf := hasCatchAllInboundRule(inboundRules)
+		applyCommonConf := len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules)
 		configurer := plugin_xds.ListenerConfigurer{
 			Conf:             conf,
 			Rules:            inboundRules,
@@ -204,7 +204,7 @@ func applyToGateway(
 
 		inboundRules := gatewayRules.InboundRules[key]
 		inboundConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
-		if hasCatchAllInboundRule(inboundRules) {
+		if len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules) {
 			if err := plugin_xds.ConfigureGatewayListener(
 				inboundConf,
 				listenerInfo.Listener.Protocol,
