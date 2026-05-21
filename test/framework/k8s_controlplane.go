@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -339,11 +340,26 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
-	stdout, stderr, err := c.Exec("wget", "-qO-", "http://localhost:5680/metrics")
+	svc := c.GetKumaCPSvc()
+	tnl, err := c.cluster.PortForward(k8s.ResourceTypeService, svc.Name, svc.Namespace, 5680)
 	if err != nil {
-		return "", fmt.Errorf("failed to scrape CP metrics: %w (stderr: %q)", err, stderr)
+		return "", fmt.Errorf("failed to port-forward CP diagnostics port: %w", err)
 	}
-	return stdout, nil
+	defer tnl.Close()
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/metrics", tnl.Endpoint))
+	if err != nil {
+		return "", fmt.Errorf("failed to scrape CP metrics: %w", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read CP metrics body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("CP metrics returned %d: %s", resp.StatusCode, string(body))
+	}
+	return string(body), nil
 }
 
 func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
