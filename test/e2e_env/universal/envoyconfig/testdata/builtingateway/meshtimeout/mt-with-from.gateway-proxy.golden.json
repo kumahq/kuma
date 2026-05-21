@@ -16,14 +16,14 @@
       "value": "52s"
     },
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/gateway-proxy:HTTP:8080/filterChains/0/filters/0/typedConfig/streamIdleTimeout",
-      "value": "5s"
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/gateway-proxy:HTTP:8080/filterChains/0/filters/0/typedConfig/streamIdleTimeout",
       "value": "53s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/gateway-proxy:HTTP:8080/filterChains/0/filters/0/typedConfig/streamIdleTimeout",
+      "value": "5s"
     }
   ],
   "xds": {
