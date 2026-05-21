@@ -237,6 +237,7 @@
             "portValue": 0
           }
         },
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [
@@ -399,6 +400,7 @@
             "portValue": 11001
           }
         },
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
