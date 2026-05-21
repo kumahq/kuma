@@ -64,7 +64,7 @@ func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh
 	if err != nil {
 		return nil, err
 	}
-	stats, err := s.adminClient.Stats(ctx, resWithAddr, req.Format)
+	stats, err := s.adminClient.Stats(ctx, resWithAddr, req.Format, req.UsedOnly)
 	if err != nil {
 		if errors.Is(err, &kds_envoyadmin.KDSTransportError{}) {
 			return &mesh_proto.StatsResponse{

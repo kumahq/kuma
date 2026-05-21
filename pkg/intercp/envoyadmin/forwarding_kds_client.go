@@ -91,7 +91,7 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 	return resp.GetConfig(), nil
 }
 
-func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
+func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.StatsRPC)
 	if err != nil {
@@ -99,7 +99,7 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 	}
 	f.logIntendedAction(proxy, instanceID)
 	if instanceID == f.instanceID {
-		return f.fallbackClient.Stats(ctx, proxy, format)
+		return f.fallbackClient.Stats(ctx, proxy, format, usedOnly)
 	}
 	client, err := f.clientForInstanceID(ctx, instanceID)
 	if err != nil {
@@ -109,6 +109,8 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: proxy.GetMeta().GetName(),
 		ResourceMesh: proxy.GetMeta().GetMesh(),
+		Format:       format,
+		UsedOnly:     usedOnly,
 	}
 	resp, err := client.Stats(ctx, req)
 	if err != nil {

@@ -229,7 +229,7 @@ type DummyEnvoyAdminClient struct {
 	ClustersCalled   int
 }
 
-func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
+func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	d.StatsCalled++
 	if format == v1alpha1.AdminOutputFormat_JSON {
 		return []byte("{\"server.live\": 1}\n"), nil
