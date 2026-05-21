@@ -222,7 +222,7 @@
       },
       "localhost:3000": {
         "altStatName": "localhost_3000",
-        "connectTimeout": "5s",
+        "connectTimeout": "10s",
         "loadAssignment": {
           "clusterName": "localhost:3000",
           "endpoints": [
@@ -419,7 +419,7 @@
                     }
                   ],
                   "cluster": "localhost:3000",
-                  "idleTimeout": "3600s",
+                  "idleTimeout": "7200s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
