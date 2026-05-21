@@ -130,11 +130,10 @@ func CreateInboundPassthroughListener(
 	inboundPort uint32,
 	useStrictInboundPorts bool,
 ) (envoy_common.NamedResource, error) {
-	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP).
+	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.OriginalDstForwarder()).
-		// SO_REUSEPORT so each worker owns its own LISTEN socket; a shared fd can wedge if one worker loses its epoll registration.
-		Configure(envoy_listeners.EnableReusePort(true))
+		Configure(envoy_listeners.OriginalDstForwarder())
 
 	if useStrictInboundPorts && len(proxy.Dataplane.Spec.Networking.Inbound) > 0 {
 		seenPorts := map[uint32]bool{}

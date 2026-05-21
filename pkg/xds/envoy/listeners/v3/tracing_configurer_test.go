@@ -22,7 +22,7 @@ var _ = Describe("TracingConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
 					Configure(Tracing(given.backend, "service", given.direction, given.destination, false)))).
@@ -50,7 +50,6 @@ var _ = Describe("TracingConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.http_connection_manager
@@ -80,7 +79,8 @@ var _ = Describe("TracingConfigurer", func() {
                         collectorEndpointVersion: HTTP_JSON
                         collectorHostname: zipkin.us:9090
             name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND`,
+            trafficDirection: INBOUND
+            enableReusePort: true`,
 		}),
 		Entry("zipkin backend specified without sampling", testCase{
 			backend: &mesh_proto.TracingBackend{
@@ -95,7 +95,6 @@ var _ = Describe("TracingConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.http_connection_manager
@@ -123,7 +122,8 @@ var _ = Describe("TracingConfigurer", func() {
                         collectorEndpointVersion: HTTP_JSON
                         collectorHostname: zipkin.us:9090
             name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND`,
+            trafficDirection: INBOUND
+            enableReusePort: true`,
 		}),
 		Entry("datadog backend specified", testCase{
 			backend: &mesh_proto.TracingBackend{
@@ -140,7 +140,6 @@ var _ = Describe("TracingConfigurer", func() {
           socketAddress:
             address: 192.168.0.1
             portValue: 8080
-        enableReusePort: false
         filterChains:
         - filters:
           - name: envoy.filters.network.http_connection_manager
@@ -166,7 +165,8 @@ var _ = Describe("TracingConfigurer", func() {
                     collectorCluster: tracing:datadog
                     serviceName: service
         name: inbound:192.168.0.1:8080
-        trafficDirection: INBOUND`,
+        trafficDirection: INBOUND
+        enableReusePort: true`,
 		}),
 		Entry("datadog backend with splitBacked for inbound traffic", testCase{
 			backend: &mesh_proto.TracingBackend{
@@ -184,7 +184,6 @@ var _ = Describe("TracingConfigurer", func() {
           socketAddress:
             address: 192.168.0.1
             portValue: 8080
-        enableReusePort: false
         filterChains:
         - filters:
           - name: envoy.filters.network.http_connection_manager
@@ -210,7 +209,8 @@ var _ = Describe("TracingConfigurer", func() {
                     collectorCluster: tracing:datadog
                     serviceName: service_INBOUND
         name: inbound:192.168.0.1:8080
-        trafficDirection: INBOUND`,
+        trafficDirection: INBOUND
+        enableReusePort: true`,
 		}),
 		Entry("datadog backend with splitBacked for outbound traffic", testCase{
 			backend: &mesh_proto.TracingBackend{
@@ -229,7 +229,6 @@ var _ = Describe("TracingConfigurer", func() {
           socketAddress:
             address: 192.168.0.1
             portValue: 8080
-        enableReusePort: false
         filterChains:
         - filters:
           - name: envoy.filters.network.http_connection_manager
@@ -255,18 +254,19 @@ var _ = Describe("TracingConfigurer", func() {
                     collectorCluster: tracing:datadog
                     serviceName: service_OUTBOUND_db
         name: inbound:192.168.0.1:8080
-        trafficDirection: INBOUND`,
+        trafficDirection: INBOUND
+        enableReusePort: true`,
 		}),
 		Entry("no backend specified", testCase{
 			backend: nil,
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.http_connection_manager

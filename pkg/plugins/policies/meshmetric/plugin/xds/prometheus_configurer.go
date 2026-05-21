@@ -3,6 +3,7 @@ package xds
 import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
@@ -78,7 +79,7 @@ func (pc *PrometheusConfigurer) providedTlsListener(proxy *core_xds.Proxy) (envo
 }
 
 func (pc *PrometheusConfigurer) unsecuredListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
-	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP).
+	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(pc.ListenerName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint())),
@@ -87,7 +88,7 @@ func (pc *PrometheusConfigurer) unsecuredListener(proxy *core_xds.Proxy) (envoy_
 }
 
 func (pc *PrometheusConfigurer) baseSecuredListenerBuilder(proxy *core_xds.Proxy, match envoy_listeners.FilterChainBuilderOpt) *envoy_listeners.ListenerBuilder {
-	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP).
+	return envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, pc.EndpointAddress, pc.Backend.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(pc.ListenerName).
 		// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
 		Configure(envoy_listeners.FilterChain(
