@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -347,7 +348,14 @@ func (c *K8sControlPlane) GetMetrics() (string, error) {
 	}
 	defer tnl.Close()
 
-	resp, err := http.Get(fmt.Sprintf("http://%s/metrics", tnl.Endpoint))
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/metrics", tnl.Endpoint), nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to build CP metrics request: %w", err)
+	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to scrape CP metrics: %w", err)
 	}

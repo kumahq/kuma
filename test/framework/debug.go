@@ -58,24 +58,25 @@ func assertNoXdsNacks(cluster Cluster) {
 	families, err := parser.TextToMetricFamilies(strings.NewReader(raw))
 	Expect(err).ToNot(HaveOccurred(), "failed to parse metrics from CP %s", cluster.Name())
 
-	const metricName = "xds_requests_received"
-	family, ok := families[metricName]
-	if !ok {
-		return
-	}
-	for _, metric := range family.GetMetric() {
-		isNack := false
-		for _, label := range metric.GetLabel() {
-			if label.GetName() == "confirmation" && label.GetValue() == "NACK" {
-				isNack = true
-				break
-			}
-		}
-		if !isNack {
+	for _, metricName := range []string{"xds_requests_received", "delta_xds_requests_received"} {
+		family, ok := families[metricName]
+		if !ok {
 			continue
 		}
-		Expect(metric.GetCounter().GetValue()).To(BeZero(),
-			"CP %s reported %s NACK(s) for labels %s", cluster.Name(), metricName, formatLabels(metric.GetLabel()))
+		for _, metric := range family.GetMetric() {
+			isNack := false
+			for _, label := range metric.GetLabel() {
+				if label.GetName() == "confirmation" && label.GetValue() == "NACK" {
+					isNack = true
+					break
+				}
+			}
+			if !isNack {
+				continue
+			}
+			Expect(metric.GetCounter().GetValue()).To(BeZero(),
+				"CP %s reported %s NACK(s) for labels %s", cluster.Name(), metricName, formatLabels(metric.GetLabel()))
+		}
 	}
 }
 
