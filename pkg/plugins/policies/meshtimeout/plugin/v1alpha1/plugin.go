@@ -117,9 +117,9 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
 		applyCommonConf := hasCatchAllInboundRule(inboundRules)
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:              conf,
-			Rules:             inboundRules,
-			ApplyCommonConfig: applyCommonConf,
+			Conf:             conf,
+			Rules:            inboundRules,
+			SkipCommonConfig: !applyCommonConf,
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
