@@ -324,8 +324,9 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 }
 
 type ListenerConfigurer struct {
-	Conf  api.Conf
-	Rules []*rules_inbound.Rule
+	Conf              api.Conf
+	Rules             []*rules_inbound.Rule
+	ApplyCommonConfig bool
 }
 
 func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -334,8 +335,10 @@ func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listene
 	}
 
 	for _, filterChain := range listener.FilterChains {
-		if err := ConfigureFilterChain(rc.Conf, filterChain); err != nil {
-			return err
+		if rc.ApplyCommonConfig {
+			if err := ConfigureFilterChain(rc.Conf, filterChain); err != nil {
+				return err
+			}
 		}
 		if err := ConfigureMatchedRoutesOnFilterChain(filterChain, rc.Rules); err != nil {
 			return err

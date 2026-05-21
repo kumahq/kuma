@@ -14,5 +14,4 @@ resources:
 - name: mes-tcp
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     name: mes-tcp

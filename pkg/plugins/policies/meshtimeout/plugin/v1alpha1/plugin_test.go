@@ -938,6 +938,84 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_spiffe_inbound.listener.golden.yaml")))
 	})
 
+	It("should not apply common inbound defaults for matched-only spiffeID rules", func() {
+		resourceSet := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: httpInboundListenerWith(),
+			},
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+			},
+		} {
+			r := res
+			resourceSet.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		inboundListener := core_rules.InboundListener{Address: "127.0.0.1", Port: 80}
+		proxy := xds_builders.Proxy().
+			WithDataplane(builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithPolicies(xds_builders.MatchedPolicies().
+				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
+					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+						inboundListener: {
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										RequestTimeout:    test.ParseDuration("2s"),
+										StreamIdleTimeout: test.ParseDuration("3s"),
+									},
+								},
+							},
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client-stream",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										StreamIdleTimeout: test.ParseDuration("4s"),
+									},
+								},
+							},
+						},
+					},
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_only_spiffe_inbound.listener.golden.yaml")))
+
+		clusterYaml, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_only_spiffe_inbound.cluster.golden.yaml")))
+	})
+
 	It("should scope SNI rules to the selected zone-egress filter chain", func() {
 		rs := core_xds.NewResourceSet()
 		for _, res := range []core_xds.Resource{

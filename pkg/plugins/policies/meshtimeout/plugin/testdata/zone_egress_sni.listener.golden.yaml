@@ -59,7 +59,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mes-tcp
-          idleTimeout: 3600s
           statPrefix: mes-tcp
       name: mes-tcp
     name: self_zoneegress_dp_ze-port

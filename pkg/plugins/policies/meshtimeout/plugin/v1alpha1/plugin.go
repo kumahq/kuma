@@ -115,9 +115,11 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 
 		inboundRules := fromRules.InboundRules[listenerKey]
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+		applyCommonConf := hasCatchAllInboundRule(inboundRules)
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:  conf,
-			Rules: inboundRules,
+			Conf:              conf,
+			Rules:             inboundRules,
+			ApplyCommonConfig: applyCommonConf,
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -129,9 +131,11 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
-		if err := clusterConfigurer.Configure(cluster); err != nil {
-			return err
+		if applyCommonConf {
+			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
+			if err := clusterConfigurer.Configure(cluster); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -200,12 +204,14 @@ func applyToGateway(
 
 		inboundRules := gatewayRules.InboundRules[key]
 		inboundConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
-		if err := plugin_xds.ConfigureGatewayListener(
-			inboundConf,
-			listenerInfo.Listener.Protocol,
-			gatewayListeners[key],
-		); err != nil {
-			return err
+		if hasCatchAllInboundRule(inboundRules) {
+			if err := plugin_xds.ConfigureGatewayListener(
+				inboundConf,
+				listenerInfo.Listener.Protocol,
+				gatewayListeners[key],
+			); err != nil {
+				return err
+			}
 		}
 		if err := plugin_xds.EnsureMatchFilterState(gatewayListeners[key], inboundRules); err != nil {
 			return err
@@ -337,12 +343,15 @@ func applyToZoneProxyListener(
 	inboundRules []*rules_inbound.Rule,
 ) error {
 	commonConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+	applyCommonConf := hasCatchAllInboundRule(inboundRules)
 	for _, filterChain := range listener.FilterChains {
-		if err := plugin_xds.ConfigureFilterChain(commonConf, filterChain); err != nil {
-			return err
-		}
-		if err := applyZoneProxyClusterConf(clusters, filterChain, commonConf); err != nil {
-			return err
+		if applyCommonConf {
+			if err := plugin_xds.ConfigureFilterChain(commonConf, filterChain); err != nil {
+				return err
+			}
+			if err := applyZoneProxyClusterConf(clusters, filterChain, commonConf); err != nil {
+				return err
+			}
 		}
 
 		for _, rule := range inboundRules {
@@ -442,6 +451,15 @@ func matchesZoneProxyFilterChain(rule *rules_inbound.Rule, filterChain *envoy_li
 		return false
 	}
 	return containsString(serverNames, rule.Match.SNI.Value)
+}
+
+func hasCatchAllInboundRule(rules []*rules_inbound.Rule) bool {
+	for _, rule := range rules {
+		if rule.Match == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func containsString(values []string, value string) bool {
