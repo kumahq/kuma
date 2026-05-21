@@ -73,10 +73,23 @@ func getConfig(mesh, dpp string) string {
 		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
 	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
-		return strings.Compare(a.Path, b.Path)
+		if cmp := strings.Compare(a.Path, b.Path); cmp != 0 {
+			return cmp
+		}
+		if cmp := strings.Compare(string(a.Op), string(b.Op)); cmp != 0 {
+			return cmp
+		}
+		return strings.Compare(jsonPatchValueKey(a.Value), jsonPatchValueKey(b.Value))
 	})
 
 	result, err := json.MarshalIndent(response, "", "  ")
+	Expect(err).ToNot(HaveOccurred())
+	return string(result)
+}
+
+func jsonPatchValueKey(value any) string {
+	GinkgoHelper()
+	result, err := json.Marshal(value)
 	Expect(err).ToNot(HaveOccurred())
 	return string(result)
 }
