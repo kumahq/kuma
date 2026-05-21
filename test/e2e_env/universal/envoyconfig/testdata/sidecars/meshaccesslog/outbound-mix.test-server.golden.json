@@ -100,7 +100,7 @@
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0",
       "value": {
         "match": {
-          "prefix": "/test/"
+          "path": "/test"
         },
         "metadata": {
           "filterMetadata": {
@@ -130,7 +130,7 @@
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0",
       "value": {
         "match": {
-          "path": "/test"
+          "prefix": "/test/"
         },
         "metadata": {
           "filterMetadata": {
