@@ -520,7 +520,7 @@ func getFromRules(froms []api.From) core_rules.FromRules {
 			Conf:   from.Default,
 		})
 		rules = append(rules, &inbound.Rule{
-			Conf:   &from,
+			Conf:   from.Default,
 			Origin: common.Origin{},
 		})
 	}
@@ -547,7 +547,7 @@ func getGatewayRules(froms []api.From) core_rules.GatewayRules {
 			Conf:   from.Default,
 		})
 		rules = append(rules, &inbound.Rule{
-			Conf:   &from,
+			Conf:   from.Default,
 			Origin: common.Origin{},
 		})
 	}

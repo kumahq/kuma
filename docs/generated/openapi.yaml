@@ -4998,6 +4998,16 @@ components:
             type: object
             additionalProperties: true
             x-go-type: interface{}
+        match:
+          description: >-
+            The incoming traffic match for this effective rule. Null means the
+            rule matches all incoming traffic (catch-all).
+          type: object
+          additionalProperties: true
+          x-go-type: common_api.Match
+          x-go-type-import:
+            name: common_api
+            path: github.com/kumahq/kuma/v2/api/common/v1alpha1
         origin:
           type: array
           description: >-

@@ -57,6 +57,42 @@ selector:
   meshService: {}
   meshExternalService: {}
 `),
+		ErrorCase("spec.template renders to uppercase",
+			validators.Violation{
+				Field:   `spec.template`,
+				Message: `template renders to "name.MESH" which is not a valid DNS name: a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')`,
+			}, `
+template: "{{ .Name }}.MESH"
+selector:
+  meshService: {}
+`),
+		ErrorCase("spec.template renders with leading dot",
+			validators.Violation{
+				Field:   `spec.template`,
+				Message: `template renders to ".name.mesh" which is not a valid DNS name: a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')`,
+			}, `
+template: ".{{ .Name }}.mesh"
+selector:
+  meshService: {}
+`),
+		ErrorCase("spec.template renders with consecutive dots",
+			validators.Violation{
+				Field:   `spec.template`,
+				Message: `template renders to "name..mesh" which is not a valid DNS name: a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')`,
+			}, `
+template: "{{ .Name }}..mesh"
+selector:
+  meshService: {}
+`),
+		ErrorCase("spec.template renders with underscore",
+			validators.Violation{
+				Field:   `spec.template`,
+				Message: `template renders to "name_svc.mesh" which is not a valid DNS name: a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')`,
+			}, `
+template: "{{ .Name }}_svc.mesh"
+selector:
+  meshService: {}
+`),
 	)
 	DescribeValidCases(
 		api.NewHostnameGeneratorResource,
@@ -69,6 +105,16 @@ selector:
 template: "{{ .Name }}.mesh"
 selector:
   meshMultiZoneService: {}
+`),
+		Entry("accepts template using all builtin fields", `
+template: "{{ .Name }}.{{ .DisplayName }}.{{ .Namespace }}.{{ .Mesh }}.{{ .Zone }}.mesh"
+selector:
+  meshService: {}
+`),
+		Entry("accepts template using label function", `
+template: "{{ label \"app\" }}.mesh"
+selector:
+  meshService: {}
 `),
 	)
 })

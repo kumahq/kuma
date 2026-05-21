@@ -11,6 +11,7 @@ import (
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_sni "github.com/kumahq/kuma/v2/pkg/core/resources/sni"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
@@ -21,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
@@ -167,10 +167,10 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	service := destinationname.MustResolve(false, dest, port)
 	var sni string
 	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
-		if err := tls.ValidateSNIForKRI(backendRef.Resource); err != nil {
+		if errs := core_sni.ValidateKRI(backendRef.Resource); len(errs) > 0 {
 			return nil, "", nil
 		}
-		sni = tls.SNIFromKRI(backendRef.Resource)
+		sni = core_sni.FromKRI(backendRef.Resource)
 	} else {
 		sni = meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
 	}
