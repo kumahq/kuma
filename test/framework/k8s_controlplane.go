@@ -339,7 +339,11 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
-	panic("not implemented")
+	stdout, stderr, err := c.Exec("wget", "-qO-", "http://localhost:5680/metrics")
+	if err != nil {
+		return "", fmt.Errorf("failed to scrape CP metrics: %w (stderr: %q)", err, stderr)
+	}
+	return stdout, nil
 }
 
 func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
