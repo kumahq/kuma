@@ -899,12 +899,12 @@ var _ = Describe("MeshTimeout", func() {
 								},
 							},
 							{
-								Matches: []common_api.Match{{
+								Match: &common_api.Match{
 									SpiffeID: &common_api.SpiffeIDMatch{
 										Type:  common_api.ExactMatchType,
 										Value: "spiffe://default/client",
 									},
-								}},
+								},
 								Conf: api.Conf{
 									Http: &api.Http{
 										RequestTimeout:    test.ParseDuration("2s"),
@@ -1067,7 +1067,7 @@ func zoneEgressListenerResource() core_xds.Resource {
 		Name:   name,
 		Origin: metadata.OriginEgress,
 		Resource: NewListenerBuilder(envoy_common.APIV3, name).
-			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP)).
+			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP, true)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 				Configure(MatchTransportProtocol("tls")).
 				Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).

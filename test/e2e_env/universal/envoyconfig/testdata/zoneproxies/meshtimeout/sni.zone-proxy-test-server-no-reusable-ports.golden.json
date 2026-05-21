@@ -670,7 +670,7 @@
                   },
                   "requestHeadersTimeout": "0s",
                   "routeConfig": {
-                    "name": "inbound:zone-proxy-test-server",
+                    "name": "inbound:zone-proxy-test-server-no-reusable-ports",
                     "requestHeadersToRemove": [
                       "x-kuma-tags"
                     ],
@@ -680,7 +680,7 @@
                         "domains": [
                           "*"
                         ],
-                        "name": "zone-proxy-test-server",
+                        "name": "zone-proxy-test-server-no-reusable-ports",
                         "routes": [
                           {
                             "match": {
@@ -748,7 +748,7 @@
             "io.kuma.tags": {
               "instance": "1",
               "kuma.io/protocol": "http",
-              "kuma.io/service": "zone-proxy-test-server",
+              "kuma.io/service": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
               "version": "v1"

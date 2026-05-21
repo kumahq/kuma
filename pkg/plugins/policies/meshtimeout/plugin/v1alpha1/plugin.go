@@ -432,22 +432,17 @@ func zoneProxyProtocol(filterChain *envoy_listener.FilterChain) core_meta.Protoc
 }
 
 func matchesZoneProxyFilterChain(rule *rules_inbound.Rule, filterChain *envoy_listener.FilterChain) bool {
-	if len(rule.Matches) == 0 {
+	if rule.Match == nil {
 		return false
 	}
 	serverNames := filterChain.GetFilterChainMatch().GetServerNames()
 	if len(serverNames) == 0 {
 		return false
 	}
-	for _, match := range rule.Matches {
-		if match.SpiffeID != nil || match.SNI == nil {
-			return false
-		}
-		if !containsString(serverNames, match.SNI.Value) {
-			return false
-		}
+	if rule.Match.SpiffeID != nil || rule.Match.SNI == nil {
+		return false
 	}
-	return true
+	return containsString(serverNames, rule.Match.SNI.Value)
 }
 
 func containsString(values []string, value string) bool {

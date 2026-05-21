@@ -371,7 +371,7 @@ func configureRouteConfigurationTimeouts(routeConfiguration *envoy_route.RouteCo
 func matchedRouteTimeoutRules(inboundRules []*rules_inbound.Rule) []*rules_inbound.Rule {
 	var matched []*rules_inbound.Rule
 	for _, rule := range inboundRules {
-		if len(rule.Matches) == 0 || !hasSpiffeIDMatch(rule.Matches) {
+		if !hasSpiffeIDMatch(rule.Match) {
 			continue
 		}
 		conf, ok := rule.Conf.(api.Conf)
@@ -387,13 +387,8 @@ func matchedRouteTimeoutRules(inboundRules []*rules_inbound.Rule) []*rules_inbou
 	return matched
 }
 
-func hasSpiffeIDMatch(matches []common_api.Match) bool {
-	for _, match := range matches {
-		if match.SpiffeID != nil {
-			return true
-		}
-	}
-	return false
+func hasSpiffeIDMatch(match *common_api.Match) bool {
+	return match != nil && match.SpiffeID != nil
 }
 
 func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []*rules_inbound.Rule) []*envoy_route.Route {
@@ -407,7 +402,7 @@ func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []*rules_inbo
 		if clone.Match == nil || clone.GetRoute() == nil {
 			continue
 		}
-		clone.Match.FilterState = append(clone.Match.FilterState, routeFilterStateMatchers(rule.Matches)...)
+		clone.Match.FilterState = append(clone.Match.FilterState, routeFilterStateMatchers(rule.Match)...)
 		ConfigureRouteAction(
 			clone.GetRoute(),
 			pointer.Deref(conf.Http).RequestTimeout,
@@ -418,27 +413,29 @@ func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []*rules_inbo
 	return duplicated
 }
 
-func routeFilterStateMatchers(matches []common_api.Match) []*envoy_matcher.FilterStateMatcher {
+func routeFilterStateMatchers(match *common_api.Match) []*envoy_matcher.FilterStateMatcher {
+	if match == nil {
+		return nil
+	}
+
 	var matchers []*envoy_matcher.FilterStateMatcher
-	for _, match := range matches {
-		if match.SpiffeID != nil {
-			matchers = append(matchers, &envoy_matcher.FilterStateMatcher{
-				Key: matchSpiffeIDFilterStateKey,
-				Matcher: &envoy_matcher.FilterStateMatcher_StringMatch{
-					StringMatch: spiffeIDMatcher(match.SpiffeID),
+	if match.SpiffeID != nil {
+		matchers = append(matchers, &envoy_matcher.FilterStateMatcher{
+			Key: matchSpiffeIDFilterStateKey,
+			Matcher: &envoy_matcher.FilterStateMatcher_StringMatch{
+				StringMatch: spiffeIDMatcher(match.SpiffeID),
+			},
+		})
+	}
+	if match.SNI != nil {
+		matchers = append(matchers, &envoy_matcher.FilterStateMatcher{
+			Key: matchSNIStateKey,
+			Matcher: &envoy_matcher.FilterStateMatcher_StringMatch{
+				StringMatch: &envoy_matcher.StringMatcher{
+					MatchPattern: &envoy_matcher.StringMatcher_Exact{Exact: match.SNI.Value},
 				},
-			})
-		}
-		if match.SNI != nil {
-			matchers = append(matchers, &envoy_matcher.FilterStateMatcher{
-				Key: matchSNIStateKey,
-				Matcher: &envoy_matcher.FilterStateMatcher_StringMatch{
-					StringMatch: &envoy_matcher.StringMatcher{
-						MatchPattern: &envoy_matcher.StringMatcher_Exact{Exact: match.SNI.Value},
-					},
-				},
-			})
-		}
+			},
+		})
 	}
 	return matchers
 }
@@ -488,7 +485,7 @@ func ensureMatchFilterStateFilter(filterChain *envoy_listener.FilterChain, inbou
 
 func hasAnySpiffeIDMatch(inboundRules []*rules_inbound.Rule) bool {
 	for _, rule := range inboundRules {
-		if hasSpiffeIDMatch(rule.Matches) {
+		if hasSpiffeIDMatch(rule.Match) {
 			return true
 		}
 	}
@@ -497,10 +494,8 @@ func hasAnySpiffeIDMatch(inboundRules []*rules_inbound.Rule) bool {
 
 func hasAnySNIMatch(inboundRules []*rules_inbound.Rule) bool {
 	for _, rule := range inboundRules {
-		for _, match := range rule.Matches {
-			if match.SNI != nil {
-				return true
-			}
+		if rule.Match != nil && rule.Match.SNI != nil {
+			return true
 		}
 	}
 	return false

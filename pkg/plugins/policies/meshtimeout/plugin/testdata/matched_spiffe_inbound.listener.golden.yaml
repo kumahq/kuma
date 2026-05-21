@@ -6,6 +6,7 @@ resources:
       socketAddress:
         address: 127.0.0.1
         portValue: 80
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.set_filter_state
