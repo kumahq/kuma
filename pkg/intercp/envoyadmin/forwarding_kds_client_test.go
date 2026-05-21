@@ -121,7 +121,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 			createZoneInsightConnectedToGlobal("east", given.globalInstanceID, false)
 
 			// when
-			_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT)
+			_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT, false)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
