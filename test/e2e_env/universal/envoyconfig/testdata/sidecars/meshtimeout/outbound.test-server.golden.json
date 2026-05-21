@@ -1,14 +1,14 @@
 {
   "diff": [
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/connectTimeout",
-      "value": "5s"
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/connectTimeout",
       "value": "51s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/connectTimeout",
+      "value": "5s"
     },
     {
       "op": "remove",
