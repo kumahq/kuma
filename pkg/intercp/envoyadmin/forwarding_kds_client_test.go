@@ -140,6 +140,20 @@ var _ = Describe("Forwarding KDS Client", func() {
 		}),
 	)
 
+	It("forwarded stats request preserves Format and UsedOnly", func() {
+		// given
+		createZoneInsightConnectedToGlobal("east", otherInstanceID, false)
+
+		// when
+		_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_JSON, true)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(forwardClient.lastStatsReq).ToNot(BeNil())
+		Expect(forwardClient.lastStatsReq.Format).To(Equal(mesh_proto.AdminOutputFormat_JSON))
+		Expect(forwardClient.lastStatsReq.UsedOnly).To(BeTrue())
+	})
+
 	DescribeTable("when request for clusters is executed",
 		func(given testCase) {
 			// given
@@ -182,6 +196,7 @@ type countingForwardClient struct {
 	xdsConfigCalled int
 	statsCalled     int
 	clustersCalled  int
+	lastStatsReq    *mesh_proto.StatsRequest
 }
 
 var _ mesh_proto.InterCPEnvoyAdminForwardServiceClient = &countingForwardClient{}
@@ -197,6 +212,7 @@ func (c *countingForwardClient) XDSConfig(ctx context.Context, in *mesh_proto.XD
 
 func (c *countingForwardClient) Stats(ctx context.Context, in *mesh_proto.StatsRequest, opts ...grpc.CallOption) (*mesh_proto.StatsResponse, error) {
 	c.statsCalled++
+	c.lastStatsReq = in
 	return &mesh_proto.StatsResponse{
 		Result: &mesh_proto.StatsResponse_Stats{
 			Stats: []byte("forwarded"),

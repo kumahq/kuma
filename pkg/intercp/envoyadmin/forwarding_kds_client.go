@@ -123,6 +123,7 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 			ResourceType: string(proxy.Descriptor().Name),
 			ResourceName: proxy.GetMeta().GetName(),
 			ResourceMesh: proxy.GetMeta().GetMesh(),
+			Format:       format,
 			UsedOnly:     usedOnly,
 		}
 		return client.Stats(ctx, req)
