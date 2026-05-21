@@ -73,10 +73,48 @@ func getConfig(mesh, dpp string) string {
 		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
 	}
 	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
-		return strings.Compare(a.Path, b.Path)
+		if cmp := strings.Compare(a.Path, b.Path); cmp != 0 {
+			return cmp
+		}
+		if a.Op == api_common.Remove && b.Op == api_common.Add {
+			return -1
+		}
+		if a.Op == api_common.Add && b.Op == api_common.Remove {
+			return 1
+		}
+		if a.Op == api_common.Add && b.Op == api_common.Add && jsonPatchArrayPath(a.Path) {
+			return 0
+		}
+		if cmp := strings.Compare(jsonPatchValueKey(a.Value), jsonPatchValueKey(b.Value)); cmp != 0 {
+			return cmp
+		}
+		return 0
 	})
 
 	result, err := json.MarshalIndent(response, "", "  ")
+	Expect(err).ToNot(HaveOccurred())
+	return string(result)
+}
+
+func jsonPatchArrayPath(path string) bool {
+	idx := strings.LastIndex(path, "/")
+	if idx == -1 || idx == len(path)-1 {
+		return false
+	}
+	if path[idx+1:] == "-" {
+		return true
+	}
+	for _, r := range path[idx+1:] {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func jsonPatchValueKey(value any) string {
+	GinkgoHelper()
+	result, err := json.Marshal(value)
 	Expect(err).ToNot(HaveOccurred())
 	return string(result)
 }

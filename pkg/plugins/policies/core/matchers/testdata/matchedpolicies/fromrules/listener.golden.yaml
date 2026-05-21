@@ -1,11 +1,11 @@
 InboundRules:
   1.1.1.1:10002:
   - conf:
-      default:
-        allow:
-        - spiffeID:
-            type: Exact
-            value: spiffe://mesh-1/dp-1
+      allow:
+      - spiffeID:
+          type: Exact
+          value: spiffe://mesh-1/dp-1
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
