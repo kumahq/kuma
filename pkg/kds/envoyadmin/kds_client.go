@@ -133,7 +133,7 @@ func doRequest[T message]( // nolint:nonamedreturns
 	}
 }
 
-func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
+func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	requestType := "StatsRequest"
 	mkMsg := func(reqId, typ, name, mesh string) util_grpc.ReverseUnaryMessage {
 		return &mesh_proto.StatsRequest{
@@ -142,6 +142,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 			ResourceName: name,
 			ResourceMesh: mesh,
 			Format:       format,
+			UsedOnly:     usedOnly,
 		}
 	}
 	resp, err := doRequest[*mesh_proto.StatsResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Stats, mkMsg)

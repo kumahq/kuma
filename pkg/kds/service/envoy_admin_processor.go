@@ -85,7 +85,7 @@ func (s *envoyAdminProcessor) StartProcessingStats(
 		}
 		go func() { // schedule in the background to be able to quickly process more requests
 			stats, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-				return s.adminClient.Stats(ctx, proxy, req.Format)
+				return s.adminClient.Stats(ctx, proxy, req.Format, req.UsedOnly)
 			})
 
 			resp := &mesh_proto.StatsResponse{
