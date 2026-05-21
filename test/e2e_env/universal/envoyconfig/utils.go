@@ -76,10 +76,19 @@ func getConfig(mesh, dpp string) string {
 		if cmp := strings.Compare(a.Path, b.Path); cmp != 0 {
 			return cmp
 		}
-		if cmp := strings.Compare(jsonPatchOpKey(a.Op), jsonPatchOpKey(b.Op)); cmp != 0 {
+		if a.Op == api_common.Remove && b.Op == api_common.Add {
+			return -1
+		}
+		if a.Op == api_common.Add && b.Op == api_common.Remove {
+			return 1
+		}
+		if a.Op == api_common.Add && b.Op == api_common.Add && jsonPatchArrayPath(a.Path) {
+			return 0
+		}
+		if cmp := strings.Compare(jsonPatchValueKey(a.Value), jsonPatchValueKey(b.Value)); cmp != 0 {
 			return cmp
 		}
-		return strings.Compare(jsonPatchValueKey(a.Value), jsonPatchValueKey(b.Value))
+		return 0
 	})
 
 	result, err := json.MarshalIndent(response, "", "  ")
@@ -87,14 +96,20 @@ func getConfig(mesh, dpp string) string {
 	return string(result)
 }
 
-func jsonPatchOpKey(op api_common.JsonPatchItemOp) string {
-	if op == api_common.Remove {
-		return "0"
+func jsonPatchArrayPath(path string) bool {
+	idx := strings.LastIndex(path, "/")
+	if idx == -1 || idx == len(path)-1 {
+		return false
 	}
-	if op == api_common.Add {
-		return "1"
+	if path[idx+1:] == "-" {
+		return true
 	}
-	return string(op)
+	for _, r := range path[idx+1:] {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func jsonPatchValueKey(value any) string {
