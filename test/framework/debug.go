@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"go.uber.org/multierr"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -53,7 +54,8 @@ func assertNoXdsNacks(cluster Cluster) {
 	raw, err := cluster.GetKuma().GetMetrics()
 	Expect(err).ToNot(HaveOccurred(), "failed to scrape metrics from CP %s", cluster.Name())
 
-	families, err := (&expfmt.TextParser{}).TextToMetricFamilies(strings.NewReader(raw))
+	parser := expfmt.NewTextParser(model.UTF8Validation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(raw))
 	Expect(err).ToNot(HaveOccurred(), "failed to parse metrics from CP %s", cluster.Name())
 
 	const metricName = "xds_requests_received"
