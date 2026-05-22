@@ -451,11 +451,35 @@ func configureListenerFromRules[T ~string](
 	if len(rules) == 0 {
 		return nil
 	}
-	return NewModifier(listener).
+	if err := (NewModifier(listener).
 		Configure(bldrs_listener.AccessLogs(BuildAccessLogBuildersFromRules(
 			rules, string(defaultFormat), backendsAcc, values, accessLogSocketPath,
 		))).
-		Modify()
+		Modify()); err != nil {
+		return err
+	}
+	if hasSNIMatch(rules) {
+		return ensureTLSInspector(listener)
+	}
+	return nil
+}
+
+func hasSNIMatch(rules []*rules_inbound.Rule) bool {
+	for _, rule := range rules {
+		if rule.Match != nil && rule.Match.SNI != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func ensureTLSInspector(listener *envoy_listener.Listener) error {
+	for _, lf := range listener.ListenerFilters {
+		if lf.Name == listeners_v3.TlsInspectorName {
+			return nil
+		}
+	}
+	return (&listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
 }
 
 func applyToRealResource(

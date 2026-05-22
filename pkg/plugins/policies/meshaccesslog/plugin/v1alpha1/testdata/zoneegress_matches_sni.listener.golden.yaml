@@ -29,5 +29,9 @@ filterChains:
           path: /tmp/aurora.log
       cluster: aws-aurora
       statPrefix: aws-aurora
+listenerFilters:
+- name: envoy.filters.listener.tls_inspector
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
 name: inbound:10.20.30.40:10002
 trafficDirection: INBOUND

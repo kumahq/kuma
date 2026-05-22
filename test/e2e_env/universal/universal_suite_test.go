@@ -88,6 +88,7 @@ var (
 	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 	_ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
+	_ = Describe("MeshAccessLog - matches", meshaccesslog.Matches, Ordered)
 	_ = Describe("Timeout", timeout.Policy, Ordered)
 	_ = Describe("Retry", retry.Policy, Ordered)
 	_ = Describe("MeshRetry", meshretry.HttpRetry, Ordered)
