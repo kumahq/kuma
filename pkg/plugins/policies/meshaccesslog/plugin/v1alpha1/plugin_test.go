@@ -967,6 +967,117 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"outbound_file_workload_identity.listener.golden.yaml"},
 		}),
+		Entry("inbound with rules[].matches[].spiffeID and catch-all (first-match-wins)", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {
+						{
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.ExactMatchType,
+									Value: "spiffe://default/ns/clients/sa/specific-client",
+								},
+							},
+							Conf: api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{Path: "/tmp/specific.log"},
+								}},
+							},
+						},
+						{
+							Conf: api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{Path: "/tmp/all.log"},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
+		}),
+		Entry("zone egress listener with rules[].matches[].sni", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound:zoneegress",
+				Origin: metadata.OriginEgress,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(MatchTransportProtocol("tls")).
+						Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+						Configure(TcpProxyDeprecated("aws-aurora", envoy_common.NewCluster(envoy_common.WithService("aws-aurora")))),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10002}: {{
+						Match: &common_api.Match{
+							SNI: &common_api.SNIMatch{
+								Type:  common_api.SNIExactMatchType,
+								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+							},
+						},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{Path: "/tmp/aurora.log"},
+							}},
+						},
+					}},
+				},
+			},
+			expectedListeners: []string{"zoneegress_matches_sni.listener.golden.yaml"},
+		}),
+		Entry("zone ingress listener with rules[].matches[].spiffeID", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound:zoneingress",
+				Origin: metadata.OriginIngress,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(MatchTransportProtocol("tls")).
+						Configure(MatchServerNames("inbound-backend{mesh=default}")).
+						Configure(TcpProxyDeprecated("backend", envoy_common.NewCluster(envoy_common.WithService("backend")))),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10001}: {{
+						Match: &common_api.Match{
+							SpiffeID: &common_api.SpiffeIDMatch{
+								Type:  common_api.PrefixMatchType,
+								Value: "spiffe://default/ns/clients/",
+							},
+						},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{Path: "/tmp/ingress.log"},
+							}},
+						},
+					}},
+				},
+			},
+			expectedListeners: []string{"zoneingress_matches_spiffeid.listener.golden.yaml"},
+		}),
 	)
 
 	It("should route opentelemetry backendRef via kuma-dp when feature is enabled", func() {

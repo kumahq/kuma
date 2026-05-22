@@ -20,12 +20,15 @@ type MeshAccessLog struct {
 	To *[]To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From *[]From `json:"from,omitempty"`
-	// Rules defines inbound access log configurations. Currently limited to
-	// selecting all inbound traffic, as L7 matching is not yet implemented.
+	// Rules defines inbound access log configurations.
 	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
+	// Matches defines a list of conditions (by SpiffeID or SNI) that select the
+	// traffic this rule applies to. When several rules match the same connection,
+	// the most specific one wins (first-match-wins).
+	Matches *[]common_api.Match `json:"matches,omitempty"`
 	// Default contains configuration of the inbound access logging
 	Default Conf `json:"default"`
 }

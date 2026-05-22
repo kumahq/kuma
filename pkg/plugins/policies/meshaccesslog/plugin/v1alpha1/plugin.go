@@ -9,6 +9,7 @@ import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -44,6 +45,7 @@ import (
 	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/model"
 	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
@@ -106,6 +108,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
 	}
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
+		return err
+	}
+	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
 		return err
 	}
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI, inboundTagsDisabled); err != nil {
@@ -177,7 +182,6 @@ func applyToInbounds(
 		}
 		configured[listenerKey] = struct{}{}
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
 			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
@@ -187,7 +191,50 @@ func applyToInbounds(
 			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 		}
-		if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
+		if err := configureListenerFromRules(rules.InboundRules[listenerKey], listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyToZoneProxyListeners(
+	rs *core_xds.ResourceSet,
+	rules core_rules.FromRules,
+	dataplane *core_mesh.DataplaneResource,
+	backends *EndpointAccumulator,
+	accessLogSocketPath string,
+	zone string,
+	workloadKRI string,
+	inboundTagsDisabled bool,
+) error {
+	for _, res := range rs.Resources(envoy_resource.ListenerType) {
+		if res.Origin != metadata.OriginEgress && res.Origin != metadata.OriginIngress {
+			continue
+		}
+		listener, ok := res.Resource.(*envoy_listener.Listener)
+		if !ok {
+			continue
+		}
+		dpAddress := listener.GetAddress().GetSocketAddress()
+		listenerKey := core_rules.InboundListener{
+			Address: dpAddress.GetAddress(),
+			Port:    dpAddress.GetPortValue(),
+		}
+		inboundRules, ok := rules.InboundRules[listenerKey]
+		if !ok || len(inboundRules) == 0 {
+			continue
+		}
+		kumaValues := listeners_v3.KumaValues{
+			SourceService:      mesh_proto.ServiceUnknown,
+			SourceIP:           dataplane.GetIP(),
+			DestinationService: dataplane.IdentifyingName(inboundTagsDisabled),
+			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
+			TrafficDirection:   envoy.TrafficDirectionInbound,
+		}
+		if err := configureListenerFromRules(inboundRules, listener, backends, DefaultFormat(core_meta.ProtocolTCP), kumaValues, accessLogSocketPath); err != nil {
 			return err
 		}
 	}
@@ -357,7 +404,6 @@ func applyToGateway(
 		}
 
 		if fromListenerRules, ok := rules.InboundRules[listenerKey]; ok {
-			conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromListenerRules)
 			kumaValues := listeners_v3.KumaValues{
 				SourceService:      mesh_proto.ServiceUnknown,
 				SourceIP:           proxy.Dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
@@ -367,7 +413,7 @@ func applyToGateway(
 				WorkloadKRI:        workloadKRI,
 				TrafficDirection:   envoy.TrafficDirectionInbound,
 			}
-			if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
+			if err := configureListenerFromRules(fromListenerRules, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
 				return err
 			}
 		}
@@ -391,6 +437,24 @@ func configureListener[T ~string](
 				func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
 					return BaseAccessLogBuilder(b, string(defaultFormat), backendsAcc, values, accessLogSocketPath)
 				}))).
+		Modify()
+}
+
+func configureListenerFromRules[T ~string](
+	rules []*rules_inbound.Rule,
+	listener *envoy_listener.Listener,
+	backendsAcc *EndpointAccumulator,
+	defaultFormat T,
+	values listeners_v3.KumaValues,
+	accessLogSocketPath string,
+) error {
+	if len(rules) == 0 {
+		return nil
+	}
+	return NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(BuildAccessLogBuildersFromRules(
+			rules, string(defaultFormat), backendsAcc, values, accessLogSocketPath,
+		))).
 		Modify()
 }
 
