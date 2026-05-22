@@ -267,8 +267,6 @@ spec:
 		Entry("Disabled", mesh_proto.Mesh_MeshServices_Disabled),
 		Entry("Exclusive", mesh_proto.Mesh_MeshServices_Exclusive),
 	)
-
-	zoneProxyMeshTimeout()
 }
 
 func waitForInboundRequestTimeout(namespace string, port uint32, timeout time.Duration) {

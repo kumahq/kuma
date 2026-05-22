@@ -112,7 +112,7 @@ spec:
 `, meshName, Config.KumaNamespace)
 }
 
-func zoneProxyMeshTimeout() {
+func ZoneProxyMeshTimeout() {
 	ns := "meshtimeout-zoneproxy"
 	extNs := "meshtimeout-zoneproxy-ext"
 	mesh := "meshtimeout-zoneproxy"

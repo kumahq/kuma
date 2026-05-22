@@ -7,8 +7,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -63,7 +61,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToZoneProxyListeners(policies, rs, proxy); err != nil {
+	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
 		return err
 	}
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
@@ -283,40 +281,30 @@ func applyToGateway(
 
 func applyToZoneProxyListeners(
 	policies core_xds.TypedMatchingPolicies,
-	rs *core_xds.ResourceSet,
+	listeners xds.Listeners,
+	clusters xds.Clusters,
 	proxy *core_xds.Proxy,
 ) error {
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	if !networking.HasZoneProxyListeners() {
 		return nil
 	}
-
-	listenerResources := rs.Resources(envoy_resource.ListenerType)
-	clusterResources := map[string]*envoy_cluster.Cluster{}
-	for name, resource := range rs.Resources(envoy_resource.ClusterType) {
-		cluster, ok := resource.Resource.(*envoy_cluster.Cluster)
-		if !ok {
-			continue
-		}
-		clusterResources[name] = cluster
-	}
+	filterChainTargets := xds.GatherFilterChainTargets(listeners, clusters)
 
 	for _, listener := range networking.GetListeners() {
-		var listenerName string
+		var (
+			envoyListener *envoy_listener.Listener
+			ok            bool
+		)
+
 		switch listener.GetType() {
 		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
-			listenerName = naming.ContextualZoneIngressListenerName(listener.GetSectionName())
+			envoyListener, ok = listeners.ZoneIngress[naming.ContextualZoneIngressListenerName(listener.GetSectionName())]
 		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
-			listenerName = naming.ContextualZoneEgressListenerName(listener.GetSectionName())
+			envoyListener, ok = listeners.ZoneEgress[naming.ContextualZoneEgressListenerName(listener.GetSectionName())]
 		default:
 			continue
 		}
-
-		resource, ok := listenerResources[listenerName]
-		if !ok {
-			continue
-		}
-		envoyListener, ok := resource.Resource.(*envoy_listener.Listener)
 		if !ok {
 			continue
 		}
@@ -329,7 +317,7 @@ func applyToZoneProxyListeners(
 			continue
 		}
 
-		if err := applyToZoneProxyListener(envoyListener, clusterResources, inboundRules); err != nil {
+		if err := applyToZoneProxyListener(envoyListener, filterChainTargets, inboundRules); err != nil {
 			return err
 		}
 	}
@@ -339,17 +327,19 @@ func applyToZoneProxyListeners(
 
 func applyToZoneProxyListener(
 	listener *envoy_listener.Listener,
-	clusters map[string]*envoy_cluster.Cluster,
+	filterChainTargets map[*envoy_listener.FilterChain]*envoy_cluster.Cluster,
 	inboundRules []*rules_inbound.Rule,
 ) error {
 	commonConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
 	applyCommonConf := hasCatchAllInboundRule(inboundRules)
 	for _, filterChain := range listener.FilterChains {
+		cluster := filterChainTargets[filterChain]
+		protocol := xds.FilterChainProtocol(filterChain)
 		if applyCommonConf {
 			if err := plugin_xds.ConfigureFilterChain(commonConf, filterChain); err != nil {
 				return err
 			}
-			if err := applyZoneProxyClusterConf(clusters, filterChain, commonConf); err != nil {
+			if err := applyZoneProxyClusterConf(cluster, protocol, commonConf); err != nil {
 				return err
 			}
 		}
@@ -365,7 +355,7 @@ func applyToZoneProxyListener(
 			if err := plugin_xds.ConfigureFilterChain(conf, filterChain); err != nil {
 				return err
 			}
-			if err := applyZoneProxyClusterConf(clusters, filterChain, conf); err != nil {
+			if err := applyZoneProxyClusterConf(cluster, protocol, conf); err != nil {
 				return err
 			}
 		}
@@ -379,64 +369,15 @@ func applyToZoneProxyListener(
 }
 
 func applyZoneProxyClusterConf(
-	clusters map[string]*envoy_cluster.Cluster,
-	filterChain *envoy_listener.FilterChain,
+	cluster *envoy_cluster.Cluster,
+	protocol core_meta.Protocol,
 	conf api.Conf,
 ) error {
-	clusterName := zoneProxyClusterName(filterChain)
-	if clusterName == "" {
+	if cluster == nil {
 		return nil
 	}
-	cluster, ok := clusters[clusterName]
-	if !ok {
-		return nil
-	}
-
-	configurer := plugin_xds.ClusterConfigurerFromConf(conf, zoneProxyProtocol(filterChain))
+	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
 	return configurer.Configure(cluster)
-}
-
-func zoneProxyClusterName(filterChain *envoy_listener.FilterChain) string {
-	var clusterName string
-	_ = listeners_v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-		routeConfig := hcm.GetRouteConfig()
-		if routeConfig == nil {
-			return nil
-		}
-		for _, virtualHost := range routeConfig.VirtualHosts {
-			for _, route := range virtualHost.Routes {
-				if name := route.GetRoute().GetCluster(); name != "" {
-					clusterName = name
-					return nil
-				}
-			}
-		}
-		return nil
-	})
-	if clusterName != "" {
-		return clusterName
-	}
-
-	_ = listeners_v3.UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
-		clusterName = proxy.GetCluster()
-		return nil
-	})
-	return clusterName
-}
-
-func zoneProxyProtocol(filterChain *envoy_listener.FilterChain) core_meta.Protocol {
-	protocol := core_meta.ProtocolUnknown
-	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, func(*envoy_hcm.HttpConnectionManager) error {
-		protocol = core_meta.ProtocolHTTP
-		return nil
-	}); err == nil {
-		return protocol
-	}
-	_ = listeners_v3.UpdateTCPProxy(filterChain, func(*envoy_tcp.TcpProxy) error {
-		protocol = core_meta.ProtocolTCP
-		return nil
-	})
-	return protocol
 }
 
 func matchesZoneProxyFilterChain(rule *rules_inbound.Rule, filterChain *envoy_listener.FilterChain) bool {
