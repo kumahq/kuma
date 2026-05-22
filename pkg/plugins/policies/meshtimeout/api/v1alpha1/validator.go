@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -132,9 +134,21 @@ func validateMatches(matchesPath validators.PathBuilder, defaultPath validators.
 	var verr validators.ValidationError
 	hasSpiffeID := false
 	for idx, match := range matches {
-		verr.AddErrorAt(matchesPath.Index(idx), mesh.ValidateMatch(match))
+		matchPath := matchesPath.Index(idx)
+		verr.AddErrorAt(matchPath, mesh.ValidateMatch(match))
+		if match.SpiffeID == nil && match.SNI == nil {
+			verr.AddViolationAt(matchPath, "must specify at least one of 'spiffeID' or 'sni'")
+			continue
+		}
 		if match.SpiffeID != nil {
 			hasSpiffeID = true
+			switch match.SpiffeID.Type {
+			case common_api.ExactMatchType, common_api.PrefixMatchType:
+			case "":
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), "must be set")
+			default:
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), fmt.Sprintf("unrecognized type %q, supported values are: Exact, Prefix", match.SpiffeID.Type))
+			}
 		}
 	}
 	if hasSpiffeID {

@@ -443,6 +443,54 @@ violations:
   - field: spec.rules[0].default
     message: at least one timeout should be configured`,
 			}),
+			Entry("empty match entry", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - {}
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0]
+    message: must specify at least one of 'spiffeID' or 'sni'`,
+			}),
+			Entry("spiffeID match without type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          value: spiffe://default/client
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: must be set`,
+			}),
+			Entry("spiffeID match with unrecognized type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Regex
+          value: spiffe://default/client
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: 'unrecognized type "Regex", supported values are: Exact, Prefix'`,
+			}),
 			Entry("spiffeID match with unsupported timeout fields", testCase{
 				inputYaml: `
 targetRef:
