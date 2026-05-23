@@ -42,7 +42,7 @@ func BuildAccessLogBuildersFromRules(
 			priors = append(priors, rule.Match)
 			continue
 		}
-		expr := ComposeWinnerExpr(rule.Match, priors)
+		expr := ComposeExpr(rule.Match, priors)
 		for _, backend := range pointer.Deref(conf.Backends) {
 			b := BaseAccessLogBuilder(backend, defaultFormat, endpointsAcc, values, accessLogSocketPath)
 			if b == nil {

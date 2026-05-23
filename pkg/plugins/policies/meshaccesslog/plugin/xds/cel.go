@@ -29,11 +29,11 @@ func MatchToCEL(m *common_api.Match) string {
 	return strings.Join(parts, " && ")
 }
 
-// ComposeWinnerExpr returns the CEL expression for a "first-match-wins" rule:
+// ComposeExpr returns the CEL expression for a "first-match-wins" rule:
 // the rule applies only when its own match holds AND none of the more-specific
 // prior rules' matches hold. Returns "" if no filter is needed (no self match
 // and no priors — i.e. the only rule with no constraints).
-func ComposeWinnerExpr(self *common_api.Match, priors []*common_api.Match) string {
+func ComposeExpr(self *common_api.Match, priors []*common_api.Match) string {
 	selfExpr := MatchToCEL(self)
 	var negatedPriors []string
 	for _, p := range priors {

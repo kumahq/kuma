@@ -110,7 +110,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
 		return err
 	}
-	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
+	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI, inboundTagsDisabled); err != nil {
@@ -206,7 +206,6 @@ func applyToZoneProxyListeners(
 	accessLogSocketPath string,
 	zone string,
 	workloadKRI string,
-	inboundTagsDisabled bool,
 ) error {
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin != metadata.OriginEgress && res.Origin != metadata.OriginIngress {
@@ -228,11 +227,11 @@ func applyToZoneProxyListeners(
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
 			SourceIP:           dataplane.GetIP(),
-			DestinationService: dataplane.IdentifyingName(inboundTagsDisabled),
+			DestinationService: mesh_proto.ServiceUnknown,
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
 			WorkloadKRI:        workloadKRI,
-			TrafficDirection:   envoy.TrafficDirectionInbound,
+			TrafficDirection:   envoy.TrafficDirectionUnspecified,
 		}
 		if err := configureListenerFromRules(inboundRules, listener, backends, DefaultFormat(core_meta.ProtocolTCP), kumaValues, accessLogSocketPath); err != nil {
 			return err
@@ -440,11 +439,11 @@ func configureListener[T ~string](
 		Modify()
 }
 
-func configureListenerFromRules[T ~string](
+func configureListenerFromRules(
 	rules []*rules_inbound.Rule,
 	listener *envoy_listener.Listener,
 	backendsAcc *EndpointAccumulator,
-	defaultFormat T,
+	defaultFormat string,
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) error {

@@ -73,7 +73,7 @@ var _ = Describe("ComposeWinnerExpr", func() {
 
 	DescribeTable("composes first-match-wins CEL expression",
 		func(self *common_api.Match, priors []*common_api.Match, expected string) {
-			Expect(ComposeWinnerExpr(self, priors)).To(Equal(expected))
+			Expect(ComposeExpr(self, priors)).To(Equal(expected))
 		},
 		Entry("no self, no priors", (*common_api.Match)(nil), nil, ""),
 		Entry("self only, no priors",
