@@ -41,25 +41,41 @@ func DefaultFormat(protocol core_meta.Protocol) string {
 	}
 }
 
+type ResolvedBackend struct {
+	Backend      api.Backend
+	OtelEndpoint *LoggingEndpoint
+}
+
+func ResolveBackends(backends []api.Backend, backendsAcc *EndpointAccumulator) []ResolvedBackend {
+	resolved := make([]ResolvedBackend, 0, len(backends))
+	for _, backend := range backends {
+		switch {
+		case backend.OpenTelemetry != nil:
+			otelEndpoint := resolveOtelLoggingEndpoint(backend.OpenTelemetry, backendsAcc)
+			if otelEndpoint == nil {
+				continue
+			}
+			resolved = append(resolved, ResolvedBackend{
+				Backend:      backend,
+				OtelEndpoint: otelEndpoint,
+			})
+		default:
+			resolved = append(resolved, ResolvedBackend{
+				Backend: backend,
+			})
+		}
+	}
+	return resolved
+}
+
 func BaseAccessLogBuilder(
-	backend api.Backend,
+	resolvedBackend ResolvedBackend,
 	defaultFormat string,
 	backendsAcc *EndpointAccumulator,
 	values listeners_v3.KumaValues,
 	accessLogSocketPath string,
 ) *Builder[envoy_accesslog.AccessLog] {
-	// Pre-resolve OTel endpoint so we can skip the entire access log entry
-	// when the backendRef is dangling. Without this, the builder produces an
-	// empty AccessLog that downstream configurers (MetadataFilter) still
-	// write to, causing Envoy to reject the listener.
-	var otelEndpoint *LoggingEndpoint
-	if backend.OpenTelemetry != nil {
-		otelEndpoint = resolveOtelLoggingEndpoint(backend.OpenTelemetry, backendsAcc)
-		if otelEndpoint == nil && backend.Tcp == nil && backend.File == nil {
-			return nil
-		}
-	}
-
+	backend := resolvedBackend.Backend
 	return bldrs_accesslog.NewBuilder().
 		Configure(IfNotNil(backend.Tcp, func(tcpBackend api.TCPBackend) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
@@ -71,7 +87,7 @@ func BaseAccessLogBuilder(
 				Configure(FileBackendSFS(&fileBackend, defaultFormat, values)).
 				Configure(bldrs_accesslog.Path(fileBackend.Path)))
 		})).
-		Configure(IfNotNil(otelEndpoint, func(endpoint LoggingEndpoint) Configurer[envoy_accesslog.AccessLog] {
+		Configure(IfNotNil(resolvedBackend.OtelEndpoint, func(endpoint LoggingEndpoint) Configurer[envoy_accesslog.AccessLog] {
 			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
 				Configure(OtelBody(backend.OpenTelemetry, defaultFormat, values)).
 				Configure(OtelAttributes(backend.OpenTelemetry, values)).
