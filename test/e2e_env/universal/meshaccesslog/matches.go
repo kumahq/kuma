@@ -3,7 +3,6 @@ package meshaccesslog
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -252,10 +251,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(strings.TrimSpace(stdout)).To(Equal("on-sidecar spiffe=demo-client-1"))
 		}, "60s", "1s").Should(Succeed())
-
-		for {
-			time.Sleep(1 * time.Hour)
-		}
 
 		By("request from demo-client-2 falls through to the test-server SNI rule")
 		Eventually(func(g Gomega) {
