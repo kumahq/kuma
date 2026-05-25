@@ -156,7 +156,7 @@ func ZoneProxyMeshTimeout() {
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	It("zone-proxy should timeout MeshExternalService traffic selected by SNI", FlakeAttempts(3), func() {
+	It("zone-proxy should timeout MeshExternalService traffic selected by SNI", func() {
 		url := fmt.Sprintf("http://external-server-%s.extsvc.mesh.local", mesh)
 
 		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
