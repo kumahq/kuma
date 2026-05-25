@@ -64,6 +64,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
 		fromRules       core_rules.FromRules
+		withoutPolicy   bool
 		expectedCluster []string
 	}
 
@@ -148,14 +149,14 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							mesh_proto.ServiceTag: "second-service",
 						},
 					}},
-				}).
-				WithPolicies(
+				})
+			if !given.withoutPolicy {
+				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
-				).
-				Build()
+				)
+			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-
-			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, context, proxy.Build())).To(Succeed())
 
 			for idx, expected := range given.expectedCluster {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[idx].Resource)).
@@ -193,6 +194,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					Resource: test_xds.ClusterWithName("other-service"),
 				},
 			},
+			withoutPolicy:   true,
 			expectedCluster: []string{"outbound_cluster_track_remaining_only.golden.yaml"},
 		}),
 		Entry("basic outbound cluster preserves existing circuit breakers without MeshCircuitBreaker", sidecarTestCase{
@@ -203,6 +205,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					Resource: clusterWithExistingCircuitBreakers("other-service"),
 				},
 			},
+			withoutPolicy:   true,
 			expectedCluster: []string{"outbound_cluster_existing_circuit_breakers.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with outlier detection", sidecarTestCase{
@@ -506,6 +509,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		meshtcproutes  core_rules.GatewayRules
 		meshservices   []*meshservice_api.MeshServiceResource
 		rules          core_rules.GatewayRules
+		withoutPolicy  bool
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -531,29 +535,30 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
-				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules).
-					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
-					WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes),
-				).
-				Build()
+				WithDataplane(samples.GatewayDataplaneBuilder())
+			policies := xds_builders.MatchedPolicies().
+				WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
+				WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes)
+			if !given.withoutPolicy {
+				policies = policies.WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules)
+			}
+			proxy = proxy.WithPolicies(policies)
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy.Build())).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy.Build())
 			Expect(err).NotTo(HaveOccurred())
 
 			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy.Build())).To(Succeed())
 
 			tcpRoutePlugin := meshtcproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy.Build())).To(Succeed())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy.Build())).To(Succeed())
 
 			// then
 			resource, err := util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ClusterType)
@@ -584,6 +589,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster without MeshCircuitBreaker", gatewayTestCase{
 			name:          "track-remaining-only",
 			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			withoutPolicy: true,
 		}),
 		Entry("real MeshService targeted to real MeshService", gatewayTestCase{
 			name: "real-MeshService-targeted-to-real-MeshService",
@@ -665,6 +671,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 	type zoneProxyTestCase struct {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
+		withoutPolicy   bool
 		expectedCluster string
 	}
 
@@ -704,14 +711,15 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							},
 						},
 					}
-				}).
-				WithPolicies(
+				})
+			if !given.withoutPolicy {
+				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, core_rules.FromRules{}),
-				).
-				Build()
+				)
+			}
 
 			p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(p.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+			Expect(p.Apply(resourceSet, xdsCtx, proxy.Build())).To(Succeed())
 
 			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource)).
 				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
@@ -739,6 +747,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				Resource:       test_xds.ClusterWithName(mesKRI.String()),
 				ResourceOrigin: mesKRI,
 			}},
+			withoutPolicy:   true,
 			expectedCluster: "basic-meshexternalservice-track-remaining.zone_proxy_cluster.golden.yaml",
 		}),
 		Entry("MeshExternalService cluster with outlier detection on zone proxy", zoneProxyTestCase{

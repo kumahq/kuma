@@ -29,8 +29,8 @@ func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 }
 
 func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.ConnectionLimits) {
-	EnsureTrackRemaining(cluster)
 	defaultThreshold := ensureDefaultThreshold(cluster)
+	defaultThreshold.TrackRemaining = true
 
 	if conf == nil {
 		return
