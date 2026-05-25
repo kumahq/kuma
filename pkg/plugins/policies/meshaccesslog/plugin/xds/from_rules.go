@@ -43,11 +43,8 @@ func BuildAccessLogBuildersFromRules(
 			continue
 		}
 		expr := ComposeExpr(rule.Match, priors)
-		for _, backend := range pointer.Deref(conf.Backends) {
+		for _, backend := range ResolveBackends(pointer.Deref(conf.Backends), endpointsAcc) {
 			b := BaseAccessLogBuilder(backend, defaultFormat, endpointsAcc, values, accessLogSocketPath)
-			if b == nil {
-				continue
-			}
 			if expr != "" {
 				b = b.Configure(bldrs_accesslog.CELFilter(expr))
 			}
