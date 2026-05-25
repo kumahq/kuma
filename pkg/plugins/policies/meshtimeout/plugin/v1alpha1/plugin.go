@@ -1,21 +1,28 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
@@ -54,6 +61,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	routes := xds.GatherRoutes(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
 		return err
 	}
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
@@ -103,10 +113,13 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		inboundRules := fromRules.InboundRules[listenerKey]
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+		applyCommonConf := len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules)
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:     conf,
-			Protocol: protocol,
+			Conf:             conf,
+			Rules:            inboundRules,
+			SkipCommonConfig: !applyCommonConf,
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -118,9 +131,11 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
-		if err := clusterConfigurer.Configure(cluster); err != nil {
-			return err
+		if applyCommonConf {
+			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
+			if err := clusterConfigurer.Configure(cluster); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -187,25 +202,26 @@ func applyToGateway(
 			Port:    listenerInfo.Listener.Port,
 		}
 
-		inboundConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](gatewayRules.InboundRules[key])
-		if err := plugin_xds.ConfigureGatewayListener(
-			inboundConf,
-			listenerInfo.Listener.Protocol,
-			gatewayListeners[key],
-		); err != nil {
+		inboundRules := gatewayRules.InboundRules[key]
+		inboundConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+		if len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules) {
+			if err := plugin_xds.ConfigureGatewayListener(
+				inboundConf,
+				listenerInfo.Listener.Protocol,
+				gatewayListeners[key],
+			); err != nil {
+				return err
+			}
+		}
+		if err := plugin_xds.EnsureMatchFilterState(gatewayListeners[key], inboundRules); err != nil {
 			return err
 		}
 
-		toRules, ok := gatewayRules.ToRules.ByListener[key]
-		if !ok {
-			continue
-		}
-
+		toRules, hasToRules := gatewayRules.ToRules.ByListener[key]
 		conf, commonOk := getConf(toRules.Rules, subsetutils.MeshElement())
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
 			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
-
-			if ok {
+			if ok && hasToRules {
 				for _, vh := range route.VirtualHosts {
 					for _, r := range vh.Routes {
 						routeConf, routeOk := getConf(toRules.Rules, subsetutils.MeshElement().WithKeyValue(core_rules.RuleMatchesHashTag, r.Name))
@@ -224,6 +240,15 @@ func applyToGateway(
 					}
 				}
 			}
+			if ok {
+				if err := plugin_xds.ConfigureMatchedRoutes(route, inboundRules); err != nil {
+					return err
+				}
+			}
+		}
+
+		if !hasToRules {
+			continue
 		}
 
 		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
@@ -256,6 +281,196 @@ func applyToGateway(
 	return nil
 }
 
+func applyToZoneProxyListeners(
+	policies core_xds.TypedMatchingPolicies,
+	listeners xds.Listeners,
+	clusters xds.Clusters,
+	proxy *core_xds.Proxy,
+) error {
+	networking := proxy.Dataplane.Spec.GetNetworking()
+	if !networking.HasZoneProxyListeners() {
+		return nil
+	}
+	filterChainTargets := xds.GatherFilterChainTargets(listeners, clusters)
+
+	for _, listener := range networking.GetListeners() {
+		var (
+			envoyListener *envoy_listener.Listener
+			ok            bool
+		)
+
+		switch listener.GetType() {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			envoyListener, ok = listeners.ZoneIngress[naming.ContextualZoneIngressListenerName(listener.GetSectionName())]
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			envoyListener, ok = listeners.ZoneEgress[naming.ContextualZoneEgressListenerName(listener.GetSectionName())]
+		default:
+			continue
+		}
+		if !ok {
+			continue
+		}
+
+		inboundRules, err := buildListenerScopedInboundRules(policies, listener.GetSectionName())
+		if err != nil {
+			return err
+		}
+		if len(inboundRules) == 0 {
+			continue
+		}
+
+		if err := applyToZoneProxyListener(envoyListener, filterChainTargets, inboundRules); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToZoneProxyListener(
+	listener *envoy_listener.Listener,
+	filterChainTargets map[*envoy_listener.FilterChain]*envoy_cluster.Cluster,
+	inboundRules []*rules_inbound.Rule,
+) error {
+	commonConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+	applyCommonConf := hasCatchAllInboundRule(inboundRules)
+	for _, filterChain := range listener.FilterChains {
+		cluster := filterChainTargets[filterChain]
+		protocol := xds.FilterChainProtocol(filterChain)
+		if applyCommonConf {
+			if err := plugin_xds.ConfigureFilterChain(commonConf, filterChain); err != nil {
+				return err
+			}
+			if err := applyZoneProxyClusterConf(cluster, protocol, commonConf); err != nil {
+				return err
+			}
+		}
+
+		matchedRules := zoneProxyFilterChainRules(inboundRules, filterChain)
+		if conf, ok, err := mergeZoneProxyRuleConfs(matchedRules); err != nil {
+			return err
+		} else if ok {
+			if err := plugin_xds.ConfigureFilterChain(conf, filterChain); err != nil {
+				return err
+			}
+			if err := applyZoneProxyClusterConf(cluster, protocol, conf); err != nil {
+				return err
+			}
+		}
+
+		if err := plugin_xds.ConfigureMatchedRoutesOnFilterChain(filterChain, inboundRules); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyZoneProxyClusterConf(
+	cluster *envoy_cluster.Cluster,
+	protocol core_meta.Protocol,
+	conf api.Conf,
+) error {
+	if cluster == nil {
+		return nil
+	}
+	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
+	return configurer.Configure(cluster)
+}
+
+func matchesZoneProxyFilterChain(rule *rules_inbound.Rule, filterChain *envoy_listener.FilterChain) bool {
+	if rule.Match == nil {
+		return false
+	}
+	serverNames := filterChain.GetFilterChainMatch().GetServerNames()
+	if len(serverNames) == 0 {
+		return false
+	}
+	if rule.Match.SpiffeID != nil || rule.Match.SNI == nil {
+		return false
+	}
+	return containsString(serverNames, rule.Match.SNI.Value)
+}
+
+func zoneProxyFilterChainRules(inboundRules []*rules_inbound.Rule, filterChain *envoy_listener.FilterChain) []*rules_inbound.Rule {
+	var matched []*rules_inbound.Rule
+	for _, rule := range inboundRules {
+		if matchesZoneProxyFilterChain(rule, filterChain) {
+			matched = append(matched, rule)
+		}
+	}
+	return matched
+}
+
+func mergeZoneProxyRuleConfs(rules []*rules_inbound.Rule) (api.Conf, bool, error) {
+	confs := make([]any, 0, len(rules))
+	for _, rule := range rules {
+		conf, ok := rule.Conf.(api.Conf)
+		if !ok {
+			continue
+		}
+		confs = append(confs, conf)
+	}
+	if len(confs) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	merged, err := merge.Confs(confs)
+	if err != nil {
+		return api.Conf{}, false, err
+	}
+	if len(merged) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	conf, ok := merged[0].(api.Conf)
+	if !ok {
+		return api.Conf{}, false, errors.Errorf("unexpected merged zone proxy conf type: %T", merged[0])
+	}
+	return conf, true, nil
+}
+
+func hasCatchAllInboundRule(rules []*rules_inbound.Rule) bool {
+	for _, rule := range rules {
+		if rule.Match == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func containsString(values []string, value string) bool {
+	return slices.Contains(values, value)
+}
+
+func buildListenerScopedInboundRules(
+	policies core_xds.TypedMatchingPolicies,
+	sectionName string,
+) ([]*rules_inbound.Rule, error) {
+	if len(policies.DataplanePolicies) == 0 {
+		return nil, nil
+	}
+
+	filtered := api.MeshTimeoutResourceTypeDescriptor.NewList()
+	for _, resource := range policies.DataplanePolicies {
+		policy, ok := resource.GetSpec().(core_model.Policy)
+		if !ok {
+			continue
+		}
+		targetRef := policy.GetTargetRef()
+		if targetRef.Kind == common_api.Dataplane {
+			if sn := pointer.Deref(targetRef.SectionName); sn != "" && sn != sectionName {
+				continue
+			}
+		}
+		if err := filtered.AddItem(resource); err != nil {
+			return nil, err
+		}
+	}
+
+	return rules_inbound.BuildRules(filtered)
+}
+
 func getConf(
 	rules core_rules.Rules,
 	element subsetutils.Element,
@@ -269,7 +484,7 @@ func getConf(
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
-		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf(), Protocol: r.Protocol}
+		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf()}
 		if err := configurer.ConfigureListener(envoyResource); err != nil {
 			return err
 		}
