@@ -6,11 +6,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -339,7 +341,33 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
-	panic("not implemented")
+	svc := c.GetKumaCPSvc()
+	tnl, err := c.cluster.PortForward(k8s.ResourceTypeService, svc.Name, svc.Namespace, 5680)
+	if err != nil {
+		return "", fmt.Errorf("failed to port-forward CP diagnostics port: %w", err)
+	}
+	defer tnl.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/metrics", tnl.Endpoint), http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to build CP metrics request: %w", err)
+	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to scrape CP metrics: %w", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read CP metrics body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("CP metrics returned %d: %s", resp.StatusCode, string(body))
+	}
+	return string(body), nil
 }
 
 func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {

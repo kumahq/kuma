@@ -118,7 +118,7 @@ func createServiceInsight(name string, mesh string, rs store.ResourceStore) erro
 func createHostnameGenerator(name string, rs store.ResourceStore) error {
 	return builders.HostnameGenerator().
 		WithName(name).
-		WithTemplate("%s.mesh").
+		WithTemplate("{{ .Name }}.mesh").
 		WithMeshServiceMatchLabels(map[string]string{
 			"kuma.io/service": name,
 		}).

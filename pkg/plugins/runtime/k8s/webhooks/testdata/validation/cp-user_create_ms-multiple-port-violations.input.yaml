@@ -1,0 +1,21 @@
+# user=system:serviceaccount:kuma-system:kuma-control-plane,operation=CREATE
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: backend
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - name: dot.in.name
+      port: 8080
+      targetPort: 8080
+      appProtocol: http
+    - name: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      port: 8081
+      targetPort: 8081
+      appProtocol: http
