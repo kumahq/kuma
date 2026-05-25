@@ -876,6 +876,8 @@ webhooks:
             - enabled
         - key: kuma.io/mesh
           operator: Exists
+        - key: k8s.kuma.io/zone-proxy-type
+          operator: Exists
     clientConfig:
       caBundle: XYZ
       service:

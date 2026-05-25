@@ -1089,12 +1089,15 @@ spec:
 			return inj
 		}
 
-		newPod := func(namespace string, explicitMesh bool) *kube_core.Pod {
+		newPod := func(namespace string, explicitMesh bool, zoneProxyType string) *kube_core.Pod {
 			labels := map[string]string{
 				metadata.KumaSidecarInjectionAnnotation: "enabled",
 			}
 			if explicitMesh {
 				labels[metadata.KumaMeshLabel] = "default"
+			}
+			if zoneProxyType != "" {
+				labels[metadata.KumaZoneProxyTypeLabel] = zoneProxyType
 			}
 
 			return &kube_core.Pod{
@@ -1111,8 +1114,8 @@ spec:
 			}
 		}
 
-		It("allows system namespace pods to inject before the mesh exists", func() {
-			pod := newPod(systemNamespace, true)
+		It("allows zone proxy pods to inject before the mesh exists", func() {
+			pod := newPod("default", true, "ingress")
 
 			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
 			Expect(pod.Spec.Containers).To(ContainElement(
@@ -1120,8 +1123,8 @@ spec:
 			))
 		})
 
-		It("still rejects system namespace pods without an explicit mesh label when the mesh does not exist", func() {
-			pod := newPod(systemNamespace, false)
+		It("still rejects zone proxy pods without an explicit mesh label when the mesh does not exist", func() {
+			pod := newPod("default", false, "ingress")
 
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())
@@ -1131,8 +1134,8 @@ spec:
 			))
 		})
 
-		It("still rejects non-system namespace pods when the mesh does not exist", func() {
-			pod := newPod("default", true)
+		It("still rejects non-zone-proxy pods when the mesh does not exist", func() {
+			pod := newPod("default", true, "")
 
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())
