@@ -53,14 +53,17 @@ func (p plugin) Apply(
 	proxy *core_xds.Proxy,
 ) error {
 	if proxy.ZoneEgressProxy != nil {
+		applyTrackRemainingToNamedClusters(policies_xds.GatherClusters(rs).Egress)
 		return applyToEgressRealResources(rs, proxy)
 	}
+
+	clusters := policies_xds.GatherClusters(rs)
+	applyTrackRemainingDefaults(clusters)
+
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
 	if !ok {
 		return nil
 	}
-
-	clusters := policies_xds.GatherClusters(rs)
 
 	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
@@ -79,6 +82,27 @@ func (p plugin) Apply(
 	}
 
 	return nil
+}
+
+func applyTrackRemainingDefaults(clusters policies_xds.Clusters) {
+	applyTrackRemainingToNamedClusters(clusters.Inbound)
+	applyTrackRemainingToNamedClusters(clusters.Outbound)
+	applyTrackRemainingToSplitClusters(clusters.OutboundSplit)
+	applyTrackRemainingToNamedClusters(clusters.Gateway)
+}
+
+func applyTrackRemainingToNamedClusters(clusters map[string]*envoy_cluster.Cluster) {
+	for _, cluster := range clusters {
+		plugin_xds.EnsureTrackRemaining(cluster)
+	}
+}
+
+func applyTrackRemainingToSplitClusters(clusters map[string][]*envoy_cluster.Cluster) {
+	for _, splitClusters := range clusters {
+		for _, cluster := range splitClusters {
+			plugin_xds.EnsureTrackRemaining(cluster)
+		}
+	}
 }
 
 func applyToInbounds(

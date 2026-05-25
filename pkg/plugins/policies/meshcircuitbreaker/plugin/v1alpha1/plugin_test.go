@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -107,6 +109,17 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		}
 	}
 
+	clusterWithExistingCircuitBreakers := func(name string) *envoy_cluster.Cluster {
+		cluster := test_xds.ClusterWithName(name).(*envoy_cluster.Cluster)
+		cluster.CircuitBreakers = &envoy_cluster.CircuitBreakers{
+			Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{{
+				Priority:       envoy_config_core_v3.RoutingPriority_DEFAULT,
+				MaxConnections: util_proto.UInt32(66),
+			}},
+		}
+		return cluster
+	}
+
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
 			resourceSet := core_xds.NewResourceSet()
@@ -171,6 +184,26 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			expectedCluster: []string{"outbound_cluster_connection_limits.golden.yaml"},
+		}),
+		Entry("basic outbound cluster without MeshCircuitBreaker", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   metadata.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+			},
+			expectedCluster: []string{"outbound_cluster_track_remaining_only.golden.yaml"},
+		}),
+		Entry("basic outbound cluster preserves existing circuit breakers without MeshCircuitBreaker", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   metadata.OriginOutbound,
+					Resource: clusterWithExistingCircuitBreakers("other-service"),
+				},
+			},
+			expectedCluster: []string{"outbound_cluster_existing_circuit_breakers.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -548,6 +581,10 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 		}),
+		Entry("basic outbound cluster without MeshCircuitBreaker", gatewayTestCase{
+			name:          "track-remaining-only",
+			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+		}),
 		Entry("real MeshService targeted to real MeshService", gatewayTestCase{
 			name: "real-MeshService-targeted-to-real-MeshService",
 			meshservices: []*meshservice_api.MeshServiceResource{
@@ -694,6 +731,15 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			expectedCluster: "basic-meshexternalservice.zone_proxy_cluster.golden.yaml",
+		}),
+		Entry("MeshExternalService cluster without MeshCircuitBreaker on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:           mesKRI.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName(mesKRI.String()),
+				ResourceOrigin: mesKRI,
+			}},
+			expectedCluster: "basic-meshexternalservice-track-remaining.zone_proxy_cluster.golden.yaml",
 		}),
 		Entry("MeshExternalService cluster with outlier detection on zone proxy", zoneProxyTestCase{
 			resources: []*core_xds.Resource{{

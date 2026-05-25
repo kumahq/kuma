@@ -29,13 +29,11 @@ func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 }
 
 func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.ConnectionLimits) {
+	EnsureTrackRemaining(cluster)
+	defaultThreshold := ensureDefaultThreshold(cluster)
+
 	if conf == nil {
 		return
-	}
-
-	defaultThreshold := &envoy_cluster.CircuitBreakers_Thresholds{
-		Priority:       envoy_config_core_v3.RoutingPriority_DEFAULT,
-		TrackRemaining: true,
 	}
 
 	if conf.MaxConnectionPools != nil {
@@ -57,10 +55,31 @@ func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.Connecti
 	if conf.MaxRequests != nil {
 		defaultThreshold.MaxRequests = util_proto.UInt32(*conf.MaxRequests)
 	}
+}
 
-	cluster.CircuitBreakers = &envoy_cluster.CircuitBreakers{
-		Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{defaultThreshold},
+func EnsureTrackRemaining(cluster *envoy_cluster.Cluster) {
+	ensureDefaultThreshold(cluster).TrackRemaining = true
+}
+
+func ensureDefaultThreshold(cluster *envoy_cluster.Cluster) *envoy_cluster.CircuitBreakers_Thresholds {
+	if cluster.CircuitBreakers == nil {
+		cluster.CircuitBreakers = &envoy_cluster.CircuitBreakers{}
 	}
+
+	for _, threshold := range cluster.CircuitBreakers.Thresholds {
+		if threshold == nil {
+			continue
+		}
+		if threshold.Priority == envoy_config_core_v3.RoutingPriority_DEFAULT {
+			return threshold
+		}
+	}
+
+	defaultThreshold := &envoy_cluster.CircuitBreakers_Thresholds{
+		Priority: envoy_config_core_v3.RoutingPriority_DEFAULT,
+	}
+	cluster.CircuitBreakers.Thresholds = append(cluster.CircuitBreakers.Thresholds, defaultThreshold)
+	return defaultThreshold
 }
 
 func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.OutlierDetection) error {
