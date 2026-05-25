@@ -89,6 +89,7 @@ func applyTrackRemainingDefaults(clusters policies_xds.Clusters) {
 	applyTrackRemainingToNamedClusters(clusters.Outbound)
 	applyTrackRemainingToSplitClusters(clusters.OutboundSplit)
 	applyTrackRemainingToNamedClusters(clusters.Gateway)
+	applyTrackRemainingToNamedClusters(clusters.Egress)
 }
 
 func applyTrackRemainingToNamedClusters(clusters map[string]*envoy_cluster.Cluster) {

@@ -767,4 +767,38 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			expectedCluster: "basic-meshexternalservice-outlier.zone_proxy_cluster.golden.yaml",
 		}),
 	)
+
+	It("should enable track remaining for ZoneEgressProxy without MeshCircuitBreaker", func() {
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:           mesKRI.String(),
+			Origin:         metadata.OriginEgress,
+			Resource:       test_xds.ClusterWithName(mesKRI.String()),
+			ResourceOrigin: mesKRI,
+		})
+
+		proxy := xds_builders.Proxy().
+			With(func(p *core_xds.Proxy) {
+				p.ZoneEgressProxy = &core_xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-egress", Mesh: "default"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "10.0.0.1",
+								Port:    10002,
+							},
+						},
+					},
+				}
+			}).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+
+		cluster := resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource.(*envoy_cluster.Cluster)
+		Expect(cluster.GetCircuitBreakers().GetThresholds()).To(HaveLen(1))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].GetPriority()).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].TrackRemaining).To(BeTrue())
+	})
 })
