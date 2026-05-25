@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -13,6 +14,9 @@ import (
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	io_prometheus_client "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"go.uber.org/multierr"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -39,6 +43,49 @@ func ControlPlaneAssertions(cluster Cluster) {
 	default:
 		ginkgo.Fail("unknown cluster")
 	}
+	assertNoXdsNacks(cluster)
+}
+
+// assertNoXdsNacks scrapes the CP /metrics endpoint and fails if any xDS
+// request has been answered with a NACK. A non-zero counter means the CP
+// produced a config that Envoy rejected.
+func assertNoXdsNacks(cluster Cluster) {
+	ginkgo.GinkgoHelper()
+	raw, err := cluster.GetKuma().GetMetrics()
+	Expect(err).ToNot(HaveOccurred(), "failed to scrape metrics from CP %s", cluster.Name())
+
+	parser := expfmt.NewTextParser(model.UTF8Validation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(raw))
+	Expect(err).ToNot(HaveOccurred(), "failed to parse metrics from CP %s", cluster.Name())
+
+	for _, metricName := range []string{"xds_requests_received", "delta_xds_requests_received"} {
+		family, ok := families[metricName]
+		if !ok {
+			continue
+		}
+		for _, metric := range family.GetMetric() {
+			isNack := false
+			for _, label := range metric.GetLabel() {
+				if label.GetName() == "confirmation" && label.GetValue() == "NACK" {
+					isNack = true
+					break
+				}
+			}
+			if !isNack {
+				continue
+			}
+			Expect(metric.GetCounter().GetValue()).To(BeNumerically("<", 3),
+				"CP %s reported %s NACK(s) for labels %s", cluster.Name(), metricName, formatLabels(metric.GetLabel()))
+		}
+	}
+}
+
+func formatLabels(labels []*io_prometheus_client.LabelPair) string {
+	parts := make([]string, 0, len(labels))
+	for _, label := range labels {
+		parts = append(parts, fmt.Sprintf("%s=%q", label.GetName(), label.GetValue()))
+	}
+	return "{" + strings.Join(parts, ",") + "}"
 }
 
 // DebugUniversal prints state of the cluster. Useful in case of failure.

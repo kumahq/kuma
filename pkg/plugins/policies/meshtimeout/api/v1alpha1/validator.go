@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -122,8 +124,53 @@ func validateRules(rules []Rule, topLevelKind common_api.TargetRefKind) validato
 	var verr validators.ValidationError
 	for idx, rule := range rules {
 		path := validators.RootedAt("rules").Index(idx)
+		verr.Add(validateMatches(path.Field("matches"), path.Field("default"), pointer.Deref(rule.Matches), rule.Default))
 		verr.Add(validateDefault(path.Field("default"), rule.Default, topLevelKind))
 	}
+	return verr
+}
+
+func validateMatches(matchesPath validators.PathBuilder, defaultPath validators.PathBuilder, matches []common_api.Match, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	hasSpiffeID := false
+	for idx, match := range matches {
+		matchPath := matchesPath.Index(idx)
+		verr.AddErrorAt(matchPath, mesh.ValidateMatch(match))
+		if match.SpiffeID == nil && match.SNI == nil {
+			verr.AddViolationAt(matchPath, "must specify at least one of 'spiffeID' or 'sni'")
+			continue
+		}
+		if match.SpiffeID != nil {
+			hasSpiffeID = true
+			switch match.SpiffeID.Type {
+			case common_api.ExactMatchType, common_api.PrefixMatchType:
+			case "":
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), "must be set")
+			default:
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), fmt.Sprintf("unrecognized type %q, supported values are: Exact, Prefix", match.SpiffeID.Type))
+			}
+		}
+	}
+	if hasSpiffeID {
+		verr.Add(validateSourceConditionedTimeouts(defaultPath, conf))
+	}
+	return verr
+}
+
+func validateSourceConditionedTimeouts(path validators.PathBuilder, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	const msg = "can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity"
+
+	verr.Add(validators.ValidateNil(path.Field("connectionTimeout"), conf.ConnectionTimeout, msg))
+	verr.Add(validators.ValidateNil(path.Field("idleTimeout"), conf.IdleTimeout, msg))
+
+	if http := conf.Http; http != nil {
+		httpPath := path.Field("http")
+		verr.Add(validators.ValidateNil(httpPath.Field("requestHeadersTimeout"), http.RequestHeadersTimeout, msg))
+		verr.Add(validators.ValidateNil(httpPath.Field("maxStreamDuration"), http.MaxStreamDuration, msg))
+		verr.Add(validators.ValidateNil(httpPath.Field("maxConnectionDuration"), http.MaxConnectionDuration, msg))
+	}
+
 	return verr
 }
 

@@ -134,6 +134,21 @@ to:
     default:
       http:
         requestTimeout: 1s`),
+			Entry("matched inbound rule with route timeouts", `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://default/client
+        sni:
+          type: Exact
+          value: backend.mesh
+    default:
+      http:
+        requestTimeout: 1s
+        streamIdleTimeout: 2s`),
 		)
 
 		type testCase struct {
@@ -427,6 +442,77 @@ rules:
 violations:
   - field: spec.rules[0].default
     message: at least one timeout should be configured`,
+			}),
+			Entry("empty match entry", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - {}
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0]
+    message: must specify at least one of 'spiffeID' or 'sni'`,
+			}),
+			Entry("spiffeID match without type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          value: spiffe://default/client
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: must be set`,
+			}),
+			Entry("spiffeID match with unrecognized type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Regex
+          value: spiffe://default/client
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: 'unrecognized type "Regex", supported values are: Exact, Prefix'`,
+			}),
+			Entry("spiffeID match with unsupported timeout fields", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://default/client
+    default:
+      connectionTimeout: 10s
+      http:
+        requestHeadersTimeout: 2s
+        maxStreamDuration: 3s`,
+				expected: `
+violations:
+  - field: spec.rules[0].default.connectionTimeout
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity
+  - field: spec.rules[0].default.http.requestHeadersTimeout
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity
+  - field: spec.rules[0].default.http.maxStreamDuration
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity`,
 			}),
 		)
 	})
