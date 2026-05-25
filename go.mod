@@ -274,7 +274,7 @@ require (
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	k8s.io/apiserver v0.35.1 // indirect
 	k8s.io/code-generator v0.35.1 // indirect
 	k8s.io/component-base v0.35.1 // indirect
