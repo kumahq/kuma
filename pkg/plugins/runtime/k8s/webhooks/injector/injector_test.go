@@ -18,6 +18,7 @@ import (
 	conf "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 	inject "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks/injector"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -1064,6 +1065,83 @@ spec:
 			cfgFile: "inject.config.yaml",
 		}),
 	)
+
+	Describe("mesh existence precheck", func() {
+		newInjector := func() *inject.KumaInjector {
+			var cfg conf.Injector
+			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
+			cfg.CaCertFile = caCertPath
+
+			inj, err := inject.New(
+				cfg,
+				"http://kuma-control-plane.kuma-system:5681",
+				k8sClient,
+				false,
+				k8s.NewSimpleConverter(),
+				9901,
+				9902,
+				false,
+				systemNamespace,
+				nil,
+				false,
+			)
+			ExpectWithOffset(1, err).ToNot(HaveOccurred())
+			return inj
+		}
+
+		newPod := func(namespace string, explicitMesh bool) *kube_core.Pod {
+			labels := map[string]string{
+				metadata.KumaSidecarInjectionAnnotation: "enabled",
+			}
+			if explicitMesh {
+				labels[metadata.KumaMeshLabel] = "default"
+			}
+
+			return &kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name:      "zone-proxy",
+					Namespace: namespace,
+					Labels:    labels,
+				},
+				Spec: kube_core.PodSpec{
+					Containers: []kube_core.Container{
+						{Name: "pause", Image: "registry.k8s.io/pause:3.10"},
+					},
+				},
+			}
+		}
+
+		It("allows system namespace pods to inject before the mesh exists", func() {
+			pod := newPod(systemNamespace, true)
+
+			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
+			Expect(pod.Spec.Containers).To(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("still rejects system namespace pods without an explicit mesh label when the mesh does not exist", func() {
+			pod := newPod(systemNamespace, false)
+
+			err := newInjector().InjectKuma(context.Background(), pod)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
+			Expect(pod.Spec.Containers).ToNot(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("still rejects non-system namespace pods when the mesh does not exist", func() {
+			pod := newPod("default", true)
+
+			err := newInjector().InjectKuma(context.Background(), pod)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
+			Expect(pod.Spec.Containers).ToNot(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+	})
 
 	Describe("delta xDS injection", func() {
 		const (

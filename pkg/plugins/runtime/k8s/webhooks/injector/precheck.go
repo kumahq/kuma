@@ -39,9 +39,16 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 
 	meshName := k8s_util.MeshOfByLabelOrAnnotation(logger, pod, ns)
 	logger = logger.WithValues("mesh", meshName)
-	// Check mesh exists
-	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {
-		return "", err
+	// Mesh zone proxy pods are selected by a dedicated webhook in the system
+	// namespace and carry an explicit mesh label. They rely on the Pod/Dataplane
+	// reconciliation path to retry until the target mesh exists, so admission
+	// must not block them here.
+	skipMeshExistenceCheck := ns.GetName() == i.systemNamespace &&
+		pod.GetLabels()[metadata.KumaMeshLabel] != ""
+	if !skipMeshExistenceCheck {
+		if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {
+			return "", err
+		}
 	}
 
 	// Warn if an init container in the pod is using the same UID as the sidecar. This traffic will be exempt from
