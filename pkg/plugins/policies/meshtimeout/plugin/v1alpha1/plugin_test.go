@@ -938,6 +938,80 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_spiffe_inbound.listener.golden.yaml")))
 	})
 
+	It("should merge overlapping spiffeID matches before duplicating inbound routes", func() {
+		resourceSet := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: httpInboundListenerWith(),
+			},
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+			},
+		} {
+			r := res
+			resourceSet.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		inboundListener := core_rules.InboundListener{Address: "127.0.0.1", Port: 80}
+		proxy := xds_builders.Proxy().
+			WithDataplane(builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithPolicies(xds_builders.MatchedPolicies().
+				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
+					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+						inboundListener: {
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffe://default/",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										RequestTimeout:    test.ParseDuration("5s"),
+										StreamIdleTimeout: test.ParseDuration("10s"),
+									},
+								},
+							},
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										StreamIdleTimeout: test.ParseDuration("3s"),
+									},
+								},
+							},
+						},
+					},
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_spiffe_precedence.listener.golden.yaml")))
+	})
+
 	It("should not apply common inbound defaults for matched-only spiffeID rules", func() {
 		resourceSet := core_xds.NewResourceSet()
 		for _, res := range []core_xds.Resource{
@@ -1094,6 +1168,99 @@ var _ = Describe("MeshTimeout", func() {
 		clusterYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ClusterType)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni.cluster.golden.yaml")))
+	})
+
+	It("should merge overlapping SNI rules before configuring a zone-egress filter chain", func() {
+		rs := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			zoneEgressListenerResource(),
+			{
+				Name:     "mes-http",
+				Origin:   metadata.OriginEgress,
+				Resource: test_xds.ClusterWithName("mes-http"),
+			},
+			{
+				Name:     "mes-tcp",
+				Origin:   metadata.OriginEgress,
+				Resource: test_xds.ClusterWithName("mes-tcp"),
+			},
+		} {
+			r := res
+			rs.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		meshTimeout := api.NewMeshTimeoutResource()
+		meshTimeout.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-timeout-precedence",
+			Labels: map[string]string{},
+		})
+		meshTimeout.Spec = &api.MeshTimeout{
+			TargetRef: &common_api.TargetRef{
+				Kind:        common_api.Dataplane,
+				SectionName: pointer.To("ze-port"),
+			},
+			Rules: &[]api.Rule{
+				{
+					Matches: &[]common_api.Match{{
+						SNI: &common_api.SNIMatch{
+							Type:  common_api.SNIExactMatchType,
+							Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+						},
+					}},
+					Default: api.Conf{
+						ConnectionTimeout: test.ParseDuration("7s"),
+						IdleTimeout:       test.ParseDuration("13s"),
+						Http: &api.Http{
+							RequestHeadersTimeout: test.ParseDuration("5s"),
+							RequestTimeout:        test.ParseDuration("11s"),
+						},
+					},
+				},
+				{
+					Matches: &[]common_api.Match{{
+						SNI: &common_api.SNIMatch{
+							Type:  common_api.SNIExactMatchType,
+							Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+						},
+					}},
+					Default: api.Conf{
+						ConnectionTimeout: test.ParseDuration("3s"),
+						Http: &api.Http{
+							RequestTimeout: test.ParseDuration("2s"),
+						},
+					},
+				},
+			},
+		}
+		Expect(meshTimeout.Validate()).To(Succeed())
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(zoneEgressOnlyDataplane()).
+			WithZone("zone-1").
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshTimeoutType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshTimeout},
+					}
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(rs, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni_precedence.listener.golden.yaml")))
+
+		clusterYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni_precedence.cluster.golden.yaml")))
 	})
 })
 

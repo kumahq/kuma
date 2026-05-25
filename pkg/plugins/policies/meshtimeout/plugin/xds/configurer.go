@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"slices"
+	"strings"
 	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -24,6 +26,7 @@ import (
 	policies_defaults "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
@@ -303,12 +306,16 @@ func ConfigureMatchedRoutes(routeConfiguration *envoy_route.RouteConfiguration, 
 	if len(matchedRules) == 0 {
 		return nil
 	}
+	effectiveRules, err := effectiveMatchedRouteRules(matchedRules)
+	if err != nil {
+		return err
+	}
 
 	for _, virtualHost := range routeConfiguration.VirtualHosts {
 		originalRoutes := append([]*envoy_route.Route(nil), virtualHost.Routes...)
-		virtualHost.Routes = make([]*envoy_route.Route, 0, len(originalRoutes)*(len(matchedRules)+1))
+		virtualHost.Routes = make([]*envoy_route.Route, 0, len(originalRoutes)*(len(effectiveRules)+1))
 		for _, route := range originalRoutes {
-			virtualHost.Routes = append(virtualHost.Routes, duplicateMatchedRoutes(route, matchedRules)...)
+			virtualHost.Routes = append(virtualHost.Routes, duplicateMatchedRoutes(route, effectiveRules)...)
 			virtualHost.Routes = append(virtualHost.Routes, route)
 		}
 	}
@@ -370,6 +377,11 @@ func configureRouteConfigurationTimeouts(routeConfiguration *envoy_route.RouteCo
 	}
 }
 
+type effectiveMatchedRouteRule struct {
+	Match *common_api.Match
+	Conf  api.Conf
+}
+
 func matchedRouteTimeoutRules(inboundRules []*rules_inbound.Rule) []*rules_inbound.Rule {
 	var matched []*rules_inbound.Rule
 	for _, rule := range inboundRules {
@@ -386,6 +398,7 @@ func matchedRouteTimeoutRules(inboundRules []*rules_inbound.Rule) []*rules_inbou
 		}
 		matched = append(matched, rule)
 	}
+	slices.SortStableFunc(matched, compareMatchedRouteRuleSpecificityDesc)
 	return matched
 }
 
@@ -393,13 +406,166 @@ func hasSpiffeIDMatch(match *common_api.Match) bool {
 	return match != nil && match.SpiffeID != nil
 }
 
-func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []*rules_inbound.Rule) []*envoy_route.Route {
-	var duplicated []*envoy_route.Route
-	for _, rule := range inboundRules {
+func effectiveMatchedRouteRules(matchedRules []*rules_inbound.Rule) ([]effectiveMatchedRouteRule, error) {
+	var effective []effectiveMatchedRouteRule
+	for _, rule := range matchedRules {
+		if containsEffectiveMatchedRoute(effective, rule.Match) {
+			continue
+		}
+
+		conf, ok, err := mergeSubsumingMatchedRouteConfs(matchedRules, rule.Match)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
+		effective = append(effective, effectiveMatchedRouteRule{
+			Match: rule.Match,
+			Conf:  conf,
+		})
+	}
+	return effective, nil
+}
+
+func containsEffectiveMatchedRoute(rules []effectiveMatchedRouteRule, match *common_api.Match) bool {
+	for _, rule := range rules {
+		if sameMatchedRoute(rule.Match, match) {
+			return true
+		}
+	}
+	return false
+}
+
+func sameMatchedRoute(a, b *common_api.Match) bool {
+	switch {
+	case a == nil || b == nil:
+		return a == b
+	case a.SpiffeID == nil || b.SpiffeID == nil:
+		return a.SpiffeID == b.SpiffeID
+	default:
+		return a.SpiffeID.Type == b.SpiffeID.Type && a.SpiffeID.Value == b.SpiffeID.Value
+	}
+}
+
+func mergeSubsumingMatchedRouteConfs(matchedRules []*rules_inbound.Rule, target *common_api.Match) (api.Conf, bool, error) {
+	var applicable []*rules_inbound.Rule
+	for _, rule := range matchedRules {
+		if matchedRouteSubsumes(rule.Match, target) {
+			applicable = append(applicable, rule)
+		}
+	}
+	if len(applicable) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	slices.SortStableFunc(applicable, compareMatchedRouteRuleSpecificityAsc)
+
+	confs := make([]any, 0, len(applicable))
+	for _, rule := range applicable {
 		conf, ok := rule.Conf.(api.Conf)
 		if !ok {
 			continue
 		}
+		confs = append(confs, conf)
+	}
+	if len(confs) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	merged, err := merge.Confs(confs)
+	if err != nil {
+		return api.Conf{}, false, err
+	}
+	if len(merged) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	conf, ok := merged[0].(api.Conf)
+	if !ok {
+		return api.Conf{}, false, errors.Errorf("unexpected merged matched route conf type: %T", merged[0])
+	}
+	return conf, true, nil
+}
+
+func matchedRouteSubsumes(candidate, target *common_api.Match) bool {
+	if candidate == nil || target == nil || candidate.SpiffeID == nil || target.SpiffeID == nil {
+		return false
+	}
+
+	switch candidate.SpiffeID.Type {
+	case common_api.ExactMatchType:
+		return target.SpiffeID.Type == common_api.ExactMatchType && candidate.SpiffeID.Value == target.SpiffeID.Value
+	case common_api.PrefixMatchType:
+		return strings.HasPrefix(target.SpiffeID.Value, candidate.SpiffeID.Value)
+	default:
+		return false
+	}
+}
+
+func compareMatchedRouteRuleSpecificityDesc(a, b *rules_inbound.Rule) int {
+	return compareMatchedRouteSpecificity(a.Match, b.Match, true)
+}
+
+func compareMatchedRouteRuleSpecificityAsc(a, b *rules_inbound.Rule) int {
+	return compareMatchedRouteSpecificity(a.Match, b.Match, false)
+}
+
+// Keep this MeshTimeout-local instead of reusing inbound.CompareMatch.
+// Route precedence needs both ascending and descending order, and for Prefix
+// matches it also needs a longer-prefix tie-break that the generic inbound
+// sorter intentionally does not provide.
+func compareMatchedRouteSpecificity(a, b *common_api.Match, descending bool) int {
+	aRank, aLen := matchedRouteSpecificity(a)
+	bRank, bLen := matchedRouteSpecificity(b)
+
+	switch {
+	case descending && aRank > bRank:
+		return -1
+	case descending && aRank < bRank:
+		return 1
+	case !descending && aRank < bRank:
+		return -1
+	case !descending && aRank > bRank:
+		return 1
+	}
+
+	if aRank != 1 || bRank != 1 {
+		return 0
+	}
+
+	switch {
+	case descending && aLen > bLen:
+		return -1
+	case descending && aLen < bLen:
+		return 1
+	case !descending && aLen < bLen:
+		return -1
+	case !descending && aLen > bLen:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func matchedRouteSpecificity(match *common_api.Match) (int, int) {
+	if match == nil || match.SpiffeID == nil {
+		return 0, 0
+	}
+
+	switch match.SpiffeID.Type {
+	case common_api.ExactMatchType:
+		return 2, len(match.SpiffeID.Value)
+	case common_api.PrefixMatchType:
+		return 1, len(match.SpiffeID.Value)
+	default:
+		return 0, len(match.SpiffeID.Value)
+	}
+}
+
+func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []effectiveMatchedRouteRule) []*envoy_route.Route {
+	var duplicated []*envoy_route.Route
+	for _, rule := range inboundRules {
 		clone := proto.Clone(route).(*envoy_route.Route)
 		if clone.Match == nil || clone.GetRoute() == nil {
 			continue
@@ -407,8 +573,8 @@ func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []*rules_inbo
 		clone.Match.FilterState = append(clone.Match.FilterState, routeFilterStateMatchers(rule.Match)...)
 		ConfigureMatchedRouteAction(
 			clone.GetRoute(),
-			pointer.Deref(conf.Http).RequestTimeout,
-			pointer.Deref(conf.Http).StreamIdleTimeout,
+			pointer.Deref(rule.Conf.Http).RequestTimeout,
+			pointer.Deref(rule.Conf.Http).StreamIdleTimeout,
 		)
 		duplicated = append(duplicated, clone)
 	}

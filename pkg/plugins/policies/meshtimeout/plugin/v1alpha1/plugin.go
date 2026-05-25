@@ -7,6 +7,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -21,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
@@ -344,14 +346,10 @@ func applyToZoneProxyListener(
 			}
 		}
 
-		for _, rule := range inboundRules {
-			if !matchesZoneProxyFilterChain(rule, filterChain) {
-				continue
-			}
-			conf, ok := rule.Conf.(api.Conf)
-			if !ok {
-				continue
-			}
+		matchedRules := zoneProxyFilterChainRules(inboundRules, filterChain)
+		if conf, ok, err := mergeZoneProxyRuleConfs(matchedRules); err != nil {
+			return err
+		} else if ok {
 			if err := plugin_xds.ConfigureFilterChain(conf, filterChain); err != nil {
 				return err
 			}
@@ -392,6 +390,44 @@ func matchesZoneProxyFilterChain(rule *rules_inbound.Rule, filterChain *envoy_li
 		return false
 	}
 	return containsString(serverNames, rule.Match.SNI.Value)
+}
+
+func zoneProxyFilterChainRules(inboundRules []*rules_inbound.Rule, filterChain *envoy_listener.FilterChain) []*rules_inbound.Rule {
+	var matched []*rules_inbound.Rule
+	for _, rule := range inboundRules {
+		if matchesZoneProxyFilterChain(rule, filterChain) {
+			matched = append(matched, rule)
+		}
+	}
+	return matched
+}
+
+func mergeZoneProxyRuleConfs(rules []*rules_inbound.Rule) (api.Conf, bool, error) {
+	confs := make([]any, 0, len(rules))
+	for _, rule := range rules {
+		conf, ok := rule.Conf.(api.Conf)
+		if !ok {
+			continue
+		}
+		confs = append(confs, conf)
+	}
+	if len(confs) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	merged, err := merge.Confs(confs)
+	if err != nil {
+		return api.Conf{}, false, err
+	}
+	if len(merged) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	conf, ok := merged[0].(api.Conf)
+	if !ok {
+		return api.Conf{}, false, errors.Errorf("unexpected merged zone proxy conf type: %T", merged[0])
+	}
+	return conf, true, nil
 }
 
 func hasCatchAllInboundRule(rules []*rules_inbound.Rule) bool {
