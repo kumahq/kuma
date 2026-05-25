@@ -167,6 +167,13 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig-zoneproxies_mes-zone-proxy__kuma-3_extsvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -231,6 +238,13 @@
         }
       },
       "envoyconfig-zoneproxies_zone-proxy-demo-client__kuma-3_msvc_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -296,6 +310,13 @@
         }
       },
       "envoyconfig-zoneproxies_zone-proxy-test-server-no-reusable-ports__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -366,6 +387,13 @@
         }
       },
       "envoyconfig-zoneproxies_zone-proxy-test-server__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -513,6 +541,13 @@
       },
       "localhost:8080": {
         "altStatName": "localhost_8080",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:8080",

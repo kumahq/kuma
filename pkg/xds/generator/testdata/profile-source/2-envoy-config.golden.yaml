@@ -2,6 +2,9 @@ resources:
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
@@ -41,6 +44,9 @@ resources:
 - name: elastic
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
@@ -131,6 +137,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8080
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 10s
     loadAssignment:
       clusterName: localhost:8080

@@ -15,6 +15,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8080
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 0.500s
     loadAssignment:
       clusterName: localhost:8080

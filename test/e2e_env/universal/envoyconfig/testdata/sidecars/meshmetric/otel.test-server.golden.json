@@ -187,6 +187,13 @@
         }
       },
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -246,6 +253,13 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -387,6 +401,13 @@
       },
       "localhost:8080": {
         "altStatName": "localhost_8080",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:8080",

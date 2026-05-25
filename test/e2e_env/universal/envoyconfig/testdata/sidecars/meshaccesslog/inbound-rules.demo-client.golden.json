@@ -22,6 +22,13 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -81,6 +88,13 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -222,6 +236,13 @@
       },
       "localhost:3000": {
         "altStatName": "localhost_3000",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:3000",
