@@ -567,7 +567,7 @@ func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []effectiveMa
 	var duplicated []*envoy_route.Route
 	for _, rule := range inboundRules {
 		clone := proto.Clone(route).(*envoy_route.Route)
-		if clone.Match == nil || clone.GetRoute() == nil {
+		if clone.Match == nil || !matchedRouteSupportsTimeouts(clone.GetRoute()) {
 			continue
 		}
 		clone.Match.FilterState = append(clone.Match.FilterState, routeFilterStateMatchers(rule.Match)...)
@@ -579,6 +579,31 @@ func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []effectiveMa
 		duplicated = append(duplicated, clone)
 	}
 	return duplicated
+}
+
+func matchedRouteSupportsTimeouts(routeAction *envoy_route.RouteAction) bool {
+	if routeAction == nil {
+		return false
+	}
+
+	switch specifier := routeAction.ClusterSpecifier.(type) {
+	case *envoy_route.RouteAction_Cluster:
+		return specifier.Cluster != ""
+	case *envoy_route.RouteAction_ClusterHeader:
+		return specifier.ClusterHeader != ""
+	case *envoy_route.RouteAction_WeightedClusters:
+		if specifier.WeightedClusters == nil || len(specifier.WeightedClusters.Clusters) == 0 {
+			return false
+		}
+		for _, cluster := range specifier.WeightedClusters.Clusters {
+			if cluster.GetName() == "" && cluster.GetClusterHeader() == "" {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
+	}
 }
 
 func ConfigureMatchedRouteAction(
