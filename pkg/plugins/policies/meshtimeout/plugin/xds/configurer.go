@@ -438,14 +438,12 @@ func containsEffectiveMatchedRoute(rules []effectiveMatchedRouteRule, match *com
 }
 
 func sameMatchedRoute(a, b *common_api.Match) bool {
-	switch {
-	case a == nil || b == nil:
+	if a == nil || b == nil {
 		return a == b
-	case a.SpiffeID == nil || b.SpiffeID == nil:
-		return a.SpiffeID == b.SpiffeID
-	default:
-		return a.SpiffeID.Type == b.SpiffeID.Type && a.SpiffeID.Value == b.SpiffeID.Value
 	}
+
+	return sameSpiffeIDMatch(a.SpiffeID, b.SpiffeID) &&
+		sameSNIMatch(a.SNI, b.SNI)
 }
 
 func mergeSubsumingMatchedRouteConfs(matchedRules []*rules_inbound.Rule, target *common_api.Match) (api.Conf, bool, error) {
@@ -489,18 +487,12 @@ func mergeSubsumingMatchedRouteConfs(matchedRules []*rules_inbound.Rule, target 
 }
 
 func matchedRouteSubsumes(candidate, target *common_api.Match) bool {
-	if candidate == nil || target == nil || candidate.SpiffeID == nil || target.SpiffeID == nil {
+	if candidate == nil || target == nil {
 		return false
 	}
 
-	switch candidate.SpiffeID.Type {
-	case common_api.ExactMatchType:
-		return target.SpiffeID.Type == common_api.ExactMatchType && candidate.SpiffeID.Value == target.SpiffeID.Value
-	case common_api.PrefixMatchType:
-		return strings.HasPrefix(target.SpiffeID.Value, candidate.SpiffeID.Value)
-	default:
-		return false
-	}
+	return spiffeIDMatchSubsumes(candidate.SpiffeID, target.SpiffeID) &&
+		sniMatchSubsumes(candidate.SNI, target.SNI)
 }
 
 func compareMatchedRouteRuleSpecificityDesc(a, b *rules_inbound.Rule) int {
@@ -511,26 +503,21 @@ func compareMatchedRouteRuleSpecificityAsc(a, b *rules_inbound.Rule) int {
 	return compareMatchedRouteSpecificity(a.Match, b.Match, false)
 }
 
-// Keep this MeshTimeout-local instead of reusing inbound.CompareMatch.
-// Route precedence needs both ascending and descending order, and for Prefix
-// matches it also needs a longer-prefix tie-break that the generic inbound
-// sorter intentionally does not provide.
+// Keep this MeshTimeout-local even though it builds on inbound.CompareByMatch.
+// Route precedence still needs both ascending and descending order, and for
+// Prefix matches it also needs a longer-prefix tie-break that the generic
+// inbound sorter intentionally does not provide.
 func compareMatchedRouteSpecificity(a, b *common_api.Match, descending bool) int {
-	aRank, aLen := matchedRouteSpecificity(a)
-	bRank, bLen := matchedRouteSpecificity(b)
-
-	switch {
-	case descending && aRank > bRank:
-		return -1
-	case descending && aRank < bRank:
-		return 1
-	case !descending && aRank < bRank:
-		return -1
-	case !descending && aRank > bRank:
-		return 1
+	if c := rules_inbound.CompareByMatch(a, b); c != 0 {
+		if descending {
+			return c
+		}
+		return -c
 	}
 
-	if aRank != 1 || bRank != 1 {
+	aLen := matchedRoutePrefixLen(a)
+	bLen := matchedRoutePrefixLen(b)
+	if aLen == 0 || bLen == 0 {
 		return 0
 	}
 
@@ -548,19 +535,55 @@ func compareMatchedRouteSpecificity(a, b *common_api.Match, descending bool) int
 	}
 }
 
-func matchedRouteSpecificity(match *common_api.Match) (int, int) {
-	if match == nil || match.SpiffeID == nil {
-		return 0, 0
+func matchedRoutePrefixLen(match *common_api.Match) int {
+	if match == nil || match.SpiffeID == nil || match.SpiffeID.Type != common_api.PrefixMatchType {
+		return 0
+	}
+	return len(match.SpiffeID.Value)
+}
+
+func sameSpiffeIDMatch(a, b *common_api.SpiffeIDMatch) bool {
+	switch {
+	case a == nil || b == nil:
+		return a == b
+	default:
+		return a.Type == b.Type && a.Value == b.Value
+	}
+}
+
+func sameSNIMatch(a, b *common_api.SNIMatch) bool {
+	switch {
+	case a == nil || b == nil:
+		return a == b
+	default:
+		return a.Type == b.Type && a.Value == b.Value
+	}
+}
+
+func spiffeIDMatchSubsumes(candidate, target *common_api.SpiffeIDMatch) bool {
+	if candidate == nil || target == nil {
+		return false
 	}
 
-	switch match.SpiffeID.Type {
+	switch candidate.Type {
 	case common_api.ExactMatchType:
-		return 2, len(match.SpiffeID.Value)
+		return target.Type == common_api.ExactMatchType && candidate.Value == target.Value
 	case common_api.PrefixMatchType:
-		return 1, len(match.SpiffeID.Value)
+		return strings.HasPrefix(target.Value, candidate.Value)
 	default:
-		return 0, len(match.SpiffeID.Value)
+		return false
 	}
+}
+
+func sniMatchSubsumes(candidate, target *common_api.SNIMatch) bool {
+	if candidate == nil {
+		return true
+	}
+	if target == nil {
+		return false
+	}
+
+	return candidate.Type == target.Type && candidate.Value == target.Value
 }
 
 func duplicateMatchedRoutes(route *envoy_route.Route, inboundRules []effectiveMatchedRouteRule) []*envoy_route.Route {
