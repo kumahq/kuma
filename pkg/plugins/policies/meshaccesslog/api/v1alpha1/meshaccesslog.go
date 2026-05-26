@@ -26,8 +26,8 @@ type MeshAccessLog struct {
 
 type Rule struct {
 	// Matches defines a list of conditions (by SpiffeID or SNI) that select the
-	// traffic this rule applies to. When several rules match the same connection,
-	// the most specific one wins (first-match-wins).
+	// traffic this rule applies to. Rules fire independently: a connection that
+	// satisfies multiple rules is logged to every matching rule's backends.
 	Matches *[]common_api.Match `json:"matches,omitempty"`
 	// Default contains configuration of the inbound access logging
 	Default Conf `json:"default"`

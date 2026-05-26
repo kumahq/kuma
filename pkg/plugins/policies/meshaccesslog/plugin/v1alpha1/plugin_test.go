@@ -967,7 +967,7 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"outbound_file_workload_identity.listener.golden.yaml"},
 		}),
-		Entry("inbound with rules[].matches[].spiffeID and catch-all (first-match-wins)", sidecarTestCase{
+		Entry("inbound with rules[].matches[].spiffeID and catch-all (parallel logging)", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,

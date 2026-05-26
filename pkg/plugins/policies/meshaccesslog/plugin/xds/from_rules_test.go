@@ -45,7 +45,7 @@ var _ = Describe("BuildAccessLogBuildersFromRules", func() {
 		return out
 	}
 
-	It("single catch-all rule produces one unfiltered entry", func() {
+	It("catch-all rule produces an unfiltered entry", func() {
 		rules := []*inbound.Rule{
 			{Match: nil, Conf: confWith(fileBackend("/var/log/a"))},
 		}
@@ -54,7 +54,7 @@ var _ = Describe("BuildAccessLogBuildersFromRules", func() {
 		))
 	})
 
-	It("two rules: first match wins via NOT-priors on second", func() {
+	It("each rule's match becomes its own CEL filter", func() {
 		spiffeMatch := common_api.Match{
 			SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://default/sa/x"},
 		}
@@ -73,7 +73,7 @@ var _ = Describe("BuildAccessLogBuildersFromRules", func() {
 		Expect(out[1]).To(HaveKeyWithValue("filterName", "envoy.access_loggers.extension_filters.cel"))
 	})
 
-	It("catch-all after specific rule gets only NOT-prior filter", func() {
+	It("catch-all alongside a specific rule stays unfiltered", func() {
 		spiffeMatch := common_api.Match{
 			SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://default/sa/x"},
 		}
@@ -84,7 +84,7 @@ var _ = Describe("BuildAccessLogBuildersFromRules", func() {
 		out := build(rules)
 		Expect(out).To(HaveLen(2))
 		Expect(out[0]).To(HaveKeyWithValue("hasFilter", true))
-		Expect(out[1]).To(HaveKeyWithValue("hasFilter", true))
+		Expect(out[1]).To(HaveKeyWithValue("hasFilter", false))
 	})
 
 	It("one rule with two backends generates two entries with the same filter", func() {
@@ -97,7 +97,7 @@ var _ = Describe("BuildAccessLogBuildersFromRules", func() {
 		Expect(build(rules)).To(HaveLen(2))
 	})
 
-	It("conf with unexpected type is skipped but advances priors", func() {
+	It("conf with unexpected type is skipped", func() {
 		spiffeMatch := common_api.Match{
 			SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://default/sa/x"},
 		}

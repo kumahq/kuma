@@ -27,7 +27,7 @@ func Matches() {
 		"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
 	}
 
-	var zoneName, tcpSinkDockerName, externalServiceDockerName, demoClient1SpiffeID string
+	var zoneName, tcpSinkDockerName, externalServiceDockerName, demoClient1SpiffeID, demoClient2SpiffeID string
 
 	BeforeAll(func() {
 		zoneName = universal.Cluster.ZoneName()
@@ -120,7 +120,10 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 
 		demoClient1SpiffeID = fmt.Sprintf("spiffe://%s.%s.mesh.local/workload/%s", meshName, zoneName, demoClient1)
+		demoClient2SpiffeID = fmt.Sprintf("spiffe://%s.%s.mesh.local/workload/%s", meshName, zoneName, demoClient2)
 
+		// Rules fire independently under parallel semantics, so each rule's
+		// match is made disjoint by SpiffeID to keep `tail -1` deterministic.
 		egressMAL := fmt.Sprintf(`
 type: MeshAccessLog
 name: mal-matches-egress
@@ -143,7 +146,10 @@ spec:
                 plain: "on-egress spiffe=demo-client-1"
               address: "%s:9999"
     - matches:
-        - sni:
+        - spiffeID:
+            type: Exact
+            value: %q
+          sni:
             type: Exact
             value: sni.extsvc.%s.%s.httpbin.80
       default:
@@ -156,7 +162,7 @@ spec:
               address: "%s:9999"
 `, meshName, egressDP,
 			demoClient1SpiffeID, tcpSinkDockerName,
-			meshName, zoneName, tcpSinkDockerName,
+			demoClient2SpiffeID, meshName, zoneName, tcpSinkDockerName,
 		)
 		Expect(YamlUniversal(egressMAL)(universal.Cluster)).To(Succeed())
 
@@ -182,7 +188,10 @@ spec:
                 plain: "on-sidecar spiffe=demo-client-1"
               address: "%s:9999"
     - matches:
-        - sni:
+        - spiffeID:
+            type: Exact
+            value: %q
+          sni:
             type: Exact
             value: sni.msvc.%s.%s.%s.80
       default:
@@ -195,7 +204,7 @@ spec:
               address: "%s:9999"
 `, meshName, testServer,
 			demoClient1SpiffeID, tcpSinkDockerName,
-			meshName, zoneName, testServer, tcpSinkDockerName,
+			demoClient2SpiffeID, meshName, zoneName, testServer, tcpSinkDockerName,
 		)
 		Expect(YamlUniversal(sidecarMAL)(universal.Cluster)).To(Succeed())
 	})
@@ -224,7 +233,7 @@ spec:
 			g.Expect(strings.TrimSpace(stdout)).To(Equal("on-egress spiffe=demo-client-1"))
 		}, "60s", "1s").Should(Succeed())
 
-		By("request from demo-client-2 falls through to the SNI rule")
+		By("request from demo-client-2 matches the spiffeID+SNI rule")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, demoClient2, "httpbin.extsvc.mesh.local",
@@ -252,7 +261,7 @@ spec:
 			g.Expect(strings.TrimSpace(stdout)).To(Equal("on-sidecar spiffe=demo-client-1"))
 		}, "60s", "1s").Should(Succeed())
 
-		By("request from demo-client-2 falls through to the test-server SNI rule")
+		By("request from demo-client-2 matches the spiffeID+SNI rule")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, demoClient2, testServerURL,

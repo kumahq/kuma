@@ -3,7 +3,6 @@ package xds
 import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
@@ -12,14 +11,10 @@ import (
 	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
-// BuildAccessLogBuildersFromRules turns a list of sorted inbound rules (most
-// specific first, per inbound.SortRules) into access log builders implementing
-// first-match-wins semantics via a CEL ExpressionFilter on each entry.
-//
-// For each rule, every backend produces one access log builder configured with
-// `myMatchExpr && !(prior0Expr) && !(prior1Expr) ...`. The first rule with no
-// match (and no priors) produces an unfiltered entry — preserving today's
-// catch-all behavior when no matches are used.
+// BuildAccessLogBuildersFromRules turns inbound rules into access log builders.
+// Each rule fires independently: every backend on every rule whose Match holds
+// emits a log entry. Rules with overlapping matches produce logs to every
+// matching backend (intentional — access logging fans out).
 //
 // TODO: on zone proxies (ZoneIngress/ZoneEgress), filter chains already match
 // per-SNI via MatchServerNames, so encoding `connection.requested_server_name`
@@ -35,14 +30,12 @@ func BuildAccessLogBuildersFromRules(
 	accessLogSocketPath string,
 ) []*Builder[envoy_accesslog.AccessLog] {
 	var result []*Builder[envoy_accesslog.AccessLog]
-	var priors []*common_api.Match
 	for _, rule := range rules {
 		conf, ok := rule.Conf.(api.Conf)
 		if !ok {
-			priors = append(priors, rule.Match)
 			continue
 		}
-		expr := ComposeExpr(rule.Match, priors)
+		expr := MatchToCEL(rule.Match)
 		for _, backend := range ResolveBackends(pointer.Deref(conf.Backends), endpointsAcc) {
 			b := BaseAccessLogBuilder(backend, defaultFormat, endpointsAcc, values, accessLogSocketPath)
 			if expr != "" {
@@ -50,7 +43,6 @@ func BuildAccessLogBuildersFromRules(
 			}
 			result = append(result, b)
 		}
-		priors = append(priors, rule.Match)
 	}
 	return result
 }
