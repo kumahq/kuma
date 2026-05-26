@@ -178,6 +178,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -202,6 +203,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/log",
 									},
@@ -251,6 +253,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/meshservice/log",
 									},
@@ -262,6 +265,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/route-2/log",
 									},
@@ -273,6 +277,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/route-3/log",
 									},
@@ -322,6 +327,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/meshservice/log",
 									},
@@ -354,6 +360,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/log",
 									},
@@ -375,6 +382,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -395,6 +403,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
@@ -418,6 +427,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
@@ -444,6 +454,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.TCPBackendType,
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 								},
@@ -483,6 +494,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 								},
@@ -496,6 +508,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 									Body: &apiextensionsv1.JSON{
@@ -512,6 +525,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "other-otel-collector:5317",
 									Body: &apiextensionsv1.JSON{
@@ -564,6 +578,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 								},
@@ -577,6 +592,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 									Body: &apiextensionsv1.JSON{
@@ -593,6 +609,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "other-otel-collector:5317",
 									Body: &apiextensionsv1.JSON{
@@ -630,6 +647,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.TCPBackendType,
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
@@ -653,6 +671,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.TCPBackendType,
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
@@ -682,6 +701,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -721,6 +741,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -732,6 +753,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -780,6 +802,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -791,6 +814,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -836,6 +860,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -847,6 +872,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -880,6 +906,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
 									OpenTelemetry: &api.OtelBackend{
 										Endpoint: "otel-collector",
 										Body: &apiextensionsv1.JSON{
@@ -925,6 +952,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/log",
 										Format: &api.Format{
@@ -1017,6 +1045,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
 										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
@@ -1116,6 +1145,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
 										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
@@ -1232,6 +1262,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/from-log",
 									},
@@ -1245,6 +1276,7 @@ var _ = Describe("MeshAccessLog", func() {
 						{
 							Conf: api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/from-log",
 									},
@@ -1260,6 +1292,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									Backends: &[]api.Backend{{
+										Type: api.FileBackendType,
 										File: &api.FileBackend{
 											Path: "/tmp/to-log",
 										},

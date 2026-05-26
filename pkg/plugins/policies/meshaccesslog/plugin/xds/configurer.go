@@ -76,27 +76,22 @@ func BaseAccessLogBuilder(
 	accessLogSocketPath string,
 ) *Builder[envoy_accesslog.AccessLog] {
 	backend := resolvedBackend.Backend
+	var otelClusterName string
+	if backend.Type == api.OtelTelemetryBackendType {
+		otelClusterName = string(backendsAcc.ClusterForEndpoint(*resolvedBackend.OtelEndpoint))
+	}
 	return bldrs_accesslog.NewBuilder().
-		Configure(IfNotNil(backend.Tcp, func(tcpBackend api.TCPBackend) Configurer[envoy_accesslog.AccessLog] {
-			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
-				Configure(TCPBackendSFS(&tcpBackend, defaultFormat, values)).
-				Configure(bldrs_accesslog.Path(accessLogSocketPath)))
-		})).
-		Configure(IfNotNil(backend.File, func(fileBackend api.FileBackend) Configurer[envoy_accesslog.AccessLog] {
-			return bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
-				Configure(FileBackendSFS(&fileBackend, defaultFormat, values)).
-				Configure(bldrs_accesslog.Path(fileBackend.Path)))
-		})).
-		Configure(IfNotNil(resolvedBackend.OtelEndpoint, func(endpoint LoggingEndpoint) Configurer[envoy_accesslog.AccessLog] {
-			return bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
-				Configure(OtelBody(backend.OpenTelemetry, defaultFormat, values)).
-				Configure(OtelAttributes(backend.OpenTelemetry, values)).
-				Configure(OtelResourceAttributes(values)).
-				Configure(bldrs_accesslog.CommonConfig(
-					"MeshAccessLog",
-					string(backendsAcc.ClusterForEndpoint(endpoint)),
-				)))
-		}))
+		Configure(If(backend.Type == api.TCPBackendType, bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
+			Configure(TCPBackendSFS(backend.Tcp, defaultFormat, values)).
+			Configure(bldrs_accesslog.Path(accessLogSocketPath))))).
+		Configure(If(backend.Type == api.FileBackendType, bldrs_accesslog.Config(envoy_wellknown.FileAccessLog, bldrs_accesslog.NewFileBuilder().
+			Configure(FileBackendSFS(backend.File, defaultFormat, values)).
+			Configure(bldrs_accesslog.Path(pointer.Deref(backend.File).Path))))).
+		Configure(If(backend.Type == api.OtelTelemetryBackendType, bldrs_accesslog.Config("envoy.access_loggers.open_telemetry", bldrs_accesslog.NewOtelBuilder().
+			Configure(OtelBody(backend.OpenTelemetry, defaultFormat, values)).
+			Configure(OtelAttributes(backend.OpenTelemetry, values)).
+			Configure(OtelResourceAttributes(values)).
+			Configure(bldrs_accesslog.CommonConfig("MeshAccessLog", otelClusterName)))))
 }
 
 // OtelPipeResolver holds the context needed to resolve OTel backendRef
