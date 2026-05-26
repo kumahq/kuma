@@ -2,24 +2,40 @@
   "diff": [
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:3000/circuitBreakers",
-      "value": {
-        "thresholds": [
-          {
-            "maxConnectionPools": 5,
-            "maxConnections": 10,
-            "maxPendingRequests": 2,
-            "maxRequests": 32,
-            "maxRetries": 1,
-            "trackRemaining": true
-          }
-        ]
-      }
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:3000/circuitBreakers/thresholds/0/maxConnectionPools",
+      "value": 5
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:3000/circuitBreakers/thresholds/0/maxConnections",
+      "value": 10
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:3000/circuitBreakers/thresholds/0/maxPendingRequests",
+      "value": 2
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:3000/circuitBreakers/thresholds/0/maxRequests",
+      "value": 32
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:3000/circuitBreakers/thresholds/0/maxRetries",
+      "value": 1
     }
   ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -79,6 +95,13 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
