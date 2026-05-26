@@ -459,7 +459,7 @@ func configureListenerFromRules(
 	}
 	if err := (NewModifier(listener).
 		Configure(bldrs_listener.AccessLogs(BuildAccessLogBuildersFromRules(
-			rules, string(defaultFormat), backendsAcc, values, accessLogSocketPath,
+			rules, defaultFormat, backendsAcc, values, accessLogSocketPath,
 		))).
 		Modify()); err != nil {
 		return err

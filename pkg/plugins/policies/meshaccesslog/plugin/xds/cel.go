@@ -33,10 +33,17 @@ func MatchToCEL(m *common_api.Match) string {
 // the rule applies only when its own match holds AND none of the more-specific
 // prior rules' matches hold. Returns "" if no filter is needed (no self match
 // and no priors — i.e. the only rule with no constraints).
+//
+// Priors provably disjoint from self are dropped: if a prior cannot match when
+// self matches, its negation is tautologically true and would only bloat the
+// expression (and the CEL parser's recursion depth).
 func ComposeExpr(self *common_api.Match, priors []*common_api.Match) string {
 	selfExpr := MatchToCEL(self)
 	var negatedPriors []string
 	for _, p := range priors {
+		if disjoint(self, p) {
+			continue
+		}
 		priorExpr := MatchToCEL(p)
 		if priorExpr == "" {
 			// A prior rule that matches everything would shadow this rule entirely;
@@ -56,6 +63,40 @@ func ComposeExpr(self *common_api.Match, priors []*common_api.Match) string {
 	default:
 		return selfExpr + " && " + strings.Join(negatedPriors, " && ")
 	}
+}
+
+// disjoint reports whether two matches can never be simultaneously true. Sound
+// but not complete: returns false when uncertain. A nil or empty sub-matcher
+// on either side cannot prove disjointness on that dimension.
+func disjoint(a, b *common_api.Match) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	return spiffeDisjoint(a.SpiffeID, b.SpiffeID) || sniDisjoint(a.SNI, b.SNI)
+}
+
+func spiffeDisjoint(a, b *common_api.SpiffeIDMatch) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	switch {
+	case a.Type == common_api.ExactMatchType && b.Type == common_api.ExactMatchType:
+		return a.Value != b.Value
+	case a.Type == common_api.ExactMatchType && b.Type == common_api.PrefixMatchType:
+		return !strings.HasPrefix(a.Value, b.Value)
+	case a.Type == common_api.PrefixMatchType && b.Type == common_api.ExactMatchType:
+		return !strings.HasPrefix(b.Value, a.Value)
+	case a.Type == common_api.PrefixMatchType && b.Type == common_api.PrefixMatchType:
+		return !strings.HasPrefix(a.Value, b.Value) && !strings.HasPrefix(b.Value, a.Value)
+	}
+	return false
+}
+
+func sniDisjoint(a, b *common_api.SNIMatch) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Value != b.Value
 }
 
 // celString returns a double-quoted CEL string literal with backslashes and

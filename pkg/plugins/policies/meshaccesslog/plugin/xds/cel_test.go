@@ -65,9 +65,20 @@ var _ = Describe("ComposeWinnerExpr", func() {
 			SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: v},
 		}
 	}
+	prefixSpiffe := func(v string) *common_api.Match {
+		return &common_api.Match{
+			SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: v},
+		}
+	}
 	sni := func(v string) *common_api.Match {
 		return &common_api.Match{
 			SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: v},
+		}
+	}
+	exactSpiffeAndSNI := func(spiffeV, sniV string) *common_api.Match {
+		return &common_api.Match{
+			SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: spiffeV},
+			SNI:      &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: sniV},
 		}
 	}
 
@@ -82,16 +93,44 @@ var _ = Describe("ComposeWinnerExpr", func() {
 		Entry("catch-all with one prior",
 			(*common_api.Match)(nil), []*common_api.Match{exactSpiffe("spiffe://m/sa1")},
 			`!(connection.uri_san_peer_certificate == "spiffe://m/sa1")`),
-		Entry("self with one prior",
+		Entry("self with one prior on a different dimension is kept",
 			sni("sni-2"), []*common_api.Match{exactSpiffe("spiffe://m/sa1")},
 			`connection.requested_server_name == "sni-2" && !(connection.uri_san_peer_certificate == "spiffe://m/sa1")`),
-		Entry("self with two priors",
+		Entry("priors disjoint on same dimension are dropped; others kept",
 			sni("sni-3"),
 			[]*common_api.Match{exactSpiffe("spiffe://m/sa1"), sni("sni-2")},
-			`connection.requested_server_name == "sni-3" && !(connection.uri_san_peer_certificate == "spiffe://m/sa1") && !(connection.requested_server_name == "sni-2")`),
+			`connection.requested_server_name == "sni-3" && !(connection.uri_san_peer_certificate == "spiffe://m/sa1")`),
 		Entry("nil prior is skipped defensively",
 			sni("sni-x"),
 			[]*common_api.Match{nil},
 			`connection.requested_server_name == "sni-x"`),
+
+		// Disjointness simplification:
+		Entry("exact-vs-exact spiffe disjoint prior is dropped",
+			exactSpiffe("spiffe://m/sa1"), []*common_api.Match{exactSpiffe("spiffe://m/sa2")},
+			`connection.uri_san_peer_certificate == "spiffe://m/sa1"`),
+		Entry("exact-vs-exact spiffe equal prior is kept",
+			exactSpiffe("spiffe://m/sa1"), []*common_api.Match{exactSpiffe("spiffe://m/sa1")},
+			`connection.uri_san_peer_certificate == "spiffe://m/sa1" && !(connection.uri_san_peer_certificate == "spiffe://m/sa1")`),
+		Entry("exact self vs non-matching prefix prior is dropped",
+			exactSpiffe("spiffe://m/sa1"), []*common_api.Match{prefixSpiffe("spiffe://other/")},
+			`connection.uri_san_peer_certificate == "spiffe://m/sa1"`),
+		Entry("exact self vs covering prefix prior is kept",
+			exactSpiffe("spiffe://m/sa1"), []*common_api.Match{prefixSpiffe("spiffe://m/")},
+			`connection.uri_san_peer_certificate == "spiffe://m/sa1" && !(connection.uri_san_peer_certificate.startsWith("spiffe://m/"))`),
+		Entry("prefix self vs unrelated prefix prior is dropped",
+			prefixSpiffe("spiffe://a/"), []*common_api.Match{prefixSpiffe("spiffe://b/")},
+			`connection.uri_san_peer_certificate.startsWith("spiffe://a/")`),
+		Entry("prefix self vs comparable prefix prior is kept",
+			prefixSpiffe("spiffe://m/ns/"), []*common_api.Match{prefixSpiffe("spiffe://m/")},
+			`connection.uri_san_peer_certificate.startsWith("spiffe://m/ns/") && !(connection.uri_san_peer_certificate.startsWith("spiffe://m/"))`),
+		Entry("disjoint SNI proves overall disjointness regardless of matching spiffe",
+			exactSpiffeAndSNI("spiffe://m/sa1", "sni-1"),
+			[]*common_api.Match{exactSpiffeAndSNI("spiffe://m/sa1", "sni-2")},
+			`connection.uri_san_peer_certificate == "spiffe://m/sa1" && connection.requested_server_name == "sni-1"`),
+		Entry("priors filtered out of a chain leave a clean expression",
+			exactSpiffe("spiffe://m/sa3"),
+			[]*common_api.Match{exactSpiffe("spiffe://m/sa1"), exactSpiffe("spiffe://m/sa2"), prefixSpiffe("spiffe://m/")},
+			`connection.uri_san_peer_certificate == "spiffe://m/sa3" && !(connection.uri_san_peer_certificate.startsWith("spiffe://m/"))`),
 	)
 })
