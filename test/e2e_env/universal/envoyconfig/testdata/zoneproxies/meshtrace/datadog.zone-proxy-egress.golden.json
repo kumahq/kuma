@@ -216,6 +216,7 @@
             "portValue": 0
           }
         },
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [
@@ -378,6 +379,7 @@
             "portValue": 11002
           }
         },
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -392,6 +394,24 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
                   "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.rbac",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC",
+                        "matcher": {
+                          "onNoMatch": {
+                            "action": {
+                              "name": "envoy.filters.rbac.action",
+                              "typedConfig": {
+                                "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                "action": "DENY",
+                                "name": "default"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
                     {
                       "name": "envoy.filters.http.router",
                       "typedConfig": {

@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
@@ -25,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
@@ -481,18 +483,164 @@ var _ = Describe("MeshService generator", func() {
 			).To(Succeed())
 		})
 
-		It("should not generate MeshService for Dataplane with empty inbound tags", func() {
-			err := builders.Dataplane().WithAddress("192.168.0.1").WithoutInbounds().
-				AddInbound(
-					builders.Inbound().WithPort(80).WithServicePort(8080),
-				).Create(resManager)
-			Expect(err).ToNot(HaveOccurred())
+		createDataplane := func(name, workload string, labels map[string]string, inbounds ...*builders.InboundBuilder) {
+			dp := builders.Dataplane().WithAddress("192.168.0.1").WithoutInbounds()
+			for _, inbound := range inbounds {
+				dp.AddInbound(inbound)
+			}
+			allLabels := map[string]string{}
+			maps.Copy(allLabels, labels)
+			if workload != "" {
+				allLabels[metadata.KumaWorkload] = workload
+			}
+			Expect(resManager.Create(
+				context.Background(),
+				dp.Build(),
+				store.CreateByKey(name, model.DefaultMesh),
+				store.CreateWithLabels(allLabels),
+			)).To(Succeed())
+		}
+
+		It("should not generate MeshService for Dataplane without kuma.io/workload label", func() {
+			createDataplane("dp-1", "", nil,
+				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
+			)
 
 			Consistently(func(g Gomega) {
 				mss := &meshservice_api.MeshServiceResourceList{}
 				g.Expect(resManager.List(context.Background(), mss)).To(Succeed())
 				g.Expect(mss.GetItems()).To(BeEmpty())
 			}, "1s", "100ms").Should(Succeed())
+		})
+
+		It("should not generate MeshService for invalid kuma.io/workload label", func() {
+			createDataplane("dp-1", "Invalid_Workload", nil,
+				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
+			)
+
+			Consistently(func(g Gomega) {
+				mss := &meshservice_api.MeshServiceResourceList{}
+				g.Expect(resManager.List(context.Background(), mss)).To(Succeed())
+				g.Expect(mss.GetItems()).To(BeEmpty())
+			}, "1s", "100ms").Should(Succeed())
+		})
+
+		It("should generate one MeshService per workload with a port per inbound", func() {
+			createDataplane("dp-1", "backend", nil,
+				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
+				builders.Inbound().WithPort(90).WithServicePort(9090).WithName("grpc"),
+			)
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.Spec.Selector).To(Equal(meshservice_api.Selector{
+					DataplaneLabels: &common_api.LabelSelector{
+						MatchLabels: &map[string]string{metadata.KumaWorkload: "backend"},
+					},
+				}))
+				g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
+					{
+						Name:        pointer.To("http"),
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt32(80)),
+						AppProtocol: core_meta.ProtocolTCP,
+					},
+					{
+						Name:        pointer.To("grpc"),
+						Port:        90,
+						TargetPort:  pointer.To(intstr.FromInt32(90)),
+						AppProtocol: core_meta.ProtocolTCP,
+					},
+				}))
+			}, "2s", "100ms").Should(Succeed())
+		})
+
+		It("should generate a single MeshService for many Dataplanes of one workload", func() {
+			createDataplane("dp-1", "backend", nil,
+				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
+			)
+			createDataplane("dp-2", "backend", nil,
+				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
+			)
+
+			Eventually(func(g Gomega) {
+				mss := &meshservice_api.MeshServiceResourceList{}
+				g.Expect(resManager.List(context.Background(), mss)).To(Succeed())
+				g.Expect(mss.GetItems()).To(HaveLen(1))
+				g.Expect(mss.GetItems()[0].GetMeta().GetName()).To(Equal("backend"))
+			}, "2s", "100ms").Should(Succeed())
+		})
+	})
+
+	Context("with InboundTagsDisabled and LabelPropagation enabled", func() {
+		BeforeEach(func() {
+			close(stopCh)
+
+			m, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			metrics = m
+			s := memory.NewStore()
+			resManager = manager.NewResourceManager(s)
+			meshContextBuilder = xds_context.NewMeshContextBuilder(
+				resManager,
+				server.MeshResourceTypes(),
+				net.LookupIP,
+				"zone",
+				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
+				".mesh",
+				80,
+				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				nil,
+			)
+			meshCache, err := cache_mesh.NewCache(
+				100*time.Millisecond,
+				meshContextBuilder,
+				metrics,
+			)
+			Expect(err).ToNot(HaveOccurred())
+			allocator, err := generate.New(
+				logr.Discard(),
+				50*time.Millisecond,
+				gracePeriodInterval,
+				metrics,
+				resManager,
+				meshCache,
+				"zone",
+				true,
+				kuma_cp.MeshServiceLabelPropagation{Enabled: true},
+			)
+			Expect(err).ToNot(HaveOccurred())
+			stopCh = make(chan struct{})
+			innerCh := stopCh
+			go func() {
+				defer GinkgoRecover()
+				Expect(allocator.Start(innerCh)).To(Succeed())
+			}()
+			Expect(
+				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+			).To(Succeed())
+		})
+
+		It("propagates non-kuma Dataplane labels to the generated MeshService", func() {
+			dp := builders.Dataplane().WithAddress("192.168.0.1").WithoutInbounds().
+				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http")).
+				Build()
+			Expect(resManager.Create(
+				context.Background(),
+				dp,
+				store.CreateByKey("dp-1", model.DefaultMesh),
+				store.CreateWithLabels(map[string]string{
+					metadata.KumaWorkload: "backend",
+					"team":                "payments",
+				}),
+			)).To(Succeed())
+
+			ms := meshservice_api.NewMeshServiceResource()
+			Eventually(func(g Gomega) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("team", "payments"))
+			}, "2s", "100ms").Should(Succeed())
 		})
 	})
 

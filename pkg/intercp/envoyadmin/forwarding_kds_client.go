@@ -114,15 +114,17 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 	return forward(f, ctx, proxy, service.ConfigDumpRPC, fallback, doRequest, handleResponse)
 }
 
-func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
+func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	fallback := func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-		return f.fallbackClient.Stats(ctx, proxy, format)
+		return f.fallbackClient.Stats(ctx, proxy, format, usedOnly)
 	}
 	doRequest := func(ctx context.Context, client mesh_proto.InterCPEnvoyAdminForwardServiceClient) (*mesh_proto.StatsResponse, error) {
 		req := &mesh_proto.StatsRequest{
 			ResourceType: string(proxy.Descriptor().Name),
 			ResourceName: proxy.GetMeta().GetName(),
 			ResourceMesh: proxy.GetMeta().GetMesh(),
+			Format:       format,
+			UsedOnly:     usedOnly,
 		}
 		return client.Stats(ctx, req)
 	}

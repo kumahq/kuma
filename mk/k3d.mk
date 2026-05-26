@@ -16,7 +16,7 @@ K3S_IMAGE   ?= rancher/k3s:$(K3S_VERSION)
 # --- MetalLB ---
 
 # renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
-METALLB_VERSION ?= v0.15.3
+METALLB_VERSION ?= v0.16.0
 METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 METALLB_NAMESPACE ?= metallb-system
 
@@ -303,6 +303,7 @@ k3d/cluster/start:
 	$(Q)$(MAKE) k3d/docker/network/create
 	$(Q)$(MAKE) k3d/docker/credentials/setup
 	$(Q)$(MAKE) k3d/cluster/create
+	$(Q)$(MAKE) k3d/cluster/wait/api
 	$(Q)$(MAKE) k3d/cluster/cni/setup
 	$(Q)$(MAKE) k3d/cluster/ebpf/setup
 	$(Q)$(MAKE) k3d/cluster/wait
@@ -337,6 +338,23 @@ k3d/cluster/metallb/setup: $(METALLB_RESOURCES)
 	  --filename $(METALLB_RESOURCES)
 
 # --- Cluster wait ---
+
+.PHONY: k3d/cluster/wait/api
+k3d/cluster/wait/api: MAX_RETRIES ?= 30
+k3d/cluster/wait/api:
+	$(Q)tries=0; \
+	until $(KUBECTL) get --raw=/readyz \
+	  --context $(KUBECONTEXT) \
+	  --request-timeout 5s >/dev/null 2>&1; do \
+	  tries=$$((tries + 1)); \
+	  if [ $$tries -ge $(MAX_RETRIES) ]; then \
+	    echo "Timed out waiting for Kubernetes API readiness in $(CLUSTER_NAME)"; \
+	    docker logs k3d-$(CLUSTER_NAME)-server-0 2>&1 || true; \
+	    exit 1; \
+	  fi; \
+	  echo "Waiting for Kubernetes API in $(CLUSTER_NAME) ($$tries/$(MAX_RETRIES))..."; \
+	  sleep 1; \
+	done
 
 .PHONY: k3d/cluster/wait
 k3d/cluster/wait: NAMESPACE   ?= kube-system

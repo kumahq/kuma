@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
 	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/config/multizone"
 	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
 	"github.com/kumahq/kuma/v2/pkg/core/datasource"
 	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
@@ -61,6 +62,7 @@ var _ = Describe("Mesh Manager", func() {
 				Defaults: &kuma_cp.Defaults{
 					CreateMeshRoutingResources: false,
 				},
+				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 		unsafeDeleteResManager = mesh.NewMeshManager(
 			resStore, manager, caManagers, test_resources.Global(),
@@ -72,6 +74,7 @@ var _ = Describe("Mesh Manager", func() {
 				Defaults: &kuma_cp.Defaults{
 					CreateMeshRoutingResources: false,
 				},
+				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 	})
 

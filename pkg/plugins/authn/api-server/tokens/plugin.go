@@ -103,7 +103,7 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 	return nil
 }
 
-func EnsureUserTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
+func EnsureUserTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config, extensions context.Context) error {
 	return core_tokens.EnsureDefaultSigningKeyExist(system.UserTokenSigningKeyPrefix, ctx, resManager, logger)
 }
 

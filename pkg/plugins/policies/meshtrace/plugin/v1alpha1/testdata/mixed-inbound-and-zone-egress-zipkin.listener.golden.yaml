@@ -6,6 +6,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 17777
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -50,6 +51,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 10002
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         serverNames:

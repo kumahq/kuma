@@ -2,6 +2,7 @@ address:
   socketAddress:
     address: 127.0.0.1
     portValue: 80
+enableReusePort: true
 filterChains:
 - filters:
   - name: envoy.filters.network.http_connection_manager

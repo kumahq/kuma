@@ -28,7 +28,7 @@ metadata:
 	var k8sCluster *K8sCluster
 	nodeName := fmt.Sprintf(
 		"second-%s",
-		strings.ToLower(random.UniqueId()),
+		strings.ToLower(random.UniqueID()),
 	)
 
 	setup := func() {
@@ -39,7 +39,7 @@ metadata:
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		err := NewClusterSetup().

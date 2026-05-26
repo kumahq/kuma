@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -48,7 +49,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	if err != nil {
 		return err
 	}
-	err = k8s.KubectlApplyFromStringE(cluster.GetTesting(),
+	err = k8s.KubectlApplyFromStringContextE(cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(),
 		yaml)
 	if err != nil {

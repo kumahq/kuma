@@ -1,6 +1,7 @@
 package skipinboundtags
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -85,8 +86,8 @@ spec:
 
 	It("should generate dataplane with empty inbound tags", func() {
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				KubeCluster.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				KubeCluster.GetTesting(), context.Background(),
 				KubeCluster.GetKubectlOptions(Config.KumaNamespace),
 				"get", "dataplanes", "-n", Config.KumaNamespace,
 				"-l", fmt.Sprintf("k8s.kuma.io/namespace=%s", namespace),
@@ -99,8 +100,8 @@ spec:
 
 	It("should generate MeshService with dataplaneLabels selector", func() {
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				KubeCluster.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				KubeCluster.GetTesting(), context.Background(),
 				KubeCluster.GetKubectlOptions(namespace),
 				"get", "meshservices", "-n", namespace,
 				"-l", fmt.Sprintf("kuma.io/mesh=%s", meshName),
@@ -111,8 +112,8 @@ spec:
 		}, "60s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				KubeCluster.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				KubeCluster.GetTesting(), context.Background(),
 				KubeCluster.GetKubectlOptions(namespace),
 				"get", "meshservices", "-n", namespace,
 				"-l", fmt.Sprintf("kuma.io/mesh=%s", meshName),
