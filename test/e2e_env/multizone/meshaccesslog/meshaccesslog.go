@@ -221,10 +221,6 @@ spec:
 			return strings.TrimSpace(stdout), err
 		}
 
-		for {
-			time.Sleep(1 * time.Hour)
-		}
-
 		By("traffic to test-server-1 produces a log entry with the matching SNI")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(multizone.UniZone2, demoClient, urlFor(testServer1))
