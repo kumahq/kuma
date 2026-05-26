@@ -2,9 +2,8 @@ package validate
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
-	"math/big"
+	"math/rand/v2"
 	"net"
 	"net/netip"
 	"time"
@@ -18,6 +17,19 @@ const (
 	ServerPort      uint16 = 15006
 	retries                = 10
 	retriesInterval        = time.Second
+	// ClientConnectIPv4 is the loopback alias the KUMA_MESH_OUTBOUND chain
+	// redirects UID 5678 traffic on lo to (when destination is not 127.0.0.1),
+	// landing on KUMA_MESH_INBOUND_REDIRECT and finally on Envoy's inbound
+	// listener.
+	ClientConnectIPv4 = "127.0.0.6"
+	ClientConnectIPv6 = "::6"
+	// SelfTestPortMin/Max is the destination-port range used by both the
+	// init-time validator and the runtime readiness self-test. The exact
+	// port is irrelevant because the kernel's REDIRECT --to-ports
+	// <inbound-port> rule rewrites it; the range only has to avoid colliding
+	// with anything bound on the loopback interface inside the netns.
+	SelfTestPortMin = 20000
+	SelfTestPortMax = 30000
 )
 
 type Validator struct {
@@ -43,17 +55,53 @@ func NewValidator(useIpv6 bool, port uint16, logger logr.Logger) *Validator {
 		// connect to 127.0.0.6 should be redirected to 127.0.0.1
 		// connect to ::6       should be redirected to ::1
 		ServerListenIP:      netip.MustParseAddr("127.0.0.1"),
-		ClientConnectIP:     netip.MustParseAddr("127.0.0.6"),
+		ClientConnectIP:     netip.MustParseAddr(ClientConnectIPv4),
 		ServerListenPort:    port,
 		ClientRetryInterval: retriesInterval,
 	}
 
 	if useIpv6 {
 		v.ServerListenIP = netip.MustParseAddr("::1")
-		v.ClientConnectIP = netip.MustParseAddr("::6")
+		v.ClientConnectIP = netip.MustParseAddr(ClientConnectIPv6)
 	}
 
 	return &v
+}
+
+// SelfTest performs a single TCP dial through the transparent-proxy outbound
+// redirect path and returns true when the dial completes the handshake. It is
+// the runtime equivalent of the init-time client/server validation but skips
+// the local server: a successful handshake means the KUMA_MESH_OUTBOUND ->
+// KUMA_MESH_INBOUND_REDIRECT chain rewrote the destination to Envoy's
+// inbound listener (or whatever listens on the per-netns inbound port).
+//
+// Caller must be UID 5678 (the kuma-dp user) for the iptables owner-match to
+// apply. timeout bounds the dial; on a healthy loopback redirect the dial
+// completes well under 1ms, so a small timeout in the tens of milliseconds is
+// safe. useIPv6 picks the v6 redirect target.
+func SelfTest(useIPv6 bool, timeout time.Duration) error {
+	clientIP := ClientConnectIPv4
+	localIP := "127.0.0.1:0"
+	if useIPv6 {
+		clientIP = ClientConnectIPv6
+		localIP = "[::1]:0"
+	}
+
+	laddr, err := net.ResolveTCPAddr("tcp", localIP)
+	if err != nil {
+		return errors.Wrap(err, "resolve local addr")
+	}
+
+	port := SelfTestPortMin + rand.IntN(SelfTestPortMax-SelfTestPortMin)
+	dst := net.JoinHostPort(clientIP, fmt.Sprintf("%d", port))
+
+	dialer := net.Dialer{LocalAddr: laddr, Timeout: timeout}
+	conn, err := dialer.Dial("tcp", dst)
+	if err != nil {
+		return err
+	}
+	_ = conn.Close()
+	return nil
 }
 
 func (v *Validator) RunServer(
@@ -192,10 +240,10 @@ func runLocalClient(serverIP netip.Addr, serverPort uint16) error {
 	// a pre-configured port for testing purposes
 	switch serverPort {
 	case 0:
-		randPort, _ := rand.Int(rand.Reader, big.NewInt(10000))
+		port := SelfTestPortMin + rand.IntN(SelfTestPortMax-SelfTestPortMin)
 		serverAddress = net.JoinHostPort(
 			serverIP.String(),
-			fmt.Sprintf("%d", 20000+randPort.Int64()),
+			fmt.Sprintf("%d", port),
 		)
 	default:
 		serverAddress = net.JoinHostPort(

@@ -444,6 +444,17 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.Dataplane.ReadinessPort,
 				adminSocketPath,
 				dnsConfigReady)
+			// On Kubernetes with transparent proxy, also detect when the
+			// pod's netns iptables redirect to Envoy has been wiped out
+			// from under us by something on the host (see FTI-7529 /
+			// K8S-5010 z977j). The probe lives in
+			// pkg/transparentproxy/validate.SelfTest and works without any
+			// extra capability because the KUMA_MESH_OUTBOUND rule
+			// matches kuma-dp's own UID (5678) on lo.
+			if _, inKubernetes := os.LookupEnv("POD_NAME"); inKubernetes {
+				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
+				readinessReporter.EnableTproxyCheck(ipv6)
+			}
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

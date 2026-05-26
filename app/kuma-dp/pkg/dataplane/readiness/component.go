@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	tproxy_validate "github.com/kumahq/kuma/v2/pkg/transparentproxy/validate"
 )
 
 const (
@@ -24,7 +25,10 @@ const (
 	stateReady           = "READY"
 	stateNotReady        = "NOT_READY"
 	stateTerminating     = "TERMINATING"
+	stateRedirectFailed  = "INBOUND_REDIRECT_FAILED"
 	dnsConfigGateTimeout = 15 * time.Second
+	tproxyCheckInterval  = 10 * time.Second
+	tproxyDialTimeout    = 100 * time.Millisecond
 )
 
 // Reporter reports the health status of this Kuma Dataplane Proxy.
@@ -44,6 +48,23 @@ type Reporter struct {
 	dnsConfigReady    <-chan struct{}
 	dnsConfigDeadline time.Time
 	dnsBypassed       atomic.Bool
+	// tproxyCheckEnabled gates the periodic inbound-redirect self-test.
+	// When enabled, the readiness handler dials the redirect path that
+	// `pkg/transparentproxy/validate.SelfTest` exercises (127.0.0.6 on
+	// IPv4, ::6 on IPv6 — both rewritten by KUMA_MESH_OUTBOUND for
+	// UID 5678 traffic on lo). A connect failure indicates the netns
+	// iptables redirect chain is gone (FTI-7529 / K8S-5010 z977j: long-
+	// running pods whose iptables have been wiped by an external
+	// host-side process keep accepting Service traffic but silently
+	// drop mesh requests with WRONG_VERSION_NUMBER on the peer side).
+	tproxyCheckEnabled bool
+	tproxyUseIPv6      bool
+	tproxyHealthy      atomic.Bool
+	tproxyLastChecked  atomic.Int64
+	// tproxyProbe is the actual TCP self-test. Defaults to
+	// `tproxy_validate.SelfTest`; tests override it to simulate
+	// intact-vs-broken iptables without needing a real netns.
+	tproxyProbe func(useIPv6 bool, timeout time.Duration) error
 }
 
 var logger = core.Log.WithName("readiness")
@@ -68,7 +89,20 @@ func newReporterWithDeadline(localIPAddr string, localListenPort uint32, adminSo
 		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
 		r.adminClient = &c
 	}
+	r.tproxyHealthy.Store(true)
 	return r
+}
+
+// EnableTproxyCheck turns on the periodic inbound-redirect self-test.
+// useIPv6 selects the v6 redirect target (::6 -> KUMA_MESH_INBOUND_REDIRECT)
+// instead of the v4 one (127.0.0.6); the choice should follow the family
+// the dataplane is using.
+func (r *Reporter) EnableTproxyCheck(useIPv6 bool) {
+	r.tproxyCheckEnabled = true
+	r.tproxyUseIPv6 = useIPv6
+	if r.tproxyProbe == nil {
+		r.tproxyProbe = tproxy_validate.SelfTest
+	}
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
@@ -158,6 +192,11 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 		}
 	}
 
+	if r.tproxyCheckEnabled && !r.checkTproxyHealthy() {
+		r.writeState(writer, req, stateRedirectFailed, http.StatusServiceUnavailable)
+		return
+	}
+
 	// When admin is on UDS, proxy /ready to Envoy admin so that
 	// the pod is only marked ready after Envoy receives its config.
 	if r.adminSocketPath != "" {
@@ -166,6 +205,34 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	}
 
 	r.writeState(writer, req, stateReady, http.StatusOK)
+}
+
+// checkTproxyHealthy returns true when the transparent-proxy inbound
+// redirect chain is intact. Result is cached for tproxyCheckInterval to
+// keep readiness probes cheap (default kubelet period is 5s). The probe
+// itself is `pkg/transparentproxy/validate.SelfTest` so the canonical
+// dial target lives in one place; do not inline the dial here.
+func (r *Reporter) checkTproxyHealthy() bool {
+	now := time.Now().UnixNano()
+	last := r.tproxyLastChecked.Load()
+	if last != 0 && time.Duration(now-last) < tproxyCheckInterval {
+		return r.tproxyHealthy.Load()
+	}
+	if !r.tproxyLastChecked.CompareAndSwap(last, now) {
+		// another goroutine is refreshing; use the cached value
+		return r.tproxyHealthy.Load()
+	}
+
+	err := r.tproxyProbe(r.tproxyUseIPv6, tproxyDialTimeout)
+	healthy := err == nil
+	prev := r.tproxyHealthy.Swap(healthy)
+	if prev && !healthy {
+		logger.Info("[WARNING] transparent proxy self-test failed; netns iptables redirect to inbound listener is missing or broken; reporting NOT_READY",
+			"err", err)
+	} else if !prev && healthy {
+		logger.Info("transparent proxy self-test recovered")
+	}
+	return healthy
 }
 
 func (r *Reporter) writeState(writer http.ResponseWriter, req *http.Request, state string, status int) {
