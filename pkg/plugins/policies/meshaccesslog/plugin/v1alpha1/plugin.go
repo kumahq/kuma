@@ -236,6 +236,13 @@ func applyToZoneProxyListeners(
 		if err := configureListenerFromRules(inboundRules, listener, backends, DefaultFormat(core_meta.ProtocolTCP), kumaValues, accessLogSocketPath); err != nil {
 			return err
 		}
+		// Without flushing on connect, access logs for TCP connections are populated only when the connection closes.
+		// Extending this to sidecar listeners is tracked in https://github.com/kumahq/kuma/issues/16763.
+		if err := (NewModifier(listener).
+			Configure(bldrs_listener.FlushTCPProxyAccessLogOnConnected()).
+			Modify()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
