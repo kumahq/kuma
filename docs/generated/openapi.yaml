@@ -7108,10 +7108,11 @@ components:
                       Matches defines a list of conditions (by SpiffeID or SNI)
                       that select the
 
-                      traffic this rule applies to. When several rules match the
-                      same connection,
+                      traffic this rule applies to. Rules fire independently: a
+                      connection that
 
-                      the most specific one wins (first-match-wins).
+                      satisfies multiple rules is logged to every matching
+                      rule's backends.
                     items:
                       properties:
                         sni:
