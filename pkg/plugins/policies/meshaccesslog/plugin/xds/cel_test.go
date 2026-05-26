@@ -1,19 +1,12 @@
 package xds_test
 
 import (
-	"testing"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/plugin/xds"
-	"github.com/kumahq/kuma/v2/pkg/test"
 )
-
-func TestCEL(t *testing.T) {
-	test.RunSpecs(t, "MeshAccessLog CEL")
-}
 
 var _ = Describe("MatchToCEL", func() {
 	DescribeTable("converts a Match to a CEL expression",
