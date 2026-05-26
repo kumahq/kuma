@@ -8,6 +8,13 @@
   "kuma.io/mesh": "default"
  },
  "kri": "kri_mzsvc_default___redis_",
+ "snis": [
+  {
+   "port": 6379,
+   "sectionName": "6379",
+   "sni": "sni.mzsvc.default.redis.6379"
+  }
+ ],
  "spec": {
   "selector": {
    "meshService": {

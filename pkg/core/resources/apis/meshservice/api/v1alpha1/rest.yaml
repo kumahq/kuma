@@ -143,6 +143,28 @@ components:
           type: string
           readOnly: true
           example: 'kri_msvc_default_zone-east_kuma-demo_myresource1_'
+        snis:
+          description: 'List of SNIs (Server Name Indication) advertised by xDS for this destination, one entry per port, sorted by port ascending. Always set for MeshService, MeshMultiZoneService and MeshExternalService; absent for other resource types.'
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required: [port, sectionName, sni]
+            properties:
+              port:
+                type: integer
+                format: int32
+                description: 'The destination port this SNI corresponds to.'
+              sectionName:
+                type: string
+                description: 'The section name placed in the trailing segment of the SNI: the port name when set, otherwise the stringified port number.'
+              sni:
+                type: string
+                description: 'The SNI string advertised by xDS for this port.'
+          example:
+            - port: 8080
+              sectionName: 'http'
+              sni: 'sni.msvc.default.zone-east.kuma-demo.myresource1.http'
         name:
           description: 'Name of the Kuma resource'
           type: string

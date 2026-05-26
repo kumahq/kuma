@@ -8,6 +8,13 @@
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
    "kri": "kri_msvc_default___redis-1_",
+   "snis": [
+    {
+     "port": 6379,
+     "sectionName": "6379",
+     "sni": "sni.msvc.default.redis-1.6379"
+    }
+   ],
    "spec": {
     "state": "Unavailable",
     "selector": {
@@ -40,6 +47,13 @@
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
    "kri": "kri_msvc_default___redis-2_",
+   "snis": [
+    {
+     "port": 6379,
+     "sectionName": "6379",
+     "sni": "sni.msvc.default.redis-2.6379"
+    }
+   ],
    "spec": {
     "state": "Unavailable",
     "selector": {

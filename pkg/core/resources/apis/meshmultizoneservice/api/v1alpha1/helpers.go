@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/vip"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/sni"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
@@ -89,6 +90,17 @@ func (p Port) GetValue() int32 {
 
 func (p Port) GetProtocol() core_meta.Protocol {
 	return p.AppProtocol
+}
+
+func (s *MeshMultiZoneService) SNIs() []sni.Section {
+	if s == nil {
+		return nil
+	}
+	out := make([]sni.Section, 0, len(s.Ports))
+	for _, p := range s.Ports {
+		out = append(out, sni.Section{Port: p.Port, SectionName: p.GetName()})
+	}
+	return out
 }
 
 func (l *MeshMultiZoneServiceResourceList) GetDestinations() []core.Destination {
