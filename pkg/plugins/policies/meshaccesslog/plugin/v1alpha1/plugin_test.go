@@ -1002,6 +1002,7 @@ var _ = Describe("MeshAccessLog", func() {
 							},
 							Conf: api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{Path: "/tmp/specific.log"},
 								}},
 							},
@@ -1009,6 +1010,7 @@ var _ = Describe("MeshAccessLog", func() {
 						{
 							Conf: api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{Path: "/tmp/all.log"},
 								}},
 							},
@@ -1040,6 +1042,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{Path: "/tmp/aurora.log"},
 							}},
 						},
@@ -1070,6 +1073,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{Path: "/tmp/ingress.log"},
 							}},
 						},
