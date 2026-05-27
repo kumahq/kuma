@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -18,21 +19,13 @@ func MatchToCEL(m *common_api.Match) string {
 	if m.SpiffeID != nil {
 		switch m.SpiffeID.Type {
 		case common_api.ExactMatchType:
-			parts = append(parts, fmt.Sprintf(`connection.uri_san_peer_certificate == %s`, celString(m.SpiffeID.Value)))
+			parts = append(parts, fmt.Sprintf(`connection.uri_san_peer_certificate == %s`, strconv.Quote(m.SpiffeID.Value)))
 		case common_api.PrefixMatchType:
-			parts = append(parts, fmt.Sprintf(`connection.uri_san_peer_certificate.startsWith(%s)`, celString(m.SpiffeID.Value)))
+			parts = append(parts, fmt.Sprintf(`connection.uri_san_peer_certificate.startsWith(%s)`, strconv.Quote(m.SpiffeID.Value)))
 		}
 	}
 	if m.SNI != nil && m.SNI.Type == common_api.SNIExactMatchType {
-		parts = append(parts, fmt.Sprintf(`connection.requested_server_name == %s`, celString(m.SNI.Value)))
+		parts = append(parts, fmt.Sprintf(`connection.requested_server_name == %s`, strconv.Quote(m.SNI.Value)))
 	}
 	return strings.Join(parts, " && ")
-}
-
-// celString returns a double-quoted CEL string literal with backslashes and
-// double quotes escaped.
-func celString(v string) string {
-	escaped := strings.ReplaceAll(v, `\`, `\\`)
-	escaped = strings.ReplaceAll(escaped, `"`, `\"`)
-	return `"` + escaped + `"`
 }
