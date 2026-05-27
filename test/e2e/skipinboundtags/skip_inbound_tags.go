@@ -80,6 +80,7 @@ spec:
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(KubeCluster)
 		Expect(KubeCluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(KubeCluster.DeleteMesh(meshName)).To(Succeed())
 	})

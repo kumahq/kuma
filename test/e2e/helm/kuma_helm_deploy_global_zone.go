@@ -82,6 +82,8 @@ interCp:
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(c1)
+		ControlPlaneAssertions(c2)
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(c1.DeleteKuma()).To(Succeed())
 		Expect(c2.DeleteKuma()).To(Succeed())

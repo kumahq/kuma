@@ -154,6 +154,9 @@ conf:
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zone1)
+		ControlPlaneAssertions(zone4)
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())

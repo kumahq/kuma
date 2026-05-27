@@ -42,6 +42,9 @@ func UpgradingWithHelmChartMultizone() {
 	})
 
 	E2EAfterEach(func() {
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zoneK8s)
+		ControlPlaneAssertions(zoneUniversal)
 		grp := sync.WaitGroup{}
 		grp.Add(3)
 		go func() {

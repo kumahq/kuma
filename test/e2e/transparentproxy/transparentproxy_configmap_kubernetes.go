@@ -76,6 +76,7 @@ func TransparentProxyConfigMap() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.TriggerDeleteNamespace(namespaceExternal)).To(Succeed())
 		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())

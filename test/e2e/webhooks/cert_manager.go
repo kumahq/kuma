@@ -59,6 +59,7 @@ func CertManagerCAInjection() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteDeployment(certmanager.DeploymentName)).To(Succeed())

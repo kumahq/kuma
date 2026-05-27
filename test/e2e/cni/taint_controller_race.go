@@ -61,6 +61,7 @@ metadata:
 	})
 
 	E2EAfterEach(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
