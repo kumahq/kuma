@@ -12,7 +12,9 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_sni "github.com/kumahq/kuma/v2/pkg/core/resources/sni"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
@@ -24,7 +26,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	system_names "github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
@@ -106,7 +107,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	listenerName := naming.ContextualZoneIngressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(listenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
@@ -185,7 +186,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 	zoneEgressListenerName := naming.ContextualZoneEgressListenerName(listener.GetSectionName())
 
 	listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, zoneEgressListenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(zoneEgressListenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
@@ -203,7 +204,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		}
 		esPort := ports[0]
 		id := kri.WithSectionName(kri.From(dst), esPort.GetName())
-		sni := tls.SNIFromKRI(id)
+		sni := core_sni.FromKRI(id)
 		clusterName := id.String()
 		group := endpointMap[clusterName]
 

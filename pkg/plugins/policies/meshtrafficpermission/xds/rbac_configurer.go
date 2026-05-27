@@ -120,7 +120,7 @@ func rbacUpdater(
 func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
 	for _, rule := range c.InboundRules {
-		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
+		conf := rule.Conf.(policies_api.RuleConf)
 		denyMatchers, err := buildMatchers(pointer.Deref(conf.Deny), rbac_config.RBAC_DENY, rule.Origin)
 		if err != nil {
 			return nil, err
@@ -145,7 +145,7 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
 	for _, rule := range c.InboundRules {
-		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
+		conf := rule.Conf.(policies_api.RuleConf)
 		if conf.AllowWithShadowDeny == nil {
 			continue
 		}

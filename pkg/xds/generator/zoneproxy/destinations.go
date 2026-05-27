@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_sni "github.com/kumahq/kuma/v2/pkg/core/resources/sni"
 	"github.com/kumahq/kuma/v2/pkg/dns"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -84,7 +85,7 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination, sy
 func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh, systemNS string, useNewSNIFormat bool) func(kri.Identifier, core_resources.Port) string {
 	if useNewSNIFormat {
 		return func(id kri.Identifier, _ core_resources.Port) string {
-			return tls.SNIFromKRI(id)
+			return core_sni.FromKRI(id)
 		}
 	}
 	var rName string

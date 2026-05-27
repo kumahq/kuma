@@ -1,0 +1,17 @@
+resources:
+- name: mes-http
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 3s
+    name: mes-http
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 13s
+          maxConnectionDuration: 0s
+          maxStreamDuration: 0s
+- name: mes-tcp
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: mes-tcp

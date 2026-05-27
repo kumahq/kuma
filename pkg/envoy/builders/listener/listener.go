@@ -18,9 +18,6 @@ func AccessLogs(builders []*Builder[envoy_accesslog.AccessLog]) Configurer[envoy
 	return func(l *envoy_listener.Listener) error {
 		accessLogs := []*envoy_accesslog.AccessLog{}
 		for _, b := range builders {
-			if b == nil {
-				continue
-			}
 			al, err := b.Build()
 			if err != nil {
 				return err

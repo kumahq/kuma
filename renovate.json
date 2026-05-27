@@ -153,6 +153,19 @@
       "datasourceTemplate": "docker",
       "packageNameTemplate": "registry.k8s.io/kubectl",
       "depNameTemplate": "kubectl"
+    },
+    {
+      "customType": "regex",
+      "description": [
+        " Update the universal e2e Postgres image digest in the Go deployment helper.",
+        " The Dockerfile manager updates test/dockerfiles/postgres.dockerfile, while this",
+        " keeps the runtime image used by universal e2e deployments on the same pinned tag"
+      ],
+      "managerFilePatterns": ["/test/framework/deployments/postgres/deployment\\.go$/"],
+      "matchStrings": [
+        "PostgresImage\\s*=\\s*\"(?<depName>postgres):(?<currentValue>[^@\"]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?\""
+      ],
+      "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [

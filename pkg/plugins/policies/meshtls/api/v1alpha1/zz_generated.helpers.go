@@ -35,6 +35,10 @@ func (x *Rule) GetDefault() interface{} {
 	return x.Default
 }
 
+func (x *Rule) GetMatches() []common_api.Match {
+	return []common_api.Match{}
+}
+
 func (x *MeshTLS) GetRules() []inbound.RuleEntry {
 	var result []inbound.RuleEntry
 	for _, itm := range pointer.Deref(x.Rules) {

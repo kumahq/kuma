@@ -70,7 +70,7 @@ var _ = Describe("MeshTrace", func() {
 			{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)),
 					)).MustBuild(),
@@ -89,7 +89,7 @@ var _ = Describe("MeshTrace", func() {
 			{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)),
 					)).MustBuild(),
@@ -113,7 +113,7 @@ var _ = Describe("MeshTrace", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundUnifiedName).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager(inboundUnifiedName, false, nil, true)),
 					)).MustBuild(),
@@ -836,7 +836,7 @@ func zoneEgressListenerResource() core_xds.Resource {
 		Name:   name,
 		Origin: metadata.OriginEgress,
 		Resource: NewListenerBuilder(envoy_common.APIV3, name).
-			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP)).
+			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP, true)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 				Configure(MatchTransportProtocol("tls")).
 				Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
@@ -856,7 +856,7 @@ func zoneIngressListenerResource() core_xds.Resource {
 		Name:   name,
 		Origin: metadata.OriginIngress,
 		Resource: NewListenerBuilder(envoy_common.APIV3, name).
-			Configure(InboundListener("192.168.0.11", 10001, core_xds.SocketAddressProtocolTCP)).
+			Configure(InboundListener("192.168.0.11", 10001, core_xds.SocketAddressProtocolTCP, true)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(MatchTransportProtocol("tls")).
 				Configure(MatchServerNames("backend{mesh=default}")).
@@ -869,7 +869,7 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 	inbound := core_xds.Resource{
 		Name:   "inbound:192.168.0.1:17777",
 		Origin: metadata.OriginInbound,
-		Resource: NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+		Resource: NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(HttpConnectionManager("192.168.0.1:17777", false, nil, true)),
 			)).MustBuild(),
@@ -879,7 +879,7 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 		Name:   egressName,
 		Origin: metadata.OriginEgress,
 		Resource: NewListenerBuilder(envoy_common.APIV3, egressName).
-			Configure(InboundListener("192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
+			Configure(InboundListener("192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 				Configure(MatchTransportProtocol("tls")).
 				Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).

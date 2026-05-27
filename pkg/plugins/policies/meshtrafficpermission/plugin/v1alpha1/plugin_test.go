@@ -42,7 +42,7 @@ var _ = Describe("RBAC", func() {
 				Build()
 
 			// listener that matches
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -56,7 +56,7 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that is originated from inbound proxy generator but won't match
-			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
+			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -70,7 +70,7 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that matches but is not originated from inbound proxy generator
-			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
+			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -84,7 +84,7 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that matches but it does not have mTLS
-			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
+			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener4").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
@@ -144,7 +144,7 @@ var _ = Describe("RBAC", func() {
 				Build()
 
 			// listener that matches
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -158,7 +158,7 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that is originated from inbound proxy generator but won't match
-			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
+			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -172,7 +172,7 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that matches but is not originated from inbound proxy generator
-			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
+			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -185,7 +185,7 @@ var _ = Describe("RBAC", func() {
 				Resource: listener3,
 			})
 
-			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
+			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener4").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.HttpConnectionManager("test_listener4", false, nil, true)))).
@@ -212,30 +212,28 @@ var _ = Describe("RBAC", func() {
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Deny: &[]common_api.Match{
-													{
-														SpiffeID: &common_api.SpiffeIDMatch{
-															Type:  common_api.ExactMatchType,
-															Value: "spiffe://trust-domain.mesh/ns/backend/v1",
-														},
+										Conf: policies_api.RuleConf{
+											Deny: &[]common_api.Match{
+												{
+													SpiffeID: &common_api.SpiffeIDMatch{
+														Type:  common_api.ExactMatchType,
+														Value: "spiffe://trust-domain.mesh/ns/backend/v1",
 													},
 												},
-												AllowWithShadowDeny: &[]common_api.Match{
-													{
-														SpiffeID: &common_api.SpiffeIDMatch{
-															Type:  common_api.ExactMatchType,
-															Value: "spiffe://trust-domain.mesh/ns/backend/v2",
-														},
+											},
+											AllowWithShadowDeny: &[]common_api.Match{
+												{
+													SpiffeID: &common_api.SpiffeIDMatch{
+														Type:  common_api.ExactMatchType,
+														Value: "spiffe://trust-domain.mesh/ns/backend/v2",
 													},
 												},
-												Allow: &[]common_api.Match{
-													{
-														SpiffeID: &common_api.SpiffeIDMatch{
-															Type:  common_api.PrefixMatchType,
-															Value: "spiffe://trust-domain.mesh/ns/backend/",
-														},
+											},
+											Allow: &[]common_api.Match{
+												{
+													SpiffeID: &common_api.SpiffeIDMatch{
+														Type:  common_api.PrefixMatchType,
+														Value: "spiffe://trust-domain.mesh/ns/backend/",
 													},
 												},
 											},
@@ -276,7 +274,7 @@ var _ = Describe("RBAC", func() {
 				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
 				Build()
 
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -297,13 +295,12 @@ var _ = Describe("RBAC", func() {
 							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 								{Address: "192.168.0.1", Port: 8080}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Allow: &[]common_api.Match{
-													{SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: "sni.example"}},
-												},
+										Conf: policies_api.RuleConf{
+											Allow: &[]common_api.Match{
+												{SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: "sni.example"}},
 											},
 										},
+
 										Origin: common.Origin{
 											Resource: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "mtp-1"},
 										},
@@ -331,7 +328,7 @@ var _ = Describe("RBAC", func() {
 				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
 				Build()
 
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
@@ -352,13 +349,12 @@ var _ = Describe("RBAC", func() {
 							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 								{Address: "192.168.0.1", Port: 8080}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Allow: &[]common_api.Match{
-													{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh-1/svc"}},
-												},
+										Conf: policies_api.RuleConf{
+											Allow: &[]common_api.Match{
+												{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh-1/svc"}},
 											},
 										},
+
 										Origin: common.Origin{
 											Resource: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "mtp-1"},
 										},
@@ -382,7 +378,7 @@ var _ = Describe("RBAC", func() {
 	Context("for DPP with ZoneEgress listener", func() {
 		buildZEListener := func(address string, port uint32, name string) func() *core_xds.Resource {
 			return func() *core_xds.Resource {
-				listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, address, port, core_xds.SocketAddressProtocolTCP).
+				listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, address, port, core_xds.SocketAddressProtocolTCP, true).
 					WithOverwriteName(name).
 					Configure(
 						listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "mes-1").Configure(
@@ -452,14 +448,12 @@ var _ = Describe("RBAC", func() {
 							InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 								{Address: "192.168.0.1", Port: 10002}: {
 									{
-										Conf: &policies_api.Rule{
-											Default: policies_api.RuleConf{
-												Allow: &[]common_api.Match{
-													{
-														SNI: &common_api.SNIMatch{
-															Type:  common_api.SNIExactMatchType,
-															Value: "sni.mes-1.default.zone-1.aws.8443",
-														},
+										Conf: policies_api.RuleConf{
+											Allow: &[]common_api.Match{
+												{
+													SNI: &common_api.SNIMatch{
+														Type:  common_api.SNIExactMatchType,
+														Value: "sni.mes-1.default.zone-1.aws.8443",
 													},
 												},
 											},
@@ -496,7 +490,7 @@ var _ = Describe("RBAC", func() {
 			rs := core_xds.NewResourceSet()
 
 			// listener that matches
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(
 					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-1").Configure(
