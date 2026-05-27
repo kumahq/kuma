@@ -74,6 +74,48 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result).To(matchers.MatchGoldenJSON(path.Join("testdata", "full_global_insight.golden.json")))
 	})
+
+	It("should include mesh-scoped zone proxy dataplanes in zone stats", func() {
+		// given
+		globalInsightService := globalinsight.NewDefaultGlobalInsightService(rm)
+
+		err := createMeshScopedZoneProxyDataplane("zi-online", "default", []mesh_proto.Dataplane_Networking_Listener_Type{
+			mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+		}, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createDataplaneInsight("zi-online", "default", true, rs)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = createMeshScopedZoneProxyDataplane("zi-ze-offline", "payments", []mesh_proto.Dataplane_Networking_Listener_Type{
+			mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+			mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+		}, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createDataplaneInsight("zi-ze-offline", "payments", false, rs)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = createMeshScopedZoneProxyDataplane("ze-no-insight", "payments", []mesh_proto.Dataplane_Networking_Listener_Type{
+			mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+		}, rs)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = builders.Dataplane().
+			WithName("standard-dp").
+			WithMesh("default").
+			WithServices("backend").
+			Create(rs)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		globalInsight, err := globalInsightService.GetGlobalInsight(context.Background())
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(globalInsight.Zones.ZoneIngresses.Total).To(Equal(2))
+		Expect(globalInsight.Zones.ZoneIngresses.Online).To(Equal(1))
+		Expect(globalInsight.Zones.ZoneEgresses.Total).To(Equal(2))
+		Expect(globalInsight.Zones.ZoneEgresses.Online).To(Equal(0))
+	})
 })
 
 func createMeshInsight(name string, rs store.ResourceStore) error {
@@ -174,4 +216,69 @@ func createZoneEgressInsight(name string, mesh string, online bool, rs store.Res
 	}
 
 	return builder.Create(rs)
+}
+
+func createMeshScopedZoneProxyDataplane(
+	name string,
+	mesh string,
+	listenerTypes []mesh_proto.Dataplane_Networking_Listener_Type,
+	rs store.ResourceStore,
+) error {
+	listeners := make([]*mesh_proto.Dataplane_Networking_Listener, 0, len(listenerTypes))
+	for i, listenerType := range listenerTypes {
+		listeners = append(listeners, &mesh_proto.Dataplane_Networking_Listener{
+			Type:    listenerType,
+			Address: "127.0.0.1",
+			Port:    10001 + uint32(i),
+		})
+	}
+
+	dataplane := builders.Dataplane().
+		WithName(name).
+		WithMesh(mesh).
+		With(func(dp *core_mesh.DataplaneResource) {
+			dp.Spec.Networking.Listeners = listeners
+		}).
+		Build()
+
+	return rs.Create(
+		context.Background(),
+		dataplane,
+		store.CreateByKey(name, mesh),
+		store.CreateWithLabels(meshScopedZoneProxyLabels(listenerTypes)),
+	)
+}
+
+func createDataplaneInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
+	builder := builders.DataplaneInsight().WithName(name).WithMesh(mesh)
+
+	if online {
+		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
+			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+		})
+	} else {
+		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
+			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
+		})
+	}
+
+	return builder.Create(rs)
+}
+
+func meshScopedZoneProxyLabels(
+	listenerTypes []mesh_proto.Dataplane_Networking_Listener_Type,
+) map[string]string {
+	labels := map[string]string{}
+
+	for _, listenerType := range listenerTypes {
+		switch listenerType {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			labels[mesh_proto.ListenerZoneIngressLabel] = "enabled"
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			labels[mesh_proto.ListenerZoneEgressLabel] = "enabled"
+		}
+	}
+
+	return labels
 }

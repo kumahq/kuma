@@ -64,6 +64,10 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 		return nil, err
 	}
 
+	if err := gis.aggregateMeshScopedZoneProxies(ctx, globalInsights); err != nil {
+		return nil, err
+	}
+
 	return globalInsights, nil
 }
 
@@ -260,4 +264,67 @@ func (gis *defaultGlobalInsightService) aggregateZoneEgresses(
 	}
 
 	return nil
+}
+
+func (gis *defaultGlobalInsightService) aggregateMeshScopedZoneProxies(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsightBase,
+) error {
+	zoneProxyDataplanes := &mesh.DataplaneResourceList{}
+	if err := gis.resourceStore.List(
+		ctx,
+		zoneProxyDataplanes,
+		core_store.ListByFilterFunc(func(resource core_model.Resource) bool {
+			dataplane, ok := resource.(*mesh.DataplaneResource)
+			return ok && isMeshScopedZoneProxyDataplane(dataplane)
+		}),
+	); err != nil {
+		return err
+	}
+
+	if len(zoneProxyDataplanes.Items) == 0 {
+		return nil
+	}
+
+	resourceKeys := make([]core_model.ResourceKey, 0, len(zoneProxyDataplanes.Items))
+	for _, dataplane := range zoneProxyDataplanes.Items {
+		resourceKeys = append(resourceKeys, core_model.MetaToResourceKey(dataplane.GetMeta()))
+	}
+
+	dataplaneInsights := &mesh.DataplaneInsightResourceList{}
+	if err := gis.resourceStore.List(ctx, dataplaneInsights, core_store.ListByResourceKeys(resourceKeys)); err != nil {
+		return err
+	}
+
+	insightsByKey := map[core_model.ResourceKey]*mesh.DataplaneInsightResource{}
+	for _, dataplaneInsight := range dataplaneInsights.Items {
+		insightsByKey[core_model.MetaToResourceKey(dataplaneInsight.GetMeta())] = dataplaneInsight
+	}
+
+	for _, dataplane := range zoneProxyDataplanes.Items {
+		key := core_model.MetaToResourceKey(dataplane.GetMeta())
+		insight := insightsByKey[key]
+		labels := dataplane.GetMeta().GetLabels()
+
+		if labels[mesh_proto.ListenerZoneIngressLabel] == "enabled" {
+			globalInsight.Zones.ZoneIngresses.Total += 1
+			if insight != nil && insight.GetSpec().(*mesh_proto.DataplaneInsight).IsOnline() {
+				globalInsight.Zones.ZoneIngresses.Online += 1
+			}
+		}
+
+		if labels[mesh_proto.ListenerZoneEgressLabel] == "enabled" {
+			globalInsight.Zones.ZoneEgresses.Total += 1
+			if insight != nil && insight.GetSpec().(*mesh_proto.DataplaneInsight).IsOnline() {
+				globalInsight.Zones.ZoneEgresses.Online += 1
+			}
+		}
+	}
+
+	return nil
+}
+
+func isMeshScopedZoneProxyDataplane(dataplane *mesh.DataplaneResource) bool {
+	labels := dataplane.GetMeta().GetLabels()
+	return labels[mesh_proto.ListenerZoneIngressLabel] == "enabled" || labels[mesh_proto.ListenerZoneEgressLabel] == "enabled"
 }
