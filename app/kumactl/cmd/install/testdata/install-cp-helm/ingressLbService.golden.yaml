@@ -562,6 +562,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -776,10 +778,6 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
-            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
-              value: "true"
-            - name: KUMA_READINESS_PORT
-              value: "9902"
           args:
             - run
             - --log-level=info

@@ -244,8 +244,8 @@ func applyToRealResource(meshCtx xds_context.MeshContext, rules outbound.Resourc
 	return nil
 }
 
-func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet) error {
-	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet, filters ...func(*core_xds.Resource) bool) error {
+	for uri, resType := range rs.IndexByOrigin(filters...) {
 		if err := applyToRealResource(meshCtx, rules, tagSet, uri, resType); err != nil {
 			return err
 		}

@@ -686,3 +686,24 @@ var _ = Describe("TagSelectorRank", func() {
 		)
 	})
 })
+
+var _ = Describe("IsReservedLabelKey", func() {
+	type testCase struct {
+		key      string
+		expected bool
+	}
+
+	DescribeTable("should identify reserved label keys",
+		func(given testCase) {
+			Expect(IsReservedLabelKey(given.key)).To(Equal(given.expected))
+		},
+		Entry("kuma.io/ prefix", testCase{key: "kuma.io/service", expected: true}),
+		Entry("k8s.kuma.io/ prefix", testCase{key: "k8s.kuma.io/namespace", expected: true}),
+		Entry("bare kuma.io/", testCase{key: "kuma.io/", expected: true}),
+		Entry("bare k8s.kuma.io/", testCase{key: "k8s.kuma.io/", expected: true}),
+		Entry("non-reserved app label", testCase{key: "app", expected: false}),
+		Entry("non-reserved custom domain", testCase{key: "example.com/foo", expected: false}),
+		Entry("empty string", testCase{key: "", expected: false}),
+		Entry("partial prefix kuma.io without slash", testCase{key: "kuma.io", expected: false}),
+	)
+})

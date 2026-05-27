@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/config/core"
+	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/version"
 )
@@ -81,7 +82,7 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 
 func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
 	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy && c.Mode == core.Zone {
-		if _, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), core_model.NewNamespace(ns, ns == c.SystemNamespace)); err != nil {
+		if _, err := resource_labels.ComputePolicyRole(r.GetSpec().(core_model.Policy), resource_labels.NewNamespace(ns, ns == c.SystemNamespace)); err != nil {
 			return forbiddenResponse(err.Error())
 		}
 	}

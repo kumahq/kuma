@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -91,7 +92,7 @@ func (u *universalDeployment) updatePublishedPorts(t testing.TestingT) error {
 }
 
 func (u *universalDeployment) Delete(cluster framework.Cluster) error {
-	retry.DoWithRetry(cluster.GetTesting(), "stop "+u.container, framework.DefaultRetries, framework.DefaultTimeout,
+	retry.DoWithRetryContext(cluster.GetTesting(), context.Background(), "stop "+u.container, framework.DefaultRetries, framework.DefaultTimeout,
 		func() (string, error) {
 			_, err := u.dockerBackend.StopE(cluster.GetTesting(), []string{u.container}, &docker.StopOptions{Time: 1})
 			if err == nil {
@@ -112,4 +113,8 @@ func (u *universalDeployment) OTelCollectorTraceURL() string {
 
 func (u *universalDeployment) TracedServices() ([]string, error) {
 	return tracedServices(fmt.Sprintf("http://localhost:%d", u.ports[16686]))
+}
+
+func (u *universalDeployment) TracesForService(service string, limit int) ([]Trace, error) {
+	return tracesForService(fmt.Sprintf("http://localhost:%d", u.ports[16686]), service, limit)
 }

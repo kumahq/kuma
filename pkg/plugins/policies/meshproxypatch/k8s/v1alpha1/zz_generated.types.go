@@ -99,7 +99,7 @@ func (l *MeshProxyPatchList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshProxyPatch{}, &MeshProxyPatchList{})
+	knownTypes = append(knownTypes, &MeshProxyPatch{}, &MeshProxyPatchList{})
 	registry.RegisterObjectType(&policy.MeshProxyPatch{}, &MeshProxyPatch{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

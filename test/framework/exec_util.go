@@ -42,10 +42,10 @@ type ExecOptions struct {
 // execOnce ignores retries.
 func (c *K8sCluster) execOnce(options ExecOptions) (string, string, error) {
 	const tty = false
-	config, err := k8s.LoadApiClientConfigE(c.kubeconfig, "")
+	config, err := k8s.LoadAPIClientConfigE(c.kubeconfig, "")
 	Expect(err).NotTo(HaveOccurred())
 
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	clientset, err := k8s.GetKubernetesClientFromOptionsContextE(c.t, context.Background(), c.GetKubectlOptions())
 	Expect(err).NotTo(HaveOccurred())
 
 	req := clientset.CoreV1().RESTClient().Post().
@@ -94,8 +94,8 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 	if timeout == 0 {
 		timeout = options.Timeout
 	}
-	_, err := retry.DoWithRetryE(
-		c.t,
+	_, err := retry.DoWithRetryContextE(
+		c.t, context.Background(),
 		fmt.Sprintf("kubectl exec -c %q -n %q %s -- %s",
 			options.ContainerName,
 			options.Namespace,

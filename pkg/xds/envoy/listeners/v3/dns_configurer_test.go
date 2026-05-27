@@ -20,7 +20,7 @@ var _ = Describe("DNSConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 1234, xds.SocketAddressProtocolUDP).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 1234, xds.SocketAddressProtocolUDP, true).
 				WithOverwriteName(names.GetDNSListenerName()).
 				Configure(DNS(given.vips)).
 				Build()
@@ -45,7 +45,6 @@ var _ = Describe("DNSConfigurer", func() {
                 address: 192.168.0.1
                 portValue: 1234
                 protocol: UDP
-            enableReusePort: true
             listenerFilters:
             - name: envoy.filters.udp.dns_filter
               typedConfig:
@@ -75,7 +74,7 @@ var _ = Describe("DNSConfigurer", func() {
                 statPrefix: kuma_dns
             name: kuma:dns
             trafficDirection: INBOUND
-`,
+            enableReusePort: true`,
 		}),
 	)
 })

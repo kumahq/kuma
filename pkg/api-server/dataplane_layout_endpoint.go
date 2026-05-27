@@ -98,6 +98,29 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		}
 	})
 
+	listeners := []api_common.DataplaneListener{}
+	for _, listener := range dataplane.Spec.GetNetworking().GetListeners() {
+		sectionName := listener.GetSectionName()
+		var listenerType api_common.DataplaneListenerType
+		var proxyResourceName string
+		switch listener.GetType() {
+		case v1alpha1.Dataplane_Networking_Listener_ZoneIngress:
+			listenerType = api_common.ZoneIngress
+			proxyResourceName = naming.ContextualZoneIngressListenerName(sectionName)
+		case v1alpha1.Dataplane_Networking_Listener_ZoneEgress:
+			listenerType = api_common.ZoneEgress
+			proxyResourceName = naming.ContextualZoneEgressListenerName(sectionName)
+		default:
+			continue
+		}
+		listeners = append(listeners, api_common.DataplaneListener{
+			Kri:               kri.WithSectionName(kri.From(dataplane), sectionName).String(),
+			Type:              listenerType,
+			Port:              int32(listener.GetPort()),
+			ProxyResourceName: proxyResourceName,
+		})
+	}
+
 	outbounds := []api_common.DataplaneOutbound{}
 	reachableOutbounds, _ := baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	for outboundKri, port := range reachableOutbounds {
@@ -117,6 +140,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		Inbounds:  inbounds,
 		Kri:       kri.From(dataplane).String(),
 		Labels:    dataplane.GetMeta().GetLabels(),
+		Listeners: listeners,
 		Outbounds: outbounds,
 		SpiffeId:  dle.computeSpiffeID(request, meshName, dataplane),
 	}

@@ -199,8 +199,8 @@ spec:
 		Entry("a service", testCase{
 			deploymentName: name,
 			scaleFn: func(replicas int) error {
-				return k8s.RunKubectlE(
-					kubernetes.Cluster.GetTesting(),
+				return k8s.RunKubectlContextE(
+					kubernetes.Cluster.GetTesting(), context.Background(),
 					kubernetes.Cluster.GetKubectlOptions(namespace),
 					"scale", "deployment", name, "--replicas", strconv.Itoa(replicas),
 				)

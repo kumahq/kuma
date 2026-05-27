@@ -659,6 +659,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -792,7 +794,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-1-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-1-ingress
     kuma.io/mesh: mesh-1
     app.kubernetes.io/name: kuma
@@ -851,7 +853,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-1-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-1-egress
     kuma.io/mesh: mesh-1
     app.kubernetes.io/name: kuma
@@ -910,7 +912,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-2-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-2-ingress
     kuma.io/mesh: mesh-2
     app.kubernetes.io/name: kuma
@@ -969,7 +971,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-2-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-2-egress
     kuma.io/mesh: mesh-2
     app.kubernetes.io/name: kuma

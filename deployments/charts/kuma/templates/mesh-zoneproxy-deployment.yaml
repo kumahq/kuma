@@ -23,20 +23,29 @@
 {{- range $roleEntry := $roles }}
 {{- $role := $roleEntry.role }}
 {{- $cfg := $roleEntry.cfg }}
+{{- $dep := $cfg.deployment | default dict }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
   namespace: {{ $.Release.Namespace }}
-  labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+  labels:
+    {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
+    {{- with $dep.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $dep.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   strategy:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
   {{- if not (and $cfg.hpa $cfg.hpa.enabled) }}
-  replicas: {{ default 1 $cfg.replicas }}
+  replicas: {{ default 1 $dep.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -49,21 +58,21 @@ spec:
         {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 8 }}
         kuma.io/sidecar-injection: enabled
     spec:
-      {{- if $cfg.resources }}
-      resources: {{ toYaml $cfg.resources | nindent 8 }}
+      {{- if and $dep.podSpec $dep.podSpec.resources }}
+      resources: {{ toYaml $dep.podSpec.resources | nindent 8 }}
       {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.affinity) }}
+      {{- with (and $dep.podSpec $dep.podSpec.affinity) }}
       affinity: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.topologySpreadConstraints) }}
+      {{- with (and $dep.podSpec $dep.podSpec.topologySpreadConstraints) }}
       topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.priorityClassName) }}
+      {{- with (and $dep.podSpec $dep.podSpec.priorityClassName) }}
       priorityClassName: {{ . }}
       {{- end }}
-      {{- if and $cfg.podSpec $cfg.podSpec.securityContext }}
+      {{- if and $dep.podSpec $dep.podSpec.securityContext }}
       securityContext:
-      {{- toYaml $cfg.podSpec.securityContext | trim | nindent 8 }}
+      {{- toYaml $dep.podSpec.securityContext | trim | nindent 8 }}
       {{- else }}
       securityContext:
         runAsUser: 5678
@@ -74,11 +83,11 @@ spec:
       serviceAccountName: {{ include "kuma.mesh.zoneproxy.name" (dict "root" $ "meshName" $meshName "role" $role) }}
       automountServiceAccountToken: {{ default true $cfg.automountServiceAccountToken }}
       restartPolicy: {{ default "Always" $cfg.restartPolicy }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.nodeSelector) }}
+      {{- with (and $dep.podSpec $dep.podSpec.nodeSelector) }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with (and $cfg.podSpec $cfg.podSpec.tolerations) }}
+      {{- with (and $dep.podSpec $dep.podSpec.tolerations) }}
       tolerations:
       {{ toYaml . | nindent 8 }}
       {{- end }}
@@ -87,9 +96,9 @@ spec:
         - name: pause
           image: {{ include "kuma.mesh.zoneproxy.image" (dict "root" $ "cfg" $cfg "meshName" $meshName "role" $role) | quote }}
           imagePullPolicy: {{ default "IfNotPresent" $cfg.imagePullPolicy }}
-          {{- if and $cfg.podSpec $cfg.podSpec.containerSecurityContext }}
+          {{- if and $dep.podSpec $dep.podSpec.containerSecurityContext }}
           securityContext:
-          {{- toYaml $cfg.podSpec.containerSecurityContext | trim | nindent 12 }}
+          {{- toYaml $dep.podSpec.containerSecurityContext | trim | nindent 12 }}
           {{- else }}
           securityContext:
             readOnlyRootFilesystem: true
@@ -99,8 +108,8 @@ spec:
               drop:
                 - ALL
           {{- end }}
-          {{- if $cfg.containerResources }}
-          resources: {{ toYaml $cfg.containerResources | nindent 12 }}
+          {{- if and $dep.podSpec $dep.podSpec.containerResources }}
+          resources: {{ toYaml $dep.podSpec.containerResources | nindent 12 }}
           {{- else }}
           resources:
             requests:

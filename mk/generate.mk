@@ -155,7 +155,7 @@ api/openapi/types%/: ; @mkdir -p $@
 #   | $$(@D)          - Order-only prerequisite: ensure directory exists, but don't
 #                       rebuild if directory timestamp changes (avoids spurious rebuilds)
 define OAS_RULE
-$(call OAS_OUT,$(1)): $(1) api/openapi/openapi.cfg.yaml | $$(@D)
+$(call OAS_OUT,$(1)): $(1) api/openapi/openapi.cfg.yaml mise.toml | $$(@D)
 	@$$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o $$@ $$<
 endef
 

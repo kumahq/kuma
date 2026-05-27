@@ -23,7 +23,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, true, given.internalAddresses, true)))).
 				Build()
@@ -46,11 +46,11 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.http_connection_manager

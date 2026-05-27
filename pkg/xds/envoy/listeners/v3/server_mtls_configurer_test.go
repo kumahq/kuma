@@ -28,7 +28,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		func(given testCase) {
 			// when
 			tracker := envoy_common.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(ServerSideMTLS(given.mesh, tracker, nil, nil, false, false)).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
@@ -71,7 +71,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.tcp_proxy
@@ -103,7 +102,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
-`,
+            enableReusePort: true`,
 		}),
 		Entry("basic tcp_proxy with mTLS and Dataplane credentials", testCase{
 			listenerAddress: "192.168.0.1",
@@ -134,7 +133,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.tcp_proxy
@@ -165,7 +163,8 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                         resourceApiVersion: V3
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND`,
+            trafficDirection: INBOUND
+            enableReusePort: true`,
 		}),
 	)
 })

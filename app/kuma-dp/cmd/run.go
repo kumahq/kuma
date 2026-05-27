@@ -221,6 +221,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
+			if cfg.DataplaneRuntime.SocketDir != "" && cfg.DataplaneRuntime.SocketDir != tmpDir {
+				if err := os.MkdirAll(cfg.DataplaneRuntime.SocketDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to create socket directory")
+					return err
+				}
+			}
+
 			if cfg.DataplaneRuntime.SystemCaPath == "" {
 				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath()
 			}
@@ -268,11 +276,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
 			}
-			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
-			}
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
+			}
+			if cfg.DataplaneRuntime.ReusePortEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePort)
 			}
 
 			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
@@ -411,18 +419,27 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				// When admin is on UDS, bind readiness reporter so K8s
-				// probes (podIP) and PostStart hooks (localhost) can
-				// reach /ready. Only /ready is served on this listener.
-				readinessAddr = "0.0.0.0"
-				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+				// When admin is on UDS, the readiness reporter also reverse-
+				// proxies read-only Envoy admin endpoints on this listener
+				// (mutating endpoints are blocked); see readiness.Reporter.
+				// On Kubernetes the listener must accept probes from the
+				// kubelet (podIP), so we bind wildcard. Outside Kubernetes
+				// we default to loopback to avoid exposing admin info on the
+				// host network. POD_NAME is set by the sidecar injector.
+				_, inKubernetes := os.LookupEnv("POD_NAME")
+				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
+				switch {
+				case inKubernetes && ipv6:
 					readinessAddr = "::"
+				case inKubernetes:
+					readinessAddr = "0.0.0.0"
+				case ipv6:
+					readinessAddr = "::1"
+				default:
+					readinessAddr = "127.0.0.1"
 				}
 			}
 			readinessReporter := readiness.NewReporter(
-				cfg.Dataplane.ReadinessUnixSocketDisabled,
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort,
 				adminSocketPath,

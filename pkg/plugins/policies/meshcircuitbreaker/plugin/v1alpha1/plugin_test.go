@@ -17,7 +17,9 @@ import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
@@ -285,7 +287,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{Default: api.Conf{ConnectionLimits: genConnectionLimits()}},
+						Conf: api.Conf{ConnectionLimits: genConnectionLimits()},
 					}},
 				},
 			},
@@ -310,7 +312,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{Default: api.Conf{OutlierDetection: genOutlierDetection(false)}},
+						Conf: api.Conf{OutlierDetection: genOutlierDetection(false)},
 					}},
 				},
 			},
@@ -337,10 +339,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								OutlierDetection: genOutlierDetection(true),
-							},
+						Conf: api.Conf{
+							OutlierDetection: genOutlierDetection(true),
 						},
 					}},
 				},
@@ -369,11 +369,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-								OutlierDetection: genOutlierDetection(false),
-							},
+						Conf: api.Conf{
+							ConnectionLimits: genConnectionLimits(),
+							OutlierDetection: genOutlierDetection(false),
 						},
 					}},
 				},
@@ -402,11 +400,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-								OutlierDetection: genOutlierDetection(true),
-							},
+						Conf: api.Conf{
+							ConnectionLimits: genConnectionLimits(),
+							OutlierDetection: genOutlierDetection(true),
 						},
 					}},
 				},
@@ -626,6 +622,94 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
+		}),
+	)
+
+	type zoneProxyTestCase struct {
+		resources       []*core_xds.Resource
+		toRules         core_rules.ToRules
+		expectedCluster string
+	}
+
+	mesKRI := kri.Identifier{
+		ResourceType: meshexternalservice_api.MeshExternalServiceType,
+		Mesh:         "default",
+		Name:         "example",
+		SectionName:  "9000",
+	}
+
+	DescribeTable("should generate proper Envoy config for mesh-scoped zone proxy",
+		func(given zoneProxyTestCase) {
+			resourceSet := core_xds.NewResourceSet()
+			resourceSet.Add(given.resources...)
+
+			mes := builders.MeshExternalService().Build()
+
+			xdsCtx := *xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshLocalResources([]core_model.Resource{mes}).
+				Build()
+
+			proxy := xds_builders.Proxy().
+				With(func(p *core_xds.Proxy) {
+					p.Dataplane = &core_mesh.DataplaneResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-proxy", Mesh: "default"},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "10.0.0.1",
+								Listeners: []*mesh_proto.Dataplane_Networking_Listener{{
+									Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+									Address: "10.0.0.1",
+									Port:    10002,
+									Name:    "ze-port",
+									State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+								}},
+							},
+						},
+					}
+				}).
+				WithPolicies(
+					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, core_rules.FromRules{}),
+				).
+				Build()
+
+			p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(p.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource)).
+				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
+		},
+		Entry("MeshExternalService cluster with connection limits on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:           mesKRI.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName(mesKRI.String()),
+				ResourceOrigin: mesKRI,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: outbound.ResourceRules{
+					mesKRI: {
+						Conf: []any{api.Conf{ConnectionLimits: genConnectionLimits()}},
+					},
+				},
+			},
+			expectedCluster: "basic-meshexternalservice.zone_proxy_cluster.golden.yaml",
+		}),
+		Entry("MeshExternalService cluster with outlier detection on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:           mesKRI.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName(mesKRI.String()),
+				ResourceOrigin: mesKRI,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: outbound.ResourceRules{
+					mesKRI: {
+						Conf: []any{api.Conf{OutlierDetection: genOutlierDetection(false)}},
+					},
+				},
+			},
+			expectedCluster: "basic-meshexternalservice-outlier.zone_proxy_cluster.golden.yaml",
 		}),
 	)
 })

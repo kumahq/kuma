@@ -42,7 +42,7 @@ type ZoneList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Zone{}, &ZoneList{})
+	knownTypes = append(knownTypes, &Zone{}, &ZoneList{})
 }
 
 func (cb *Zone) GetObjectMeta() *metav1.ObjectMeta {
@@ -147,7 +147,7 @@ type ZoneInsightList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneInsight{}, &ZoneInsightList{})
+	knownTypes = append(knownTypes, &ZoneInsight{}, &ZoneInsightList{})
 }
 
 func (cb *ZoneInsight) GetObjectMeta() *metav1.ObjectMeta {

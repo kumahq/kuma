@@ -1,0 +1,9 @@
+Patches: null
+allowed: true
+status:
+  code: 200
+  metadata: {}
+uid: "12345"
+warnings:
+- 'Invalid MeshService SNI (port "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"):
+  must be no more than 63 characters. This is deprecated.'

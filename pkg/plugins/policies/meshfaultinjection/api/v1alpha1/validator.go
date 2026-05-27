@@ -72,6 +72,9 @@ func validateMatches(field string, matches []common_api.Match) validators.Valida
 	var verr validators.ValidationError
 	for idx, match := range matches {
 		path := validators.RootedAt(field).Index(idx)
+		if match.SNI != nil {
+			verr.AddViolationAt(path.Field("sni"), "is not supported on MeshFaultInjection")
+		}
 		verr.AddErrorAt(path, mesh.ValidateMatch(match))
 	}
 	return verr

@@ -1,12 +1,15 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/test/framework"
 )
@@ -49,32 +52,6 @@ func (t *k8SDeployment) Name() string {
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	extraArgs := map[string][]string{"upgrade": {"--create-namespace", "--install", "--wait"}}
 
-	if err := helm.UpgradeE(
-		cluster.GetTesting(),
-		&helm.Options{
-			KubectlOptions: cluster.GetKubectlOptions(t.options.namespace),
-			ExtraArgs:      extraArgs,
-		},
-		cnpgChart,
-		"cnpg",
-	); err != nil {
-		return err
-	}
-
-	if err := k8s.KubectlApplyFromStringE(
-		cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.options.namespace),
-		dbSecrets(
-			t.options.namespace,
-			"postgres",
-			t.options.postgresPassword,
-			t.options.username,
-			t.options.password,
-		),
-	); err != nil {
-		return err
-	}
-
 	opts := &helm.Options{
 		SetValues: map[string]string{
 			"cluster.imageName":                        postgresImage,
@@ -94,20 +71,117 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		opts.SetValues[fmt.Sprintf("cluster.initdb.postInitSQL[%d]", i)] = script
 	}
 
-	if err := helm.UpgradeE(cluster.GetTesting(), opts, clusterChart, t.options.primaryName); err != nil {
+	// Preload chart images into the cluster's container runtime so pod
+	// startup does not hit ghcr.io at test time. The CNPG cluster wait has a
+	// hard 180s budget; transient ghcr.io timeouts during runtime pulls of
+	// the operator and postgres images are the dominant cause of this
+	// BeforeAll flaking on CI.
+	if k8sCluster, ok := cluster.(*framework.K8sCluster); ok {
+		opImages, err := renderChartImages(cluster, nil, cnpgChart, "cnpg")
+		if err != nil {
+			return errors.Wrap(err, "render cnpg operator chart")
+		}
+		clImages, err := renderChartImages(cluster, opts, clusterChart, t.options.primaryName)
+		if err != nil {
+			return errors.Wrap(err, "render cnpg cluster chart")
+		}
+		// postgresImage is consumed by the CNPG operator (via the Cluster
+		// CR) rather than appearing directly in the rendered chart, so add
+		// it explicitly.
+		images := dedupe(append(append(opImages, clImages...), postgresImage))
+		if err := k8sCluster.PreloadImages(images...); err != nil {
+			return errors.Wrap(err, "preload postgres images")
+		}
+	}
+
+	if err := framework.HelmUpgradeWithRetryE(
+		cluster.GetTesting(),
+		&helm.Options{
+			KubectlOptions: cluster.GetKubectlOptions(t.options.namespace),
+			ExtraArgs:      extraArgs,
+		},
+		cnpgChart,
+		"cnpg",
+	); err != nil {
+		return err
+	}
+
+	if err := k8s.KubectlApplyFromStringContextE(
+		cluster.GetTesting(), context.Background(),
+		cluster.GetKubectlOptions(t.options.namespace),
+		dbSecrets(
+			t.options.namespace,
+			"postgres",
+			t.options.postgresPassword,
+			t.options.username,
+			t.options.password,
+		),
+	); err != nil {
+		return err
+	}
+
+	if err := framework.HelmUpgradeWithRetryE(cluster.GetTesting(), opts, clusterChart, t.options.primaryName); err != nil {
 		return err
 	}
 
 	// Helm's --wait flag doesn't wait for custom resources to be ready, so we
 	// explicitly wait for the CNPG Cluster to reach Ready condition
-	return k8s.RunKubectlE(
-		cluster.GetTesting(),
+	return k8s.RunKubectlContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(t.options.namespace),
 		"wait",
 		"--for=condition=Ready",
 		fmt.Sprintf("clusters.postgresql.cnpg.io/%s-cluster", t.options.primaryName),
 		"--timeout=180s",
 	)
+}
+
+// renderChartImages renders the chart with `helm template` and returns the
+// distinct container images referenced in the resulting manifests. The opts
+// argument may be nil; when non-nil, its SetValues are forwarded to the
+// rendered template so values that affect image selection (e.g. cluster.imageName)
+// are respected.
+func renderChartImages(cluster framework.Cluster, opts *helm.Options, chart, release string) ([]string, error) {
+	templateOpts := &helm.Options{
+		KubectlOptions: cluster.GetKubectlOptions(""),
+	}
+	if opts != nil {
+		templateOpts.SetValues = opts.SetValues
+	}
+	out, err := helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), templateOpts, "template", release, chart)
+	if err != nil {
+		return nil, err
+	}
+	return parseImages(out), nil
+}
+
+var imageLineRE = regexp.MustCompile(`(?m)^\s*image:\s*["']?([^"'\s]+)["']?\s*$`)
+
+func parseImages(rendered string) []string {
+	seen := map[string]struct{}{}
+	var images []string
+	for _, m := range imageLineRE.FindAllStringSubmatch(rendered, -1) {
+		img := m[1]
+		if _, ok := seen[img]; ok {
+			continue
+		}
+		seen[img] = struct{}{}
+		images = append(images, img)
+	}
+	return images
+}
+
+func dedupe(images []string) []string {
+	seen := map[string]struct{}{}
+	out := images[:0]
+	for _, img := range images {
+		if _, ok := seen[img]; ok {
+			continue
+		}
+		seen[img] = struct{}{}
+		out = append(out, img)
+	}
+	return out
 }
 
 func (t *k8SDeployment) Delete(framework.Cluster) error {

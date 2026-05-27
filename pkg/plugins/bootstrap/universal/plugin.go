@@ -24,7 +24,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 	if err != nil {
 		return err
 	}
-	b.WithComponentManager(component.NewManager(leaderElector))
+	b.WithComponentManager(component.NewManager(leaderElector, b.GetInstanceId()))
 	return nil
 }
 

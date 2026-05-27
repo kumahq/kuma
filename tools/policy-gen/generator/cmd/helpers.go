@@ -39,6 +39,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"generateTo":            pconfig.HasTo,
 				"generateFrom":          pconfig.HasFrom,
 				"generateRules":         pconfig.HasRules,
+				"ruleHasMatches":        pconfig.RuleHasMatches,
 				"skipGetDefault":        pconfig.SkipGetDefault,
 				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
 			}, outPath)
@@ -112,6 +113,14 @@ func (x *{{.name}}) GetToList() []core_model.PolicyItem {
 {{ if .generateRules }}
 func (x *Rule) GetDefault() interface{} {
 	return x.Default
+}
+
+func (x *Rule) GetMatches() []common_api.Match {
+{{- if .ruleHasMatches }}
+	return pointer.DerefOr(x.Matches, []common_api.Match{})
+{{- else }}
+	return []common_api.Match{}
+{{- end }}
 }
 
 func (x *{{.name}}) GetRules() []inbound.RuleEntry {

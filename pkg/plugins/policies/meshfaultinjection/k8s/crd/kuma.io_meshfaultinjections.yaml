@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -294,6 +294,25 @@ spec:
                         injection will be applied
                       items:
                         properties:
+                          sni:
+                            description: SNI defines a matcher configuration for matching
+                              by SNI value carried on the TLS connection
+                            properties:
+                              type:
+                                description: Type defines how to match traffic by
+                                  SNI. Only `Exact` is supported.
+                                enum:
+                                - Exact
+                                type: string
+                              value:
+                                description: Value is the SNI carried on the TLS connection
+                                  that needs to match for the configuration to be
+                                  applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
                           spiffeID:
                             description: SpiffeID defines a matcher configuration
                               for SpiffeID matching

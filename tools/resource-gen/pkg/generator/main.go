@@ -17,7 +17,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/invopop/jsonschema"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -107,7 +106,7 @@ type {{.ResourceType}}List struct {
 
 {{- if not .SkipRegistration}}
 func init() {
-	SchemeBuilder.Register(&{{.ResourceType}}{}, &{{.ResourceType}}List{})
+	knownTypes = append(knownTypes, &{{.ResourceType}}{}, &{{.ResourceType}}List{})
 }
 {{- end}}
 
@@ -477,7 +476,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		if !exists {
 			continue
 		}
-		schemaMap := orderedmap.New[string, *jsonschema.Schema]()
+		schemaMap := jsonschema.NewProperties()
 		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
 		schemaMap.Set("name", &jsonschema.Schema{Type: "string"})
 		if !r.Global {
