@@ -164,7 +164,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(envoy_server_uptime{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}, \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(envoy_server_uptime{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}, \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -602,7 +602,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(envoy_control_plane_connected_state{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}, \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(envoy_control_plane_connected_state{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}, \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -692,7 +692,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(envoy_listener_downstream_cx_active{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(envoy_listener_downstream_cx_active{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -781,7 +781,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_listener_downstream_cx_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_listener_downstream_cx_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -870,7 +870,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_rq_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_rq_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -959,7 +959,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_connect_fail{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_connect_fail{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -1051,7 +1051,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_listener_downstream_cx_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_listener_downstream_cx_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} downstream (from local proxies)",
           "refId": "A"
         },
@@ -1060,7 +1060,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} upstream (zone / external out)",
           "refId": "B"
         }
@@ -1152,7 +1152,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_tx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_tx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} tx",
           "refId": "A"
         },
@@ -1161,7 +1161,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_rx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_cluster_upstream_cx_rx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} rx",
           "refId": "B"
         }
@@ -1252,7 +1252,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod, envoy_cluster_name) (rate(envoy_cluster_upstream_rq_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod, envoy_cluster_name) (rate(envoy_cluster_upstream_rq_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} \u00b7 {{ envoy_cluster_name }}",
           "refId": "A"
         }
@@ -1341,7 +1341,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (pod, le, envoy_cluster_name) (rate(envoy_cluster_upstream_cx_connect_ms_bucket{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval]))), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(histogram_quantile(0.95, sum by (pod, le, envoy_cluster_name) (rate(envoy_cluster_upstream_cx_connect_ms_bucket{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}[$__rate_interval]))), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} \u00b7 {{ envoy_cluster_name }}",
           "refId": "A"
         }
@@ -1431,7 +1431,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod, envoy_cluster_name) (envoy_cluster_membership_healthy{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod, envoy_cluster_name) (envoy_cluster_membership_healthy{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\"}), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} \u00b7 {{ envoy_cluster_name }} healthy",
           "refId": "A"
         }
@@ -1522,7 +1522,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_listener_ssl_handshake{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_listener_ssl_handshake{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} handshakes",
           "refId": "A"
         },
@@ -1531,7 +1531,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_listener_ssl_fail_verify_error{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_listener_ssl_fail_verify_error{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} verify failures",
           "refId": "B"
         },
@@ -1540,7 +1540,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod)(rate(envoy_listener_ssl_connection_error{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod)(rate(envoy_listener_ssl_connection_error{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} connection errors",
           "refId": "C"
         }
@@ -1645,7 +1645,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (envoy_cluster_name)(rate(envoy_cluster_upstream_rq_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}[$__rate_interval])), \"mes\", \"$1\", \"envoy_cluster_name\", \"kri_extsvc_[^_]+_[^_]+_[^_]+_(.+)_[0-9]+\")",
+          "expr": "label_replace(sum by (envoy_cluster_name)(rate(envoy_cluster_upstream_rq_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}[$__rate_interval])), \"mes\", \"$1\", \"envoy_cluster_name\", \"kri_extsvc_[^_]*_[^_]*_[^_]*_(.+?)_[^_]*\")",
           "legendFormat": "{{ mes }}",
           "refId": "A"
         }
@@ -1737,7 +1737,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (envoy_cluster_name)(envoy_cluster_upstream_cx_active{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}), \"mes\", \"$1\", \"envoy_cluster_name\", \"kri_extsvc_[^_]+_[^_]+_[^_]+_(.+)_[0-9]+\")",
+          "expr": "label_replace(sum by (envoy_cluster_name)(envoy_cluster_upstream_cx_active{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}), \"mes\", \"$1\", \"envoy_cluster_name\", \"kri_extsvc_[^_]*_[^_]*_[^_]*_(.+?)_[^_]*\")",
           "legendFormat": "{{ mes }}",
           "refId": "A"
         }
@@ -1829,7 +1829,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (envoy_cluster_name)(rate(envoy_cluster_upstream_cx_connect_fail{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}[$__rate_interval])), \"mes\", \"$1\", \"envoy_cluster_name\", \"kri_extsvc_[^_]+_[^_]+_[^_]+_(.+)_[0-9]+\")",
+          "expr": "label_replace(sum by (envoy_cluster_name)(rate(envoy_cluster_upstream_cx_connect_fail{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}[$__rate_interval])), \"mes\", \"$1\", \"envoy_cluster_name\", \"kri_extsvc_[^_]*_[^_]*_[^_]*_(.+?)_[^_]*\")",
           "legendFormat": "{{ mes }}",
           "refId": "A"
         }
@@ -1951,7 +1951,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (envoy_response_code_class) (rate(envoy_cluster_upstream_rq_xx{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}[$__rate_interval]))",
+          "expr": "sum by (envoy_response_code_class) (rate(envoy_cluster_upstream_rq_xx{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}[$__rate_interval]))",
           "legendFormat": "{{ envoy_response_code_class }}xx",
           "refId": "A"
         }
@@ -2040,7 +2040,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, envoy_cluster_name) (rate(envoy_cluster_upstream_cx_connect_ms_bucket{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le, envoy_cluster_name) (rate(envoy_cluster_upstream_cx_connect_ms_bucket{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}[$__rate_interval])))",
           "legendFormat": "{{ envoy_cluster_name }}",
           "refId": "A"
         }
@@ -2132,7 +2132,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_tx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}[$__rate_interval]))",
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_tx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}[$__rate_interval]))",
           "legendFormat": "{{ envoy_cluster_name }} tx",
           "refId": "A"
         },
@@ -2141,7 +2141,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_rx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}[$__rate_interval]))",
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_rx_bytes_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}[$__rate_interval]))",
           "legendFormat": "{{ envoy_cluster_name }} rx",
           "refId": "B"
         }
@@ -2237,7 +2237,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (envoy_cluster_name) (envoy_cluster_upstream_cx_active{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"})",
+          "expr": "sum by (envoy_cluster_name) (envoy_cluster_upstream_cx_active{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"})",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -2247,7 +2247,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (envoy_cluster_name) (envoy_cluster_membership_healthy{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"})",
+          "expr": "sum by (envoy_cluster_name) (envoy_cluster_membership_healthy{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"})",
           "format": "table",
           "instant": true,
           "refId": "B"
@@ -2257,7 +2257,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_connect_fail{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[0-9]+\"}[$__rate_interval]))",
+          "expr": "sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_cx_connect_fail{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name=~\"kri_extsvc_.+_($mes)_[^_]*\"}[$__rate_interval]))",
           "format": "table",
           "instant": true,
           "refId": "C"
@@ -2862,7 +2862,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod) (rate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod) (rate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -2954,7 +2954,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod) (rate(envoy_server_watchdog_miss{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod) (rate(envoy_server_watchdog_miss{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} miss",
           "refId": "A"
         },
@@ -2963,7 +2963,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod) (rate(envoy_server_watchdog_mega_miss{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod) (rate(envoy_server_watchdog_mega_miss{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}[$__rate_interval])), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }} mega miss",
           "refId": "B"
         }
@@ -3261,7 +3261,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace(sum by (pod) (envoy_control_plane_pending_requests{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}), \"replica\", \"$2\", \"pod\", \"^kuma-default-(ingress|egress)-[^-]+-(.+)$\")",
+          "expr": "label_replace(sum by (pod) (envoy_control_plane_pending_requests{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"}), \"replica\", \"$1\", \"pod\", \"^.*-([^-]+)$\")",
           "legendFormat": "{{ replica }}",
           "refId": "A"
         }
@@ -3457,7 +3457,7 @@
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
-        "regex": "/kri_extsvc_[^_]+_[^_]+_[^_]+_(.+)_[0-9]+/",
+        "regex": "/kri_extsvc_[^_]*_[^_]*_[^_]*_(.+?)_[^_]*/",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
