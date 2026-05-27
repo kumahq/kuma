@@ -387,8 +387,8 @@ func configureListener[T ~string](
 	return NewModifier(listener).
 		Configure(bldrs_listener.AccessLogs(
 			util_slices.Map(
-				pointer.Deref(conf.Backends),
-				func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+				ResolveBackends(pointer.Deref(conf.Backends), backendsAcc),
+				func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
 					return BaseAccessLogBuilder(b, string(defaultFormat), backendsAcc, values, accessLogSocketPath)
 				}))).
 		Modify()
@@ -421,7 +421,7 @@ func applyToRealResource(
 		TrafficDirection:   envoy.TrafficDirectionOutbound,
 	}
 
-	backends := pointer.Deref(rctx.Conf().Backends)
+	backends := ResolveBackends(pointer.Deref(rctx.Conf().Backends), backendsAcc)
 
 	routesConfs, err := buildRoutesMap(listener, rctx)
 	if err != nil {
@@ -429,30 +429,25 @@ func applyToRealResource(
 	}
 
 	routesIds := slices.SortedStableFunc(maps.Keys(routesConfs), kri.Compare)
+	routesBackends := util_maps.MapValues(routesConfs, func(_ kri.Identifier, conf api.Conf) []ResolvedBackend {
+		return ResolveBackends(pointer.Deref(conf.Backends), backendsAcc)
+	})
 
-	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesConfs), func(conf api.Conf) bool {
-		return len(pointer.Deref(conf.Backends)) > 0
+	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesBackends), func(backends []ResolvedBackend) bool {
+		return len(backends) > 0
 	})) > 0
 
-	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-		base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
-		if base == nil {
-			return nil
-		}
-		return base.
+	builderForSharedBackend := func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
 			Configure(If(core_meta.IsHTTPBased(r.Protocol), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
 				Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 				Configure(bldrs_matcher.NullValue())),
 			))
 	}
 
-	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-			base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
-			if base == nil {
-				return nil
-			}
-			return base.
+	builderForRouteBackend := func(routeID kri.Identifier) func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+		return func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
 				Configure(bldrs_accesslog.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
 					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.ExactValue(routeID.String()))))
@@ -472,7 +467,7 @@ func applyToRealResource(
 				routesIds,
 				func(id kri.Identifier) []*Builder[envoy_accesslog.AccessLog] {
 					return util_slices.Map(
-						pointer.Deref(routesConfs[id].Backends),
+						routesBackends[id],
 						builderForRouteBackend(id),
 					)
 				}))).

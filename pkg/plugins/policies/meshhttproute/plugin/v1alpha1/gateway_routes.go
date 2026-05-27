@@ -239,6 +239,8 @@ func makeHttpRouteEntry(
 			if ref.ReferencesRealResource() {
 				if d, port, ok := meshroute.DestinationPortFromRef(meshCtx, ref.RealResourceBackendRef()); ok {
 					dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}
+				} else {
+					dest = map[string]string{mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag}
 				}
 			}
 		}
