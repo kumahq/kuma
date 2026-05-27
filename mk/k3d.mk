@@ -16,7 +16,7 @@ K3S_IMAGE   ?= rancher/k3s:$(K3S_VERSION)
 # --- MetalLB ---
 
 # renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
-METALLB_VERSION ?= v0.15.3
+METALLB_VERSION ?= v0.16.0
 METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 METALLB_NAMESPACE ?= metallb-system
 
