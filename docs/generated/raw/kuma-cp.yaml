@@ -100,6 +100,11 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
+    # Sets `grpc.max_receive_message_length` on the GoogleGrpc xDS channel in
+    # Envoy's bootstrap. Caps inbound xDS message size and sizes the per-stream
+    # HTTP/2 receive window.
+    # Default: 16 MiB.
+    xdsGrpcMaxReceiveMessageBytes: 16777216 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Whether the MADS server is enabled

@@ -63,14 +63,10 @@ type BootstrapParamsConfig struct {
 	XdsPort uint32 `json:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout config_types.Duration `json:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
-	// XdsGrpcMaxReceiveMessageBytes caps the gRPC C-Core receive flow-control
-	// window on the kuma-dp xDS client (set as the GoogleGrpc channel arg
-	// `grpc.max_receive_message_length`). The gRPC C-Core default of 4 MiB
-	// sizes the per-stream HTTP/2 receive window too small for the initial
-	// xDS push on gateway DPs with hundreds of listeners — under that load
-	// the receive window depletes mid-push and the gRPC client aborts the
-	// stalled stream with CANCELLED, preventing Envoy from ACKing LDS.
-	// Default: 16 MiB.
+    // Sets `grpc.max_receive_message_length` on the GoogleGrpc xDS channel in
+    // Envoy's bootstrap. Caps inbound xDS message size and sizes the per-stream
+    // HTTP/2 receive window.
+    // Default: 16 MiB.
 	XdsGrpcMaxReceiveMessageBytes uint32 `json:"xdsGrpcMaxReceiveMessageBytes" envconfig:"kuma_bootstrap_server_params_xds_grpc_max_receive_message_bytes"`
 	// Path to the template of Corefile for data planes to use
 	CorefileTemplatePath string `json:"corefileTemplatePath" envconfig:"kuma_bootstrap_server_params_corefile_template_path"`
