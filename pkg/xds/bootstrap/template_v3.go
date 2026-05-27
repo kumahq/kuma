@@ -509,8 +509,8 @@ func buildGrpcService(params configParameters, useTokenPath bool, clusterName st
 							},
 							// In Envoy's GoogleGrpc transport, this arg sizes the per-stream HTTP/2
   							// receive window for the xDS stream. If a push doesn't fit in the window,
-  							// the stream stalls and gRPC aborts it with CANCELLED. The default of 4MiB
-							// might be not sufficient for huge deployment which cannot use reachable 
+  							// the stream stalls and gRPC aborts it with CANCELLED. The default of 4 MiB
+							// may not be sufficient for large deployments that do not use reachable
 							// backends. 16 MiB covers typical large snapshots.
 							"grpc.max_receive_message_length": {
 								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
