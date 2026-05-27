@@ -326,7 +326,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum (envoy_listener_downstream_cx_active{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"})",
-          "legendFormat": "",
+          "legendFormat": "downstream cx (all replicas)",
           "refId": "A"
         }
       ],
@@ -418,7 +418,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum (rate(envoy_cluster_upstream_rq_total{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", envoy_cluster_name!~\"kuma_.*|_kuma_.*|access_log_sink|.*passthrough.*|.*transparentproxy.*\", proxy=\"egress\"}[$__rate_interval]))",
-          "legendFormat": "",
+          "legendFormat": "upstream req/s (all replicas)",
           "refId": "A"
         }
       ],
@@ -510,7 +510,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum (envoy_server_memory_heap_size{job=\"kuma-zone-proxies\", namespace=~\"$namespace\", zone=~\"$zone\", proxy=\"egress\"})",
-          "legendFormat": "",
+          "legendFormat": "heap (all replicas)",
           "refId": "A"
         }
       ],
@@ -887,8 +887,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "fixed",
-            "fixedColor": "red"
+            "mode": "continuous-reds"
           },
           "custom": {
             "axisCenteredZero": false,
@@ -1494,23 +1493,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*fail.*|.*error.*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "x": 12,
@@ -2600,8 +2583,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "fixed",
-            "fixedColor": "red"
+            "mode": "continuous-reds"
           },
           "custom": {
             "axisCenteredZero": false,
@@ -2646,23 +2628,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(reject|overflow|miss|timeout|5xx|4xx|fail).*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "x": 16,
@@ -2718,8 +2684,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "fixed",
-            "fixedColor": "red"
+            "mode": "continuous-reds"
           },
           "custom": {
             "axisCenteredZero": false,
@@ -2764,23 +2729,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(reject|overflow|miss|timeout|5xx|4xx|fail).*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "x": 0,
@@ -2836,8 +2785,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "fixed",
-            "fixedColor": "red"
+            "mode": "continuous-reds"
           },
           "custom": {
             "axisCenteredZero": false,
@@ -2929,8 +2877,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "fixed",
-            "fixedColor": "red"
+            "mode": "continuous-reds"
           },
           "custom": {
             "axisCenteredZero": false,
@@ -2975,23 +2922,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(reject|overflow|miss|timeout|5xx|4xx|fail).*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "x": 16,
@@ -3092,23 +3023,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*(reject|overflow|miss|timeout|5xx|4xx|fail).*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "x": 0,
@@ -3168,7 +3083,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "continuous-reds"
           },
           "custom": {
             "axisCenteredZero": false,
@@ -3213,23 +3128,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "x": 0,
@@ -3377,8 +3276,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
+            "mode": "continuous-greens"
           },
           "custom": {
             "axisCenteredZero": false,
