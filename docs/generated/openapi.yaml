@@ -7152,7 +7152,7 @@ components:
                               type: string
                             value:
                               description: >-
-                                Value is SpiffeId of a client that needs to
+                                Value is SpiffeID of a client that needs to
                                 match for the configuration to be applied
                               type: string
                           required:
@@ -9732,7 +9732,7 @@ components:
                               type: string
                             value:
                               description: >-
-                                Value is SpiffeId of a client that needs to
+                                Value is SpiffeID of a client that needs to
                                 match for the configuration to be applied
                               type: string
                           required:
@@ -16227,7 +16227,7 @@ components:
                               type: string
                             value:
                               description: >-
-                                Value is SpiffeId of a client that needs to
+                                Value is SpiffeID of a client that needs to
                                 match for the configuration to be applied
                               type: string
                           required:
@@ -17161,7 +17161,7 @@ components:
                                   type: string
                                 value:
                                   description: >-
-                                    Value is SpiffeId of a client that needs to
+                                    Value is SpiffeID of a client that needs to
                                     match for the configuration to be applied
                                   type: string
                               required:
@@ -17216,7 +17216,7 @@ components:
                                   type: string
                                 value:
                                   description: >-
-                                    Value is SpiffeId of a client that needs to
+                                    Value is SpiffeID of a client that needs to
                                     match for the configuration to be applied
                                   type: string
                               required:
@@ -17269,7 +17269,7 @@ components:
                                   type: string
                                 value:
                                   description: >-
-                                    Value is SpiffeId of a client that needs to
+                                    Value is SpiffeID of a client that needs to
                                     match for the configuration to be applied
                                   type: string
                               required:
