@@ -75,6 +75,15 @@ spec:
 	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.Mesh{})
 		Expect(err).ToNot(HaveOccurred())
+		err = k8sClient.DeleteAllOf(context.Background(), &kube_core.Service{}, kube_client.InNamespace("default"))
+		Expect(err).ToNot(HaveOccurred())
+		ns := &kube_core.Namespace{}
+		err = k8sClient.Get(context.Background(), kube_client.ObjectKey{Name: "default"}, ns)
+		Expect(err).ToNot(HaveOccurred())
+		delete(ns.Labels, metadata.KumaMeshLabel)
+		delete(ns.Annotations, metadata.KumaMeshLabel)
+		err = k8sClient.Update(context.Background(), ns)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	DescribeTableSubtree("should inject Kuma into a Pod",
@@ -1089,8 +1098,9 @@ spec:
 			return inj
 		}
 
-		newPod := func(namespace string, explicitMesh bool, zoneProxyType string) *kube_core.Pod {
+		newPod := func(explicitMesh bool, zoneProxyType string) *kube_core.Pod {
 			labels := map[string]string{
+				"app":                                   "zone-proxy",
 				metadata.KumaSidecarInjectionAnnotation: "enabled",
 			}
 			if explicitMesh {
@@ -1103,7 +1113,7 @@ spec:
 			return &kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name:      "zone-proxy",
-					Namespace: namespace,
+					Namespace: "default",
 					Labels:    labels,
 				},
 				Spec: kube_core.PodSpec{
@@ -1114,8 +1124,31 @@ spec:
 			}
 		}
 
+		createZoneProxyService := func(namespace string) {
+			svc := &kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name:      "zone-proxy-svc",
+					Namespace: namespace,
+					Labels: map[string]string{
+						metadata.KumaZoneProxyTypeLabel: "ingress",
+					},
+				},
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app": "zone-proxy",
+					},
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 10001,
+						},
+					},
+				},
+			}
+			ExpectWithOffset(1, k8sClient.Create(context.Background(), svc)).To(Succeed())
+		}
+
 		It("allows zone proxy pods to inject before the mesh exists", func() {
-			pod := newPod("default", true, "ingress")
+			pod := newPod(true, "ingress")
 
 			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
 			Expect(pod.Spec.Containers).To(ContainElement(
@@ -1124,7 +1157,7 @@ spec:
 		})
 
 		It("still rejects zone proxy pods without an explicit mesh label when the mesh does not exist", func() {
-			pod := newPod("default", false, "ingress")
+			pod := newPod(false, "ingress")
 
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())
@@ -1135,7 +1168,39 @@ spec:
 		})
 
 		It("still rejects non-zone-proxy pods when the mesh does not exist", func() {
-			pod := newPod("default", true, "")
+			pod := newPod(true, "")
+
+			err := newInjector().InjectKuma(context.Background(), pod)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
+			Expect(pod.Spec.Containers).ToNot(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("allows zone proxy pods selected by a Service before the mesh exists when the mesh is on the namespace", func() {
+			createZoneProxyService("default")
+
+			ns := &kube_core.Namespace{}
+			Expect(k8sClient.Get(context.Background(), kube_client.ObjectKey{Name: "default"}, ns)).To(Succeed())
+			if ns.Labels == nil {
+				ns.Labels = map[string]string{}
+			}
+			ns.Labels[metadata.KumaMeshLabel] = "default"
+			Expect(k8sClient.Update(context.Background(), ns)).To(Succeed())
+
+			pod := newPod(false, "")
+
+			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
+			Expect(pod.Spec.Containers).To(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("still rejects service-selected zone proxy pods when the mesh is not set on the pod or namespace", func() {
+			createZoneProxyService("default")
+
+			pod := newPod(false, "")
 
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())

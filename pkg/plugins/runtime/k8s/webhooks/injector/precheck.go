@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
@@ -39,11 +40,19 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 
 	meshName := k8s_util.MeshOfByLabelOrAnnotation(logger, pod, ns)
 	logger = logger.WithValues("mesh", meshName)
-	// Mesh zone proxy pods carry explicit mesh and zone-proxy-type labels. They
-	// rely on the Pod/Dataplane reconciliation path to retry until the target
-	// mesh exists, so admission must not block them here.
-	skipMeshExistenceCheck := pod.GetLabels()[metadata.KumaMeshLabel] != "" &&
-		pod.GetLabels()[metadata.KumaZoneProxyTypeLabel] != ""
+	// Mesh zone proxy pods rely on the Pod/Dataplane reconciliation path to
+	// retry until the target mesh exists, so admission must not block them
+	// here. Prefer the pod-local zone-proxy-type hint when present, but also
+	// fall back to matching Services so the regular injector path keeps working
+	// when zone proxy is not in the default release namespace.
+	isZoneProxyPod := pod.GetLabels()[metadata.KumaZoneProxyTypeLabel] != ""
+	if !isZoneProxyPod {
+		isZoneProxyPod, err = i.hasZoneProxyService(ctx, pod)
+		if err != nil {
+			return "", errors.Wrap(err, "could not determine if pod is a zone proxy")
+		}
+	}
+	skipMeshExistenceCheck := hasExplicitMesh(pod, ns) && isZoneProxyPod
 	if !skipMeshExistenceCheck {
 		if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {
 			return "", err
@@ -87,6 +96,40 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 		return "", err
 	}
 	return meshName, nil
+}
+
+func (i *KumaInjector) hasZoneProxyService(ctx context.Context, pod *kube_core.Pod) (bool, error) {
+	services := &kube_core.ServiceList{}
+	if err := i.client.List(ctx, services, kube_client.InNamespace(pod.Namespace)); err != nil {
+		return false, err
+	}
+	for idx := range services.Items {
+		svc := &services.Items[idx]
+		if k8s_util.MatchService(svc,
+			k8s_util.AnySelector(),
+			k8s_util.Not(k8s_util.Ignored()),
+			k8s_util.MatchServiceThatSelectsPod(pod, nil),
+		) && svc.Labels[metadata.KumaZoneProxyTypeLabel] != "" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func hasExplicitMesh(pod *kube_core.Pod, ns *kube_core.Namespace) bool {
+	if mesh, exists := metadata.Annotations(pod.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
+		return true
+	}
+	if mesh, exists := metadata.Annotations(pod.GetAnnotations()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
+		return true
+	}
+	if mesh, exists := metadata.Annotations(ns.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
+		return true
+	}
+	if mesh, exists := metadata.Annotations(ns.GetAnnotations()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
+		return true
+	}
+	return false
 }
 
 func (i *KumaInjector) needToInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
