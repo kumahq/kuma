@@ -18,7 +18,7 @@ const (
 type SpiffeIDMatch struct {
 	// Type defines how to match incoming traffic by SpiffeID. `Exact` or `Prefix` are allowed.
 	Type SpiffeIDMatchType `json:"type"`
-	// Value is SpiffeId of a client that needs to match for the configuration to be applied
+	// Value is SpiffeID of a client that needs to match for the configuration to be applied
 	Value string `json:"value"`
 }
 

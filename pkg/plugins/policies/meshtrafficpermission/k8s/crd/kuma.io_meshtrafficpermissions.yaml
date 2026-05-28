@@ -185,7 +185,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -232,7 +232,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -278,7 +278,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:

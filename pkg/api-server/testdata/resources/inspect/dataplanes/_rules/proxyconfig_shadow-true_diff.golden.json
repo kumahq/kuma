@@ -41,6 +41,13 @@
        ]
       }
      ]
+    },
+    "circuitBreakers": {
+     "thresholds": [
+      {
+       "trackRemaining": true
+      }
+     ]
     }
    }
   },
