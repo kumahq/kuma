@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"reflect"
 	"slices"
 	"strings"
 
@@ -217,7 +218,33 @@ func generateEnvoyRouteEntries(
 		}
 	}
 
-	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
+	return dedupRouteEntries(plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries))
+}
+
+// dedupRouteEntries removes consecutive duplicates that result from a single
+// virtual host being covered by multiple overlapping rules that emit identical
+// route entries (for example, a rule scoped to `foo.example.com` and a rule
+// scoped to `*.example.com` both producing the same match+action for the
+// `foo.example.com` virtual host). Entries that differ in match, action,
+// rewrite, mirror or header transformations are preserved as distinct.
+func dedupRouteEntries(entries []route.Entry) []route.Entry {
+	if len(entries) < 2 {
+		return entries
+	}
+	out := make([]route.Entry, 0, len(entries))
+	for _, e := range entries {
+		duplicate := false
+		for _, kept := range out {
+			if reflect.DeepEqual(e, kept) {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 func makeHttpRouteEntry(
