@@ -29,6 +29,13 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -95,6 +102,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -120,6 +134,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
