@@ -93,6 +93,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_envoy_admin
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:envoy:admin
@@ -109,6 +112,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_readiness
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:readiness

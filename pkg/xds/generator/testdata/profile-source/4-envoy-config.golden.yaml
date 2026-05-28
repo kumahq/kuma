@@ -93,6 +93,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: inbound_passthrough_ipv4
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: inbound:passthrough:ipv4
@@ -105,6 +108,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_envoy_admin
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:envoy:admin
@@ -121,6 +127,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_metrics_hijacker
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:metrics:hijacker
@@ -136,6 +145,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_readiness
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:readiness
@@ -182,6 +194,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: outbound_passthrough_ipv4
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: outbound:passthrough:ipv4
@@ -190,6 +205,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: self_transparentproxy_no_destination_inbound
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     name: self_transparentproxy_no_destination_inbound
     type: STATIC

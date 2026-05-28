@@ -768,6 +768,23 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		}),
 	)
 
+	It("should enable track remaining on clusters regardless of origin", func() {
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:     "prometheus",
+			Origin:   metadata.OriginPrometheus,
+			Resource: test_xds.ClusterWithName("prometheus"),
+		})
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), xds_builders.Proxy().Build())).To(Succeed())
+
+		cluster := resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource.(*envoy_cluster.Cluster)
+		Expect(cluster.GetCircuitBreakers().GetThresholds()).To(HaveLen(1))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].GetPriority()).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].TrackRemaining).To(BeTrue())
+	})
+
 	It("should enable track remaining for ZoneEgressProxy without MeshCircuitBreaker", func() {
 		resourceSet := core_xds.NewResourceSet()
 		resourceSet.Add(&core_xds.Resource{
