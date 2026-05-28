@@ -46,7 +46,15 @@ conf:
   - port: %d
     protocol: HTTP
     hostname: example.kuma.io
-`, mesh, gatewayPort)
+  - port: %d
+    protocol: HTTP
+    hostname: another.kuma.io
+  - port: %d
+    protocol: HTTP
+    hostname: "*.test.kuma.io"
+  - port: %d
+    protocol: HTTP
+`, mesh, gatewayPort, gatewayPort+1, gatewayPort+2, gatewayPort+3)
 }
 
 var meshHTTPRoute = func() string {
@@ -61,6 +69,34 @@ spec:
   to:
     - targetRef:
         kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: "/"
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: echo-service
+                port: 80
+`, mesh)
+}
+
+var meshHTTPRouteWithDomains = func() string {
+	return fmt.Sprintf(`
+type: MeshHTTPRoute
+name: gateway-proxy-route-domain
+mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: gateway-proxy
+  to:
+    - targetRef:
+        kind: Mesh
+      hostnames:
+        - another.kuma.io
+        - app.test.kuma.io
       rules:
         - matches:
             - path:
@@ -130,7 +166,8 @@ func SetupGatewayCluster() {
 			"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 		}))).
 		Install(YamlUniversal(meshGateway())).
-		Install(YamlUniversal(meshHTTPRoute()))
+		Install(YamlUniversal(meshHTTPRoute())).
+		Install(YamlUniversal(meshHTTPRouteWithDomains()))
 
 	Expect(setup.Setup(universal.Cluster)).To(Succeed())
 
