@@ -3,6 +3,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_externalservice-1
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
@@ -34,6 +37,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_externalservice-2
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
@@ -89,6 +95,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_service-1-zone-2
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
@@ -100,6 +109,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_service-2-zone-2
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:

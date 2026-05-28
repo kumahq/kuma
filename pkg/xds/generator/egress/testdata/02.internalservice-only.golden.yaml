@@ -3,6 +3,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_service-in-zone-2
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:

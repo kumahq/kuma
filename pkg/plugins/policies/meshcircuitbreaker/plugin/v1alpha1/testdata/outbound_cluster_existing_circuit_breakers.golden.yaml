@@ -1,0 +1,5 @@
+circuitBreakers:
+  thresholds:
+  - maxConnections: 66
+    trackRemaining: true
+name: other-service

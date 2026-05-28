@@ -5,6 +5,13 @@
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/meshtrace:datadog",
       "value": {
         "altStatName": "meshtrace_datadog",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "meshtrace:datadog",
@@ -33,6 +40,13 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -44,6 +58,13 @@
         "type": "EDS"
       },
       "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -55,6 +76,13 @@
         "type": "EDS"
       },
       "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -67,6 +95,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -92,6 +127,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
@@ -117,6 +159,13 @@
       },
       "meshtrace:datadog": {
         "altStatName": "meshtrace_datadog",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "meshtrace:datadog",
