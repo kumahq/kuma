@@ -2,8 +2,9 @@ package validate
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand/v2"
+	"math/big"
 	"net"
 	"net/netip"
 	"time"
@@ -92,7 +93,11 @@ func SelfTest(useIPv6 bool, timeout time.Duration) error {
 		return errors.Wrap(err, "resolve local addr")
 	}
 
-	port := SelfTestPortMin + rand.IntN(SelfTestPortMax-SelfTestPortMin)
+	randPort, err := rand.Int(rand.Reader, big.NewInt(int64(SelfTestPortMax-SelfTestPortMin)))
+	if err != nil {
+		return errors.Wrap(err, "generate random port")
+	}
+	port := SelfTestPortMin + int(randPort.Int64())
 	dst := net.JoinHostPort(clientIP, fmt.Sprintf("%d", port))
 
 	dialer := net.Dialer{LocalAddr: laddr, Timeout: timeout}
@@ -240,7 +245,8 @@ func runLocalClient(serverIP netip.Addr, serverPort uint16) error {
 	// a pre-configured port for testing purposes
 	switch serverPort {
 	case 0:
-		port := SelfTestPortMin + rand.IntN(SelfTestPortMax-SelfTestPortMin)
+		randPort, _ := rand.Int(rand.Reader, big.NewInt(int64(SelfTestPortMax-SelfTestPortMin)))
+		port := SelfTestPortMin + int(randPort.Int64())
 		serverAddress = net.JoinHostPort(
 			serverIP.String(),
 			fmt.Sprintf("%d", port),

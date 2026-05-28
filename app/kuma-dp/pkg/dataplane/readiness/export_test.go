@@ -5,9 +5,9 @@ import "time"
 var NewReporterWithDeadline = newReporterWithDeadline
 
 const (
-	StateReady           = stateReady
-	StateNotReady        = stateNotReady
-	StateRedirectFailed  = stateRedirectFailed
+	StateReady          = stateReady
+	StateNotReady       = stateNotReady
+	StateRedirectFailed = stateRedirectFailed
 )
 
 // SetTproxyProbe overrides the transparent-proxy self-test function used by
