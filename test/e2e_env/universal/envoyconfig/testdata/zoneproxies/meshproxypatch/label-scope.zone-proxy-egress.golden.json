@@ -13,6 +13,13 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80",
@@ -76,6 +83,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -101,6 +115,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
