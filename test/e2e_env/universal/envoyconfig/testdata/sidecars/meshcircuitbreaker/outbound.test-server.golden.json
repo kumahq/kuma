@@ -39,6 +39,13 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -98,6 +105,13 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "commonLbConfig": {
           "healthyPanicThreshold": {
             "value": 20
@@ -190,6 +204,13 @@
       },
       "inbound:passthrough:ipv4": {
         "altStatName": "inbound_passthrough_ipv4",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "inbound:passthrough:ipv4",
@@ -203,6 +224,13 @@
       },
       "inbound:passthrough:ipv6": {
         "altStatName": "inbound_passthrough_ipv6",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "inbound:passthrough:ipv6",
@@ -216,6 +244,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -241,6 +276,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
@@ -266,6 +308,13 @@
       },
       "localhost:8080": {
         "altStatName": "localhost_8080",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:8080",
@@ -310,6 +359,13 @@
       },
       "outbound:passthrough:ipv4": {
         "altStatName": "outbound_passthrough_ipv4",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv4",
@@ -317,6 +373,13 @@
       },
       "outbound:passthrough:ipv6": {
         "altStatName": "outbound_passthrough_ipv6",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv6",
@@ -324,6 +387,13 @@
       },
       "self_transparentproxy_no_destination_inbound": {
         "altStatName": "self_transparentproxy_no_destination_inbound",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "name": "self_transparentproxy_no_destination_inbound",
         "type": "STATIC"

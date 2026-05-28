@@ -1,3 +1,6 @@
+circuitBreakers:
+  thresholds:
+  - trackRemaining: true
 commonLbConfig:
   healthyPanicThreshold:
     value: 30.2

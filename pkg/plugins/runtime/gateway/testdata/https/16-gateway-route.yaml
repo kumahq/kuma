@@ -4,6 +4,7 @@ Clusters:
       circuitBreakers:
         thresholds:
         - maxRetries: 20
+          trackRemaining: true
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
@@ -33,6 +34,7 @@ Clusters:
       circuitBreakers:
         thresholds:
         - maxRetries: 20
+          trackRemaining: true
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
@@ -62,6 +64,7 @@ Clusters:
       circuitBreakers:
         thresholds:
         - maxRetries: 10
+          trackRemaining: true
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:

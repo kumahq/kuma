@@ -20,6 +20,15 @@ type Clusters struct {
 	Prometheus    *envoy_cluster.Cluster
 }
 
+func GatherAllClusters(rs *core_xds.ResourceSet) []*envoy_cluster.Cluster {
+	var clusters []*envoy_cluster.Cluster
+	for _, res := range rs.Resources(envoy_resource.ClusterType) {
+		cluster := res.Resource.(*envoy_cluster.Cluster)
+		clusters = append(clusters, cluster)
+	}
+	return clusters
+}
+
 func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 	clusters := Clusters{
 		Inbound:       map[string]*envoy_cluster.Cluster{},

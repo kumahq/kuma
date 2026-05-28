@@ -2,18 +2,23 @@
   "diff": [
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/circuitBreakers",
-      "value": {
-        "thresholds": [
-          {
-            "maxConnections": 2,
-            "maxPendingRequests": 8,
-            "maxRequests": 2,
-            "maxRetries": 2,
-            "trackRemaining": true
-          }
-        ]
-      }
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/circuitBreakers/thresholds/0/maxConnections",
+      "value": 2
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/circuitBreakers/thresholds/0/maxPendingRequests",
+      "value": 8
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/circuitBreakers/thresholds/0/maxRequests",
+      "value": 2
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/circuitBreakers/thresholds/0/maxRetries",
+      "value": 2
     },
     {
       "op": "add",
@@ -155,6 +160,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -180,6 +192,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
