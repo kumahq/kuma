@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -62,6 +64,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
 		fromRules       core_rules.FromRules
+		withoutPolicy   bool
 		expectedCluster []string
 	}
 
@@ -107,6 +110,17 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		}
 	}
 
+	clusterWithExistingCircuitBreakers := func(name string) *envoy_cluster.Cluster {
+		cluster := test_xds.ClusterWithName(name).(*envoy_cluster.Cluster)
+		cluster.CircuitBreakers = &envoy_cluster.CircuitBreakers{
+			Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{{
+				Priority:       envoy_config_core_v3.RoutingPriority_DEFAULT,
+				MaxConnections: util_proto.UInt32(66),
+			}},
+		}
+		return cluster
+	}
+
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
 			resourceSet := core_xds.NewResourceSet()
@@ -135,14 +149,14 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							mesh_proto.ServiceTag: "second-service",
 						},
 					}},
-				}).
-				WithPolicies(
+				})
+			if !given.withoutPolicy {
+				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
-				).
-				Build()
+				)
+			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-
-			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, context, proxy.Build())).To(Succeed())
 
 			for idx, expected := range given.expectedCluster {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[idx].Resource)).
@@ -171,6 +185,28 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			expectedCluster: []string{"outbound_cluster_connection_limits.golden.yaml"},
+		}),
+		Entry("basic outbound cluster without MeshCircuitBreaker", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   metadata.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+			},
+			withoutPolicy:   true,
+			expectedCluster: []string{"outbound_cluster_track_remaining_only.golden.yaml"},
+		}),
+		Entry("basic outbound cluster preserves existing circuit breakers without MeshCircuitBreaker", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   metadata.OriginOutbound,
+					Resource: clusterWithExistingCircuitBreakers("other-service"),
+				},
+			},
+			withoutPolicy:   true,
+			expectedCluster: []string{"outbound_cluster_existing_circuit_breakers.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -473,6 +509,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		meshtcproutes  core_rules.GatewayRules
 		meshservices   []*meshservice_api.MeshServiceResource
 		rules          core_rules.GatewayRules
+		withoutPolicy  bool
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -498,29 +535,30 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
-				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules).
-					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
-					WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes),
-				).
-				Build()
+				WithDataplane(samples.GatewayDataplaneBuilder())
+			policies := xds_builders.MatchedPolicies().
+				WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
+				WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes)
+			if !given.withoutPolicy {
+				policies = policies.WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules)
+			}
+			proxy = proxy.WithPolicies(policies)
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy.Build())).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy.Build())
 			Expect(err).NotTo(HaveOccurred())
 
 			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy.Build())).To(Succeed())
 
 			tcpRoutePlugin := meshtcproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy.Build())).To(Succeed())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy.Build())).To(Succeed())
 
 			// then
 			resource, err := util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ClusterType)
@@ -547,6 +585,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
+		}),
+		Entry("basic outbound cluster without MeshCircuitBreaker", gatewayTestCase{
+			name:          "track-remaining-only",
+			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			withoutPolicy: true,
 		}),
 		Entry("real MeshService targeted to real MeshService", gatewayTestCase{
 			name: "real-MeshService-targeted-to-real-MeshService",
@@ -628,6 +671,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 	type zoneProxyTestCase struct {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
+		withoutPolicy   bool
 		expectedCluster string
 	}
 
@@ -667,14 +711,15 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							},
 						},
 					}
-				}).
-				WithPolicies(
+				})
+			if !given.withoutPolicy {
+				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, core_rules.FromRules{}),
-				).
-				Build()
+				)
+			}
 
 			p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(p.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+			Expect(p.Apply(resourceSet, xdsCtx, proxy.Build())).To(Succeed())
 
 			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource)).
 				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
@@ -695,6 +740,16 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			expectedCluster: "basic-meshexternalservice.zone_proxy_cluster.golden.yaml",
 		}),
+		Entry("MeshExternalService cluster without MeshCircuitBreaker on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:           mesKRI.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName(mesKRI.String()),
+				ResourceOrigin: mesKRI,
+			}},
+			withoutPolicy:   true,
+			expectedCluster: "basic-meshexternalservice-track-remaining.zone_proxy_cluster.golden.yaml",
+		}),
 		Entry("MeshExternalService cluster with outlier detection on zone proxy", zoneProxyTestCase{
 			resources: []*core_xds.Resource{{
 				Name:           mesKRI.String(),
@@ -712,4 +767,55 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			expectedCluster: "basic-meshexternalservice-outlier.zone_proxy_cluster.golden.yaml",
 		}),
 	)
+
+	It("should enable track remaining on clusters regardless of origin", func() {
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:     "prometheus",
+			Origin:   metadata.OriginPrometheus,
+			Resource: test_xds.ClusterWithName("prometheus"),
+		})
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), xds_builders.Proxy().Build())).To(Succeed())
+
+		cluster := resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource.(*envoy_cluster.Cluster)
+		Expect(cluster.GetCircuitBreakers().GetThresholds()).To(HaveLen(1))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].GetPriority()).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].TrackRemaining).To(BeTrue())
+	})
+
+	It("should enable track remaining for ZoneEgressProxy without MeshCircuitBreaker", func() {
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:           mesKRI.String(),
+			Origin:         metadata.OriginEgress,
+			Resource:       test_xds.ClusterWithName(mesKRI.String()),
+			ResourceOrigin: mesKRI,
+		})
+
+		proxy := xds_builders.Proxy().
+			With(func(p *core_xds.Proxy) {
+				p.ZoneEgressProxy = &core_xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-egress", Mesh: "default"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "10.0.0.1",
+								Port:    10002,
+							},
+						},
+					},
+				}
+			}).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+
+		cluster := resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource.(*envoy_cluster.Cluster)
+		Expect(cluster.GetCircuitBreakers().GetThresholds()).To(HaveLen(1))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].GetPriority()).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].TrackRemaining).To(BeTrue())
+	})
 })

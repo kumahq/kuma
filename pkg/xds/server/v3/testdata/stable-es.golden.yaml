@@ -2,6 +2,9 @@ resources:
 - name: es-with-tls
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
@@ -143,6 +146,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: inbound_passthrough_ipv4
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: inbound:passthrough:ipv4
@@ -155,6 +161,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8080
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: localhost:8080
@@ -175,6 +184,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8443
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: localhost:8443
@@ -195,6 +207,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: outbound_passthrough_ipv4
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: outbound:passthrough:ipv4
@@ -203,6 +218,9 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: self_transparentproxy_no_destination_inbound
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     name: self_transparentproxy_no_destination_inbound
     type: STATIC

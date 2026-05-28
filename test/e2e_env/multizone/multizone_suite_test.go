@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/localityawarelb"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshaccesslog"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshhttproute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshidentity"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshmetric"
@@ -69,6 +70,7 @@ var (
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", connectivity.GatewayIPV6CNIV2, Ordered)
 	_ = Describe("Sync", multizone_sync.Sync, Ordered)
 	_ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
+	_ = Describe("MeshAccessLog on Zone Ingress", meshaccesslog.ZoneIngress, Ordered)
 	_ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
 	_ = Describe("Ownership", ownership.MultizoneUniversal, Ordered)
