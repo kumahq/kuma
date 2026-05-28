@@ -69,9 +69,6 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 				return nil, nil, errors.New("could not add certificate")
 			}
 			tlsConfig.RootCAs = certPool
-		} else {
-			log.Info(`[WARNING] The data plane proxy cannot verify the identity of the control plane because you are not setting the "--ca-cert-file" argument or setting the KUMA_CONTROL_PLANE_CA_CERT environment variable.`)
-			tlsConfig.InsecureSkipVerify = true // #nosec G402 -- we have the warning above
 		}
 	}
 

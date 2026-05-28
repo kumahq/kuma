@@ -16,9 +16,7 @@ func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, cl
 		},
 	}
 
-	if caCert == "" {
-		transport.TLSClientConfig.InsecureSkipVerify = true
-	} else {
+	if caCert != "" {
 		certBytes, err := os.ReadFile(caCert)
 		if err != nil {
 			return errors.Wrap(err, "could not read CA cert")
