@@ -46,8 +46,8 @@ func RegisterXDS(
 	dpLifecycle := xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration))
 	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks, xdsMetrics)
-	ingressReconciler := DefaultIngressReconciler(rt, xdsContext, statsCallbacks)
-	egressReconciler := DefaultEgressReconciler(rt, xdsContext, statsCallbacks)
+	ingressReconciler := DefaultIngressReconciler(rt, xdsContext, statsCallbacks, xdsMetrics)
+	egressReconciler := DefaultEgressReconciler(rt, xdsContext, statsCallbacks, xdsMetrics)
 	otelStatusCache := otelstatus.NewCache()
 	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, ingressReconciler, egressReconciler, xdsMetrics, envoyCpCtx, otelStatusCache, envoy_common.APIV3)
 	if err != nil {
@@ -127,6 +127,7 @@ func DefaultIngressReconciler(
 	rt core_runtime.Runtime,
 	xdsContext XdsContext,
 	statsCallbacks util_xds.StatsCallbacks,
+	metrics *xds_metrics.Metrics,
 ) xds_sync.SnapshotReconciler {
 	resolver := &xds_template.StaticProxyTemplateResolver{
 		Template: &mesh_proto.ProxyTemplate{
@@ -145,6 +146,7 @@ func DefaultIngressReconciler(
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 		statsCallbacks: statsCallbacks,
+		metrics:        metrics,
 	}
 }
 
@@ -152,6 +154,7 @@ func DefaultEgressReconciler(
 	rt core_runtime.Runtime,
 	xdsContext XdsContext,
 	statsCallbacks util_xds.StatsCallbacks,
+	metrics *xds_metrics.Metrics,
 ) xds_sync.SnapshotReconciler {
 	resolver := &xds_template.StaticProxyTemplateResolver{
 		Template: &mesh_proto.ProxyTemplate{
@@ -170,6 +173,7 @@ func DefaultEgressReconciler(
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 		statsCallbacks: statsCallbacks,
+		metrics:        metrics,
 	}
 }
 

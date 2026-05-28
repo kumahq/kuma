@@ -21,10 +21,12 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	xds_model "github.com/kumahq/kuma/v2/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 func hcmForRoute(routeName string) *anypb.Any {
@@ -131,6 +133,8 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds", util_xds.NoopVersionExtractor)
 			Expect(err).ToNot(HaveOccurred())
+			xdsMetrics, err := xds_metrics.NewMetrics(metrics)
+			Expect(err).ToNot(HaveOccurred())
 
 			// setup
 			r := &reconciler{
@@ -140,6 +144,7 @@ var _ = Describe("Reconcile", func() {
 				}),
 				cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 				statsCallbacks: statsCallbacks,
+				metrics:        xdsMetrics,
 			}
 
 			// given
@@ -185,6 +190,23 @@ var _ = Describe("Reconcile", func() {
 			Expect(clusterV1).ToNot(BeEmpty())
 			Expect(endpointV1).ToNot(BeEmpty())
 			Expect(secretV1).ToNot(BeEmpty())
+
+			By("verifying snapshot size histogram was observed for each xDS type")
+			for _, typeURL := range []string{
+				resource.ClusterType,
+				resource.EndpointType,
+				resource.ListenerType,
+				resource.RouteType,
+				resource.SecretType,
+				resource.RuntimeType,
+			} {
+				m := test_metrics.FindMetric(metrics, "xds_snapshot_size_bytes", "type_url", typeURL, "proxy_type", string(mesh_proto.DataplaneProxyType))
+				Expect(m).ToNot(BeNil(), "expected snapshot size histogram for %s", typeURL)
+				Expect(m.GetHistogram().GetSampleCount()).To(BeNumerically(">=", uint64(1)))
+			}
+			// non-empty resource types must have observed a positive byte total
+			listenerMetric := test_metrics.FindMetric(metrics, "xds_snapshot_size_bytes", "type_url", resource.ListenerType, "proxy_type", string(mesh_proto.DataplaneProxyType))
+			Expect(listenerMetric.GetHistogram().GetSampleSum()).To(BeNumerically(">", float64(0)))
 
 			By("simulating discovery event (Dataplane watchdog triggers refresh)")
 			// when

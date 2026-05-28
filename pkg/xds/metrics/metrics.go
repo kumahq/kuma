@@ -13,6 +13,7 @@ type Metrics struct {
 	KubeAuthCache           *prometheus.CounterVec
 	CertExpirationTimestamp *prometheus.GaugeVec
 	SnapshotResources       *prometheus.HistogramVec
+	SnapshotSizeBytes       *prometheus.HistogramVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -37,7 +38,12 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Help:    "Distribution of resource counts per xDS snapshot by resource type.",
 		Buckets: prometheus.ExponentialBuckets(1, 2, 12),
 	}, []string{"resource_type"})
-	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources); err != nil {
+	snapshotSizeBytes := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "xds_snapshot_size_bytes",
+		Help:    "Total serialized size in bytes of resources in the snapshot computed per proxy, split by xDS resource type.",
+		Buckets: prometheus.ExponentialBuckets(1024, 2, 16),
+	}, []string{"type_url", "proxy_type"})
+	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources, snapshotSizeBytes); err != nil {
 		return nil, err
 	}
 
@@ -47,5 +53,6 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		KubeAuthCache:           kubeAuthCache,
 		CertExpirationTimestamp: certExpirationTimestamp,
 		SnapshotResources:       snapshotResources,
+		SnapshotSizeBytes:       snapshotSizeBytes,
 	}, nil
 }

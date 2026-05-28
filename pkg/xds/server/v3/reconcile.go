@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	model "github.com/kumahq/kuma/v2/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
@@ -21,6 +22,31 @@ import (
 	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/v2/pkg/xds/template"
 )
+
+var snapshotSizeTypeURLs = []string{
+	envoy_resource.ClusterType,
+	envoy_resource.EndpointType,
+	envoy_resource.ListenerType,
+	envoy_resource.RouteType,
+	envoy_resource.SecretType,
+	envoy_resource.RuntimeType,
+}
+
+// proxyTypeLabel returns the value for the proxy_type histogram label. The
+// reconciler is shared between dataplane, ingress and egress proxies, so we
+// pick the label based on which proxy-specific field is populated.
+func proxyTypeLabel(proxy *model.Proxy) string {
+	switch {
+	case proxy.ZoneIngressProxy != nil:
+		return string(mesh_proto.IngressProxyType)
+	case proxy.ZoneEgressProxy != nil:
+		return string(mesh_proto.EgressProxyType)
+	case proxy.Dataplane != nil && proxy.Dataplane.Spec.IsBuiltinGateway():
+		return string(mesh_proto.GatewayLabel)
+	default:
+		return string(mesh_proto.DataplaneProxyType)
+	}
+}
 
 var reconcileLog = core.Log.WithName("xds").WithName("reconcile")
 
@@ -97,6 +123,21 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 		return false, errors.Wrap(err, "inconsistent snapshot")
 	}
 	log.Info("config has changed", "versions", changed)
+
+	if r.metrics != nil {
+		proxyType := proxyTypeLabel(proxy)
+		for _, typeURL := range snapshotSizeTypeURLs {
+			resources := snapshot.GetResources(typeURL)
+			var total int
+			for _, res := range resources {
+				if res == nil {
+					continue
+				}
+				total += proto.Size(res)
+			}
+			r.metrics.SnapshotSizeBytes.WithLabelValues(typeURL, proxyType).Observe(float64(total))
+		}
+	}
 
 	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
 		return false, errors.Wrap(err, "failed to store snapshot")
