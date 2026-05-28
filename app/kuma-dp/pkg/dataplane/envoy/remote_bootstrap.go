@@ -63,7 +63,11 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 		client.Transport = &http.Transport{
 			TLSClientConfig: tlsConfig,
 		}
-		if opts.Config.ControlPlane.CaCert != "" {
+		switch {
+		case opts.Config.ControlPlane.TlsSkipVerify:
+			log.Info("[WARNING] --skip-verify is set, the Control Plane certificate will not be verified")
+			tlsConfig.InsecureSkipVerify = true // #nosec G402 -- opt-in via --skip-verify
+		case opts.Config.ControlPlane.CaCert != "":
 			certPool := x509.NewCertPool()
 			if ok := certPool.AppendCertsFromPEM([]byte(opts.Config.ControlPlane.CaCert)); !ok {
 				return nil, nil, errors.New("could not add certificate")
