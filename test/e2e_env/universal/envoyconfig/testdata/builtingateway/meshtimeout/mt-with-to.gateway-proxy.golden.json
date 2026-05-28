@@ -102,36 +102,6 @@
     },
     {
       "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8081:*/virtualHosts/0/routes/2/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8081:*/virtualHosts/0/routes/2/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8081:*/virtualHosts/0/routes/2/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8081:*/virtualHosts/0/routes/3/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8081:*/virtualHosts/0/routes/3/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8081:*/virtualHosts/0/routes/3/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/0/route/idleTimeout",
       "value": "5s"
     },
@@ -158,36 +128,6 @@
     {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/1/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/2/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/2/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/2/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/3/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/3/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8082:*/virtualHosts/0/routes/3/route/timeout",
       "value": "52s"
     },
     {
@@ -252,36 +192,6 @@
     },
     {
       "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/0/routes/2/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/0/routes/2/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/0/routes/2/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/0/routes/3/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/0/routes/3/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/0/routes/3/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/0/route/idleTimeout",
       "value": "5s"
     },
@@ -308,36 +218,6 @@
     {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/1/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/2/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/2/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/2/route/timeout",
-      "value": "52s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/3/route/idleTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/3/route/idleTimeout",
-      "value": "53s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.route.v3.RouteConfiguration/gateway-proxy:HTTP:8083:*/virtualHosts/1/routes/3/route/timeout",
       "value": "52s"
     },
     {
@@ -1269,60 +1149,6 @@
               },
               {
                 "match": {
-                  "path": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
-                  "prefix": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
                   "prefix": "/"
                 },
                 "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
@@ -1369,60 +1195,6 @@
               {
                 "match": {
                   "path": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
-                  "path": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
-                  "prefix": "/"
                 },
                 "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
                 "route": {
@@ -1583,60 +1355,6 @@
               },
               {
                 "match": {
-                  "path": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
-                  "prefix": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
                   "prefix": "/"
                 },
                 "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
@@ -1673,60 +1391,6 @@
               {
                 "match": {
                   "path": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
-                  "path": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "53s",
-                  "timeout": "52s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
-                  "prefix": "/"
                 },
                 "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
                 "route": {
