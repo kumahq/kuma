@@ -12,6 +12,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -314,11 +315,13 @@ var _ = Describe("MeshFaultInjection", func() {
 	)
 
 	It("should generate proper Envoy config for zone egress listener with rules[].matches[].sni", func() {
+		name := naming.ContextualZoneEgressListenerName("ze-port")
 		resourceSet := core_xds.NewResourceSet()
 		resourceSet.Add(&core_xds.Resource{
-			Name:   "outbound:zoneegress",
+			Name:   name,
 			Origin: metadata.OriginEgress,
-			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true).
+			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(listeners.InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 					Configure(listeners.MatchTransportProtocol("tls")).
 					Configure(listeners.MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).

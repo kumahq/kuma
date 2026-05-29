@@ -13,6 +13,34 @@ filterChains:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
       httpFilters:
+      - name: kri_mfi_default_zone-1_ns-1_mfi-zone-egress_
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+          extensionConfig:
+            name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              abort:
+                httpStatus: 503
+                percentage:
+                  numerator: 50
+          xdsMatcher:
+            matcherList:
+              matchers:
+              - onMatch:
+                  action:
+                    name: skip
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.common.matcher.action.v3.SkipFilter
+                predicate:
+                  notMatcher:
+                    singlePredicate:
+                      input:
+                        name: envoy.matching.inputs.server_name
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput
+                      valueMatch:
+                        exact: sni.extsvc.default.zone-1.aws-aurora.8443
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -42,5 +70,5 @@ filterChains:
               timeout: 0s
       statPrefix: mes-http
   name: mes-http
-name: inbound:10.20.30.40:10002
+name: self_zoneegress_dp_ze-port
 trafficDirection: INBOUND
