@@ -5,6 +5,12 @@ FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:cdf2203e4c97413016eabd6472a90fe04
 
 ARG ARCH
 
+# ca-certificates is required for curl to validate HTTPS downloads (e.g. older
+# kuma-dp binaries from packages.konghq.com used by compatibility tests).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -u 5678 -U kuma-dp
 
 RUN mkdir /kuma
