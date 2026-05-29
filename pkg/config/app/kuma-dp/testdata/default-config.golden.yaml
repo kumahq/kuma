@@ -6,6 +6,7 @@ controlPlane:
   retry:
     backoff: 3s
     maxDuration: 5m0s
+  tlsSkipVerify: false
   url: https://localhost:5678
 dataplane:
   drainTime: 30s
