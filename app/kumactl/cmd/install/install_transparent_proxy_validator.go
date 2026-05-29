@@ -62,7 +62,7 @@ The result will be shown as text in stdout as well as the exit code.
 			validateOnlyIPv4 := ipFamilyMode == tproxy_config.IPFamilyModeIPv4
 
 			validate := func(ipv6 bool) error {
-				if ipv6 && !hasLocalIPv6Addr || validateOnlyIPv4 {
+				if ipv6 && (!hasLocalIPv6Addr || validateOnlyIPv4) {
 					return nil
 				}
 
