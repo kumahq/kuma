@@ -221,12 +221,13 @@ func generateEnvoyRouteEntries(
 	return dedupRouteEntries(plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries))
 }
 
-// dedupRouteEntries removes consecutive duplicates that result from a single
-// virtual host being covered by multiple overlapping rules that emit identical
-// route entries (for example, a rule scoped to `foo.example.com` and a rule
-// scoped to `*.example.com` both producing the same match+action for the
-// `foo.example.com` virtual host). Entries that differ in match, action,
-// rewrite, mirror or header transformations are preserved as distinct.
+// dedupRouteEntries removes exact duplicate route entries while preserving order.
+//
+// Duplicates can happen when a single virtual host is covered by multiple
+// overlapping hostname rules that emit identical route.Entry values (e.g.
+// `foo.example.com` and `*.example.com` both producing the same entry for
+// `foo.example.com`). Equality is determined by reflect.DeepEqual on the whole
+// route.Entry, so entries that differ in any field remain distinct.
 func dedupRouteEntries(entries []route.Entry) []route.Entry {
 	if len(entries) < 2 {
 		return entries
