@@ -230,6 +230,13 @@ spec:
 			g.Expect(log).To(Equal(fmt.Sprintf("sni=%s", testServer1SNI)))
 		}, "60s", "1s").Should(Succeed())
 
+		By("traffic to test-server-2 becomes routable before checking that it is not logged")
+		Eventually(func(g Gomega) {
+			response, err := client.CollectEchoResponse(multizone.UniZone2, demoClient, urlFor(testServer2))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal(testServer2))
+		}, "60s", "1s").Should(Succeed())
+
 		By("traffic to test-server-2 does not match the rule and is not logged")
 		Consistently(func(g Gomega) {
 			_, err := client.CollectEchoResponse(multizone.UniZone2, demoClient, urlFor(testServer2))
