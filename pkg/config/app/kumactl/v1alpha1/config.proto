@@ -57,6 +57,9 @@ message ControlPlaneCoordinates {
 
     // Authentication configuration for defined authentication type
     map<string, string> auth_conf = 7;
+
+    // SkipVerify disables verification of the Control Plane API Server's TLS certificate.
+    bool skip_verify = 8;
   }
 
   ApiServer api_server = 1 [(validate.rules).message.required = true];
