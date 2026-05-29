@@ -137,10 +137,10 @@ func ZoneProxy() {
 
 	fromDemoClient := client.FromKubernetesPod(ns, demoClient)
 
-	trafficAllowed := func(address string) {
+	trafficAllowedWithPasses := func(address string, mustPassRepeatedly int) {
 		GinkgoHelper()
 
-		Eventually(func(g Gomega) {
+		eventually := Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
 				demoClient,
@@ -149,22 +149,26 @@ func ZoneProxy() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(ContainSubstring(externalServer))
-		}, "90s", "3s").Should(Succeed())
+		}, "90s", "3s")
+
+		if mustPassRepeatedly > 0 {
+			eventually.MustPassRepeatedly(mustPassRepeatedly).Should(Succeed())
+			return
+		}
+
+		eventually.Should(Succeed())
+	}
+
+	trafficAllowed := func(address string) {
+		GinkgoHelper()
+
+		trafficAllowedWithPasses(address, 0)
 	}
 
 	trafficAllowedRepeatedly := func(address string) {
 		GinkgoHelper()
 
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				kubernetes.Cluster,
-				demoClient,
-				address,
-				fromDemoClient,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(ContainSubstring(externalServer))
-		}, "90s", "3s").MustPassRepeatedly(3).Should(Succeed())
+		trafficAllowedWithPasses(address, 3)
 	}
 
 	trafficFaultInjected := func(address string) {
