@@ -25,6 +25,13 @@ import (
 
 const defaultLogName = "transparentproxy.validator"
 
+// shouldSkipValidation returns true when the given IP version should not be
+// validated. IPv6 is skipped when the node has no local IPv6 address or the
+// mode is IPv4-only. IPv4 is never skipped.
+func shouldSkipValidation(ipv6, hasLocalIPv6Addr, validateOnlyIPv4 bool) bool {
+	return ipv6 && (!hasLocalIPv6Addr || validateOnlyIPv4)
+}
+
 func newInstallTransparentProxyValidator() *cobra.Command {
 	ipFamilyMode := tproxy_config.IPFamilyModeDualStack
 	serverPort := tproxy_validate.ServerPort
@@ -65,7 +72,7 @@ The result will be shown as text in stdout as well as the exit code.
 			validateOnlyIPv4 := ipFamilyMode == tproxy_config.IPFamilyModeIPv4
 
 			validate := func(ipv6 bool) error {
-				if ipv6 && !hasLocalIPv6Addr || validateOnlyIPv4 {
+				if shouldSkipValidation(ipv6, hasLocalIPv6Addr, validateOnlyIPv4) {
 					return nil
 				}
 
