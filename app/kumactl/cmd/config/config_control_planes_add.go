@@ -49,6 +49,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 						ClientKeyFile:  args.clientKeyFile,
 						AuthType:       args.authType,
 						AuthConf:       args.authConf,
+						SkipVerify:     args.skipVerify,
 					},
 				},
 			}
