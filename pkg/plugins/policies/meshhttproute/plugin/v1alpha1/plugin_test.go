@@ -2781,6 +2781,110 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("gateway-builtingateway-with-multiple-listeners", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+								Hostname: "example.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8081,
+								Hostname: "another.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8082,
+								Hostname: "*.test.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8083,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("echo-service", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "echo-service", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)),
+				)
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+
+			// allRules combines both MeshHTTPRoute configs from builtingateway.go:
+			// - global (meshHTTPRoute): routes "/" to echo-service for any hostname
+			// - domain (meshHTTPRouteWithDomains): routes "/" only for the two explicit hostnames
+			pathRootRule := []api.Rule{{
+				Matches: []api.Match{{
+					Path: &api.PathMatch{
+						Type:  api.PathPrefix,
+						Value: "/",
+					},
+				}},
+				Default: api.RuleConf{
+					BackendRefs: &[]common_api.BackendRef{{
+						TargetRef: builders.TargetRefService("echo-service"),
+						Weight:    pointer.To(uint(100)),
+					}},
+				},
+			}}
+			allRules := core_rules.Rules{
+				{
+					Subset: subsetutils.MeshSubset(),
+					Conf:   api.PolicyDefault{Rules: pathRootRule},
+				},
+				{
+					Subset: subsetutils.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Hostnames: []string{"another.kuma.io", "app.test.kuma.io"},
+						Rules:     pathRootRule,
+					},
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "example.kuma.io"): {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "another.kuma.io"): {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, "*.test.kuma.io"):  {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*"):               {Rules: allRules},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 	)
 })
 
