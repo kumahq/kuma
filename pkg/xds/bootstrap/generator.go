@@ -98,15 +98,16 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 	params := configParameters{
-		Id:                 proxyId.String(),
-		AdminAddress:       b.config.Params.AdminAddress,
-		AdminAccessLogPath: b.adminAccessLogPath(request.OperatingSystem),
-		XdsHost:            b.xdsHost(request),
-		XdsPort:            b.config.Params.XdsPort,
-		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout.Duration,
-		DataplaneToken:     request.DataplaneToken,
-		DataplaneTokenPath: request.DataplaneTokenPath,
-		DataplaneResource:  request.DataplaneResource,
+		Id:                            proxyId.String(),
+		AdminAddress:                  b.config.Params.AdminAddress,
+		AdminAccessLogPath:            b.adminAccessLogPath(request.OperatingSystem),
+		XdsHost:                       b.xdsHost(request),
+		XdsPort:                       b.config.Params.XdsPort,
+		XdsConnectTimeout:             b.config.Params.XdsConnectTimeout.Duration,
+		XdsGrpcMaxReceiveMessageBytes: b.config.Params.XdsGrpcMaxReceiveMessageBytes,
+		DataplaneToken:                request.DataplaneToken,
+		DataplaneTokenPath:            request.DataplaneTokenPath,
+		DataplaneResource:             request.DataplaneResource,
 		Version: &mesh_proto.Version{
 			KumaDp: &mesh_proto.KumaDpVersion{
 				Version:   request.Version.KumaDp.Version,
