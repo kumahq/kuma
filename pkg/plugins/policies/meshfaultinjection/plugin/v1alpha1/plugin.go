@@ -127,45 +127,49 @@ func applyToZoneProxyListeners(
 		return nil
 	}
 
-	apply := func(listener *envoy_listener.Listener) error {
-		if listener == nil {
-			return nil
-		}
-
-		socketAddress := listener.GetAddress().GetSocketAddress()
-		if socketAddress == nil {
-			return nil
-		}
-
-		listenerKey := core_rules.InboundListener{
-			Address: socketAddress.GetAddress(),
-			Port:    socketAddress.GetPortValue(),
-		}
-		inboundRules, ok := fromRules.InboundRules[listenerKey]
-		if !ok || len(inboundRules) == 0 {
-			return nil
-		}
-
-		configurer := plugin_xds.Configurer{Rules: inboundRules}
-		for _, filterChain := range listener.FilterChains {
-			switch policies_xds.FilterChainProtocol(filterChain) {
-			case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-				if err := configurer.ConfigureHttpListener(filterChain); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}
-
 	for _, listener := range listeners.ZoneIngress {
-		if err := apply(listener); err != nil {
+		if err := applyToZoneProxyListener(fromRules, listener); err != nil {
 			return err
 		}
 	}
 	for _, listener := range listeners.ZoneEgress {
-		if err := apply(listener); err != nil {
+		if err := applyToZoneProxyListener(fromRules, listener); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToZoneProxyListener(
+	fromRules core_rules.FromRules,
+	listener *envoy_listener.Listener,
+) error {
+	if listener == nil {
+		return nil
+	}
+
+	socketAddress := listener.GetAddress().GetSocketAddress()
+	if socketAddress == nil {
+		return nil
+	}
+
+	listenerKey := core_rules.InboundListener{
+		Address: socketAddress.GetAddress(),
+		Port:    socketAddress.GetPortValue(),
+	}
+	inboundRules, ok := fromRules.InboundRules[listenerKey]
+	if !ok || len(inboundRules) == 0 {
+		return nil
+	}
+
+	configurer := plugin_xds.Configurer{Rules: inboundRules}
+	for _, filterChain := range listener.FilterChains {
+		switch policies_xds.FilterChainProtocol(filterChain) {
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+			if err := configurer.ConfigureHttpListener(filterChain); err != nil {
+				return err
+			}
 		}
 	}
 
