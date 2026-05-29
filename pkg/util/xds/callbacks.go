@@ -28,6 +28,10 @@ type DiscoveryResponse interface {
 	VersionInfo() string
 	GetResources() []*anypb.Any
 	GetNonce() string
+	// ByteSize returns the serialized protobuf size in bytes of the
+	// underlying DiscoveryResponse message. Used to expose payload size
+	// observability for xDS responses.
+	ByteSize() int
 }
 
 type DeltaDiscoveryRequest interface {
@@ -49,6 +53,10 @@ type DeltaDiscoveryResponse interface {
 	GetResources() []*discoveryv3.Resource
 	GetRemovedResources() []string
 	GetNonce() string
+	// ByteSize returns the serialized protobuf size in bytes of the
+	// underlying DeltaDiscoveryResponse message. Used to expose payload
+	// size observability for xDS responses.
+	ByteSize() int
 }
 
 // Callbacks defines Callbacks for xDS streaming requests. The difference over real go-control-plane Callbacks is that it takes an DiscoveryRequest / DiscoveryResponse interface.
