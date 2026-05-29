@@ -11,6 +11,12 @@
   "kuma.io/zone": "default"
  },
  "kri": "kri_msvc_default_default__with-status_",
+ "snis": [
+  {
+   "port": 8082,
+   "sni": "sni.msvc.default.default.with-status.8082"
+  }
+ ],
  "spec": {
   "state": "Unavailable",
   "selector": {
