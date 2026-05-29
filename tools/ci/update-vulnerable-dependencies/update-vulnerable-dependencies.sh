@@ -37,9 +37,6 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
     if [[ "$package" == "stdlib" ]]; then
       go mod edit -go="$fixVersion"
     else
-<<<<<<< HEAD
-      go get "$package"@v"$fixVersion"
-=======
       # Always use GOTOOLCHAIN=auto to allow downloading newer Go toolchain
       # when updating dependencies that require it (e.g., helm requiring Go 1.24+).
       # OSV sometimes reports a fixed version that isn't published to the Go
@@ -49,7 +46,6 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
       if ! GOTOOLCHAIN=auto go get "$package"@v"$fixVersion"; then
         echo "WARNING: failed to update $package to v$fixVersion; skipping" >&2
       fi
->>>>>>> d3b4948eca (ci(deps): skip deps with unpublished fix ver (#16770))
     fi
   fi
 done
