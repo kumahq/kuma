@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -40,22 +41,30 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 
 	meshName := k8s_util.MeshOfByLabelOrAnnotation(logger, pod, ns)
 	logger = logger.WithValues("mesh", meshName)
-	// Mesh zone proxy pods rely on the Pod/Dataplane reconciliation path to
-	// retry until the target mesh exists, so admission must not block them
-	// here. Prefer the pod-local zone-proxy-type hint when present, but also
-	// fall back to matching Services so the regular injector path keeps working
-	// when zone proxy is not in the default release namespace.
-	isZoneProxyPod := pod.GetLabels()[metadata.KumaZoneProxyTypeLabel] != ""
-	if !isZoneProxyPod {
-		isZoneProxyPod, err = i.hasZoneProxyService(ctx, pod)
-		if err != nil {
-			return "", errors.Wrap(err, "could not determine if pod is a zone proxy")
+	if meshErr := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); meshErr != nil {
+		if !kube_errors.IsNotFound(meshErr) {
+			return "", meshErr
 		}
-	}
-	skipMeshExistenceCheck := hasExplicitMesh(pod, ns) && isZoneProxyPod
-	if !skipMeshExistenceCheck {
-		if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {
-			return "", err
+
+		// Mesh zone proxy pods rely on the Pod/Dataplane reconciliation path to
+		// retry until the target mesh exists, so admission must not block them
+		// here. Prefer the pod-local zone-proxy-type hint when present, but only
+		// fall back to matching Services after a Mesh NotFound so the regular
+		// injector path keeps its fast path.
+		if !hasExplicitMesh(pod, ns) {
+			return "", meshErr
+		}
+
+		isZoneProxyPod := pod.GetLabels()[metadata.KumaZoneProxyTypeLabel] != ""
+		if !isZoneProxyPod {
+			var serviceErr error
+			isZoneProxyPod, serviceErr = i.hasZoneProxyService(ctx, pod)
+			if serviceErr != nil {
+				return "", errors.Wrap(serviceErr, "could not determine if pod is a zone proxy")
+			}
+		}
+		if !isZoneProxyPod {
+			return "", meshErr
 		}
 	}
 

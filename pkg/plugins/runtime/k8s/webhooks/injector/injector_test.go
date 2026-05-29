@@ -1169,6 +1169,7 @@ spec:
 
 		It("still rejects non-zone-proxy pods when the mesh does not exist", func() {
 			pod := newPod(true, "")
+			pod.Labels["app"] = "regular"
 
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())
