@@ -392,6 +392,7 @@ cp %s/envoy /usr/bin/envoy
 		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
+		"--skip-verify",
 		"--dataplane-token-file=/kuma/token-" + name,
 		"--binary-path", "/usr/local/bin/envoy",
 	}
