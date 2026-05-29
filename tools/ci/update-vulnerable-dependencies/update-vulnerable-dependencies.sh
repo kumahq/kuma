@@ -37,7 +37,15 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
     if [[ "$package" == "stdlib" ]]; then
       go mod edit -go="$fixVersion"
     else
-      go get "$package"@v"$fixVersion"
+      # Always use GOTOOLCHAIN=auto to allow downloading newer Go toolchain
+      # when updating dependencies that require it (e.g., helm requiring Go 1.24+).
+      # OSV sometimes reports a fixed version that isn't published to the Go
+      # module proxy (e.g. github.com/docker/docker tags v29.x upstream as
+      # docker-v29.x, so go get fails with "unknown revision"). Don't abort the
+      # whole run in that case — log and move on so other updates still apply.
+      if ! GOTOOLCHAIN=auto go get "$package"@v"$fixVersion"; then
+        echo "WARNING: failed to update $package to v$fixVersion; skipping" >&2
+      fi
     fi
   fi
 done
