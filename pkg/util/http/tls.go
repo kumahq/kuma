@@ -9,16 +9,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, clientKey string) error {
+func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, clientKey string, skipVerify bool) error {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		},
 	}
 
-	if caCert == "" {
-		transport.TLSClientConfig.InsecureSkipVerify = true
-	} else {
+	switch {
+	case skipVerify:
+		transport.TLSClientConfig.InsecureSkipVerify = true // #nosec G402 -- opt-in via skipVerify
+	case caCert != "":
 		certBytes, err := os.ReadFile(caCert)
 		if err != nil {
 			return errors.Wrap(err, "could not read CA cert")

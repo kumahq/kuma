@@ -99,6 +99,8 @@ type ControlPlane struct {
 	CaCert string `json:"caCert" envconfig:"kuma_control_plane_ca_cert"`
 	// CaCertFile defines a file for Certificate Authority that will be used to verify connection to the Control Plane.
 	CaCertFile string `json:"caCertFile" envconfig:"kuma_control_plane_ca_cert_file"`
+	// TlsSkipVerify disables verification of the Control Plane's TLS certificate. Insecure, intended for development and testing only.
+	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_control_plane_tls_skip_verify"`
 }
 
 type ApiServer struct {
