@@ -373,6 +373,15 @@ cp %s/envoy /usr/bin/envoy
 	// create the token file on the app container
 	_, _ = cmd.WriteString("#!/bin/sh\n")
 	_, _ = fmt.Fprintf(cmd, "printf %q > /kuma/token-%s\n", token, name)
+	if envsMap == nil {
+		envsMap = map[string]string{}
+	}
+	// Skip CP cert verification via env var instead of the --skip-verify flag so
+	// that older kuma-dp versions (compatibility tests) silently ignore it
+	// instead of erroring on an unknown flag.
+	if _, ok := envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"]; !ok {
+		envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"] = "true"
+	}
 	for k, v := range envsMap {
 		_, _ = fmt.Fprintf(cmd, "export %s=%s\n", k, utils.ShellEscape(v))
 	}
@@ -399,7 +408,6 @@ cp %s/envoy /usr/bin/envoy
 		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
-		"--skip-verify",
 		"--dataplane-token-file=/kuma/token-" + name,
 		"--binary-path", "/usr/local/bin/envoy",
 	}
