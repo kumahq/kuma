@@ -313,6 +313,66 @@ var _ = Describe("MeshFaultInjection", func() {
 		}),
 	)
 
+	It("should generate proper Envoy config for zone egress listener with rules[].matches[].sni", func() {
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:   "outbound:zoneegress",
+			Origin: metadata.OriginEgress,
+			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+					Configure(listeners.MatchTransportProtocol("tls")).
+					Configure(listeners.MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+					Configure(listeners.HttpConnectionManager("mes-http", false, nil, true)).
+					Configure(listeners.AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+				)).
+				MustBuild(),
+		})
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("zone-proxy-egress").
+					WithMesh("default").
+					WithAddress("10.20.30.40").
+					With(func(d *core_mesh.DataplaneResource) {
+						d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.20.30.40",
+							Port:    10002,
+							Name:    "ze-port",
+						}}
+					}),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10002}: {{
+						Match: &common_api.Match{
+							SNI: &common_api.SNIMatch{
+								Type:  common_api.SNIExactMatchType,
+								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+							},
+						},
+						Conf: api.Conf{
+							Http: &[]api.FaultInjectionConf{{
+								Abort: &api.AbortConf{
+									HttpStatus: 503,
+									Percentage: intstr.FromString("50"),
+								},
+							}},
+						},
+						Origin: policyOrigin("mfi-zone-egress"),
+					}},
+				},
+			})).
+			Build()
+
+		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+		Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[0].Resource)).To(
+			test_matchers.MatchGoldenYAML(path.Join("testdata", "zoneegress_matches_sni.listener.golden.yaml")),
+		)
+	})
+
 	It("should generate proper Envoy config for Egress", func() {
 		// given
 		rs := core_xds.NewResourceSet()
