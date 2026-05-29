@@ -163,11 +163,6 @@ func (g Generator) Generate(
 			)
 			if ca, ok := generatedMeshCAs[mesh]; ok {
 				resources.Add(createCaSecretResource(identityName, ca))
-			} else {
-				// We need to add _something_ here so that Envoy syncs the
-				// config
-				emptyCa := &core_xds.CaSecret{}
-				resources.Add(createCaSecretResource(identityName, emptyCa))
 			}
 			addedCas = append(addedCas, mesh)
 		}
