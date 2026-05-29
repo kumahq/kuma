@@ -64,15 +64,11 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 		client.Transport = &http.Transport{
 			TLSClientConfig: tlsConfig,
 		}
-<<<<<<< HEAD
-		if cfg.ControlPlane.CaCert != "" {
-=======
 		switch {
-		case opts.Config.ControlPlane.TlsSkipVerify:
+		case cfg.ControlPlane.TlsSkipVerify:
 			log.Info("[WARNING] --skip-verify is set, the Control Plane certificate will not be verified")
 			tlsConfig.InsecureSkipVerify = true // #nosec G402 -- opt-in via --skip-verify
-		case opts.Config.ControlPlane.CaCert != "":
->>>>>>> 2ecadac1aa (fix(kuma-cp): use system trust when CA cert is not provided (#16777))
+		case cfg.ControlPlane.CaCert != "":
 			certPool := x509.NewCertPool()
 			if ok := certPool.AppendCertsFromPEM([]byte(cfg.ControlPlane.CaCert)); !ok {
 				return nil, nil, errors.New("could not add certificate")
