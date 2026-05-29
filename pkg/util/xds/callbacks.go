@@ -25,6 +25,10 @@ type Response interface {
 	GetNonce() string
 	VersionInfo() string
 	GetNumberOfResources() int
+	// ByteSize returns the serialized protobuf size in bytes of the
+	// underlying DiscoveryResponse message. Used to expose payload size
+	// observability for xDS responses.
+	ByteSize() int
 }
 
 // DiscoveryRequest defines interface over real Envoy's DiscoveryRequest.

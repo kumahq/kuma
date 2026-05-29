@@ -44,6 +44,7 @@ type StatsCallbacks interface {
 type statsCallbacks struct {
 	NoopCallbacks
 	responsesSentMetric    *prometheus.CounterVec
+	responseBytesMetric    *prometheus.HistogramVec
 	requestsReceivedMetric *prometheus.CounterVec
 	versionsMetric         *prometheus.GaugeVec
 	deliveryMetric         prometheus.Summary
@@ -90,6 +91,15 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 		Help: "Number of responses sent by the server to a client",
 	}, []string{"type_url"})
 	if err := metrics.Register(stats.responsesSentMetric); err != nil {
+		return nil, err
+	}
+
+	stats.responseBytesMetric = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    dsType + "_responses_sent_bytes",
+		Help:    "Size in bytes of DiscoveryResponse messages sent by the server",
+		Buckets: prometheus.ExponentialBuckets(1024, 2, 16),
+	}, []string{"type_url"})
+	if err := metrics.Register(stats.responseBytesMetric); err != nil {
 		return nil, err
 	}
 
@@ -187,6 +197,7 @@ func (s *statsCallbacks) OnStreamResponse(streamID int64, request DiscoveryReque
 	}
 
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
+	s.responseBytesMetric.WithLabelValues(response.GetTypeUrl()).Observe(float64(response.ByteSize()))
 }
 
 func (s *statsCallbacks) OnDeltaStreamOpen(context.Context, int64, string) error {
@@ -235,6 +246,7 @@ func (s *statsCallbacks) OnStreamDeltaResponse(streamID int64, request DeltaDisc
 	}
 
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
+	s.responseBytesMetric.WithLabelValues(response.GetTypeUrl()).Observe(float64(response.ByteSize()))
 }
 
 func classifyError(err string) string {
