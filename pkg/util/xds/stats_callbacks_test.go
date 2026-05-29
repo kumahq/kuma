@@ -153,6 +153,20 @@ var _ = Describe("Stats callbacks", func() {
 			Expect(test_metrics.FindMetric(metrics, "xds_responses_sent", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
 		})
 
+		It("should track response bytes", func() {
+			// when
+			resp := &envoy_discovery.DiscoveryResponse{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+			}
+			adaptedCallbacks.OnStreamResponse(context.Background(), streamId, nil, resp)
+
+			// then
+			histogram := test_metrics.FindMetric(metrics, "xds_responses_sent_bytes", "type_url", resource.RouteType).GetHistogram()
+			Expect(histogram.GetSampleCount()).To(Equal(uint64(1)))
+			Expect(histogram.GetSampleSum()).To(BeNumerically(">", 0))
+		})
+
 		It("should track config delivery", func() {
 			// given
 			statsCallbacks.ConfigReadyForDelivery("123")
@@ -322,6 +336,20 @@ var _ = Describe("Stats callbacks", func() {
 
 			// then
 			Expect(test_metrics.FindMetric(metrics, "delta_xds_responses_sent", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should track response bytes", func() {
+			// when
+			resp := &envoy_discovery.DeltaDiscoveryResponse{
+				TypeUrl:           resource.RouteType,
+				SystemVersionInfo: "123",
+			}
+			adaptedCallbacks.OnStreamDeltaResponse(streamId, nil, resp)
+
+			// then
+			histogram := test_metrics.FindMetric(metrics, "delta_xds_responses_sent_bytes", "type_url", resource.RouteType).GetHistogram()
+			Expect(histogram.GetSampleCount()).To(Equal(uint64(1)))
+			Expect(histogram.GetSampleSum()).To(BeNumerically(">", 0))
 		})
 
 		It("should track config delivery", func() {
