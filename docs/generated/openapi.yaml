@@ -18497,15 +18497,13 @@ components:
           description: >-
             List of SNIs (Server Name Indication) advertised by xDS for this
             destination, one entry per port, sorted by port ascending. Present
-            for MeshService, MeshMultiZoneService and MeshExternalService when
-            the destination has SNI sections/ports; absent otherwise.
+            for MeshService, MeshMultiZoneService and MeshExternalService.
           type: array
           readOnly: true
           items:
             type: object
             required:
               - port
-              - sectionName
               - sni
             properties:
               port:
@@ -19212,15 +19210,13 @@ components:
           description: >-
             List of SNIs (Server Name Indication) advertised by xDS for this
             destination, one entry per port, sorted by port ascending. Present
-            for MeshService, MeshMultiZoneService and MeshExternalService when
-            the destination has SNI sections/ports; absent otherwise.
+            for MeshService, MeshMultiZoneService and MeshExternalService.
           type: array
           readOnly: true
           items:
             type: object
             required:
               - port
-              - sectionName
               - sni
             properties:
               port:
@@ -19747,15 +19743,13 @@ components:
           description: >-
             List of SNIs (Server Name Indication) advertised by xDS for this
             destination, one entry per port, sorted by port ascending. Present
-            for MeshService, MeshMultiZoneService and MeshExternalService when
-            the destination has SNI sections/ports; absent otherwise.
+            for MeshService, MeshMultiZoneService and MeshExternalService.
           type: array
           readOnly: true
           items:
             type: object
             required:
               - port
-              - sectionName
               - sni
             properties:
               port:
