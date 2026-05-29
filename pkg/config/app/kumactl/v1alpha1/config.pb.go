@@ -320,7 +320,9 @@ type ControlPlaneCoordinates_ApiServer struct {
 	// Authentication type
 	AuthType string `protobuf:"bytes,6,opt,name=auth_type,json=authType,proto3" json:"auth_type,omitempty"`
 	// Authentication configuration for defined authentication type
-	AuthConf      map[string]string `protobuf:"bytes,7,rep,name=auth_conf,json=authConf,proto3" json:"auth_conf,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	AuthConf map[string]string `protobuf:"bytes,7,rep,name=auth_conf,json=authConf,proto3" json:"auth_conf,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// SkipVerify disables verification of the Control Plane API Server's TLS certificate.
+	SkipVerify    bool `protobuf:"varint,8,opt,name=skip_verify,json=skipVerify,proto3" json:"skip_verify,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -404,6 +406,13 @@ func (x *ControlPlaneCoordinates_ApiServer) GetAuthConf() map[string]string {
 	return nil
 }
 
+func (x *ControlPlaneCoordinates_ApiServer) GetSkipVerify() bool {
+	if x != nil {
+		return x.SkipVerify
+	}
+	return false
+}
+
 // Defaults defines default settings for a context.
 type Context_Defaults struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -461,13 +470,13 @@ const file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDesc = "" +
 	"\x0fcurrent_context\x18\x03 \x01(\tR\x0ecurrentContext\"\x89\x01\n" +
 	"\fControlPlane\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\x04name\x12\\\n" +
-	"\vcoordinates\x18\x02 \x01(\v20.kumactl.config.v1alpha1.ControlPlaneCoordinatesB\b\xfaB\x05\x8a\x01\x02\x10\x01R\vcoordinates\"\xe4\x04\n" +
+	"\vcoordinates\x18\x02 \x01(\v20.kumactl.config.v1alpha1.ControlPlaneCoordinatesB\b\xfaB\x05\x8a\x01\x02\x10\x01R\vcoordinates\"\x85\x05\n" +
 	"\x17ControlPlaneCoordinates\x12c\n" +
 	"\n" +
 	"api_server\x18\x01 \x01(\v2:.kumactl.config.v1alpha1.ControlPlaneCoordinates.ApiServerB\b\xfaB\x05\x8a\x01\x02\x10\x01R\tapiServer\x1a1\n" +
 	"\aHeaders\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\x1a\xb0\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\x1a\xd1\x03\n" +
 	"\tApiServer\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xfaB\x05r\x03\x88\x01\x01R\x03url\x12 \n" +
 	"\fca_cert_file\x18\x02 \x01(\tR\n" +
@@ -476,7 +485,9 @@ const file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDesc = "" +
 	"\x0fclient_key_file\x18\x04 \x01(\tR\rclientKeyFile\x12R\n" +
 	"\aheaders\x18\x05 \x03(\v28.kumactl.config.v1alpha1.ControlPlaneCoordinates.HeadersR\aheaders\x12\x1b\n" +
 	"\tauth_type\x18\x06 \x01(\tR\bauthType\x12e\n" +
-	"\tauth_conf\x18\a \x03(\v2H.kumactl.config.v1alpha1.ControlPlaneCoordinates.ApiServer.AuthConfEntryR\bauthConf\x1a;\n" +
+	"\tauth_conf\x18\a \x03(\v2H.kumactl.config.v1alpha1.ControlPlaneCoordinates.ApiServer.AuthConfEntryR\bauthConf\x12\x1f\n" +
+	"\vskip_verify\x18\b \x01(\bR\n" +
+	"skipVerify\x1a;\n" +
 	"\rAuthConfEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbb\x01\n" +
