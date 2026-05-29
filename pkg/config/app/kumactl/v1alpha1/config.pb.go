@@ -337,7 +337,15 @@ type ControlPlaneCoordinates_ApiServer struct {
 	// Authentication type
 	AuthType string `protobuf:"bytes,6,opt,name=auth_type,json=authType,proto3" json:"auth_type,omitempty"`
 	// Authentication configuration for defined authentication type
+<<<<<<< HEAD
 	AuthConf map[string]string `protobuf:"bytes,7,rep,name=auth_conf,json=authConf,proto3" json:"auth_conf,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+=======
+	AuthConf map[string]string `protobuf:"bytes,7,rep,name=auth_conf,json=authConf,proto3" json:"auth_conf,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// SkipVerify disables verification of the Control Plane API Server's TLS certificate.
+	SkipVerify    bool `protobuf:"varint,8,opt,name=skip_verify,json=skipVerify,proto3" json:"skip_verify,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+>>>>>>> 2ecadac1aa (fix(kuma-cp): use system trust when CA cert is not provided (#16777))
 }
 
 func (x *ControlPlaneCoordinates_ApiServer) Reset() {
@@ -421,6 +429,13 @@ func (x *ControlPlaneCoordinates_ApiServer) GetAuthConf() map[string]string {
 	return nil
 }
 
+func (x *ControlPlaneCoordinates_ApiServer) GetSkipVerify() bool {
+	if x != nil {
+		return x.SkipVerify
+	}
+	return false
+}
+
 // Defaults defines default settings for a context.
 type Context_Defaults struct {
 	state         protoimpl.MessageState
@@ -472,6 +487,7 @@ func (x *Context_Defaults) GetMesh() string {
 
 var File_pkg_config_app_kumactl_v1alpha1_config_proto protoreflect.FileDescriptor
 
+<<<<<<< HEAD
 var file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDesc = []byte{
 	0x0a, 0x2c, 0x70, 0x6b, 0x67, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x61, 0x70, 0x70,
 	0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x63, 0x74, 0x6c, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
@@ -555,6 +571,44 @@ var file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDesc = []byte{
 	0x6d, 0x61, 0x2f, 0x76, 0x32, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x76, 0x31, 0x61,
 	0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
+=======
+const file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDesc = "" +
+	"\n" +
+	",pkg/config/app/kumactl/v1alpha1/config.proto\x12\x17kumactl.config.v1alpha1\x1a\x17validate/validate.proto\"\xc4\x01\n" +
+	"\rConfiguration\x12L\n" +
+	"\x0econtrol_planes\x18\x01 \x03(\v2%.kumactl.config.v1alpha1.ControlPlaneR\rcontrolPlanes\x12<\n" +
+	"\bcontexts\x18\x02 \x03(\v2 .kumactl.config.v1alpha1.ContextR\bcontexts\x12'\n" +
+	"\x0fcurrent_context\x18\x03 \x01(\tR\x0ecurrentContext\"\x89\x01\n" +
+	"\fControlPlane\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\x04name\x12\\\n" +
+	"\vcoordinates\x18\x02 \x01(\v20.kumactl.config.v1alpha1.ControlPlaneCoordinatesB\b\xfaB\x05\x8a\x01\x02\x10\x01R\vcoordinates\"\x85\x05\n" +
+	"\x17ControlPlaneCoordinates\x12c\n" +
+	"\n" +
+	"api_server\x18\x01 \x01(\v2:.kumactl.config.v1alpha1.ControlPlaneCoordinates.ApiServerB\b\xfaB\x05\x8a\x01\x02\x10\x01R\tapiServer\x1a1\n" +
+	"\aHeaders\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\x1a\xd1\x03\n" +
+	"\tApiServer\x12\x1a\n" +
+	"\x03url\x18\x01 \x01(\tB\b\xfaB\x05r\x03\x88\x01\x01R\x03url\x12 \n" +
+	"\fca_cert_file\x18\x02 \x01(\tR\n" +
+	"caCertFile\x12(\n" +
+	"\x10client_cert_file\x18\x03 \x01(\tR\x0eclientCertFile\x12&\n" +
+	"\x0fclient_key_file\x18\x04 \x01(\tR\rclientKeyFile\x12R\n" +
+	"\aheaders\x18\x05 \x03(\v28.kumactl.config.v1alpha1.ControlPlaneCoordinates.HeadersR\aheaders\x12\x1b\n" +
+	"\tauth_type\x18\x06 \x01(\tR\bauthType\x12e\n" +
+	"\tauth_conf\x18\a \x03(\v2H.kumactl.config.v1alpha1.ControlPlaneCoordinates.ApiServer.AuthConfEntryR\bauthConf\x12\x1f\n" +
+	"\vskip_verify\x18\b \x01(\bR\n" +
+	"skipVerify\x1a;\n" +
+	"\rAuthConfEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbb\x01\n" +
+	"\aContext\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\x04name\x12,\n" +
+	"\rcontrol_plane\x18\x02 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\fcontrolPlane\x12E\n" +
+	"\bdefaults\x18\x03 \x01(\v2).kumactl.config.v1alpha1.Context.DefaultsR\bdefaults\x1a\x1e\n" +
+	"\bDefaults\x12\x12\n" +
+	"\x04mesh\x18\x01 \x01(\tR\x04meshB+Z)github.com/kumahq/kuma/v2/config/v1alpha1b\x06proto3"
+>>>>>>> 2ecadac1aa (fix(kuma-cp): use system trust when CA cert is not provided (#16777))
 
 var (
 	file_pkg_config_app_kumactl_v1alpha1_config_proto_rawDescOnce sync.Once
