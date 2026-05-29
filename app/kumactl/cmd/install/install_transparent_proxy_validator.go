@@ -21,6 +21,13 @@ type transparentProxyValidatorArgs struct {
 	ValidationServerPort uint16
 }
 
+// shouldSkipValidation returns true when the given IP version should not be
+// validated. IPv6 is skipped when the node has no local IPv6 address or the
+// mode is IPv4-only. IPv4 is never skipped.
+func shouldSkipValidation(ipv6, hasLocalIPv6Addr, validateOnlyIPv4 bool) bool {
+	return ipv6 && (!hasLocalIPv6Addr || validateOnlyIPv4)
+}
+
 func newInstallTransparentProxyValidator() *cobra.Command {
 	args := transparentProxyValidatorArgs{
 		IpFamilyMode:         "dualstack",
@@ -51,9 +58,37 @@ The result will be shown as text in stdout as well as the exit code.
 				return err
 			}
 
+<<<<<<< HEAD
 			// by using 0, we make the client to generate a random port to connect verifying the iptables rules are working
 			err = validator.RunClient(uint16(0), sExit)
 			return err
+=======
+			hasLocalIPv6Addr, _ := tproxy_config.HasLocalIPv6()
+			validateOnlyIPv4 := ipFamilyMode == tproxy_config.IPFamilyModeIPv4
+
+			validate := func(ipv6 bool) error {
+				if shouldSkipValidation(ipv6, hasLocalIPv6Addr, validateOnlyIPv4) {
+					return nil
+				}
+
+				logger := logger.WithName(strings.ToLower(tproxy_consts.IPTypeMap[ipv6]))
+				validator := tproxy_validate.NewValidator(ipv6, serverPort, logger)
+				exitC := make(chan struct{})
+
+				if _, err := validator.RunServer(cmd.Context(), exitC); err != nil {
+					return err
+				}
+
+				// by using 0, we make the client to generate a random port to connect verifying
+				// the iptables rules are working
+				return validator.RunClient(cmd.Context(), 0, exitC)
+			}
+
+			return errors.Wrap(
+				std_errors.Join(validate(false), validate(true)),
+				"validation failed",
+			)
+>>>>>>> 6f4783c3f5 (fix(kuma-init): properly validate ip family condition (#16810))
 		},
 	}
 
