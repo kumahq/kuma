@@ -57,6 +57,7 @@ spec:
       labels:
         {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 8 }}
         kuma.io/sidecar-injection: enabled
+        k8s.kuma.io/zone-proxy-type: {{ $role }}
     spec:
       {{- if and $dep.podSpec $dep.podSpec.resources }}
       resources: {{ toYaml $dep.podSpec.resources | nindent 8 }}

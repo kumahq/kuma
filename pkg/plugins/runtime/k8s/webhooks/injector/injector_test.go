@@ -18,6 +18,7 @@ import (
 	conf "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
 	inject "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks/injector"
 	"github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -73,6 +74,15 @@ spec:
 
 	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.Mesh{})
+		Expect(err).ToNot(HaveOccurred())
+		err = k8sClient.DeleteAllOf(context.Background(), &kube_core.Service{}, kube_client.InNamespace("default"))
+		Expect(err).ToNot(HaveOccurred())
+		ns := &kube_core.Namespace{}
+		err = k8sClient.Get(context.Background(), kube_client.ObjectKey{Name: "default"}, ns)
+		Expect(err).ToNot(HaveOccurred())
+		delete(ns.Labels, metadata.KumaMeshLabel)
+		delete(ns.Annotations, metadata.KumaMeshLabel)
+		err = k8sClient.Update(context.Background(), ns)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -1064,6 +1074,143 @@ spec:
 			cfgFile: "inject.config.yaml",
 		}),
 	)
+
+	Describe("mesh existence precheck", func() {
+		newInjector := func() *inject.KumaInjector {
+			var cfg conf.Injector
+			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
+			cfg.CaCertFile = caCertPath
+
+			inj, err := inject.New(
+				cfg,
+				"http://kuma-control-plane.kuma-system:5681",
+				k8sClient,
+				false,
+				k8s.NewSimpleConverter(),
+				9901,
+				9902,
+				false,
+				systemNamespace,
+				nil,
+				false,
+			)
+			ExpectWithOffset(1, err).ToNot(HaveOccurred())
+			return inj
+		}
+
+		newPod := func(explicitMesh bool, zoneProxyType string) *kube_core.Pod {
+			labels := map[string]string{
+				"app":                                   "zone-proxy",
+				metadata.KumaSidecarInjectionAnnotation: "enabled",
+			}
+			if explicitMesh {
+				labels[metadata.KumaMeshLabel] = "default"
+			}
+			if zoneProxyType != "" {
+				labels[metadata.KumaZoneProxyTypeLabel] = zoneProxyType
+			}
+
+			return &kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name:      "zone-proxy",
+					Namespace: "default",
+					Labels:    labels,
+				},
+				Spec: kube_core.PodSpec{
+					Containers: []kube_core.Container{
+						{Name: "pause", Image: "registry.k8s.io/pause:3.10"},
+					},
+				},
+			}
+		}
+
+		createZoneProxyService := func(namespace string) {
+			svc := &kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name:      "zone-proxy-svc",
+					Namespace: namespace,
+					Labels: map[string]string{
+						metadata.KumaZoneProxyTypeLabel: "ingress",
+					},
+				},
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app": "zone-proxy",
+					},
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 10001,
+						},
+					},
+				},
+			}
+			ExpectWithOffset(1, k8sClient.Create(context.Background(), svc)).To(Succeed())
+		}
+
+		It("allows zone proxy pods to inject before the mesh exists", func() {
+			pod := newPod(true, "ingress")
+
+			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
+			Expect(pod.Spec.Containers).To(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("still rejects zone proxy pods without an explicit mesh label when the mesh does not exist", func() {
+			pod := newPod(false, "ingress")
+
+			err := newInjector().InjectKuma(context.Background(), pod)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
+			Expect(pod.Spec.Containers).ToNot(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("still rejects non-zone-proxy pods when the mesh does not exist", func() {
+			pod := newPod(true, "")
+			pod.Labels["app"] = "regular"
+
+			err := newInjector().InjectKuma(context.Background(), pod)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
+			Expect(pod.Spec.Containers).ToNot(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("allows zone proxy pods selected by a Service before the mesh exists when the mesh is on the namespace", func() {
+			createZoneProxyService("default")
+
+			ns := &kube_core.Namespace{}
+			Expect(k8sClient.Get(context.Background(), kube_client.ObjectKey{Name: "default"}, ns)).To(Succeed())
+			if ns.Labels == nil {
+				ns.Labels = map[string]string{}
+			}
+			ns.Labels[metadata.KumaMeshLabel] = "default"
+			Expect(k8sClient.Update(context.Background(), ns)).To(Succeed())
+
+			pod := newPod(false, "")
+
+			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
+			Expect(pod.Spec.Containers).To(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+
+		It("still rejects service-selected zone proxy pods when the mesh is not set on the pod or namespace", func() {
+			createZoneProxyService("default")
+
+			pod := newPod(false, "")
+
+			err := newInjector().InjectKuma(context.Background(), pod)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
+			Expect(pod.Spec.Containers).ToNot(ContainElement(
+				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+			))
+		})
+	})
 
 	Describe("delta xDS injection", func() {
 		const (
