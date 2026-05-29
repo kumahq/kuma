@@ -155,15 +155,11 @@ components:
                 type: integer
                 format: int32
                 description: 'The destination port this SNI corresponds to.'
-              sectionName:
-                type: string
-                description: 'The section name placed in the trailing segment of the SNI: the port name when set, otherwise the stringified port number.'
               sni:
                 type: string
                 description: 'The SNI string advertised by xDS for this port.'
           example:
             - port: 8080
-              sectionName: '8080'
               sni: 'sni.extsvc.default.zone-east.kuma-system.myresource1.8080'
         name:
           description: 'Name of the Kuma resource'

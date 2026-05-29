@@ -78,9 +78,8 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 // port. Section is the section name fed into the trailing segment of the
 // SNI (typically the port name, falling back to the stringified port).
 type SNIEntry struct {
-	Port    int32  `json:"port"`
-	Section string `json:"sectionName"`
-	SNI     string `json:"sni"`
+	Port int32  `json:"port"`
+	SNI  string `json:"sni"`
 }
 
 // computeSNIs returns the list of SNIs for the resource identified by id,
@@ -106,7 +105,7 @@ func computeSNIs(id kri.Identifier, spec core_model.ResourceSpec) []SNIEntry {
 		if err != nil {
 			continue
 		}
-		out = append(out, SNIEntry{Port: s.Port, Section: s.SectionName, SNI: v})
+		out = append(out, SNIEntry{Port: s.Port, SNI: v})
 	}
 	if len(out) == 0 {
 		return nil

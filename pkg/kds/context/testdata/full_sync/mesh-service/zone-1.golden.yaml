@@ -19,10 +19,8 @@ modificationTime: "0001-01-01T00:00:00Z"
 name: redis-zone-1
 snis:
 - port: 6739
-  sectionName: "6739"
   sni: sni.msvc.default.redis-zone-1.6739
 - port: 16739
-  sectionName: some-port
   sni: sni.msvc.default.redis-zone-1.some-port
 spec:
   ports:
@@ -63,10 +61,8 @@ modificationTime: "0001-01-01T00:00:00Z"
 name: redis-zone-2-ff29vc4685c6f594
 snis:
 - port: 6739
-  sectionName: "6739"
   sni: sni.msvc.default.zone-2.redis-zone-2.6739
 - port: 16739
-  sectionName: some-port
   sni: sni.msvc.default.zone-2.redis-zone-2.some-port
 spec:
   ports:

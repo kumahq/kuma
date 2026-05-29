@@ -105,8 +105,8 @@ var _ = Describe("Rest Resource", func() {
 				Expect(json.Unmarshal(bytes, &got)).To(Succeed())
 				Expect(got.KRI).To(Equal("kri_msvc_default_east_demo_backend_"))
 				Expect(got.SNIs).To(Equal([]v1alpha1.SNIEntry{
-					{Port: 6379, Section: "6379", SNI: "sni.msvc.default.east.demo.backend.6379"},
-					{Port: 8080, Section: "http", SNI: "sni.msvc.default.east.demo.backend.http"},
+					{Port: 6379, SNI: "sni.msvc.default.east.demo.backend.6379"},
+					{Port: 8080, SNI: "sni.msvc.default.east.demo.backend.http"},
 				}))
 			})
 
@@ -132,7 +132,7 @@ var _ = Describe("Rest Resource", func() {
 				}
 				Expect(json.Unmarshal(bytes, &got)).To(Succeed())
 				Expect(got.SNIs).To(Equal([]v1alpha1.SNIEntry{
-					{Port: 443, Section: "443", SNI: "sni.extsvc.default.google.443"},
+					{Port: 443, SNI: "sni.extsvc.default.google.443"},
 				}))
 			})
 
@@ -160,7 +160,7 @@ var _ = Describe("Rest Resource", func() {
 				}
 				Expect(json.Unmarshal(bytes, &got)).To(Succeed())
 				Expect(got.SNIs).To(Equal([]v1alpha1.SNIEntry{
-					{Port: 9090, Section: "grpc", SNI: "sni.mzsvc.default.agg.grpc"},
+					{Port: 9090, SNI: "sni.mzsvc.default.agg.grpc"},
 				}))
 			})
 

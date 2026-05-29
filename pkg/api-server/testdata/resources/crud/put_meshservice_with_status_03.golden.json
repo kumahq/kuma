@@ -14,7 +14,6 @@
  "snis": [
   {
    "port": 8082,
-   "sectionName": "8082",
    "sni": "sni.msvc.default.default.with-status.8082"
   }
  ],

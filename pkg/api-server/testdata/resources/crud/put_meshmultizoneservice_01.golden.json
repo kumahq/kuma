@@ -11,7 +11,6 @@
  "snis": [
   {
    "port": 6379,
-   "sectionName": "6379",
    "sni": "sni.mzsvc.default.redis.6379"
   }
  ],

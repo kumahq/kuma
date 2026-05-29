@@ -14,7 +14,6 @@
  "snis": [
   {
    "port": 4242,
-   "sectionName": "4242",
    "sni": "sni.extsvc.default.default.mes-tcp.4242"
   }
  ],

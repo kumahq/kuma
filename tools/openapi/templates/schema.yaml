@@ -29,8 +29,7 @@ properties:
   snis:
     description: 'List of SNIs (Server Name Indication) advertised by xDS
       for this destination, one entry per port, sorted by port ascending.
-      Present for MeshService, MeshMultiZoneService and MeshExternalService
-      when the destination has SNI sections/ports; absent otherwise.'
+      Present for MeshService, MeshMultiZoneService and MeshExternalService.
     type: array
     readOnly: true
     items:
@@ -41,17 +40,11 @@ properties:
           type: integer
           format: int32
           description: 'The destination port this SNI corresponds to.'
-        sectionName:
-          type: string
-          description: 'The section name placed in the trailing segment of
-            the SNI: the port name when set, otherwise the stringified port
-            number.'
         sni:
           type: string
           description: 'The SNI string advertised by xDS for this port.'
     example:
       - port: 8080
-        sectionName: '8080'
         sni: 'sni.{{ .ShortName }}.{{ $mesh }}.{{ $zone }}.{{ $ns }}.{{ $name }}.8080'
   {{- end }}
   {{- end }}
