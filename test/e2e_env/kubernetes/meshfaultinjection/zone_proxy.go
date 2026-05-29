@@ -2,6 +2,7 @@ package meshfaultinjection
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -67,12 +68,12 @@ spec:
 }
 
 func zoneProxyMeshTrafficPermission(meshName string, allowedSNIs ...string) string {
-	allow := ""
+	allow := make([]string, 0, len(allowedSNIs))
 	for _, sni := range allowedSNIs {
-		allow += fmt.Sprintf(`
+		allow = append(allow, fmt.Sprintf(`
           - sni:
               type: Exact
-              value: %q`, sni)
+              value: %q`, sni))
 	}
 
 	return fmt.Sprintf(`
@@ -89,7 +90,7 @@ spec:
   rules:
     - default:
         allow:%[3]s
-`, meshName, Config.KumaNamespace, allow)
+`, meshName, Config.KumaNamespace, strings.Join(allow, ""))
 }
 
 func zoneProxyPolicy(meshName, targetSNI string) string {
