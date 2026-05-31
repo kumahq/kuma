@@ -55,10 +55,11 @@ var _ = Describe("Auth test", func() {
 			certPath,
 			filepath.Join("..", "..", "test", "certs", "client", "client.pem"),
 			filepath.Join("..", "..", "test", "certs", "client", "client.key"),
+			false,
 		)).To(Succeed())
 
 		httpsClientWithoutCerts = &http.Client{}
-		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "")).To(Succeed())
+		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "", false)).To(Succeed())
 
 		// wait for both http and https server
 		Eventually(func(g Gomega) {
