@@ -23,7 +23,7 @@ These clients now use the host system's trust store (Go's default) and verify th
 
 Connections to a control plane whose certificate cannot be verified against the system trust store (typically self-signed or signed by a private CA that is not installed on the host) will now fail instead of silently succeeding without verification. The inter-CP `grpcs` client returns an error if called without a TLS config.
 
-Deployments that already provide a CA via `--ca-cert-file` / `KUMA_CONTROL_PLANE_CA_CERT[_FILE]`, or that use a publicly trusted certificate, or that run the default Helm-installed setup, are not affected.
+Deployments that already provide a CA via `--ca-cert-file` / `KUMA_CONTROL_PLANE_CA_CERT` / `KUMA_CONTROL_PLANE_CA_CERT_FILE`, or that use a publicly trusted certificate, or that run the default Helm-installed setup, are not affected.
 
 **Action required**
 
