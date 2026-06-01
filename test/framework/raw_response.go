@@ -44,6 +44,29 @@ func ApplyResourceRawResponse(cluster Cluster, resourcePath, yamlBody string) st
 	}
 	req.Header.Set("Content-Type", "application/json")
 
+	return doRawRequest(req)
+}
+
+// DeleteResourceRawResponse sends an HTTP DELETE for the named resource and
+// returns the raw response in the same stable format as
+// ApplyResourceRawResponse.
+//
+// resourcePath is the plural REST path segment (e.g., "meshtimeouts"). The URL
+// is built as "{api}/meshes/{mesh}/{resourcePath}/{name}".
+func DeleteResourceRawResponse(cluster Cluster, resourcePath, mesh, name string) string {
+	url := fmt.Sprintf("%s/meshes/%s/%s/%s",
+		cluster.GetKuma().GetAPIServerAddress(),
+		mesh, resourcePath, name)
+	req, err := http.NewRequestWithContext(context.Background(),
+		http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Sprintf("request create error: %v", err)
+	}
+
+	return doRawRequest(req)
+}
+
+func doRawRequest(req *http.Request) string {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Sprintf("request error: %v", err)
