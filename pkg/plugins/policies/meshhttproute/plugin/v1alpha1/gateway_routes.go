@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"reflect"
 	"slices"
 	"strings"
 
@@ -177,7 +178,34 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 		}
 	}
 
-	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
+	return dedupRouteEntries(plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries))
+}
+
+// dedupRouteEntries removes exact duplicate route entries while preserving order.
+//
+// Duplicates can happen when a single virtual host is covered by multiple
+// overlapping hostname rules that emit identical route.Entry values (e.g.
+// `foo.example.com` and `*.example.com` both producing the same entry for
+// `foo.example.com`). Equality is determined by reflect.DeepEqual on the whole
+// route.Entry, so entries that differ in any field remain distinct.
+func dedupRouteEntries(entries []route.Entry) []route.Entry {
+	if len(entries) < 2 {
+		return entries
+	}
+	out := make([]route.Entry, 0, len(entries))
+	for _, e := range entries {
+		duplicate := false
+		for _, kept := range out {
+			if reflect.DeepEqual(e, kept) {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
