@@ -109,6 +109,7 @@ var (
 	_ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
 	_ = Describe("GRPC", grpc.GRPC, Ordered)
 	_ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
+	_ = Describe("MeshRateLimit on Zone Proxy", meshratelimit.ZoneProxy, Ordered)
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
 	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
 	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Ordered)

@@ -247,9 +247,7 @@ spec:
                   type: object
                 type: array
               rules:
-                description: |-
-                  Rules defines inbound rate limiting configurations. Currently limited to
-                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                description: Rules defines inbound rate limiting configurations.
                 items:
                   properties:
                     default:
@@ -371,6 +369,51 @@ spec:
                               type: object
                           type: object
                       type: object
+                    matches:
+                      description: Matches define additional conditions for applying
+                        this rate limit rule.
+                      items:
+                        properties:
+                          sni:
+                            description: SNI defines a matcher configuration for matching
+                              by SNI value carried on the TLS connection
+                            properties:
+                              type:
+                                description: Type defines how to match traffic by
+                                  SNI. Only `Exact` is supported.
+                                enum:
+                                - Exact
+                                type: string
+                              value:
+                                description: Value is the SNI carried on the TLS connection
+                                  that needs to match for the configuration to be
+                                  applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                          spiffeID:
+                            description: SpiffeID defines a matcher configuration
+                              for SpiffeID matching
+                            properties:
+                              type:
+                                description: Type defines how to match incoming traffic
+                                  by SpiffeID. `Exact` or `Prefix` are allowed.
+                                enum:
+                                - Exact
+                                - Prefix
+                                type: string
+                              value:
+                                description: Value is SpiffeID of a client that needs
+                                  to match for the configuration to be applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                        type: object
+                      type: array
                   type: object
                 type: array
               targetRef:

@@ -1,0 +1,23 @@
+type: MeshRateLimit
+name: mrl-zone-proxy
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/listener-zoneegress: enabled
+  rules:
+    - matches:
+        - sni:
+            type: Exact
+            value: sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80
+      default:
+        local:
+          http:
+            requestRate:
+              num: 1
+              interval: 1h
+            onRateLimit:
+              status: 429

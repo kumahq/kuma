@@ -77,6 +77,7 @@ func ZoneProxies() {
 	DescribeTable("should generate proper Envoy config for zone proxies",
 		TestZoneProxyConfig,
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshfaultinjection"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("zoneproxies", "meshratelimit"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshtimeout"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshtrace"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("zoneproxies", "meshmetric"), "envoyconfig"),
