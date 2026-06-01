@@ -115,6 +115,7 @@ var (
 	_ = Describe("Resilience", resilience.ResilienceUniversal, Ordered)
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
+	_ = Describe("MeshFaultInjection on Zone Proxy", meshfaultinjection.ZoneProxy, Ordered)
 	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
