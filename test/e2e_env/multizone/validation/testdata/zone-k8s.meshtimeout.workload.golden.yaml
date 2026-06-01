@@ -1,1 +1,1 @@
-meshtimeout.kuma.io/mt-workload created
+error while running command: exit status 1; Error from server (Forbidden): error when creating "STDIN": admission webhook "mesh.defaulter.kuma-admission.kuma.io" denied the request: Operation not allowed. 'kuma.io/workload' is a reserved label managed by the control plane and cannot be set on apply

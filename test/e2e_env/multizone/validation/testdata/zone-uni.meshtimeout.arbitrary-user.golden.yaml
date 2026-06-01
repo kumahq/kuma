@@ -1,3 +1,29 @@
-HTTP/1.1 201 Created
+HTTP/1.1 400 Bad Request
 
-{}
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"k8s.kuma.io/baz\"]",
+   "reason": "is a reserved label managed by the control plane and cannot be set on apply"
+  },
+  {
+   "field": "labels[\"kuma.io/foo\"]",
+   "reason": "is a reserved label managed by the control plane and cannot be set on apply"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"k8s.kuma.io/baz\"]",
+   "message": "is a reserved label managed by the control plane and cannot be set on apply"
+  },
+  {
+   "field": "labels[\"kuma.io/foo\"]",
+   "message": "is a reserved label managed by the control plane and cannot be set on apply"
+  }
+ ]
+}
