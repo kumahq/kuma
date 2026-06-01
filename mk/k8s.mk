@@ -35,7 +35,7 @@ $(if $(_k8s_cluster_valid),,$(error Invalid CLUSTER "$(CLUSTER)". Expected "kuma
 
 # --- Derived variables ---
 
-# Numeric suffix (used for MetalLB subnet offset, port allocation)
+# Numeric suffix (used for port allocation)
 ifeq ($(CLUSTER),kuma)
   CLUSTER_NUMBER := 0
 else ifneq ($(filter kuma-%,$(CLUSTER)),)

@@ -13,13 +13,6 @@ endif
 
 K3S_IMAGE   ?= rancher/k3s:$(K3S_VERSION)
 
-# --- MetalLB ---
-
-# renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
-METALLB_VERSION ?= v0.16.1
-METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
-METALLB_NAMESPACE ?= metallb-system
-
 # --- Calico ---
 
 # renovate: datasource=github-releases depName=projectcalico/tigera-operator packageName=projectcalico/calico versioning=semver
@@ -60,8 +53,11 @@ else ifneq ($(filter $(K3D_CNI),flannel calico),$(K3D_CNI))
 endif
 
 # --- Component disable list ---
+# servicelb (klipper-lb) is left enabled so LoadBalancer Services get an
+# external IP (the node container's IP on the docker network) without
+# pulling extra images from external registries.
 
-K3D_DISABLE_DEFAULT := traefik servicelb metrics-server
+K3D_DISABLE_DEFAULT := traefik metrics-server
 # Re-enable components: K3D_ENABLE="traefik metrics-server"
 K3D_ENABLE ?=
 K3D_DISABLE := $(filter-out $(strip $(K3D_ENABLE)),$(K3D_DISABLE_DEFAULT))
@@ -307,35 +303,6 @@ k3d/cluster/start:
 	$(Q)$(MAKE) k3d/cluster/cni/setup
 	$(Q)$(MAKE) k3d/cluster/ebpf/setup
 	$(Q)$(MAKE) k3d/cluster/wait
-	$(Q)$(MAKE) k3d/cluster/metallb/setup
-
-# --- MetalLB ---
-
-METALLB_RENDER_POOL    ?= $(KUMA_DIR)/mk/resources/render-metallb-pool.sh
-METALLB_RESOURCES      ?= $(TMP_DIR_K8S)/metallb-$(CLUSTER_NAME).yaml
-
-.PHONY: $(METALLB_RESOURCES)
-$(METALLB_RESOURCES): $(METALLB_RENDER_POOL) k3d/docker/network/create
-	$(Q)$(METALLB_RENDER_POOL) $(DOCKER_NETWORK) $(CLUSTER_NUMBER) $@ $(METALLB_NAMESPACE)
-
-.PHONY: k3d/cluster/metallb/setup
-k3d/cluster/metallb/setup: $(METALLB_RESOURCES)
-	$(Q)$(KUBECTL) apply \
-	  --filename $(METALLB_MANIFESTS)
-
-	$(Q)$(KUBECTL) rollout status deployment \
-	  --namespace $(METALLB_NAMESPACE) \
-	  --timeout 120s
-
-	$(Q)$(KUBECTL) wait \
-	  --namespace $(METALLB_NAMESPACE) \
-	  --for condition=Ready \
-	  --timeout 120s \
-	  --all pods
-
-	$(Q)$(KUBECTL) apply \
-	  --namespace $(METALLB_NAMESPACE) \
-	  --filename $(METALLB_RESOURCES)
 
 # --- Cluster wait ---
 
