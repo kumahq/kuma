@@ -1311,10 +1311,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "echo-service", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)),
+					WithTags(mesh_proto.ServiceTag, "echo-service", mesh_proto.ProtocolTag, string(core_mesh.ProtocolHTTP)),
 				)
 			xdsContext := xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMesh(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
 
@@ -1337,11 +1337,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}}
 			allRules := core_rules.Rules{
 				{
-					Subset: subsetutils.MeshSubset(),
+					Subset: core_rules.MeshSubset(),
 					Conf:   api.PolicyDefault{Rules: pathRootRule},
 				},
 				{
-					Subset: subsetutils.MeshSubset(),
+					Subset: core_rules.MeshSubset(),
 					Conf: api.PolicyDefault{
 						Hostnames: []string{"another.kuma.io", "app.test.kuma.io"},
 						Rules:     pathRootRule,
@@ -1358,11 +1358,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
-									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "example.kuma.io"): {Rules: allRules},
-										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "another.kuma.io"): {Rules: allRules},
-										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, "*.test.kuma.io"):  {Rules: allRules},
-										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*"):               {Rules: allRules},
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "example.kuma.io"): allRules,
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "another.kuma.io"): allRules,
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, "*.test.kuma.io"):  allRules,
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*"):               allRules,
 									},
 								},
 							}),
