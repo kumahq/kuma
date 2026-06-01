@@ -1801,7 +1801,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"),
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_mesh.ProtocolHTTP), "region", "us"),
 				)
 			xdsContext := xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
