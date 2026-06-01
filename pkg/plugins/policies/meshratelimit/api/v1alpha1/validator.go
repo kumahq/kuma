@@ -90,6 +90,13 @@ func validateRuleMatches(path validators.PathBuilder, matches []common_api.Match
 		}
 		if match.SpiffeID != nil {
 			hasSpiffeID = true
+			switch match.SpiffeID.Type {
+			case common_api.ExactMatchType, common_api.PrefixMatchType:
+			case "":
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), "must be set")
+			default:
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), fmt.Sprintf("unrecognized type %q, supported values are: Exact, Prefix", match.SpiffeID.Type))
+			}
 		}
 	}
 	if hasSpiffeID {

@@ -23,6 +23,7 @@ import (
 	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
+	core_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
@@ -229,7 +230,9 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 			if err != nil {
 				return err
 			}
-			upsertHTTPFilter(hcm, httpFilter)
+			if err := upsertHTTPFilter(hcm, httpFilter); err != nil {
+				return err
+			}
 		}
 		return ConfigureMatchedRoutes(hcm.GetRouteConfig(), effectiveRules)
 	}); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
@@ -316,7 +319,9 @@ func configureHttpListener(filterChain *envoy_listener.FilterChain, conf *api.Lo
 			}
 		}
 
-		upsertHTTPFilter(hcm, httpFilter)
+		if err := upsertHTTPFilter(hcm, httpFilter); err != nil {
+			return err
+		}
 		return nil
 	}); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 		return err
@@ -341,14 +346,14 @@ func newHTTPLocalRateLimitFilter() (*envoy_hcm.HttpFilter, error) {
 	}, nil
 }
 
-func upsertHTTPFilter(hcm *envoy_hcm.HttpConnectionManager, filter *envoy_hcm.HttpFilter) {
+func upsertHTTPFilter(hcm *envoy_hcm.HttpConnectionManager, filter *envoy_hcm.HttpFilter) error {
 	for idx, existing := range hcm.GetHttpFilters() {
 		if existing.GetName() == filter.GetName() {
 			hcm.HttpFilters[idx] = filter
-			return
+			return nil
 		}
 	}
-	hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{filter}, hcm.HttpFilters...)
+	return core_xds.InsertHTTPFiltersBeforeRouter(hcm, filter)
 }
 
 func configureTcpListener(filterChain *envoy_listener.FilterChain, conf *api.LocalTCP) error {

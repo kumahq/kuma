@@ -466,6 +466,26 @@ violations:
   - field: spec.rules[0].default.local.tcp
     message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity`,
 			}),
+			Entry("spiffeID match with unsupported type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+rules:
+  - matches:
+      - spiffeID:
+          type: Unknown
+          value: spiffe://default/client
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: 'unrecognized type "Unknown", supported values are: Exact, Prefix'`,
+			}),
 		)
 	})
 })
