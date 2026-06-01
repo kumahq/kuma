@@ -72,7 +72,37 @@ func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.V
 	}
 	for idx, ruleItem := range rules {
 		path := validators.RootedAt("rules").Index(idx)
+		verr.Add(validateRuleMatches(path, pointer.Deref(ruleItem.Matches), ruleItem.Default))
 		verr.Add(validateDefault(path.Field("default"), ruleItem.Default))
+	}
+	return verr
+}
+
+func validateRuleMatches(path validators.PathBuilder, matches []common_api.Match, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	hasSpiffeID := false
+	for idx, match := range matches {
+		matchPath := path.Field("matches").Index(idx)
+		verr.AddErrorAt(matchPath, mesh.ValidateMatch(match))
+		if match.SpiffeID == nil && match.SNI == nil {
+			verr.AddViolationAt(matchPath, "must specify at least one of 'spiffeID' or 'sni'")
+			continue
+		}
+		if match.SpiffeID != nil {
+			hasSpiffeID = true
+		}
+	}
+	if hasSpiffeID {
+		verr.Add(validateSourceConditionedRule(path.Field("default"), conf))
+	}
+	return verr
+}
+
+func validateSourceConditionedRule(path validators.PathBuilder, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	const msg = "can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity"
+	if pointer.Deref(conf.Local).TCP != nil {
+		verr.AddViolationAt(path.Field("local").Field("tcp"), msg)
 	}
 	return verr
 }

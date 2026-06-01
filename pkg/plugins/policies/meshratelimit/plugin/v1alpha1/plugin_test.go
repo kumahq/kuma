@@ -16,6 +16,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -551,7 +552,126 @@ var _ = Describe("MeshRateLimit", func() {
 			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
 			expectedListeners:    []string{"http_disabled.golden.yaml"},
 		}),
+		Entry("inbound listener with catch-all and rules[].matches[].spiffeID", sidecarTestCase{
+			resources: []*core_xds.Resource{{
+				Name:   "inbound:127.0.0.1:17777",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {
+						{
+							Conf: api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
+								},
+							},
+						},
+						{
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://default/ns/clients/",
+								},
+							},
+							Conf: api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 5, Interval: *test.ParseDuration("1s")},
+										OnRateLimit: &api.OnRateLimit{
+											Status: pointer.To(uint32(429)),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
+			expectedListeners:    []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
+		}),
 	)
+
+	It("should generate proper Envoy config for zone egress listener with rules[].matches[].sni", func() {
+		name := naming.ContextualZoneEgressListenerName("ze-port")
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:   name,
+			Origin: metadata.OriginEgress,
+			Resource: NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+					Configure(MatchTransportProtocol("tls")).
+					Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+					Configure(HttpConnectionManager("mes-http", false, nil, true)).
+					Configure(AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+				)).
+				MustBuild(),
+		})
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("zone-proxy-egress").
+					WithMesh("default").
+					WithAddress("10.20.30.40").
+					With(func(d *core_mesh.DataplaneResource) {
+						d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.20.30.40",
+							Port:    10002,
+							Name:    "ze-port",
+						}}
+					}),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshRateLimitType, core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10002}: {{
+						Match: &common_api.Match{
+							SNI: &common_api.SNIMatch{
+								Type:  common_api.SNIExactMatchType,
+								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+							},
+						},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									RequestRate: &api.Rate{Num: 50, Interval: *test.ParseDuration("5s")},
+								},
+							},
+						},
+					}},
+				},
+			})).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+		Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[0].Resource)).To(
+			test_matchers.MatchGoldenYAML(path.Join("testdata", "zoneegress_matches_sni.listener.golden.yaml")),
+		)
+	})
 
 	It("should generate correct configuration for ExternalService with ZoneEgress", func() {
 		// given
