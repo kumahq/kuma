@@ -2402,7 +2402,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "echo-service", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)),
+					WithTags(mesh_proto.ServiceTag, "echo-service", mesh_proto.ProtocolTag, string(core_mesh.ProtocolHTTP)),
 				)
 			xdsContext := xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
@@ -2428,11 +2428,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}}
 			allRules := core_rules.Rules{
 				{
-					Subset: subsetutils.MeshSubset(),
+					Subset: core_rules.MeshSubset(),
 					Conf:   api.PolicyDefault{Rules: pathRootRule},
 				},
 				{
-					Subset: subsetutils.MeshSubset(),
+					Subset: core_rules.MeshSubset(),
 					Conf: api.PolicyDefault{
 						Hostnames: []string{"another.kuma.io", "app.test.kuma.io"},
 						Rules:     pathRootRule,
