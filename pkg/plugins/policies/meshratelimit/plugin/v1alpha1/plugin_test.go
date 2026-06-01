@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
@@ -630,6 +631,35 @@ var _ = Describe("MeshRateLimit", func() {
 				MustBuild(),
 		})
 
+		meshRateLimit := api.NewMeshRateLimitResource()
+		meshRateLimit.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-rate-limit",
+			Labels: map[string]string{},
+		})
+		meshRateLimit.Spec = &api.MeshRateLimit{
+			TargetRef: &common_api.TargetRef{
+				Kind:        common_api.Dataplane,
+				SectionName: pointer.To("ze-port"),
+			},
+			Rules: &[]api.Rule{{
+				Matches: &[]common_api.Match{{
+					SNI: &common_api.SNIMatch{
+						Type:  common_api.SNIExactMatchType,
+						Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+					},
+				}},
+				Default: api.Conf{
+					Local: &api.Local{
+						HTTP: &api.LocalHTTP{
+							RequestRate: &api.Rate{Num: 50, Interval: *test.ParseDuration("5s")},
+						},
+					},
+				},
+			}},
+		}
+		Expect(meshRateLimit.Validate()).To(Succeed())
+
 		proxy := xds_builders.Proxy().
 			WithDataplane(
 				builders.Dataplane().
@@ -645,25 +675,12 @@ var _ = Describe("MeshRateLimit", func() {
 						}}
 					}),
 			).
-			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshRateLimitType, core_rules.FromRules{
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "10.20.30.40", Port: 10002}: {{
-						Match: &common_api.Match{
-							SNI: &common_api.SNIMatch{
-								Type:  common_api.SNIExactMatchType,
-								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
-							},
-						},
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									RequestRate: &api.Rate{Num: 50, Interval: *test.ParseDuration("5s")},
-								},
-							},
-						},
-					}},
-				},
-			})).
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshRateLimitType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshRateLimit},
+					}
+				})).
 			Build()
 
 		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
