@@ -443,6 +443,16 @@ func (s *UniversalApp) CreateDP(
 		panic(err)
 	}
 
+	if envsMap == nil {
+		envsMap = map[string]string{}
+	}
+	// Skip CP cert verification via env var instead of the --skip-verify flag so
+	// that older kuma-dp versions (compatibility tests) silently ignore it
+	// instead of erroring on an unknown flag.
+	if _, ok := envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"]; !ok {
+		envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"] = "true"
+	}
+
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
 	args := []string{
 		"runuser", "-u", "kuma-dp", "--",
