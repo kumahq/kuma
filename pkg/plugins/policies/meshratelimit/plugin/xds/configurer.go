@@ -220,6 +220,14 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 		return nil
 	}
 
+	baseRateLimit, err := routeRateLimit(baseConf)
+	if err != nil {
+		return err
+	}
+	if baseRateLimit == nil && !hasMatchedRateLimit(effectiveRules) {
+		return nil
+	}
+
 	if err := ensureMatchFilterStateFilter(filterChain, effectiveRules); err != nil {
 		return err
 	}
