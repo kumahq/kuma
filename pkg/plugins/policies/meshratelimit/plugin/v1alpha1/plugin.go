@@ -203,25 +203,14 @@ func applyToZoneProxyListener(
 	applyCommonConf := hasCatchAllInboundRule(inboundRules)
 
 	for _, filterChain := range listener.FilterChains {
-		baseConf := api.Conf{}
-		if applyCommonConf {
-			if err := plugin_xds.ConfigureFilterChain(commonConf, filterChain); err != nil {
-				return err
-			}
-			baseConf = commonConf
-		}
-
 		matchedRules := zoneProxyFilterChainRules(inboundRules, filterChain)
-		if conf, ok, err := mergeZoneProxyRuleConfs(matchedRules); err != nil {
+		baseConf, ok, err := effectiveZoneProxyFilterChainConf(commonConf, applyCommonConf, matchedRules)
+		if err != nil {
 			return err
-		} else if ok {
-			if err := plugin_xds.ConfigureFilterChain(conf, filterChain); err != nil {
+		}
+		if ok {
+			if err := plugin_xds.ConfigureFilterChain(baseConf, filterChain); err != nil {
 				return err
-			}
-			if mergedConf, ok, err := mergeRateLimitConfs(baseConf, conf); err != nil {
-				return err
-			} else if ok {
-				baseConf = mergedConf
 			}
 		}
 
@@ -231,6 +220,24 @@ func applyToZoneProxyListener(
 	}
 
 	return nil
+}
+
+func effectiveZoneProxyFilterChainConf(
+	commonConf api.Conf,
+	applyCommonConf bool,
+	matchedRules []*rules_inbound.Rule,
+) (api.Conf, bool, error) {
+	confs := make([]api.Conf, 0, 2)
+	if applyCommonConf {
+		confs = append(confs, commonConf)
+	}
+	if conf, ok, err := mergeZoneProxyRuleConfs(matchedRules); err != nil {
+		return api.Conf{}, false, err
+	} else if ok {
+		confs = append(confs, conf)
+	}
+
+	return mergeRateLimitConfs(confs...)
 }
 
 func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {

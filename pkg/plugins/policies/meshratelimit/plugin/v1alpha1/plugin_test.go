@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -690,6 +693,116 @@ var _ = Describe("MeshRateLimit", func() {
 		)
 	})
 
+	It("should merge catch-all and SNI-specific listener rate limits on zone Egress", func() {
+		name := naming.ContextualZoneEgressListenerName("ze-port")
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:   name,
+			Origin: metadata.OriginEgress,
+			Resource: NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+					Configure(MatchTransportProtocol("tls")).
+					Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+					Configure(HttpConnectionManager("mes-http", false, nil, true)).
+					Configure(AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+				)).
+				MustBuild(),
+		})
+
+		meshRateLimit := api.NewMeshRateLimitResource()
+		meshRateLimit.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-rate-limit-precedence",
+			Labels: map[string]string{},
+		})
+		meshRateLimit.Spec = &api.MeshRateLimit{
+			TargetRef: &common_api.TargetRef{
+				Kind:        common_api.Dataplane,
+				SectionName: pointer.To("ze-port"),
+			},
+			Rules: &[]api.Rule{
+				{
+					Default: api.Conf{
+						Local: &api.Local{
+							HTTP: &api.LocalHTTP{
+								RequestRate: &api.Rate{
+									Num:      10,
+									Interval: *test.ParseDuration("1s"),
+								},
+								OnRateLimit: &api.OnRateLimit{
+									Status: pointer.To(uint32(429)),
+									Headers: &api.HeaderModifier{
+										Add: &[]api.HeaderKeyValue{{
+											Name:  "x-rate-limit-scope",
+											Value: "common",
+										}},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Matches: &[]common_api.Match{{
+						SNI: &common_api.SNIMatch{
+							Type:  common_api.SNIExactMatchType,
+							Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+						},
+					}},
+					Default: api.Conf{
+						Local: &api.Local{
+							HTTP: &api.LocalHTTP{
+								RequestRate: &api.Rate{
+									Num:      50,
+									Interval: *test.ParseDuration("5s"),
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(meshRateLimit.Validate()).To(Succeed())
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("zone-proxy-egress").
+					WithMesh("default").
+					WithAddress("10.20.30.40").
+					With(func(d *core_mesh.DataplaneResource) {
+						d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.20.30.40",
+							Port:    10002,
+							Name:    "ze-port",
+						}}
+					}),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshRateLimitType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshRateLimit},
+					}
+				})).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+
+		listener, ok := resourceSet.ListOf(envoy_resource.ListenerType)[0].Resource.(*envoy_listener.Listener)
+		Expect(ok).To(BeTrue())
+
+		rateLimit := routeRateLimitFromZoneProxyListener(listener)
+		Expect(rateLimit.GetTokenBucket().GetMaxTokens()).To(BeEquivalentTo(50))
+		Expect(rateLimit.GetTokenBucket().GetFillInterval().AsDuration()).To(Equal(5 * time.Second))
+		Expect(rateLimit.GetStatus().GetCode()).To(BeEquivalentTo(429))
+		Expect(rateLimit.GetResponseHeadersToAdd()).To(HaveLen(1))
+		Expect(rateLimit.GetResponseHeadersToAdd()[0].GetHeader().GetKey()).To(Equal("x-rate-limit-scope"))
+		Expect(rateLimit.GetResponseHeadersToAdd()[0].GetHeader().GetValue()).To(Equal("common"))
+	})
+
 	It("should generate correct configuration for ExternalService with ZoneEgress", func() {
 		// given
 		rs := core_xds.NewResourceSet()
@@ -1144,4 +1257,21 @@ func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteC
 			},
 		},
 	}
+}
+
+func routeRateLimitFromZoneProxyListener(listener *envoy_listener.Listener) *envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit {
+	Expect(listener.GetFilterChains()).ToNot(BeEmpty())
+	Expect(listener.GetFilterChains()[0].GetFilters()).ToNot(BeEmpty())
+
+	hcm := &envoy_hcm.HttpConnectionManager{}
+	Expect(util_proto.UnmarshalAnyTo(listener.GetFilterChains()[0].GetFilters()[0].GetTypedConfig(), hcm)).To(Succeed())
+	Expect(hcm.GetRouteConfig().GetVirtualHosts()).ToNot(BeEmpty())
+	Expect(hcm.GetRouteConfig().GetVirtualHosts()[0].GetRoutes()).ToNot(BeEmpty())
+
+	rateLimitAny := hcm.GetRouteConfig().GetVirtualHosts()[0].GetRoutes()[0].GetTypedPerFilterConfig()["envoy.filters.http.local_ratelimit"]
+	Expect(rateLimitAny).ToNot(BeNil())
+
+	rateLimit := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{}
+	Expect(util_proto.UnmarshalAnyTo(rateLimitAny, rateLimit)).To(Succeed())
+	return rateLimit
 }
