@@ -57,8 +57,7 @@ func DeleteResourceRawResponse(cluster Cluster, resourcePath, mesh, name string)
 	url := fmt.Sprintf("%s/meshes/%s/%s/%s",
 		cluster.GetKuma().GetAPIServerAddress(),
 		mesh, resourcePath, name)
-	req, err := http.NewRequestWithContext(context.Background(),
-		http.MethodDelete, url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, url, http.NoBody)
 	if err != nil {
 		return fmt.Sprintf("request create error: %v", err)
 	}
