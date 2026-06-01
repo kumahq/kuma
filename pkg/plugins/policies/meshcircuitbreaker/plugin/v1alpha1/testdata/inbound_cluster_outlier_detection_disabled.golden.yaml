@@ -1,1 +1,4 @@
+circuitBreakers:
+  thresholds:
+  - trackRemaining: true
 name: localhost:8080

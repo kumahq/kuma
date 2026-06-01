@@ -38,14 +38,15 @@ func New(serverURL string, tlsCfg *TLSConfig, maxMsgSize int) (Conn, error) {
 	case "grpc": // not used in production
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
-		if tlsCfg != nil {
-			cp := x509.NewCertPool()
-			cp.AddCert(&tlsCfg.CaCert)
-			tlsConfig.RootCAs = cp
-			tlsConfig.Certificates = []tls.Certificate{tlsCfg.ClientCert}
-		} else {
-			tlsConfig.InsecureSkipVerify = true
+		if tlsCfg == nil {
+			return nil, errors.New("TLS config is required for grpcs scheme")
+		}
+		cp := x509.NewCertPool()
+		cp.AddCert(&tlsCfg.CaCert)
+		tlsConfig := &tls.Config{
+			MinVersion:   tls.VersionTLS12,
+			RootCAs:      cp,
+			Certificates: []tls.Certificate{tlsCfg.ClientCert},
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	default:

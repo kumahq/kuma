@@ -8,6 +8,7 @@ import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/vip"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/sni"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 )
 
@@ -73,6 +74,13 @@ func (m Match) GetValue() int32 {
 
 func (m Match) GetProtocol() core_meta.Protocol {
 	return m.Protocol
+}
+
+func (s *MeshExternalService) SNIs() []sni.Section {
+	if s == nil {
+		return nil
+	}
+	return []sni.Section{{Port: s.Match.Port, SectionName: s.Match.GetName()}}
 }
 
 func (l *MeshExternalServiceResourceList) GetDestinations() []core.Destination {

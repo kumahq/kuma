@@ -1,11 +1,17 @@
 ARG ARCH
 FROM kumahq/envoy:no-push-$ARCH AS envoy
-FROM ghcr.io/spiffe/spire-server:1.15.0@sha256:734433bd91b676acf1f8b5651c0e40028cab9381830db1ce364d91cfb27dec9c AS spire_server
+FROM ghcr.io/spiffe/spire-server:1.15.1@sha256:abfb368f538557646d5eb138ab0854361b79fa5ae36243ca5efe378dcbe85d61 AS spire_server
 FROM ghcr.io/spiffe/spire-agent:1.15.0@sha256:cdf98ba3c8cbbfadef9e996bb70844eccc9a6ecaf2aca506430b08113aa68acd AS spire_agent
 # Built in github.com/kumahq/ci-tools
 FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:487f66a9386f17fb2ba4cf5271bbf6ce8c79daadb3ad8dc80406acddb99fb110
 
 ARG ARCH
+
+# ca-certificates is required for curl to validate HTTPS downloads (e.g. older
+# kuma-dp binaries from packages.konghq.com used by compatibility tests).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -u 5678 -U kuma-dp
 

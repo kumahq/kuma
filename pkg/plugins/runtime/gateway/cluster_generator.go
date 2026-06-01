@@ -60,6 +60,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			)
 			if r == nil && err == nil {
 				log.Info("skipping backendRef", "backendRef", dest.BackendRef)
+				dest.Name = metadata.UnresolvedBackendServiceTag
 				continue
 			}
 			isExternalService := xdsCtx.Mesh.IsExternalService(service)

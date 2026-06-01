@@ -91,6 +91,7 @@ var (
 	_ = Describe("MeshRetry", meshretry.API, Ordered)
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.MeshFaultInjection, Ordered)
+	_ = Describe("MeshFaultInjection Zone Proxy", meshfaultinjection.ZoneProxy, Ordered)
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
 	_ = Describe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
