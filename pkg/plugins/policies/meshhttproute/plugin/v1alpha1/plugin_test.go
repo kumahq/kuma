@@ -881,6 +881,83 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("gateway-root-prefix", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_mesh.ProtocolHTTP), "region", "us"),
+				)
+			xdsContext := xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+
+			commonRules := core_rules.Rules{
+				{
+					Subset: core_rules.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.PathPrefix,
+									Value: "/",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(100)),
+								}},
+							},
+						}},
+					},
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.Rules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("gateway-listener-specific", func() outboundsTestCase {
 			gateway := &core_mesh.MeshGatewayResource{
 				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
