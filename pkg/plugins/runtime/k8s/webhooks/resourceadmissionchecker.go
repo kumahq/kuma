@@ -127,11 +127,11 @@ func rawK8sLabels(meta core_model.ResourceMeta) map[string]string {
 	if !ok {
 		return meta.GetLabels()
 	}
-	labels := maps.Clone(adapter.ObjectMeta.Labels)
+	labels := maps.Clone(adapter.Labels)
 	if labels == nil {
 		labels = map[string]string{}
 	}
-	for k, v := range adapter.ObjectMeta.Annotations {
+	for k, v := range adapter.Annotations {
 		if !mesh_proto.IsReservedLabelKey(k) {
 			continue
 		}
