@@ -1,0 +1,1 @@
+import{_ as c,r as e,o as s,p as _,w as o,b as t}from"./index-a_f-9CHH.js";const p={};function i(m,u){const n=e("RouterView"),r=e("AppView"),a=e("RouteView");return s(),_(a,{name:"hostname-generator-root-view"},{default:o(()=>[t(r,null,{default:o(()=>[t(n)]),_:1})]),_:1})}const f=c(p,[["render",i]]);export{f as default};
