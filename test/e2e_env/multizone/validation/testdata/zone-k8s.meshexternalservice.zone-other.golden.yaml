@@ -1,1 +1,1 @@
-error while running command: exit status 1; Error from server (Forbidden): error when creating "STDIN": admission webhook "mesh.defaulter.kuma-admission.kuma.io" denied the request: Operation not allowed. 'kuma.io/zone' label should have 'kuma-1' value, got 'other-zone'
+error while running command: exit status 1; Error from server (Forbidden): error when creating "STDIN": admission webhook "mesh.defaulter.kuma-admission.kuma.io" denied the request: Operation not allowed. kuma.io/zone should be 'kuma-1', got 'other-zone'

@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "reason": "the origin label must be set to 'zone'"
+   "reason": "the kuma.io/origin label must be set to 'zone'"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "message": "the origin label must be set to 'zone'"
+   "message": "the kuma.io/origin label must be set to 'zone'"
   }
  ]
 }

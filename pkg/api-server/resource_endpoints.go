@@ -671,20 +671,24 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	return err.OrNil()
 }
 
+func (r *resourceEndpoints) labelValidationContext() resource_labels.ValidationContext {
+	return resource_labels.ValidationContext{
+		Mode:                         r.mode,
+		IsK8s:                        r.isK8s,
+		FederatedZone:                r.federatedZone,
+		ZoneName:                     r.zoneName,
+		SystemNamespace:              r.systemNamespace,
+		DisableOriginLabelValidation: r.disableOriginLabelValidation,
+		Descriptor:                   r.descriptor,
+		// Namespace stays unset: REST API has no Kubernetes-namespace context.
+		// Privileged stays false: KDS sync bypasses REST entirely.
+	}
+}
+
 func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta) validators.ValidationError {
 	var err validators.ValidationError
-	origin, ok := core_model.ResourceOrigin(meta)
-
-	if !r.disableOriginLabelValidation && r.mode == config_core.Global {
-		if ok && origin != mesh_proto.GlobalResourceOrigin {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.GlobalResourceOrigin))
-		}
-	}
-
-	if !r.disableOriginLabelValidation && r.federatedZone && r.descriptor.IsPluginOriginated {
-		if !ok || origin != mesh_proto.ZoneResourceOrigin {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
-		}
+	for _, v := range resource_labels.ValidateOrigin(meta.GetLabels(), r.labelValidationContext()) {
+		err.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
 	}
 	return err
 }
@@ -692,31 +696,8 @@ func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta)
 func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 
-	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
-	if ok {
-		if oerr := origin.IsValid(); oerr != nil {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
-		}
-	}
-
-	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
-
-	if r.mode != config_core.Global {
-		if origin != mesh_proto.GlobalResourceOrigin {
-			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != r.zoneName {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-			}
-			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-			}
-		}
-	}
-
-	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {
-		r.validatePolicyRole(resource)
-	}
-
+	// Transport-level format checks first — these are independent of label
+	// semantics and shouldn't be expressed in the spec registry.
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
@@ -724,6 +705,18 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
+	}
+	if err.HasViolations() {
+		return err
+	}
+
+	ctx := r.labelValidationContext()
+	ctx.Spec = resource.GetSpec()
+	ctx.ResourceName = resource.GetMeta().GetName()
+	ctx.ResourceMesh = resource.GetMeta().GetMesh()
+
+	for _, v := range resource_labels.Validate(resource.GetMeta().GetLabels(), ctx) {
+		err.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
 	}
 	return err
 }
@@ -754,16 +747,6 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 		}
 	}
 
-	return err
-}
-
-func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
-	var err validators.ValidationError
-	policyRole := core_model.PolicyRole(resource.GetMeta())
-	// at the moment on universal all policies have system policy role
-	if policyRole != mesh_proto.SystemPolicyRole {
-		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
-	}
 	return err
 }
 

@@ -8,14 +8,14 @@ HTTP/1.1 400 Bad Request
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "reason": "kuma.io/zone label should have kuma-4 value"
+   "reason": "kuma.io/zone should be 'kuma-4', got 'other-zone'"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "message": "kuma.io/zone label should have kuma-4 value"
+   "message": "kuma.io/zone should be 'kuma-4', got 'other-zone'"
   }
  ]
 }

@@ -8,14 +8,14 @@ HTTP/1.1 400 Bad Request
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/mesh\"]",
-   "reason": "kuma.io/mesh label must not differ from mesh set on resource"
+   "reason": "kuma.io/mesh should be 'multizone-label-validation', got 'nonexistent-mesh'"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/mesh\"]",
-   "message": "kuma.io/mesh label must not differ from mesh set on resource"
+   "message": "kuma.io/mesh should be 'multizone-label-validation', got 'nonexistent-mesh'"
   }
  ]
 }
