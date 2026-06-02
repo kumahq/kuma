@@ -102,7 +102,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		IsK8s:                        true,
 		FederatedZone:                c.FederatedZone,
 		ZoneName:                     c.ZoneName,
-		SystemNamespace:              c.SystemNamespace,
 		Namespace:                    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
 		DisableOriginLabelValidation: c.DisableOriginLabelValidation,
 		Descriptor:                   r.Descriptor(),

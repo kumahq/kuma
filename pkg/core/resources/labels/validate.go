@@ -34,7 +34,6 @@ type ValidationContext struct {
 	IsK8s                        bool
 	FederatedZone                bool
 	ZoneName                     string
-	SystemNamespace              string
 	Namespace                    Namespace
 	DisableOriginLabelValidation bool
 	Descriptor                   core_model.ResourceTypeDescriptor

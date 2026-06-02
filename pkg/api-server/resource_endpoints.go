@@ -675,7 +675,6 @@ func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resou
 		IsK8s:                        r.isK8s,
 		FederatedZone:                r.federatedZone,
 		ZoneName:                     r.zoneName,
-		SystemNamespace:              r.systemNamespace,
 		DisableOriginLabelValidation: r.disableOriginLabelValidation,
 		Descriptor:                   r.descriptor,
 		Privileged:                   false,
