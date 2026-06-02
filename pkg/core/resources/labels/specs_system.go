@@ -13,17 +13,14 @@ import (
 
 func init() {
 	register(LabelSpec{
-		Key:         metadata.KumaServiceAccount,
-		Description: "Kubernetes ServiceAccount of the workload behind a proxy. CP-set from the Pod.",
-		Owner:       OwnerSystem,
+		Key:   metadata.KumaServiceAccount,
+		Owner: OwnerSystem,
 	})
 
 	register(LabelSpec{
-		Key:           metadata.KumaWorkload,
-		Description:   "Workload identifier of a proxy. CP-set from the Pod owner on K8s; user-supplied on Universal Dataplanes (privileged paths bypass this validator).",
-		Owner:         OwnerControlPlane,
-		OpenValue:     true,
-		AppliesToExpr: "proxy resources on a zone CP (Universal-set or K8s-controller-set)",
+		Key:       metadata.KumaWorkload,
+		Owner:     OwnerControlPlane,
+		OpenValue: true,
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if ctx.Mode != config_core.Zone || !ctx.Descriptor.IsProxy {
 				return "", false
@@ -33,26 +30,22 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:         mesh_proto.ListenerZoneIngressLabel,
-		Description: "Marker set by the CP when a Dataplane has a ZoneIngress listener.",
-		Owner:       OwnerSystem,
+		Key:   mesh_proto.ListenerZoneIngressLabel,
+		Owner: OwnerSystem,
 	})
 
 	register(LabelSpec{
-		Key:         mesh_proto.ListenerZoneEgressLabel,
-		Description: "Marker set by the CP when a Dataplane has a ZoneEgress listener.",
-		Owner:       OwnerSystem,
+		Key:   mesh_proto.ListenerZoneEgressLabel,
+		Owner: OwnerSystem,
 	})
 
 	register(LabelSpec{
-		Key:         mesh_proto.ManagedByLabel,
-		Description: "Set by the CP on auto-generated resources (e.g. MeshServices).",
-		Owner:       OwnerSystem,
+		Key:   mesh_proto.ManagedByLabel,
+		Owner: OwnerSystem,
 	})
 
 	register(LabelSpec{
-		Key:         mesh_proto.DeletionGracePeriodStartedLabel,
-		Description: "CP-managed lifecycle marker for graceful deletion.",
-		Owner:       OwnerSystem,
+		Key:   mesh_proto.DeletionGracePeriodStartedLabel,
+		Owner: OwnerSystem,
 	})
 }

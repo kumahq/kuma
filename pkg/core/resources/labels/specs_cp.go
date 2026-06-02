@@ -13,12 +13,9 @@ import (
 
 func init() {
 	register(LabelSpec{
-		Key:               mesh_proto.ResourceOriginLabel,
-		Description:       "Origin of the resource. 'global' on the global CP, 'zone' on a zone CP.",
-		Owner:             OwnerControlPlane,
-		AllowedValues:     []string{string(mesh_proto.GlobalResourceOrigin), string(mesh_proto.ZoneResourceOrigin)},
-		ExpectedValueExpr: "'global' on global CP; 'zone' on zone CP",
-		RequiredWhenExpr:  "zone CP, plugin-originated resources (REST) or system namespace (K8s)",
+		Key:           mesh_proto.ResourceOriginLabel,
+		Owner:         OwnerControlPlane,
+		AllowedValues: []string{string(mesh_proto.GlobalResourceOrigin), string(mesh_proto.ZoneResourceOrigin)},
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if ctx.Mode == config_core.Global {
 				return string(mesh_proto.GlobalResourceOrigin), true
@@ -40,10 +37,8 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:               mesh_proto.MeshTag,
-		Description:       "Mesh the resource belongs to.",
-		Owner:             OwnerControlPlane,
-		ExpectedValueExpr: "= resource's mesh field",
+		Key:   mesh_proto.MeshTag,
+		Owner: OwnerControlPlane,
 		Expected: func(ctx ValidationContext) (string, bool) {
 			// Only Mesh-scoped resources have a meaningful kuma.io/mesh; for
 			// Global-scoped resources (Mesh, Zone, ...) the label is not applicable.
@@ -55,11 +50,8 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:               mesh_proto.ZoneTag,
-		Description:       "Zone the resource belongs to.",
-		Owner:             OwnerControlPlane,
-		ExpectedValueExpr: "current zone name (zone CP only)",
-		AppliesToExpr:     "zone CP only",
+		Key:   mesh_proto.ZoneTag,
+		Owner: OwnerControlPlane,
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if ctx.Mode != config_core.Zone {
 				return "", false
@@ -69,12 +61,9 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:               mesh_proto.EnvTag,
-		Description:       "Environment (kubernetes or universal) the resource was created on.",
-		Owner:             OwnerControlPlane,
-		AllowedValues:     []string{mesh_proto.KubernetesEnvironment, mesh_proto.UniversalEnvironment},
-		ExpectedValueExpr: "'kubernetes' on K8s zone, 'universal' on universal zone",
-		AppliesToExpr:     "zone CP only",
+		Key:           mesh_proto.EnvTag,
+		Owner:         OwnerControlPlane,
+		AllowedValues: []string{mesh_proto.KubernetesEnvironment, mesh_proto.UniversalEnvironment},
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if ctx.Mode != config_core.Zone {
 				return "", false
@@ -87,10 +76,8 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:               mesh_proto.DisplayName,
-		Description:       "Human-readable name of the resource (used by UIs and KDS sync).",
-		Owner:             OwnerControlPlane,
-		ExpectedValueExpr: "= resource name (K8s metadata.name without .namespace suffix)",
+		Key:   mesh_proto.DisplayName,
+		Owner: OwnerControlPlane,
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if ctx.ResourceName == "" {
 				return "", false
@@ -100,12 +87,9 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:               mesh_proto.PolicyRoleLabel,
-		Description:       "Role of the policy: system, producer, consumer or workload-owner.",
-		Owner:             OwnerControlPlane,
-		AllowedValues:     []string{string(mesh_proto.SystemPolicyRole), string(mesh_proto.ProducerPolicyRole), string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole)},
-		ExpectedValueExpr: "ComputePolicyRole(spec, namespace)",
-		AppliesToExpr:     "plugin-originated policies",
+		Key:           mesh_proto.PolicyRoleLabel,
+		Owner:         OwnerControlPlane,
+		AllowedValues: []string{string(mesh_proto.SystemPolicyRole), string(mesh_proto.ProducerPolicyRole), string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole)},
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if !ctx.Descriptor.IsPolicy || !ctx.Descriptor.IsPluginOriginated {
 				return "", false
@@ -125,11 +109,8 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:               mesh_proto.ProxyTypeLabel,
-		Description:       "Type of the proxy (sidecar, gateway, zoneingress, zoneegress).",
-		Owner:             OwnerControlPlane,
-		ExpectedValueExpr: "spec.GetProxyType()",
-		AppliesToExpr:     "proxy resources (IsProxy=true)",
+		Key:   mesh_proto.ProxyTypeLabel,
+		Owner: OwnerControlPlane,
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if !ctx.Descriptor.IsProxy {
 				return "", false
@@ -143,11 +124,8 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:               mesh_proto.KubeNamespaceTag,
-		Description:       "Kubernetes namespace the resource was applied in.",
-		Owner:             OwnerControlPlane,
-		ExpectedValueExpr: "current namespace (K8s only)",
-		AppliesToExpr:     "K8s resources with a namespace",
+		Key:   mesh_proto.KubeNamespaceTag,
+		Owner: OwnerControlPlane,
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if !ctx.IsK8s || ctx.Namespace.value == "" {
 				return "", false
