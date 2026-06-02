@@ -621,7 +621,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 		return
 	}
 
-	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
+	if verr := r.validateOriginForWrite(rest.From.Resource(resource)); verr.HasViolations() {
 		rest_errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Could not delete a resource")
 		return
 	}
@@ -669,7 +669,7 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	return err.OrNil()
 }
 
-func (r *resourceEndpoints) labelValidationContext() resource_labels.ValidationContext {
+func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resource_labels.ValidationContext {
 	return resource_labels.ValidationContext{
 		Mode:                         r.mode,
 		IsK8s:                        r.isK8s,
@@ -679,13 +679,16 @@ func (r *resourceEndpoints) labelValidationContext() resource_labels.ValidationC
 		DisableOriginLabelValidation: r.disableOriginLabelValidation,
 		Descriptor:                   r.descriptor,
 		Privileged:                   false,
+		Spec:                         resource.GetSpec(),
+		ResourceName:                 resource.GetMeta().GetName(),
+		ResourceMesh:                 resource.GetMeta().GetMesh(),
 		// Namespace stays unset: REST API has no Kubernetes-namespace context.
 	}
 }
 
-func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta) validators.ValidationError {
+func (r *resourceEndpoints) validateOriginForWrite(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
-	for _, v := range resource_labels.ValidateOrigin(meta.GetLabels(), r.labelValidationContext()) {
+	for _, v := range resource_labels.ValidateOrigin(resource.GetMeta().GetLabels(), r.labelValidationContext(resource)) {
 		err.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
 	}
 	return err
@@ -693,13 +696,7 @@ func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta)
 
 func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
-
-	ctx := r.labelValidationContext()
-	ctx.Spec = resource.GetSpec()
-	ctx.ResourceName = resource.GetMeta().GetName()
-	ctx.ResourceMesh = resource.GetMeta().GetMesh()
-
-	for _, v := range resource_labels.Validate(resource.GetMeta().GetLabels(), ctx) {
+	for _, v := range resource_labels.Validate(resource.GetMeta().GetLabels(), r.labelValidationContext(resource)) {
 		err.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
 	}
 	return err
