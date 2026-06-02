@@ -14,9 +14,16 @@ import (
 )
 
 // Violation is a single label-validation failure.
+//
+// Format=true marks failures of the K8s label format constraints
+// (qualified-name keys, label-value values). Callers may treat these
+// differently from semantic violations — the REST API emits both, the K8s
+// webhook short-circuits on format violations so the K8s API server's native
+// "Invalid value: ..." error surfaces unmodified.
 type Violation struct {
 	Key    string `json:"key"`
 	Reason string `json:"reason"`
+	Format bool   `json:"-"`
 }
 
 // ValidationContext carries the per-call information validators consult.
@@ -41,9 +48,15 @@ type ValidationContext struct {
 
 const reservedReason = "is a reserved label managed by the control plane and cannot be set on apply"
 
-// Validate runs the registry against the given label set.
+// Validate runs format + semantic checks against the given label set.
 //
-// Behavior, per LabelSpec.Owner:
+// Format violations are returned first; when any are present, semantic
+// validation is skipped (validators assume well-formed input). All returned
+// violations have Format=true; callers that need to behave differently for
+// format issues (e.g. the K8s webhook, which lets the API server emit the
+// native format error) inspect Violation.Format.
+//
+// Semantic behavior, per LabelSpec.Owner:
 //   - OwnerSystem        — any user-set value is rejected.
 //   - OwnerUser          — any value is accepted; if AllowedValues is non-empty,
 //     the value must be in the set.
@@ -62,16 +75,8 @@ func Validate(labels map[string]string, ctx ValidationContext) []Violation {
 		return nil
 	}
 
-	// Defer to transport-level format validation if any label key or value is
-	// malformed. The REST API runs IsQualifiedName / IsValidLabelValue ahead of
-	// us; the K8s API server runs the same checks as built-in admission. By
-	// bailing out here, we let those native format errors surface unmodified
-	// — otherwise we'd mask "Invalid value: 'kuma.io/Not Valid!'" with a
-	// less-helpful "is a reserved label" reason.
-	for k, v := range labels {
-		if len(validation.IsQualifiedName(k)) > 0 || len(validation.IsValidLabelValue(v)) > 0 {
-			return nil
-		}
+	if format := formatViolations(labels); len(format) > 0 {
+		return format
 	}
 
 	var violations []Violation
@@ -113,6 +118,28 @@ func ValidateOrigin(labels map[string]string, ctx ValidationContext) []Violation
 		return []Violation{*v}
 	}
 	return nil
+}
+
+func formatViolations(labels map[string]string) []Violation {
+	var out []Violation
+	for _, k := range sortedKeys(labels) {
+		for _, msg := range validation.IsQualifiedName(k) {
+			out = append(out, Violation{Key: k, Reason: msg, Format: true})
+		}
+		for _, msg := range validation.IsValidLabelValue(labels[k]) {
+			out = append(out, Violation{Key: k, Reason: msg, Format: true})
+		}
+	}
+	return out
+}
+
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func validateOne(spec LabelSpec, value string, present bool, ctx ValidationContext) *Violation {

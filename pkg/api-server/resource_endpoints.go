@@ -13,7 +13,6 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
-	"k8s.io/apimachinery/pkg/util/validation"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -49,7 +48,6 @@ import (
 	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -680,8 +678,8 @@ func (r *resourceEndpoints) labelValidationContext() resource_labels.ValidationC
 		SystemNamespace:              r.systemNamespace,
 		DisableOriginLabelValidation: r.disableOriginLabelValidation,
 		Descriptor:                   r.descriptor,
+		Privileged:                   false,
 		// Namespace stays unset: REST API has no Kubernetes-namespace context.
-		// Privileged stays false: KDS sync bypasses REST entirely.
 	}
 }
 
@@ -695,20 +693,6 @@ func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta)
 
 func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
-
-	// Transport-level format checks first — these are independent of label
-	// semantics and shouldn't be expressed in the spec registry.
-	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
-		for _, msg := range validation.IsQualifiedName(k) {
-			err.AddViolationAt(validators.Root().Key(k), msg)
-		}
-		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
-			err.AddViolationAt(validators.Root().Key(k), msg)
-		}
-	}
-	if err.HasViolations() {
-		return err
-	}
 
 	ctx := r.labelValidationContext()
 	ctx.Spec = resource.GetSpec()

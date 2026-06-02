@@ -108,6 +108,12 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	if len(violations) == 0 {
 		return nil
 	}
+	// Defer to the K8s API server's native "Invalid value: ..." error when the
+	// problem is label format — its message carries kind/name/key context that
+	// our admission response doesn't.
+	if violations[0].Format {
+		return nil
+	}
 	return forbiddenResponse("Operation not allowed. " + formatLabelViolation(violations[0]))
 }
 
