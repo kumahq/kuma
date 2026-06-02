@@ -3,10 +3,11 @@ kind: MeshExternalService
 metadata:
   name: mes-display-name
   namespace: {{ .KumaNamespace }}
+  annotations:
+    kuma.io/display-name: my-custom-name
   labels:
     kuma.io/mesh: multizone-label-validation
     kuma.io/origin: zone
-    kuma.io/display-name: my-custom-name
 spec:
   match:
     type: HostnameGenerator

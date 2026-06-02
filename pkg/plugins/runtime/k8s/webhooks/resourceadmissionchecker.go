@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 
@@ -11,11 +10,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	k8s_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
@@ -73,7 +70,7 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 	if (c.Mode == core.Global || c.FederatedZone) && r.Descriptor().IsPluginOriginated {
 		return c.validateLabels(r, ns, op)
 	}
-	if violations := resource_labels.ValidateOriginFormat(rawK8sLabels(r.GetMeta())); len(violations) > 0 {
+	if violations := resource_labels.ValidateOriginFormat(r.GetMeta().GetLabels()); len(violations) > 0 {
 		return forbiddenResponse("Operation not allowed. " + formatLabelViolation(violations[0]))
 	}
 	return nil
@@ -109,7 +106,8 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		ResourceName:                 name,
 		ResourceMesh:                 r.GetMeta().GetMesh(),
 	}
-	labels := rawK8sLabels(r.GetMeta())
+	labels := r.GetMeta().GetLabels()
+
 	// Delete authorization only hinges on origin — was this resource created
 	// in the CP that's now being asked to delete it? Other CP-computed labels
 	// reflect their originating CP's context (notably for KDS-synced resources)
@@ -130,32 +128,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		return nil
 	}
 	return forbiddenResponse("Operation not allowed. " + formatLabelViolation(violations[0]))
-}
-
-// rawK8sLabels returns what the user actually supplied on the K8s object,
-// before KubernetesMetaAdapter.GetLabels rewrites kuma.io/display-name (and
-// similar) from the metadata.name fallback. Reserved-namespace annotations
-// (the canonical storage location for kuma.io/display-name) are folded in so
-// the validator observes them too.
-func rawK8sLabels(meta core_model.ResourceMeta) map[string]string {
-	adapter, ok := meta.(*k8s_resources.KubernetesMetaAdapter)
-	if !ok {
-		return meta.GetLabels()
-	}
-	labels := maps.Clone(adapter.Labels)
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	for k, v := range adapter.Annotations {
-		if !mesh_proto.IsReservedLabelKey(k) {
-			continue
-		}
-		if _, present := labels[k]; present {
-			continue
-		}
-		labels[k] = v
-	}
-	return labels
 }
 
 // formatLabelViolation renders a Violation into the inline "Operation not
