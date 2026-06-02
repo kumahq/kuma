@@ -682,7 +682,7 @@ func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resou
 		Spec:                         resource.GetSpec(),
 		ResourceName:                 resource.GetMeta().GetName(),
 		ResourceMesh:                 resource.GetMeta().GetMesh(),
-		// Namespace stays unset: REST API has no Kubernetes-namespace context.
+		Namespace:                    resource_labels.UnsetNamespace,
 	}
 }
 
