@@ -46,7 +46,7 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 			)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "cnpg.io/cluster", "postgres-cluster")(globalCluster)).To(Succeed())
+		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "cnpg.io/podRole", "instance")(globalCluster)).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
