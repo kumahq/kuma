@@ -25,6 +25,12 @@ type LabelSpec struct {
 	// (e.g. kuma.io/workload on Universal Dataplanes — value comes from the
 	// user but the label only applies to specific resource types).
 	OpenValue bool
+	// AllowAnyWhenNotApplicable: when Owner == OwnerControlPlane and Expected
+	// returns applies=false, accept any AllowedValues value the user supplies
+	// instead of rejecting it as "reserved". Used by kuma.io/origin: contexts
+	// where the CP doesn't strictly enforce a specific origin (e.g. user
+	// namespaces on K8s zones) still want the vocabulary checked.
+	AllowAnyWhenNotApplicable bool
 
 	// Expected returns the value the CP would compute for ctx. applies=false
 	// means the label is not applicable in this context: any user-provided

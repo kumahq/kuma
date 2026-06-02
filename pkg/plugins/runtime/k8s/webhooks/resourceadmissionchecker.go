@@ -28,7 +28,7 @@ type ResourceAdmissionChecker struct {
 	ZoneName                     string
 }
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
+func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string, op v1.Operation) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
 	}
@@ -44,7 +44,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return *forbiddenResponse(resourceTypeNotAllowedMsg(r.Descriptor().Name, c.Mode))
 	}
 
-	if errResponse := c.isResourceAllowed(r, ns); errResponse != nil {
+	if errResponse := c.isResourceAllowed(r, ns, op); errResponse != nil {
 		return *errResponse
 	}
 
@@ -65,12 +65,18 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 	return admission.Allowed("")
 }
 
-func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) *admission.Response {
-	// we don't need to validate non fedarated zone and legacy policies
-	if (c.Mode != core.Global && !c.FederatedZone) || !r.Descriptor().IsPluginOriginated {
-		return nil
+func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string, op v1.Operation) *admission.Response {
+	// Federated/plugin resources get the full context-aware validation, which
+	// already catches unknown origin values via the "should be 'zone', got X"
+	// mismatch path. Non-federated zones / legacy resources skip that broader
+	// check but still get the origin vocabulary check below.
+	if (c.Mode == core.Global || c.FederatedZone) && r.Descriptor().IsPluginOriginated {
+		return c.validateLabels(r, ns, op)
 	}
-	return c.validateLabels(r, ns)
+	if violations := resource_labels.ValidateOriginFormat(rawK8sLabels(r.GetMeta())); len(violations) > 0 {
+		return forbiddenResponse("Operation not allowed. " + formatLabelViolation(violations[0]))
+	}
+	return nil
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
@@ -82,7 +88,7 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
 
-func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
+func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string, op v1.Operation) *admission.Response {
 	// On K8s the kuma core name is "<metadata.name>.<namespace>". For label
 	// validation (notably kuma.io/display-name, which equals the K8s
 	// metadata.name) we need the unqualified name, so strip the namespace
@@ -104,7 +110,17 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		ResourceName:                 name,
 		ResourceMesh:                 r.GetMeta().GetMesh(),
 	}
-	violations := resource_labels.Validate(rawK8sLabels(r.GetMeta()), ctx)
+	labels := rawK8sLabels(r.GetMeta())
+	// Delete authorization only hinges on origin — was this resource created
+	// in the CP that's now being asked to delete it? Other CP-computed labels
+	// reflect their originating CP's context (notably for KDS-synced resources)
+	// and aren't meaningful to recompute here.
+	var violations []resource_labels.Violation
+	if op == v1.Delete {
+		violations = resource_labels.ValidateOrigin(labels, ctx)
+	} else {
+		violations = resource_labels.Validate(labels, ctx)
+	}
 	if len(violations) == 0 {
 		return nil
 	}

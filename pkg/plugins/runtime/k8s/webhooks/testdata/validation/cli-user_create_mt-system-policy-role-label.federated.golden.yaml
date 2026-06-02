@@ -1,6 +1,9 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 403
+  message: Operation not allowed. kuma.io/policy-role should be 'system', got 'invalid'
   metadata: {}
+  reason: Forbidden
+  status: Failure
 uid: "12345"

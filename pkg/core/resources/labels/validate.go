@@ -102,6 +102,25 @@ func Validate(labels map[string]string, ctx ValidationContext) []Violation {
 	return violations
 }
 
+// ValidateOriginFormat is a context-free vocabulary check on the
+// kuma.io/origin label — its value must be one of "global" or "zone" (or
+// empty, treated as unset). Appropriate for flows that intentionally skip
+// the context-aware ValidateOrigin (non-federated zone CPs, legacy
+// non-plugin-originated resources) but still want to reject unknown values.
+func ValidateOriginFormat(labels map[string]string) []Violation {
+	value, ok := labels[mesh_proto.ResourceOriginLabel]
+	if !ok || value == "" {
+		return nil
+	}
+	if err := mesh_proto.ResourceOrigin(value).IsValid(); err != nil {
+		return []Violation{{
+			Key:    mesh_proto.ResourceOriginLabel,
+			Reason: fmt.Sprintf("%s should be 'global' or 'zone', got '%s'", mesh_proto.ResourceOriginLabel, value),
+		}}
+	}
+	return nil
+}
+
 // ValidateOrigin runs only the kuma.io/origin label spec.
 // Used by the delete flow, where the other labels are CP-managed state and
 // the only thing the caller can authoritatively gate on is origin.
@@ -173,10 +192,19 @@ func validateOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 		}
 
 		if !applies {
-			if present {
-				return &Violation{Key: spec.Key, Reason: reservedReason}
+			if !present {
+				return nil
 			}
-			return nil
+			if spec.AllowAnyWhenNotApplicable {
+				if len(spec.AllowedValues) > 0 && !slices.Contains(spec.AllowedValues, value) {
+					return &Violation{
+						Key:    spec.Key,
+						Reason: fmt.Sprintf("must be one of [%s]", strings.Join(quoted(spec.AllowedValues), ", ")),
+					}
+				}
+				return nil
+			}
+			return &Violation{Key: spec.Key, Reason: reservedReason}
 		}
 
 		if present {

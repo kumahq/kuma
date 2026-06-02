@@ -1,16 +1,9 @@
 Patches: null
 allowed: false
 status:
-  code: 422
-  details:
-    causes:
-    - field: labels["kuma.io/origin"]
-      message: unknown resource origin "unknownvalue"
-      reason: FieldValueInvalid
-    kind: MeshTrafficPermission
-    name: mtp-es
-  message: 'labels["kuma.io/origin"]: unknown resource origin "unknownvalue"'
+  code: 403
+  message: Operation not allowed. kuma.io/origin should be 'global', got 'unknownvalue'
   metadata: {}
-  reason: Invalid
+  reason: Forbidden
   status: Failure
 uid: "12345"

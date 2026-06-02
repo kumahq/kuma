@@ -2,8 +2,7 @@ Patches: null
 allowed: false
 status:
   code: 403
-  message: Operation not allowed. 'kuma.io/zone' label should have 'zone-1' value,
-    got 'wrong-zone'
+  message: Operation not allowed. kuma.io/zone should be 'zone-1', got 'wrong-zone'
   metadata: {}
   reason: Forbidden
   status: Failure

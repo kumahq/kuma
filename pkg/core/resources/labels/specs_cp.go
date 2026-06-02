@@ -13,12 +13,31 @@ import (
 
 func init() {
 	register(LabelSpec{
-		Key:           mesh_proto.ResourceOriginLabel,
-		Owner:         OwnerControlPlane,
-		AllowedValues: []string{string(mesh_proto.GlobalResourceOrigin), string(mesh_proto.ZoneResourceOrigin)},
+		Key:                       mesh_proto.ResourceOriginLabel,
+		Owner:                     OwnerControlPlane,
+		AllowedValues:             []string{string(mesh_proto.GlobalResourceOrigin), string(mesh_proto.ZoneResourceOrigin)},
+		AllowAnyWhenNotApplicable: true,
+		// Origin enforcement is strict only where the CP would itself set the
+		// value: Global (always 'global') or Zone in a "strict" context — K8s
+		// system namespace, or Universal federated plugin-originated. In other
+		// zone contexts (user namespaces on K8s, non-federated/non-plugin on
+		// Universal) any known origin value is accepted; the vocabulary check
+		// still rejects unknown values via AllowAnyWhenNotApplicable.
 		Expected: func(ctx ValidationContext) (string, bool) {
+			if ctx.DisableOriginLabelValidation {
+				return "", false
+			}
 			if ctx.Mode == config_core.Global {
 				return string(mesh_proto.GlobalResourceOrigin), true
+			}
+			strict := false
+			if ctx.IsK8s {
+				strict = ctx.Namespace.system
+			} else {
+				strict = ctx.FederatedZone && ctx.Descriptor.IsPluginOriginated
+			}
+			if !strict {
+				return "", false
 			}
 			return string(mesh_proto.ZoneResourceOrigin), true
 		},
