@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -10,9 +11,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	k8s_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v2/pkg/version"
 )
 
@@ -80,6 +83,14 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 }
 
 func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
+	// On K8s the kuma core name is "<metadata.name>.<namespace>". For label
+	// validation (notably kuma.io/display-name, which equals the K8s
+	// metadata.name) we need the unqualified name, so strip the namespace
+	// suffix.
+	name := r.GetMeta().GetName()
+	if ns != "" {
+		name = strings.TrimSuffix(name, "."+ns)
+	}
 	ctx := resource_labels.ValidationContext{
 		Mode:                         c.Mode,
 		IsK8s:                        true,
@@ -90,14 +101,40 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		DisableOriginLabelValidation: c.DisableOriginLabelValidation,
 		Descriptor:                   r.Descriptor(),
 		Spec:                         r.GetSpec(),
-		ResourceName:                 r.GetMeta().GetName(),
+		ResourceName:                 name,
 		ResourceMesh:                 r.GetMeta().GetMesh(),
 	}
-	violations := resource_labels.Validate(r.GetMeta().GetLabels(), ctx)
+	violations := resource_labels.Validate(rawK8sLabels(r.GetMeta()), ctx)
 	if len(violations) == 0 {
 		return nil
 	}
 	return forbiddenResponse("Operation not allowed. " + formatLabelViolation(violations[0]))
+}
+
+// rawK8sLabels returns what the user actually supplied on the K8s object,
+// before KubernetesMetaAdapter.GetLabels rewrites kuma.io/display-name (and
+// similar) from the metadata.name fallback. Reserved-namespace annotations
+// (the canonical storage location for kuma.io/display-name) are folded in so
+// the validator observes them too.
+func rawK8sLabels(meta core_model.ResourceMeta) map[string]string {
+	adapter, ok := meta.(*k8s_resources.KubernetesMetaAdapter)
+	if !ok {
+		return meta.GetLabels()
+	}
+	labels := maps.Clone(adapter.ObjectMeta.Labels)
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	for k, v := range adapter.ObjectMeta.Annotations {
+		if !mesh_proto.IsReservedLabelKey(k) {
+			continue
+		}
+		if _, present := labels[k]; present {
+			continue
+		}
+		labels[k] = v
+	}
+	return labels
 }
 
 // formatLabelViolation renders a Violation into the inline "Operation not

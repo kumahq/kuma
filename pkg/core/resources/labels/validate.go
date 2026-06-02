@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/validation"
+
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -58,6 +60,18 @@ const reservedReason = "is a reserved label managed by the control plane and can
 func Validate(labels map[string]string, ctx ValidationContext) []Violation {
 	if ctx.Privileged {
 		return nil
+	}
+
+	// Defer to transport-level format validation if any label key or value is
+	// malformed. The REST API runs IsQualifiedName / IsValidLabelValue ahead of
+	// us; the K8s API server runs the same checks as built-in admission. By
+	// bailing out here, we let those native format errors surface unmodified
+	// — otherwise we'd mask "Invalid value: 'kuma.io/Not Valid!'" with a
+	// less-helpful "is a reserved label" reason.
+	for k, v := range labels {
+		if len(validation.IsQualifiedName(k)) > 0 || len(validation.IsValidLabelValue(v)) > 0 {
+			return nil
+		}
 	}
 
 	var violations []Violation

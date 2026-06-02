@@ -144,7 +144,7 @@ spec:
 			Expect(WaitForResource(descriptor, core_model.ResourceKey{Mesh: mesh, Name: nameOnK8sZone}, multizone.KubeZone1)).To(Succeed())
 
 			Expect(DeleteResourceRawResponse(multizone.UniZone1, "meshtimeouts", mesh, nameFromGlobal)).
-				To(ContainSubstring("the origin label must be set to"))
+				To(ContainSubstring("kuma.io/origin should be 'zone', got 'global'"))
 
 			out, kerr := deleteFromK8sZone(nameFromGlobal)
 			Expect(kerr).To(HaveOccurred(), "kubectl delete should fail: %s", out)
@@ -163,7 +163,7 @@ spec:
 			Expect(WaitForResource(descriptor, core_model.ResourceKey{Mesh: mesh, Name: nameOnGlobalFromK8s}, multizone.Global)).To(Succeed())
 
 			Expect(DeleteResourceRawResponse(multizone.Global, "meshtimeouts", mesh, nameOnGlobalFromK8s)).
-				To(ContainSubstring("the origin label must be set to"))
+				To(ContainSubstring("kuma.io/origin should be 'global', got 'zone'"))
 
 			out, kerr := deleteFromK8sZone(mtName)
 			Expect(kerr).ToNot(HaveOccurred(), "kubectl delete on zone of origin should succeed: %s", out)
@@ -175,7 +175,7 @@ spec:
 			Expect(WaitForResource(descriptor, core_model.ResourceKey{Mesh: mesh, Name: nameOnGlobalFromUni}, multizone.Global)).To(Succeed())
 
 			Expect(DeleteResourceRawResponse(multizone.Global, "meshtimeouts", mesh, nameOnGlobalFromUni)).
-				To(ContainSubstring("the origin label must be set to"))
+				To(ContainSubstring("kuma.io/origin should be 'global', got 'zone'"))
 
 			Expect(DeleteResourceRawResponse(multizone.UniZone1, "meshtimeouts", mesh, mtName)).
 				To(ContainSubstring("200 OK"))
