@@ -8,6 +8,7 @@
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
+  "kuma.io/policy-role": "system",
   "kuma.io/zone": "default"
  },
  "kri": "kri_mal_default_default__my-access-log_",

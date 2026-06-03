@@ -273,6 +273,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				mesh_proto.ZoneTag:             zone,
 				mesh_proto.MeshTag:             mesh,
 				mesh_proto.EnvTag:              "universal",
+				mesh_proto.PolicyRoleLabel:     string(mesh_proto.SystemPolicyRole),
 			}))
 		},
 		Entry("non-federated zone", false),
