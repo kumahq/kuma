@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/http"
 	"slices"
 	"sort"
@@ -678,18 +677,6 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 			labelErr.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
 		}
 		err.AddError("labels", labelErr)
-	}
-	// Apply the sanitized labels back to the resource — the CP-overrides
-	// principle: keys with warnings are either replaced with the CP's expected
-	// value (CP-owned labels that apply here) or dropped (system labels and
-	// CP-owned labels not applicable in this context).
-	if labels := resource.GetMeta().GetLabels(); len(labels) > 0 || len(labelResult.Sanitized) > 0 {
-		for k := range labels {
-			if _, keep := labelResult.Sanitized[k]; !keep {
-				delete(labels, k)
-			}
-		}
-		maps.Copy(labels, labelResult.Sanitized)
 	}
 	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 

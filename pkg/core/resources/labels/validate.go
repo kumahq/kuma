@@ -2,7 +2,6 @@ package labels
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -52,14 +51,11 @@ type ValidationContext struct {
 //   - Errors must reject the request (format issues, unknown reserved keys,
 //     OwnerUser AllowedValues mismatch).
 //   - Warnings should be surfaced to the caller without rejecting. They cover
-//     attempts to set CP-managed labels: the CP will override (or drop) the
+//     attempts to set CP-managed labels: Compute will override (or drop) the
 //     value and the user should know what happened.
-//   - Sanitized is a copy of the input labels with all warned-on keys removed.
-//     Pass it to Compute so CP-owned values are populated from context.
 type Result struct {
-	Errors    []Violation
-	Warnings  []Violation
-	Sanitized map[string]string
+	Errors   []Violation
+	Warnings []Violation
 }
 
 func mismatchReason(key, expected, got string) string {
@@ -86,35 +82,28 @@ func notAllowedValueReason(key string, allowed []string, got string) string {
 //
 // Semantic classification, per LabelSpec.Owner:
 //
-//   - OwnerSystem        — any user-set value is a warning; the key is removed
-//     from Sanitized so the storage layer receives a clean map.
+//   - OwnerSystem        — any user-set value is a warning. Compute will
+//     overwrite or drop it.
 //   - OwnerUser          — any value is accepted; if AllowedValues is non-empty
 //     and the value is outside the set, that is an error.
 //   - OwnerControlPlane  — Expected(ctx) supplies the CP value. The user value
 //     is accepted only when it matches expected (or OpenValue is set, or
 //     applies=false with a valid AllowAnyWhenNotApplicable value). All other
-//     cases are warnings; the key is removed from Sanitized so Compute can
-//     regenerate the right value.
+//     cases are warnings; Compute will regenerate the right value.
 //
 // Reserved keys (kuma.io/* or k8s.kuma.io/*) absent from the registry are
 // rejected as errors — these are typos or removed labels and the caller
 // should fix them.
 //
-// When ctx.Privileged is true the function returns an empty Result with the
-// input labels copied into Sanitized — KDS-synced and CP-internal flows skip
-// all validation.
+// When ctx.Privileged is true the function returns an empty Result — KDS-synced
+// and CP-internal flows skip all validation.
 func Validate(labels map[string]string, ctx ValidationContext) Result {
 	if ctx.Privileged {
-		return Result{Sanitized: maps.Clone(labels)}
+		return Result{}
 	}
 
 	if format := formatViolations(labels); len(format) > 0 {
-		return Result{Errors: format, Sanitized: maps.Clone(labels)}
-	}
-
-	sanitized := map[string]string{}
-	if len(labels) > 0 {
-		sanitized = maps.Clone(labels)
+		return Result{Errors: format}
 	}
 
 	var errs, warns []Violation
@@ -127,7 +116,6 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 		}
 		if w != nil {
 			warns = append(warns, *w)
-			applySanitize(sanitized, spec, ctx)
 		}
 	}
 
@@ -143,7 +131,7 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 
 	sort.Slice(errs, func(i, j int) bool { return errs[i].Key < errs[j].Key })
 	sort.Slice(warns, func(i, j int) bool { return warns[i].Key < warns[j].Key })
-	return Result{Errors: errs, Warnings: warns, Sanitized: sanitized}
+	return Result{Errors: errs, Warnings: warns}
 }
 
 // ValidateOriginFormat is a context-free vocabulary check on the
@@ -183,23 +171,6 @@ func ValidateOrigin(labels map[string]string, ctx ValidationContext) []Violation
 		return []Violation{*v}
 	}
 	return nil
-}
-
-// applySanitize mutates sanitized to reflect what the CP would store for a
-// label that triggered a warning. For OwnerControlPlane labels that apply in
-// this context, the CP's expected value is written so the immutable-label
-// check on update sees the same value the CP would have computed. Otherwise
-// the user-supplied value is dropped.
-func applySanitize(sanitized map[string]string, spec LabelSpec, ctx ValidationContext) {
-	if spec.Owner == OwnerControlPlane {
-		if spec.Expected != nil {
-			if expected, applies := spec.Expected(ctx); applies {
-				sanitized[spec.Key] = expected
-				return
-			}
-		}
-	}
-	delete(sanitized, spec.Key)
 }
 
 func formatViolations(labels map[string]string) []Violation {

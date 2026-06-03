@@ -54,7 +54,7 @@ var _ = Describe("Validate", func() {
 		Expect(r.Warnings).To(BeEmpty())
 	})
 
-	It("warns on mismatched mesh label and replaces with the expected value", func() {
+	It("warns on mismatched mesh label", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
@@ -66,10 +66,9 @@ var _ = Describe("Validate", func() {
 			Key:    mesh_proto.MeshTag,
 			Reason: "kuma.io/mesh is computed by the control plane (expected 'mesh-1'); the supplied value 'other-mesh' was overridden",
 		}))
-		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.MeshTag, "mesh-1"))
 	})
 
-	It("warns on mismatched zone label and replaces with the expected value", func() {
+	It("warns on mismatched zone label", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
@@ -81,7 +80,6 @@ var _ = Describe("Validate", func() {
 			Key:    mesh_proto.ZoneTag,
 			Reason: "kuma.io/zone is computed by the control plane (expected 'kuma-zone'); the supplied value 'other-zone' was overridden",
 		}))
-		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.ZoneTag, "kuma-zone"))
 	})
 
 	It("requires origin to be set on a federated zone CP (conscious-apply gate)", func() {
@@ -94,7 +92,7 @@ var _ = Describe("Validate", func() {
 		}))
 	})
 
-	It("warns on origin=global on a zone CP and replaces with the expected value", func() {
+	It("warns on origin=global on a zone CP", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
@@ -105,7 +103,6 @@ var _ = Describe("Validate", func() {
 			Key:    mesh_proto.ResourceOriginLabel,
 			Reason: "kuma.io/origin is computed by the control plane (expected 'zone'); the supplied value 'global' was overridden",
 		}))
-		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.ResourceOriginLabel, "zone"))
 	})
 
 	It("warns on user-set kuma.io/env on global CP (not applicable)", func() {
@@ -119,7 +116,6 @@ var _ = Describe("Validate", func() {
 			Key:    mesh_proto.EnvTag,
 			Reason: "kuma.io/env is managed by the control plane and is not applicable in this context; the supplied value 'universal' was removed",
 		}))
-		Expect(r.Sanitized).NotTo(HaveKey(mesh_proto.EnvTag))
 	})
 
 	It("accepts kuma.io/env=universal on Universal zone CP", func() {
@@ -149,7 +145,7 @@ var _ = Describe("Validate", func() {
 		}))
 	})
 
-	It("warns on mismatched display-name and replaces with the expected value", func() {
+	It("warns on mismatched display-name", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
@@ -161,7 +157,6 @@ var _ = Describe("Validate", func() {
 			Key:    mesh_proto.DisplayName,
 			Reason: "kuma.io/display-name is computed by the control plane (expected 'mtp-1'); the supplied value 'wrong-name' was overridden",
 		}))
-		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.DisplayName, "mtp-1"))
 	})
 
 	It("rejects arbitrary reserved keys not in the registry", func() {
@@ -229,7 +224,7 @@ var _ = Describe("Validate", func() {
 		Expect(r.Warnings).To(BeEmpty())
 	})
 
-	It("warns on kuma.io/workload on a policy (not a proxy) and strips it", func() {
+	It("warns on kuma.io/workload on a policy (not a proxy)", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
@@ -241,10 +236,9 @@ var _ = Describe("Validate", func() {
 			Key:    metadata.KumaWorkload,
 			Reason: "kuma.io/workload is managed by the control plane and is not applicable in this context; the supplied value 'my-workload' was removed",
 		}))
-		Expect(r.Sanitized).NotTo(HaveKey(metadata.KumaWorkload))
 	})
 
-	It("warns on system-only labels (managed-by) from user input and strips them", func() {
+	It("warns on system-only labels (managed-by) from user input", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
@@ -256,7 +250,6 @@ var _ = Describe("Validate", func() {
 			Key:    mesh_proto.ManagedByLabel,
 			Reason: "kuma.io/managed-by is set by the control plane; the supplied value 'anything' was overridden",
 		}))
-		Expect(r.Sanitized).NotTo(HaveKey(mesh_proto.ManagedByLabel))
 	})
 
 	It("bypasses validation entirely when Privileged is true", func() {
@@ -264,16 +257,14 @@ var _ = Describe("Validate", func() {
 		ctx.FederatedZone = true
 		ctx.Privileged = true
 		// This input would otherwise produce several findings.
-		input := map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "global",
 			mesh_proto.MeshTag:             "other-mesh",
 			mesh_proto.DisplayName:         "wrong-name",
 			mesh_proto.ManagedByLabel:      "kds",
-		}
-		r := labels.Validate(input, ctx)
+		}, ctx)
 		Expect(r.Errors).To(BeEmpty())
 		Expect(r.Warnings).To(BeEmpty())
-		Expect(r.Sanitized).To(Equal(input))
 	})
 
 	It("honors DisableOriginLabelValidation for the origin spec", func() {

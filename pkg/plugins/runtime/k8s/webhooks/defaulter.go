@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 func DefaultingWebhookFor(scheme *runtime.Scheme, converter k8s_common.Converter, checker ResourceAdmissionChecker) *admission.Webhook {
@@ -68,26 +69,44 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return decision.Response
 	}
 
-	// Use the sanitized labels (CP-overridden values stripped) so Compute
-	// regenerates the right values from context.
-	inputLabels := resource.GetMeta().GetLabels()
-	if decision.SanitizedLabels != nil {
-		inputLabels = decision.SanitizedLabels
+	// Privileged requests (KDS sync, GC, storage-version migrator) carry labels
+	// that are authoritative from the source CP — recomputing would clobber
+	// kuma.io/origin, kuma.io/zone, etc. Skip Compute but still split out the
+	// annotation-stored labels (display-name, workload, service-account) the
+	// K8s adapter synthesized into the labels map.
+	coreLabels := resource.GetMeta().GetLabels()
+	if !decision.Privileged {
+		// The K8s adapter encodes the metadata.name into NameExtensions; fall
+		// back to stripping the namespace suffix from the kuma name if the
+		// extension is missing.
+		k8sName := resource.GetMeta().GetName()
+		if name, ok := resource.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && name != "" {
+			k8sName = name
+		}
+		// On K8s the kuma.io/mesh label is the canonical mesh for new
+		// resources; the top-level mesh field on the K8s object is often
+		// empty on apply.
+		mesh := resource.GetMeta().GetMesh()
+		if labelMesh, ok := coreLabels[metadata.KumaMeshLabel]; ok && labelMesh != "" {
+			mesh = labelMesh
+		}
+		computed, err := resource_labels.Compute(
+			resource.Descriptor(),
+			resource.GetSpec(),
+			coreLabels,
+			mesh,
+			resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
+			resource_labels.WithMode(h.Mode),
+			resource_labels.WithK8s(true),
+			resource_labels.WithZone(h.ZoneName),
+			resource_labels.WithResourceName(k8sName),
+		)
+		if err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
+		coreLabels = computed
 	}
-	computed, err := resource_labels.Compute(
-		resource.Descriptor(),
-		resource.GetSpec(),
-		inputLabels,
-		resource.GetMeta().GetMesh(),
-		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
-		resource_labels.WithMode(h.Mode),
-		resource_labels.WithK8s(true),
-		resource_labels.WithZone(h.ZoneName),
-	)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
-	}
-	labels, annotations := k8s.SplitLabelsAndAnnotations(computed, obj.GetAnnotations())
+	labels, annotations := k8s.SplitLabelsAndAnnotations(coreLabels, obj.GetAnnotations())
 
 	obj.SetLabels(labels)
 	obj.SetAnnotations(annotations)

@@ -26,20 +26,23 @@ type ResourceAdmissionChecker struct {
 }
 
 // AdmissionDecision is the result of an admission check. When Response.Allowed
-// is false, Warnings and SanitizedLabels are empty. When Allowed is true,
-// Warnings carries any non-blocking findings (e.g. user-supplied CP-managed
-// label values that the CP will override) and SanitizedLabels is the labels
-// map with those keys removed — defaulters should patch this back onto the
-// object so the stored resource reflects the CP-overridden state.
+// is false, Warnings is empty. When Allowed is true, Warnings carries any
+// non-blocking findings (e.g. user-supplied CP-managed label values that the
+// CP will override on persist via Compute).
+//
+// Privileged signals that the request bypassed validation (KDS sync, GC,
+// storage-version migrator). The mutating defaulter must NOT run Compute on
+// these — the resource's labels are authoritative from the source CP and
+// recomputing would clobber kuma.io/origin, kuma.io/zone, etc.
 type AdmissionDecision struct {
-	Response        admission.Response
-	Warnings        []string
-	SanitizedLabels map[string]string
+	Response   admission.Response
+	Warnings   []string
+	Privileged bool
 }
 
 func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string, op v1.Operation) AdmissionDecision {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
-		return AdmissionDecision{Response: admission.Allowed("")}
+		return AdmissionDecision{Response: admission.Allowed(""), Privileged: true}
 	}
 
 	if ns != "" {
@@ -147,9 +150,8 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		warnings = append(warnings, formatLabelViolation(w))
 	}
 	return AdmissionDecision{
-		Response:        admission.Allowed("").WithWarnings(warnings...),
-		Warnings:        warnings,
-		SanitizedLabels: result.Sanitized,
+		Response: admission.Allowed("").WithWarnings(warnings...),
+		Warnings: warnings,
 	}
 }
 

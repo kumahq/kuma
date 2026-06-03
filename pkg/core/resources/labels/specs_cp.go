@@ -17,12 +17,10 @@ func init() {
 		Owner:                     OwnerControlPlane,
 		AllowedValues:             []string{string(mesh_proto.GlobalResourceOrigin), string(mesh_proto.ZoneResourceOrigin)},
 		AllowAnyWhenNotApplicable: true,
-		// Origin enforcement is strict only where the CP would itself set the
-		// value: Global (always 'global') or Zone in a "strict" context — K8s
-		// system namespace, or Universal federated plugin-originated. In other
-		// zone contexts (user namespaces on K8s, non-federated/non-plugin on
-		// Universal) any known origin value is accepted; the vocabulary check
-		// still rejects unknown values via AllowAnyWhenNotApplicable.
+		// The CP claims authority over kuma.io/origin wherever the resource
+		// can be locally originated: Global (always 'global'), or Zone for
+		// any ProvidedByZone-flagged type ('zone'). The narrower "user must
+		// consciously set it" gate is in RequirePresence below.
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if ctx.DisableOriginLabelValidation {
 				return "", false
@@ -30,16 +28,10 @@ func init() {
 			if ctx.Mode == config_core.Global {
 				return string(mesh_proto.GlobalResourceOrigin), true
 			}
-			strict := false
-			if ctx.IsK8s {
-				strict = ctx.Namespace.system
-			} else {
-				strict = ctx.FederatedZone && ctx.Descriptor.IsPluginOriginated
+			if ctx.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+				return string(mesh_proto.ZoneResourceOrigin), true
 			}
-			if !strict {
-				return "", false
-			}
-			return string(mesh_proto.ZoneResourceOrigin), true
+			return "", false
 		},
 		RequirePresence: func(ctx ValidationContext) bool {
 			if ctx.DisableOriginLabelValidation {
@@ -75,6 +67,9 @@ func init() {
 			if ctx.Mode != config_core.Zone {
 				return "", false
 			}
+			if !ctx.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+				return "", false
+			}
 			return ctx.ZoneName, true
 		},
 	})
@@ -85,6 +80,9 @@ func init() {
 		AllowedValues: []string{mesh_proto.KubernetesEnvironment, mesh_proto.UniversalEnvironment},
 		Expected: func(ctx ValidationContext) (string, bool) {
 			if ctx.Mode != config_core.Zone {
+				return "", false
+			}
+			if !ctx.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
 				return "", false
 			}
 			if ctx.IsK8s {

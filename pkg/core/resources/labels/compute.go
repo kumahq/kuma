@@ -1,9 +1,7 @@
 package labels
 
 import (
-	"fmt"
 	"maps"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -48,6 +46,7 @@ type Options struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
+	ResourceName   string
 }
 
 type Option func(*Options)
@@ -96,8 +95,35 @@ func WithMode(mode config_core.CpMode) Option {
 	}
 }
 
-// Compute computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
-// Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
+// WithResourceName supplies the resource name kuma.io/display-name should
+// reflect. On K8s pass the metadata.name (without the namespace suffix); on
+// the api-server pass the resource name from the URL.
+func WithResourceName(name string) Option {
+	return func(opts *Options) {
+		opts.ResourceName = name
+	}
+}
+
+// Compute returns the label map the CP would store for the given resource.
+//
+// It walks the LabelSpec registry and, for each non-user-owned key:
+//
+//   - OwnerControlPlane, Expected applies=true, !OpenValue: force-set the
+//     expected value, overriding whatever the user supplied.
+//   - OwnerControlPlane, Expected applies=true, OpenValue: keep the user
+//     value as-is. The CP doesn't dictate the value, just where it lives.
+//   - OwnerControlPlane, Expected applies=false: delete the key. The label
+//     isn't applicable in this context; a user value would be stale.
+//   - OwnerSystem: delete the key. These labels are set by other CP-internal
+//     code paths (controllers, lifecycle); on apply they must not be
+//     user-supplied. Compute then writes the right value below for the
+//     labels it is responsible for.
+//
+// OwnerUser keys are left untouched.
+//
+// After the registry walk, Compute writes the OwnerSystem labels it owns
+// based on caller-supplied options and the resource spec (ServiceAccount,
+// Workload, and the Dataplane listener flags).
 func Compute(
 	rd core_model.ResourceTypeDescriptor,
 	spec core_model.ResourceSpec,
@@ -105,100 +131,77 @@ func Compute(
 	mesh string,
 	opts ...Option,
 ) (map[string]string, error) {
-	labelsOpts := NewOptions(opts...)
+	o := NewOptions(opts...)
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
 	}
 
-	set := func(k, v string) {
-		if _, ok := AllComputedLabels[k]; !ok {
-			panic(fmt.Sprintf("label %q is not in the list of computed labels, update AllComputedLabels list as it is used in another project", k))
-		}
-		labels[k] = v
+	resourceMesh := mesh
+	if rd.Scope == core_model.ScopeMesh && resourceMesh == "" {
+		resourceMesh = core_model.DefaultMesh
 	}
 
-	setIfNotExist := func(k, v string) {
-		if _, ok := labels[k]; !ok {
-			set(k, v)
-		}
+	ctx := ValidationContext{
+		Mode:         o.Mode,
+		IsK8s:        o.IsK8s,
+		ZoneName:     o.ZoneName,
+		Namespace:    o.Namespace,
+		Descriptor:   rd,
+		Spec:         spec,
+		ResourceMesh: resourceMesh,
+		ResourceName: o.ResourceName,
 	}
 
-	getMeshOrDefault := func() string {
-		if mesh != "" {
-			return mesh
-		}
-		return core_model.DefaultMesh
-	}
-
-	if rd.Scope == core_model.ScopeMesh {
-		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
-	}
-
-	if labelsOpts.Mode == config_core.Zone {
-		// If resource can't be created on Zone (like Mesh), there is no point in adding
-		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
-		if rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
-				setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
-				env := mesh_proto.UniversalEnvironment
-				if labelsOpts.IsK8s {
-					env = mesh_proto.KubernetesEnvironment
-				}
-				setIfNotExist(mesh_proto.EnvTag, env)
+	for _, ls := range registry {
+		switch ls.Owner {
+		case OwnerUser:
+			continue
+		case OwnerSystem:
+			delete(labels, ls.Key)
+		case OwnerControlPlane:
+			value, applies := "", true
+			if ls.Expected != nil {
+				value, applies = ls.Expected(ctx)
 			}
+			if !applies {
+				delete(labels, ls.Key)
+				continue
+			}
+			if ls.OpenValue {
+				continue
+			}
+			labels[ls.Key] = value
 		}
 	}
 
-	if labelsOpts.Namespace.value != "" && labelsOpts.IsK8s && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		setIfNotExist(mesh_proto.KubeNamespaceTag, labelsOpts.Namespace.value)
-	}
-
-	if labelsOpts.Namespace.value != "" && rd.IsPolicy && rd.IsPluginOriginated && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		role, err := ComputePolicyRole(spec.(core_model.Policy), labelsOpts.Namespace)
-		if err != nil {
+	// ComputePolicyRole reports two spec-validation errors (from+to mixed,
+	// producer+consumer mixed) that the registry's Expected swallows as
+	// applies=false. Surface them explicitly here so the create/update fails
+	// rather than silently dropping kuma.io/policy-role.
+	if rd.IsPolicy && rd.IsPluginOriginated && o.Namespace.value != "" {
+		if _, err := ComputePolicyRole(spec.(core_model.Policy), o.Namespace); err != nil {
 			return nil, err
 		}
-		set(mesh_proto.PolicyRoleLabel, string(role))
 	}
 
-	if rd.IsProxy {
-		proxy, ok := spec.(core_model.ProxyResource)
-		if ok {
-			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
-		}
-		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
-			hasIngress, hasEgress := false, false
-			for _, l := range dp.GetNetworking().GetListeners() {
-				switch l.Type {
-				case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
-					hasIngress = true
-				case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
-					hasEgress = true
-				}
-			}
-			if hasIngress {
-				set(mesh_proto.ListenerZoneIngressLabel, "enabled")
-			} else {
-				delete(labels, mesh_proto.ListenerZoneIngressLabel)
-			}
-			if hasEgress {
-				set(mesh_proto.ListenerZoneEgressLabel, "enabled")
-			} else {
-				delete(labels, mesh_proto.ListenerZoneEgressLabel)
+	if dp, ok := spec.(*mesh_proto.Dataplane); ok {
+		for _, l := range dp.GetNetworking().GetListeners() {
+			switch l.Type {
+			case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+				labels[mesh_proto.ListenerZoneIngressLabel] = "enabled"
+			case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+				labels[mesh_proto.ListenerZoneEgressLabel] = "enabled"
 			}
 		}
 	}
 
-	if labelsOpts.IsK8s {
-		if labelsOpts.ServiceAccount != "" {
-			set(metadata.KumaServiceAccount, labelsOpts.ServiceAccount)
-		}
+	if o.IsK8s && o.ServiceAccount != "" {
+		labels[metadata.KumaServiceAccount] = o.ServiceAccount
 	}
 
-	if labelsOpts.Workload != "" {
-		set(metadata.KumaWorkload, labelsOpts.Workload)
+	if o.Workload != "" {
+		labels[metadata.KumaWorkload] = o.Workload
 	}
 
 	return labels, nil
