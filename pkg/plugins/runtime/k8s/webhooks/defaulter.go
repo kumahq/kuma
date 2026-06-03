@@ -99,7 +99,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 			resource_labels.WithMode(h.Mode),
 			resource_labels.WithK8s(true),
 			resource_labels.WithZone(h.ZoneName),
-			resource_labels.WithResourceName(k8sName),
+			resource_labels.WithDisplayName(k8sName),
 		)
 		if err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)

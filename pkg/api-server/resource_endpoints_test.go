@@ -176,7 +176,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
 	})
 
-	It("should warn (not 400) when mesh label is different from resource mesh", func() {
+	It("should return 201 with warnings when mesh label is different from resource mesh", func() {
 		// given
 		apiServer, store, stop := createServer(true, true)
 		defer stop()

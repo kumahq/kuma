@@ -46,7 +46,7 @@ type Options struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
-	ResourceName   string
+	DisplayName    string
 }
 
 type Option func(*Options)
@@ -95,12 +95,12 @@ func WithMode(mode config_core.CpMode) Option {
 	}
 }
 
-// WithResourceName supplies the resource name kuma.io/display-name should
+// WithDisplayName supplies the resource name kuma.io/display-name should
 // reflect. On K8s pass the metadata.name (without the namespace suffix); on
 // the api-server pass the resource name from the URL.
-func WithResourceName(name string) Option {
+func WithDisplayName(name string) Option {
 	return func(opts *Options) {
-		opts.ResourceName = name
+		opts.DisplayName = name
 	}
 }
 
@@ -150,7 +150,7 @@ func Compute(
 		Descriptor:   rd,
 		Spec:         spec,
 		ResourceMesh: resourceMesh,
-		ResourceName: o.ResourceName,
+		ResourceName: o.DisplayName,
 	}
 
 	for _, ls := range registry {
