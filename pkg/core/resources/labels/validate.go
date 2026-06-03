@@ -62,6 +62,10 @@ func mismatchReason(key, expected, got string) string {
 	return fmt.Sprintf("%s is computed by the control plane (expected '%s'); the supplied value '%s' was overridden", key, expected, got)
 }
 
+func strictMismatchReason(key, expected, got string) string {
+	return fmt.Sprintf("%s should be '%s', got '%s'", key, expected, got)
+}
+
 func notApplicableReason(key, got string) string {
 	return fmt.Sprintf("%s is managed by the control plane and is not applicable in this context; the supplied value '%s' was removed", key, got)
 }
@@ -89,7 +93,9 @@ func notAllowedValueReason(key string, allowed []string, got string) string {
 //   - OwnerControlPlane  — Expected(ctx) supplies the CP value. The user value
 //     is accepted only when it matches expected (or OpenValue is set, or
 //     applies=false with a valid AllowAnyWhenNotApplicable value). All other
-//     cases are warnings; Compute will regenerate the right value.
+//     cases are warnings; Compute will regenerate the right value. Exception:
+//     when StrictMatch is set on the spec, a mismatch against an applicable
+//     Expected becomes an error (kuma.io/origin).
 //
 // Reserved keys (kuma.io/* or k8s.kuma.io/*) absent from the registry are
 // rejected as errors — these are typos or removed labels and the caller
@@ -250,6 +256,12 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 				return nil, nil
 			}
 			if value != expected {
+				if spec.StrictMatch {
+					return &Violation{
+						Key:    spec.Key,
+						Reason: strictMismatchReason(spec.Key, expected, value),
+					}, nil
+				}
 				return nil, &Violation{
 					Key:    spec.Key,
 					Reason: mismatchReason(spec.Key, expected, value),

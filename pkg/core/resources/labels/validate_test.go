@@ -92,17 +92,17 @@ var _ = Describe("Validate", func() {
 		}))
 	})
 
-	It("warns on origin=global on a zone CP", func() {
+	It("rejects origin=global on a zone CP (strict-match)", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "global",
 		}, ctx)
-		Expect(r.Errors).To(BeEmpty())
-		Expect(r.Warnings).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.ResourceOriginLabel,
-			Reason: "kuma.io/origin is computed by the control plane (expected 'zone'); the supplied value 'global' was overridden",
+			Reason: "kuma.io/origin should be 'zone', got 'global'",
 		}))
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
 	It("warns on user-set kuma.io/env on global CP (not applicable)", func() {
@@ -272,6 +272,20 @@ var _ = Describe("Validate", func() {
 		ctx.FederatedZone = true
 		ctx.DisableOriginLabelValidation = true
 		r := labels.Validate(map[string]string{}, ctx)
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
+	})
+
+	It("DisableOriginLabelValidation suppresses strict-match on origin mismatch", func() {
+		ctx := mtDesc()
+		ctx.FederatedZone = true
+		ctx.DisableOriginLabelValidation = true
+		// On a zone CP the CP-computed origin would be 'zone', but with
+		// validation disabled the user value is accepted (any value in the
+		// vocabulary) and never escalates to a strict-match error.
+		r := labels.Validate(map[string]string{
+			mesh_proto.ResourceOriginLabel: "global",
+		}, ctx)
 		Expect(r.Errors).To(BeEmpty())
 		Expect(r.Warnings).To(BeEmpty())
 	})

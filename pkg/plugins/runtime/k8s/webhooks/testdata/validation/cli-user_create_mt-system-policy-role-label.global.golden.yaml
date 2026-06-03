@@ -1,13 +1,9 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 403
+  message: Operation not allowed. kuma.io/origin should be 'global', got 'zone'
   metadata: {}
+  reason: Forbidden
+  status: Failure
 uid: "12345"
-warnings:
-- kuma.io/origin is computed by the control plane (expected 'global'); the supplied
-  value 'zone' was overridden
-- kuma.io/policy-role is computed by the control plane (expected 'system'); the supplied
-  value 'invalid' was overridden
-- kuma.io/zone is managed by the control plane and is not applicable in this context;
-  the supplied value 'zone-1' was removed

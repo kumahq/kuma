@@ -31,6 +31,14 @@ type LabelSpec struct {
 	// where the CP doesn't strictly enforce a specific origin (e.g. user
 	// namespaces on K8s zones) still want the vocabulary checked.
 	AllowAnyWhenNotApplicable bool
+	// StrictMatch: when Owner == OwnerControlPlane, Expected returns
+	// applies=true, and the user-supplied value mismatches expected, surface
+	// an error instead of a warning. Used by kuma.io/origin so a wrong
+	// 'global'/'zone' is not silently overridden — that would mask the real
+	// failure mode (resource being applied to the wrong CP). Other CP-owned
+	// labels stay non-strict: Compute regenerates them and a warning is
+	// enough.
+	StrictMatch bool
 
 	// Expected returns the value the CP would compute for ctx. applies=false
 	// means the label is not applicable in this context: any user-provided

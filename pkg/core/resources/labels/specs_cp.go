@@ -17,6 +17,7 @@ func init() {
 		Owner:                     OwnerControlPlane,
 		AllowedValues:             []string{string(mesh_proto.GlobalResourceOrigin), string(mesh_proto.ZoneResourceOrigin)},
 		AllowAnyWhenNotApplicable: true,
+		StrictMatch:               true,
 		// The CP claims authority over kuma.io/origin wherever the resource
 		// can be locally originated: Global (always 'global'), or Zone for
 		// any ProvidedByZone-flagged type ('zone'). The narrower "user must
