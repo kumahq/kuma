@@ -84,12 +84,14 @@ var _ = Describe("Validate", func() {
 		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.ZoneTag, "kuma-zone"))
 	})
 
-	It("does not require origin to be present (Compute will populate it)", func() {
+	It("requires origin to be set on a federated zone CP (conscious-apply gate)", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{}, ctx)
-		Expect(r.Errors).To(BeEmpty())
-		Expect(r.Warnings).To(BeEmpty())
+		Expect(r.Errors).To(ContainElement(labels.Violation{
+			Key:    mesh_proto.ResourceOriginLabel,
+			Reason: "the kuma.io/origin label must be set to 'zone'",
+		}))
 	})
 
 	It("warns on origin=global on a zone CP and replaces with the expected value", func() {

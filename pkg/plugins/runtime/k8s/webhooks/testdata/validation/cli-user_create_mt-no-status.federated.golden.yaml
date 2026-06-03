@@ -1,6 +1,9 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 403
+  message: Operation not allowed. the kuma.io/origin label must be set to 'zone'
   metadata: {}
+  reason: Forbidden
+  status: Failure
 uid: "12345"

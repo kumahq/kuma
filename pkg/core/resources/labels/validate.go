@@ -287,7 +287,16 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 			return nil, nil
 		}
 
-		// Absent and applies=true: Compute will populate, so no finding.
+		// Absent and applies=true. Most CP-owned labels are populated by Compute,
+		// so we don't fail here. The exception is RequirePresence: the user must
+		// consciously set the value (kuma.io/origin: zone on a zone CP gates apply
+		// so users don't blindly create resources thinking they're on Global).
+		if spec.RequirePresence != nil && spec.RequirePresence(ctx) {
+			return &Violation{
+				Key:    spec.Key,
+				Reason: fmt.Sprintf("the %s label must be set to '%s'", spec.Key, expected),
+			}, nil
+		}
 		return nil, nil
 	}
 

@@ -148,7 +148,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	It("should succeed when origin label is not set (CP will populate it)", func() {
+	It("should return 400 when origin validation is enabled and origin label is not set", func() {
 		// given
 		apiServer, store, stop := createServer(true, true)
 		defer stop()
@@ -170,7 +170,10 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// and then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
 	})
 
 	It("should warn (not 400) when mesh label is different from resource mesh", func() {
