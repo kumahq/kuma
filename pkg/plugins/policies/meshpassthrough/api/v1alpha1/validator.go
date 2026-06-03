@@ -102,8 +102,12 @@ func validateDefault(conf Conf) validators.ValidationError {
 			if match.Port == nil && strings.HasPrefix(match.Value, "*") && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "wildcard domains doesn't work for all ports and layer 7 protocol")
 			}
-			if !strings.HasPrefix(match.Value, "*") {
-				isValid := govalidator.IsDNSName(match.Value)
+			valueToValidate := match.Value
+			if strings.HasPrefix(match.Value, "*.") {
+				valueToValidate = match.Value[2:]
+			}
+			if !strings.HasPrefix(valueToValidate, "*") {
+				isValid := govalidator.IsDNSName(valueToValidate)
 				if !isValid {
 					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value")
 				}

@@ -67,6 +67,10 @@ func (c *UniversalControlPlane) GetName() string {
 	return c.name
 }
 
+func (c *UniversalControlPlane) Mode() core.CpMode {
+	return c.mode
+}
+
 func (c *UniversalControlPlane) GetKDSInsecureServerAddress() string {
 	return c.getKDSServerAddress(false)
 }

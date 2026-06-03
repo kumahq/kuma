@@ -23,6 +23,13 @@
             ]
           }
         ]
+      },
+      "circuitBreakers": {
+        "thresholds": [
+          {
+            "trackRemaining": true
+          }
+        ]
       }
     }
   },

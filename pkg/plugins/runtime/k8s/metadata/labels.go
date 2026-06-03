@@ -6,8 +6,10 @@ const (
 	// Label value must be the name of a Mesh resource.
 	KumaMeshLabel = "kuma.io/mesh"
 
-	// KumaZoneProxyTypeLabel is a Service label that drives zone proxy
-	// listener generation on the Dataplane of a matching pod.
+	// KumaZoneProxyTypeLabel marks mesh-scoped zone proxy resources.
+	// On Services it drives zone proxy listener generation on the Dataplane of a
+	// matching pod, and on Pods it acts as an injector hint for mesh-scoped zone
+	// proxies.
 	// Allowed values: ingress or egress.
 	KumaZoneProxyTypeLabel = "k8s.kuma.io/zone-proxy-type"
 )

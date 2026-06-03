@@ -11,6 +11,12 @@
   "kuma.io/zone": "default"
  },
  "kri": "kri_msvc_default_default__redis_",
+ "snis": [
+  {
+   "port": 6379,
+   "sni": "sni.msvc.default.default.redis.6379"
+  }
+ ],
  "spec": {
   "state": "Unavailable",
   "selector": {

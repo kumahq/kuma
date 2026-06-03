@@ -59,6 +59,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
+	if err := applyToZoneProxyListeners(policies.FromRules, listeners, proxy); err != nil {
+		return err
+	}
 
 	if err := applyToGateways(policies.GatewayRules, listeners.Gateway, proxy); err != nil {
 		return err
@@ -112,6 +115,64 @@ func applyToInbounds(
 			}
 		}
 	}
+	return nil
+}
+
+func applyToZoneProxyListeners(
+	fromRules core_rules.FromRules,
+	listeners policies_xds.Listeners,
+	proxy *core_xds.Proxy,
+) error {
+	if !proxy.Dataplane.Spec.GetNetworking().HasZoneProxyListeners() {
+		return nil
+	}
+
+	for _, listener := range listeners.ZoneIngress {
+		if err := applyToZoneProxyListener(fromRules, listener); err != nil {
+			return err
+		}
+	}
+	for _, listener := range listeners.ZoneEgress {
+		if err := applyToZoneProxyListener(fromRules, listener); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToZoneProxyListener(
+	fromRules core_rules.FromRules,
+	listener *envoy_listener.Listener,
+) error {
+	if listener == nil {
+		return nil
+	}
+
+	socketAddress := listener.GetAddress().GetSocketAddress()
+	if socketAddress == nil {
+		return nil
+	}
+
+	listenerKey := core_rules.InboundListener{
+		Address: socketAddress.GetAddress(),
+		Port:    socketAddress.GetPortValue(),
+	}
+	inboundRules, ok := fromRules.InboundRules[listenerKey]
+	if !ok || len(inboundRules) == 0 {
+		return nil
+	}
+
+	configurer := plugin_xds.Configurer{Rules: inboundRules}
+	for _, filterChain := range listener.FilterChains {
+		switch policies_xds.FilterChainProtocol(filterChain) {
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+			if err := configurer.ConfigureHttpListener(filterChain); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 

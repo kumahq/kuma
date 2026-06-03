@@ -72,6 +72,10 @@ func (c *K8sControlPlane) GetName() string {
 	return c.name
 }
 
+func (c *K8sControlPlane) Mode() core.CpMode {
+	return c.mode
+}
+
 func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
 	options := &k8s.KubectlOptions{
 		ConfigPath: c.kubeconfig,

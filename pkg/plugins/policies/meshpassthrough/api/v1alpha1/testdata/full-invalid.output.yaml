@@ -28,3 +28,5 @@ violations:
   message: protocol mysql is not supported for a domain
 - field: spec.default.appendMatch[12].port
   message: port must be defined for Mysql protocol
+- field: spec.default.appendMatch[13].value
+  message: provided DNS has incorrect value

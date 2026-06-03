@@ -7,6 +7,7 @@ import (
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 )
 
@@ -39,6 +40,35 @@ var sniCapableShortNames = map[string]struct{}{
 // kuma-system on Global.
 func FromKRI(id kri.Identifier) string {
 	return strings.Join(buildSegments(id), ".")
+}
+
+// FromKRIE is the non-panicking variant of FromKRI. It returns an error when
+// the resource type is not SNI-capable or the descriptor cannot be resolved,
+// so callers running in marshaling code paths do not have to defend against
+// programmer errors with recover.
+func FromKRIE(id kri.Identifier) (string, error) {
+	desc, err := registry.Global().DescriptorFor(id.ResourceType)
+	if err != nil {
+		return "", err
+	}
+	if _, ok := sniCapableShortNames[desc.ShortName]; !ok {
+		return "", fmt.Errorf("resource type not supported for SNI: %s", id.ResourceType)
+	}
+	return strings.Join(buildSegmentsFor(desc, id), "."), nil
+}
+
+// Section describes a single (port, sectionName) pair that contributes one
+// SNI for a destination. SectionName is what gets placed into the trailing
+// segment of the SNI and matches kri.Identifier.SectionName.
+type Section struct {
+	Port        int32
+	SectionName string
+}
+
+// SectionLister is implemented by resource spec types that contribute SNI
+// sections.
+type SectionLister interface {
+	SNIs() []Section
 }
 
 // ValidateKRI returns every reason the SNI that FromKRI would produce does
@@ -98,7 +128,10 @@ func buildSegments(id kri.Identifier) []string {
 	if _, ok := sniCapableShortNames[desc.ShortName]; !ok {
 		panic("resource type not supported for SNI: " + string(id.ResourceType))
 	}
+	return buildSegmentsFor(desc, id)
+}
 
+func buildSegmentsFor(desc core_model.ResourceTypeDescriptor, id kri.Identifier) []string {
 	segments := []string{sniFormatPrefix, desc.ShortName, id.Mesh}
 	if id.Zone != "" {
 		segments = append(segments, id.Zone)

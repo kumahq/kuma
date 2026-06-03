@@ -273,7 +273,7 @@ components:
                                     - Prefix
                                   type: string
                                 value:
-                                  description: Value is SpiffeId of a client that needs to match for the configuration to be applied
+                                  description: Value is SpiffeID of a client that needs to match for the configuration to be applied
                                   type: string
                               required:
                                 - type
@@ -312,7 +312,7 @@ components:
                                     - Prefix
                                   type: string
                                 value:
-                                  description: Value is SpiffeId of a client that needs to match for the configuration to be applied
+                                  description: Value is SpiffeID of a client that needs to match for the configuration to be applied
                                   type: string
                               required:
                                 - type
@@ -349,7 +349,7 @@ components:
                                     - Prefix
                                   type: string
                                 value:
-                                  description: Value is SpiffeId of a client that needs to match for the configuration to be applied
+                                  description: Value is SpiffeID of a client that needs to match for the configuration to be applied
                                   type: string
                               required:
                                 - type
