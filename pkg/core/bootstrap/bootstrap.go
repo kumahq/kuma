@@ -87,6 +87,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	log.Info("policy plugins loaded in order", "policies", policyNames)
 	core_plugins.InitAllIf(cfg.CoreResources.Enabled, "meshidentities", meshidentity.NameToModule)
+	core_plugins.LogRegistered()
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
@@ -144,9 +145,13 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 	builder.WithCAProvider(caProvider)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
-	}))
+	})
+	if err != nil {
+		return nil, err
+	}
+	builder.WithDpServer(dpServer)
 	resourceManager := builder.ResourceManager()
 	kdsContext := kds_context.DefaultContext(appCtx, resourceManager, cfg)
 	builder.WithKDSContext(kdsContext)

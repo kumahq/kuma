@@ -1,6 +1,7 @@
 package federation
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -30,7 +31,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 
-		releaseName = fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
+		releaseName = fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueID()))
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Global,
@@ -84,7 +85,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 
 			report.AddFileToReportEntry("kumactl-export-federation-output.yaml", out)
 
-			err = k8s.KubectlApplyFromStringE(global.GetTesting(), global.GetKubectlOptions(), out)
+			err = k8s.KubectlApplyFromStringContextE(global.GetTesting(), context.Background(), global.GetKubectlOptions(), out)
 			Expect(err).ToNot(HaveOccurred())
 			err = zone.(*K8sCluster).UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
@@ -95,7 +96,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 
 		It("should sync data plane proxies to global cp", func() {
 			Eventually(func(g Gomega) {
-				out, err := k8s.RunKubectlAndGetOutputE(global.GetTesting(), global.GetKubectlOptions(), "get", "dataplanes", "-A")
+				out, err := k8s.RunKubectlAndGetOutputContextE(global.GetTesting(), context.Background(), global.GetKubectlOptions(), "get", "dataplanes", "-A")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("demo-client"))
 			}, "120s", "1s").Should(Succeed())
@@ -103,7 +104,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 
 		It("should sync policies to global cp", func() {
 			Eventually(func(g Gomega) {
-				out, err := k8s.RunKubectlAndGetOutputE(global.GetTesting(), global.GetKubectlOptions(), "get", "meshcircuitbreakers", "-A")
+				out, err := k8s.RunKubectlAndGetOutputContextE(global.GetTesting(), context.Background(), global.GetKubectlOptions(), "get", "meshcircuitbreakers", "-A")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("mesh-circuit-breaker-all-default-zw856xvxdb7558d9"))
 			}, "120s", "1s").Should(Succeed())

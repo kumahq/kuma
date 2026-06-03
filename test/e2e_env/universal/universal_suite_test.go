@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshretry"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshservice"
+	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshservicelabelpropagation"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtls"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/v2/test/e2e_env/universal/mtls"
@@ -80,12 +81,14 @@ var (
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
+	_ = Describe("MeshService Label Propagation", meshservicelabelpropagation.LabelPropagation, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
 	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 	_ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
+	_ = Describe("MeshAccessLog - matches", meshaccesslog.Matches, Ordered)
 	_ = Describe("Timeout", timeout.Policy, Ordered)
 	_ = Describe("Retry", retry.Policy, Ordered)
 	_ = Describe("MeshRetry", meshretry.HttpRetry, Ordered)
@@ -93,6 +96,7 @@ var (
 	_ = Describe("RateLimit", ratelimit.Policy, Ordered)
 	_ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
+	_ = Describe("MeshProxyPatch on Zone Proxy", meshproxypatch.ZoneProxy, Ordered)
 	_ = Describe("Matching", matching.Matching, Ordered)
 	_ = Describe("Mtls", mtls.Policy, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
@@ -105,18 +109,21 @@ var (
 	_ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
 	_ = Describe("GRPC", grpc.GRPC, Ordered)
 	_ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
+	_ = Describe("MeshRateLimit on Zone Proxy", meshratelimit.ZoneProxy, Ordered)
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
 	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
 	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Ordered)
 	_ = Describe("Resilience", resilience.ResilienceUniversal, Ordered)
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
+	_ = Describe("MeshFaultInjection on Zone Proxy", meshfaultinjection.ZoneProxy, Ordered)
 	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
 	_ = Describe("MeshTLS", meshtls.Policy, Ordered)
-	_ = Describe("Envoy Config – Sidecars", envoyconfig.Sidecars, Ordered)
-	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
+	_ = Describe("Envoy Config – Sidecars", Label("golden-files-e2e"), envoyconfig.Sidecars, Ordered)
+	_ = Describe("Envoy Config – Builtin Gateway", Label("golden-files-e2e"), envoyconfig.BuiltinGateway, Ordered)
+	_ = Describe("Envoy Config – Zone Proxies", Label("golden-files-e2e"), envoyconfig.ZoneProxies, Ordered)
 	_ = Describe("Bind Outbounds", Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 	_ = Describe("MeshIdentity - Spire", meshidentity.Spire, Ordered)
 	_ = Describe("MeshIdentity - Rotate CA", meshidentity.Rotate, Ordered)

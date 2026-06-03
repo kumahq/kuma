@@ -49,6 +49,11 @@ func (d *DataplaneResource) Validate() error {
 				"inbound cannot be defined for delegated gateways")
 		}
 
+		if len(d.Spec.GetNetworking().GetListeners()) > 0 {
+			err.AddViolationAt(net.Field("listeners"),
+				"listeners cannot be defined for delegated gateways")
+		}
+
 		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
@@ -60,6 +65,11 @@ func (d *DataplaneResource) Validate() error {
 
 		if len(d.Spec.GetNetworking().GetOutbound()) > 0 {
 			err.AddViolationAt(net.Field("outbound"), "outbound cannot be defined for builtin gateways")
+		}
+
+		if len(d.Spec.GetNetworking().GetListeners()) > 0 {
+			err.AddViolationAt(net.Field("listeners"),
+				"listeners cannot be defined for builtin gateways")
 		}
 
 		if d.Spec.GetProbes() != nil {

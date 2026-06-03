@@ -38,22 +38,12 @@
       }
     },
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 0
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 0
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"OpenTelemetry\",\"name\":\"otel-collector.observability.svc-4317\",\"openTelemetry\":{\"endpoint\":\"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock\",\"refreshInterval\":\"1m0s\"}}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"dataplane\":\"demo-client\",\"kuma_io_service\":\"demo-client\",\"kuma_io_services\":\",demo-client,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig\",\"service\":\"demo-client\",\"team\":\"client-owners\",\"teams\":\",client-owners,\",\"zone\":\"kuma-3\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"OpenTelemetry\",\"name\":\"otel-collector.observability.svc-4317\",\"openTelemetry\":{\"endpoint\":\"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock\",\"refreshInterval\":\"1m0s\"}}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"dataplane\":\"demo-client\",\"kuma.proxy_role\":\"sidecar\",\"kuma_io_service\":\"demo-client\",\"kuma_io_services\":\",demo-client,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig\",\"service\":\"demo-client\",\"team\":\"client-owners\",\"teams\":\",client-owners,\",\"zone\":\"kuma-3\"}}}}"
           },
           "status": 200
         },
@@ -65,7 +55,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "c6cad8cd71c0f601a7a87e4e5ae06eefcd72ae71bf44a78da007e9522f82eabb"
+              "value": "a0ba8700b9ea5bbaa208e302c7756ac5863ded1106d5ac2447fba9548cc12654"
             }
           }
         ]
@@ -83,7 +73,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "c6cad8cd71c0f601a7a87e4e5ae06eefcd72ae71bf44a78da007e9522f82eabb"
+                "exact": "a0ba8700b9ea5bbaa208e302c7756ac5863ded1106d5ac2447fba9548cc12654"
               }
             }
           ],
@@ -197,6 +187,13 @@
         }
       },
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -256,6 +253,13 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -321,6 +325,13 @@
       },
       "inbound:passthrough:ipv4": {
         "altStatName": "inbound_passthrough_ipv4",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "inbound:passthrough:ipv4",
@@ -334,6 +345,13 @@
       },
       "inbound:passthrough:ipv6": {
         "altStatName": "inbound_passthrough_ipv6",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "inbound:passthrough:ipv6",
@@ -347,6 +365,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -372,6 +397,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
@@ -397,6 +429,13 @@
       },
       "localhost:3000": {
         "altStatName": "localhost_3000",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:3000",
@@ -428,6 +467,13 @@
       },
       "outbound:passthrough:ipv4": {
         "altStatName": "outbound_passthrough_ipv4",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv4",
@@ -435,6 +481,13 @@
       },
       "outbound:passthrough:ipv6": {
         "altStatName": "outbound_passthrough_ipv6",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv6",
@@ -442,6 +495,13 @@
       },
       "self_transparentproxy_no_destination_inbound": {
         "altStatName": "self_transparentproxy_no_destination_inbound",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "name": "self_transparentproxy_no_destination_inbound",
         "type": "STATIC"
@@ -472,6 +532,13 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -513,6 +580,13 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -599,7 +673,7 @@
           }
         },
         "bindToPort": false,
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [
@@ -694,7 +768,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -723,7 +797,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -752,7 +826,7 @@
             "portValue": 0
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [

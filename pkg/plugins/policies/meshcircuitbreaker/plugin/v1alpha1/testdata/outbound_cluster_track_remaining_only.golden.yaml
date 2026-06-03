@@ -1,0 +1,4 @@
+circuitBreakers:
+  thresholds:
+  - trackRemaining: true
+name: other-service

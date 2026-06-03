@@ -405,6 +405,7 @@ var (
 				Default: meshaccesslog.Conf{
 					Backends: &[]meshaccesslog.Backend{
 						{
+							Type: meshaccesslog.FileBackendType,
 							File: &meshaccesslog.FileBackend{
 								Path: "/dev/null",
 							},

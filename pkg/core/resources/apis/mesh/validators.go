@@ -10,6 +10,7 @@ import (
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
@@ -458,6 +459,22 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 		_, err := spiffeid.FromString(match.SpiffeID.Value)
 		if err != nil {
 			verr.AddViolation("spiffeID", "must be a valid Spiffe ID")
+		}
+	}
+	if match.SNI != nil {
+		switch match.SNI.Type {
+		case common_api.SNIExactMatchType:
+		case "":
+			verr.AddViolation("sni.type", "must be set")
+		default:
+			verr.AddViolation("sni.type", fmt.Sprintf("unrecognized type %q, supported values are: Exact", match.SNI.Type))
+		}
+		if match.SNI.Value == "" {
+			verr.AddViolation("sni.value", "must be set")
+		} else {
+			for _, violation := range k8s_validation.IsDNS1123Subdomain(match.SNI.Value) {
+				verr.AddViolation("sni.value", violation)
+			}
 		}
 	}
 	return verr

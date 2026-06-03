@@ -488,7 +488,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 3436c44681aed5e14160899aa0e5054d756d2c803237a49e18d69c231c05cf5e
+        checksum/tls-secrets: cd1c50ca02a7fa50784dd969a5ca09913b6711e397de6261f4066691000b64dc
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -546,6 +546,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -915,6 +917,8 @@ webhooks:
           values:
             - enabled
         - key: kuma.io/mesh
+          operator: Exists
+        - key: k8s.kuma.io/zone-proxy-type
           operator: Exists
     clientConfig:
       caBundle: XYZ

@@ -29,6 +29,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
@@ -494,15 +495,15 @@ func (r *resourceEndpoints) createResource(
 		}
 	}
 
-	labels, err := core_model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		res.Descriptor(),
 		res.GetSpec(),
 		res.GetMeta().GetLabels(),
 		meshName,
-		core_model.WithNamespace(core_model.GetNamespace(res.GetMeta(), r.systemNamespace)),
-		core_model.WithMode(r.mode),
-		core_model.WithK8s(r.isK8s),
-		core_model.WithZone(r.zoneName),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(res.GetMeta(), r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
@@ -542,15 +543,15 @@ func (r *resourceEndpoints) updateResource(
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
-	currentLabels, err := core_model.ComputeLabels(
+	currentLabels, err := resource_labels.Compute(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
 		currentRes.GetMeta().GetLabels(),
 		meshName,
-		core_model.WithNamespace(core_model.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
-		core_model.WithMode(r.mode),
-		core_model.WithK8s(r.isK8s),
-		core_model.WithZone(r.zoneName),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
@@ -560,15 +561,15 @@ func (r *resourceEndpoints) updateResource(
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	// Compute labels for new request
-	labels, err := core_model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
 		newResRest.GetMeta().GetLabels(),
 		meshName,
-		core_model.WithNamespace(core_model.GetNamespace(newResRest.GetMeta(), r.systemNamespace)),
-		core_model.WithMode(r.mode),
-		core_model.WithK8s(r.isK8s),
-		core_model.WithZone(r.zoneName),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(newResRest.GetMeta(), r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
@@ -622,6 +623,11 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 		return
 	}
 
+	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
+		rest_errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Could not delete a resource")
+		return
+	}
+
 	if err := r.resourceAccess.ValidateDelete(
 		request.Request.Context(),
 		core_model.ResourceKey{Mesh: meshName, Name: name},
@@ -665,15 +671,9 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	return err.OrNil()
 }
 
-func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
+func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta) validators.ValidationError {
 	var err validators.ValidationError
-
-	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
-	if ok {
-		if oerr := origin.IsValid(); oerr != nil {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
-		}
-	}
+	origin, ok := core_model.ResourceOrigin(meta)
 
 	if !r.disableOriginLabelValidation && r.mode == config_core.Global {
 		if ok && origin != mesh_proto.GlobalResourceOrigin {
@@ -686,6 +686,20 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
 		}
 	}
+	return err
+}
+
+func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
+	var err validators.ValidationError
+
+	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
+	if ok {
+		if oerr := origin.IsValid(); oerr != nil {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
+		}
+	}
+
+	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
 
 	if r.mode != config_core.Global {
 		if origin != mesh_proto.GlobalResourceOrigin {
@@ -1114,13 +1128,20 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 	if err != nil {
 		return nil, rest_errors.NewBadRequestError(err.Error())
 	}
-	inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName)
-	if len(inbounds) == 0 {
+	var inboundKey core_rules.InboundListener
+	if inbounds := dataplane.Spec.GetNetworking().InboundsSelectedBySectionName(inboundKri.SectionName); len(inbounds) > 0 {
+		inboundKey = core_rules.InboundListener{
+			Address: inbounds[0].DataplaneIP,
+			Port:    inbounds[0].DataplanePort,
+		}
+	} else if listeners := dataplane.Spec.GetNetworking().ListenersSelectedBySectionName(inboundKri.SectionName); len(listeners) > 0 {
+		addr := listeners[0].GetAddress()
+		if addr == "" {
+			addr = dataplane.Spec.GetNetworking().GetAddress()
+		}
+		inboundKey = core_rules.InboundListener{Address: addr, Port: listeners[0].GetPort()}
+	} else {
 		return nil, errors.New("inbound not found")
-	}
-	inboundKey := core_rules.InboundListener{
-		Address: inbounds[0].DataplaneIP,
-		Port:    inbounds[0].DataplanePort,
 	}
 
 	conf := []api_common.InboundPolicyConf{}
@@ -1134,7 +1155,7 @@ func matchedPoliciesToInboundConfig(matchedPolicies []core_xds.TypedMatchingPoli
 		for _, rule := range rules {
 			policyRules = append(policyRules, api_common.PolicyRule{
 				Kri:  pointer.To(originToKRI(rule.Origin.Resource, matched.Type).Kri),
-				Conf: rule.Conf.GetDefault(),
+				Conf: rule.Conf,
 			})
 		}
 
@@ -1379,8 +1400,8 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					var tags map[string]string
 					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
 						tags = dp.Spec.Networking.Gateway.Tags
-					} else {
-						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+					} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
+						tags = inb.Tags
 					}
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
@@ -1404,15 +1425,16 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				rs := make([]api_common.InboundRule, len(rulesForInbound))
 				for i := range rulesForInbound {
 					rs[i] = api_common.InboundRule{
-						Conf:   []any{rulesForInbound[i].Conf.GetDefault()},
+						Conf:   []any{rulesForInbound[i].Conf},
+						Match:  rulesForInbound[i].Match,
 						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}
 				var tags map[string]string
 				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
 					tags = dp.Spec.Networking.Gateway.Tags
-				} else {
-					tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+				} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
+					tags = inb.Tags
 				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{

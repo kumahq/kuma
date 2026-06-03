@@ -19,7 +19,7 @@ const (
 	DefaultPostgresPassword = "kuma"
 	DefaultPostgresDBName   = "kuma"
 
-	PostgresImage = "postgres"
+	PostgresImage = "postgres:latest@sha256:8ff36f3c66371cba71d20ceedccfc3de9669a68737607888c4ef0af93abe8e39"
 
 	PostgresEnvVarUser     = "POSTGRES_USER"
 	PostgresEnvVarPassword = "POSTGRES_PASSWORD" // #nosec G101 -- Env var not actual password

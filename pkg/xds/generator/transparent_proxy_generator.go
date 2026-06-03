@@ -133,7 +133,7 @@ func CreateInboundPassthroughListener(
 	useStrictInboundPorts bool,
 	statPrefix string,
 ) (envoy_common.NamedResource, error) {
-	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP).
+	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.OriginalDstForwarder())

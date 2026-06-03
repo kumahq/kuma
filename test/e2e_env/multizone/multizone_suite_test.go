@@ -15,8 +15,10 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/localityawarelb"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshaccesslog"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshhttproute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshidentity"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshmetric"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshmultizoneservice"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshproxy"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/meshservice"
@@ -32,6 +34,7 @@ import (
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/unifiednaming"
+	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/validation"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/virtualoutbound"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/v2/test/e2e_env/multizone/zoneegress"
@@ -67,6 +70,7 @@ var (
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", connectivity.GatewayIPV6CNIV2, Ordered)
 	_ = Describe("Sync", multizone_sync.Sync, Ordered)
 	_ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
+	_ = Describe("MeshAccessLog on Zone Ingress", meshaccesslog.ZoneIngress, Ordered)
 	_ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
 	_ = Describe("Ownership", ownership.MultizoneUniversal, Ordered)
@@ -95,4 +99,7 @@ var (
 	_ = Describe("MeshIdentity Migration", meshidentity.Migration, Ordered)
 	_ = Describe("CNI Configuration", Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", meshproxy.Connectivity, Ordered)
+	_ = Describe("MeshProxy Migration", meshproxy.Migration, Ordered)
+	_ = Describe("MeshMetric on Zone Proxy", meshmetric.ZoneProxy, Ordered)
+	_ = Describe("Resource Label Validation", Label("golden-files-e2e"), validation.ResourceValidation, Ordered)
 )

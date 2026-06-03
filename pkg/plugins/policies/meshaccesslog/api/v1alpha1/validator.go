@@ -70,7 +70,17 @@ func validateRules(rules []Rule) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, rule := range rules {
 		path := validators.RootedAt("rules").Index(idx)
+		verr.AddErrorAt(path, validateMatches("matches", pointer.Deref(rule.Matches)))
 		verr.AddErrorAt(path.Field("default"), validateDefault(rule.Default))
+	}
+	return verr
+}
+
+func validateMatches(field string, matches []common_api.Match) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, match := range matches {
+		path := validators.RootedAt(field).Index(idx)
+		verr.AddErrorAt(path, mesh.ValidateMatch(match))
 	}
 	return verr
 }
@@ -158,10 +168,20 @@ func validateBackend(backend Backend) validators.ValidationError {
 			backend.OpenTelemetry.Endpoint,
 			backend.OpenTelemetry.BackendRef,
 		))
+		verr.AddErrorAt(root, validateOtelAttributes(pointer.Deref(backend.OpenTelemetry.Attributes)))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
+	return verr
+}
+
+func validateOtelAttributes(attributes []OtelAttribute) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, attribute := range attributes {
+		path := validators.RootedAt("attributes").Index(idx)
+		verr.Add(validators.ValidateOtelAttributeName(path.Field("key"), attribute.Key))
+	}
 	return verr
 }
 

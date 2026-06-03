@@ -12,6 +12,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
@@ -102,7 +103,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
@@ -124,7 +125,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17778",
 					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
@@ -217,7 +218,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
@@ -239,7 +240,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17778",
 					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
@@ -249,32 +250,28 @@ var _ = Describe("MeshFaultInjection", func() {
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {
 						{
-							Conf: &api.Rule{
-								Matches: &[]common_api.Match{
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/",
+								},
+							},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{
 									{
-										SpiffeID: &common_api.SpiffeIDMatch{
-											Type:  common_api.PrefixMatchType,
-											Value: "spiffe://trust-domain.mesh/",
+										Abort: &api.AbortConf{
+											HttpStatus: int32(444),
+											Percentage: intstr.FromString("12"),
 										},
 									},
-								},
-								Default: api.Conf{
-									Http: &[]api.FaultInjectionConf{
-										{
-											Abort: &api.AbortConf{
-												HttpStatus: int32(444),
-												Percentage: intstr.FromString("12"),
-											},
+									{
+										Delay: &api.DelayConf{
+											Value:      *test.ParseDuration("55s"),
+											Percentage: intstr.FromString("55"),
 										},
-										{
-											Delay: &api.DelayConf{
-												Value:      *test.ParseDuration("55s"),
-												Percentage: intstr.FromString("55"),
-											},
-											ResponseBandwidth: &api.ResponseBandwidthConf{
-												Limit:      "111Mbps",
-												Percentage: intstr.FromString("62.9"),
-											},
+										ResponseBandwidth: &api.ResponseBandwidthConf{
+											Limit:      "111Mbps",
+											Percentage: intstr.FromString("62.9"),
 										},
 									},
 								},
@@ -284,30 +281,26 @@ var _ = Describe("MeshFaultInjection", func() {
 					},
 					{Address: "127.0.0.1", Port: 17778}: {
 						{
-							Conf: &api.Rule{
-								Matches: &[]common_api.Match{
-									{
-										SpiffeID: &common_api.SpiffeIDMatch{
-											Type:  common_api.PrefixMatchType,
-											Value: "spiffe://trust-domain.mesh/",
-										},
-									},
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://trust-domain.mesh/",
 								},
-								Default: api.Conf{
-									Http: &[]api.FaultInjectionConf{
-										{
-											Abort: &api.AbortConf{
-												HttpStatus: int32(444),
-												Percentage: intstr.FromString("12"),
-											},
-											Delay: &api.DelayConf{
-												Value:      *test.ParseDuration("55s"),
-												Percentage: intstr.FromString("55"),
-											},
-											ResponseBandwidth: &api.ResponseBandwidthConf{
-												Limit:      "111Mbps",
-												Percentage: intstr.FromString("62.9"),
-											},
+							},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{
+									{
+										Abort: &api.AbortConf{
+											HttpStatus: int32(444),
+											Percentage: intstr.FromString("12"),
+										},
+										Delay: &api.DelayConf{
+											Value:      *test.ParseDuration("55s"),
+											Percentage: intstr.FromString("55"),
+										},
+										ResponseBandwidth: &api.ResponseBandwidthConf{
+											Limit:      "111Mbps",
+											Percentage: intstr.FromString("62.9"),
 										},
 									},
 								},
@@ -321,12 +314,74 @@ var _ = Describe("MeshFaultInjection", func() {
 		}),
 	)
 
+	It("should generate proper Envoy config for zone egress listener with rules[].matches[].sni", func() {
+		name := naming.ContextualZoneEgressListenerName("ze-port")
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:   name,
+			Origin: metadata.OriginEgress,
+			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(listeners.InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+					Configure(listeners.MatchTransportProtocol("tls")).
+					Configure(listeners.MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+					Configure(listeners.HttpConnectionManager("mes-http", false, nil, true)).
+					Configure(listeners.AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+				)).
+				MustBuild(),
+		})
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("zone-proxy-egress").
+					WithMesh("default").
+					WithAddress("10.20.30.40").
+					With(func(d *core_mesh.DataplaneResource) {
+						d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.20.30.40",
+							Port:    10002,
+							Name:    "ze-port",
+						}}
+					}),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10002}: {{
+						Match: &common_api.Match{
+							SNI: &common_api.SNIMatch{
+								Type:  common_api.SNIExactMatchType,
+								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+							},
+						},
+						Conf: api.Conf{
+							Http: &[]api.FaultInjectionConf{{
+								Abort: &api.AbortConf{
+									HttpStatus: 503,
+									Percentage: intstr.FromString("50"),
+								},
+							}},
+						},
+						Origin: policyOrigin("mfi-zone-egress"),
+					}},
+				},
+			})).
+			Build()
+
+		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+		Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[0].Resource)).To(
+			test_matchers.MatchGoldenYAML(path.Join("testdata", "zoneegress_matches_sni.listener.golden.yaml")),
+		)
+	})
+
 	It("should generate proper Envoy config for Egress", func() {
 		// given
 		rs := core_xds.NewResourceSet()
 
 		// listener that matches
-		listener, err := listeners.NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+		listener, err := listeners.NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
 			WithOverwriteName("test_listener").
 			Configure(
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-1").Configure(

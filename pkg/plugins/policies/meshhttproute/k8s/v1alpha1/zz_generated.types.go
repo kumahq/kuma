@@ -103,7 +103,7 @@ func (l *MeshHTTPRouteList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshHTTPRoute{}, &MeshHTTPRouteList{})
+	knownTypes = append(knownTypes, &MeshHTTPRoute{}, &MeshHTTPRouteList{})
 	registry.RegisterObjectType(&policy.MeshHTTPRoute{}, &MeshHTTPRoute{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

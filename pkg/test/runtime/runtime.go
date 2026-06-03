@@ -102,9 +102,13 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		return nil, err
 	}
 	builder.WithXDS(xdsCtx)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
-	}))
+	})
+	if err != nil {
+		return nil, err
+	}
+	builder.WithDpServer(dpServer)
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg))
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
 	if err != nil {
@@ -198,7 +202,7 @@ type DummyEnvoyAdminClient struct {
 	ClustersCalled   int
 }
 
-func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
+func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	d.StatsCalled++
 	if format == v1alpha1.AdminOutputFormat_JSON {
 		return []byte("{\"server.live\": 1}\n"), nil

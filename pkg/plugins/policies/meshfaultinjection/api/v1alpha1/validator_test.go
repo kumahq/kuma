@@ -96,6 +96,23 @@ rules:
             httpStatus: 500
             percentage: "50.5"
 `),
+		Entry("accepts rules matches with sni", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - sni:
+          type: Exact
+          value: sni.extsvc.default.zone-1.aws-aurora.8443
+    default:
+      http:
+        - responseBandwidth:
+            limit: 1000Mbps
+            percentage: 50
+`),
 	)
 
 	DescribeErrorCases(
@@ -197,6 +214,29 @@ rules:
       - responseBandwidth:
           limit: 1000
           percentage: 1111
+`),
+		ErrorCases("matches sni incorrect",
+			[]validators.Violation{
+				{
+					Field:   "spec.rules[0].matches[0].sni.type",
+					Message: `unrecognized type "Prefix", supported values are: Exact`,
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - sni:
+          type: Prefix
+          value: sni.extsvc.default.zone-1.aws-aurora.8443
+    default:
+      http:
+      - responseBandwidth:
+          limit: 1000Mbps
+          percentage: 50
 `),
 		ErrorCases("matches spiffeID incorrect",
 			[]validators.Violation{

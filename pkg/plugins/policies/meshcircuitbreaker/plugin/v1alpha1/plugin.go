@@ -52,15 +52,18 @@ func (p plugin) Apply(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
+	applyTrackRemaining(policies_xds.GatherAllClusters(rs))
+
 	if proxy.ZoneEgressProxy != nil {
 		return applyToEgressRealResources(rs, proxy)
 	}
+
+	clusters := policies_xds.GatherClusters(rs)
+
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
 	if !ok {
 		return nil
 	}
-
-	clusters := policies_xds.GatherClusters(rs)
 
 	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
@@ -79,6 +82,12 @@ func (p plugin) Apply(
 	}
 
 	return nil
+}
+
+func applyTrackRemaining(clusters []*envoy_cluster.Cluster) {
+	for _, cluster := range clusters {
+		plugin_xds.EnsureTrackRemaining(cluster)
+	}
 }
 
 func applyToInbounds(
@@ -265,8 +274,9 @@ func applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
 	rules outbound.ResourceRules,
+	filters ...func(*core_xds.Resource) bool,
 ) error {
-	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+	for uri, resType := range rs.IndexByOrigin(filters...) {
 		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
 			return err
 		}

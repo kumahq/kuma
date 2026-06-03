@@ -48,7 +48,7 @@ data:
 			Install(YamlK8s(configMap(Config.KumaNamespace))).
 			Install(Kuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
-				WithHelmReleaseName(fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))),
+				WithHelmReleaseName(fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueID()))),
 				WithHelmOpt("controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH",
 					dnsConfigDir+"/"+configMapName),
 				WithHelmOpt("controlPlane.extraConfigMaps[0].name", configMapName),

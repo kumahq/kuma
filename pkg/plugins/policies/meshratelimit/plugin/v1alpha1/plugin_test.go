@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,8 +19,10 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
@@ -101,7 +106,7 @@ var _ = Describe("MeshRateLimit", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: metadata.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
@@ -123,7 +128,7 @@ var _ = Describe("MeshRateLimit", func() {
 				{
 					Name:   "inbound:127.0.0.1:17778",
 					Origin: metadata.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
@@ -178,29 +183,27 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								Local: &api.Local{
-									HTTP: &api.LocalHTTP{
-										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-										OnRateLimit: &api.OnRateLimit{
-											Status: pointer.To(uint32(444)),
-											Headers: &api.HeaderModifier{
-												Add: &[]api.HeaderKeyValue{
-													{
-														Name:  "x-kuma-rate-limit-header",
-														Value: "test-value",
-													},
-													{
-														Name:  "x-kuma-rate-limit",
-														Value: "other-value",
-													},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									OnRateLimit: &api.OnRateLimit{
+										Status: pointer.To(uint32(444)),
+										Headers: &api.HeaderModifier{
+											Add: &[]api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header",
+													Value: "test-value",
 												},
-												Set: &[]api.HeaderKeyValue{
-													{
-														Name:  "x-kuma-rate-limit-header-set",
-														Value: "test-value",
-													},
+												{
+													Name:  "x-kuma-rate-limit",
+													Value: "other-value",
+												},
+											},
+											Set: &[]api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header-set",
+													Value: "test-value",
 												},
 											},
 										},
@@ -210,15 +213,13 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								Local: &api.Local{
-									HTTP: &api.LocalHTTP{
-										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-									},
-									TCP: &api.LocalTCP{
-										ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-									},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+								},
+								TCP: &api.LocalTCP{
+									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 								},
 							},
 						},
@@ -233,7 +234,7 @@ var _ = Describe("MeshRateLimit", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: metadata.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
@@ -309,37 +310,35 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								Local: &api.Local{
-									HTTP: &api.LocalHTTP{
-										RequestRate: &api.Rate{
-											Num:      100,
-											Interval: *test.ParseDuration("10s"),
-										},
-										OnRateLimit: &api.OnRateLimit{
-											Status: pointer.To(uint32(444)),
-											Headers: &api.HeaderModifier{
-												Add: &[]api.HeaderKeyValue{
-													{
-														Name:  "x-kuma-rate-limit-header",
-														Value: "test-value",
-													},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									RequestRate: &api.Rate{
+										Num:      100,
+										Interval: *test.ParseDuration("10s"),
+									},
+									OnRateLimit: &api.OnRateLimit{
+										Status: pointer.To(uint32(444)),
+										Headers: &api.HeaderModifier{
+											Add: &[]api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header",
+													Value: "test-value",
 												},
-												Set: &[]api.HeaderKeyValue{
-													{
-														Name:  "x-kuma-rate-limit",
-														Value: "other-value",
-													},
+											},
+											Set: &[]api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit",
+													Value: "other-value",
 												},
 											},
 										},
 									},
-									TCP: &api.LocalTCP{
-										ConnectionRate: &api.Rate{
-											Num:      100,
-											Interval: *test.ParseDuration("99s"),
-										},
+								},
+								TCP: &api.LocalTCP{
+									ConnectionRate: &api.Rate{
+										Num:      100,
+										Interval: *test.ParseDuration("99s"),
 									},
 								},
 							},
@@ -381,7 +380,7 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17778",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 					)).MustBuild(),
@@ -402,13 +401,11 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								Local: &api.Local{
-									TCP: &api.LocalTCP{
-										Disabled:       pointer.To(true),
-										ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-									},
+						Conf: api.Conf{
+							Local: &api.Local{
+								TCP: &api.LocalTCP{
+									Disabled:       pointer.To(true),
+									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 								},
 							},
 						},
@@ -422,7 +419,7 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17777",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
@@ -457,13 +454,11 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								Local: &api.Local{
-									HTTP: &api.LocalHTTP{
-										Disabled:    pointer.To(true),
-										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-									},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									Disabled:    pointer.To(true),
+									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 								},
 							},
 						},
@@ -477,7 +472,7 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17778",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 					)).MustBuild(),
@@ -497,12 +492,10 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								Local: &api.Local{
-									TCP: &api.LocalTCP{
-										ConnectionRate: nil,
-									},
+						Conf: api.Conf{
+							Local: &api.Local{
+								TCP: &api.LocalTCP{
+									ConnectionRate: nil,
 								},
 							},
 						},
@@ -516,7 +509,7 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17777",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
@@ -550,12 +543,10 @@ var _ = Describe("MeshRateLimit", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								Local: &api.Local{
-									HTTP: &api.LocalHTTP{
-										RequestRate: nil,
-									},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									RequestRate: nil,
 								},
 							},
 						},
@@ -565,14 +556,259 @@ var _ = Describe("MeshRateLimit", func() {
 			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
 			expectedListeners:    []string{"http_disabled.golden.yaml"},
 		}),
+		Entry("inbound listener with catch-all and rules[].matches[].spiffeID", sidecarTestCase{
+			resources: []*core_xds.Resource{{
+				Name:   "inbound:127.0.0.1:17777",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {
+						{
+							Conf: api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
+								},
+							},
+						},
+						{
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://default/ns/clients/",
+								},
+							},
+							Conf: api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 5, Interval: *test.ParseDuration("1s")},
+										OnRateLimit: &api.OnRateLimit{
+											Status: pointer.To(uint32(429)),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
+			expectedListeners:    []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
+		}),
 	)
+
+	It("should generate proper Envoy config for zone egress listener with rules[].matches[].sni", func() {
+		name := naming.ContextualZoneEgressListenerName("ze-port")
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:   name,
+			Origin: metadata.OriginEgress,
+			Resource: NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+					Configure(MatchTransportProtocol("tls")).
+					Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+					Configure(HttpConnectionManager("mes-http", false, nil, true)).
+					Configure(AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+				)).
+				MustBuild(),
+		})
+
+		meshRateLimit := api.NewMeshRateLimitResource()
+		meshRateLimit.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-rate-limit",
+			Labels: map[string]string{},
+		})
+		meshRateLimit.Spec = &api.MeshRateLimit{
+			TargetRef: &common_api.TargetRef{
+				Kind:        common_api.Dataplane,
+				SectionName: pointer.To("ze-port"),
+			},
+			Rules: &[]api.Rule{{
+				Matches: &[]common_api.Match{{
+					SNI: &common_api.SNIMatch{
+						Type:  common_api.SNIExactMatchType,
+						Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+					},
+				}},
+				Default: api.Conf{
+					Local: &api.Local{
+						HTTP: &api.LocalHTTP{
+							RequestRate: &api.Rate{Num: 50, Interval: *test.ParseDuration("5s")},
+						},
+					},
+				},
+			}},
+		}
+		Expect(meshRateLimit.Validate()).To(Succeed())
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("zone-proxy-egress").
+					WithMesh("default").
+					WithAddress("10.20.30.40").
+					With(func(d *core_mesh.DataplaneResource) {
+						d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.20.30.40",
+							Port:    10002,
+							Name:    "ze-port",
+						}}
+					}),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshRateLimitType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshRateLimit},
+					}
+				})).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+		Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[0].Resource)).To(
+			test_matchers.MatchGoldenYAML(path.Join("testdata", "zoneegress_matches_sni.listener.golden.yaml")),
+		)
+	})
+
+	It("should merge catch-all and SNI-specific listener rate limits on zone Egress", func() {
+		name := naming.ContextualZoneEgressListenerName("ze-port")
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:   name,
+			Origin: metadata.OriginEgress,
+			Resource: NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+					Configure(MatchTransportProtocol("tls")).
+					Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+					Configure(HttpConnectionManager("mes-http", false, nil, true)).
+					Configure(AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+				)).
+				MustBuild(),
+		})
+
+		meshRateLimit := api.NewMeshRateLimitResource()
+		meshRateLimit.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-rate-limit-precedence",
+			Labels: map[string]string{},
+		})
+		meshRateLimit.Spec = &api.MeshRateLimit{
+			TargetRef: &common_api.TargetRef{
+				Kind:        common_api.Dataplane,
+				SectionName: pointer.To("ze-port"),
+			},
+			Rules: &[]api.Rule{
+				{
+					Default: api.Conf{
+						Local: &api.Local{
+							HTTP: &api.LocalHTTP{
+								RequestRate: &api.Rate{
+									Num:      10,
+									Interval: *test.ParseDuration("1s"),
+								},
+								OnRateLimit: &api.OnRateLimit{
+									Status: pointer.To(uint32(429)),
+									Headers: &api.HeaderModifier{
+										Add: &[]api.HeaderKeyValue{{
+											Name:  "x-rate-limit-scope",
+											Value: "common",
+										}},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Matches: &[]common_api.Match{{
+						SNI: &common_api.SNIMatch{
+							Type:  common_api.SNIExactMatchType,
+							Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+						},
+					}},
+					Default: api.Conf{
+						Local: &api.Local{
+							HTTP: &api.LocalHTTP{
+								RequestRate: &api.Rate{
+									Num:      50,
+									Interval: *test.ParseDuration("5s"),
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(meshRateLimit.Validate()).To(Succeed())
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("zone-proxy-egress").
+					WithMesh("default").
+					WithAddress("10.20.30.40").
+					With(func(d *core_mesh.DataplaneResource) {
+						d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.20.30.40",
+							Port:    10002,
+							Name:    "ze-port",
+						}}
+					}),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshRateLimitType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshRateLimit},
+					}
+				})).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+
+		listener, ok := resourceSet.ListOf(envoy_resource.ListenerType)[0].Resource.(*envoy_listener.Listener)
+		Expect(ok).To(BeTrue())
+
+		rateLimit := routeRateLimitFromZoneProxyListener(listener)
+		Expect(rateLimit.GetTokenBucket().GetMaxTokens()).To(BeEquivalentTo(50))
+		Expect(rateLimit.GetTokenBucket().GetFillInterval().AsDuration()).To(Equal(5 * time.Second))
+		Expect(rateLimit.GetStatus().GetCode()).To(BeEquivalentTo(429))
+		Expect(rateLimit.GetResponseHeadersToAdd()).To(HaveLen(1))
+		Expect(rateLimit.GetResponseHeadersToAdd()[0].GetHeader().GetKey()).To(Equal("x-rate-limit-scope"))
+		Expect(rateLimit.GetResponseHeadersToAdd()[0].GetHeader().GetValue()).To(Equal("common"))
+	})
 
 	It("should generate correct configuration for ExternalService with ZoneEgress", func() {
 		// given
 		rs := core_xds.NewResourceSet()
 
 		// listener that matches
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
 			WithOverwriteName("test_listener").
 			Configure(
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-1").Configure(
@@ -1021,4 +1257,21 @@ func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteC
 			},
 		},
 	}
+}
+
+func routeRateLimitFromZoneProxyListener(listener *envoy_listener.Listener) *envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit {
+	Expect(listener.GetFilterChains()).ToNot(BeEmpty())
+	Expect(listener.GetFilterChains()[0].GetFilters()).ToNot(BeEmpty())
+
+	hcm := &envoy_hcm.HttpConnectionManager{}
+	Expect(util_proto.UnmarshalAnyTo(listener.GetFilterChains()[0].GetFilters()[0].GetTypedConfig(), hcm)).To(Succeed())
+	Expect(hcm.GetRouteConfig().GetVirtualHosts()).ToNot(BeEmpty())
+	Expect(hcm.GetRouteConfig().GetVirtualHosts()[0].GetRoutes()).ToNot(BeEmpty())
+
+	rateLimitAny := hcm.GetRouteConfig().GetVirtualHosts()[0].GetRoutes()[0].GetTypedPerFilterConfig()["envoy.filters.http.local_ratelimit"]
+	Expect(rateLimitAny).ToNot(BeNil())
+
+	rateLimit := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{}
+	Expect(util_proto.UnmarshalAnyTo(rateLimitAny, rateLimit)).To(Succeed())
+	return rateLimit
 }

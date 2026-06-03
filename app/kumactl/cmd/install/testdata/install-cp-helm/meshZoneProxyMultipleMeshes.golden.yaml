@@ -601,7 +601,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: f682bf0be13a5363a8fe433d046be85b64bbd62026cabcead33f236e51de8fa0
+        checksum/tls-secrets: 037b75e7a91465d94401c948c7fb17c9d74e43f2becf66ab2dbadae773b7f1ea
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -659,6 +659,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -792,7 +794,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-1-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-1-ingress
     kuma.io/mesh: mesh-1
     app.kubernetes.io/name: kuma
@@ -818,6 +820,7 @@ spec:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
+        k8s.kuma.io/zone-proxy-type: ingress
     spec:
       securityContext:
         runAsUser: 5678
@@ -851,7 +854,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-1-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-1-egress
     kuma.io/mesh: mesh-1
     app.kubernetes.io/name: kuma
@@ -877,6 +880,7 @@ spec:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
+        k8s.kuma.io/zone-proxy-type: egress
     spec:
       securityContext:
         runAsUser: 5678
@@ -910,7 +914,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-2-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-2-ingress
     kuma.io/mesh: mesh-2
     app.kubernetes.io/name: kuma
@@ -936,6 +940,7 @@ spec:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
+        k8s.kuma.io/zone-proxy-type: ingress
     spec:
       securityContext:
         runAsUser: 5678
@@ -969,7 +974,7 @@ kind: Deployment
 metadata:
   name: kuma-mesh-2-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-mesh-2-egress
     kuma.io/mesh: mesh-2
     app.kubernetes.io/name: kuma
@@ -995,6 +1000,7 @@ spec:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
+        k8s.kuma.io/zone-proxy-type: egress
     spec:
       securityContext:
         runAsUser: 5678
@@ -1242,6 +1248,8 @@ webhooks:
           values:
             - enabled
         - key: kuma.io/mesh
+          operator: Exists
+        - key: k8s.kuma.io/zone-proxy-type
           operator: Exists
     clientConfig:
       caBundle: XYZ

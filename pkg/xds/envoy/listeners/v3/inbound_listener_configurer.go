@@ -9,13 +9,15 @@ import (
 )
 
 type InboundListenerConfigurer struct {
-	Protocol core_xds.SocketAddressProtocol
-	Address  string
-	Port     uint32
+	Protocol          core_xds.SocketAddressProtocol
+	Address           string
+	Port              uint32
+	EnableReusedPorts bool
 }
 
 func (c *InboundListenerConfigurer) Configure(l *envoy_listener.Listener) error {
-	l.EnableReusePort = util_proto.Bool(c.Protocol == core_xds.SocketAddressProtocolUDP)
+	// UDP always needs SO_REUSEPORT for multi-worker correctness; TCP follows the DP feature.
+	l.EnableReusePort = util_proto.Bool(c.Protocol == core_xds.SocketAddressProtocolUDP || c.EnableReusedPorts)
 	l.TrafficDirection = envoy_core.TrafficDirection_INBOUND
 	l.Address = &envoy_core.Address{
 		Address: &envoy_core.Address_SocketAddress{

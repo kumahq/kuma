@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,6 +35,9 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/v2/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
@@ -350,6 +354,264 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					Build(),
+			}
+		}()),
+		Entry("default-meshservice-mesh-scoped-zone", func() outboundsTestCase {
+			// MeshService located in a remote zone that exposes a mesh-scoped zone proxy.
+			// The cluster SNI must use the KRI-derived format (sni.msvc.<mesh>.<zone>.<name>.<port>)
+			// instead of the legacy hash-based format.
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("default_backend__remote-zone_msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						mesh_proto.ZoneTag: "remote-zone",
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{{
+						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+						Value: "backend",
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+			}
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
+					WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					With(func(ctx *xds_context.Context) {
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"remote-zone": true}
+					}).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+					).
+					WithOutbounds(xds_types.Outbounds{{
+						Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
+						Address:  "10.0.0.1",
+						Port:     80,
+					}}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+							return bldrs_tls.SdsSecretConfigSource(
+								"identity_cert:secret:default",
+								bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+							)
+						},
+					}).
+					Build(),
+			}
+		}()),
+		Entry("default-meshexternalservice-mesh-scoped-zone", func() outboundsTestCase {
+			// MeshExternalService in a remote zone that exposes a mesh-scoped zone proxy.
+			// The cluster SNI must use the KRI-derived format (sni.extsvc.<mesh>.<zone>.<name>.<port>).
+			meshExtSvc := &meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name:   "ext-backend",
+					Mesh:   "default",
+					Labels: map[string]string{mesh_proto.ZoneTag: "remote-zone"},
+				},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9000,
+						Protocol: core_meta.ProtocolHTTP,
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{IP: "10.20.20.1"},
+				},
+			}
+			extSvcKRI := kri.From(meshExtSvc)
+			const mesServiceName = "default_ext-backend__remote-zone_extsvc_9000"
+
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint(mesServiceName, xds_builders.Endpoint().
+					WithTarget("192.168.0.10").
+					WithPort(27017).
+					WithWeight(1).
+					WithExternalService(&core_xds.ExternalService{OwnerResource: extSvcKRI}))
+
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
+				Items: []*meshexternalservice_api.MeshExternalServiceResource{meshExtSvc},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshBuilder(builders.Mesh().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive)).
+					WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					AddExternalService(mesServiceName).
+					AddServiceProtocol(mesServiceName, core_meta.ProtocolHTTP).
+					With(func(ctx *xds_context.Context) {
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"remote-zone": true}
+						ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
+							{Address: "10.0.0.1", Port: 10002, SAN: "spiffe://default/zone-egress"},
+						}
+					}).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+					).
+					WithOutbounds(xds_types.Outbounds{{
+						Resource: kri.WithSectionName(extSvcKRI, "9000"),
+						Address:  "10.20.20.1",
+						Port:     9000,
+					}}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(&core_xds.DataplaneMetadata{
+						Features: map[string]bool{
+							xds_types.FeatureUnifiedResourceNaming: true,
+						},
+					}).
+					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+							return bldrs_tls.SdsSecretConfigSource(
+								"identity_cert:secret:default",
+								bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+							)
+						},
+					}).
+					Build(),
+			}
+		}()),
+		Entry("default-meshmultizoneservice-mesh-scoped-zone", func() outboundsTestCase {
+			// MeshMultiZoneService (global, no zone) with mesh-scoped proxy enabled for zone "".
+			// The cluster SNI must use the KRI-derived format (sni.mzsvc.<mesh>.<name>.<port>).
+			backendDP := builders.Dataplane().
+				WithName("backend").
+				WithAddress("192.168.0.4").
+				AddInbound(builders.Inbound().
+					WithPort(8084).
+					WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: string(core_meta.ProtocolHTTP),
+						"app":                  "backend",
+					}),
+				).Build()
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						"service": "backend",
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{
+						DataplaneTags: &map[string]string{
+							mesh_proto.ServiceTag: "backend",
+						},
+					},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "backend",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
+				},
+			}
+			meshMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								"service": "backend",
+							},
+						},
+					},
+					Ports: []meshmultizoneservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.2",
+					}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{
+							Name: "backend",
+							Mesh: "default",
+						},
+					},
+				},
+			}
+
+			dp := builders.Dataplane().
+				WithName("web-01").
+				WithAddress("192.168.0.2").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				Build()
+			mc := meshContextWithResources(builders.Mesh(), dp, backendDP, &meshSvc, &meshMZSvc)
+
+			builder := &sync.DataplaneProxyBuilder{
+				Zone:       "zone-1",
+				APIVersion: envoy.APIV3,
+			}
+			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, &core_xds.DataplaneMetadata{}, *mc)
+			Expect(err).ToNot(HaveOccurred())
+
+			proxy.Outbounds = xds_types.Outbounds{{
+				Address:  "10.0.0.2",
+				Port:     80,
+				Resource: kri.WithSectionName(kri.From(&meshMZSvc), "80"),
+			}}
+			proxy.WorkloadIdentity = &core_xds.WorkloadIdentity{
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"identity_cert:secret:default",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					With(func(ctx *xds_context.Context) {
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"local": true}
+					}).
+					Build(),
+				proxy: proxy,
 			}
 		}()),
 		Entry("default-meshmultizoneservice", func() outboundsTestCase {
@@ -2333,6 +2595,85 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("gateway-root-prefix", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"),
+				)
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					{
+						Subset: subsetutils.MeshSubset(),
+						Conf: api.PolicyDefault{
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefService("backend"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}},
+						},
+					},
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("gateway-real-mesh-service", func() outboundsTestCase {
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
@@ -2849,6 +3190,110 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											},
 										},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-builtingateway-with-multiple-listeners", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+								Hostname: "example.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8081,
+								Hostname: "another.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8082,
+								Hostname: "*.test.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8083,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("echo-service", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "echo-service", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)),
+				)
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+
+			// allRules combines both MeshHTTPRoute configs from builtingateway.go:
+			// - global (meshHTTPRoute): routes "/" to echo-service for any hostname
+			// - domain (meshHTTPRouteWithDomains): routes "/" only for the two explicit hostnames
+			pathRootRule := []api.Rule{{
+				Matches: []api.Match{{
+					Path: &api.PathMatch{
+						Type:  api.PathPrefix,
+						Value: "/",
+					},
+				}},
+				Default: api.RuleConf{
+					BackendRefs: &[]common_api.BackendRef{{
+						TargetRef: builders.TargetRefService("echo-service"),
+						Weight:    pointer.To(uint(100)),
+					}},
+				},
+			}}
+			allRules := core_rules.Rules{
+				{
+					Subset: subsetutils.MeshSubset(),
+					Conf:   api.PolicyDefault{Rules: pathRootRule},
+				},
+				{
+					Subset: subsetutils.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Hostnames: []string{"another.kuma.io", "app.test.kuma.io"},
+						Rules:     pathRootRule,
+					},
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "example.kuma.io"): {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "another.kuma.io"): {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, "*.test.kuma.io"):  {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*"):               {Rules: allRules},
 									},
 								},
 							}),

@@ -22,6 +22,13 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -88,6 +95,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -113,6 +127,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
@@ -168,6 +189,13 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig-builtingateway",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -309,7 +337,7 @@
             "portValue": 0
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [
@@ -483,32 +511,6 @@
             "routes": [
               {
                 "match": {
-                  "path": "/"
-                },
-                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                "route": {
-                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
-                  "idleTimeout": "5s",
-                  "weightedClusters": {
-                    "clusters": [
-                      {
-                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
-                        "requestHeadersToAdd": [
-                          {
-                            "header": {
-                              "key": "x-kuma-tags",
-                              "value": "&kuma.io/service=gateway-proxy&&kuma.io/zone=kuma-3&"
-                            }
-                          }
-                        ],
-                        "weight": 1
-                      }
-                    ]
-                  }
-                }
-              },
-              {
-                "match": {
                   "prefix": "/"
                 },
                 "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
@@ -523,7 +525,7 @@
                           {
                             "header": {
                               "key": "x-kuma-tags",
-                              "value": "&kuma.io/service=gateway-proxy&&kuma.io/zone=kuma-3&"
+                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
                             }
                           }
                         ],

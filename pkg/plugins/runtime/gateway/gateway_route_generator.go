@@ -127,6 +127,14 @@ func HandlePrefixMatchesAndPopulatePolicies(host GatewayHost, exactEntries, pref
 			// Duplicate the route to an exact match only if there
 			// isn't already an exact match for this path.
 			if !hasExactMatch {
+				// For the root prefix ("/"), the prefix match already becomes "/",
+				// which matches every path including "/", so synthesizing an extra
+				// exact "/" match is pure redundancy. Keep emitting it when a prefix
+				// rewrite or redirect path-rewrite is present, because there the exact
+				// match carries different full-path rewrite semantics for "/".
+				if exactPath == "" && exactPathRewrite == nil && exactPathRedirectPathRewrite == nil {
+					continue
+				}
 				exactMatch := e
 				exactMatch.Match.PrefixPath = ""
 				exactMatch.Match.ExactPath = exactPath

@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"strings"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
@@ -17,6 +19,8 @@ type Listeners struct {
 	Inbound         map[core_rules.InboundListener]*envoy_listener.Listener
 	Outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
 	Egress          *envoy_listener.Listener
+	ZoneIngress     map[string]*envoy_listener.Listener
+	ZoneEgress      map[string]*envoy_listener.Listener
 	Gateway         map[core_rules.InboundListener]*envoy_listener.Listener
 	Ipv4Passthrough *envoy_listener.Listener
 	Ipv6Passthrough *envoy_listener.Listener
@@ -28,9 +32,13 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 	listeners := Listeners{
 		Inbound:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		Outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
+		ZoneIngress:  map[string]*envoy_listener.Listener{},
+		ZoneEgress:   map[string]*envoy_listener.Listener{},
 		Gateway:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		DirectAccess: map[generator_model.Endpoint]*envoy_listener.Listener{},
 	}
+	zoneIngressPrefix := naming.ContextualZoneIngressListenerName("")
+	zoneEgressPrefix := naming.ContextualZoneEgressListenerName("")
 
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		listener := res.Resource.(*envoy_listener.Listener)
@@ -49,6 +57,13 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 			}] = listener
 		case generator_meta.OriginEgress:
 			listeners.Egress = listener
+			if strings.HasPrefix(listener.Name, zoneEgressPrefix) {
+				listeners.ZoneEgress[listener.Name] = listener
+			}
+		case generator_meta.OriginIngress:
+			if strings.HasPrefix(listener.Name, zoneIngressPrefix) {
+				listeners.ZoneIngress[listener.Name] = listener
+			}
 		case generator_meta.OriginTransparent:
 			switch listener.Name {
 			case generator_meta.TransparentOutboundNameIPv4:

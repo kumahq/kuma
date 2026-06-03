@@ -1,0 +1,13 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt-no-labels
+  namespace: {{ .KumaNamespace }}
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

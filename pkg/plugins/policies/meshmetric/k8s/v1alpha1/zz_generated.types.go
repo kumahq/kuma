@@ -111,7 +111,7 @@ func (l *MeshMetricList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshMetric{}, &MeshMetricList{})
+	knownTypes = append(knownTypes, &MeshMetric{}, &MeshMetricList{})
 	registry.RegisterObjectType(&policy.MeshMetric{}, &MeshMetric{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

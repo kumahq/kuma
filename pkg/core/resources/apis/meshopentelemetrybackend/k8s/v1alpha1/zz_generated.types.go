@@ -111,7 +111,7 @@ func (l *MeshOpenTelemetryBackendList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshOpenTelemetryBackend{}, &MeshOpenTelemetryBackendList{})
+	knownTypes = append(knownTypes, &MeshOpenTelemetryBackend{}, &MeshOpenTelemetryBackendList{})
 	registry.RegisterObjectType(&policy.MeshOpenTelemetryBackend{}, &MeshOpenTelemetryBackend{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

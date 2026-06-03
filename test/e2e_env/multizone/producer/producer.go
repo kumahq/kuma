@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -110,8 +111,8 @@ spec:
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				multizone.KubeZone1.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				multizone.KubeZone1.GetTesting(), context.Background(),
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
@@ -159,8 +160,8 @@ spec:
 
 		// should not get synced to zone 1
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				multizone.KubeZone1.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				multizone.KubeZone1.GetTesting(), context.Background(),
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
@@ -234,8 +235,8 @@ spec:
 
 		// check 'timeout-on-http-route' synced to test-client's zone
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				multizone.KubeZone1.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				multizone.KubeZone1.GetTesting(), context.Background(),
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())

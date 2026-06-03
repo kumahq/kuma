@@ -1,0 +1,22 @@
+type: MeshTrafficPermission
+name: mtp-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://trust-domain.mesh/ns/backend
+            sni:
+              type: Exact
+              value: sni.extsvc.envoyconfig.zone-1.aws-aurora.8443
+          - sni:
+              type: Exact
+              value: sni.extsvc.envoyconfig.zone-1.aws-rds.8443
+        deny:
+          - sni:
+              type: Exact
+              value: sni.extsvc.envoyconfig.zone-1.blocked.8443

@@ -156,8 +156,7 @@ func gatewayListenerInfoFromProxy(
 		return nil
 	}
 
-	log.V(1).Info(fmt.Sprintf("matched gateway %q to dataplane %q",
-		gateway.Meta.GetName(), proxy.Dataplane.Meta.GetName()))
+	log.V(1).Info("matched gateway to dataplane", "gateway", gateway.Meta.GetName(), "dataplane", proxy.Dataplane.Meta.GetName())
 
 	// Canonicalize the tags on each listener to be the merged resources
 	// of dataplane, gateway and listener tags.

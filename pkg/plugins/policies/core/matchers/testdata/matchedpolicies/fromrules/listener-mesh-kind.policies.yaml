@@ -1,0 +1,12 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-mesh
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://mesh-1/dp-1

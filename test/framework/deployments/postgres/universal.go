@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -80,7 +81,7 @@ func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 	containerID := u.container.GetID()
 	r := regexp.MustCompile("database system is ready to accept connections")
 
-	retry.DoWithRetry(t, "logs "+containerID, DefaultRetries, DefaultTimeout,
+	retry.DoWithRetryContext(t, context.Background(), "logs "+containerID, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			containerLogs, err := u.container.GetLogs()
 			if err != nil {

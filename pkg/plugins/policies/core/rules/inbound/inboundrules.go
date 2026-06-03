@@ -1,6 +1,7 @@
 package inbound
 
 import (
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
@@ -9,35 +10,35 @@ import (
 )
 
 type Rule struct {
-	Conf   RuleEntry     `json:"conf"`
-	Origin common.Origin `json:"origin"`
+	Match  *common_api.Match `json:"match"`
+	Conf   any               `json:"conf"`
+	Origin common.Origin     `json:"origin"`
 }
 
 func MatchesAllIncomingTraffic[T any](rules []*Rule) T {
 	var result T
-	if len(rules) > 0 {
-		entries := util_slices.Map(rules, func(a *Rule) common.WithPolicyAttributes[RuleEntry] {
-			return common.WithPolicyAttributes[RuleEntry]{Entry: a.Conf}
-		})
-		conf, err := merge.Entries(entries)
-		if err != nil {
-			return result
-		}
-		if len(conf) > 0 {
-			result = conf[0].(T)
-		}
+	catchAll := util_slices.Filter(rules, func(r *Rule) bool { return r.Match == nil })
+	if len(catchAll) == 0 {
+		return result
+	}
+	confs := util_slices.Map(catchAll, func(a *Rule) any { return a.Conf })
+	conf, err := merge.Confs(confs)
+	if err != nil {
+		return result
+	}
+	if len(conf) > 0 {
+		result = conf[0].(T)
 	}
 	return result
 }
 
 type RuleEntry interface {
 	common.BaseEntry
+	GetMatches() []common_api.Match
 }
 
 // ruleEntryAdapter is a helper struct that allows using any BaseEntry as RuleEntry. For example, this is needed to
-// provide backward compatibility for legacy FromEntries and use them as RuleEntries. Currently, RuleEntry and BaseEntry
-// are the same, so this adapter is not needed, but in the future RuleEntry is expected to have additional methods
-// like GetMatches() and GetTargetRef() that are not present in BaseEntry.
+// provide backward compatibility for legacy FromEntries and use them as RuleEntries without match conditions.
 type ruleEntryAdapter[T common.BaseEntry] struct {
 	BaseEntry T
 }
@@ -48,6 +49,10 @@ func newRuleEntryAdapter[T common.BaseEntry](base T) *ruleEntryAdapter[T] {
 
 func (r *ruleEntryAdapter[T]) GetDefault() any {
 	return r.BaseEntry.GetDefault()
+}
+
+func (r *ruleEntryAdapter[T]) GetMatches() []common_api.Match {
+	return []common_api.Match{}
 }
 
 type PolicyWithRules interface {
@@ -115,17 +120,31 @@ func buildRules[T interface {
 
 	Sort(list)
 
+	// Build rules, expanding multi-match entries so each Rule carries exactly one match.
 	var rules []*Rule
 	for _, entry := range list {
-		rules = append(rules, &Rule{
-			Conf: entry.GetEntry(),
-			Origin: common.Origin{
-				Resource:  entry.GetResourceMeta(),
-				RuleIndex: entry.GetRuleIndex(),
-			},
-		})
+		origin := common.Origin{
+			Resource:  entry.GetResourceMeta(),
+			RuleIndex: entry.GetRuleIndex(),
+		}
+		matches := entry.GetEntry().GetMatches()
+		if len(matches) == 0 {
+			rules = append(rules, &Rule{
+				Conf:   entry.GetEntry().GetDefault(),
+				Origin: origin,
+			})
+		} else {
+			for k := range matches {
+				rules = append(rules, &Rule{
+					Match:  &matches[k],
+					Conf:   entry.GetEntry().GetDefault(),
+					Origin: origin,
+				})
+			}
+		}
 	}
 
+	SortRules(rules)
 	return rules, nil
 }
 

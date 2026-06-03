@@ -10,19 +10,60 @@ permissions:
   contents: read
 jobs:
   pr_comments:
-    timeout-minutes: 45
-    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/tproxy_golden_files'))
-    runs-on: ubuntu-24.04
-    env:
-      IPV6: "true"
+    timeout-minutes: 120
+    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/golden_files_e2e') || contains(github.event.comment.body, '/tproxy_golden_files'))
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
+      # Commands are additive: one comment can request multiple actions, and all
+      # matching steps below will run in order.
+      - name: Parse PR comment commands
+        id: parse-commands
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          format=false
+          golden_files=false
+          golden_files_e2e=false
+          tproxy_golden_files=false
+
+          while IFS= read -r token; do
+            case "$token" in
+              /format)
+                format=true
+                ;;
+              /golden_files)
+                golden_files=true
+                ;;
+              /golden_files_e2e)
+                golden_files_e2e=true
+                ;;
+              /tproxy_golden_files)
+                tproxy_golden_files=true
+                ;;
+            esac
+          done < <(printf '%s\n' "$COMMENT_BODY" | grep -Eo '/[A-Za-z0-9_]+' || true)
+
+          has_command=false
+          if [[ "$format" == "true" || "$golden_files" == "true" || "$golden_files_e2e" == "true" || "$tproxy_golden_files" == "true" ]]; then
+            has_command=true
+          fi
+
+          {
+            echo "format=$format"
+            echo "golden_files=$golden_files"
+            echo "golden_files_e2e=$golden_files_e2e"
+            echo "tproxy_golden_files=$tproxy_golden_files"
+            echo "has_command=$has_command"
+          } >> "$GITHUB_OUTPUT"
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        if: steps.parse-commands.outputs.has_command == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: check-maintainer
+        if: steps.parse-commands.outputs.has_command == 'true'
         run: |
           # Ensure the commenter is a maintainer
           if gh api '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep -q ${{ github.event.comment.user.login }}; then
@@ -35,34 +76,77 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - id: get-branch
+        if: steps.parse-commands.outputs.has_command == 'true'
         run: |
-          echo "BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> "$GITHUB_ENV"
-          echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> "$GITHUB_ENV"
+          BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')
+          REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')
+          IS_CROSS_REPOSITORY=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json isCrossRepository --jq '.isCrossRepository')
+
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+          echo "REPO=$REPO" >> "$GITHUB_ENV"
+          {
+            echo "branch_name=$BRANCH_NAME"
+            echo "repo=$REPO"
+            echo "is_cross_repository=$IS_CROSS_REPOSITORY"
+          } >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: steps.parse-commands.outputs.has_command == 'true'
         with:
           fetch-depth: 0
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
           token: ${{ steps.github-app-token.outputs.token }}
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
+          version: 2026.5.7
+        if: steps.parse-commands.outputs.has_command == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: "Reject e2e golden refresh on fork PRs"
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository == 'true'
+        run: |
+          echo "/golden_files_e2e is not allowed on fork PRs because it would expose repository secrets to PR-controlled code."
+          exit 1
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
-        if: contains(github.event.comment.body, '/format')
+        if: steps.parse-commands.outputs.format == 'true'
         run: make clean/generated check
         continue-on-error: true
 
-      # Update all golden files except transparent proxy tests if /golden_files is in the comment
-      - name: "Update golden files (excluding transparent proxy)"
-        if: contains(github.event.comment.body, '/golden_files')
+      # Update unit-test golden files if /golden_files is in the comment
+      - name: "Update golden files (excluding transparent proxy and e2e)"
+        if: steps.parse-commands.outputs.golden_files == 'true'
         run: make test UPDATE_GOLDEN_FILES=true
+
+      - name: "Free up disk space for E2E golden files"
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository != 'true'
+        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+
+      # Update the labeled e2e golden-file suites if /golden_files_e2e is in the comment
+      - name: "Update e2e golden files"
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository != 'true'
+        env:
+          DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
+        run: |
+          if [[ -n "$DOCKERHUB_PULL_CREDENTIAL" ]]; then
+            DOCKER_USER=${DOCKERHUB_PULL_CREDENTIAL%%:*}
+            DOCKER_PWD=${DOCKERHUB_PULL_CREDENTIAL#*:}
+            printf '%s' "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
+            trap 'docker logout docker.io' EXIT
+          fi
+
+          make UPDATE_GOLDEN_FILES=true test/e2e-golden-files
 
       # Enable IPv6 for transparent proxy tests
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
-        if: contains(github.event.comment.body, '/tproxy_golden_files')
+        if: steps.parse-commands.outputs.tproxy_golden_files == 'true'
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
@@ -78,10 +162,13 @@ jobs:
 
       # Update only transparent proxy golden files if /tproxy_golden_files is in the comment
       - name: "Update transparent proxy golden files"
-        if: contains(github.event.comment.body, '/tproxy_golden_files')
+        if: steps.parse-commands.outputs.tproxy_golden_files == 'true'
+        env:
+          IPV6: "true"
         run: make test/transparentproxy UPDATE_GOLDEN_FILES=true
 
       - name: commit and push fixes
+        if: steps.parse-commands.outputs.has_command == 'true'
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
@@ -93,6 +180,7 @@ jobs:
             git commit -s -m "fix(ci): format files" .
             git push
           fi
-      - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
+      - if: steps.parse-commands.outputs.has_command == 'true'
+        run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}

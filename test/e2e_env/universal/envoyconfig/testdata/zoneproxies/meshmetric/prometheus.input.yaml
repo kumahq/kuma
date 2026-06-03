@@ -1,0 +1,16 @@
+type: MeshMetric
+name: mm-1
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  default:
+    applications:
+      - name: ignored-on-zone-proxy
+        path: /metrics
+        port: 8888
+    backends:
+      - type: Prometheus
+        prometheus:
+          port: 5670
+          path: "/metrics"
