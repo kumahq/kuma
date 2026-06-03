@@ -11,6 +11,12 @@
   "kuma.io/zone": "default"
  },
  "kri": "kri_extsvc_default_default__mes-tcp_",
+ "snis": [
+  {
+   "port": 4242,
+   "sni": "sni.extsvc.default.default.mes-tcp.4242"
+  }
+ ],
  "spec": {
   "match": {
    "type": "HostnameGenerator",

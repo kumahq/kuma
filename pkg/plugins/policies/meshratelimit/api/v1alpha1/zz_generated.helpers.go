@@ -53,7 +53,7 @@ func (x *Rule) GetDefault() interface{} {
 }
 
 func (x *Rule) GetMatches() []common_api.Match {
-	return []common_api.Match{}
+	return pointer.DerefOr(x.Matches, []common_api.Match{})
 }
 
 func (x *MeshRateLimit) GetRules() []inbound.RuleEntry {

@@ -623,6 +623,11 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 		return
 	}
 
+	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
+		rest_errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Could not delete a resource")
+		return
+	}
+
 	if err := r.resourceAccess.ValidateDelete(
 		request.Request.Context(),
 		core_model.ResourceKey{Mesh: meshName, Name: name},
@@ -666,15 +671,9 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	return err.OrNil()
 }
 
-func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
+func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta) validators.ValidationError {
 	var err validators.ValidationError
-
-	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
-	if ok {
-		if oerr := origin.IsValid(); oerr != nil {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
-		}
-	}
+	origin, ok := core_model.ResourceOrigin(meta)
 
 	if !r.disableOriginLabelValidation && r.mode == config_core.Global {
 		if ok && origin != mesh_proto.GlobalResourceOrigin {
@@ -687,6 +686,20 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
 		}
 	}
+	return err
+}
+
+func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
+	var err validators.ValidationError
+
+	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
+	if ok {
+		if oerr := origin.IsValid(); oerr != nil {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
+		}
+	}
+
+	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
 
 	if r.mode != config_core.Global {
 		if origin != mesh_proto.GlobalResourceOrigin {
