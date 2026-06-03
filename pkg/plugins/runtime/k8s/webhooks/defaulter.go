@@ -63,14 +63,21 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if resp := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace, req.Operation); !resp.Allowed {
-		return resp
+	decision := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace, req.Operation)
+	if !decision.Response.Allowed {
+		return decision.Response
 	}
 
+	// Use the sanitized labels (CP-overridden values stripped) so Compute
+	// regenerates the right values from context.
+	inputLabels := resource.GetMeta().GetLabels()
+	if decision.SanitizedLabels != nil {
+		inputLabels = decision.SanitizedLabels
+	}
 	computed, err := resource_labels.Compute(
 		resource.Descriptor(),
 		resource.GetSpec(),
-		resource.GetMeta().GetLabels(),
+		inputLabels,
 		resource.GetMeta().GetMesh(),
 		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
 		resource_labels.WithMode(h.Mode),
@@ -90,5 +97,5 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	return admission.PatchResponseFromRaw(req.Object.Raw, marshaled)
+	return admission.PatchResponseFromRaw(req.Object.Raw, marshaled).WithWarnings(decision.Warnings...)
 }

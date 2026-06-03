@@ -1,21 +1,7 @@
-HTTP/1.1 400 Bad Request
+HTTP/1.1 201 Created
 
 {
- "type": "/std-errors",
- "status": 400,
- "title": "Could not process a resource",
- "detail": "Resource is not valid",
- "invalid_parameters": [
-  {
-   "field": "labels[\"kuma.io/origin\"]",
-   "reason": "kuma.io/origin should be 'zone', got 'bogus'"
-  }
- ],
- "details": "Resource is not valid",
- "causes": [
-  {
-   "field": "labels[\"kuma.io/origin\"]",
-   "message": "kuma.io/origin should be 'zone', got 'bogus'"
-  }
+ "warnings": [
+  "kuma.io/origin is computed by the control plane (expected 'zone'); the supplied value 'bogus' was overridden"
  ]
 }

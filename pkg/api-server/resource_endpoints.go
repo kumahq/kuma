@@ -427,15 +427,16 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
+	labelWarnings, err := r.validateResourceRequest(name, meshName, resourceRest)
+	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
 
 	if create {
-		r.createResource(request.Request.Context(), name, meshName, resourceRest, response)
+		r.createResource(request.Request.Context(), name, meshName, resourceRest, labelWarnings, response)
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest, response, meshName)
+		r.updateResource(request.Request.Context(), resource, resourceRest, labelWarnings, response, meshName)
 	}
 }
 
@@ -456,6 +457,7 @@ func (r *resourceEndpoints) createResource(
 	name string,
 	meshName string,
 	resRest rest.Resource,
+	labelWarnings []string,
 	response *restful.Response,
 ) {
 	if err := r.resourceAccess.ValidateCreate(
@@ -513,7 +515,9 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}
+	warnings := append([]string{}, labelWarnings...)
+	warnings = append(warnings, core_model.Deprecations(res)...)
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}
 	if err := response.WriteHeaderAndJson(http.StatusCreated, resp, "application/json"); err != nil {
 		log.Error(err, "Could not write the create response")
 	}
@@ -523,6 +527,7 @@ func (r *resourceEndpoints) updateResource(
 	ctx context.Context,
 	currentRes core_model.Resource,
 	newResRest rest.Resource,
+	labelWarnings []string,
 	response *restful.Response,
 	meshName string,
 ) {
@@ -587,7 +592,9 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(currentRes)}
+	warnings := append([]string{}, labelWarnings...)
+	warnings = append(warnings, core_model.Deprecations(currentRes)...)
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}
 	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
 		log.Error(err, "Could not write the update response")
 	}
@@ -648,7 +655,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource) error {
+func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource) ([]string, error) {
 	var err validators.ValidationError
 	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -663,10 +670,42 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 
-	err.AddError("labels", r.validateLabels(resource))
+	labelResult := resource_labels.Validate(resource.GetMeta().GetLabels(), r.labelValidationContext(resource))
+	if len(labelResult.Errors) > 0 {
+		var labelErr validators.ValidationError
+		for _, v := range labelResult.Errors {
+			labelErr.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
+		}
+		err.AddError("labels", labelErr)
+	}
+	// Apply the sanitized labels back to the resource — the CP-overrides
+	// principle: keys with warnings are either replaced with the CP's expected
+	// value (CP-owned labels that apply here) or dropped (system labels and
+	// CP-owned labels not applicable in this context).
+	if labels := resource.GetMeta().GetLabels(); len(labels) > 0 || len(labelResult.Sanitized) > 0 {
+		for k := range labels {
+			if _, keep := labelResult.Sanitized[k]; !keep {
+				delete(labels, k)
+			}
+		}
+		for k, v := range labelResult.Sanitized {
+			labels[k] = v
+		}
+	}
 	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 
-	return err.OrNil()
+	warnings := make([]string, 0, len(labelResult.Warnings))
+	for _, w := range labelResult.Warnings {
+		warnings = append(warnings, formatLabelWarning(w))
+	}
+	return warnings, err.OrNil()
+}
+
+func formatLabelWarning(v resource_labels.Violation) string {
+	if strings.Contains(v.Reason, v.Key) {
+		return v.Reason
+	}
+	return "'" + v.Key + "' " + v.Reason
 }
 
 func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resource_labels.ValidationContext {
@@ -688,14 +727,6 @@ func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resou
 func (r *resourceEndpoints) validateOriginForWrite(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 	for _, v := range resource_labels.ValidateOrigin(resource.GetMeta().GetLabels(), r.labelValidationContext(resource)) {
-		err.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
-	}
-	return err
-}
-
-func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
-	var err validators.ValidationError
-	for _, v := range resource_labels.Validate(resource.GetMeta().GetLabels(), r.labelValidationContext(resource)) {
 		err.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
 	}
 	return err

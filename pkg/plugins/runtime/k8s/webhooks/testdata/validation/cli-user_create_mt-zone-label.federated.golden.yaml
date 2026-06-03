@@ -1,9 +1,9 @@
 Patches: null
-allowed: false
+allowed: true
 status:
-  code: 403
-  message: Operation not allowed. kuma.io/zone should be 'zone-1', got 'wrong-zone'
+  code: 200
   metadata: {}
-  reason: Forbidden
-  status: Failure
 uid: "12345"
+warnings:
+- kuma.io/zone is computed by the control plane (expected 'zone-1'); the supplied
+  value 'wrong-zone' was overridden

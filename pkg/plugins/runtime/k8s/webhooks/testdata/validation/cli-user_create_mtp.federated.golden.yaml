@@ -1,9 +1,13 @@
 Patches: null
-allowed: false
+allowed: true
 status:
-  code: 403
-  message: Operation not allowed. the kuma.io/origin label must be set to 'zone'
+  code: 200
   metadata: {}
-  reason: Forbidden
-  status: Failure
 uid: "12345"
+warnings:
+- '''from'' field is deprecated and will be removed in 3.0, use ''rules'' with MeshIdentity
+  (spiffeId) instead'
+- MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with
+  'kuma.io/service' instead
+- MeshService value for 'targetRef.kind' is deprecated, use Dataplane with labels
+  instead

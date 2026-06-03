@@ -1,1 +1,2 @@
-error while running command: exit status 1; Error from server (Forbidden): error when creating "STDIN": admission webhook "mesh.defaulter.kuma-admission.kuma.io" denied the request: Operation not allowed. kuma.io/origin should be 'zone', got 'bogus'
+Warning: kuma.io/origin is computed by the control plane (expected 'zone'); the supplied value 'bogus' was overridden
+meshtimeout.kuma.io/mt-origin-invalid created

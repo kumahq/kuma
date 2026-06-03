@@ -2,6 +2,7 @@ package labels
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -13,13 +14,13 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
-// Violation is a single label-validation failure.
+// Violation is a single label-validation finding.
 //
 // Format=true marks failures of the K8s label format constraints
 // (qualified-name keys, label-value values). Callers may treat these
-// differently from semantic violations — the REST API emits both, the K8s
-// webhook short-circuits on format violations so the K8s API server's native
-// "Invalid value: ..." error surfaces unmodified.
+// differently from semantic findings — the K8s webhook short-circuits on
+// format violations so the K8s API server's native "Invalid value: ..." error
+// surfaces unmodified.
 type Violation struct {
 	Key    string `json:"key"`
 	Reason string `json:"reason"`
@@ -40,50 +41,93 @@ type ValidationContext struct {
 	Spec                         core_model.ResourceSpec
 	ResourceName                 string
 	ResourceMesh                 string
-	// Privileged: when true, Validate returns nil. Set by callers that bypass
-	// validation (KDS sync, GC, storage-version migrator).
+	// Privileged: when true, Validate returns an empty Result with the input
+	// labels echoed in Sanitized. Set by callers that bypass validation (KDS
+	// sync, GC, storage-version migrator).
 	Privileged bool
 }
 
-const reservedReason = "is a reserved label managed by the control plane and cannot be set on apply"
+// Result is what Validate returns.
+//
+//   - Errors must reject the request (format issues, unknown reserved keys,
+//     OwnerUser AllowedValues mismatch).
+//   - Warnings should be surfaced to the caller without rejecting. They cover
+//     attempts to set CP-managed labels: the CP will override (or drop) the
+//     value and the user should know what happened.
+//   - Sanitized is a copy of the input labels with all warned-on keys removed.
+//     Pass it to Compute so CP-owned values are populated from context.
+type Result struct {
+	Errors    []Violation
+	Warnings  []Violation
+	Sanitized map[string]string
+}
+
+func mismatchReason(key, expected, got string) string {
+	return fmt.Sprintf("%s is computed by the control plane (expected '%s'); the supplied value '%s' was overridden", key, expected, got)
+}
+
+func notApplicableReason(key, got string) string {
+	return fmt.Sprintf("%s is managed by the control plane and is not applicable in this context; the supplied value '%s' was removed", key, got)
+}
+
+func systemOverriddenReason(key, got string) string {
+	return fmt.Sprintf("%s is set by the control plane; the supplied value '%s' was overridden", key, got)
+}
+
+func notAllowedValueReason(key string, allowed []string, got string) string {
+	return fmt.Sprintf("%s must be one of [%s] in this context; the supplied value '%s' was removed", key, strings.Join(quoted(allowed), ", "), got)
+}
 
 // Validate runs format + semantic checks against the given label set.
 //
-// Format violations are returned first; when any are present, semantic
-// validation is skipped (validators assume well-formed input). All returned
-// violations have Format=true; callers that need to behave differently for
-// format issues (e.g. the K8s webhook, which lets the API server emit the
-// native format error) inspect Violation.Format.
+// Format violations short-circuit the rest of the function (validators
+// assume well-formed input). All format findings have Format=true; callers
+// that need to behave differently for format issues inspect Violation.Format.
 //
-// Semantic behavior, per LabelSpec.Owner:
-//   - OwnerSystem        — any user-set value is rejected.
-//   - OwnerUser          — any value is accepted; if AllowedValues is non-empty,
-//     the value must be in the set.
-//   - OwnerControlPlane  — Expected(ctx) supplies the CP value. If applies=false,
-//     any user-set value is rejected. Otherwise the user
-//     value (if present) must match expected. If absent and
-//     RequirePresence(ctx) is true, that is also a violation.
+// Semantic classification, per LabelSpec.Owner:
+//
+//   - OwnerSystem        — any user-set value is a warning; the key is removed
+//     from Sanitized so the storage layer receives a clean map.
+//   - OwnerUser          — any value is accepted; if AllowedValues is non-empty
+//     and the value is outside the set, that is an error.
+//   - OwnerControlPlane  — Expected(ctx) supplies the CP value. The user value
+//     is accepted only when it matches expected (or OpenValue is set, or
+//     applies=false with a valid AllowAnyWhenNotApplicable value). All other
+//     cases are warnings; the key is removed from Sanitized so Compute can
+//     regenerate the right value.
 //
 // Reserved keys (kuma.io/* or k8s.kuma.io/*) absent from the registry are
-// rejected as reserved.
+// rejected as errors — these are typos or removed labels and the caller
+// should fix them.
 //
-// When ctx.Privileged is true the function returns nil — KDS-synced and
-// CP-internal flows skip all validation.
-func Validate(labels map[string]string, ctx ValidationContext) []Violation {
+// When ctx.Privileged is true the function returns an empty Result with the
+// input labels copied into Sanitized — KDS-synced and CP-internal flows skip
+// all validation.
+func Validate(labels map[string]string, ctx ValidationContext) Result {
 	if ctx.Privileged {
-		return nil
+		return Result{Sanitized: maps.Clone(labels)}
 	}
 
 	if format := formatViolations(labels); len(format) > 0 {
-		return format
+		return Result{Errors: format, Sanitized: maps.Clone(labels)}
 	}
 
-	var violations []Violation
+	sanitized := map[string]string{}
+	if len(labels) > 0 {
+		sanitized = maps.Clone(labels)
+	}
+
+	var errs, warns []Violation
 
 	for _, spec := range registry {
 		value, present := labels[spec.Key]
-		if v := validateOne(spec, value, present, ctx); v != nil {
-			violations = append(violations, *v)
+		e, w := classifyOne(spec, value, present, ctx)
+		if e != nil {
+			errs = append(errs, *e)
+		}
+		if w != nil {
+			warns = append(warns, *w)
+			applySanitize(sanitized, spec, ctx)
 		}
 	}
 
@@ -94,11 +138,12 @@ func Validate(labels map[string]string, ctx ValidationContext) []Violation {
 		if !mesh_proto.IsReservedLabelKey(key) {
 			continue
 		}
-		violations = append(violations, Violation{Key: key, Reason: reservedReason})
+		errs = append(errs, Violation{Key: key, Reason: "unknown reserved label: kuma.io/* and k8s.kuma.io/* are managed by the control plane"})
 	}
 
-	sort.Slice(violations, func(i, j int) bool { return violations[i].Key < violations[j].Key })
-	return violations
+	sort.Slice(errs, func(i, j int) bool { return errs[i].Key < errs[j].Key })
+	sort.Slice(warns, func(i, j int) bool { return warns[i].Key < warns[j].Key })
+	return Result{Errors: errs, Warnings: warns, Sanitized: sanitized}
 }
 
 // ValidateOriginFormat is a context-free vocabulary check on the
@@ -120,9 +165,11 @@ func ValidateOriginFormat(labels map[string]string) []Violation {
 	return nil
 }
 
-// ValidateOrigin runs only the kuma.io/origin label spec.
-// Used by the delete flow, where the other labels are CP-managed state and
-// the only thing the caller can authoritatively gate on is origin.
+// ValidateOrigin runs only the kuma.io/origin label spec, returning errors
+// only. Used by the delete flow — it is the one CP-computed label the
+// delete-authorization gate actually needs to enforce. A mismatch here is
+// "you are deleting in the wrong CP", not a value the CP would silently
+// override.
 func ValidateOrigin(labels map[string]string, ctx ValidationContext) []Violation {
 	if ctx.Privileged {
 		return nil
@@ -132,10 +179,27 @@ func ValidateOrigin(labels map[string]string, ctx ValidationContext) []Violation
 		return nil
 	}
 	value, present := labels[spec.Key]
-	if v := validateOne(spec, value, present, ctx); v != nil {
+	if v := originDeleteCheck(spec, value, present, ctx); v != nil {
 		return []Violation{*v}
 	}
 	return nil
+}
+
+// applySanitize mutates sanitized to reflect what the CP would store for a
+// label that triggered a warning. For OwnerControlPlane labels that apply in
+// this context, the CP's expected value is written so the immutable-label
+// check on update sees the same value the CP would have computed. Otherwise
+// the user-supplied value is dropped.
+func applySanitize(sanitized map[string]string, spec LabelSpec, ctx ValidationContext) {
+	if spec.Owner == OwnerControlPlane {
+		if spec.Expected != nil {
+			if expected, applies := spec.Expected(ctx); applies {
+				sanitized[spec.Key] = expected
+				return
+			}
+		}
+	}
+	delete(sanitized, spec.Key)
 }
 
 func formatViolations(labels map[string]string) []Violation {
@@ -160,28 +224,30 @@ func sortedKeys(m map[string]string) []string {
 	return keys
 }
 
-func validateOne(spec LabelSpec, value string, present bool, ctx ValidationContext) *Violation {
+// classifyOne returns (error, warning) for a single registered label.
+// Exactly one is non-nil, or both are nil when the value is accepted.
+func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationContext) (*Violation, *Violation) {
 	switch spec.Owner {
 	case OwnerSystem:
 		if present {
-			return &Violation{Key: spec.Key, Reason: reservedReason}
+			return nil, &Violation{Key: spec.Key, Reason: systemOverriddenReason(spec.Key, value)}
 		}
-		return nil
+		return nil, nil
 
 	case OwnerUser:
 		if !present {
-			return nil
+			return nil, nil
 		}
 		if len(spec.AllowedValues) == 0 {
-			return nil
+			return nil, nil
 		}
 		if slices.Contains(spec.AllowedValues, value) {
-			return nil
+			return nil, nil
 		}
 		return &Violation{
 			Key:    spec.Key,
 			Reason: fmt.Sprintf("must be one of [%s]", strings.Join(quoted(spec.AllowedValues), ", ")),
-		}
+		}, nil
 
 	case OwnerControlPlane:
 		var expected string
@@ -192,42 +258,83 @@ func validateOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 
 		if !applies {
 			if !present {
-				return nil
+				return nil, nil
 			}
 			if spec.AllowAnyWhenNotApplicable {
 				if len(spec.AllowedValues) > 0 && !slices.Contains(spec.AllowedValues, value) {
-					return &Violation{
+					// Out-of-vocabulary value — the CP would not have set it.
+					// Strip it and warn.
+					return nil, &Violation{
 						Key:    spec.Key,
-						Reason: fmt.Sprintf("must be one of [%s]", strings.Join(quoted(spec.AllowedValues), ", ")),
+						Reason: notAllowedValueReason(spec.Key, spec.AllowedValues, value),
 					}
 				}
-				return nil
+				return nil, nil
 			}
-			return &Violation{Key: spec.Key, Reason: reservedReason}
+			return nil, &Violation{Key: spec.Key, Reason: notApplicableReason(spec.Key, value)}
 		}
 
 		if present {
 			if spec.OpenValue {
-				return nil
+				return nil, nil
 			}
 			if value != expected {
+				return nil, &Violation{
+					Key:    spec.Key,
+					Reason: mismatchReason(spec.Key, expected, value),
+				}
+			}
+			return nil, nil
+		}
+
+		// Absent and applies=true: Compute will populate, so no finding.
+		return nil, nil
+	}
+
+	return nil, nil
+}
+
+// originDeleteCheck is the validator used by the delete flow — it preserves
+// pre-warning behavior so origin mismatches still reject deletes.
+func originDeleteCheck(spec LabelSpec, value string, present bool, ctx ValidationContext) *Violation {
+	var expected string
+	applies := true
+	if spec.Expected != nil {
+		expected, applies = spec.Expected(ctx)
+	}
+
+	if !applies {
+		if !present {
+			return nil
+		}
+		if spec.AllowAnyWhenNotApplicable {
+			if len(spec.AllowedValues) > 0 && !slices.Contains(spec.AllowedValues, value) {
 				return &Violation{
 					Key:    spec.Key,
-					Reason: fmt.Sprintf("%s should be '%s', got '%s'", spec.Key, expected, value),
+					Reason: fmt.Sprintf("must be one of [%s]", strings.Join(quoted(spec.AllowedValues), ", ")),
 				}
 			}
 			return nil
 		}
+		return &Violation{Key: spec.Key, Reason: "is a reserved label managed by the control plane and cannot be set on apply"}
+	}
 
-		if spec.RequirePresence != nil && spec.RequirePresence(ctx) {
+	if present {
+		if value != expected {
 			return &Violation{
 				Key:    spec.Key,
-				Reason: fmt.Sprintf("the %s label must be set to '%s'", spec.Key, expected),
+				Reason: fmt.Sprintf("%s should be '%s', got '%s'", spec.Key, expected, value),
 			}
 		}
 		return nil
 	}
 
+	if spec.RequirePresence != nil && spec.RequirePresence(ctx) {
+		return &Violation{
+			Key:    spec.Key,
+			Reason: fmt.Sprintf("the %s label must be set to '%s'", spec.Key, expected),
+		}
+	}
 	return nil
 }
 

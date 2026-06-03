@@ -42,220 +42,244 @@ var _ = Describe("Validate", func() {
 		}
 	}
 
-	It("returns no violations for a clean apply on a zone CP", func() {
+	It("returns nothing for a clean apply on a zone CP", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.MeshTag:             "mesh-1",
 			mesh_proto.ZoneTag:             "kuma-zone",
 		}, ctx)
-		Expect(violations).To(BeEmpty())
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
-	It("rejects mismatched mesh label", func() {
+	It("warns on mismatched mesh label and replaces with the expected value", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.MeshTag:             "other-mesh",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.MeshTag,
-			Reason: "kuma.io/mesh should be 'mesh-1', got 'other-mesh'",
+			Reason: "kuma.io/mesh is computed by the control plane (expected 'mesh-1'); the supplied value 'other-mesh' was overridden",
 		}))
+		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.MeshTag, "mesh-1"))
 	})
 
-	It("rejects mismatched zone label", func() {
+	It("warns on mismatched zone label and replaces with the expected value", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.ZoneTag:             "other-zone",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.ZoneTag,
-			Reason: "kuma.io/zone should be 'kuma-zone', got 'other-zone'",
+			Reason: "kuma.io/zone is computed by the control plane (expected 'kuma-zone'); the supplied value 'other-zone' was overridden",
 		}))
+		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.ZoneTag, "kuma-zone"))
 	})
 
-	It("requires origin on a federated zone CP (REST)", func() {
+	It("does not require origin to be present (Compute will populate it)", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
-			Key:    mesh_proto.ResourceOriginLabel,
-			Reason: "the kuma.io/origin label must be set to 'zone'",
-		}))
+		r := labels.Validate(map[string]string{}, ctx)
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
-	It("rejects origin=global on a zone CP", func() {
+	It("warns on origin=global on a zone CP and replaces with the expected value", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "global",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.ResourceOriginLabel,
-			Reason: "kuma.io/origin should be 'zone', got 'global'",
+			Reason: "kuma.io/origin is computed by the control plane (expected 'zone'); the supplied value 'global' was overridden",
 		}))
+		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.ResourceOriginLabel, "zone"))
 	})
 
-	It("rejects user-set kuma.io/env on global CP (not applicable)", func() {
+	It("warns on user-set kuma.io/env on global CP (not applicable)", func() {
 		ctx := mtDesc()
 		ctx.Mode = config_core.Global
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.EnvTag: "universal",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.EnvTag,
-			Reason: "is a reserved label managed by the control plane and cannot be set on apply",
+			Reason: "kuma.io/env is managed by the control plane and is not applicable in this context; the supplied value 'universal' was removed",
 		}))
+		Expect(r.Sanitized).NotTo(HaveKey(mesh_proto.EnvTag))
 	})
 
 	It("accepts kuma.io/env=universal on Universal zone CP", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.EnvTag:              "universal",
 		}, ctx)
-		Expect(violations).To(BeEmpty())
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
-	It("rejects kuma.io/env=universal on K8s zone CP (mismatch — expects 'kubernetes')", func() {
+	It("warns on kuma.io/env=universal on K8s zone CP (mismatch — expects 'kubernetes')", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		ctx.IsK8s = true
 		ctx.Namespace = labels.NewNamespace("kuma-system", true)
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.EnvTag:              "universal",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.EnvTag,
-			Reason: "kuma.io/env should be 'kubernetes', got 'universal'",
+			Reason: "kuma.io/env is computed by the control plane (expected 'kubernetes'); the supplied value 'universal' was overridden",
 		}))
 	})
 
-	It("rejects mismatched display-name", func() {
+	It("warns on mismatched display-name and replaces with the expected value", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.DisplayName:         "wrong-name",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.DisplayName,
-			Reason: "kuma.io/display-name should be 'mtp-1', got 'wrong-name'",
+			Reason: "kuma.io/display-name is computed by the control plane (expected 'mtp-1'); the supplied value 'wrong-name' was overridden",
 		}))
+		Expect(r.Sanitized).To(HaveKeyWithValue(mesh_proto.DisplayName, "mtp-1"))
 	})
 
 	It("rejects arbitrary reserved keys not in the registry", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			"kuma.io/foo":                  "bar",
 			"k8s.kuma.io/baz":              "qux",
 		}, ctx)
 		var keys []string
-		for _, v := range violations {
+		for _, v := range r.Errors {
 			keys = append(keys, v.Key)
 		}
 		Expect(keys).To(ConsistOf("k8s.kuma.io/baz", "kuma.io/foo"))
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
 	It("allows non-reserved user labels", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			"example.com/team":             "platform",
 			"app":                          "billing",
 		}, ctx)
-		Expect(violations).To(BeEmpty())
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
 	It("allows OwnerUser flags with allowed values", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.EffectLabel:         "shadow",
 			mesh_proto.KDSSyncLabel:        "disabled",
 		}, ctx)
-		Expect(violations).To(BeEmpty())
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
 	It("rejects OwnerUser flag values outside the allowed set", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.EffectLabel:         "loud",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.EffectLabel,
 			Reason: "must be one of ['', 'shadow']",
 		}))
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
 	It("allows user-set kuma.io/workload on Universal Dataplane", func() {
 		ctx := dpDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			metadata.KumaWorkload:          "my-workload",
 		}, ctx)
-		Expect(violations).To(BeEmpty())
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
 	})
 
-	It("rejects kuma.io/workload on a policy (not a proxy)", func() {
+	It("warns on kuma.io/workload on a policy (not a proxy) and strips it", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			metadata.KumaWorkload:          "my-workload",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    metadata.KumaWorkload,
-			Reason: "is a reserved label managed by the control plane and cannot be set on apply",
+			Reason: "kuma.io/workload is managed by the control plane and is not applicable in this context; the supplied value 'my-workload' was removed",
 		}))
+		Expect(r.Sanitized).NotTo(HaveKey(metadata.KumaWorkload))
 	})
 
-	It("rejects system-only labels (managed-by) from user input", func() {
+	It("warns on system-only labels (managed-by) from user input and strips them", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		violations := labels.Validate(map[string]string{
+		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.ManagedByLabel:      "anything",
 		}, ctx)
-		Expect(violations).To(ContainElement(labels.Violation{
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
 			Key:    mesh_proto.ManagedByLabel,
-			Reason: "is a reserved label managed by the control plane and cannot be set on apply",
+			Reason: "kuma.io/managed-by is set by the control plane; the supplied value 'anything' was overridden",
 		}))
+		Expect(r.Sanitized).NotTo(HaveKey(mesh_proto.ManagedByLabel))
 	})
 
 	It("bypasses validation entirely when Privileged is true", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		ctx.Privileged = true
-		// This input would otherwise produce several violations.
-		violations := labels.Validate(map[string]string{
+		// This input would otherwise produce several findings.
+		input := map[string]string{
 			mesh_proto.ResourceOriginLabel: "global",
 			mesh_proto.MeshTag:             "other-mesh",
 			mesh_proto.DisplayName:         "wrong-name",
 			mesh_proto.ManagedByLabel:      "kds",
-		}, ctx)
-		Expect(violations).To(BeEmpty())
+		}
+		r := labels.Validate(input, ctx)
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
+		Expect(r.Sanitized).To(Equal(input))
 	})
 
 	It("honors DisableOriginLabelValidation for the origin spec", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		ctx.DisableOriginLabelValidation = true
-		violations := labels.Validate(map[string]string{}, ctx)
-		Expect(violations).To(BeEmpty())
+		r := labels.Validate(map[string]string{}, ctx)
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(BeEmpty())
 	})
 })

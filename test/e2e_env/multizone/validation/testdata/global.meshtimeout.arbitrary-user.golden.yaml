@@ -8,22 +8,22 @@ HTTP/1.1 400 Bad Request
  "invalid_parameters": [
   {
    "field": "labels[\"k8s.kuma.io/baz\"]",
-   "reason": "is a reserved label managed by the control plane and cannot be set on apply"
+   "reason": "unknown reserved label: kuma.io/* and k8s.kuma.io/* are managed by the control plane"
   },
   {
    "field": "labels[\"kuma.io/foo\"]",
-   "reason": "is a reserved label managed by the control plane and cannot be set on apply"
+   "reason": "unknown reserved label: kuma.io/* and k8s.kuma.io/* are managed by the control plane"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"k8s.kuma.io/baz\"]",
-   "message": "is a reserved label managed by the control plane and cannot be set on apply"
+   "message": "unknown reserved label: kuma.io/* and k8s.kuma.io/* are managed by the control plane"
   },
   {
    "field": "labels[\"kuma.io/foo\"]",
-   "message": "is a reserved label managed by the control plane and cannot be set on apply"
+   "message": "unknown reserved label: kuma.io/* and k8s.kuma.io/* are managed by the control plane"
   }
  ]
 }

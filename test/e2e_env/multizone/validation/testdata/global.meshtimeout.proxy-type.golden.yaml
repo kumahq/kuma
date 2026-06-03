@@ -1,21 +1,7 @@
-HTTP/1.1 400 Bad Request
+HTTP/1.1 201 Created
 
 {
- "type": "/std-errors",
- "status": 400,
- "title": "Could not process a resource",
- "detail": "Resource is not valid",
- "invalid_parameters": [
-  {
-   "field": "labels[\"kuma.io/proxy-type\"]",
-   "reason": "is a reserved label managed by the control plane and cannot be set on apply"
-  }
- ],
- "details": "Resource is not valid",
- "causes": [
-  {
-   "field": "labels[\"kuma.io/proxy-type\"]",
-   "message": "is a reserved label managed by the control plane and cannot be set on apply"
-  }
+ "warnings": [
+  "kuma.io/proxy-type is managed by the control plane and is not applicable in this context; the supplied value 'sidecar' was removed"
  ]
 }

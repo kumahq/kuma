@@ -1,21 +1,7 @@
-HTTP/1.1 400 Bad Request
+HTTP/1.1 201 Created
 
 {
- "type": "/std-errors",
- "status": 400,
- "title": "Could not process a resource",
- "detail": "Resource is not valid",
- "invalid_parameters": [
-  {
-   "field": "labels[\"kuma.io/mesh\"]",
-   "reason": "kuma.io/mesh should be 'multizone-label-validation', got 'nonexistent-mesh'"
-  }
- ],
- "details": "Resource is not valid",
- "causes": [
-  {
-   "field": "labels[\"kuma.io/mesh\"]",
-   "message": "kuma.io/mesh should be 'multizone-label-validation', got 'nonexistent-mesh'"
-  }
+ "warnings": [
+  "kuma.io/mesh is computed by the control plane (expected 'multizone-label-validation'); the supplied value 'nonexistent-mesh' was overridden"
  ]
 }

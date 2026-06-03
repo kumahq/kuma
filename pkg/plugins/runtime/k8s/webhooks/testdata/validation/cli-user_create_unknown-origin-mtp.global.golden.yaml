@@ -1,9 +1,17 @@
 Patches: null
-allowed: false
+allowed: true
 status:
-  code: 403
-  message: Operation not allowed. kuma.io/origin should be 'global', got 'unknownvalue'
+  code: 200
   metadata: {}
-  reason: Forbidden
-  status: Failure
 uid: "12345"
+warnings:
+- kuma.io/origin is computed by the control plane (expected 'global'); the supplied
+  value 'unknownvalue' was overridden
+- kuma.io/policy-role is computed by the control plane (expected 'system'); the supplied
+  value 'workload-owner' was overridden
+- '''from'' field is deprecated and will be removed in 3.0, use ''rules'' with MeshIdentity
+  (spiffeId) instead'
+- MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with
+  'kuma.io/service' instead
+- MeshService value for 'targetRef.kind' is deprecated, use Dataplane with labels
+  instead

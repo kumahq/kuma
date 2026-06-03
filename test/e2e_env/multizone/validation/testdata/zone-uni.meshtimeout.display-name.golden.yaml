@@ -1,21 +1,7 @@
-HTTP/1.1 400 Bad Request
+HTTP/1.1 201 Created
 
 {
- "type": "/std-errors",
- "status": 400,
- "title": "Could not process a resource",
- "detail": "Resource is not valid",
- "invalid_parameters": [
-  {
-   "field": "labels[\"kuma.io/display-name\"]",
-   "reason": "kuma.io/display-name should be 'mt-display-name', got 'my-custom-name'"
-  }
- ],
- "details": "Resource is not valid",
- "causes": [
-  {
-   "field": "labels[\"kuma.io/display-name\"]",
-   "message": "kuma.io/display-name should be 'mt-display-name', got 'my-custom-name'"
-  }
+ "warnings": [
+  "kuma.io/display-name is computed by the control plane (expected 'mt-display-name'); the supplied value 'my-custom-name' was overridden"
  ]
 }

@@ -57,15 +57,16 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, req.Namespace, req.Operation); !resp.Allowed {
-		return resp
+	decision := h.IsOperationAllowed(req.UserInfo, coreRes, req.Namespace, req.Operation)
+	if !decision.Response.Allowed {
+		return decision.Response
 	}
 
 	switch req.Operation {
 	case v1.Delete:
 		return admission.Allowed("")
 	default:
-		var warnings []string
+		warnings := append([]string{}, decision.Warnings...)
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
