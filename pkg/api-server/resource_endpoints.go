@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"slices"
 	"sort"
@@ -688,9 +689,7 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 				delete(labels, k)
 			}
 		}
-		for k, v := range labelResult.Sanitized {
-			labels[k] = v
-		}
+		maps.Copy(labels, labelResult.Sanitized)
 	}
 	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 
