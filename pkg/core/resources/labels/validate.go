@@ -48,8 +48,8 @@ type ValidationContext struct {
 
 // Result is what Validate returns.
 //
-//   - Errors must reject the request (format issues, unknown reserved keys,
-//     OwnerUser AllowedValues mismatch).
+//   - Errors must reject the request (format issues, OwnerUser AllowedValues
+//     mismatch, OwnerControlPlane StrictMatch mismatch).
 //   - Warnings should be surfaced to the caller without rejecting. They cover
 //     attempts to set CP-managed labels: Compute will override (or drop) the
 //     value and the user should know what happened.
@@ -97,9 +97,9 @@ func notAllowedValueReason(key string, allowed []string, got string) string {
 //     when StrictMatch is set on the spec, a mismatch against an applicable
 //     Expected becomes an error (kuma.io/origin).
 //
-// Reserved keys (kuma.io/* or k8s.kuma.io/*) absent from the registry are
-// rejected as errors — these are typos or removed labels and the caller
-// should fix them.
+// Reserved keys (kuma.io/* or k8s.kuma.io/*) that are not in the registry are
+// left alone — Compute will not touch them either, so they pass through as
+// opaque user-set values.
 //
 // When ctx.Privileged is true the function returns an empty Result — KDS-synced
 // and CP-internal flows skip all validation.
@@ -123,16 +123,6 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 		if w != nil {
 			warns = append(warns, *w)
 		}
-	}
-
-	for key := range labels {
-		if _, known := registry[key]; known {
-			continue
-		}
-		if !mesh_proto.IsReservedLabelKey(key) {
-			continue
-		}
-		errs = append(errs, Violation{Key: key, Reason: "unknown reserved label: kuma.io/* and k8s.kuma.io/* are managed by the control plane"})
 	}
 
 	sort.Slice(errs, func(i, j int) bool { return errs[i].Key < errs[j].Key })

@@ -159,7 +159,7 @@ var _ = Describe("Validate", func() {
 		}))
 	})
 
-	It("rejects arbitrary reserved keys not in the registry", func() {
+	It("allows arbitrary reserved-prefix keys not in the registry", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		r := labels.Validate(map[string]string{
@@ -167,11 +167,7 @@ var _ = Describe("Validate", func() {
 			"kuma.io/foo":                  "bar",
 			"k8s.kuma.io/baz":              "qux",
 		}, ctx)
-		var keys []string
-		for _, v := range r.Errors {
-			keys = append(keys, v.Key)
-		}
-		Expect(keys).To(ConsistOf("k8s.kuma.io/baz", "kuma.io/foo"))
+		Expect(r.Errors).To(BeEmpty())
 		Expect(r.Warnings).To(BeEmpty())
 	})
 
