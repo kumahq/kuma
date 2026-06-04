@@ -46,6 +46,18 @@ type Options struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
+	// Privileged marks the caller as a trusted CP-internal flow (KDS sync,
+	// GC, storage-version migrator, K8s controllers writing under the CP
+	// service account). It changes Compute's behavior in two ways:
+	//
+	//   - If the resource is not locally originated (e.g. kuma.io/origin
+	//     reports a different CP), Compute returns the labels unchanged.
+	//     KDS-synced resources are authoritative from the source CP and
+	//     must not be rewritten.
+	//   - OwnerSystem labels the caller supplied are preserved instead of
+	//     stripped. K8s controllers legitimately set keys like
+	//     kuma.io/managed-by; user input paths still drop them.
+	Privileged bool
 }
 
 type Option func(*Options)
@@ -94,9 +106,19 @@ func WithMode(mode config_core.CpMode) Option {
 	}
 }
 
+func WithPrivileged(privileged bool) Option {
+	return func(opts *Options) {
+		opts.Privileged = privileged
+	}
+}
+
 // Compute returns the label map the CP would store for the given resource.
 //
-// It walks the LabelSpec registry and, for each non-user-owned key:
+// If Options.Privileged is set and the resource is not locally originated
+// (the KDS-sync case — labels are authoritative from another CP), Compute
+// returns the labels untouched.
+//
+// Otherwise it walks the LabelSpec registry and, for each non-user-owned key:
 //
 //   - OwnerControlPlane, Expected applies=true, !OpenValue: force-set the
 //     expected value, overriding whatever the user supplied.
@@ -104,10 +126,9 @@ func WithMode(mode config_core.CpMode) Option {
 //     value as-is. The CP doesn't dictate the value, just where it lives.
 //   - OwnerControlPlane, Expected applies=false: delete the key. The label
 //     isn't applicable in this context; a user value would be stale.
-//   - OwnerSystem: delete the key. These labels are set by other CP-internal
-//     code paths (controllers, lifecycle); on apply they must not be
-//     user-supplied. Compute then writes the right value below for the
-//     labels it is responsible for.
+//   - OwnerSystem: delete the key on user paths; preserve on Privileged
+//     paths. K8s controllers, the CP itself, etc. legitimately set keys
+//     like kuma.io/managed-by; user input would be impersonation.
 //
 // OwnerUser keys are left untouched.
 //
@@ -126,6 +147,14 @@ func Compute(
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
+	}
+
+	// Privileged callers writing a non-locally-originated resource (the KDS
+	// sync case) bring labels that are authoritative from the source CP —
+	// rewriting them here would clobber kuma.io/origin, kuma.io/zone, etc.
+	// Pass them through unchanged.
+	if o.Privileged && !core_model.IsLocallyOriginated(o.Mode, labels) {
+		return labels, nil
 	}
 
 	resourceMesh := mesh
@@ -149,7 +178,12 @@ func Compute(
 		case OwnerUser:
 			continue
 		case OwnerSystem:
-			delete(labels, ls.Key)
+			// Privileged callers (K8s controllers, etc.) legitimately set
+			// OwnerSystem labels like kuma.io/managed-by. Drop them only on
+			// user paths, where any value is impersonation.
+			if !o.Privileged {
+				delete(labels, ls.Key)
+			}
 		case OwnerControlPlane:
 			value, applies := "", true
 			if ls.Expected != nil {

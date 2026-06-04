@@ -69,43 +69,42 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return decision.Response
 	}
 
-	// Privileged requests (KDS sync, GC, storage-version migrator) carry labels
-	// that are authoritative from the source CP — recomputing would clobber
-	// kuma.io/origin, kuma.io/zone, etc. Skip Compute but still split out the
-	// annotation-stored labels (display-name, workload, service-account) the
-	// K8s adapter synthesized into the labels map.
+	// Compute is the single mutator for labels on K8s. It uses the Privileged
+	// signal to distinguish a KDS sync / GC / migrator write (non-locally
+	// originated — labels are authoritative from the source CP) from a local
+	// K8s controller write (locally originated — needs the registry walk to
+	// fill in kuma.io/origin, kuma.io/namespace, kuma.io/display-name, ...
+	// while preserving system labels like kuma.io/managed-by).
 	coreLabels := resource.GetMeta().GetLabels()
-	if !decision.Privileged {
-		// The K8s adapter encodes the metadata.name into NameExtensions; fall
-		// back to stripping the namespace suffix from the kuma name if the
-		// extension is missing.
-		k8sName := resource.GetMeta().GetName()
-		if name, ok := resource.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && name != "" {
-			k8sName = name
-		}
-		// On K8s the kuma.io/mesh label is the canonical mesh for new
-		// resources; the top-level mesh field on the K8s object is often
-		// empty on apply.
-		mesh := resource.GetMeta().GetMesh()
-		if labelMesh, ok := coreLabels[metadata.KumaMeshLabel]; ok && labelMesh != "" {
-			mesh = labelMesh
-		}
-		computed, err := resource_labels.Compute(
-			resource.Descriptor(),
-			resource.GetSpec(),
-			coreLabels,
-			mesh,
-			k8sName,
-			resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
-			resource_labels.WithMode(h.Mode),
-			resource_labels.WithK8s(true),
-			resource_labels.WithZone(h.ZoneName),
-		)
-		if err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
-		}
-		coreLabels = computed
+	// The K8s adapter encodes the metadata.name into NameExtensions; fall
+	// back to stripping the namespace suffix from the kuma name if the
+	// extension is missing.
+	k8sName := resource.GetMeta().GetName()
+	if name, ok := resource.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && name != "" {
+		k8sName = name
 	}
+	// On K8s the kuma.io/mesh label is the canonical mesh for new resources;
+	// the top-level mesh field on the K8s object is often empty on apply.
+	mesh := resource.GetMeta().GetMesh()
+	if labelMesh, ok := coreLabels[metadata.KumaMeshLabel]; ok && labelMesh != "" {
+		mesh = labelMesh
+	}
+	computed, err := resource_labels.Compute(
+		resource.Descriptor(),
+		resource.GetSpec(),
+		coreLabels,
+		mesh,
+		k8sName,
+		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
+		resource_labels.WithMode(h.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(h.ZoneName),
+		resource_labels.WithPrivileged(decision.Privileged),
+	)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+	coreLabels = computed
 	labels, annotations := k8s.SplitLabelsAndAnnotations(coreLabels, obj.GetAnnotations())
 
 	obj.SetLabels(labels)
