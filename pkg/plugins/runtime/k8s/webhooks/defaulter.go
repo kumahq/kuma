@@ -95,11 +95,11 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 			resource.GetSpec(),
 			coreLabels,
 			mesh,
+			k8sName,
 			resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
 			resource_labels.WithMode(h.Mode),
 			resource_labels.WithK8s(true),
 			resource_labels.WithZone(h.ZoneName),
-			resource_labels.WithDisplayName(k8sName),
 		)
 		if err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)

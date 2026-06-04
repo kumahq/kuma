@@ -97,9 +97,6 @@ func init() {
 		Key:   mesh_proto.DisplayName,
 		Owner: OwnerControlPlane,
 		Expected: func(ctx ValidationContext) (string, bool) {
-			if ctx.ResourceName == "" {
-				return "", false
-			}
 			return ctx.ResourceName, true
 		},
 	})

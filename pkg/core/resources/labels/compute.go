@@ -46,7 +46,6 @@ type Options struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
-	DisplayName    string
 }
 
 type Option func(*Options)
@@ -95,15 +94,6 @@ func WithMode(mode config_core.CpMode) Option {
 	}
 }
 
-// WithDisplayName supplies the resource name kuma.io/display-name should
-// reflect. On K8s pass the metadata.name (without the namespace suffix); on
-// the api-server pass the resource name from the URL.
-func WithDisplayName(name string) Option {
-	return func(opts *Options) {
-		opts.DisplayName = name
-	}
-}
-
 // Compute returns the label map the CP would store for the given resource.
 //
 // It walks the LabelSpec registry and, for each non-user-owned key:
@@ -129,6 +119,7 @@ func Compute(
 	spec core_model.ResourceSpec,
 	existingLabels map[string]string,
 	mesh string,
+	displayName string,
 	opts ...Option,
 ) (map[string]string, error) {
 	o := NewOptions(opts...)
@@ -150,7 +141,7 @@ func Compute(
 		Descriptor:   rd,
 		Spec:         spec,
 		ResourceMesh: resourceMesh,
-		ResourceName: o.DisplayName,
+		ResourceName: displayName,
 	}
 
 	for _, ls := range registry {

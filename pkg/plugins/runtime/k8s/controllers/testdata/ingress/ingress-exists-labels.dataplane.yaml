@@ -2,8 +2,14 @@ metadata:
   labels:
     app: kuma-ingress
     k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: kuma-ingress
+    kuma.io/env: kubernetes
+    kuma.io/origin: zone
     kuma.io/proxy-type: zoneingress
+    kuma.io/zone: zone-1
     test: new
+  name: kuma-ingress
+  namespace: kuma-system
 spec:
   availableServices:
   - instances: 3

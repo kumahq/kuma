@@ -3,9 +3,15 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: example
+    kuma.io/env: kubernetes
     kuma.io/mesh: default
+    kuma.io/origin: zone
     kuma.io/proxy-type: sidecar
+    kuma.io/zone: zone-1
     version: "0.1"
+  name: example
+  namespace: demo
 spec:
   networking:
     address: fd00::1

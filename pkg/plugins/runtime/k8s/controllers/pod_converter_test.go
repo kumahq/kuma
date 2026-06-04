@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
@@ -119,8 +120,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			// existing dataplane
-			existingDataplane := &mesh_k8s.Dataplane{}
+			// existing dataplane — mirror the controller, which seeds
+			// Namespace/Name from the Pod before calling the converter.
+			existingDataplane := &mesh_k8s.Dataplane{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: pod.Namespace,
+					Name:      pod.Name,
+				},
+			}
 			if given.existingDataplane != "" {
 				bytes, err := os.ReadFile(filepath.Join("testdata", given.existingDataplane))
 				Expect(err).ToNot(HaveOccurred())
@@ -140,6 +147,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 					InboundTagsDisabled: given.inboundTagsDisabled,
 				},
 				Zone:              "zone-1",
+				Mode:              config_core.Zone,
 				ResourceConverter: k8s.NewSimpleConverter(),
 				WorkloadLabels:    given.workloadLabels,
 			}
@@ -451,13 +459,19 @@ var _ = Describe("PodToDataplane(..)", func() {
 				NodeGetter:        nodeGetter,
 				ResourceConverter: k8s.NewSimpleConverter(),
 				Zone:              "zone-1",
+				Mode:              config_core.Zone,
 				InboundConverter: InboundConverter{
 					NodeGetter: nodeGetter,
 				},
 			}
 
 			// when
-			ingress := &mesh_k8s.ZoneIngress{}
+			ingress := &mesh_k8s.ZoneIngress{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: pod.Namespace,
+					Name:      pod.Name,
+				},
+			}
 			if given.existingDataplane != "" {
 				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.existingDataplane))
 				Expect(err).ToNot(HaveOccurred())
@@ -556,12 +570,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 				NodeGetter:        nodeGetter,
 				ResourceConverter: k8s.NewSimpleConverter(),
 				Zone:              "zone-1",
+				Mode:              config_core.Zone,
 				InboundConverter: InboundConverter{
 					NodeGetter: nodeGetter,
 				},
 			}
 
-			egress := &mesh_k8s.ZoneEgress{}
+			egress := &mesh_k8s.ZoneEgress{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: pod.Namespace,
+					Name:      pod.Name,
+				},
+			}
 			if given.existingDataplane != "" {
 				bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.existingDataplane))
 				Expect(err).ToNot(HaveOccurred())

@@ -181,6 +181,7 @@ var _ = Describe("Compute", func() {
 				given.r.GetSpec(),
 				given.r.GetMeta().GetLabels(),
 				given.r.GetMeta().GetMesh(),
+				given.r.GetMeta().GetName(),
 				resource_labels.WithNamespace(resource_labels.GetNamespace(given.r.GetMeta(), "kuma-system")),
 				resource_labels.WithMode(given.mode),
 				resource_labels.WithK8s(given.isK8s),
@@ -201,10 +202,12 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/env":    "kubernetes",
-				"kuma.io/mesh":   "mesh-1",
-				"kuma.io/origin": "zone",
-				"kuma.io/zone":   "zone-1",
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/policy-role":  "system",
+				"kuma.io/zone":         "zone-1",
 			},
 		}),
 		Entry("source/destination policy on zone-k8s", testCase{
@@ -216,7 +219,8 @@ var _ = Describe("Compute", func() {
 				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "sample-timeout"},
 			},
 			expectedLabels: map[string]string{
-				"kuma.io/mesh": "mesh-1",
+				"kuma.io/display-name": "sample-timeout",
+				"kuma.io/mesh":         "mesh-1",
 			},
 		}),
 		Entry("mesh resource on non-federated zone", testCase{
@@ -227,7 +231,9 @@ var _ = Describe("Compute", func() {
 				Spec: samples.Mesh1,
 				Meta: &test_model.ResourceMeta{Mesh: core_model.NoMesh, Name: "mesh-1"},
 			},
-			expectedLabels: map[string]string{},
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "mesh-1",
+			},
 		}),
 		Entry("plugin originated policy on zone-k8s on custom namespace", testCase{
 			mode:      core.Zone,
@@ -244,6 +250,7 @@ var _ = Describe("Compute", func() {
 				Build(),
 			expectedLabels: map[string]string{
 				"k8s.kuma.io/namespace": "custom-ns",
+				"kuma.io/display-name":  "idle-timeout",
 				"kuma.io/policy-role":   "consumer",
 				"kuma.io/mesh":          "mesh-1",
 				"kuma.io/origin":        "zone",
@@ -260,11 +267,12 @@ var _ = Describe("Compute", func() {
 				WithBuiltInGateway("test-gateway").
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "gateway",
+				"kuma.io/display-name": "dp-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/proxy-type":   "gateway",
 			},
 		}),
 		Entry("dataplane proxy", testCase{
@@ -277,11 +285,12 @@ var _ = Describe("Compute", func() {
 				WithMesh("mesh-1").
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "sidecar",
+				"kuma.io/display-name": "backend-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/proxy-type":   "sidecar",
 			},
 		}),
 		Entry("zone egress proxy", testCase{
@@ -292,10 +301,11 @@ var _ = Describe("Compute", func() {
 				WithPort(1001).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "zoneegress",
+				"kuma.io/display-name": "zoneegress-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/proxy-type":   "zoneegress",
 			},
 		}),
 		Entry("dataplane with ZoneIngress listener", testCase{
@@ -315,6 +325,7 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
+				"kuma.io/display-name":         "dp-1",
 				"kuma.io/mesh":                 "mesh-1",
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
@@ -340,6 +351,7 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
+				"kuma.io/display-name":        "dp-1",
 				"kuma.io/mesh":                "mesh-1",
 				"kuma.io/origin":              "zone",
 				"kuma.io/zone":                "zone-1",
@@ -370,6 +382,7 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
+				"kuma.io/display-name":         "dp-1",
 				"kuma.io/mesh":                 "mesh-1",
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
@@ -392,11 +405,12 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "sidecar",
+				"kuma.io/display-name": "dp-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/proxy-type":   "sidecar",
 			},
 		}),
 	)

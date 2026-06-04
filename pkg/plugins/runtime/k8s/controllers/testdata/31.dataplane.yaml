@@ -4,11 +4,17 @@ metadata:
     app: redis
     k8s.kuma.io/namespace: demo
     k8s.kuma.io/service-account: redis-sa
+    kuma.io/display-name: redis-example
+    kuma.io/env: kubernetes
     kuma.io/mesh: default
+    kuma.io/origin: zone
     kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
     kuma.io/workload: redis
+    kuma.io/zone: zone-1
     version: "6.0"
+  name: redis-example
+  namespace: demo
 spec:
   networking:
     address: 192.168.0.10

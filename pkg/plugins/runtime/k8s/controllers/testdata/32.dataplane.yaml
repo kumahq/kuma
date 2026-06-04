@@ -4,11 +4,17 @@ metadata:
     component: database
     k8s.kuma.io/namespace: demo
     k8s.kuma.io/service-account: mysql-service-account
+    kuma.io/display-name: mysql-example
+    kuma.io/env: kubernetes
     kuma.io/mesh: default
+    kuma.io/origin: zone
     kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
     kuma.io/workload: mysql-service-account
+    kuma.io/zone: zone-1
     version: "5.7"
+  name: mysql-example
+  namespace: demo
 spec:
   networking:
     address: 192.168.0.20
