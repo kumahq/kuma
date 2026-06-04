@@ -26,6 +26,13 @@ type Violation struct {
 	Format bool   `json:"-"`
 }
 
+func (v Violation) String() string {
+	if strings.Contains(v.Reason, v.Key) {
+		return v.Reason
+	}
+	return "'" + v.Key + "' " + v.Reason
+}
+
 // ValidationContext carries the per-call information validators consult.
 // It is the only piece of state passed into Validate; all per-label rules
 // derive their decision from these fields.

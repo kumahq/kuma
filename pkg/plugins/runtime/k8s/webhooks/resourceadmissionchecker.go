@@ -83,7 +83,7 @@ func (c *ResourceAdmissionChecker) checkResource(r core_model.Resource, ns strin
 		return c.validateLabels(r, ns, op)
 	}
 	if violations := resource_labels.ValidateOriginFormat(r.GetMeta().GetLabels()); len(violations) > 0 {
-		return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + formatLabelViolation(violations[0]))}
+		return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + violations[0].String())}
 	}
 	return AdmissionDecision{Response: admission.Allowed("")}
 }
@@ -130,7 +130,7 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	// stay as errors so we don't silently delete from the wrong CP.
 	if op == v1.Delete {
 		if violations := resource_labels.ValidateOrigin(labels, ctx); len(violations) > 0 {
-			return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + formatLabelViolation(violations[0]))}
+			return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + violations[0].String())}
 		}
 		return AdmissionDecision{Response: admission.Allowed("")}
 	}
@@ -143,28 +143,16 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		if result.Errors[0].Format {
 			return AdmissionDecision{Response: admission.Allowed("")}
 		}
-		return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + formatLabelViolation(result.Errors[0]))}
+		return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + result.Errors[0].String())}
 	}
 	warnings := make([]string, 0, len(result.Warnings))
 	for _, w := range result.Warnings {
-		warnings = append(warnings, formatLabelViolation(w))
+		warnings = append(warnings, w.String())
 	}
 	return AdmissionDecision{
 		Response: admission.Allowed("").WithWarnings(warnings...),
 		Warnings: warnings,
 	}
-}
-
-// formatLabelViolation renders a Violation into the inline "Operation not
-// allowed. <msg>" form used by the K8s admission response. Violation.Reason
-// usually already mentions the label key (e.g. "kuma.io/zone should be ...");
-// for reasons that don't (the generic "is a reserved label" case) we prefix
-// the quoted key so the message remains self-contained.
-func formatLabelViolation(v resource_labels.Violation) string {
-	if strings.Contains(v.Reason, v.Key) {
-		return v.Reason
-	}
-	return "'" + v.Key + "' " + v.Reason
 }
 
 func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode) string {

@@ -685,16 +685,9 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 
 	warnings := make([]string, 0, len(labelResult.Warnings))
 	for _, w := range labelResult.Warnings {
-		warnings = append(warnings, formatLabelWarning(w))
+		warnings = append(warnings, w.String())
 	}
 	return warnings, err.OrNil()
-}
-
-func formatLabelWarning(v resource_labels.Violation) string {
-	if strings.Contains(v.Reason, v.Key) {
-		return v.Reason
-	}
-	return "'" + v.Key + "' " + v.Reason
 }
 
 func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resource_labels.ValidationContext {
