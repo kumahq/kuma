@@ -128,7 +128,7 @@ func WithInitScript(initScript string) DeployOptionsFunc {
 	}
 }
 
-func WithoutPreLoadImage() DeployOptionsFunc {
+func WithoutPreloadImages() DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.preloadImages = false
 	}
