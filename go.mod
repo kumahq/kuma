@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma/v2
 
-go 1.26.3
+go 1.26.4
 
 require (
 	cirello.io/pglock v1.16.1
@@ -35,7 +35,7 @@ require (
 	github.com/gruntwork-io/terratest v1.0.0
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/invopop/jsonschema v0.14.0
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/josephburnett/jd/v2 v2.5.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/miekg/dns v1.1.72
@@ -47,14 +47,14 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.68.0
+	github.com/prometheus/common v0.68.1
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/sethvargo/go-retry v0.3.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.13.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/spiffe/go-spiffe/v2 v2.6.0
+	github.com/spiffe/go-spiffe/v2 v2.7.0
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
 	github.com/vishvananda/netlink v1.3.1
@@ -89,7 +89,7 @@ require (
 	k8s.io/apimachinery v0.36.1
 	k8s.io/client-go v0.36.1
 	k8s.io/klog/v2 v2.140.0
-	k8s.io/kube-openapi v0.0.0-20260520065146-aa012df4f4af
+	k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25
 	k8s.io/kubectl v0.36.1
 	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2
 	sigs.k8s.io/controller-runtime v0.24.1
@@ -274,7 +274,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
-	golang.org/x/exp v0.0.0-20260529124908-c761662dc8c9
+	golang.org/x/exp v0.0.0-20260603202125-055de637280b
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
