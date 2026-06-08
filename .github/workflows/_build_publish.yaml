@@ -194,7 +194,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@7040193cacd1787991b11b6b2ddb0a9719cbb533 # v5.0.3
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@a92df3beb1e69e27d86be56346488f15fecaf0de # v5.0.4
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
