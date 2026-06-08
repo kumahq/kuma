@@ -161,6 +161,14 @@ spec:
 				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
 			}
 
+			// Scale down ingress before upgrading so the pod is never running against a
+			// mixed-version CP. Without this, the ingress can connect to an old CP replica
+			// first (enable_reuse_port=false) and then receive enable_reuse_port=true from
+			// the upgraded CP, which Envoy rejects indefinitely. Helm restores the
+			// deployment to 1 replica as part of the upgrade.
+			By("scale down zone ingress before upgrade")
+			Expect(zoneK8s.(*K8sCluster).StopZoneIngress()).To(Succeed())
+
 			By("upgrade Zone")
 			// when
 			err = zoneK8s.(*K8sCluster).UpgradeKuma(core.Zone,
