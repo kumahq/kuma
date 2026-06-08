@@ -292,6 +292,82 @@ filters:
                     name: default
     statPrefix: rules_from_merged.`,
 		}),
+		Entry("more specific deny prefixes precede broader allow prefixes across merged policies", testCase{
+			stats: "deny_precedes_allow",
+			inboundRules: []*inbound.Rule{
+				{
+					Conf: v1alpha1.RuleConf{
+						Allow: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://default.mesh.local",
+								},
+							},
+						},
+					},
+					Origin: mtpOrigin("mtp-1"),
+				},
+				{
+					Conf: v1alpha1.RuleConf{
+						Deny: &[]common_api.Match{
+							{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.PrefixMatchType,
+									Value: "spiffe://default.mesh.local/ns/kuma-demo",
+								},
+							},
+						},
+					},
+					Origin: mtpOrigin("mtp-2"),
+				},
+			},
+			expected: `
+filters:
+- name: envoy.filters.network.rbac
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+    matcher:
+        matcherList:
+            matchers:
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            action: DENY
+                            name: kri_mtp_default_zone-1_ns-1_mtp-2_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            prefix: spiffe://default.mesh.local/ns/kuma-demo
+                - onMatch:
+                    action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                            '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                            name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                  predicate:
+                    singlePredicate:
+                        input:
+                            name: envoy.matching.inputs.uri_san
+                            typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                        valueMatch:
+                            prefix: spiffe://default.mesh.local
+        onNoMatch:
+            action:
+                name: envoy.filters.rbac.action
+                typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: default
+    statPrefix: deny_precedes_allow.`,
+		}),
 		Entry("shadow deny rule", testCase{
 			stats: "shadow_deny",
 			inboundRules: []*inbound.Rule{
