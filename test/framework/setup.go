@@ -428,6 +428,29 @@ spec:
 	return YamlUniversal(mtp)
 }
 
+// MeshTrafficPermissionAllowAllUniversalWorkloadIdentity installs an allow-all
+// MeshTrafficPermission using the 'rules' field. Under MeshIdentity the legacy
+// 'from' form is ignored, so meshes with MeshIdentity must use 'rules' with a
+// SPIFFE ID prefix. The prefix must carry the full trust domain (a bare
+// "spiffe://" prefix does not match); the trust domain is configured by the
+// MeshIdentity, so it's passed in rather than derived here.
+func MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(name, trustDomain string) InstallFunc {
+	mtp := fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-all-%[1]s
+mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[2]s"`, name, trustDomain)
+	return YamlUniversal(mtp)
+}
+
 func YamlUniversal(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "install yaml resource", DefaultRetries, DefaultTimeout,
