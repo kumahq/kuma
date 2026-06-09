@@ -68,6 +68,21 @@ kind/cluster/wait:
 		fi; \
 	done
 
+KIND_CLUSTER_START_RETRIES ?= 3
+
+.PHONY: kind/cluster/start/with-retry
+kind/cluster/start/with-retry:
+	@attempts=0; \
+	while [ $$attempts -lt $(KIND_CLUSTER_START_RETRIES) ]; do \
+		attempts=$$((attempts + 1)); \
+		echo "==> kind cluster $(CLUSTER_NAME) start attempt $$attempts/$(KIND_CLUSTER_START_RETRIES)"; \
+		$(MAKE) kind/cluster/start && exit 0; \
+		echo "==> Attempt $$attempts failed, tearing down $(CLUSTER_NAME)..."; \
+		$(MAKE) kind/cluster/stop || true; \
+	done; \
+	echo "==> All $(KIND_CLUSTER_START_RETRIES) attempts to start $(CLUSTER_NAME) failed"; \
+	exit 1
+
 .PHONY: kind/cluster/stop
 kind/cluster/stop: kind/cleanup-docker-credentials
 	@$(KIND) delete cluster --kubeconfig $(KIND_CLUSTER_KUBECONFIG) --name $(CLUSTER_NAME)
