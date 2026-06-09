@@ -6,6 +6,6 @@ params:
   envoyAdminUnixSocket: true
   readinessPort: 9902
   xdsConnectTimeout: 1s
-  xdsGrpcMaxReceiveMessageBytes: 16777216
+  xdsGrpcMaxReceiveMessageBytes: 4194304
   xdsHost: ""
   xdsPort: 0

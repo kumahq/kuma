@@ -33,7 +33,7 @@ dynamicResources:
             grpc.keepalive_timeout_ms:
               intValue: "30000"
             grpc.max_receive_message_length:
-              intValue: "16777216"
+              intValue: "4194304"
         channelCredentials:
           sslCredentials:
             rootCerts:
@@ -71,7 +71,7 @@ hdsConfig:
           grpc.keepalive_timeout_ms:
             intValue: "30000"
           grpc.max_receive_message_length:
-            intValue: "16777216"
+            intValue: "4194304"
       channelCredentials:
         sslCredentials:
           rootCerts:
