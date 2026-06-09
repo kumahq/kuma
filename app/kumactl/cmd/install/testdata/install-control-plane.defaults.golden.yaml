@@ -4093,11 +4093,6 @@ spec:
                                     where KDS adds a hash suffix to metadata.name. Mutually exclusive with
                                     Name. When multiple resources match, the oldest by creation time wins.
                                   type: object
-                                name:
-                                  description: |-
-                                    Name of the referenced resource (metadata.name). Use for same-cluster
-                                    references. Mutually exclusive with Labels.
-                                  type: string
                               required:
                               - kind
                               type: object
@@ -8196,11 +8191,6 @@ spec:
                                     where KDS adds a hash suffix to metadata.name. Mutually exclusive with
                                     Name. When multiple resources match, the oldest by creation time wins.
                                   type: object
-                                name:
-                                  description: |-
-                                    Name of the referenced resource (metadata.name). Use for same-cluster
-                                    references. Mutually exclusive with Labels.
-                                  type: string
                               required:
                               - kind
                               type: object
@@ -10290,11 +10280,6 @@ spec:
                                           where KDS adds a hash suffix to metadata.name. Mutually exclusive with
                                           Name. When multiple resources match, the oldest by creation time wins.
                                         type: object
-                                      name:
-                                        description: |-
-                                          Name of the referenced resource (metadata.name). Use for same-cluster
-                                          references. Mutually exclusive with Labels.
-                                        type: string
                                     required:
                                     - kind
                                     type: object
@@ -10551,11 +10536,6 @@ spec:
                                           where KDS adds a hash suffix to metadata.name. Mutually exclusive with
                                           Name. When multiple resources match, the oldest by creation time wins.
                                         type: object
-                                      name:
-                                        description: |-
-                                          Name of the referenced resource (metadata.name). Use for same-cluster
-                                          references. Mutually exclusive with Labels.
-                                        type: string
                                     required:
                                     - kind
                                     type: object
@@ -10861,11 +10841,6 @@ spec:
                                           where KDS adds a hash suffix to metadata.name. Mutually exclusive with
                                           Name. When multiple resources match, the oldest by creation time wins.
                                         type: object
-                                      name:
-                                        description: |-
-                                          Name of the referenced resource (metadata.name). Use for same-cluster
-                                          references. Mutually exclusive with Labels.
-                                        type: string
                                     required:
                                     - kind
                                     type: object
