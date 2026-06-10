@@ -88,7 +88,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		).To(Succeed())
 	})
 
-	AfterAll(func() {
+	E2EAfterAll(func() {
 		ControlPlaneAssertions(global)
 		ControlPlaneAssertions(zone1)
 		ControlPlaneAssertions(zone4)
