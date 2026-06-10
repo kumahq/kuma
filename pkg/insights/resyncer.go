@@ -26,7 +26,6 @@ import (
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
-// TODO:
 var log = core.Log.WithName("mesh-insight-resyncer")
 
 const (
