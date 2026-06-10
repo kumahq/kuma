@@ -219,18 +219,10 @@ func buildBackendIndex(motbs []*motb_api.MeshOpenTelemetryBackendResource) map[s
 	return indexByMesh
 }
 
-// resolveRef resolves a BackendResourceRef to a MOTB name within a mesh.
-// Handles both Name-based (direct lookup) and Labels-based (label matching,
-// oldest wins) references.
+// resolveRef resolves a BackendResourceRef to a MOTB name within a mesh via label matching (oldest wins).
 func resolveRef(indexByMesh map[string]*backendIndex, mesh string, ref *common_api.BackendResourceRef) (string, bool) {
 	idx := indexByMesh[mesh]
 	if idx == nil {
-		return "", false
-	}
-	if ref.Name != "" {
-		if _, exists := idx.byName[ref.Name]; exists {
-			return ref.Name, true
-		}
 		return "", false
 	}
 	if len(ref.Labels) > 0 {
@@ -255,13 +247,8 @@ func matchByLabels(resources []motbEntry, selector map[string]string) (string, b
 	return "", false
 }
 
-// backendRefKey returns a string key for a BackendResourceRef for use in
-// deduplication maps. Name-based refs use the name directly, labels-based
-// refs use a sorted label representation.
+// backendRefKey returns a string key for a BackendResourceRef for use in deduplication maps.
 func backendRefKey(ref *common_api.BackendResourceRef) string {
-	if ref.Name != "" {
-		return ref.Name
-	}
 	parts := make([]string, 0, len(ref.Labels))
 	for _, k := range util_maps.SortedKeys(ref.Labels) {
 		parts = append(parts, k+"="+ref.Labels[k])

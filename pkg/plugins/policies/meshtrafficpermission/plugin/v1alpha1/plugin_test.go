@@ -136,6 +136,56 @@ var _ = Describe("RBAC", func() {
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply.golden.yaml")))
 		})
 
+		It("should ignore legacy 'from' MTP and default-deny under WorkloadIdentity", func() {
+			// given
+			rs := core_xds.NewResourceSet()
+			ctx := xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				Build()
+
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
+				WithOverwriteName("test_listener").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   metadata.OriginInbound,
+				Resource: listener,
+			})
+
+			proxy := xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
+							Rules: map[core_rules.InboundListener]core_rules.Rules{
+								{Address: "192.168.0.1", Port: 8080}: {
+									{
+										Subset: []subsetutils.Tag{{Key: mesh_proto.ServiceTag, Value: "frontend"}},
+										Conf:   policies_api.Conf{Action: pointer.To[policies_api.Action]("Allow")},
+									},
+								},
+							},
+						}),
+				).
+				Build()
+
+			// when
+			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
+
+			// then
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
+			Expect(err).ToNot(HaveOccurred())
+			bytes, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-workload-identity-ignores-from.golden.yaml")))
+		})
+
 		It("should enrich matching listener with RBAC filter using matching api", func() {
 			// given
 			rs := core_xds.NewResourceSet()
