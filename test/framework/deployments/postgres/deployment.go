@@ -18,7 +18,6 @@ const (
 	DefaultPostgresUser     = "kuma"
 	DefaultPostgresPassword = "kuma"
 	DefaultPostgresDBName   = "kuma"
-	DefaultPreloadImages    = true
 
 	PostgresImage = "postgres:latest@sha256:8ff36f3c66371cba71d20ceedccfc3de9669a68737607888c4ef0af93abe8e39"
 
@@ -47,7 +46,6 @@ type deployOptions struct {
 	primaryName      string
 	postgresPassword string
 	initScripts      []string
-	preloadImages    bool
 }
 type DeployOptionsFunc func(*deployOptions)
 
@@ -64,7 +62,6 @@ func Install(name string, optFns ...DeployOptionsFunc) InstallFunc {
 		username:         DefaultPostgresUser,
 		password:         DefaultPostgresPassword,
 		postgresPassword: DefaultPostgresPassword,
-		preloadImages:    DefaultPreloadImages,
 	}
 
 	for _, optFn := range optFns {
@@ -125,11 +122,5 @@ func WithPostgresPassword(postgresPassword string) DeployOptionsFunc {
 func WithInitScript(initScript string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.initScripts = append(o.initScripts, initScript)
-	}
-}
-
-func WithoutPreloadImages() DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.preloadImages = false
 	}
 }

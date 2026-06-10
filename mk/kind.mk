@@ -9,7 +9,7 @@ else
 endif
 
 # renovate[docker]: depName=kindest/node
-CI_KUBERNETES_VERSION ?= v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5
+CI_KUBERNETES_VERSION ?= v1.35.1@sha256:05d7bcdefbda08b4e038f644c4df690cdac3fba8b06f8289f30e10026720a1ab
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system

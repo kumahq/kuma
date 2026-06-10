@@ -54,7 +54,7 @@ jobs:
           remove_android: true
           remove_dotnet: true
           remove_haskell: true
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Detect changed files
@@ -98,7 +98,7 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
