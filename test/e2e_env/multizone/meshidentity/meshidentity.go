@@ -32,7 +32,11 @@ func Identity() {
 					WithName(meshName).
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName,
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.KubeZone1.ZoneName()),
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.KubeZone2.ZoneName()),
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.UniZone1.ZoneName()),
+			)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
