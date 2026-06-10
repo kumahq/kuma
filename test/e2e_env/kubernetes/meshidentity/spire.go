@@ -46,7 +46,7 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(YamlK8s(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).KubeYaml())).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(spireNamespace)).
 			Install(spire.Install(
