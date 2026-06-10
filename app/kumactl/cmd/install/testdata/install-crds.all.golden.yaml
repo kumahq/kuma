@@ -685,9 +685,8 @@ spec:
                                         additionalProperties:
                                           type: string
                                         description: |-
-                                          Labels to match the referenced resource. Use for cross-zone references
-                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                          Name. When multiple resources match, the oldest by creation time wins.
+                                          Labels to match the referenced resource. When multiple resources match,
+                                          the oldest by creation time wins.
                                         type: object
                                     required:
                                     - kind
@@ -941,9 +940,8 @@ spec:
                                         additionalProperties:
                                           type: string
                                         description: |-
-                                          Labels to match the referenced resource. Use for cross-zone references
-                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                          Name. When multiple resources match, the oldest by creation time wins.
+                                          Labels to match the referenced resource. When multiple resources match,
+                                          the oldest by creation time wins.
                                         type: object
                                     required:
                                     - kind
@@ -1246,9 +1244,8 @@ spec:
                                         additionalProperties:
                                           type: string
                                         description: |-
-                                          Labels to match the referenced resource. Use for cross-zone references
-                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                          Name. When multiple resources match, the oldest by creation time wins.
+                                          Labels to match the referenced resource. When multiple resources match,
+                                          the oldest by creation time wins.
                                         type: object
                                     required:
                                     - kind
@@ -6318,9 +6315,8 @@ spec:
                                   additionalProperties:
                                     type: string
                                   description: |-
-                                    Labels to match the referenced resource. Use for cross-zone references
-                                    where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                    Name. When multiple resources match, the oldest by creation time wins.
+                                    Labels to match the referenced resource. When multiple resources match,
+                                    the oldest by creation time wins.
                                   type: object
                               required:
                               - kind
@@ -10344,9 +10340,8 @@ spec:
                                   additionalProperties:
                                     type: string
                                   description: |-
-                                    Labels to match the referenced resource. Use for cross-zone references
-                                    where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                    Name. When multiple resources match, the oldest by creation time wins.
+                                    Labels to match the referenced resource. When multiple resources match,
+                                    the oldest by creation time wins.
                                   type: object
                               required:
                               - kind
