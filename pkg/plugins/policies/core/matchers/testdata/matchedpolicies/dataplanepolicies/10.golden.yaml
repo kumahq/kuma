@@ -1,0 +1,20 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mp-1
+  spec:
+    default:
+      appendMatch:
+      - port: 443
+        protocol: tls
+        type: Domain
+        value: example.com
+      passthroughMode: Matched
+    targetRef:
+      kind: Dataplane
+      labels:
+        app: web
+  type: MeshPassthrough
+next: null
+total: 0

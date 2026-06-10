@@ -1,0 +1,16 @@
+# 10. policies with targetRef.kind=Dataplane + labels select ignored inbounds
+type: MeshPassthrough
+mesh: mesh-1
+name: mp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: web
+  default:
+    passthroughMode: Matched
+    appendMatch:
+      - type: Domain
+        value: example.com
+        port: 443
+        protocol: tls
