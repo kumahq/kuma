@@ -81,17 +81,13 @@ func ResolveOtelBackend(
 
 func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_context.Resources) *ResolvedOtelBackend {
 	var backend *motb_api.MeshOpenTelemetryBackendResource
-	switch {
-	case ref.Name != "":
-		backend = resolveBackendResourceByName(resources, ref.Name)
-	case len(ref.Labels) > 0:
+	if len(ref.Labels) > 0 {
 		backend = resolveBackendResourceByLabels(resources, ref.Labels)
 	}
 
 	if backend == nil {
 		otelLog.Info(
 			"MeshOpenTelemetryBackend not found, skipping backend",
-			"name", ref.Name,
 			"labels", ref.Labels,
 		)
 		return nil
@@ -123,20 +119,6 @@ func resolvedFromSpec(backend *motb_api.MeshOpenTelemetryBackendResource) *Resol
 		Path:      basePath,
 		Name:      core_model.GetDisplayName(backend.GetMeta()),
 	}
-}
-
-// resolveBackendResourceByName looks up by display name (the user-facing name
-// without the namespace suffix that Kubernetes adds internally).
-func resolveBackendResourceByName(
-	resources xds_context.Resources,
-	name string,
-) *motb_api.MeshOpenTelemetryBackendResource {
-	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
-		if core_model.GetDisplayName(backend.GetMeta()) == name {
-			return backend
-		}
-	}
-	return nil
 }
 
 // resolveBackendResourceByLabels matches all labels and picks the oldest on collision.
