@@ -26,6 +26,7 @@ import (
 	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 )
 
+// TODO:
 var log = core.Log.WithName("mesh-insight-resyncer")
 
 const (
@@ -427,6 +428,11 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 }
 
 func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
+	if svcName == "" {
+		// When KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is set, inbounds carry no
+		// kuma.io/service tag, so there is no service to track here.
+		return
+	}
 	if _, ok := insight.Services[svcName]; !ok {
 		insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
 			IssuedBackends: map[string]uint32{},
@@ -633,6 +639,11 @@ func (r *resyncer) createOrUpdateMeshInsight(
 
 		for _, inbound := range networking.GetInbound() {
 			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+				continue
+			}
+			// With KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED inbounds have no
+			// kuma.io/service tag, so there is no service to count here.
+			if inbound.GetService() == "" {
 				continue
 			}
 			internalServices[inbound.GetService()] = struct{}{}
