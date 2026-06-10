@@ -77,7 +77,11 @@
   branch: release-2.13
   lts: true
 - edition: kuma
-  version: preview
+  version: 2.14.0
   release: 2.14.x
+  branch: release-2.14
+- edition: kuma
+  version: preview
+  release: 2.15.x
   branch: master
   label: dev
