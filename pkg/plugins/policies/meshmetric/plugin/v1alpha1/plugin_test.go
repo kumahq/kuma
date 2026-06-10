@@ -667,8 +667,9 @@ var _ = Describe("MeshMetric", func() {
 		newMotb := func() *motb_api.MeshOpenTelemetryBackendResource {
 			motb := motb_api.NewMeshOpenTelemetryBackendResource()
 			motb.SetMeta(&test_model.ResourceMeta{
-				Mesh: "default",
-				Name: backendName,
+				Mesh:   "default",
+				Name:   backendName,
+				Labels: map[string]string{mesh_proto.DisplayName: backendName},
 			})
 			motb.Spec.Endpoint = &motb_api.Endpoint{
 				Address: new("collector.mesh"),
@@ -743,8 +744,8 @@ var _ = Describe("MeshMetric", func() {
 				Type: api.OpenTelemetryBackendType,
 				OpenTelemetry: &api.OpenTelemetryBackend{
 					BackendRef: &common_api.BackendResourceRef{
-						Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-						Name: backendName,
+						Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+						Labels: map[string]string{mesh_proto.DisplayName: backendName},
 					},
 					RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
 				},
@@ -794,8 +795,8 @@ var _ = Describe("MeshMetric", func() {
 					Type: api.OpenTelemetryBackendType,
 					OpenTelemetry: &api.OpenTelemetryBackend{
 						BackendRef: &common_api.BackendResourceRef{
-							Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-							Name: backendName,
+							Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+							Labels: map[string]string{mesh_proto.DisplayName: backendName},
 						},
 						RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
 					},

@@ -292,8 +292,7 @@ func ValidateLength(path PathBuilder, maxLength int, v string) ValidationError {
 	return err
 }
 
-// ValidateBackendResourceRef checks that a BackendResourceRef has a valid kind
-// and exactly one of name or labels set.
+// ValidateBackendResourceRef checks that a BackendResourceRef has a valid kind and labels set.
 func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationError {
 	var verr ValidationError
 	if ref == nil {
@@ -303,11 +302,8 @@ func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationEr
 		verr.AddErrorAt(RootedAt("kind"),
 			MakeFieldMustBeOneOfErr("kind", string(common_api.BackendResourceMeshOpenTelemetryBackend)))
 	}
-	if ref.Name == "" && len(ref.Labels) == 0 {
-		verr.AddViolation("", MustHaveExactlyOneOf("backendRef", "name", "labels"))
-	}
-	if ref.Name != "" && len(ref.Labels) > 0 {
-		verr.AddViolation("", MustHaveOnlyOne("backendRef", "name", "labels"))
+	if len(ref.Labels) == 0 {
+		verr.AddViolation("", MustHaveExactlyOneOf("backendRef", "labels"))
 	}
 	return verr
 }

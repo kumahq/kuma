@@ -1096,8 +1096,9 @@ var _ = Describe("MeshAccessLog", func() {
 
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
 		motb.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: backendName,
+			Mesh:   "default",
+			Name:   backendName,
+			Labels: map[string]string{mesh_proto.DisplayName: backendName},
 		})
 		motb.Spec.Endpoint = &motb_api.Endpoint{
 			Address: pointer.To("collector.mesh"),
@@ -1163,8 +1164,8 @@ var _ = Describe("MeshAccessLog", func() {
 								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
-										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: backendName,
+										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+										Labels: map[string]string{mesh_proto.DisplayName: backendName},
 									},
 								},
 							}},
