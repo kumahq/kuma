@@ -239,9 +239,6 @@ func allDataplanesSelected(ref common_api.TargetRef) bool {
 func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
 	var selectedInbounds []core_rules.InboundListener
 	for _, inbound := range dpp.Spec.GetNetworking().Inbound {
-		if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
-			continue
-		}
 		if sectionName == "" || inbound.Name == sectionName {
 			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
 			selectedInbounds = append(selectedInbounds, core_rules.InboundListener{

@@ -1,0 +1,13 @@
+type: Dataplane
+mesh: mesh-1
+name: dp-1
+labels:
+  app: web
+networking:
+  address: 1.1.1.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: web
+        app: web
+      state: Ignored
