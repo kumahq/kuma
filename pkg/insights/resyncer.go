@@ -371,9 +371,16 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 		return errors.Wrap(err, "unable to get ExternalServices to recompute insights")
 	}
 
+	// When meshServices.mode is Exclusive, kuma.io/service based ServiceInsights are no longer relevant
+	meshRes := core_mesh.NewMeshResource()
+	if err := r.rm.Get(ctx, meshRes, store.GetByKey(event.mesh, model.NoMesh)); err != nil {
+		return errors.Wrap(err, "unable to get Mesh to recompute insights")
+	}
+	exclusiveMeshServices := meshRes.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive
+
 	anyChanged := false
 	if event.flag&FlagService == FlagService {
-		err, changed := r.createOrUpdateServiceInsight(ctx, event.mesh, dpOverviews, externalServices.Items)
+		err, changed := r.createOrUpdateServiceInsight(ctx, event.mesh, dpOverviews, externalServices.Items, exclusiveMeshServices)
 		if err != nil {
 			return errors.Wrap(err, "unable to resync ServiceInsight")
 		}
@@ -382,7 +389,7 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 		}
 	}
 	if event.flag&FlagMesh == FlagMesh {
-		err, changed := r.createOrUpdateMeshInsight(ctx, event.mesh, dpOverviews, externalServices.Items, event.types)
+		err, changed := r.createOrUpdateMeshInsight(ctx, event.mesh, dpOverviews, externalServices.Items, event.types, exclusiveMeshServices)
 		if err != nil {
 			return errors.Wrap(err, "unable to resync MeshInsight")
 		}
@@ -461,10 +468,14 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	mesh string,
 	dpOverviews []*core_mesh.DataplaneOverviewResource,
 	externalServices []*core_mesh.ExternalServiceResource,
+	exclusiveMeshServices bool,
 ) (error, bool) {
-	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
+	}
+	if exclusiveMeshServices {
+		// set ServiceInsight with empty Services map
+		return r.upsertServiceInsight(ctx, mesh, insight)
 	}
 
 	zonesMap := map[string]map[string]struct{}{}
@@ -528,6 +539,11 @@ func (r *resyncer) createOrUpdateServiceInsight(
 		}
 	}
 
+	return r.upsertServiceInsight(ctx, mesh, insight)
+}
+
+func (r *resyncer) upsertServiceInsight(ctx context.Context, mesh string, insight *mesh_proto.ServiceInsight) (error, bool) {
+	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	key := ServiceInsightKey(mesh)
 	changed := false
 	err := manager.Upsert(ctx, r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
@@ -561,6 +577,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	dpOverviews []*core_mesh.DataplaneOverviewResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	types map[model.ResourceType]struct{},
+	exclusiveMeshServices bool,
 ) (error, bool) {
 	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.MeshInsight{
@@ -632,20 +649,24 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
 
-		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
-			internalServices[svc] = struct{}{}
-		}
+		// internalServices is only used for the Services stat, which we don't report in
+		// Exclusive mode, so skip building it then.
+		if !exclusiveMeshServices {
+			if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
+				internalServices[svc] = struct{}{}
+			}
 
-		for _, inbound := range networking.GetInbound() {
-			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
-				continue
+			for _, inbound := range networking.GetInbound() {
+				if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+					continue
+				}
+				// With KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED inbounds have no
+				// kuma.io/service tag, so there is no service to count here.
+				if inbound.GetService() == "" {
+					continue
+				}
+				internalServices[inbound.GetService()] = struct{}{}
 			}
-			// With KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED inbounds have no
-			// kuma.io/service tag, so there is no service to count here.
-			if inbound.GetService() == "" {
-				continue
-			}
-			internalServices[inbound.GetService()] = struct{}{}
 		}
 	}
 
@@ -654,10 +675,12 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	insight.DataplanesByType.Gateway.PartiallyDegraded = insight.GetDataplanesByType().GetGatewayBuiltin().GetPartiallyDegraded() + insight.GetDataplanesByType().GetGatewayDelegated().GetPartiallyDegraded()
 	insight.DataplanesByType.Gateway.Total = insight.GetDataplanesByType().GetGatewayBuiltin().GetTotal() + insight.GetDataplanesByType().GetGatewayDelegated().GetTotal()
 
-	insight.Services = &mesh_proto.MeshInsight_ServiceStat{
-		Total:    uint32(len(internalServices) + len(externalServices)),
-		Internal: uint32(len(internalServices)),
-		External: uint32(len(externalServices)),
+	if !exclusiveMeshServices {
+		insight.Services = &mesh_proto.MeshInsight_ServiceStat{
+			Total:    uint32(len(internalServices) + len(externalServices)),
+			Internal: uint32(len(internalServices)),
+			External: uint32(len(externalServices)),
+		}
 	}
 
 	key := MeshInsightKey(mesh)
