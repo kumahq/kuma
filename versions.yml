@@ -59,8 +59,9 @@
   version: 2.11.15
   release: 2.11.x
   releaseDate: "2025-06-10"
-  endOfLifeDate: "2026-06-10"
+  endOfLifeDate: "2026-12-10"
   branch: release-2.11
+  extensionMonths: 6
 - edition: kuma
   version: 2.12.12
   release: 2.12.x
