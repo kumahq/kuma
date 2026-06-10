@@ -129,7 +129,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  "Bad Request",
 			Detail: err.Error(),
 		}
-	case err == tokens.IssuerDisabled:
+	case errors.Is(err, tokens.IssuerDisabled):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,

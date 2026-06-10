@@ -119,6 +119,11 @@ func rbacUpdater(
 
 func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
+
+	// Merged policies can arrive in a broad-to-specific order (for example a
+	// mesh-wide allow before a listener-scoped deny). Envoy stops at the first
+	// matching action, so all deny matchers need to be emitted before allow
+	// matchers across the merged rule set.
 	for _, rule := range c.InboundRules {
 		conf := rule.Conf.(policies_api.RuleConf)
 		denyMatchers, err := buildMatchers(pointer.Deref(conf.Deny), rbac_config.RBAC_DENY, rule.Origin)
@@ -126,7 +131,10 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 			return nil, err
 		}
 		fieldMatchers = append(fieldMatchers, denyMatchers)
+	}
 
+	for _, rule := range c.InboundRules {
+		conf := rule.Conf.(policies_api.RuleConf)
 		allowMatchers, err := buildMatchers(append(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny)...), rbac_config.RBAC_ALLOW, rule.Origin)
 		if err != nil {
 			return nil, err
