@@ -361,6 +361,18 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 	startProcessingTime := r.now()
 	r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
 	r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
+
+	// When meshServices.mode is Exclusive, kuma.io/service based ServiceInsights are no longer relevant.
+	meshRes := core_mesh.NewMeshResource()
+	if err := r.rm.Get(ctx, meshRes, store.GetByKey(event.mesh, model.NoMesh)); err != nil {
+		if store.IsNotFound(err) {
+			// Mesh no longer exists, there is nothing to recompute. This can happen when Mesh is being deleted.
+			return nil
+		}
+		return errors.Wrap(err, "unable to get Mesh to recompute insights")
+	}
+	exclusiveMeshServices := meshRes.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive
+
 	dpOverviews, err := r.dpOverviews(ctx, event.mesh)
 	if err != nil {
 		return errors.Wrap(err, "unable to get DataplaneOverviews to recompute insights")
@@ -370,13 +382,6 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 	if err := r.rm.List(ctx, externalServices, store.ListByMesh(event.mesh)); err != nil {
 		return errors.Wrap(err, "unable to get ExternalServices to recompute insights")
 	}
-
-	// When meshServices.mode is Exclusive, kuma.io/service based ServiceInsights are no longer relevant
-	meshRes := core_mesh.NewMeshResource()
-	if err := r.rm.Get(ctx, meshRes, store.GetByKey(event.mesh, model.NoMesh)); err != nil {
-		return errors.Wrap(err, "unable to get Mesh to recompute insights")
-	}
-	exclusiveMeshServices := meshRes.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive
 
 	anyChanged := false
 	if event.flag&FlagService == FlagService {
