@@ -623,8 +623,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Name: "backend-remote", Mesh: "default",
 					Labels: map[string]string{
 						"service":                      "backend",
-						mesh_proto.ZoneTag:               "remote-zone",
-						mesh_proto.ResourceOriginLabel:   string(mesh_proto.GlobalResourceOrigin),
+						mesh_proto.ZoneTag:             "remote-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 					},
 				},
 				Spec: &meshservice_api.MeshService{
