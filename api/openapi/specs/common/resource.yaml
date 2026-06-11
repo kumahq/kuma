@@ -52,6 +52,18 @@ components:
       type: object
       required: [type, mesh, name, labels]
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          example: 0001-01-01T00:00:00Z
+          format: date-time
+          readOnly: true
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          example: 0001-01-01T00:00:00Z
+          format: date-time
+          readOnly: true
+          type: string
         type:
           type: string
           example: Dataplane
