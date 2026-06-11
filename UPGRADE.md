@@ -64,7 +64,13 @@ The data plane now advertises the `feature-reuse-port` capability to the control
 
 **Action required:**
 
-None for most users. If your environment has known issues with `SO_REUSEPORT` (e.g. certain Linux kernel versions or network configurations), disable the feature before upgrading using the instructions below.
+If your environment has known issues with `SO_REUSEPORT` (e.g. certain Linux kernel versions or network configurations), disable the feature before upgrading using the instructions below.
+
+In a rolling CP upgrade, **disable reuse port for ZoneIngress/ZoneEgress before upgrading**.
+
+During the upgrade, a ZoneIngress/ZoneEgress can first receive `enable_reuse_port: false` from an old CP,
+then `enable_reuse_port: true` from a new CP.
+Envoy cannot change this setting on a live listener, so it NACKs the update and keeps serving the stale listener.
 
 **Kubernetes — injected sidecars**
 
