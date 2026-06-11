@@ -363,6 +363,41 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
+	It("should not delete MeshService synced from another zone", func() {
+		// MeshService generated in another zone and synced here via KDS: it
+		// keeps the generator's managed-by label but has origin=global and no
+		// local Dataplane backing it. The generator must leave it untouched.
+		ms := meshservice_api.NewMeshServiceResource()
+		ms.Spec = &meshservice_api.MeshService{
+			Selector: meshservice_api.Selector{
+				DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "remote-backend"},
+			},
+			Ports: []meshservice_api.Port{{
+				Name:        pointer.To("80"),
+				Port:        80,
+				TargetPort:  pointer.To(intstr.FromInt(80)),
+				AppProtocol: core_meta.ProtocolTCP,
+			}},
+		}
+		Expect(resManager.Create(
+			context.Background(),
+			ms,
+			store.CreateByKey("remote-backend", model.DefaultMesh),
+			store.CreateWithLabels(map[string]string{
+				mesh_proto.ManagedByLabel:      "meshservice-generator",
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+				mesh_proto.ZoneTag:             "other-zone",
+			}),
+		)).To(Succeed())
+
+		// It's never marked for deletion nor removed.
+		Consistently(func(g Gomega) {
+			synced := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), synced, store.GetByKey("remote-backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(synced.GetMeta().GetLabels()).ToNot(HaveKey(mesh_proto.DeletionGracePeriodStartedLabel))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
 	It("should not delete MeshService if a Dataplane comes back", func() {
 		err := samples.DataplaneBackendBuilder().Create(resManager)
 		Expect(err).ToNot(HaveOccurred())
