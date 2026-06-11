@@ -242,7 +242,7 @@ rules:
 			[]validators.Violation{
 				{
 					Field:   "spec.rules[0].matches[0].spiffeID",
-					Message: "must be a valid Spiffe ID",
+					Message: "must be a valid Spiffe ID: scheme is missing or invalid",
 				},
 			}, `
 type: MeshFaultInjection
