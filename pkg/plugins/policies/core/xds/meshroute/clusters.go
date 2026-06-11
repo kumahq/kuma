@@ -12,6 +12,7 @@ import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -161,7 +162,15 @@ func GenerateClusters(
 						// Local MeshService traffic stays sidecar-to-sidecar and never traverses a zone proxy,
 						// so ZonesWithMeshScopedProxy (a remote-zone capability check) doesn't apply.
 						// When the consuming proxy has WorkloadIdentity, always use the new KRI-based SNI for local MeshServices.
-						useKRISni := zone == "" || isLocalMeshService || meshCtx.ZonesWithMeshScopedProxy[zone]
+						// MeshMultiZoneService is always zone=="" (global resource) but routes cross-zone; check
+						// endpoint zones to determine if the new KRI SNI format is supported end-to-end.
+						var useKRISni bool
+						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshMultiZoneService {
+							endpoints := meshCtx.EndpointMap[destinationname.ResolveLegacyFromDestination(dest, port)]
+							useKRISni = allEndpointZonesHaveNewProxy(endpoints, meshCtx.ZonesWithMeshScopedProxy)
+						} else {
+							useKRISni = zone == "" || isLocalMeshService || meshCtx.ZonesWithMeshScopedProxy[zone]
+						}
 						var sni string
 						if useKRISni && proxy.WorkloadIdentity != nil {
 							if errs := core_sni.ValidateKRI(realResourceRef.Resource); len(errs) > 0 {
@@ -335,4 +344,23 @@ func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
 		return endpoints[0].IsMeshExternalService()
 	}
 	return false
+}
+
+// allEndpointZonesHaveNewProxy returns true when the endpoint list is non-empty
+// and every remote endpoint (Locality.Zone != "") is served by a zone that has
+// a new-style zone proxy (MeshZoneAddress). Endpoints without locality (local
+// zone, sidecar-to-sidecar) are skipped since they never traverse a zone proxy.
+func allEndpointZonesHaveNewProxy(endpoints []core_xds.Endpoint, zonesWithProxy map[string]bool) bool {
+	if len(endpoints) == 0 {
+		return false
+	}
+	for _, ep := range endpoints {
+		if ep.Locality == nil || ep.Locality.Zone == "" {
+			continue
+		}
+		if !zonesWithProxy[ep.Locality.Zone] {
+			return false
+		}
+	}
+	return true
 }
