@@ -133,7 +133,10 @@ func (g Generator) Generate(
 		log.V(1).Info("added all in one CA resources")
 	}
 
-	if usedIdentity || len(usedCAs) > 0 {
+	needLegacyIdentity := usedIdentity && proxy.WorkloadIdentity == nil
+	needLegacyCAs := len(usedCAs) > 0 && len(xdsCtx.Mesh.CAsByTrustDomain) == 0
+
+	if needLegacyIdentity || needLegacyCAs {
 		var usedCAsMeshes []*core_mesh.MeshResource
 		for _, otherMesh := range otherMeshes {
 			if _, ok := usedCAs[otherMesh.GetMeta().GetName()]; ok {
@@ -145,33 +148,33 @@ func (g Generator) Generate(
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}
 
-		identitySecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
-			proxy.SecretsTracker.RequestIdentityCert().Name(),
-		)
-		resources.Add(createIdentitySecretResource(identitySecretName, identity))
-
-		var addedCas []string
-		for mesh := range usedCAs {
-			// when there is a MeshTrust we create a different secret which includes the mTLS Mesh CA
-			if len(xdsCtx.Mesh.CAsByTrustDomain) > 0 {
-				break
-			}
-			identityName := getNameOrDefault(
-				system_names.AsSystemName("mtls_ca_"+mesh),
-				proxy.SecretsTracker.RequestCa(mesh).Name(),
+		if needLegacyIdentity {
+			identitySecretName := getNameOrDefault(
+				system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
+				proxy.SecretsTracker.RequestIdentityCert().Name(),
 			)
-			if ca, ok := generatedMeshCAs[mesh]; ok {
-				resources.Add(createCaSecretResource(identityName, ca))
-			} else {
-				// We need to add _something_ here so that Envoy syncs the
-				// config
-				emptyCa := &core_xds.CaSecret{}
-				resources.Add(createCaSecretResource(identityName, emptyCa))
-			}
-			addedCas = append(addedCas, mesh)
+			resources.Add(createIdentitySecretResource(identitySecretName, identity))
 		}
-		log.V(1).Info("added identity and mesh CAs resources", "cas", addedCas)
+
+		if needLegacyCAs {
+			var addedCas []string
+			for mesh := range usedCAs {
+				identityName := getNameOrDefault(
+					system_names.AsSystemName("mtls_ca_"+mesh),
+					proxy.SecretsTracker.RequestCa(mesh).Name(),
+				)
+				if ca, ok := generatedMeshCAs[mesh]; ok {
+					resources.Add(createCaSecretResource(identityName, ca))
+				} else {
+					// We need to add _something_ here so that Envoy syncs the
+					// config
+					emptyCa := &core_xds.CaSecret{}
+					resources.Add(createCaSecretResource(identityName, emptyCa))
+				}
+				addedCas = append(addedCas, mesh)
+			}
+			log.V(1).Info("added identity and mesh CAs resources", "cas", addedCas)
+		}
 	}
 
 	return resources, nil
