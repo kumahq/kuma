@@ -299,3 +299,17 @@ func UpstreamTLSContext(config *envoy_tls.UpstreamTlsContext) ClusterBuilderOpt 
 		})
 	})
 }
+
+// UpstreamTLSContextWithZoneMatches configures a cluster-wide default
+// UpstreamTlsContext plus per-zone overrides added as transport_socket_match
+// entries keyed on the kuma.io/zone endpoint metadata. It is used for
+// MeshMultiZoneService clusters whose endpoints span zones with different SNI
+// expectations (new mesh-scoped zone proxy vs. legacy ZoneIngress).
+func UpstreamTLSContextWithZoneMatches(config *envoy_tls.UpstreamTlsContext, zoneMatches map[string]*envoy_tls.UpstreamTlsContext) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
+			Config:      config,
+			ZoneMatches: zoneMatches,
+		})
+	})
+}
