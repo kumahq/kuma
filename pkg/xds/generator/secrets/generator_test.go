@@ -216,7 +216,8 @@ var _ = Describe("SecretsGenerator", func() {
 				SecretsTracker: envoy_common.NewSecretsTracker("default", []string{"default"}),
 				APIVersion:     envoy_common.APIV3,
 				WorkloadIdentity: &core_xds.WorkloadIdentity{
-					KRI: kri.Identifier{ResourceType: "MeshIdentity", Mesh: "default", Name: "identity"},
+					KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "identity"},
+					ManagementMode: core_xds.KumaManagementMode,
 				},
 			},
 			identity: true,
