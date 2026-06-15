@@ -115,6 +115,7 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		resource_labels.WithMode(m.mode),
 		resource_labels.WithK8s(m.isK8s),
 		resource_labels.WithZone(m.zone),
+		resource_labels.WithPreviousLabels(resource.GetMeta().GetLabels()),
 	)
 	if err != nil {
 		return err

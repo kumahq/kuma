@@ -58,6 +58,12 @@ type Options struct {
 	//     stripped. K8s controllers legitimately set keys like
 	//     kuma.io/managed-by; user input paths still drop them.
 	Privileged bool
+	// PreviousLabels are the labels currently persisted for the resource.
+	// On non-Privileged user paths, Compute restores OwnerSystem keys from
+	// here instead of dropping them — controllers like the Universal
+	// workload-generator stamp kuma.io/managed-by directly via the store,
+	// and a subsequent user PUT must not wipe it out.
+	PreviousLabels map[string]string
 }
 
 type Option func(*Options)
@@ -112,6 +118,12 @@ func WithPrivileged(privileged bool) Option {
 	}
 }
 
+func WithPreviousLabels(labels map[string]string) Option {
+	return func(opts *Options) {
+		opts.PreviousLabels = labels
+	}
+}
+
 // Compute returns the label map the CP would store for the given resource.
 //
 // If Options.Privileged is set and the resource is not locally originated
@@ -126,9 +138,13 @@ func WithPrivileged(privileged bool) Option {
 //     value as-is. The CP doesn't dictate the value, just where it lives.
 //   - OwnerControlPlane, Expected applies=false: delete the key. The label
 //     isn't applicable in this context; a user value would be stale.
-//   - OwnerSystem: delete the key on user paths; preserve on Privileged
-//     paths. K8s controllers, the CP itself, etc. legitimately set keys
-//     like kuma.io/managed-by; user input would be impersonation.
+//   - OwnerSystem: on Privileged paths, preserve the caller's value. On
+//     user paths, restore from PreviousLabels if it carries a value for
+//     this key (the previously-stored CP-set value is authoritative);
+//     otherwise drop. User input on these keys is never trusted —
+//     controllers like the Universal workload-generator stamp
+//     kuma.io/managed-by directly via the store, and a subsequent user
+//     PUT must not wipe it out.
 //
 // OwnerUser keys are left untouched.
 //
@@ -183,10 +199,17 @@ func Compute(
 			continue
 		case OwnerSystem:
 			// Privileged callers (K8s controllers, etc.) legitimately set
-			// OwnerSystem labels like kuma.io/managed-by. Drop them only on
-			// user paths, where any value is impersonation.
+			// OwnerSystem labels like kuma.io/managed-by. On user paths the
+			// user's own value is never trusted, but the previously-stored
+			// CP value must survive — the Universal workload-generator and
+			// meshservice-generator stamp these directly via the store, and
+			// a subsequent user PUT would otherwise drop them.
 			if !o.Privileged {
-				delete(labels, ls.Key)
+				if prev, ok := o.PreviousLabels[ls.Key]; ok {
+					labels[ls.Key] = prev
+				} else {
+					delete(labels, ls.Key)
+				}
 			}
 		case OwnerControlPlane:
 			value, applies := "", true

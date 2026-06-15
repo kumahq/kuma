@@ -2,7 +2,8 @@ Patches: null
 allowed: false
 status:
   code: 403
-  message: Operation not allowed. kuma.io/origin should be 'global', got 'unknownvalue'
+  message: Operation not allowed. kuma.io/origin should be 'global' or 'zone', got
+    'unknownvalue'
   metadata: {}
   reason: Forbidden
   status: Failure

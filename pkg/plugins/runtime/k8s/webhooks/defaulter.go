@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -89,6 +90,12 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	if labelMesh, ok := coreLabels[metadata.KumaMeshLabel]; ok && labelMesh != "" {
 		mesh = labelMesh
 	}
+	// On Update, req.OldObject carries the stored labels so user PUTs can't
+	// strip CP-set OwnerSystem keys like kuma.io/managed-by.
+	previousLabels, err := h.previousLabels(req)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
 	computed, err := resource_labels.Compute(
 		resource.Descriptor(),
 		resource.GetSpec(),
@@ -100,6 +107,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		resource_labels.WithK8s(true),
 		resource_labels.WithZone(h.ZoneName),
 		resource_labels.WithPrivileged(decision.Privileged),
+		resource_labels.WithPreviousLabels(previousLabels),
 	)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
@@ -116,4 +124,28 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	}
 
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaled).WithWarnings(decision.Warnings...)
+}
+
+// previousLabels decodes req.OldObject and returns its labels so Compute can
+// carry CP-set OwnerSystem keys (e.g. kuma.io/managed-by) through user PUTs.
+// Create requests have no OldObject; returns nil in that case.
+func (h *defaultingHandler) previousLabels(req admission.Request) (map[string]string, error) {
+	if req.Operation != admissionv1.Update || len(req.OldObject.Raw) == 0 {
+		return nil, nil
+	}
+	oldResource, err := registry.Global().NewObject(core_model.ResourceType(req.Kind.Kind))
+	if err != nil {
+		return nil, err
+	}
+	oldObj, err := h.converter.ToKubernetesObject(oldResource)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+		return nil, err
+	}
+	if err := h.converter.ToCoreResource(oldObj, oldResource); err != nil {
+		return nil, err
+	}
+	return oldResource.GetMeta().GetLabels(), nil
 }

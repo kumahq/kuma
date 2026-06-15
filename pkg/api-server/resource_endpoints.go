@@ -547,16 +547,18 @@ func (r *resourceEndpoints) updateResource(
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
+	storedLabels := currentRes.GetMeta().GetLabels()
 	currentLabels, err := resource_labels.Compute(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
-		currentRes.GetMeta().GetLabels(),
+		storedLabels,
 		meshName,
 		currentRes.GetMeta().GetName(),
 		resource_labels.WithNamespace(resource_labels.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
 		resource_labels.WithMode(r.mode),
 		resource_labels.WithK8s(r.isK8s),
 		resource_labels.WithZone(r.zoneName),
+		resource_labels.WithPreviousLabels(storedLabels),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
@@ -576,6 +578,7 @@ func (r *resourceEndpoints) updateResource(
 		resource_labels.WithMode(r.mode),
 		resource_labels.WithK8s(r.isK8s),
 		resource_labels.WithZone(r.zoneName),
+		resource_labels.WithPreviousLabels(storedLabels),
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
