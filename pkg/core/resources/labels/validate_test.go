@@ -285,4 +285,20 @@ var _ = Describe("Validate", func() {
 		Expect(r.Errors).To(BeEmpty())
 		Expect(r.Warnings).To(BeEmpty())
 	})
+
+	It("rejects out-of-vocabulary origin even when DisableOriginLabelValidation is set", func() {
+		ctx := mtDesc()
+		ctx.FederatedZone = true
+		ctx.DisableOriginLabelValidation = true
+		// The disable flag turns off the CP-vs-user comparison, not the
+		// vocabulary check — a bogus origin value is still a hard error.
+		r := labels.Validate(map[string]string{
+			mesh_proto.ResourceOriginLabel: "bogus",
+		}, ctx)
+		Expect(r.Errors).To(ContainElement(labels.Violation{
+			Key:    mesh_proto.ResourceOriginLabel,
+			Reason: "kuma.io/origin should be 'global' or 'zone', got 'bogus'",
+		}))
+		Expect(r.Warnings).To(BeEmpty())
+	})
 })

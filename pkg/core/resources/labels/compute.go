@@ -173,6 +173,10 @@ func Compute(
 		ResourceName: displayName,
 	}
 
+	// kuma.io/origin sits outside the registry. Force-set the CP-computed
+	// value — origin is deterministic from the CP mode.
+	labels[mesh_proto.ResourceOriginLabel] = expectedOrigin(ctx)
+
 	for _, ls := range registry {
 		switch ls.Owner {
 		case OwnerUser:

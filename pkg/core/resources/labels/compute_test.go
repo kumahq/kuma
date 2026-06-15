@@ -221,6 +221,7 @@ var _ = Describe("Compute", func() {
 			expectedLabels: map[string]string{
 				"kuma.io/display-name": "sample-timeout",
 				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
 			},
 		}),
 		Entry("mesh resource on non-federated zone", testCase{
@@ -233,6 +234,7 @@ var _ = Describe("Compute", func() {
 			},
 			expectedLabels: map[string]string{
 				"kuma.io/display-name": "mesh-1",
+				"kuma.io/origin":       "zone",
 			},
 		}),
 		Entry("plugin originated policy on zone-k8s on custom namespace", testCase{

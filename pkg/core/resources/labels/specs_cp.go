@@ -10,44 +10,10 @@ import (
 
 // Control-plane-managed labels. Each one is computed by the CP for the given
 // resource and context; users may set them only if their value matches.
+//
+// kuma.io/origin is handled outside this registry — see validate_origin.go.
 
 func init() {
-	register(LabelSpec{
-		Key:                       mesh_proto.ResourceOriginLabel,
-		Owner:                     OwnerControlPlane,
-		AllowedValues:             []string{string(mesh_proto.GlobalResourceOrigin), string(mesh_proto.ZoneResourceOrigin)},
-		AllowAnyWhenNotApplicable: true,
-		StrictMatch:               true,
-		// The CP claims authority over kuma.io/origin wherever the resource
-		// can be locally originated: Global (always 'global'), or Zone for
-		// any ProvidedByZone-flagged type ('zone'). The narrower "user must
-		// consciously set it" gate is in RequirePresence below.
-		Expected: func(ctx ValidationContext) (string, bool) {
-			if ctx.DisableOriginLabelValidation {
-				return "", false
-			}
-			if ctx.Mode == config_core.Global {
-				return string(mesh_proto.GlobalResourceOrigin), true
-			}
-			if ctx.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-				return string(mesh_proto.ZoneResourceOrigin), true
-			}
-			return "", false
-		},
-		RequirePresence: func(ctx ValidationContext) bool {
-			if ctx.DisableOriginLabelValidation {
-				return false
-			}
-			if ctx.Mode != config_core.Zone {
-				return false
-			}
-			if ctx.IsK8s {
-				return ctx.Namespace.system
-			}
-			return ctx.FederatedZone && ctx.Descriptor.IsPluginOriginated
-		},
-	})
-
 	register(LabelSpec{
 		Key:   mesh_proto.MeshTag,
 		Owner: OwnerControlPlane,

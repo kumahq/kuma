@@ -15,6 +15,10 @@ const (
 )
 
 // LabelSpec is the declarative entry for one reserved label.
+//
+// kuma.io/origin is intentionally NOT in this registry: its semantics
+// (vocabulary check, strict CP-vs-user match, required-presence gate, delete
+// authorization) don't fit the generic shape. See validate_origin.go.
 type LabelSpec struct {
 	Key           string
 	Owner         Owner
@@ -25,29 +29,11 @@ type LabelSpec struct {
 	// (e.g. kuma.io/workload on Universal Dataplanes — value comes from the
 	// user but the label only applies to specific resource types).
 	OpenValue bool
-	// AllowAnyWhenNotApplicable: when Owner == OwnerControlPlane and Expected
-	// returns applies=false, accept any AllowedValues value the user supplies
-	// instead of rejecting it as "reserved". Used by kuma.io/origin: contexts
-	// where the CP doesn't strictly enforce a specific origin (e.g. user
-	// namespaces on K8s zones) still want the vocabulary checked.
-	AllowAnyWhenNotApplicable bool
-	// StrictMatch: when Owner == OwnerControlPlane, Expected returns
-	// applies=true, and the user-supplied value mismatches expected, surface
-	// an error instead of a warning. Used by kuma.io/origin so a wrong
-	// 'global'/'zone' is not silently overridden — that would mask the real
-	// failure mode (resource being applied to the wrong CP). Other CP-owned
-	// labels stay non-strict: Compute regenerates them and a warning is
-	// enough.
-	StrictMatch bool
 
 	// Expected returns the value the CP would compute for ctx. applies=false
 	// means the label is not applicable in this context: any user-provided
 	// value is rejected. Only used when Owner == OwnerControlPlane.
 	Expected func(ctx ValidationContext) (value string, applies bool)
-
-	// RequirePresence returns true iff the label MUST be set in ctx.
-	// nil means never required. Only used when Owner == OwnerControlPlane.
-	RequirePresence func(ctx ValidationContext) bool
 }
 
 var registry = map[string]LabelSpec{}

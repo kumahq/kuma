@@ -8,7 +8,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
@@ -56,7 +55,7 @@ type ValidationContext struct {
 // Result is what Validate returns.
 //
 //   - Errors must reject the request (format issues, OwnerUser AllowedValues
-//     mismatch, OwnerControlPlane StrictMatch mismatch).
+//     mismatch, origin vocabulary/mismatch/required-presence).
 //   - Warnings should be surfaced to the caller without rejecting. They cover
 //     attempts to set CP-managed labels: Compute will override (or drop) the
 //     value and the user should know what happened.
@@ -69,10 +68,6 @@ func mismatchReason(key, expected, got string) string {
 	return fmt.Sprintf("%s is computed by the control plane (expected '%s'); the supplied value '%s' was overridden", key, expected, got)
 }
 
-func strictMismatchReason(key, expected, got string) string {
-	return fmt.Sprintf("%s should be '%s', got '%s'", key, expected, got)
-}
-
 func notApplicableReason(key, got string) string {
 	return fmt.Sprintf("%s is managed by the control plane and is not applicable in this context; the supplied value '%s' was removed", key, got)
 }
@@ -81,28 +76,26 @@ func systemOverriddenReason(key, got string) string {
 	return fmt.Sprintf("%s is set by the control plane; the supplied value '%s' was overridden", key, got)
 }
 
-func notAllowedValueReason(key string, allowed []string, got string) string {
-	return fmt.Sprintf("%s must be one of [%s] in this context; the supplied value '%s' was removed", key, strings.Join(quoted(allowed), ", "), got)
-}
-
 // Validate runs format + semantic checks against the given label set.
 //
 // Format violations short-circuit the rest of the function (validators
 // assume well-formed input). All format findings have Format=true; callers
 // that need to behave differently for format issues inspect Violation.Format.
 //
-// Semantic classification, per LabelSpec.Owner:
+// kuma.io/origin is checked first by validateOrigin — its semantics are
+// stricter (vocabulary errors, CP-vs-user mismatch as error) and don't share
+// the warning/override pattern used by the rest of the CP-owned labels.
+//
+// Semantic classification for the registry (everything except origin), per
+// LabelSpec.Owner:
 //
 //   - OwnerSystem        — any user-set value is a warning. Compute will
 //     overwrite or drop it.
 //   - OwnerUser          — any value is accepted; if AllowedValues is non-empty
 //     and the value is outside the set, that is an error.
 //   - OwnerControlPlane  — Expected(ctx) supplies the CP value. The user value
-//     is accepted only when it matches expected (or OpenValue is set, or
-//     applies=false with a valid AllowAnyWhenNotApplicable value). All other
-//     cases are warnings; Compute will regenerate the right value. Exception:
-//     when StrictMatch is set on the spec, a mismatch against an applicable
-//     Expected becomes an error (kuma.io/origin).
+//     is accepted only when it matches expected (or OpenValue is set). All
+//     other cases are warnings; Compute will regenerate the right value.
 //
 // Reserved keys (kuma.io/* or k8s.kuma.io/*) that are not in the registry are
 // left alone — Compute will not touch them either, so they pass through as
@@ -120,6 +113,7 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 	}
 
 	var errs, warns []Violation
+	errs = append(errs, validateOrigin(labels, ctx)...)
 
 	for _, spec := range registry {
 		value, present := labels[spec.Key]
@@ -135,45 +129,6 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 	sort.Slice(errs, func(i, j int) bool { return errs[i].Key < errs[j].Key })
 	sort.Slice(warns, func(i, j int) bool { return warns[i].Key < warns[j].Key })
 	return Result{Errors: errs, Warnings: warns}
-}
-
-// ValidateOriginFormat is a context-free vocabulary check on the
-// kuma.io/origin label — its value must be one of "global" or "zone" (or
-// empty, treated as unset). Appropriate for flows that intentionally skip
-// the context-aware ValidateOrigin (non-federated zone CPs, legacy
-// non-plugin-originated resources) but still want to reject unknown values.
-func ValidateOriginFormat(labels map[string]string) []Violation {
-	value, ok := labels[mesh_proto.ResourceOriginLabel]
-	if !ok || value == "" {
-		return nil
-	}
-	if err := mesh_proto.ResourceOrigin(value).IsValid(); err != nil {
-		return []Violation{{
-			Key:    mesh_proto.ResourceOriginLabel,
-			Reason: fmt.Sprintf("%s should be 'global' or 'zone', got '%s'", mesh_proto.ResourceOriginLabel, value),
-		}}
-	}
-	return nil
-}
-
-// ValidateOrigin runs only the kuma.io/origin label spec, returning errors
-// only. Used by the delete flow — it is the one CP-computed label the
-// delete-authorization gate actually needs to enforce. A mismatch here is
-// "you are deleting in the wrong CP", not a value the CP would silently
-// override.
-func ValidateOrigin(labels map[string]string, ctx ValidationContext) []Violation {
-	if ctx.Privileged {
-		return nil
-	}
-	spec, ok := registry[mesh_proto.ResourceOriginLabel]
-	if !ok {
-		return nil
-	}
-	value, present := labels[spec.Key]
-	if v := originDeleteCheck(spec, value, present, ctx); v != nil {
-		return []Violation{*v}
-	}
-	return nil
 }
 
 func formatViolations(labels map[string]string) []Violation {
@@ -234,17 +189,6 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 			if !present {
 				return nil, nil
 			}
-			if spec.AllowAnyWhenNotApplicable {
-				if len(spec.AllowedValues) > 0 && !slices.Contains(spec.AllowedValues, value) {
-					// Out-of-vocabulary value — the CP would not have set it.
-					// Strip it and warn.
-					return nil, &Violation{
-						Key:    spec.Key,
-						Reason: notAllowedValueReason(spec.Key, spec.AllowedValues, value),
-					}
-				}
-				return nil, nil
-			}
 			return nil, &Violation{Key: spec.Key, Reason: notApplicableReason(spec.Key, value)}
 		}
 
@@ -253,78 +197,16 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 				return nil, nil
 			}
 			if value != expected {
-				if spec.StrictMatch {
-					return &Violation{
-						Key:    spec.Key,
-						Reason: strictMismatchReason(spec.Key, expected, value),
-					}, nil
-				}
 				return nil, &Violation{
 					Key:    spec.Key,
 					Reason: mismatchReason(spec.Key, expected, value),
 				}
 			}
-			return nil, nil
-		}
-
-		// Absent and applies=true. Most CP-owned labels are populated by Compute,
-		// so we don't fail here. The exception is RequirePresence: the user must
-		// consciously set the value (kuma.io/origin: zone on a zone CP gates apply
-		// so users don't blindly create resources thinking they're on Global).
-		if spec.RequirePresence != nil && spec.RequirePresence(ctx) {
-			return &Violation{
-				Key:    spec.Key,
-				Reason: fmt.Sprintf("the %s label must be set to '%s'", spec.Key, expected),
-			}, nil
 		}
 		return nil, nil
 	}
 
 	return nil, nil
-}
-
-// originDeleteCheck is the validator used by the delete flow — it preserves
-// pre-warning behavior so origin mismatches still reject deletes.
-func originDeleteCheck(spec LabelSpec, value string, present bool, ctx ValidationContext) *Violation {
-	var expected string
-	applies := true
-	if spec.Expected != nil {
-		expected, applies = spec.Expected(ctx)
-	}
-
-	if !applies {
-		if !present {
-			return nil
-		}
-		if spec.AllowAnyWhenNotApplicable {
-			if len(spec.AllowedValues) > 0 && !slices.Contains(spec.AllowedValues, value) {
-				return &Violation{
-					Key:    spec.Key,
-					Reason: fmt.Sprintf("must be one of [%s]", strings.Join(quoted(spec.AllowedValues), ", ")),
-				}
-			}
-			return nil
-		}
-		return &Violation{Key: spec.Key, Reason: "is a reserved label managed by the control plane and cannot be set on apply"}
-	}
-
-	if present {
-		if value != expected {
-			return &Violation{
-				Key:    spec.Key,
-				Reason: fmt.Sprintf("%s should be '%s', got '%s'", spec.Key, expected, value),
-			}
-		}
-		return nil
-	}
-
-	if spec.RequirePresence != nil && spec.RequirePresence(ctx) {
-		return &Violation{
-			Key:    spec.Key,
-			Reason: fmt.Sprintf("the %s label must be set to '%s'", spec.Key, expected),
-		}
-	}
-	return nil
 }
 
 func quoted(vals []string) []string {
