@@ -287,11 +287,11 @@ rules:
 				expected: `
 violations:
   - field: spec.rules[0].allow[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
   - field: spec.rules[0].allowWithShadowDeny[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
   - field: spec.rules[0].deny[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
 `,
 			}),
 		)

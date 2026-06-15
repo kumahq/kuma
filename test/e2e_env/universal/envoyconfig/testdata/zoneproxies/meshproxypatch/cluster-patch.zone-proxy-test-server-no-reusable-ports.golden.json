@@ -722,19 +722,15 @@
                       "name": "envoy.filters.http.rbac",
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC",
-                        "rules": {
-                          "policies": {
-                            "MeshTrafficPermission": {
-                              "permissions": [
-                                {
-                                  "any": true
-                                }
-                              ],
-                              "principals": [
-                                {
-                                  "any": true
-                                }
-                              ]
+                        "matcher": {
+                          "onNoMatch": {
+                            "action": {
+                              "name": "envoy.filters.rbac.action",
+                              "typedConfig": {
+                                "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                "action": "DENY",
+                                "name": "default"
+                              }
                             }
                           }
                         }

@@ -52,10 +52,10 @@ jobs:
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
@@ -107,14 +107,14 @@ jobs:
       matrix:
         image: ${{ fromJSON(inputs.images) }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
@@ -136,7 +136,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@29dd57c7c19389e07390c1c9fe83aef6ff0c424a # v6.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a92df3beb1e69e27d86be56346488f15fecaf0de # v6.1.1
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -145,7 +145,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@29dd57c7c19389e07390c1c9fe83aef6ff0c424a # v6.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a92df3beb1e69e27d86be56346488f15fecaf0de # v6.1.1
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -194,7 +194,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@7040193cacd1787991b11b6b2ddb0a9719cbb533 # v5.0.3
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@a92df3beb1e69e27d86be56346488f15fecaf0de # v5.0.4
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -226,14 +226,14 @@ jobs:
     timeout-minutes: 10
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7

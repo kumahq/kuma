@@ -83,7 +83,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		}
 
 		inboundRules, ok := mtp.FromRules.InboundRules[key]
-		if !ok || len(inboundRules) == 0 {
+		if (!ok || len(inboundRules) == 0) && proxy.WorkloadIdentity == nil {
 			err := p.configureLegacyRules(mtp, key, listener, res, proxy)
 			if err != nil {
 				return err

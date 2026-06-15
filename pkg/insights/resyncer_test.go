@@ -596,6 +596,114 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
+	It("should not compute services when meshServices.mode is Exclusive", func() {
+		// given a mesh with meshServices.mode=Exclusive
+		mesh := core_mesh.NewMeshResource()
+		mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Exclusive}
+		err := rm.Create(context.Background(), mesh, store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp1 := core_mesh.NewDataplaneResource()
+		dp1.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 5000,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+						},
+					},
+				},
+			},
+		}
+		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		externalService := core_mesh.NewExternalServiceResource()
+		externalService.Spec = &mesh_proto.ExternalService{
+			Tags: map[string]string{"kuma.io/service": "external-service"},
+			Networking: &mesh_proto.ExternalService_Networking{
+				Address: "foobar:8080",
+			},
+		}
+		err = rm.Create(context.Background(), externalService, store.CreateByKey("es1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		step(stepsToResync)
+
+		// then the MeshInsight is computed but reports no Services stat
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetBy(insights.MeshInsightKey("mesh-1")))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(meshInsight.Spec.Services).To(BeNil())
+		}).Should(Succeed())
+
+		// and no ServiceInsight is created since the empty insight equals the default spec
+		serviceInsight := core_mesh.NewServiceInsightResource()
+		err = rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
+		Expect(store.IsNotFound(err)).To(BeTrue())
+	})
+
+	It("should not create a service insight entry for inbounds without a kuma.io/service tag", func() {
+		// KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED strips the kuma.io/service tag from inbounds
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		tagged := core_mesh.NewDataplaneResource()
+		tagged.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 5000,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+						},
+					},
+				},
+			},
+		}
+		untagged := core_mesh.NewDataplaneResource()
+		untagged.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.2",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 5000,
+					},
+				},
+			},
+		}
+
+		for n, entity := range map[string]model.Resource{"tagged": tagged, "untagged": untagged} {
+			err = rm.Create(context.Background(), entity, store.CreateByKey(n, "mesh-1"))
+			Expect(err).ToNot(HaveOccurred(), n)
+		}
+
+		step(stepsToResync)
+
+		// when
+		Eventually(func(g Gomega) {
+			serviceInsight := core_mesh.NewServiceInsightResource()
+			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
+			g.Expect(err).ToNot(HaveOccurred())
+			// then the tagged inbound is tracked, but no entry is created for the empty name
+			g.Expect(serviceInsight.Spec.Services).To(HaveKey("backend"))
+			g.Expect(serviceInsight.Spec.Services).ToNot(HaveKey(""))
+		}).Should(Succeed())
+
+		// and the MeshInsight only counts the tagged service, not the untagged inbound
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetBy(insights.MeshInsightKey("mesh-1")))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(meshInsight.Spec.Services.Internal).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.Services.Total).To(Equal(uint32(1)))
+		}).Should(Succeed())
+	})
+
 	It("should return correct dataplanes statuses in mesh insights", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())

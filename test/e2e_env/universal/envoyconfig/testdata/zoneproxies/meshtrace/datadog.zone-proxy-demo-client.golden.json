@@ -834,19 +834,15 @@
                 "name": "envoy.filters.network.rbac",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC",
-                  "rules": {
-                    "policies": {
-                      "MeshTrafficPermission": {
-                        "permissions": [
-                          {
-                            "any": true
-                          }
-                        ],
-                        "principals": [
-                          {
-                            "any": true
-                          }
-                        ]
+                  "matcher": {
+                    "onNoMatch": {
+                      "action": {
+                        "name": "envoy.filters.rbac.action",
+                        "typedConfig": {
+                          "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                          "action": "DENY",
+                          "name": "default"
+                        }
                       }
                     }
                   },

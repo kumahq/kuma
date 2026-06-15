@@ -59,7 +59,8 @@ default:
       openTelemetry:
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: my-otel
+          labels:
+            kuma.io/display-name: my-otel
 `),
 	)
 
@@ -253,13 +254,14 @@ default:
         endpoint: otel-collector:4778
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: my-otel
+          labels:
+            kuma.io/display-name: my-otel
 `),
 		ErrorCase(
-			"openTelemetry backendRef neither name nor labels",
+			"openTelemetry backendRef no labels",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef",
-				Message: "backendRef must have exactly one defined: name, labels",
+				Message: "backendRef must have exactly one defined: labels",
 			},
 			`
 type: MeshMetric
