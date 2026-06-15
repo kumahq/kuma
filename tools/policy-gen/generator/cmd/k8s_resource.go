@@ -110,7 +110,9 @@ import (
 	{{- if not .SkipRegistration }}
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
 	{{- end }}
+	{{- if not (eq (printf "%s" .Scope) "Global") }}
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	{{- end }}
 )
 
 {{- if .Description }}
@@ -157,18 +159,27 @@ func (cb *{{.Name}}) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *{{.Name}}) GetMesh() string {
+{{- if eq (printf "%s" .Scope) "Global" }}
+	// {{.Name}} is a Global-scoped resource and is not bound to a mesh.
+	return ""
+{{- else }}
 	if mesh, ok := cb.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
 		return core_model.DefaultMesh
 	}
+{{- end }}
 }
 
 func (cb *{{.Name}}) SetMesh(mesh string) {
+{{- if eq (printf "%s" .Scope) "Global" }}
+	// {{.Name}} is a Global-scoped resource, the mesh label must not be set.
+{{- else }}
 	if cb.Labels == nil {
 		cb.Labels = map[string]string{}
 	}
 	cb.Labels[metadata.KumaMeshLabel] = mesh
+{{- end }}
 }
 
 func (cb *{{.Name}}) GetSpec() (core_model.ResourceSpec, error) {

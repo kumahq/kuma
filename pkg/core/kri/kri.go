@@ -70,9 +70,16 @@ func FromResourceMetaE[T ~string](rm core_model.ResourceMeta, resourceType T) (I
 
 	rType := core_model.ResourceType(resourceType)
 
-	if desc, err := registry.Global().DescriptorFor(rType); err != nil {
+	// an overview shares its base resource's identity: DataplaneOverview -> Dataplane
+	if base, isOverview := strings.CutSuffix(string(rType), "Overview"); isOverview {
+		rType = core_model.ResourceType(base)
+	}
+
+	desc, err := registry.Global().DescriptorFor(rType)
+	if err != nil {
 		return Identifier{}, err
-	} else if desc.ShortName == "" {
+	}
+	if desc.ShortName == "" { // types without a ShortName aren't addressable by KRI
 		return Identifier{}, nil
 	}
 

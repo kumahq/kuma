@@ -212,6 +212,36 @@ spec:
 	return YamlK8s(mtp)
 }
 
+// MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity is the 'rules'-based
+// counterpart of MeshTrafficPermissionAllowAllKubernetes for meshes using
+// MeshIdentity, where the legacy 'from' form is ignored. See
+// MeshTrafficPermissionAllowAllUniversalWorkloadIdentity for the SPIFFE ID
+// prefix constraints.
+func MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(name string, trustDomains ...string) InstallFunc {
+	fns := make([]InstallFunc, 0, len(trustDomains))
+	for i, td := range trustDomains {
+		mtp := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  namespace: %[2]s
+  name: allow-all-%[1]s-%[3]d.%[2]s
+  labels:
+    kuma.io/mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[4]s"`, name, Config.KumaNamespace, i, td)
+		fns = append(fns, YamlK8s(mtp))
+	}
+	return Combine(fns...)
+}
+
 func MTLSMeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
@@ -426,6 +456,36 @@ spec:
       default:
         action: Allow`, name)
 	return YamlUniversal(mtp)
+}
+
+// MeshTrafficPermissionAllowAllUniversalWorkloadIdentity installs an allow-all
+// MeshTrafficPermission using the 'rules' field. Under MeshIdentity the legacy
+// 'from' form is ignored, so meshes with MeshIdentity must use 'rules' with a
+// SPIFFE ID prefix. The value must be a valid SPIFFE ID, i.e. carry the full
+// trust domain and no trailing slash (a bare "spiffe://" or a trailing slash
+// fails validation). One MeshTrafficPermission is installed per trust domain
+// (they're merged anyway), which lets multizone meshes (per-zone trust domains)
+// and migrations (legacy mTLS trust domain "<mesh>" plus identity trust domains)
+// allow every expected client.
+func MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(name string, trustDomains ...string) InstallFunc {
+	fns := make([]InstallFunc, 0, len(trustDomains))
+	for i, td := range trustDomains {
+		mtp := fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-all-%[1]s-%[2]d
+mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[3]s"`, name, i, td)
+		fns = append(fns, YamlUniversal(mtp))
+	}
+	return Combine(fns...)
 }
 
 func YamlUniversal(yaml string) InstallFunc {

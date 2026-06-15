@@ -66,7 +66,7 @@ endif
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
-	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/start
+	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/start/with-retry
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:

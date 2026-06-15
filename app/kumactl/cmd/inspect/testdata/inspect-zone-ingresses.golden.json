@@ -6,6 +6,7 @@
       "name": "zone-ingress-1",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_zi____zone-ingress-1_",
       "zoneIngress": {},
       "zoneIngressInsight": {
         "subscriptions": [
@@ -63,6 +64,7 @@
       "name": "zone-ingress-2",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_zi____zone-ingress-2_",
       "zoneIngress": {},
       "zoneIngressInsight": {
         "subscriptions": [
@@ -122,6 +124,7 @@
       "name": "zone-ingress-3",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_zi____zone-ingress-3_",
       "zoneIngress": {},
       "zoneIngressInsight": {
         "subscriptions": [
