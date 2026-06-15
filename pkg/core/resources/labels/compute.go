@@ -46,23 +46,10 @@ type Options struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
-	// Privileged marks the caller as a trusted CP-internal flow (KDS sync,
-	// GC, storage-version migrator, K8s controllers writing under the CP
-	// service account). It changes Compute's behavior in two ways:
-	//
-	//   - If the resource is not locally originated (e.g. kuma.io/origin
-	//     reports a different CP), Compute returns the labels unchanged.
-	//     KDS-synced resources are authoritative from the source CP and
-	//     must not be rewritten.
-	//   - OwnerSystem labels the caller supplied are preserved instead of
-	//     stripped. K8s controllers legitimately set keys like
-	//     kuma.io/managed-by; user input paths still drop them.
+	// Privileged marks trusted CP-internal writers. Non-local resources pass
+	// through; local writes may keep OwnerSystem labels.
 	Privileged bool
-	// PreviousLabels are the labels currently persisted for the resource.
-	// On non-Privileged user paths, Compute restores OwnerSystem keys from
-	// here instead of dropping them — controllers like the Universal
-	// workload-generator stamp kuma.io/managed-by directly via the store,
-	// and a subsequent user PUT must not wipe it out.
+	// PreviousLabels preserves stored OwnerSystem labels on user updates.
 	PreviousLabels map[string]string
 }
 
@@ -124,33 +111,7 @@ func WithPreviousLabels(labels map[string]string) Option {
 	}
 }
 
-// Compute returns the label map the CP would store for the given resource.
-//
-// If Options.Privileged is set and the resource is not locally originated
-// (the KDS-sync case — labels are authoritative from another CP), Compute
-// returns the labels untouched.
-//
-// Otherwise it walks the LabelSpec registry and, for each non-user-owned key:
-//
-//   - OwnerControlPlane, Expected applies=true, !OpenValue: force-set the
-//     expected value, overriding whatever the user supplied.
-//   - OwnerControlPlane, Expected applies=true, OpenValue: keep the user
-//     value as-is. The CP doesn't dictate the value, just where it lives.
-//   - OwnerControlPlane, Expected applies=false: delete the key. The label
-//     isn't applicable in this context; a user value would be stale.
-//   - OwnerSystem: on Privileged paths, preserve the caller's value. On
-//     user paths, restore from PreviousLabels if it carries a value for
-//     this key (the previously-stored CP-set value is authoritative);
-//     otherwise drop. User input on these keys is never trusted —
-//     controllers like the Universal workload-generator stamp
-//     kuma.io/managed-by directly via the store, and a subsequent user
-//     PUT must not wipe it out.
-//
-// OwnerUser keys are left untouched.
-//
-// After the registry walk, Compute writes the OwnerSystem labels it owns
-// based on caller-supplied options and the resource spec (ServiceAccount,
-// Workload, and the Dataplane listener flags).
+// Compute returns the labels the CP should store for a resource.
 func Compute(
 	rd core_model.ResourceTypeDescriptor,
 	spec core_model.ResourceSpec,
@@ -165,10 +126,7 @@ func Compute(
 		labels = maps.Clone(existingLabels)
 	}
 
-	// Privileged callers writing a non-locally-originated resource (the KDS
-	// sync case) bring labels that are authoritative from the source CP —
-	// rewriting them here would clobber kuma.io/origin, kuma.io/zone, etc.
-	// Pass them through unchanged.
+	// Do not rewrite labels imported from another CP.
 	if o.Privileged && !core_model.IsLocallyOriginated(o.Mode, labels) {
 		return labels, nil
 	}
@@ -189,8 +147,6 @@ func Compute(
 		ResourceName: displayName,
 	}
 
-	// kuma.io/origin sits outside the registry. Force-set the CP-computed
-	// value — origin is deterministic from the CP mode.
 	labels[mesh_proto.ResourceOriginLabel] = expectedOrigin(ctx)
 
 	for _, ls := range registry {
@@ -198,12 +154,7 @@ func Compute(
 		case OwnerUser:
 			continue
 		case OwnerSystem:
-			// Privileged callers (K8s controllers, etc.) legitimately set
-			// OwnerSystem labels like kuma.io/managed-by. On user paths the
-			// user's own value is never trusted, but the previously-stored
-			// CP value must survive — the Universal workload-generator and
-			// meshservice-generator stamp these directly via the store, and
-			// a subsequent user PUT would otherwise drop them.
+			// Restore stored system labels on user writes.
 			if !o.Privileged {
 				if prev, ok := o.PreviousLabels[ls.Key]; ok {
 					labels[ls.Key] = prev
@@ -227,10 +178,7 @@ func Compute(
 		}
 	}
 
-	// ComputePolicyRole reports two spec-validation errors (from+to mixed,
-	// producer+consumer mixed) that the registry's Expected swallows as
-	// applies=false. Surface them explicitly here so the create/update fails
-	// rather than silently dropping kuma.io/policy-role.
+	// Keep policy-role validation errors from being hidden by applies=false.
 	if rd.IsPolicy && rd.IsPluginOriginated && o.Namespace.value != "" {
 		if _, err := ComputePolicyRole(spec.(core_model.Policy), o.Namespace); err != nil {
 			return nil, err

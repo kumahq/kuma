@@ -8,18 +8,11 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
-// Control-plane-managed labels. Each one is computed by the CP for the given
-// resource and context; users may set them only if their value matches.
-//
-// kuma.io/origin is handled outside this registry — see validate_origin.go.
-
 func init() {
 	register(LabelSpec{
 		Key:   mesh_proto.MeshTag,
 		Owner: OwnerControlPlane,
 		Expected: func(ctx ValidationContext) (string, bool) {
-			// Only Mesh-scoped resources have a meaningful kuma.io/mesh; for
-			// Global-scoped resources (Mesh, Zone, ...) the label is not applicable.
 			if ctx.Descriptor.Scope != core_model.ScopeMesh {
 				return "", false
 			}
@@ -81,8 +74,6 @@ func init() {
 			}
 			role, err := ComputePolicyRole(pol, ctx.Namespace)
 			if err != nil {
-				// Bad policy spec; leave it to spec validators. Treat as
-				// "not applicable" so we do not double-report here.
 				return "", false
 			}
 			return string(role), true

@@ -12,13 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
-// Violation is a single label-validation finding.
-//
-// Format=true marks failures of the K8s label format constraints
-// (qualified-name keys, label-value values). Callers may treat these
-// differently from semantic findings — the K8s webhook short-circuits on
-// format violations so the K8s API server's native "Invalid value: ..." error
-// surfaces unmodified.
+// Violation is a label-validation finding; Format marks K8s label syntax errors.
 type Violation struct {
 	Key    string `json:"key"`
 	Reason string `json:"reason"`
@@ -32,9 +26,7 @@ func (v Violation) String() string {
 	return "'" + v.Key + "' " + v.Reason
 }
 
-// ValidationContext carries the per-call information validators consult.
-// It is the only piece of state passed into Validate; all per-label rules
-// derive their decision from these fields.
+// ValidationContext carries the per-call inputs for label validation.
 type ValidationContext struct {
 	Mode                         config_core.CpMode
 	IsK8s                        bool
@@ -46,19 +38,11 @@ type ValidationContext struct {
 	Spec                         core_model.ResourceSpec
 	ResourceName                 string
 	ResourceMesh                 string
-	// Privileged: when true, Validate returns an empty Result with the input
-	// labels echoed in Sanitized. Set by callers that bypass validation (KDS
-	// sync, GC, storage-version migrator).
+	// Privileged skips validation for trusted CP-internal writes.
 	Privileged bool
 }
 
-// Result is what Validate returns.
-//
-//   - Errors must reject the request (format issues, OwnerUser AllowedValues
-//     mismatch, origin vocabulary/mismatch/required-presence).
-//   - Warnings should be surfaced to the caller without rejecting. They cover
-//     attempts to set CP-managed labels: Compute will override (or drop) the
-//     value and the user should know what happened.
+// Result separates blocking errors from warnings for values Compute will fix.
 type Result struct {
 	Errors   []Violation
 	Warnings []Violation
@@ -76,33 +60,7 @@ func systemOverriddenReason(key, got string) string {
 	return fmt.Sprintf("%s is set by the control plane; the supplied value '%s' was overridden", key, got)
 }
 
-// Validate runs format + semantic checks against the given label set.
-//
-// Format violations short-circuit the rest of the function (validators
-// assume well-formed input). All format findings have Format=true; callers
-// that need to behave differently for format issues inspect Violation.Format.
-//
-// kuma.io/origin is checked first by validateOrigin — its semantics are
-// stricter (vocabulary errors, CP-vs-user mismatch as error) and don't share
-// the warning/override pattern used by the rest of the CP-owned labels.
-//
-// Semantic classification for the registry (everything except origin), per
-// LabelSpec.Owner:
-//
-//   - OwnerSystem        — any user-set value is a warning. Compute will
-//     overwrite or drop it.
-//   - OwnerUser          — any value is accepted; if AllowedValues is non-empty
-//     and the value is outside the set, that is an error.
-//   - OwnerControlPlane  — Expected(ctx) supplies the CP value. The user value
-//     is accepted only when it matches expected (or OpenValue is set). All
-//     other cases are warnings; Compute will regenerate the right value.
-//
-// Reserved keys (kuma.io/* or k8s.kuma.io/*) that are not in the registry are
-// left alone — Compute will not touch them either, so they pass through as
-// opaque user-set values.
-//
-// When ctx.Privileged is true the function returns an empty Result — KDS-synced
-// and CP-internal flows skip all validation.
+// Validate runs format and semantic checks against labels.
 func Validate(labels map[string]string, ctx ValidationContext) Result {
 	if ctx.Privileged {
 		return Result{}
@@ -153,8 +111,6 @@ func sortedKeys(m map[string]string) []string {
 	return keys
 }
 
-// classifyOne returns (error, warning) for a single registered label.
-// Exactly one is non-nil, or both are nil when the value is accepted.
 func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationContext) (*Violation, *Violation) {
 	switch spec.Owner {
 	case OwnerSystem:

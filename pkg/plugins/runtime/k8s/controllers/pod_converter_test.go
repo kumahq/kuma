@@ -120,8 +120,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			// existing dataplane — mirror the controller, which seeds
-			// Namespace/Name from the Pod before calling the converter.
 			existingDataplane := &mesh_k8s.Dataplane{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: pod.Namespace,

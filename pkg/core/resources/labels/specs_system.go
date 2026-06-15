@@ -6,11 +6,6 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
-// System-managed labels. The CP sets these from external sources (Pod metadata,
-// lifecycle events, dataplane spec) — non-privileged callers should never
-// supply them on apply. KDS sync and the K8s controller go through the
-// Privileged bypass and skip validation entirely.
-
 func init() {
 	register(LabelSpec{
 		Key:   metadata.KumaServiceAccount,

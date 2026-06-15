@@ -15,7 +15,6 @@ import (
 
 var _ = Describe("Validate", func() {
 	mtDesc := func() labels.ValidationContext {
-		// MeshTrafficPermission descriptor: IsPolicy=true, IsPluginOriginated=true.
 		mtp := builders.MeshTrafficPermission().
 			WithTargetRef(builders.TargetRefMesh()).
 			AddFrom(builders.TargetRefMesh(), mtp_api.Allow).
@@ -252,7 +251,6 @@ var _ = Describe("Validate", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		ctx.Privileged = true
-		// This input would otherwise produce several findings.
 		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "global",
 			mesh_proto.MeshTag:             "other-mesh",
@@ -276,9 +274,6 @@ var _ = Describe("Validate", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		ctx.DisableOriginLabelValidation = true
-		// On a zone CP the CP-computed origin would be 'zone', but with
-		// validation disabled the user value is accepted (any value in the
-		// vocabulary) and never escalates to a strict-match error.
 		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "global",
 		}, ctx)
@@ -290,8 +285,6 @@ var _ = Describe("Validate", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
 		ctx.DisableOriginLabelValidation = true
-		// The disable flag turns off the CP-vs-user comparison, not the
-		// vocabulary check — a bogus origin value is still a hard error.
 		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "bogus",
 		}, ctx)

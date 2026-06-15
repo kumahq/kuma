@@ -417,14 +417,7 @@ var _ = Describe("Compute", func() {
 		}),
 	)
 
-	// On Universal the workload-generator stamps kuma.io/managed-by directly
-	// via the store, bypassing Compute. A subsequent user PUT goes through
-	// Compute with Privileged=false. Without PreviousLabels we strip the
-	// CP-set OwnerSystem value; with it, we restore the stored value.
 	Describe("OwnerSystem carry-over from PreviousLabels", func() {
-		// Use a Dataplane to avoid pulling in workload_api here. The same
-		// codepath (OwnerSystem branch in Compute) applies to any resource
-		// type carrying kuma.io/managed-by.
 		dp := builders.Dataplane().
 			WithName("backend-1").
 			WithServices("backend").

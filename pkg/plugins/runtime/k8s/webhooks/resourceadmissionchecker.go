@@ -25,15 +25,7 @@ type ResourceAdmissionChecker struct {
 	ZoneName                     string
 }
 
-// AdmissionDecision is the result of an admission check. When Response.Allowed
-// is false, Warnings is empty. When Allowed is true, Warnings carries any
-// non-blocking findings (e.g. user-supplied CP-managed label values that the
-// CP will override on persist via Compute).
-//
-// Privileged signals that the request bypassed validation (KDS sync, GC,
-// storage-version migrator). The mutating defaulter must NOT run Compute on
-// these — the resource's labels are authoritative from the source CP and
-// recomputing would clobber kuma.io/origin, kuma.io/zone, etc.
+// AdmissionDecision is the result of an admission check.
 type AdmissionDecision struct {
 	Response   admission.Response
 	Warnings   []string
@@ -74,11 +66,6 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 }
 
 func (c *ResourceAdmissionChecker) checkResource(r core_model.Resource, ns string, op v1.Operation) AdmissionDecision {
-	// Federated/plugin resources get the full context-aware validation, which
-	// covers both the origin vocabulary check and CP-owned label mismatches
-	// (now surfaced as warnings, not errors). Non-federated zones / legacy
-	// resources skip that broader check but still get the origin vocabulary
-	// check below.
 	if (c.Mode == core.Global || c.FederatedZone) && r.Descriptor().IsPluginOriginated {
 		return c.validateLabels(r, ns, op)
 	}
@@ -98,11 +85,6 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 }
 
 func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string, op v1.Operation) AdmissionDecision {
-	// On K8s the kuma core name is "<metadata.name>.<namespace>". For label
-	// validation (notably kuma.io/display-name, which equals the K8s
-	// metadata.name) we need the unqualified name. GetNameExtensions carries
-	// the original K8s metadata.name; fall back to a suffix strip if the
-	// extension is missing.
 	name := r.GetMeta().GetName()
 	if k8sName, ok := r.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && k8sName != "" {
 		name = k8sName
@@ -123,11 +105,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	}
 	labels := r.GetMeta().GetLabels()
 
-	// Delete authorization only hinges on origin — was this resource created
-	// in the CP that's now being asked to delete it? Other CP-computed labels
-	// reflect their originating CP's context (notably for KDS-synced resources)
-	// and aren't meaningful to recompute here. Origin mismatches on delete
-	// stay as errors so we don't silently delete from the wrong CP.
 	if op == v1.Delete {
 		if violations := resource_labels.ValidateOrigin(labels, ctx); len(violations) > 0 {
 			return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + violations[0].String())}
@@ -137,9 +114,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 
 	result := resource_labels.Validate(labels, ctx)
 	if len(result.Errors) > 0 {
-		// Defer to the K8s API server's native "Invalid value: ..." error when
-		// the problem is label format — its message carries kind/name/key
-		// context that our admission response doesn't.
 		if result.Errors[0].Format {
 			return AdmissionDecision{Response: admission.Allowed("")}
 		}
