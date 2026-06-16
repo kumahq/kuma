@@ -313,6 +313,9 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	}
 
 	for _, meshService := range meshServices {
+		if !meshService.IsLocalMeshService() {
+			continue
+		}
 		if managedBy, ok := meshService.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]; !ok || managedBy != managedByValue {
 			continue
 		}
@@ -466,6 +469,10 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 					g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
 				} else {
 					for _, meshService := range meshCtx.Resources.MeshServices().Items {
+						if !meshService.IsLocalMeshService() {
+							// Synced from another zone via KDS, this zone's generator must not delete it.
+							continue
+						}
 						if managedBy, ok := meshService.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]; !ok || managedBy != managedByValue {
 							continue
 						}

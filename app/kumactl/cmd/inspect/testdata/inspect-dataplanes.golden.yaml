@@ -60,6 +60,7 @@ items:
           gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
           gitTag: v1.0.2
           version: 1.0.2
+  kri: kri_dp_default___experiment_
   mesh: default
   modificationTime: "2019-07-17T18:08:41Z"
   name: experiment
@@ -124,6 +125,7 @@ items:
           gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
           gitTag: v1.0.2
           version: 1.0.2
+  kri: kri_dp_default___degraded-dp_
   mesh: default
   modificationTime: "2019-07-17T18:08:41Z"
   name: degraded-dp
@@ -189,6 +191,7 @@ items:
           gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
           gitTag: v1.0.2
           version: 1.0.2
+  kri: kri_dp_default___offline-dp_
   mesh: default
   modificationTime: "2019-07-17T18:08:41Z"
   name: offline-dp
@@ -210,6 +213,7 @@ items:
       id: "2"
     - controlPlaneInstanceId: node-003
       id: "3"
+  kri: kri_dp_default___example_
   mesh: default
   modificationTime: "2019-07-17T18:08:41Z"
   name: example

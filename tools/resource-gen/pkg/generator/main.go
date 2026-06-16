@@ -483,6 +483,27 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
+		// kri is only emitted at runtime for resources that have a ShortName
+		// (see pkg/core/kri), so only advertise it in the schema for those.
+		if r.ShortName != "" {
+			schemaMap.Set("kri", &jsonschema.Schema{
+				Type:        "string",
+				ReadOnly:    true,
+				Description: "Kuma Resource Identifier (KRI) of the given resource",
+			})
+		}
+		schemaMap.Set("creationTime", &jsonschema.Schema{
+			Type:        "string",
+			Format:      "date-time",
+			ReadOnly:    true,
+			Description: "Time at which the resource was created",
+		})
+		schemaMap.Set("modificationTime", &jsonschema.Schema{
+			Type:        "string",
+			Format:      "date-time",
+			ReadOnly:    true,
+			Description: "Time at which the resource was updated",
+		})
 		s, err := reflector.reflectFromType(tpe, true)
 		if err != nil {
 			return err

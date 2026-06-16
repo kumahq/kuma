@@ -562,7 +562,9 @@ var _ = Describe("MeshTrace", func() {
 								OpenTelemetry: &api.OpenTelemetryBackend{
 									BackendRef: &common_api.BackendResourceRef{
 										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: "non-existent-backend",
+										Labels: map[string]string{
+											"kuma.io/test": "non-existing",
+										},
 									},
 								},
 							}},
@@ -598,8 +600,9 @@ var _ = Describe("MeshTrace", func() {
 
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
 		motb.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: backendName,
+			Mesh:   "default",
+			Name:   backendName,
+			Labels: map[string]string{mesh_proto.DisplayName: backendName},
 		})
 		motb.Spec.Endpoint = &motb_api.Endpoint{
 			Address: new("collector.mesh"),
@@ -645,7 +648,9 @@ var _ = Describe("MeshTrace", func() {
 								OpenTelemetry: &api.OpenTelemetryBackend{
 									BackendRef: &common_api.BackendResourceRef{
 										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: backendName,
+										Labels: map[string]string{
+											"kuma.io/display-name": backendName,
+										},
 									},
 								},
 							}},

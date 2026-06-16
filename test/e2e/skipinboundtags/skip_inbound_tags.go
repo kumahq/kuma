@@ -57,7 +57,9 @@ spec:
 					WithName(meshName).
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			// standalone zone CP without global resolves {{ .Zone }} to "default"
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName,
+				fmt.Sprintf("%s.default.mesh.local", meshName))).
 			Install(YamlK8s(meshIdentity)).
 			Install(Parallel(
 				testserver.Install(

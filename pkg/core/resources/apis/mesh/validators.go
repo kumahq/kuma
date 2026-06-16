@@ -458,7 +458,7 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 	if match.SpiffeID != nil {
 		_, err := spiffeid.FromString(match.SpiffeID.Value)
 		if err != nil {
-			verr.AddViolation("spiffeID", "must be a valid Spiffe ID")
+			verr.AddViolation("spiffeID", fmt.Sprintf("must be a valid Spiffe ID: %s", err))
 		}
 	}
 	if match.SNI != nil {

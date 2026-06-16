@@ -160,7 +160,10 @@ spec:
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			),
 		).
-		Install(MeshTrafficPermissionAllowAllUniversal(zoneProxyMeshName)).
+		Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+			zoneProxyMeshName,
+			fmt.Sprintf("%s.%s.mesh.local", zoneProxyMeshName, universal.Cluster.ZoneName()),
+		)).
 		Install(YamlUniversal(meshExternalService)).
 		Install(YamlUniversal(meshIdentityYAML)).
 		Install(zoneproxy.Install(

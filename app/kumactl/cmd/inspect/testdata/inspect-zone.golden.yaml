@@ -1,5 +1,6 @@
 items:
 - creationTime: "2018-07-17T16:05:36.995Z"
+  kri: kri_z____zone-1_
   modificationTime: "2019-07-17T18:08:41Z"
   name: zone-1
   type: ZoneOverview
@@ -72,6 +73,7 @@ items:
           gitTag: v1.0.0
           version: 1.0.0
 - creationTime: "2018-07-17T16:05:36.995Z"
+  kri: kri_z____zone-2_
   modificationTime: "2019-07-17T18:08:41Z"
   name: zone-2
   type: ZoneOverview
@@ -86,6 +88,7 @@ items:
     - globalInstanceId: node-003
       id: "3"
 - creationTime: "2018-07-17T16:05:36.995Z"
+  kri: kri_z____zone-3_
   modificationTime: "2019-07-17T18:08:41Z"
   name: zone-3
   type: ZoneOverview

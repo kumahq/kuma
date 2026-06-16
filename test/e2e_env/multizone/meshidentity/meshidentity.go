@@ -32,7 +32,38 @@ func Identity() {
 					WithName(meshName).
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName,
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.KubeZone1.ZoneName()),
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.KubeZone2.ZoneName()),
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.UniZone1.ZoneName()),
+			)).
+			Install(YamlUniversal(fmt.Sprintf(`
+type: MeshMultiZoneService
+name: test-server-mi
+mesh: %s
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: test-server
+  ports:
+  - port: 80
+    appProtocol: http
+`, meshName))).
+			Install(YamlUniversal(fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+name: disable-la-to-test-server
+mesh: %s
+spec:
+  to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: test-server-mi
+      sectionName: '80'
+    default:
+      localityAwareness:
+        disabled: true`, meshName))).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -273,5 +304,14 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
+		// meshmultizone works
+		Expect(client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server-mi.mzsvc.mesh.local", client.WithNumberOfRequests(50))).
+			Should(And(
+				HaveLen(3),
+				HaveKey(Equal(`kube-test-server-zone-1`)),
+				HaveKey(Equal(`kube-test-server-zone-2`)),
+				HaveKey(Equal(`uni-test-server-zone-4`)),
+			))
 	})
 }

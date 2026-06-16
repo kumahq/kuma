@@ -47,6 +47,15 @@ components:
   schemas:
     DataplaneItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -72,6 +81,11 @@ components:
               description: Type of the backend (Kuma ships with 'prometheus')
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
