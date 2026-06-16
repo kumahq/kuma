@@ -9,7 +9,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
@@ -40,12 +39,10 @@ func GetNamespace(rm core_model.ResourceMeta, systemNamespace string) Namespace 
 }
 
 type Options struct {
-	Mode           config_core.CpMode
-	IsK8s          bool
-	ZoneName       string
-	Namespace      Namespace
-	ServiceAccount string
-	Workload       string
+	Mode      config_core.CpMode
+	IsK8s     bool
+	ZoneName  string
+	Namespace Namespace
 	// Privileged marks trusted CP-internal writers. Non-local resources pass
 	// through; local writes may keep OwnerSystem labels.
 	Privileged bool
@@ -72,18 +69,6 @@ func WithK8s(k8s bool) Option {
 func WithNamespace(namespace Namespace) Option {
 	return func(opts *Options) {
 		opts.Namespace = namespace
-	}
-}
-
-func WithServiceAccount(name string) Option {
-	return func(opts *Options) {
-		opts.ServiceAccount = name
-	}
-}
-
-func WithWorkload(name string) Option {
-	return func(opts *Options) {
-		opts.Workload = name
 	}
 }
 
@@ -136,9 +121,13 @@ func Compute(
 		resourceMesh = core_model.DefaultMesh
 	}
 
+	env := config_core.UniversalEnvironment
+	if o.IsK8s {
+		env = config_core.KubernetesEnvironment
+	}
 	ctx := ValidationContext{
 		Mode:         o.Mode,
-		IsK8s:        o.IsK8s,
+		Env:          env,
 		ZoneName:     o.ZoneName,
 		Namespace:    o.Namespace,
 		Descriptor:   rd,
@@ -149,32 +138,26 @@ func Compute(
 
 	labels[mesh_proto.ResourceOriginLabel] = expectedOrigin(ctx)
 
-	for _, ls := range registry {
+	for key, specs := range registry {
+		ls, ok := matchedSpec(specs, ctx)
+		if !ok {
+			delete(labels, key)
+			continue
+		}
 		switch ls.Owner {
 		case OwnerUser:
 			continue
 		case OwnerSystem:
-			// Restore stored system labels on user writes.
+			// Restore stored system labels on user writes; trust privileged writers.
 			if !o.Privileged {
-				if prev, ok := o.PreviousLabels[ls.Key]; ok {
-					labels[ls.Key] = prev
+				if prev, ok := o.PreviousLabels[key]; ok {
+					labels[key] = prev
 				} else {
-					delete(labels, ls.Key)
+					delete(labels, key)
 				}
 			}
 		case OwnerControlPlane:
-			value, applies := "", true
-			if ls.Expected != nil {
-				value, applies = ls.Expected(ctx)
-			}
-			if !applies {
-				delete(labels, ls.Key)
-				continue
-			}
-			if ls.OpenValue {
-				continue
-			}
-			labels[ls.Key] = value
+			labels[key] = ls.Expected(ctx)
 		}
 	}
 
@@ -194,14 +177,6 @@ func Compute(
 				labels[mesh_proto.ListenerZoneEgressLabel] = "enabled"
 			}
 		}
-	}
-
-	if o.IsK8s && o.ServiceAccount != "" {
-		labels[metadata.KumaServiceAccount] = o.ServiceAccount
-	}
-
-	if o.Workload != "" {
-		labels[metadata.KumaWorkload] = o.Workload
 	}
 
 	return labels, nil

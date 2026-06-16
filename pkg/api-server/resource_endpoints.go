@@ -694,9 +694,13 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 }
 
 func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resource_labels.ValidationContext {
+	env := config_core.UniversalEnvironment
+	if r.isK8s {
+		env = config_core.KubernetesEnvironment
+	}
 	return resource_labels.ValidationContext{
 		Mode:                         r.mode,
-		IsK8s:                        r.isK8s,
+		Env:                          env,
 		FederatedZone:                r.federatedZone,
 		ZoneName:                     r.zoneName,
 		DisableOriginLabelValidation: r.disableOriginLabelValidation,

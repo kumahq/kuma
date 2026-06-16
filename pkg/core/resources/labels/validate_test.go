@@ -33,6 +33,7 @@ var _ = Describe("Validate", func() {
 		dp := core_mesh.NewDataplaneResource()
 		return labels.ValidationContext{
 			Mode:         config_core.Zone,
+			Env:          config_core.UniversalEnvironment,
 			ZoneName:     "kuma-zone",
 			Descriptor:   dp.Descriptor(),
 			Spec:         dp.Spec,
@@ -131,7 +132,7 @@ var _ = Describe("Validate", func() {
 	It("warns on kuma.io/env=universal on K8s zone CP (mismatch — expects 'kubernetes')", func() {
 		ctx := mtDesc()
 		ctx.FederatedZone = true
-		ctx.IsK8s = true
+		ctx.Env = config_core.KubernetesEnvironment
 		ctx.Namespace = labels.NewNamespace("kuma-system", true)
 		r := labels.Validate(map[string]string{
 			mesh_proto.ResourceOriginLabel: "zone",
@@ -217,6 +218,21 @@ var _ = Describe("Validate", func() {
 		}, ctx)
 		Expect(r.Errors).To(BeEmpty())
 		Expect(r.Warnings).To(BeEmpty())
+	})
+
+	It("warns on user-set kuma.io/workload on K8s Dataplane (system-owned)", func() {
+		ctx := dpDesc()
+		ctx.Env = config_core.KubernetesEnvironment
+		ctx.FederatedZone = true
+		r := labels.Validate(map[string]string{
+			mesh_proto.ResourceOriginLabel: "zone",
+			metadata.KumaWorkload:          "my-workload",
+		}, ctx)
+		Expect(r.Errors).To(BeEmpty())
+		Expect(r.Warnings).To(ContainElement(labels.Violation{
+			Key:    metadata.KumaWorkload,
+			Reason: "kuma.io/workload is set by the control plane; the supplied value 'my-workload' was overridden",
+		}))
 	})
 
 	It("warns on kuma.io/workload on a policy (not a proxy)", func() {

@@ -93,7 +93,7 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	}
 	ctx := resource_labels.ValidationContext{
 		Mode:                         c.Mode,
-		IsK8s:                        true,
+		Env:                          core.KubernetesEnvironment,
 		FederatedZone:                c.FederatedZone,
 		ZoneName:                     c.ZoneName,
 		Namespace:                    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),

@@ -55,7 +55,7 @@ func requireOriginPresence(ctx ValidationContext) bool {
 	if ctx.Mode != config_core.Zone {
 		return false
 	}
-	if ctx.IsK8s {
+	if ctx.Env == config_core.KubernetesEnvironment {
 		return ctx.Namespace.system
 	}
 	return ctx.FederatedZone && ctx.Descriptor.IsPluginOriginated

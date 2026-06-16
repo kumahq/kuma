@@ -29,7 +29,7 @@ func (v Violation) String() string {
 // ValidationContext carries the per-call inputs for label validation.
 type ValidationContext struct {
 	Mode                         config_core.CpMode
-	IsK8s                        bool
+	Env                          config_core.EnvironmentType
 	FederatedZone                bool
 	ZoneName                     string
 	Namespace                    Namespace
@@ -73,8 +73,15 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 	var errs, warns []Violation
 	errs = append(errs, validateOrigin(labels, ctx)...)
 
-	for _, spec := range registry {
-		value, present := labels[spec.Key]
+	for key, specs := range registry {
+		value, present := labels[key]
+		spec, ok := matchedSpec(specs, ctx)
+		if !ok {
+			if present {
+				warns = append(warns, Violation{Key: key, Reason: notApplicableReason(key, value)})
+			}
+			continue
+		}
 		e, w := classifyOne(spec, value, present, ctx)
 		if e != nil {
 			errs = append(errs, *e)
@@ -135,28 +142,14 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 		}, nil
 
 	case OwnerControlPlane:
-		var expected string
-		applies := true
-		if spec.Expected != nil {
-			expected, applies = spec.Expected(ctx)
+		if !present {
+			return nil, nil
 		}
-
-		if !applies {
-			if !present {
-				return nil, nil
-			}
-			return nil, &Violation{Key: spec.Key, Reason: notApplicableReason(spec.Key, value)}
-		}
-
-		if present {
-			if spec.OpenValue {
-				return nil, nil
-			}
-			if value != expected {
-				return nil, &Violation{
-					Key:    spec.Key,
-					Reason: mismatchReason(spec.Key, expected, value),
-				}
+		expected := spec.Expected(ctx)
+		if value != expected {
+			return nil, &Violation{
+				Key:    spec.Key,
+				Reason: mismatchReason(spec.Key, expected, value),
 			}
 		}
 		return nil, nil
