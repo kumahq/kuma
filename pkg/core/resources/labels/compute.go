@@ -165,17 +165,6 @@ func Compute(
 		}
 	}
 
-	if dp, ok := spec.(*mesh_proto.Dataplane); ok {
-		for _, l := range dp.GetNetworking().GetListeners() {
-			switch l.Type {
-			case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
-				labels[mesh_proto.ListenerZoneIngressLabel] = "enabled"
-			case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
-				labels[mesh_proto.ListenerZoneEgressLabel] = "enabled"
-			}
-		}
-	}
-
 	return labels, nil
 }
 

@@ -1,10 +1,9 @@
 package labels
 
 import (
-	"strings"
-
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
@@ -68,7 +67,7 @@ func init() {
 			string(mesh_proto.WorkloadOwnerPolicyRole),
 		},
 		RequiredOn: RequiredOn{
-			ResourceTraits: []ResourceTrait{TraitPolicy, TraitPluginOriginated},
+			Policy: true,
 		},
 		Expected: func(ctx ValidationContext) (string, error) {
 			pol, ok := ctx.Spec.(core_model.Policy)
@@ -84,21 +83,6 @@ func init() {
 	})
 
 	register(LabelSpec{
-		Key:   mesh_proto.ProxyTypeLabel,
-		Owner: OwnerControlPlane,
-		RequiredOn: RequiredOn{
-			ResourceTraits: []ResourceTrait{TraitProxy},
-		},
-		Expected: func(ctx ValidationContext) (string, error) {
-			proxy, ok := ctx.Spec.(core_model.ProxyResource)
-			if !ok {
-				return "", nil
-			}
-			return strings.ToLower(string(proxy.GetProxyType())), nil
-		},
-	})
-
-	register(LabelSpec{
 		Key:   mesh_proto.KubeNamespaceTag,
 		Owner: OwnerControlPlane,
 		RequiredOn: RequiredOn{
@@ -110,13 +94,32 @@ func init() {
 		},
 	})
 
+	register(LabelSpec{
+		Key:   mesh_proto.ProxyTypeLabel,
+		Owner: OwnerControlPlane,
+		RequiredOn: RequiredOn{
+			ResourceTypes: []core_model.ResourceType{
+				core_mesh.DataplaneType,
+				core_mesh.ZoneIngressType,
+				core_mesh.ZoneEgressType,
+			},
+		},
+		Expected: func(ctx ValidationContext) (string, error) {
+			proxy, ok := ctx.Spec.(core_model.ProxyResource)
+			if !ok {
+				return "", nil
+			}
+			return string(proxy.GetProxyType()), nil
+		},
+	})
+
 	// System-owned labels.
 	register(LabelSpec{
 		Key:   metadata.KumaServiceAccount,
 		Owner: OwnerSystem,
 		RequiredOn: RequiredOn{
-			Environments:   []config_core.EnvironmentType{config_core.KubernetesEnvironment},
-			ResourceTraits: []ResourceTrait{TraitProxy},
+			Environments:  []config_core.EnvironmentType{config_core.KubernetesEnvironment},
+			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
 		},
 	})
 
@@ -124,20 +127,34 @@ func init() {
 		Key:   metadata.KumaWorkload,
 		Owner: OwnerSystem,
 		RequiredOn: RequiredOn{
-			Modes:          []config_core.CpMode{config_core.Zone},
-			Environments:   []config_core.EnvironmentType{config_core.KubernetesEnvironment},
-			ResourceTraits: []ResourceTrait{TraitProxy},
+			Modes:         []config_core.CpMode{config_core.Zone},
+			Environments:  []config_core.EnvironmentType{config_core.KubernetesEnvironment},
+			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
 		},
 	})
 
 	register(LabelSpec{
 		Key:   mesh_proto.ListenerZoneIngressLabel,
-		Owner: OwnerSystem,
+		Owner: OwnerControlPlane,
+		RequiredOn: RequiredOn{
+			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
+			SpecTraits:    []SpecTrait{HasZoneIngressListener},
+		},
+		Expected: func(ctx ValidationContext) (string, error) {
+			return "enabled", nil
+		},
 	})
 
 	register(LabelSpec{
 		Key:   mesh_proto.ListenerZoneEgressLabel,
-		Owner: OwnerSystem,
+		Owner: OwnerControlPlane,
+		RequiredOn: RequiredOn{
+			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
+			SpecTraits:    []SpecTrait{HasZoneEgressListener},
+		},
+		Expected: func(ctx ValidationContext) (string, error) {
+			return "enabled", nil
+		},
 	})
 
 	register(LabelSpec{
@@ -167,9 +184,9 @@ func init() {
 		Key:   metadata.KumaWorkload,
 		Owner: OwnerUser,
 		RequiredOn: RequiredOn{
-			Modes:          []config_core.CpMode{config_core.Zone},
-			Environments:   []config_core.EnvironmentType{config_core.UniversalEnvironment},
-			ResourceTraits: []ResourceTrait{TraitProxy},
+			Modes:         []config_core.CpMode{config_core.Zone},
+			Environments:  []config_core.EnvironmentType{config_core.UniversalEnvironment},
+			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
 		},
 	})
 }

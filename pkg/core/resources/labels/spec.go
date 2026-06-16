@@ -3,6 +3,7 @@ package labels
 import (
 	"slices"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
@@ -19,14 +20,13 @@ const (
 	OwnerSystem Owner = "system"
 )
 
-// ResourceTrait names a boolean property of a resource descriptor that
-// RequiredOn can require.
-type ResourceTrait string
+// SpecTrait names a boolean property of a resource's spec that RequiredOn can
+// require.
+type SpecTrait string
 
 const (
-	TraitPolicy           ResourceTrait = "Policy"
-	TraitProxy            ResourceTrait = "Proxy"
-	TraitPluginOriginated ResourceTrait = "PluginOriginated"
+	HasZoneIngressListener SpecTrait = "HasZoneIngressListener"
+	HasZoneEgressListener  SpecTrait = "HasZoneEgressListener"
 )
 
 // RequiredOn declares the contexts where a label applies.
@@ -40,8 +40,12 @@ type RequiredOn struct {
 	Environments []config_core.EnvironmentType
 	// KDSFlags lists KDS flags the descriptor must carry (all required).
 	KDSFlags []core_model.KDSFlagType
-	// ResourceTraits lists descriptor traits the resource must have (all required).
-	ResourceTraits []ResourceTrait
+	// ResourceTypes is a resource-type allowlist; ctx.Descriptor.Name must equal one entry.
+	ResourceTypes []core_model.ResourceType
+	// SpecTraits lists spec properties the resource must have (all required).
+	SpecTraits []SpecTrait
+	// Policy requires the resource to be a plugin-originated policy.
+	Policy bool
 	// RequiresNamespace requires the resource to be namespace-scoped.
 	RequiresNamespace bool
 }
@@ -62,8 +66,14 @@ func (r RequiredOn) Matches(ctx ValidationContext) bool {
 			return false
 		}
 	}
-	for _, trait := range r.ResourceTraits {
-		if !traitHolds(trait, ctx.Descriptor) {
+	if len(r.ResourceTypes) > 0 && !slices.Contains(r.ResourceTypes, ctx.Descriptor.Name) {
+		return false
+	}
+	if r.Policy && !(ctx.Descriptor.IsPolicy && ctx.Descriptor.IsPluginOriginated) {
+		return false
+	}
+	for _, trait := range r.SpecTraits {
+		if !specTraitHolds(trait, ctx.Spec) {
 			return false
 		}
 	}
@@ -73,14 +83,24 @@ func (r RequiredOn) Matches(ctx ValidationContext) bool {
 	return true
 }
 
-func traitHolds(t ResourceTrait, d core_model.ResourceTypeDescriptor) bool {
+func specTraitHolds(t SpecTrait, spec core_model.ResourceSpec) bool {
+	dp, ok := spec.(*mesh_proto.Dataplane)
+	if !ok {
+		return false
+	}
+	var want mesh_proto.Dataplane_Networking_Listener_Type
 	switch t {
-	case TraitPolicy:
-		return d.IsPolicy
-	case TraitProxy:
-		return d.IsProxy
-	case TraitPluginOriginated:
-		return d.IsPluginOriginated
+	case HasZoneIngressListener:
+		want = mesh_proto.Dataplane_Networking_Listener_ZoneIngress
+	case HasZoneEgressListener:
+		want = mesh_proto.Dataplane_Networking_Listener_ZoneEgress
+	default:
+		return false
+	}
+	for _, l := range dp.GetNetworking().GetListeners() {
+		if l.Type == want {
+			return true
+		}
 	}
 	return false
 }
