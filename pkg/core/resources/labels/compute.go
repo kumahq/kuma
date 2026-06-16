@@ -157,14 +157,11 @@ func Compute(
 				}
 			}
 		case OwnerControlPlane:
-			labels[key] = ls.Expected(ctx)
-		}
-	}
-
-	// Keep policy-role validation errors from being hidden by applies=false.
-	if rd.IsPolicy && rd.IsPluginOriginated && o.Namespace.value != "" {
-		if _, err := ComputePolicyRole(spec.(core_model.Policy), o.Namespace); err != nil {
-			return nil, err
+			value, err := ls.Expected(ctx)
+			if err != nil {
+				return nil, err
+			}
+			labels[key] = value
 		}
 	}
 

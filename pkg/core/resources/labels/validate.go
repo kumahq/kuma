@@ -145,7 +145,12 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 		if !present {
 			return nil, nil
 		}
-		expected := spec.Expected(ctx)
+		expected, err := spec.Expected(ctx)
+		if err != nil {
+			// The CP can't compute a canonical value because the resource is
+			// malformed; Compute surfaces that error on write. Nothing to compare here.
+			return nil, nil
+		}
 		if value != expected {
 			return nil, &Violation{
 				Key:    spec.Key,

@@ -92,9 +92,10 @@ type LabelSpec struct {
 	AllowedValues []string
 	// RequiredOn declares when the label applies. Zero value = always applies.
 	RequiredOn RequiredOn
-	// Expected returns the CP value when RequiredOn matches.
+	// Expected returns the CP value when RequiredOn matches. An error means the
+	// resource is malformed and no canonical value can be computed.
 	// nil means the CP has no opinion on the value (any user value is accepted).
-	Expected func(ctx ValidationContext) string
+	Expected func(ctx ValidationContext) (string, error)
 }
 
 var registry = map[string][]LabelSpec{}

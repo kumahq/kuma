@@ -17,8 +17,8 @@ func init() {
 		RequiredOn: RequiredOn{
 			ResourceScopes: []core_model.ResourceScope{core_model.ScopeMesh},
 		},
-		Expected: func(ctx ValidationContext) string {
-			return ctx.ResourceMesh
+		Expected: func(ctx ValidationContext) (string, error) {
+			return ctx.ResourceMesh, nil
 		},
 	})
 
@@ -29,8 +29,8 @@ func init() {
 			Modes:    []config_core.CpMode{config_core.Zone},
 			KDSFlags: []core_model.KDSFlagType{core_model.ProvidedByZoneFlag},
 		},
-		Expected: func(ctx ValidationContext) string {
-			return ctx.ZoneName
+		Expected: func(ctx ValidationContext) (string, error) {
+			return ctx.ZoneName, nil
 		},
 	})
 
@@ -42,39 +42,44 @@ func init() {
 			Modes:    []config_core.CpMode{config_core.Zone},
 			KDSFlags: []core_model.KDSFlagType{core_model.ProvidedByZoneFlag},
 		},
-		Expected: func(ctx ValidationContext) string {
+		Expected: func(ctx ValidationContext) (string, error) {
 			if ctx.Env == config_core.KubernetesEnvironment {
-				return mesh_proto.KubernetesEnvironment
+				return mesh_proto.KubernetesEnvironment, nil
 			}
-			return mesh_proto.UniversalEnvironment
+			return mesh_proto.UniversalEnvironment, nil
 		},
 	})
 
 	register(LabelSpec{
 		Key:   mesh_proto.DisplayName,
 		Owner: OwnerControlPlane,
-		Expected: func(ctx ValidationContext) string {
-			return ctx.ResourceName
+		Expected: func(ctx ValidationContext) (string, error) {
+			return ctx.ResourceName, nil
 		},
 	})
 
 	register(LabelSpec{
-		Key:           mesh_proto.PolicyRoleLabel,
-		Owner:         OwnerControlPlane,
-		AllowedValues: []string{string(mesh_proto.SystemPolicyRole), string(mesh_proto.ProducerPolicyRole), string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole)},
+		Key:   mesh_proto.PolicyRoleLabel,
+		Owner: OwnerControlPlane,
+		AllowedValues: []string{
+			string(mesh_proto.SystemPolicyRole),
+			string(mesh_proto.ProducerPolicyRole),
+			string(mesh_proto.ConsumerPolicyRole),
+			string(mesh_proto.WorkloadOwnerPolicyRole),
+		},
 		RequiredOn: RequiredOn{
 			ResourceTraits: []ResourceTrait{TraitPolicy, TraitPluginOriginated},
 		},
-		Expected: func(ctx ValidationContext) string {
+		Expected: func(ctx ValidationContext) (string, error) {
 			pol, ok := ctx.Spec.(core_model.Policy)
 			if !ok {
-				return ""
+				return "", nil
 			}
 			role, err := ComputePolicyRole(pol, ctx.Namespace)
 			if err != nil {
-				return ""
+				return "", err
 			}
-			return string(role)
+			return string(role), nil
 		},
 	})
 
@@ -84,12 +89,12 @@ func init() {
 		RequiredOn: RequiredOn{
 			ResourceTraits: []ResourceTrait{TraitProxy},
 		},
-		Expected: func(ctx ValidationContext) string {
+		Expected: func(ctx ValidationContext) (string, error) {
 			proxy, ok := ctx.Spec.(core_model.ProxyResource)
 			if !ok {
-				return ""
+				return "", nil
 			}
-			return strings.ToLower(string(proxy.GetProxyType()))
+			return strings.ToLower(string(proxy.GetProxyType())), nil
 		},
 	})
 
@@ -100,8 +105,8 @@ func init() {
 			Environments:      []config_core.EnvironmentType{config_core.KubernetesEnvironment},
 			RequiresNamespace: true,
 		},
-		Expected: func(ctx ValidationContext) string {
-			return ctx.Namespace.value
+		Expected: func(ctx ValidationContext) (string, error) {
+			return ctx.Namespace.value, nil
 		},
 	})
 
