@@ -69,7 +69,7 @@ func (r RequiredOn) Matches(ctx ValidationContext) bool {
 	if len(r.ResourceTypes) > 0 && !slices.Contains(r.ResourceTypes, ctx.Descriptor.Name) {
 		return false
 	}
-	if r.Policy && !(ctx.Descriptor.IsPolicy && ctx.Descriptor.IsPluginOriginated) {
+	if r.Policy && (!ctx.Descriptor.IsPolicy || !ctx.Descriptor.IsPluginOriginated) {
 		return false
 	}
 	for _, trait := range r.SpecTraits {
