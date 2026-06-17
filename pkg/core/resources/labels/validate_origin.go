@@ -61,7 +61,6 @@ func requireOriginPresence(ctx ValidationContext) bool {
 	return ctx.FederatedZone && ctx.Descriptor.IsPluginOriginated
 }
 
-// ValidateOriginFormat checks the kuma.io/origin vocabulary only.
 func ValidateOriginFormat(labels map[string]string) []Violation {
 	value, ok := labels[mesh_proto.ResourceOriginLabel]
 	if !ok || value == "" {
@@ -76,7 +75,6 @@ func ValidateOriginFormat(labels map[string]string) []Violation {
 	return nil
 }
 
-// ValidateOrigin runs origin checks for delete authorization.
 func ValidateOrigin(labels map[string]string, ctx ValidationContext) []Violation {
 	if ctx.Privileged {
 		return nil

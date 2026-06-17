@@ -12,7 +12,6 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
-// Violation is a label-validation finding; Format marks K8s label syntax errors.
 type Violation struct {
 	Key    string `json:"key"`
 	Reason string `json:"reason"`
@@ -26,7 +25,6 @@ func (v Violation) String() string {
 	return "'" + v.Key + "' " + v.Reason
 }
 
-// ValidationContext carries the per-call inputs for label validation.
 type ValidationContext struct {
 	Mode                         config_core.CpMode
 	Env                          config_core.EnvironmentType
@@ -38,11 +36,9 @@ type ValidationContext struct {
 	Spec                         core_model.ResourceSpec
 	ResourceName                 string
 	ResourceMesh                 string
-	// Privileged skips validation for trusted CP-internal writes.
-	Privileged bool
+	Privileged                   bool
 }
 
-// Result separates blocking errors from warnings for values Compute will fix.
 type Result struct {
 	Errors   []Violation
 	Warnings []Violation
@@ -60,7 +56,6 @@ func systemOverriddenReason(key, got string) string {
 	return fmt.Sprintf("%s is set by the control plane; the supplied value '%s' was overridden", key, got)
 }
 
-// Validate runs format and semantic checks against labels.
 func Validate(labels map[string]string, ctx ValidationContext) Result {
 	if ctx.Privileged {
 		return Result{}
@@ -147,8 +142,7 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 		}
 		expected, err := spec.Expected(ctx)
 		if err != nil {
-			// The CP can't compute a canonical value because the resource is
-			// malformed; Compute surfaces that error on write. Nothing to compare here.
+			// Compute surfaces malformed-resource errors on write.
 			return nil, nil
 		}
 		if value != expected {

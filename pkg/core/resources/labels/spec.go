@@ -8,20 +8,15 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
-// Owner classifies who controls a reserved label's value.
+// Owner controls a reserved label's value.
 type Owner string
 
 const (
-	// OwnerControlPlane is computed by the CP.
 	OwnerControlPlane Owner = "control-plane"
-	// OwnerUser is set by users, optionally with constrained values.
-	OwnerUser Owner = "user"
-	// OwnerSystem is set only by trusted CP-internal flows.
-	OwnerSystem Owner = "system"
+	OwnerUser         Owner = "user"
+	OwnerSystem       Owner = "system"
 )
 
-// SpecTrait names a boolean property of a resource's spec that RequiredOn can
-// require.
 type SpecTrait string
 
 const (
@@ -29,28 +24,18 @@ const (
 	HasZoneEgressListener  SpecTrait = "HasZoneEgressListener"
 )
 
-// RequiredOn declares the contexts where a label applies.
-// All fields are AND-combined. A zero-valued field places no constraint.
+// RequiredOn declares when a label applies. Fields are AND-combined.
 type RequiredOn struct {
-	// Modes is a CP-mode allowlist; ctx.Mode must equal one entry.
-	Modes []config_core.CpMode
-	// ResourceScopes is a resource-scope allowlist.
-	ResourceScopes []core_model.ResourceScope
-	// Environments is a CP-environment allowlist (Kubernetes/Universal).
-	Environments []config_core.EnvironmentType
-	// KDSFlags lists KDS flags the descriptor must carry (all required).
-	KDSFlags []core_model.KDSFlagType
-	// ResourceTypes is a resource-type allowlist; ctx.Descriptor.Name must equal one entry.
-	ResourceTypes []core_model.ResourceType
-	// SpecTraits lists spec properties the resource must have (all required).
-	SpecTraits []SpecTrait
-	// Policy requires the resource to be a plugin-originated policy.
-	Policy bool
-	// RequiresNamespace requires the resource to be namespace-scoped.
+	Modes             []config_core.CpMode
+	ResourceScopes    []core_model.ResourceScope
+	Environments      []config_core.EnvironmentType
+	KDSFlags          []core_model.KDSFlagType
+	ResourceTypes     []core_model.ResourceType
+	SpecTraits        []SpecTrait
+	Policy            bool
 	RequiresNamespace bool
 }
 
-// Matches reports whether ctx satisfies every constraint expressed by r.
 func (r RequiredOn) Matches(ctx ValidationContext) bool {
 	if len(r.Modes) > 0 && !slices.Contains(r.Modes, ctx.Mode) {
 		return false
@@ -105,16 +90,13 @@ func specTraitHolds(t SpecTrait, spec core_model.ResourceSpec) bool {
 	return false
 }
 
-// LabelSpec describes one reserved label. kuma.io/origin is handled separately.
+// LabelSpec describes one reserved label. kuma.io/origin is separate.
 type LabelSpec struct {
 	Key           string
 	Owner         Owner
 	AllowedValues []string
-	// RequiredOn declares when the label applies. Zero value = always applies.
-	RequiredOn RequiredOn
-	// Expected returns the CP value when RequiredOn matches. An error means the
-	// resource is malformed and no canonical value can be computed.
-	// nil means the CP has no opinion on the value (any user value is accepted).
+	RequiredOn    RequiredOn
+	// nil means the CP has no opinion on the value.
 	Expected func(ctx ValidationContext) (string, error)
 }
 
@@ -127,9 +109,7 @@ func register(s LabelSpec) {
 	registry[s.Key] = append(registry[s.Key], s)
 }
 
-// matchedSpec returns the unique spec from specs whose RequiredOn matches ctx.
-// Panics if two specs both match: that means the registry has overlapping
-// RequiredOn for the same key, which is a programmer error.
+// matchedSpec panics on overlapping RequiredOn entries.
 func matchedSpec(specs []LabelSpec, ctx ValidationContext) (LabelSpec, bool) {
 	var hit LabelSpec
 	found := false

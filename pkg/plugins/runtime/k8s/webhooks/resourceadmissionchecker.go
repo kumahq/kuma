@@ -25,7 +25,6 @@ type ResourceAdmissionChecker struct {
 	ZoneName                     string
 }
 
-// AdmissionDecision is the result of an admission check.
 type AdmissionDecision struct {
 	Response   admission.Response
 	Warnings   []string

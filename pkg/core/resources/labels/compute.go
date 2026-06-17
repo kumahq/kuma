@@ -43,10 +43,9 @@ type Options struct {
 	IsK8s     bool
 	ZoneName  string
 	Namespace Namespace
-	// Privileged marks trusted CP-internal writers. Non-local resources pass
-	// through; local writes may keep OwnerSystem labels.
+	// Privileged marks trusted CP-internal writes.
 	Privileged bool
-	// PreviousLabels preserves stored OwnerSystem labels on user updates.
+	// PreviousLabels preserves OwnerSystem labels on user writes.
 	PreviousLabels map[string]string
 }
 
@@ -148,7 +147,6 @@ func Compute(
 		case OwnerUser:
 			continue
 		case OwnerSystem:
-			// Restore stored system labels on user writes; trust privileged writers.
 			if !o.Privileged {
 				if prev, ok := o.PreviousLabels[key]; ok {
 					labels[key] = prev
