@@ -2,8 +2,8 @@ package labels
 
 import (
 	"fmt"
+	"maps"
 	"slices"
-	"sort"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -68,16 +68,17 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 	var errs, warns []Violation
 	errs = append(errs, validateOrigin(labels, ctx)...)
 
-	for key, specs := range registry {
+	for _, key := range slices.Sorted(maps.Keys(registry)) {
 		value, present := labels[key]
-		spec, ok := matchedSpec(specs, ctx)
-		if !ok {
-			if present {
-				warns = append(warns, Violation{Key: key, Reason: notApplicableReason(key, value)})
-			}
+		if !present {
 			continue
 		}
-		e, w := classifyOne(spec, value, present, ctx)
+		spec, ok := matchedSpec(registry[key], ctx)
+		if !ok {
+			warns = append(warns, Violation{Key: key, Reason: notApplicableReason(key, value)})
+			continue
+		}
+		e, w := classifyLabel(spec, value, ctx)
 		if e != nil {
 			errs = append(errs, *e)
 		}
@@ -86,14 +87,12 @@ func Validate(labels map[string]string, ctx ValidationContext) Result {
 		}
 	}
 
-	sort.Slice(errs, func(i, j int) bool { return errs[i].Key < errs[j].Key })
-	sort.Slice(warns, func(i, j int) bool { return warns[i].Key < warns[j].Key })
 	return Result{Errors: errs, Warnings: warns}
 }
 
 func formatViolations(labels map[string]string) []Violation {
 	var out []Violation
-	for _, k := range sortedKeys(labels) {
+	for _, k := range slices.Sorted(maps.Keys(labels)) {
 		for _, msg := range validation.IsQualifiedName(k) {
 			out = append(out, Violation{Key: k, Reason: msg, Format: true})
 		}
@@ -104,27 +103,14 @@ func formatViolations(labels map[string]string) []Violation {
 	return out
 }
 
-func sortedKeys(m map[string]string) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationContext) (*Violation, *Violation) {
+// classifyLabel checks a single present reserved label against its spec,
+// returning an error and/or a warning violation (nil when there's nothing to report).
+func classifyLabel(spec LabelSpec, value string, ctx ValidationContext) (*Violation, *Violation) {
 	switch spec.Owner {
 	case OwnerSystem:
-		if present {
-			return nil, &Violation{Key: spec.Key, Reason: systemOverriddenReason(spec.Key, value)}
-		}
-		return nil, nil
+		return nil, &Violation{Key: spec.Key, Reason: systemOverriddenReason(spec.Key, value)}
 
 	case OwnerUser:
-		if !present {
-			return nil, nil
-		}
 		if len(spec.AllowedValues) == 0 {
 			return nil, nil
 		}
@@ -137,9 +123,6 @@ func classifyOne(spec LabelSpec, value string, present bool, ctx ValidationConte
 		}, nil
 
 	case OwnerControlPlane:
-		if !present {
-			return nil, nil
-		}
 		expected, err := spec.Expected(ctx)
 		if err != nil {
 			// Compute surfaces malformed-resource errors on write.
