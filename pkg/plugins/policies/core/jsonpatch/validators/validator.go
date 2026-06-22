@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func ValidateJsonPatchBlock(

@@ -18,9 +18,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/otelenv"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 func testSocketPath(prefix string) string {

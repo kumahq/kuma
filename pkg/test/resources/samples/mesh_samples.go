@@ -1,8 +1,8 @@
 package samples
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
 func MeshDefault() *mesh.MeshResource {

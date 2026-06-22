@@ -4,7 +4,7 @@
 package types
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // Defines values for DataplaneListenerType.

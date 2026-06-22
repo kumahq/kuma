@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
 // DataplaneCallbacks are XDS callbacks that keep the context of Kuma Dataplane.

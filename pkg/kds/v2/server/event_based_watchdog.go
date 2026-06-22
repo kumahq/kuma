@@ -10,12 +10,12 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 type EventBasedWatchdog struct {

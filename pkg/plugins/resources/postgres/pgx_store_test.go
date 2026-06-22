@@ -7,15 +7,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_postgres "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_postgres "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 )
 
 var _ = Describe("PgxStore", func() {

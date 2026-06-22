@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/intercp/client"
-	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/intercp/client"
+	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
 var _ = Describe("Pool", func() {

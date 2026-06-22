@@ -5,8 +5,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	datasource_api "github.com/kumahq/kuma/v2/api/common/v1alpha1/datasource"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	datasource_api "github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 )
 
 type Selector struct {

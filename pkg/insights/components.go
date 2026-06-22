@@ -1,15 +1,15 @@
 package insights
 
 import (
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/status"
-	workload_status "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/status"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/status"
+	workload_status "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/status"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 )
 
 func Setup(rt runtime.Runtime) error {

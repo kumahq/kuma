@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshTimeout configures timeout limits for service-to-service communication to prevent requests from hanging indefinitely. It supports connection timeouts, idle timeouts, and HTTP-specific timeouts (request, stream, headers) to ensure timely failure detection and improve service responsiveness.
