@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	dns_server "github.com/kumahq/kuma/v2/pkg/config/dns-server"
+	dns_server "github.com/kumahq/kuma/v3/pkg/config/dns-server"
 )
 
 var _ = Describe("Config", func() {

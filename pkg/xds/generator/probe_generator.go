@@ -6,15 +6,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
-	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 type ProbeProxyGenerator struct{}

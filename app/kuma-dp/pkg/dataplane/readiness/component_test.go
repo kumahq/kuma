@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/readiness"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/readiness"
 )
 
 var _ = Describe("Readiness Reporter", func() {

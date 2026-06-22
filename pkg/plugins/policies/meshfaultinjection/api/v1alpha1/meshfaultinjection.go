@@ -5,7 +5,7 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshFaultInjection allows you to test the resiliency of your services by injecting faults like delays, connection aborts, and response bandwidth limits into the traffic. This is useful for chaos testing and validating that your applications handle failures gracefully.

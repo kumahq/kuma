@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
 func TestConfigCmd(t *testing.T) {

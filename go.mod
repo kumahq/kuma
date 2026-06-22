@@ -1,4 +1,4 @@
-module github.com/kumahq/kuma/v2
+module github.com/kumahq/kuma/v3
 
 go 1.26.4
 

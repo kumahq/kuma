@@ -1,8 +1,8 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (t *MeshAccessLogResource) Deprecations() []string {

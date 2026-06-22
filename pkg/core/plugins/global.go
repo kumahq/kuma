@@ -1,6 +1,6 @@
 package plugins
 
-import "github.com/kumahq/kuma/v2/pkg/core"
+import "github.com/kumahq/kuma/v3/pkg/core"
 
 var log = core.Log.WithName("plugins")
 

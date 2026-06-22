@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/events"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 )
 
 var _ = Describe("EventBus", func() {

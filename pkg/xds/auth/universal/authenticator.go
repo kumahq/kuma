@@ -5,13 +5,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	builtin_issuer "github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/v2/pkg/xds/auth"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	builtin_issuer "github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
+	"github.com/kumahq/kuma/v3/pkg/xds/auth"
 )
 
 func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneValidator zone.Validator, zone string) auth.Authenticator {

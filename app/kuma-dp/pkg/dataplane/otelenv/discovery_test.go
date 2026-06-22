@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 var _ = Describe("DiscoverWithLookup", func() {
