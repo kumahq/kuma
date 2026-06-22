@@ -66,13 +66,19 @@ const (
 		" You can still use 'kumactl' or the HTTP API to modify the rest of the resource on the global control plane.\n"
 )
 
+// resourceEndpointsContext holds the dependencies shared by the resource handlers.
+type resourceEndpointsContext struct {
+	mode           config_core.CpMode
+	zoneName       string
+	resManager     manager.ResourceManager
+	descriptor     core_model.ResourceTypeDescriptor
+	resourceAccess access.ResourceAccess
+}
+
 type resourceEndpoints struct {
-	mode                   config_core.CpMode
+	resourceEndpointsContext
+
 	federatedZone          bool
-	zoneName               string
-	resManager             manager.ResourceManager
-	descriptor             core_model.ResourceTypeDescriptor
-	resourceAccess         access.ResourceAccess
 	k8sMapper              k8s.ResourceMapperFunc
 	filter                 func(request *restful.Request) (store.ListFilterFunc, error)
 	meshContextBuilder     xds_context.MeshContextBuilder
@@ -770,7 +776,7 @@ func (r *resourceEndpoints) doesNameLengthFitsGlobal(name string) bool {
 	return len(fmt.Sprintf("%s.%s", r.zoneName, name)) < 253
 }
 
-func (r *resourceEndpoints) meshFromRequest(request *restful.Request) (string, error) {
+func (r *resourceEndpointsContext) meshFromRequest(request *restful.Request) (string, error) {
 	if r.descriptor.Scope == core_model.ScopeMesh {
 		meshName := request.PathParameter("mesh")
 		if meshName == "" { // Handle lists across all meshes

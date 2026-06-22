@@ -296,12 +296,14 @@ func addResourcesEndpoints(
 			definition.ReadOnly = definition.IsReadOnly(cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP())
 		}
 		endpoints := resourceEndpoints{
+			resourceEndpointsContext: resourceEndpointsContext{
+				mode:           cfg.Mode,
+				resManager:     resManager,
+				descriptor:     definition,
+				resourceAccess: resourceAccess,
+			},
 			k8sMapper:                    k8sMapper,
-			mode:                         cfg.Mode,
 			federatedZone:                cfg.IsFederatedZoneCP(),
-			resManager:                   resManager,
-			descriptor:                   definition,
-			resourceAccess:               resourceAccess,
 			filter:                       filters.Resource(definition),
 			meshContextBuilder:           meshContextBuilder,
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
