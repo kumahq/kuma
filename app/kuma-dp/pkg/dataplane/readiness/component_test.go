@@ -1,6 +1,7 @@
 package readiness_test
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -265,6 +266,95 @@ var _ = Describe("Readiness Reporter", func() {
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+	})
+
+	// Self-test that detects when pod-netns iptables redirect to Envoy
+	// has been wiped (FTI-7529 / K8S-5010 z977j signature).
+	Context("with transparent proxy self-test enabled", func() {
+		var (
+			probeOK     func(useIPv6 bool, timeout time.Duration) error
+			probeBroken func(useIPv6 bool, timeout time.Duration) error
+		)
+
+		BeforeEach(func() {
+			probeOK = func(_ bool, _ time.Duration) error { return nil }
+			// Simulate connect-refused, which is what the real kernel
+			// returns when KUMA_MESH_INBOUND_REDIRECT is absent and
+			// nothing listens on the destination.
+			probeBroken = func(_ bool, _ time.Duration) error {
+				return errors.New("connect: connection refused")
+			}
+
+			stopCh = make(chan struct{})
+			lis, err := net.Listen("tcp", "127.0.0.1:0")
+			Expect(err).ToNot(HaveOccurred())
+			port = uint32(lis.Addr().(*net.TCPAddr).Port)
+			Expect(lis.Close()).To(Succeed())
+
+			baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+			reporter = readiness.NewReporter("127.0.0.1", port, "", nil)
+			reporter.EnableTproxyCheck(false /* useIPv6 */)
+			reporter.SetTproxyProbe(probeOK)
+
+			go func() {
+				defer GinkgoRecover()
+				_ = reporter.Start(stopCh)
+			}()
+			Eventually(func() error {
+				resp, err := http.Get(baseURL + "/ready")
+				if err != nil {
+					return err
+				}
+				resp.Body.Close()
+				return nil
+			}, 5*time.Second, 50*time.Millisecond).Should(Succeed())
+		})
+
+		It("returns READY when the redirect-path self-test succeeds", func() {
+			resp, err := http.Get(baseURL + "/ready")
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).To(Equal(readiness.StateReady))
+		})
+
+		It("returns INBOUND_REDIRECT_FAILED when the redirect-path self-test fails (iptables wiped)", func() {
+			reporter.SetTproxyProbe(probeBroken)
+			reporter.ResetTproxyCacheForTest()
+			resp, err := http.Get(baseURL + "/ready")
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusServiceUnavailable))
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).To(Equal(readiness.StateRedirectFailed))
+		})
+
+		It("recovers to READY when the redirect-path comes back", func() {
+			reporter.SetTproxyProbe(probeBroken)
+			reporter.ResetTproxyCacheForTest()
+			Eventually(func() int {
+				resp, err := http.Get(baseURL + "/ready")
+				if err != nil {
+					return 0
+				}
+				resp.Body.Close()
+				return resp.StatusCode
+			}, 2*time.Second, 50*time.Millisecond).Should(Equal(http.StatusServiceUnavailable))
+
+			reporter.SetTproxyProbe(probeOK)
+			reporter.ResetTproxyCacheForTest()
+			Eventually(func() int {
+				resp, err := http.Get(baseURL + "/ready")
+				if err != nil {
+					return 0
+				}
+				resp.Body.Close()
+				return resp.StatusCode
+			}, 2*time.Second, 50*time.Millisecond).Should(Equal(http.StatusOK))
 		})
 	})
 })
