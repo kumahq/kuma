@@ -295,25 +295,29 @@ func addResourcesEndpoints(
 		default:
 			definition.ReadOnly = definition.IsReadOnly(cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP())
 		}
+		endpointsCtx := resourceEndpointsContext{
+			mode:           cfg.Mode,
+			resManager:     resManager,
+			descriptor:     definition,
+			resourceAccess: resourceAccess,
+		}
+		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
+			endpointsCtx.zoneName = cfg.Multizone.Zone.Name
+		}
 		endpoints := resourceEndpoints{
-			resourceEndpointsContext: resourceEndpointsContext{
-				mode:           cfg.Mode,
-				resManager:     resManager,
-				descriptor:     definition,
-				resourceAccess: resourceAccess,
-			},
+			resourceEndpointsContext:     endpointsCtx,
 			k8sMapper:                    k8sMapper,
 			federatedZone:                cfg.IsFederatedZoneCP(),
 			filter:                       filters.Resource(definition),
-			meshContextBuilder:           meshContextBuilder,
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
-			xdsHooks:                     xdsHooks,
 			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
 			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
-			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
-		}
-		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
-			endpoints.zoneName = cfg.Multizone.Zone.Name
+			inspect: &resourceInspectHandler{
+				resourceEndpointsContext: endpointsCtx,
+				meshContextBuilder:       meshContextBuilder,
+				xdsHooks:                 xdsHooks,
+				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
+			},
 		}
 		if defType == system.SecretType || defType == system.GlobalSecretType {
 			endpoints.k8sMapper = k8sSecretMapper
