@@ -714,7 +714,7 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 	}
 
 	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {
-		r.validatePolicyRole(resource)
+		err.AddError("", r.validatePolicyRole(resource))
 	}
 
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
@@ -1316,6 +1316,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build Mesh context")
+			return
 		}
 
 		resources := xds_context.Resources{
