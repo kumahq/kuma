@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/intercp"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshexternalservice"
@@ -35,18 +34,11 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/observability"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/projectedsatoken"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/proxytemplate"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/ratelimit"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/reachableservices"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/resilience"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/retry"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/strictinbounds"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/timeout"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/trafficlog"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/trafficpermission"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/trafficroute"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/transparentproxy"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/virtualoutbound"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/workload"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/zoneegress"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -70,8 +62,6 @@ var (
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
 	_ = Describe("Gateway - Resources", gateway.Resources, Ordered)
-	_ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
-	_ = Describe("HealthCheck", healthcheck.Policy)
 	_ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
 	_ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
 	_ = Describe("Workload", workload.Workload, Ordered)
@@ -83,28 +73,18 @@ var (
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
 	_ = Describe("MeshService Label Propagation", meshservicelabelpropagation.LabelPropagation, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
-	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
 	_ = Describe("Membership", membership.Membership, Ordered)
-	_ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 	_ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
 	_ = Describe("MeshAccessLog - matches", meshaccesslog.Matches, Ordered)
-	_ = Describe("Timeout", timeout.Policy, Ordered)
-	_ = Describe("Retry", retry.Policy, Ordered)
 	_ = Describe("MeshRetry", meshretry.HttpRetry, Ordered)
 	_ = Describe("MeshRetry", meshretry.GrpcRetry, Ordered)
-	_ = Describe("RateLimit", ratelimit.Policy, Ordered)
-	_ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshProxyPatch on Zone Proxy", meshproxypatch.ZoneProxy, Ordered)
-	_ = Describe("Matching", matching.Matching, Ordered)
 	_ = Describe("Mtls", mtls.Policy, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
-	_ = Describe("Traffic Permission", trafficpermission.TrafficPermission, Ordered)
-	_ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
-	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)
 	_ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
 	_ = Describe("GRPC", grpc.GRPC, Ordered)

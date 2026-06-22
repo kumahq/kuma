@@ -31,11 +31,8 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/reachablebackends"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/v3/test/e2e_env/multizone/sync"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/trafficpermission"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/unifiednaming"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/validation"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/virtualoutbound"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/zoneegress"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -58,8 +55,6 @@ var (
 	_ = Describe("External Service locality aware", localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
 	_ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
-	_ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
-	_ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
 	_ = Describe("MeshHTTPRoute MeshService", meshhttproute.MeshService, Ordered)
 	_ = Describe("MeshTCPRoute", meshtcproute.Test, Ordered)
@@ -76,7 +71,6 @@ var (
 	_ = Describe("Ownership", ownership.MultizoneUniversal, Ordered)
 	_ = Describe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)
-	_ = Describe("Virtual Outbounds", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("MeshTimeout", meshtimeout.MeshTimeout, Ordered)
 	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwareLB, Ordered)
