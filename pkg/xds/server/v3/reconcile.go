@@ -2,16 +2,18 @@ package v3
 
 import (
 	"context"
+	"hash/fnv"
+	"strconv"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
@@ -59,18 +61,16 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 		return false, errors.Wrapf(err, "failed to generate a snapshot")
 	}
 
-	// To avoid assigning a new version every time, compare with
-	// the previous snapshot and reuse its version whenever possible,
-	// fallback to UUID otherwise
+	// To avoid assigning a new version every time, compute stable content
+	// hashes per resource type and compare against the previous snapshot.
 	previous, err := r.cacher.Get(node)
 	if err != nil {
 		previous = &envoy_cache.Snapshot{}
 	}
 
-	snapshot, changed := autoVersion(previous, snapshot)
-	// We need to force new version of EDS, otherwise clusters will be stuck in warming state.
-	if previous.GetVersion(envoy_resource.ClusterType) != snapshot.GetVersion(envoy_resource.ClusterType) {
-		snapshot.Resources[envoy_types.Endpoint].Version = core.NewUUID()
+	snapshot, changed, err := autoVersion(node.Id, previous, snapshot)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to compute snapshot versions")
 	}
 
 	resKey := proxy.Id.ToResourceKey()
@@ -143,39 +143,64 @@ func validateResource(r envoy_types.Resource) error {
 	}
 }
 
-func autoVersion(old *envoy_cache.Snapshot, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string) {
-	for resourceType, resources := range old.Resources {
-		n.Resources[resourceType] = reuseVersion(resources, n.Resources[resourceType])
+// autoVersion computes deterministic FNV-64a content hashes for each resource
+// type in n, seeded with nodeId+type-index. Empty slots keep version "".
+// The cluster version is folded into the endpoint version when endpoints are
+// non-empty to force EDS re-push on cluster changes (prevents warming stalls).
+// Returns the versions that changed relative to old.
+func autoVersion(nodeId string, old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string, error) {
+	for i := range n.Resources {
+		seed := nodeId + strconv.Itoa(i)
+		ver, err := resourcesVersion(seed, n.Resources[i].Items)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to hash resources for type %d", i)
+		}
+		n.Resources[i].Version = ver
+	}
+
+	// Fold cluster version into endpoint version so that a cluster change
+	// forces an EDS re-push even when endpoint content is identical.
+	// Only when endpoints are non-empty; empty slots stay at "".
+	if ep := n.Resources[envoy_types.Endpoint].Version; ep != "" {
+		n.Resources[envoy_types.Endpoint].Version = mixVersions(ep, n.Resources[envoy_types.Cluster].Version)
 	}
 
 	var changed []string
-	for resourceType, resource := range n.Resources {
-		if old.Resources[resourceType].Version != resource.Version {
+	for i, resource := range n.Resources {
+		if old.Resources[i].Version != resource.Version {
 			changed = append(changed, resource.Version)
 		}
 	}
 
-	return n, changed
+	return n, changed, nil
 }
 
-func reuseVersion(old, n envoy_cache.Resources) envoy_cache.Resources {
-	n.Version = old.Version
-	if !equalSnapshots(old.Items, n.Items) {
-		n.Version = core.NewUUID()
+// resourcesVersion returns a hex FNV-64a hash over sorted resource names and
+// their deterministic proto serializations, seeded with seed. Returns "" for
+// empty slots so that two empty slots compare equal without versioning.
+func resourcesVersion(seed string, items map[string]envoy_types.ResourceWithTTL) (string, error) {
+	if len(items) == 0 {
+		return "", nil
 	}
-	return n
-}
-
-func equalSnapshots(old, n map[string]envoy_types.ResourceWithTTL) bool {
-	if len(n) != len(old) {
-		return false
-	}
-	for key, newValue := range n {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue.Resource, oldValue.Resource) {
-			return false
+	h := fnv.New64a()
+	h.Write([]byte(seed))
+	for _, key := range maps.SortedKeys(items) {
+		h.Write([]byte(key))
+		b, err := envoy_cache.MarshalResource(items[key].Resource)
+		if err != nil {
+			return "", err
 		}
+		h.Write(b)
 	}
-	return true
+	return strconv.FormatUint(h.Sum64(), 16), nil
+}
+
+// mixVersions combines two version strings into a single FNV-64a hash.
+func mixVersions(a, b string) string {
+	h := fnv.New64a()
+	h.Write([]byte(a))
+	h.Write([]byte(b))
+	return strconv.FormatUint(h.Sum64(), 16)
 }
 
 type snapshotGenerator interface {

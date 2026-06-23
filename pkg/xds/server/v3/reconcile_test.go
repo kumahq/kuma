@@ -2,6 +2,8 @@ package v3
 
 import (
 	"context"
+	"strconv"
+	"testing"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -212,33 +214,18 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			By("verifying that snapshot versions are new")
+			By("verifying that snapshot versions are empty for empty snapshot")
 			// when
 			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
-			// and
-			Expect(snapshot.GetVersion(resource.ListenerType)).To(SatisfyAll(
-				Not(Equal(listenerV1)),
-				Not(BeEmpty()),
-			))
-			Expect(snapshot.GetVersion(resource.RouteType)).To(SatisfyAll(
-				Not(Equal(routeV1)),
-				Not(BeEmpty()),
-			))
-			Expect(snapshot.GetVersion(resource.ClusterType)).To(SatisfyAll(
-				Not(Equal(clusterV1)),
-				Not(BeEmpty()),
-			))
-			Expect(snapshot.GetVersion(resource.EndpointType)).To(SatisfyAll(
-				Not(Equal(endpointV1)),
-				Not(BeEmpty()),
-			))
-			Expect(snapshot.GetVersion(resource.SecretType)).To(SatisfyAll(
-				Not(Equal(secretV1)),
-				Not(BeEmpty()),
-			))
+			// and: empty snapshot produces empty ("") versions, not new UUIDs
+			Expect(snapshot.GetVersion(resource.ListenerType)).To(BeEmpty())
+			Expect(snapshot.GetVersion(resource.RouteType)).To(BeEmpty())
+			Expect(snapshot.GetVersion(resource.ClusterType)).To(BeEmpty())
+			Expect(snapshot.GetVersion(resource.EndpointType)).To(BeEmpty())
+			Expect(snapshot.GetVersion(resource.SecretType)).To(BeEmpty())
 
 			By("simulating clear")
 			// when
@@ -251,6 +238,163 @@ var _ = Describe("Reconcile", func() {
 			Expect(err.Error()).To(ContainSubstring("no snapshot found"))
 			Expect(snapshot).To(BeNil())
 		})
+
+		It("should force EDS re-push when cluster changes", func() {
+			// Both clusters share the same name so endpoints stay consistent across
+			// reconciles. AltStatName differs so the cluster hash changes without
+			// affecting EDS reference resolution (which uses cluster Name).
+			makeCluster := func(altStatName string) *envoy_cluster.Cluster {
+				return &envoy_cluster.Cluster{
+					Name:                 "cluster",
+					AltStatName:          altStatName,
+					ClusterDiscoveryType: &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS},
+					EdsClusterConfig: &envoy_cluster.Cluster_EdsClusterConfig{
+						EdsConfig: &envoy_core.ConfigSource{
+							ResourceApiVersion: envoy_core.ApiVersion_V3,
+							ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
+								Ads: &envoy_core.AggregatedConfigSource{},
+							},
+						},
+					},
+				}
+			}
+			cluster1 := makeCluster("v1")
+			cluster2 := makeCluster("v2")
+			endpoint := &envoy_endpoint.ClusterLoadAssignment{ClusterName: "cluster"}
+
+			makeSnap := func(cluster *envoy_cluster.Cluster) envoy_cache.Snapshot {
+				snap := envoy_cache.Snapshot{}
+				snap.Resources[envoy_types.Cluster] = envoy_cache.Resources{
+					Items: map[string]envoy_types.ResourceWithTTL{
+						cluster.Name: {Resource: cluster},
+					},
+				}
+				snap.Resources[envoy_types.Endpoint] = envoy_cache.Resources{
+					Items: map[string]envoy_types.ResourceWithTTL{
+						endpoint.ClusterName: {Resource: endpoint},
+					},
+				}
+				return snap
+			}
+
+			snapshots := make(chan envoy_cache.Snapshot, 3)
+			snapshots <- makeSnap(cluster1)
+			snapshots <- makeSnap(cluster2)
+			snapshots <- makeSnap(cluster1)
+
+			metrics, err := core_metrics.NewMetrics("Zone")
+			Expect(err).ToNot(HaveOccurred())
+			statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds", util_xds.NoopVersionExtractor)
+			Expect(err).ToNot(HaveOccurred())
+
+			r := &reconciler{
+				generator: snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+					snap := <-snapshots
+					return &snap, nil
+				}),
+				cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
+				statsCallbacks: statsCallbacks,
+			}
+
+			proxy := &xds_model.Proxy{
+				Id: *xds_model.BuildProxyId("demo", "eds-fold-test"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{Mesh: "demo", Name: "eds-fold-test"},
+					Spec: &mesh_proto.Dataplane{},
+				},
+			}
+
+			By("first reconcile — populate initial versions")
+			changed, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeTrue())
+			cached, err := xdsContext.Cache().GetSnapshot("demo.eds-fold-test")
+			Expect(err).ToNot(HaveOccurred())
+			clusterV1 := cached.GetVersion(resource.ClusterType)
+			endpointV1 := cached.GetVersion(resource.EndpointType)
+			Expect(clusterV1).ToNot(BeEmpty())
+			Expect(endpointV1).ToNot(BeEmpty())
+
+			By("second reconcile — different cluster, identical endpoint content")
+			changed, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeTrue())
+			cached, err = xdsContext.Cache().GetSnapshot("demo.eds-fold-test")
+			Expect(err).ToNot(HaveOccurred())
+			clusterV2 := cached.GetVersion(resource.ClusterType)
+			endpointV2 := cached.GetVersion(resource.EndpointType)
+			// Cluster changed → endpoint version must change too (EDS warming fold).
+			Expect(clusterV2).ToNot(Equal(clusterV1))
+			Expect(endpointV2).ToNot(Equal(endpointV1))
+
+			By("third reconcile — back to original cluster")
+			changed, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeTrue())
+			cached, err = xdsContext.Cache().GetSnapshot("demo.eds-fold-test")
+			Expect(err).ToNot(HaveOccurred())
+			// Deterministic: same content as first reconcile → same hashes.
+			Expect(cached.GetVersion(resource.ClusterType)).To(Equal(clusterV1))
+			Expect(cached.GetVersion(resource.EndpointType)).To(Equal(endpointV1))
+		})
+
+		It("should leave empty resource types unversioned", func() {
+			// Only Secret is populated; all other types are empty.
+			// Secret has no cross-reference requirements so the snapshot is consistent.
+			onlySecrets := envoy_cache.Snapshot{}
+			onlySecrets.Resources[envoy_types.Secret] = envoy_cache.Resources{
+				Items: map[string]envoy_types.ResourceWithTTL{
+					"secret": {Resource: &envoy_auth.Secret{Name: "secret"}},
+				},
+			}
+
+			snapshots := make(chan envoy_cache.Snapshot, 2)
+			snapshots <- onlySecrets
+			snapshots <- onlySecrets
+
+			metrics, err := core_metrics.NewMetrics("Zone")
+			Expect(err).ToNot(HaveOccurred())
+			statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds", util_xds.NoopVersionExtractor)
+			Expect(err).ToNot(HaveOccurred())
+
+			r := &reconciler{
+				generator: snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+					snap := <-snapshots
+					return &snap, nil
+				}),
+				cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
+				statsCallbacks: statsCallbacks,
+			}
+
+			proxy := &xds_model.Proxy{
+				Id: *xds_model.BuildProxyId("demo", "empty-slot-test"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{Mesh: "demo", Name: "empty-slot-test"},
+					Spec: &mesh_proto.Dataplane{},
+				},
+			}
+
+			By("first reconcile")
+			changed, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeTrue())
+
+			cached, err := xdsContext.Cache().GetSnapshot("demo.empty-slot-test")
+			Expect(err).ToNot(HaveOccurred())
+			// Populated type has a content hash.
+			Expect(cached.GetVersion(resource.SecretType)).ToNot(BeEmpty())
+			// Empty types produce "" version — not versioned.
+			Expect(cached.GetVersion(resource.ListenerType)).To(BeEmpty())
+			Expect(cached.GetVersion(resource.RouteType)).To(BeEmpty())
+			Expect(cached.GetVersion(resource.ClusterType)).To(BeEmpty())
+			Expect(cached.GetVersion(resource.EndpointType)).To(BeEmpty())
+
+			By("second identical reconcile — no changes")
+			changed, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+			// Unchanged: same content hash for Route, "" == "" for empty types.
+			Expect(changed).To(BeFalse())
+		})
 	})
 })
 
@@ -258,4 +402,101 @@ type snapshotGeneratorFunc func(context.Context, xds_context.Context, *xds_model
 
 func (f snapshotGeneratorFunc) GenerateSnapshot(ctx context.Context, xdsCtx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
 	return f(ctx, xdsCtx, proxy)
+}
+
+// buildRealisticSnapshot returns a snapshot with 20 clusters, 20 endpoints,
+// 5 listeners, and 5 routes — representative of a non-trivial data plane.
+func buildRealisticSnapshot() *envoy_cache.Snapshot {
+	snap := &envoy_cache.Snapshot{}
+
+	clusterItems := make(map[string]envoy_types.ResourceWithTTL, 20)
+	endpointItems := make(map[string]envoy_types.ResourceWithTTL, 20)
+	for i := range 20 {
+		name := "cluster-" + strconv.Itoa(i)
+		clusterItems[name] = envoy_types.ResourceWithTTL{
+			Resource: &envoy_cluster.Cluster{
+				Name:                 name,
+				ClusterDiscoveryType: &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS},
+			},
+		}
+		endpointItems[name] = envoy_types.ResourceWithTTL{
+			Resource: &envoy_endpoint.ClusterLoadAssignment{ClusterName: name},
+		}
+	}
+	snap.Resources[envoy_types.Cluster] = envoy_cache.Resources{Items: clusterItems}
+	snap.Resources[envoy_types.Endpoint] = envoy_cache.Resources{Items: endpointItems}
+
+	// Listeners with static (non-RDS) route configs so no Route resources are
+	// required for Consistent() to pass.
+	listenerItems := make(map[string]envoy_types.ResourceWithTTL, 5)
+	for i := range 5 {
+		lName := "listener-" + strconv.Itoa(i)
+		listenerItems[lName] = envoy_types.ResourceWithTTL{
+			Resource: &envoy_listener.Listener{Name: lName},
+		}
+	}
+	snap.Resources[envoy_types.Listener] = envoy_cache.Resources{Items: listenerItems}
+
+	return snap
+}
+
+func BenchmarkAutoVersion(b *testing.B) {
+	nodeId := "demo.benchmark"
+	snap := buildRealisticSnapshot()
+
+	// Populate an "old" snapshot with content hashes.
+	populated, _, err := autoVersion(nodeId, &envoy_cache.Snapshot{}, snap)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Each iteration mirrors the real hot path: generator allocates a new
+		// snapshot, autoVersion hashes it and compares to the cached version.
+		n := buildRealisticSnapshot()
+		if _, _, err := autoVersion(nodeId, populated, n); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkReconcileUnchanged(b *testing.B) {
+	metrics, err := core_metrics.NewMetrics("Zone")
+	if err != nil {
+		b.Fatal(err)
+	}
+	statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds", util_xds.NoopVersionExtractor)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	xdsCtx := NewXdsContext()
+	r := &reconciler{
+		generator: snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+			return buildRealisticSnapshot(), nil
+		}),
+		cacher:         &simpleSnapshotCacher{xdsCtx.Hasher(), xdsCtx.Cache()},
+		statsCallbacks: statsCallbacks,
+	}
+
+	proxy := &xds_model.Proxy{
+		Id: *xds_model.BuildProxyId("demo", "benchmark"),
+		Dataplane: &core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{Mesh: "demo", Name: "benchmark"},
+			Spec: &mesh_proto.Dataplane{},
+		},
+	}
+
+	// Populate cache so the benchmark measures the no-change steady-state path.
+	if _, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
