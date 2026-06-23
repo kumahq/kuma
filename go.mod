@@ -54,7 +54,7 @@ require (
 	github.com/slok/go-http-metrics v0.13.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/spiffe/go-spiffe/v2 v2.7.0
+	github.com/spiffe/go-spiffe/v2 v2.8.1
 	github.com/testcontainers/testcontainers-go v0.43.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
 	github.com/vishvananda/netlink v1.3.1
