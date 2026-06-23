@@ -99,6 +99,8 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(globalCluster)
+		ControlPlaneAssertions(zoneCluster)
 		Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
