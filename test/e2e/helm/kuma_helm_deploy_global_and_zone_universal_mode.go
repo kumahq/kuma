@@ -87,6 +87,8 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(globalCluster)
+		ControlPlaneAssertions(zoneCluster)
 		DebugCPLogs(globalCluster)
 		DebugCPLogs(zoneCluster)
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
