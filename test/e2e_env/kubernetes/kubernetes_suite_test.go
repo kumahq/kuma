@@ -36,8 +36,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/reachableservices"
-	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/trafficlog"
-	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/virtualoutbound"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/workload"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
@@ -67,10 +65,8 @@ var (
 	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
 	_ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
-	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
 	_ = Describe("MeshTrace Zone Proxy", observability.ZoneProxyPluginTest, Ordered)
-	_ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
@@ -79,7 +75,6 @@ var (
 	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservices.MeshExternalServices, Ordered)
 	_ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
-	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Kong Ingress Controller", kic.KICKubernetes, Ordered)
 	_ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
 	_ = Describe("MeshTrafficPermission Rules", meshtrafficpermission.MeshTrafficPermissionRules, Ordered)
