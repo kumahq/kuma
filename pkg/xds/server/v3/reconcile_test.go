@@ -392,7 +392,7 @@ var _ = Describe("Reconcile", func() {
 			By("second identical reconcile — no changes")
 			changed, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
 			Expect(err).ToNot(HaveOccurred())
-			// Unchanged: same content hash for Route, "" == "" for empty types.
+			// Unchanged: same content hash for Secret, "" == "" for empty types.
 			Expect(changed).To(BeFalse())
 		})
 
@@ -463,7 +463,7 @@ func (f snapshotGeneratorFunc) GenerateSnapshot(ctx context.Context, xdsCtx xds_
 }
 
 // buildRealisticSnapshot returns a snapshot with 20 clusters, 20 endpoints,
-// 5 listeners, and 5 routes — representative of a non-trivial data plane.
+// and 5 listeners — representative of a non-trivial data plane.
 func buildRealisticSnapshot() *envoy_cache.Snapshot {
 	snap := &envoy_cache.Snapshot{}
 
@@ -484,7 +484,7 @@ func buildRealisticSnapshot() *envoy_cache.Snapshot {
 	snap.Resources[envoy_types.Cluster] = envoy_cache.Resources{Items: clusterItems}
 	snap.Resources[envoy_types.Endpoint] = envoy_cache.Resources{Items: endpointItems}
 
-	// Listeners with static (non-RDS) route configs so no Route resources are
+	// Listeners reference no RDS route configs, so no Route resources are
 	// required for Consistent() to pass.
 	listenerItems := make(map[string]envoy_types.ResourceWithTTL, 5)
 	for i := range 5 {
