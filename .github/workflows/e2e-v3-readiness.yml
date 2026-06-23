@@ -1,0 +1,135 @@
+# Weekly "Kuma 3.0 e2e readiness" report (also runnable on demand).
+#
+# Runs the e2e suites with the kuma3-preflight capture hook (an opt-in AfterEach that
+# audits the live CP after every spec — a no-op unless KUMA3_PREFLIGHT_BIN +
+# KUMA3_PREFLIGHT_DIR are set), then classifies the snapshots into a "what still uses
+# Kuma-3.0-removed features" report shown in the run's job summary.
+#
+# kuma3-preflight is downloaded (checksum-verified) from the public GoReleaser release
+# in github.com/Kong/kong-mesh-v3-readiness — not vendored.
+#
+# kong-mesh consumes this by COPY, not call: its tools/dev/sync_ci.sh syncs it to
+# `kuma-e2e-v3-readiness.yaml`, patching in a kuma checkout (its e2e make includes
+# $(KUMA_DIR)/mk/...) and Kong runners. Keep `runs-on: ubuntu-latest` literal so the
+# sync's use_custom_runners can swap it.
+
+name: E2E v3 readiness
+
+on:
+  schedule:
+    - cron: "0 1 * * 1" # weekly, Monday 01:00 UTC
+  workflow_dispatch: {} # on-demand
+
+permissions:
+  contents: read
+
+env:
+  # kuma3-preflight release to download; kept current by Renovate (see renovate.json).
+  # renovate[github-releases]: depName=Kong/kong-mesh-v3-readiness
+  TOOL_VERSION: v0.1.0
+
+jobs:
+  audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [universal, kubernetes, multizone]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Download kuma3-preflight (checksum-verified)
+        run: |
+          set -euo pipefail
+          base="https://github.com/Kong/kong-mesh-v3-readiness/releases/download/${TOOL_VERSION}"
+          asset="kuma3-preflight_linux_amd64.tar.gz"
+          mkdir -p "${RUNNER_TEMP}/bin"
+          curl -fsSL "${base}/${asset}" -o "${RUNNER_TEMP}/${asset}"
+          curl -fsSL "${base}/checksums.txt" -o "${RUNNER_TEMP}/checksums.txt"
+          ( cd "${RUNNER_TEMP}" && grep " ${asset}\$" checksums.txt | sha256sum -c - )
+          tar -xzf "${RUNNER_TEMP}/${asset}" -C "${RUNNER_TEMP}/bin" kuma3-preflight
+          {
+            echo "KUMA3_PREFLIGHT_BIN=${RUNNER_TEMP}/bin/kuma3-preflight"
+            echo "KUMA3_PREFLIGHT_DIR=${RUNNER_TEMP}/preflight-${{ matrix.env }}"
+          } >> "$GITHUB_ENV"
+
+      # Reuse the repo's own e2e action so the CP/image build matches normal CI exactly.
+      # It inherits KUMA3_PREFLIGHT_BIN/DIR from $GITHUB_ENV, so the hook captures per spec.
+      - name: Run e2e (${{ matrix.env }}) with capture
+        uses: ./.github/actions/run-e2e
+        with:
+          target: ${{ matrix.env }}
+          k8s_version: kind
+          cni_network_plugin: flannel
+          arch: amd64
+          parallel_runner_id: "0"
+
+      - name: Upload snapshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: preflight-${{ matrix.env }}
+          path: ${{ runner.temp }}/preflight-${{ matrix.env }}/*.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  report:
+    needs: audit
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Download kuma3-preflight (checksum-verified)
+        run: |
+          set -euo pipefail
+          base="https://github.com/Kong/kong-mesh-v3-readiness/releases/download/${TOOL_VERSION}"
+          asset="kuma3-preflight_linux_amd64.tar.gz"
+          mkdir -p "${RUNNER_TEMP}/bin"
+          curl -fsSL "${base}/${asset}" -o "${RUNNER_TEMP}/${asset}"
+          curl -fsSL "${base}/checksums.txt" -o "${RUNNER_TEMP}/checksums.txt"
+          ( cd "${RUNNER_TEMP}" && grep " ${asset}\$" checksums.txt | sha256sum -c - )
+          tar -xzf "${RUNNER_TEMP}/${asset}" -C "${RUNNER_TEMP}/bin" kuma3-preflight
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: preflight-*
+          path: ${{ runner.temp }}/snapshots
+
+      - name: Classify + write report to the job summary
+        run: |
+          set -euo pipefail
+          bin="${RUNNER_TEMP}/bin/kuma3-preflight"
+          mkdir -p report
+          echo "# Kuma 3.0 e2e readiness — $(date -u +%Y-%m-%d)" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          captured=0
+          for env in universal kubernetes multizone; do
+            dir="${RUNNER_TEMP}/snapshots/preflight-${env}"
+            src="test/e2e_env/${env}"
+            if [ ! -d "$dir" ] || [ -z "$(ls -A "$dir" 2>/dev/null)" ] || [ ! -d "$src" ]; then
+              echo "- _${env}: no snapshots, skipped_" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            # One env's classify failure (e.g. a corrupt snapshot) must not sink the report.
+            if ! "$bin" --classify --source-dir "$src" --reports-dir "$dir" --format markdown --output "report/${env}.md"; then
+              echo "::warning::classify failed for ${env}"
+              continue
+            fi
+            captured=$((captured + 1))
+            "$bin" --classify --source-dir "$src" --reports-dir "$dir" --format json --output "report/${env}.json" || true
+            "$bin" --classify --source-dir "$src" --reports-dir "$dir" --format html --output "report/${env}.html" || true
+            { cat "report/${env}.md"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          done
+          if [ "$captured" -eq 0 ]; then
+            echo "::error::no snapshots captured for any env (CP never came up, or the tool was not downloaded)"
+            exit 1
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: v3-readiness-report
+          path: report
+          retention-days: 90

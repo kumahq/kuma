@@ -53,6 +53,13 @@ var (
 	_ = E2ESynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
 	_ = SynchronizedAfterSuite(func() {}, universal.SynchronizedAfterSuite)
 	_ = ReportAfterSuite("universal after suite", universal.AfterSuite)
+	// Opt-in (KUMA3_PREFLIGHT_BIN + KUMA3_PREFLIGHT_DIR): snapshot the shared CP after
+	// each spec so kuma3-preflight can classify which tests use Kuma-3.0-removed
+	// features. No-op otherwise. Snapshot filenames carry the parallel-process index,
+	// so concurrent processes sharing the output dir do not collide.
+	_ = AfterEach(func() {
+		CapturePreflightCluster(CurrentSpecReport().FullText(), universal.Cluster)
+	})
 )
 
 var (
