@@ -309,9 +309,11 @@ func (r *resourceInspectHandler) getPoliciesConf(plugins []core_plugins.Register
 			res, err := policyPlugin.Plugin.MatchedPolicies(dataplane, baseMeshContext.Resources())
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
+				return
 			}
 			if res.Type == "" {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
+				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("matched policy didn't set type for policy plugin %s", policyPlugin.Name), "could not apply policy plugin")
+				return
 			}
 
 			matchedPolicies = append(matchedPolicies, res)
@@ -595,9 +597,11 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			}
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
+				return
 			}
 			if res.Type == "" {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
+				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("matched policy didn't set type for policy plugin %s", policyPlugin.Name), "could not apply policy plugin")
+				return
 			}
 
 			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
