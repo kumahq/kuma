@@ -29,7 +29,7 @@ node = "24"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.7.1"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.21.0"
 "aqua:kubernetes-sigs/controller-runtime/setup-envtest" = "0.24.1"
-"ubi:grafana/dashboard-linter" = "v0.1.1"
+"ubi:grafana/dashboard-linter" = "v0.2.0"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
 #     .github/actions/run-e2e/action.yml
