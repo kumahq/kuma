@@ -579,6 +579,14 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 		rules := []api_common.InspectRule{}
 		for _, policyPlugin := range allPlugins {
 			res, err := policyPlugin.Plugin.MatchedPolicies(dp, resources)
+			if err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
+				return
+			}
+			if res.Type == "" {
+				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("matched policy didn't set type for policy plugin %s", policyPlugin.Name), "could not apply policy plugin")
+				return
+			}
 			if res.Type == meshhttproute_api.MeshHTTPRouteType {
 				for _, pol := range res.ToRules.Rules {
 					for _, r := range pol.Conf.(meshhttproute_api.PolicyDefault).Rules {
@@ -594,14 +602,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 						}
 					}
 				}
-			}
-			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
-				return
-			}
-			if res.Type == "" {
-				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("matched policy didn't set type for policy plugin %s", policyPlugin.Name), "could not apply policy plugin")
-				return
 			}
 
 			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
