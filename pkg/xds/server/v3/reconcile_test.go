@@ -395,8 +395,66 @@ var _ = Describe("Reconcile", func() {
 			// Unchanged: same content hash for Route, "" == "" for empty types.
 			Expect(changed).To(BeFalse())
 		})
+
+		It("should not pass empty version to ConfigReadyForDelivery when types clear", func() {
+			// First snapshot has a Secret; second is fully empty.
+			// When Secret transitions secretHash→"", the "" must NOT reach
+			// ConfigReadyForDelivery: stats_callbacks.OnStreamRequest skips
+			// requests with VersionInfo=="" so the key would never be consumed.
+			withSecret := envoy_cache.Snapshot{}
+			withSecret.Resources[envoy_types.Secret] = envoy_cache.Resources{
+				Items: map[string]envoy_types.ResourceWithTTL{
+					"secret": {Resource: &envoy_auth.Secret{Name: "secret"}},
+				},
+			}
+			emptySnap := envoy_cache.Snapshot{}
+
+			snapshots := make(chan envoy_cache.Snapshot, 2)
+			snapshots <- withSecret
+			snapshots <- emptySnap
+
+			spy := &spyStatsCallbacks{}
+			r := &reconciler{
+				generator: snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+					snap := <-snapshots
+					return &snap, nil
+				}),
+				cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
+				statsCallbacks: spy,
+			}
+
+			proxy := &xds_model.Proxy{
+				Id: *xds_model.BuildProxyId("demo", "empty-delivery-test"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{Mesh: "demo", Name: "empty-delivery-test"},
+					Spec: &mesh_proto.Dataplane{},
+				},
+			}
+
+			By("first reconcile — Secret gets a real content hash")
+			_, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("second reconcile — Secret clears, transitioning secretHash→\"\"")
+			_, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(spy.deliveredVersions).ToNot(ContainElement(""))
+		})
 	})
 })
+
+// spyStatsCallbacks records versions passed to ConfigReadyForDelivery.
+type spyStatsCallbacks struct {
+	util_xds.NoopCallbacks
+	deliveredVersions []string
+}
+
+func (s *spyStatsCallbacks) ConfigReadyForDelivery(v string) {
+	s.deliveredVersions = append(s.deliveredVersions, v)
+}
+
+func (s *spyStatsCallbacks) DiscardConfig(string) {}
 
 type snapshotGeneratorFunc func(context.Context, xds_context.Context, *xds_model.Proxy) (*envoy_cache.Snapshot, error)
 

@@ -125,7 +125,9 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 
 	for _, version := range changed {
-		r.statsCallbacks.ConfigReadyForDelivery(version)
+		if version != "" {
+			r.statsCallbacks.ConfigReadyForDelivery(version)
+		}
 	}
 	return true, nil
 }
