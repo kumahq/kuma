@@ -295,23 +295,29 @@ func addResourcesEndpoints(
 		default:
 			definition.ReadOnly = definition.IsReadOnly(cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP())
 		}
-		endpoints := resourceEndpoints{
-			k8sMapper:                    k8sMapper,
-			mode:                         cfg.Mode,
-			federatedZone:                cfg.IsFederatedZoneCP(),
-			resManager:                   resManager,
-			descriptor:                   definition,
-			resourceAccess:               resourceAccess,
-			filter:                       filters.Resource(definition),
-			meshContextBuilder:           meshContextBuilder,
-			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
-			xdsHooks:                     xdsHooks,
-			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
-			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
-			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
+		endpointsCtx := resourceEndpointsContext{
+			mode:           cfg.Mode,
+			resManager:     resManager,
+			descriptor:     definition,
+			resourceAccess: resourceAccess,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
-			endpoints.zoneName = cfg.Multizone.Zone.Name
+			endpointsCtx.zoneName = cfg.Multizone.Zone.Name
+		}
+		endpoints := resourceEndpoints{
+			resourceEndpointsContext:     endpointsCtx,
+			k8sMapper:                    k8sMapper,
+			federatedZone:                cfg.IsFederatedZoneCP(),
+			filter:                       filters.Resource(definition),
+			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
+			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
+			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			inspect: &resourceInspectHandler{
+				resourceEndpointsContext: endpointsCtx,
+				meshContextBuilder:       meshContextBuilder,
+				xdsHooks:                 xdsHooks,
+				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
+			},
 		}
 		if defType == system.SecretType || defType == system.GlobalSecretType {
 			endpoints.k8sMapper = k8sSecretMapper
