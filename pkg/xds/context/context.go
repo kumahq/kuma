@@ -79,7 +79,7 @@ type PEMBytes []byte
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash                        string
+	Hash string
 	// PolicyMatchingHash is a content hash over matching-relevant resources only (policies,
 	// gateways, external services, destinations). Unlike Hash, it does NOT include the
 	// Dataplane roster or insight types, so it stays stable across DP registration waves.

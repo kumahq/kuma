@@ -605,14 +605,14 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 // verifying it is not read by DppSelectedByPolicy or BuildToRules. Omitting a deny-set member
 // is safe (causes spurious cache misses, never stale xDS); an allow-list would fail dangerous.
 var policyMatchingHashDenySet = map[core_model.ResourceType]struct{}{
-	core_mesh.DataplaneType:        {},
-	core_mesh.DataplaneInsightType: {},
-	core_mesh.ZoneIngressType:      {},
+	core_mesh.DataplaneType:          {},
+	core_mesh.DataplaneInsightType:   {},
+	core_mesh.ZoneIngressType:        {},
 	core_mesh.ZoneIngressInsightType: {},
-	core_mesh.ZoneEgressType:       {},
-	core_mesh.ZoneEgressInsightType: {},
-	core_mesh.ServiceInsightType:   {},
-	core_mesh.MeshInsightType:      {},
+	core_mesh.ZoneEgressType:         {},
+	core_mesh.ZoneEgressInsightType:  {},
+	core_mesh.ServiceInsightType:     {},
+	core_mesh.MeshInsightType:        {},
 }
 
 // computePolicyMatchingHash returns a hash over matching-relevant resources only. It excludes
