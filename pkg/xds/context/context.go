@@ -80,6 +80,11 @@ type PEMBytes []byte
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
 	Hash                        string
+	// PolicyMatchingHash is a content hash over matching-relevant resources only (policies,
+	// gateways, external services, destinations). Unlike Hash, it does NOT include the
+	// Dataplane roster or insight types, so it stays stable across DP registration waves.
+	// Used as the shared component of the MatchedPolicies cache key.
+	PolicyMatchingHash          string
 	Resource                    *core_mesh.MeshResource
 	BaseMeshContext             *BaseMeshContext
 	Resources                   Resources

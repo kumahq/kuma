@@ -47,6 +47,14 @@ func MatchedPolicies(
 ) (core_xds.TypedMatchingPolicies, error) {
 	mpOpts := plugins.NewMatchedPoliciesConfig(opts...)
 
+	var cacheKey string
+	if mpOpts.Cache != nil {
+		cacheKey = BuildCacheKey(string(rType), mpOpts.IncludeShadow, dpp, mpOpts.PolicyMatchingHash)
+		if cached, ok := mpOpts.Cache.GetIfPresent(cacheKey); ok {
+			return cached, nil
+		}
+	}
+
 	policies := resources.ListOrEmpty(rType)
 	var warnings []string
 
@@ -136,7 +144,7 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
 	}
 
-	return core_xds.TypedMatchingPolicies{
+	result := core_xds.TypedMatchingPolicies{
 		Type:              rType,
 		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
@@ -144,7 +152,11 @@ func MatchedPolicies(
 		GatewayRules:      gr,
 		SingleItemRules:   sr,
 		Warnings:          warnings,
-	}, nil
+	}
+	if mpOpts.Cache != nil {
+		mpOpts.Cache.Put(cacheKey, result)
+	}
+	return result, nil
 }
 
 func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_mesh.DataplaneResource) []*core_mesh.MeshGatewayResource {

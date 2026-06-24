@@ -36,6 +36,9 @@ type DataplaneProxyBuilder struct {
 	APIVersion        core_xds.APIVersion
 	InternalAddresses []core_xds.InternalAddress
 	IncludeShadow     bool
+	// policyMatchingCache is the shared LRU cache for MatchedPolicies results.
+	// Nil disables caching (inspect, test, egress paths).
+	policyMatchingCache core_plugins.PolicyMatchingCacheAccessor
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meta *core_xds.DataplaneMetadata, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -232,6 +235,9 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	opts := []core_plugins.MatchedPoliciesOption{}
 	if p.IncludeShadow {
 		opts = append(opts, core_plugins.IncludeShadow())
+	}
+	if p.policyMatchingCache != nil {
+		opts = append(opts, core_plugins.WithCache(p.policyMatchingCache, meshContext.PolicyMatchingHash))
 	}
 	for _, p := range core_plugins.Plugins().PolicyPlugins() {
 		res, err := p.Plugin.MatchedPolicies(dataplane, resources, opts...)

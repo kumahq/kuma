@@ -94,8 +94,22 @@ type IdentityProviderPlugin interface {
 	NewIdentityProvider(PluginContext, PluginConfig) (providers.IdentityProvider, error)
 }
 
+// PolicyMatchingCacheAccessor is a thread-safe bounded cache for MatchedPolicies results.
+// Implementations must be safe for concurrent use.
+type PolicyMatchingCacheAccessor interface {
+	// GetIfPresent returns the cached result for key, or (zero, false) on miss.
+	GetIfPresent(key string) (core_xds.TypedMatchingPolicies, bool)
+	// Put stores value under key.
+	Put(key string, value core_xds.TypedMatchingPolicies)
+}
+
 type MatchedPoliciesConfig struct {
 	IncludeShadow bool
+	// Cache, when non-nil, enables memoisation of MatchedPolicies results.
+	Cache PolicyMatchingCacheAccessor
+	// PolicyMatchingHash is the per-MeshContext hash over matching-relevant resources.
+	// It is used as the shared component of the cache key.
+	PolicyMatchingHash string
 }
 
 func NewMatchedPoliciesConfig(opts ...MatchedPoliciesOption) *MatchedPoliciesConfig {
@@ -111,6 +125,14 @@ type MatchedPoliciesOption func(*MatchedPoliciesConfig)
 func IncludeShadow() MatchedPoliciesOption {
 	return func(cfg *MatchedPoliciesConfig) {
 		cfg.IncludeShadow = true
+	}
+}
+
+// WithCache enables memoisation of MatchedPolicies results using c, keyed by policyMatchingHash.
+func WithCache(c PolicyMatchingCacheAccessor, policyMatchingHash string) MatchedPoliciesOption {
+	return func(cfg *MatchedPoliciesConfig) {
+		cfg.Cache = c
+		cfg.PolicyMatchingHash = policyMatchingHash
 	}
 }
 

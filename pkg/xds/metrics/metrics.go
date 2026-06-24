@@ -13,6 +13,7 @@ type Metrics struct {
 	KubeAuthCache           *prometheus.CounterVec
 	CertExpirationTimestamp *prometheus.GaugeVec
 	SnapshotResources       *prometheus.HistogramVec
+	PolicyMatchingCache     *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -37,7 +38,11 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Help:    "Distribution of resource counts per xDS snapshot by resource type.",
 		Buckets: prometheus.ExponentialBuckets(1, 2, 12),
 	}, []string{"resource_type"})
-	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources); err != nil {
+	policyMatchingCache := util_cache.NewMetric(
+		"policy_matching_cache",
+		"Cache hit/miss counts for MatchedPolicies memoisation on the dataplane watchdog path.",
+	)
+	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources, policyMatchingCache); err != nil {
 		return nil, err
 	}
 
@@ -47,5 +52,6 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		KubeAuthCache:           kubeAuthCache,
 		CertExpirationTimestamp: certExpirationTimestamp,
 		SnapshotResources:       snapshotResources,
+		PolicyMatchingCache:     policyMatchingCache,
 	}, nil
 }
