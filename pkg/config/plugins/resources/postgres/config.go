@@ -71,6 +71,12 @@ type PostgresStoreConfig struct {
 	MaxListQueryElements uint32 `json:"maxListQueryElements" envconfig:"kuma_store_postgres_max_list_query_elements"`
 	// ReadReplica is a setting for a DB replica used only for read queries
 	ReadReplica ReadReplica `json:"readReplica"`
+	// SkipMigrationCheck makes `migrate up` a no-op when the DB is at a newer
+	// version than the binary, and relaxes the boot-time migration gate from
+	// strict equality (dbVer == fileVer) to dbVer >= fileVer. Intended for
+	// blue/green CP upgrades where a newer CP owns schema migrations and an
+	// older CP shares the same DB.
+	SkipMigrationCheck bool `json:"skipMigrationCheck" envconfig:"kuma_store_postgres_skip_migration_check"`
 }
 
 type ReadReplica struct {
