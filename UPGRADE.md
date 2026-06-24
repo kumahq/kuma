@@ -58,6 +58,8 @@ Do not use this in production.
 
 ### Inbound listeners now use SO_REUSEPORT by default
 
+> **Affected versions:** this change is in `2.13.7`+ and all `2.14.x`, not just `2.14`. The rolling-upgrade note below applies any time you upgrade from a version without it (before `2.13.7`) to one with it — including a `2.13.x` upgrade that crosses `2.13.7`.
+
 The data plane now advertises the `feature-reuse-port` capability to the control plane, which causes inbound Envoy listeners to be generated with `enable_reuse_port: true`. This lets each Envoy worker thread own its own listen socket, improving connection distribution under load.
 
 **Note:** `enable_reuse_port` cannot be changed on a running Envoy listener. If a data plane is upgraded and the flag later toggled, the listener will not pick up the change until the data plane restarts.
