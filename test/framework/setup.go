@@ -325,23 +325,6 @@ destinations:
 	return YamlUniversal(tp)
 }
 
-func TrafficPermissionKubernetes(name string) InstallFunc {
-	tp := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
-mesh: %[1]s
-metadata:
-  name: allow-all-%[1]s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'`, name)
-	return YamlK8s(tp)
-}
-
 func TimeoutUniversal(name string) InstallFunc {
 	timeout := fmt.Sprintf(`
 type: Timeout
