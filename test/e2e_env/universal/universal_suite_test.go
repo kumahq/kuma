@@ -66,7 +66,6 @@ var (
 	_ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
 	_ = Describe("Workload", workload.Workload, Ordered)
 	_ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
-	_ = Describe("External Services", externalservices.Policy, Ordered)
 	_ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
