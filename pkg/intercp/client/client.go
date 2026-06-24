@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 )
 
 type TLSConfig struct {
@@ -28,7 +28,7 @@ type Conn interface {
 	GetState() connectivity.State
 }
 
-func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
+func New(serverURL string, tlsCfg *TLSConfig, maxMsgSize int) (Conn, error) {
 	url, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, err
@@ -38,21 +38,28 @@ func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
 	case "grpc": // not used in production
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
-		if tlsCfg != nil {
-			cp := x509.NewCertPool()
-			cp.AddCert(&tlsCfg.CaCert)
-			tlsConfig.RootCAs = cp
-			tlsConfig.Certificates = []tls.Certificate{tlsCfg.ClientCert}
-		} else {
-			tlsConfig.InsecureSkipVerify = true
+		if tlsCfg == nil {
+			return nil, errors.New("TLS config is required for grpcs scheme")
+		}
+		cp := x509.NewCertPool()
+		cp.AddCert(&tlsCfg.CaCert)
+		tlsConfig := &tls.Config{
+			MinVersion:   tls.VersionTLS12,
+			RootCAs:      cp,
+			Certificates: []tls.Certificate{tlsCfg.ClientCert},
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	default:
 		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
-	dialOpts = append(dialOpts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(
-		otelgrpc.WithFilter(filters.Not(filters.ServiceName(system_proto.InterCpPingService_ServiceDesc.ServiceName))),
-	)))
+	dialOpts = append(dialOpts,
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
+			otelgrpc.WithFilter(filters.Not(filters.ServiceName(system_proto.InterCpPingService_ServiceDesc.ServiceName))),
+		)),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxMsgSize),
+			grpc.MaxCallSendMsgSize(maxMsgSize),
+		),
+	)
 	return grpc.NewClient(url.Host, dialOpts...)
 }

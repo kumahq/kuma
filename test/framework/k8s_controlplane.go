@@ -2,13 +2,17 @@ package framework
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -18,9 +22,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
 )
 
 var _ ControlPlane = &K8sControlPlane{}
@@ -37,6 +41,7 @@ type K8sControlPlane struct {
 	verbose    bool
 	replicas   int
 	apiHeaders []string
+	refreshMu  sync.Mutex
 }
 
 func NewK8sControlPlane(
@@ -65,6 +70,10 @@ func NewK8sControlPlane(
 
 func (c *K8sControlPlane) GetName() string {
 	return c.name
+}
+
+func (c *K8sControlPlane) Mode() core.CpMode {
+	return c.mode
 }
 
 func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
@@ -110,8 +119,29 @@ func (c *K8sControlPlane) ClosePortForwards() {
 	}
 }
 
+func (c *K8sControlPlane) RefreshPortForwards() error {
+	c.refreshMu.Lock()
+	defer c.refreshMu.Unlock()
+
+	c.ClosePortForwards()
+	if err := c.PortForwardKumaCP(); err != nil {
+		return err
+	}
+
+	if !c.cluster.opts.setupKumactl {
+		return nil
+	}
+
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return err
+	}
+
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token, c.apiHeaders)
+}
+
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
-	return k8s.ListPods(c.t,
+	return k8s.ListPodsContext(c.t, context.Background(),
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + Config.KumaServiceName,
@@ -120,7 +150,7 @@ func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 }
 
 func (c *K8sControlPlane) GetKumaCPSvc() v1.Service {
-	return k8s.ListServices(c.t,
+	return k8s.ListServicesContext(c.t, context.Background(),
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			FieldSelector: "metadata.name=" + Config.KumaServiceName,
@@ -129,7 +159,7 @@ func (c *K8sControlPlane) GetKumaCPSvc() v1.Service {
 }
 
 func (c *K8sControlPlane) GetKumaCPSyncSvc() v1.Service {
-	return k8s.ListServices(c.t,
+	return k8s.ListServicesContext(c.t, context.Background(),
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			FieldSelector: "metadata.name=" + Config.KumaGlobalZoneSyncServiceName,
@@ -151,8 +181,9 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 		res := strings.Split(header, "=")
 		headers[res[0]] = res[1]
 	}
-	_, err := http_helper.HTTPDoWithRetryE(
+	_, err := http_helper.HTTPDoWithRetryContextE(
 		c.t,
+		context.Background(),
 		"GET",
 		c.GetAPIServerAddress()+"/zones/_overview",
 		nil,
@@ -170,8 +201,9 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 		return nil
 	}
 
-	return http_helper.HttpGetWithRetryWithCustomValidationE(
+	return http_helper.HTTPGetWithRetryWithCustomValidationContextE(
 		c.t,
+		context.Background(),
 		c.GetAPIServerAddress()+"/gui",
 		&tls.Config{MinVersion: tls.VersionTLS12},
 		3,
@@ -234,8 +266,8 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		return ExtractSecretDataFromResponse(body)
 	}
 
-	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sec, err := k8s.GetSecretE(c.t, c.GetKubectlOptions(Config.KumaNamespace), "admin-user-token")
+	return retry.DoWithRetryContextE(c.t, context.Background(), "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sec, err := k8s.GetSecretContextE(c.t, context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "admin-user-token")
 		if err != nil {
 			return "", err
 		}
@@ -313,7 +345,33 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
-	panic("not implemented")
+	svc := c.GetKumaCPSvc()
+	tnl, err := c.cluster.PortForward(k8s.ResourceTypeService, svc.Name, svc.Namespace, 5680)
+	if err != nil {
+		return "", fmt.Errorf("failed to port-forward CP diagnostics port: %w", err)
+	}
+	defer tnl.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/metrics", tnl.Endpoint), http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to build CP metrics request: %w", err)
+	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to scrape CP metrics: %w", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read CP metrics body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("CP metrics returned %d: %s", resp.StatusCode, string(body))
+	}
+	return string(body), nil
 }
 
 func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
@@ -321,8 +379,9 @@ func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, erro
 		return "", errors.New("MADS port forward wasn't setup!")
 	}
 
-	return http_helper.HTTPDoWithRetryE(
+	return http_helper.HTTPDoWithRetryContextE(
 		c.t,
+		context.Background(),
 		http.MethodPost,
 		fmt.Sprintf("http://%s/v3/discovery:monitoringassignments", c.madsFwd.Endpoint),
 		fmt.Appendf(nil, `{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId),
@@ -348,8 +407,9 @@ func (c *K8sControlPlane) generateToken(
 		return "", err
 	}
 
-	return http_helper.HTTPDoWithRetryE(
+	return http_helper.HTTPDoWithRetryContextE(
 		c.t,
+		context.Background(),
 		"POST",
 		c.GetAPIServerAddress()+"/tokens"+tokenPath,
 		[]byte(data),

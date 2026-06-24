@@ -1,12 +1,13 @@
 package observability
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type k8SDeployment struct {
@@ -30,6 +31,10 @@ func (t *k8SDeployment) TracedServices() ([]string, error) {
 	return tracedServices(fmt.Sprintf("http://%s", t.jaegerApiTunnel.Endpoint()))
 }
 
+func (t *k8SDeployment) TracesForService(service string, limit int) ([]Trace, error) {
+	return tracesForService(fmt.Sprintf("http://%s", t.jaegerApiTunnel.Endpoint()), service, limit)
+}
+
 func (t *k8SDeployment) Name() string {
 	return t.deploymentName
 }
@@ -44,7 +49,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	if err != nil {
 		return err
 	}
-	err = k8s.KubectlApplyFromStringE(cluster.GetTesting(),
+	err = k8s.KubectlApplyFromStringContextE(cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(),
 		yaml)
 	if err != nil {

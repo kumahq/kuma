@@ -3,11 +3,11 @@ package gateway
 import (
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/route"
 )
 
 func filterGatewayRoutes(in []*core_mesh.MeshGatewayRouteResource, accept func(resource *core_mesh.MeshGatewayRouteResource) bool) []*core_mesh.MeshGatewayRouteResource {
@@ -127,6 +127,14 @@ func HandlePrefixMatchesAndPopulatePolicies(host GatewayHost, exactEntries, pref
 			// Duplicate the route to an exact match only if there
 			// isn't already an exact match for this path.
 			if !hasExactMatch {
+				// For the root prefix ("/"), the prefix match already becomes "/",
+				// which matches every path including "/", so synthesizing an extra
+				// exact "/" match is pure redundancy. Keep emitting it when a prefix
+				// rewrite or redirect path-rewrite is present, because there the exact
+				// match carries different full-path rewrite semantics for "/".
+				if exactPath == "" && exactPathRewrite == nil && exactPathRedirectPathRewrite == nil {
+					continue
+				}
 				exactMatch := e
 				exactMatch.Match.PrefixPath = ""
 				exactMatch.Match.ExactPath = exactPath

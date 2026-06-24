@@ -6,19 +6,19 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	config_access "github.com/kumahq/kuma/v2/pkg/config/access"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_tokens "github.com/kumahq/kuma/v2/pkg/core/tokens"
-	"github.com/kumahq/kuma/v2/pkg/defaults"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/access"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/ws/server"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	config_access "github.com/kumahq/kuma/v3/pkg/config/access"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_tokens "github.com/kumahq/kuma/v3/pkg/core/tokens"
+	"github.com/kumahq/kuma/v3/pkg/defaults"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/tokens/access"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/tokens/ws/server"
 )
 
 const PluginName = "tokens"
@@ -103,7 +103,7 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 	return nil
 }
 
-func EnsureUserTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
+func EnsureUserTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config, extensions context.Context) error {
 	return core_tokens.EnsureDefaultSigningKeyExist(system.UserTokenSigningKeyPrefix, ctx, resManager, logger)
 }
 

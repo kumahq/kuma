@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshTimeout configures timeout limits for service-to-service communication to prevent requests from hanging indefinitely. It supports connection timeouts, idle timeouts, and HTTP-specific timeouts (request, stream, headers) to ensure timely failure detection and improve service responsiveness.
@@ -19,12 +19,14 @@ type MeshTimeout struct {
 	To *[]To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From *[]From `json:"from,omitempty"`
-	// Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
-	// default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
+	// Rules defines inbound timeout configurations. When matches are present, the rule is applied only
+	// to traffic selected by the given source and destination matchers.
 	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
+	// Matches define predicates for selecting traffic this configuration applies to.
+	Matches *[]common_api.Match `json:"matches,omitempty"`
 	// Default contains configuration of the inbound timeouts
 	Default Conf `json:"default,omitempty"`
 }

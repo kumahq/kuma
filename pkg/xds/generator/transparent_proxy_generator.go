@@ -5,17 +5,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 type TransparentProxyGenerator struct{}
@@ -133,7 +133,7 @@ func CreateInboundPassthroughListener(
 	useStrictInboundPorts bool,
 	statPrefix string,
 ) (envoy_common.NamedResource, error) {
-	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP).
+	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.OriginalDstForwarder())

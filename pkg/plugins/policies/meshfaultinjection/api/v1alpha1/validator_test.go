@@ -3,9 +3,9 @@ package v1alpha1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	meshfaultinjection_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	meshfaultinjection_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("MeshFaultInjection", func() {
@@ -95,6 +95,23 @@ rules:
         - abort:
             httpStatus: 500
             percentage: "50.5"
+`),
+		Entry("accepts rules matches with sni", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - sni:
+          type: Exact
+          value: sni.extsvc.default.zone-1.aws-aurora.8443
+    default:
+      http:
+        - responseBandwidth:
+            limit: 1000Mbps
+            percentage: 50
 `),
 	)
 
@@ -198,11 +215,34 @@ rules:
           limit: 1000
           percentage: 1111
 `),
+		ErrorCases("matches sni incorrect",
+			[]validators.Violation{
+				{
+					Field:   "spec.rules[0].matches[0].sni.type",
+					Message: `unrecognized type "Prefix", supported values are: Exact`,
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - sni:
+          type: Prefix
+          value: sni.extsvc.default.zone-1.aws-aurora.8443
+    default:
+      http:
+      - responseBandwidth:
+          limit: 1000Mbps
+          percentage: 50
+`),
 		ErrorCases("matches spiffeID incorrect",
 			[]validators.Violation{
 				{
 					Field:   "spec.rules[0].matches[0].spiffeID",
-					Message: "must be a valid Spiffe ID",
+					Message: "must be a valid Spiffe ID: scheme is missing or invalid",
 				},
 			}, `
 type: MeshFaultInjection

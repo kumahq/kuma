@@ -9,11 +9,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func AppDeploymentWithCniAndTaintController() {
@@ -28,7 +28,7 @@ metadata:
 	var k8sCluster *K8sCluster
 	nodeName := fmt.Sprintf(
 		"second-%s",
-		strings.ToLower(random.UniqueId()),
+		strings.ToLower(random.UniqueID()),
 	)
 
 	setup := func() {
@@ -39,7 +39,7 @@ metadata:
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		err := NewClusterSetup().
@@ -61,6 +61,7 @@ metadata:
 	})
 
 	E2EAfterEach(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())

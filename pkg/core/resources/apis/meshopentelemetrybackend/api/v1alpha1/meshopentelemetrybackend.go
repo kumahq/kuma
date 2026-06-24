@@ -2,7 +2,7 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshOpenTelemetryBackend defines a shared OTel collector endpoint for observability policies.
@@ -26,6 +26,8 @@ type MeshOpenTelemetryBackend struct {
 	Protocol *Protocol `json:"protocol,omitempty"`
 	// Env controls whether standard OTEL exporter env vars participate in the
 	// final exporter config for this backend.
+	// Defaults to mode: Optional, precedence: EnvFirst, allowSignalOverrides: true
+	// when omitted.
 	// +kubebuilder:validation:Optional
 	Env *EnvPolicy `json:"env,omitempty"`
 }
@@ -62,17 +64,34 @@ const (
 )
 
 type EnvPolicy struct {
-	// Mode controls whether OTEL env vars are ignored, allowed, or required.
+	// Mode controls whether OTEL env vars participate in the merge.
+	// Disabled: env vars are skipped entirely; only explicit backend fields and
+	// built-in defaults apply.
+	// Optional (default): env vars are used when present; absence is fine.
+	// Required: env vars must supply the missing fields - if any required field
+	// is missing the signal is blocked (state: missing, RequiredEnvMissing in
+	// blockedReasons) even when an explicit value or default could fill it.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=Optional
 	Mode EnvMode `json:"mode"`
-	// Precedence controls whether explicit backend fields or env vars win when
-	// both are present for the same field.
+	// Precedence controls which source wins when both an explicit backend field
+	// and an env var are present for the same field.
+	// EnvFirst (default): env vars win; explicit backend fields fill gaps.
+	// ExplicitFirst: explicit backend fields win; env vars fill gaps.
+	// In either case, built-in defaults are the last fallback.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=EnvFirst
 	Precedence EnvPrecedence `json:"precedence"`
-	// AllowSignalOverrides controls whether signal-specific OTEL env vars such
-	// as `OTEL_EXPORTER_OTLP_TRACES_*` may diverge from the shared config.
+	// AllowSignalOverrides controls whether per-signal OTEL env vars
+	// (OTEL_EXPORTER_OTLP_TRACES_*, OTEL_EXPORTER_OTLP_METRICS_*,
+	// OTEL_EXPORTER_OTLP_LOGS_*) may diverge from the shared
+	// OTEL_EXPORTER_OTLP_* values.
+	// true (default): per-signal vars override the shared values for that
+	// signal.
+	// false: per-signal vars are ignored; the shared values apply to all
+	// signals. When per-signal overrides are dropped this way,
+	// SignalOverridesDisallowed appears in blockedReasons (a soft block -
+	// export still works via the shared config).
 	AllowSignalOverrides *bool `json:"allowSignalOverrides,omitempty"`
 }
 

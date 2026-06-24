@@ -9,12 +9,12 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	cache_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/cache"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	cache_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/cache"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (core_model.ResourceList, error) {
@@ -115,23 +115,6 @@ func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) boo
 	}
 
 	return false
-}
-
-func ZoneTag(r core_model.Resource) string {
-	switch res := r.GetSpec().(type) {
-	case *mesh_proto.Dataplane:
-		if res.GetNetworking().GetGateway() != nil {
-			return res.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
-		}
-		return res.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
-	case *mesh_proto.ZoneIngress:
-		return res.GetZone()
-	case *mesh_proto.ZoneEgress:
-		return res.GetZone()
-	default:
-		// todo(jakubdyszkiewicz): consider replacing this whole function with just core_model.ZoneOfResource(r)
-		return core_model.ZoneOfResource(r)
-	}
 }
 
 func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaResource) (core_model.ResourceList, error) {

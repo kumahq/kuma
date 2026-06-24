@@ -1,6 +1,7 @@
 package meshtrafficpermission
 
 import (
+	"context"
 	"fmt"
 	"net"
 
@@ -9,11 +10,11 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func externalService(mesh string, ip string) InstallFunc {
@@ -227,7 +228,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// and when Kubernetes pod is labeled
-		err = k8s.RunKubectlE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
+		err = k8s.RunKubectlContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

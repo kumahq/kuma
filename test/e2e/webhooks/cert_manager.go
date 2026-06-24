@@ -1,6 +1,7 @@
 package webhooks
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -11,10 +12,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/certmanager"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/certmanager"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func CertManagerCAInjection() {
@@ -32,7 +33,7 @@ func CertManagerCAInjection() {
 
 		releaseName = fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		err := NewClusterSetup().
@@ -58,6 +59,7 @@ func CertManagerCAInjection() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteDeployment(certmanager.DeploymentName)).To(Succeed())
@@ -70,8 +72,8 @@ func CertManagerCAInjection() {
 
 		// Verify Certificate has all required DNS names
 		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
+			output, err := k8s.RunKubectlAndGetOutputContextE(
+				cluster.GetTesting(), context.Background(),
 				cluster.GetKubectlOptions(kumaNamespace),
 				"get", "certificate", "kuma-tls-cert",
 				"-o", "jsonpath={.spec.dnsNames}",
@@ -107,8 +109,8 @@ func CertManagerCAInjection() {
 
 		// Verify Certificate resource exists and is Ready
 		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
+			output, err := k8s.RunKubectlAndGetOutputContextE(
+				cluster.GetTesting(), context.Background(),
 				cluster.GetKubectlOptions(kumaNamespace),
 				"get", "certificate", "kuma-tls-cert",
 				"-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}",
@@ -119,8 +121,8 @@ func CertManagerCAInjection() {
 
 		// Verify Issuer resource exists and is Ready
 		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
+			output, err := k8s.RunKubectlAndGetOutputContextE(
+				cluster.GetTesting(), context.Background(),
 				cluster.GetKubectlOptions(kumaNamespace),
 				"get", "issuer", "kuma-selfsigned-issuer",
 				"-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}",
@@ -131,8 +133,8 @@ func CertManagerCAInjection() {
 
 		// Verify cert-manager annotation on validating webhook configuration
 		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
+			output, err := k8s.RunKubectlAndGetOutputContextE(
+				cluster.GetTesting(), context.Background(),
 				cluster.GetKubectlOptions(),
 				"get", "validatingwebhookconfiguration", "kuma-validating-webhook-configuration",
 				"-o", "jsonpath={.metadata.annotations.cert-manager\\.io/inject-ca-from}",
@@ -143,8 +145,8 @@ func CertManagerCAInjection() {
 
 		// Verify cert-manager annotation on mutating webhook configuration
 		Eventually(func(g Gomega) {
-			output, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
+			output, err := k8s.RunKubectlAndGetOutputContextE(
+				cluster.GetTesting(), context.Background(),
 				cluster.GetKubectlOptions(),
 				"get", "mutatingwebhookconfiguration", "kuma-admission-mutating-webhook-configuration",
 				"-o", "jsonpath={.metadata.annotations.cert-manager\\.io/inject-ca-from}",
@@ -174,16 +176,16 @@ spec:
     - name: ca-1
       type: builtin
 `
-		err := k8s.KubectlApplyFromStringE(
-			cluster.GetTesting(),
+		err := k8s.KubectlApplyFromStringContextE(
+			cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(Config.KumaNamespace),
 			meshYaml,
 		)
 		Expect(err).ToNot(HaveOccurred(), "Webhooks should successfully validate Mesh resource")
 
 		// Clean up the test mesh
-		err = k8s.KubectlDeleteFromStringE(
-			cluster.GetTesting(),
+		err = k8s.KubectlDeleteFromStringContextE(
+			cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(Config.KumaNamespace),
 			meshYaml,
 		)
@@ -195,8 +197,8 @@ spec:
 func verifyWebhookCABundle(cluster Cluster, webhookType, webhookName string) {
 	Eventually(func(g Gomega) {
 		// Get the number of webhooks
-		output, err := k8s.RunKubectlAndGetOutputE(
-			cluster.GetTesting(),
+		output, err := k8s.RunKubectlAndGetOutputContextE(
+			cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(),
 			"get", webhookType, webhookName,
 			"-o", "jsonpath={.webhooks[*].name}",
@@ -207,8 +209,8 @@ func verifyWebhookCABundle(cluster Cluster, webhookType, webhookName string) {
 
 		// Verify CA bundle for each webhook
 		for i := range webhooks {
-			caBundleOutput, err := k8s.RunKubectlAndGetOutputE(
-				cluster.GetTesting(),
+			caBundleOutput, err := k8s.RunKubectlAndGetOutputContextE(
+				cluster.GetTesting(), context.Background(),
 				cluster.GetKubectlOptions(),
 				"get", webhookType, webhookName,
 				"-o", fmt.Sprintf("jsonpath={.webhooks[%d].clientConfig.caBundle}", i),

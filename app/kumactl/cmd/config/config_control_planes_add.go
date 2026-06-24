@@ -6,11 +6,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/config"
-	config_proto "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/config"
+	config_proto "github.com/kumahq/kuma/v3/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 type controlPlaneAddArgs struct {
@@ -49,6 +49,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 						ClientKeyFile:  args.clientKeyFile,
 						AuthType:       args.authType,
 						AuthConf:       args.authConf,
+						SkipVerify:     args.skipVerify,
 					},
 				},
 			}

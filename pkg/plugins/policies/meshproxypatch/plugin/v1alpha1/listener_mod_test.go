@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("Listener modifications", func() {
@@ -268,9 +268,9 @@ var _ = Describe("Listener modifications", func() {
                   socketAddress:
                     address: 192.168.0.1
                     portValue: 8080
-                enableReusePort: false
                 name: inbound:192.168.0.1:8080
                 tcpFastOpenQueueLength: 88
+                enableReusePort: false
                 trafficDirection: INBOUND
             `,
 		}),

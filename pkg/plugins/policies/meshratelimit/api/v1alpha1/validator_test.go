@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 var _ = Describe("MeshRateLimit", func() {
@@ -146,6 +146,20 @@ to:
           connectionRate:
             num: 100
             interval: 100ms`),
+			Entry("rules example with sni match", `
+targetRef:
+  kind: Dataplane
+rules:
+  - matches:
+      - sni:
+          type: Exact
+          value: backend.mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s`),
 		)
 		type testCase struct {
 			inputYaml string
@@ -431,6 +445,46 @@ from:
 violations:
   - field: spec.from
     message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
+			}),
+			Entry("spiffeID match with tcp rule", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://default/client
+    default:
+      local:
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`,
+				expected: `
+violations:
+  - field: spec.rules[0].default.local.tcp
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity`,
+			}),
+			Entry("spiffeID match with unsupported type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+rules:
+  - matches:
+      - spiffeID:
+          type: Unknown
+          value: spiffe://default/client
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: 'unrecognized type "Unknown", supported values are: Exact, Prefix'`,
 			}),
 		)
 	})

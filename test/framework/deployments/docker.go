@@ -1,6 +1,7 @@
 package deployments
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type DockerContainer struct {
@@ -242,7 +243,7 @@ func (d *DockerContainer) updatePorts() error {
 }
 
 func (d *DockerContainer) Stop() error {
-	retry.DoWithRetry(d.t, "stop "+d.id, 30, 3*time.Second,
+	retry.DoWithRetryContext(d.t, context.Background(), "stop "+d.id, 30, 3*time.Second,
 		func() (string, error) {
 			_, err := d.dockerBackend.StopE(d.t, []string{d.id}, &docker.StopOptions{Time: 1, Logger: d.logger})
 			if err != nil {

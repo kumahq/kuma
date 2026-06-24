@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("TagsMetadataConfigurer", func() {
@@ -23,7 +23,7 @@ var _ = Describe("TagsMetadataConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				WithOverwriteName(given.listenerName).
 				Configure(TagsMetadata(given.tags)).
 				Build()
@@ -48,13 +48,13 @@ var _ = Describe("TagsMetadataConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             metadata:
               filterMetadata:
                 io.kuma.tags:
                   kuma.io/service: backend
                   version: v2
-            trafficDirection: INBOUND`,
+            trafficDirection: INBOUND
+            enableReusePort: true`,
 		}),
 	)
 })

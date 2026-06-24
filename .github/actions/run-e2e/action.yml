@@ -26,9 +26,13 @@ runs:
         remove_android: true
         remove_dotnet: true
         remove_haskell: true
-    - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+    - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+      with:
+        # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
+        version: 2026.5.7
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
     - run: make build
       shell: bash
     - run: make -j build/distributions
@@ -80,8 +84,8 @@ runs:
           export MAKE_PARAMETERS="-j2"
         fi
 
-        if [[ "$E2E_SIDECAR_CONTAINERS" != "" ]]; then
-          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
+        if [[ "$E2E_SIDECAR_CONTAINERS" == "false" ]]; then
+          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
         fi
 
         if [[ "$E2E_TARGET" == "" ]]; then

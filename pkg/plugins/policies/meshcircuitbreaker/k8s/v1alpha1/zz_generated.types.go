@@ -9,11 +9,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policy "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshCircuitBreaker protects services from cascading failures by limiting connections and detecting unhealthy instances. It provides connection limits to prevent overload and outlier detection to temporarily remove failing endpoints from the load balancing pool.
@@ -99,7 +99,7 @@ func (l *MeshCircuitBreakerList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshCircuitBreaker{}, &MeshCircuitBreakerList{})
+	knownTypes = append(knownTypes, &MeshCircuitBreaker{}, &MeshCircuitBreakerList{})
 	registry.RegisterObjectType(&policy.MeshCircuitBreaker{}, &MeshCircuitBreaker{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
-	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
+	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
+	"github.com/kumahq/kuma/v3/tools/policy-gen/generator/pkg/parse"
 )
 
 func newHelpers(rootArgs *args) *cobra.Command {
@@ -39,6 +39,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"generateTo":            pconfig.HasTo,
 				"generateFrom":          pconfig.HasFrom,
 				"generateRules":         pconfig.HasRules,
+				"ruleHasMatches":        pconfig.RuleHasMatches,
 				"skipGetDefault":        pconfig.SkipGetDefault,
 				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
 			}, outPath)
@@ -56,10 +57,10 @@ var helpersTemplate = template.Must(template.New("missingkey=error").Parse(
 package {{.version}}
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"{{ if .generateRules }}
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"{{ end }}
-    "github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"{{ if .generateRules }}
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}
+    "github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
@@ -112,6 +113,14 @@ func (x *{{.name}}) GetToList() []core_model.PolicyItem {
 {{ if .generateRules }}
 func (x *Rule) GetDefault() interface{} {
 	return x.Default
+}
+
+func (x *Rule) GetMatches() []common_api.Match {
+{{- if .ruleHasMatches }}
+	return pointer.DerefOr(x.Matches, []common_api.Match{})
+{{- else }}
+	return []common_api.Match{}
+{{- end }}
 }
 
 func (x *{{.name}}) GetRules() []inbound.RuleEntry {

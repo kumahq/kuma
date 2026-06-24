@@ -6,9 +6,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	metrics "github.com/kumahq/kuma/v2/pkg/metrics/store"
-	"github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	metrics "github.com/kumahq/kuma/v3/pkg/metrics/store"
+	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
 func Setup(rt runtime.Runtime) error {
@@ -47,6 +48,12 @@ func Setup(rt runtime.Runtime) error {
 	}
 	if err := rt.Metrics().Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{})); err != nil {
 		if !isDuplicatedError(err) { // can be already registered when K8S registerer is used
+			return err
+		}
+	}
+
+	if _, err := kuma_log.SetupMetrics(rt.Metrics()); err != nil {
+		if !isDuplicatedError(err) {
 			return err
 		}
 	}

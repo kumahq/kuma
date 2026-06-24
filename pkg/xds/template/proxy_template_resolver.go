@@ -3,15 +3,15 @@ package template
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_policy "github.com/kumahq/kuma/v2/pkg/core/policy"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_policy "github.com/kumahq/kuma/v3/pkg/core/policy"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 var templateResolverLog = core.Log.WithName("xds").WithName("proxy-template-resolver")
@@ -34,11 +34,11 @@ func (r *SimpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	}
 
 	if bestMatchTemplate := SelectProxyTemplate(proxy.Dataplane, templateList.Items); bestMatchTemplate != nil {
-		log.V(2).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.GetMeta()))
+		log.V(1).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.GetMeta()))
 		return bestMatchTemplate.Spec
 	}
 
-	log.V(2).Info("no matching ProxyTemplate")
+	log.V(1).Info("no matching ProxyTemplate")
 	return nil
 }
 

@@ -7,11 +7,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers/extension"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers/extension"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
 type stubHandler struct {

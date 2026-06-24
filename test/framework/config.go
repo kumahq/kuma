@@ -10,10 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/test/framework/report"
-	"github.com/kumahq/kuma/v2/test/framework/versions"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+	"github.com/kumahq/kuma/v3/test/framework/versions"
 )
 
 var _ config.Config = E2eConfig{}
@@ -245,7 +245,7 @@ var defaultConf = E2eConfig{
 	},
 	ZoneEgressApp:                     "kuma-egress",
 	ZoneIngressApp:                    "kuma-ingress",
-	KumaExperimentalSidecarContainers: false,
+	KumaExperimentalSidecarContainers: true,
 	DumpDir:                           path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
 	DumpOnSuccess:                     false,
 }

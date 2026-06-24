@@ -1,6 +1,7 @@
 package meshidentity
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -8,18 +9,18 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/spire"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/spire"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
 )
 
 func Spire() {
@@ -45,7 +46,7 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(YamlK8s(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).KubeYaml())).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(spireNamespace)).
 			Install(spire.Install(
@@ -118,7 +119,7 @@ spec:
 		// wait for MeshIdentity to be reconciled by SPIRE provider before checking traffic
 		isMeshIdentityReady := func(name string) (bool, error) {
 			GinkgoHelper()
-			output, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
+			output, err := k8s.RunKubectlAndGetOutputContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
 			if err != nil {
 				return false, err
 			}

@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	. "github.com/kumahq/kuma/v2/pkg/cmd/version"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	. "github.com/kumahq/kuma/v3/pkg/cmd/version"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 var _ = Describe("version", func() {

@@ -6,11 +6,11 @@ import (
 	"sort"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	envoy "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	envoy "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 // tagSets represent map from tags (encoded as string) to number of instances

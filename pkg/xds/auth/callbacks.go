@@ -9,15 +9,15 @@ import (
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
 // The same logic also resides in pkg/hds/authn/callbacks.go
@@ -157,9 +157,8 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request,
 
 	if s.nodeID == "" {
 		s.nodeID = req.NodeId()
-	}
-
-	if s.nodeID != req.NodeId() {
+	} else if req.NodeId() != "" && s.nodeID != req.NodeId() {
+		// Delta xDS only requires Node on the first request; subsequent requests may omit it.
 		return stream{}, errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", s.nodeID, req.NodeId())
 	}
 

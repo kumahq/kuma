@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func StrictInboundPorts() {
@@ -255,7 +255,9 @@ func StrictInboundPorts() {
 				universal.Cluster, "demo-client-not-in-mesh", serviceAddress,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Exitcode).To(Or(Equal(52)))
+			// 52 = CURLE_GOT_NOTHING (TLS alert, clean close)
+			// 56 = CURLE_RECV_ERROR (TCP RST when no filter chain matches)
+			g.Expect(resp.Exitcode).To(Or(Equal(52), Equal(56)))
 		}, "30s", "1s").Should(Succeed())
 
 		// and

@@ -3,7 +3,7 @@ package zoneproxy
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type DeploymentOpts struct {
@@ -13,6 +13,9 @@ type DeploymentOpts struct {
 	Workload    string
 	IngressPort uint32
 	EgressPort  uint32
+	// DpEnvs are extra kuma-dp environment variables applied to the proxy.
+	// Universal-only; ignored on k8s deployments.
+	DpEnvs map[string]string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
@@ -58,6 +61,14 @@ func WithIngressPort(port uint32) DeploymentOptsFn {
 func WithEgressPort(port uint32) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.EgressPort = port
+	}
+}
+
+// WithDpEnvs sets kuma-dp environment overrides for the zone proxy DPP.
+// Universal-only.
+func WithDpEnvs(envs map[string]string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.DpEnvs = envs
 	}
 }
 

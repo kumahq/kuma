@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"context"
 	"time"
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -12,22 +11,22 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/auth"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	generator_meta "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
-	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	xds_callbacks "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
-	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
-	xds_template "github.com/kumahq/kuma/v2/pkg/xds/template"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/auth"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
+	generator_meta "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	xds_callbacks "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
+	xds_sync "github.com/kumahq/kuma/v3/pkg/xds/sync"
+	xds_template "github.com/kumahq/kuma/v3/pkg/xds/template"
 )
 
 var xdsServerLog = core.Log.WithName("xds").WithName("server")
@@ -55,7 +54,7 @@ func RegisterXDS(
 		return err
 	}
 
-	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
+	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
 
 	callbacks := util_xds_v3.CallbacksChain{
@@ -89,8 +88,8 @@ func RegisterXDS(
 	}
 
 	rest := envoy_server_rest.NewServer(xdsContext.Cache(), callbacks)
-	sotw := envoy_server_sotw.NewServer(context.Background(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
-	delta := envoy_server_delta.NewServer(context.Background(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
+	sotw := envoy_server_sotw.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
+	delta := envoy_server_delta.NewServer(rt.AppContext(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
 		o.Ordered = true
 	})
 	newServerAdvanced := envoy_server.NewServerAdvanced(rest, sotw, delta)

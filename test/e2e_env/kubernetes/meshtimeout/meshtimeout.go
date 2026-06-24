@@ -5,18 +5,22 @@ import (
 	"strings"
 	"time"
 
+	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_hcm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshretry_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/config_dump"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshTimeout() {
@@ -185,7 +189,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
-  name: mt1
+  name: mt-single-inbound-%s
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -200,7 +204,7 @@ spec:
         idleTimeout: 20s
         http:
           requestTimeout: 2s
-          maxStreamDuration: 20s`, Config.KumaNamespace, mesh)
+          maxStreamDuration: 20s`, mesh, Config.KumaNamespace, mesh)
 
 			// Delete all retries and timeouts policy
 			Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
@@ -235,6 +239,8 @@ spec:
 			Expect(YamlK8s(policy)(kubernetes.Cluster)).To(Succeed())
 
 			// then
+			waitForInboundRequestTimeout(namespace, 9090, 2*time.Second)
+
 			// main inbound
 			Eventually(func(g Gomega) {
 				start := time.Now()
@@ -261,4 +267,56 @@ spec:
 		Entry("Disabled", mesh_proto.Mesh_MeshServices_Disabled),
 		Entry("Exclusive", mesh_proto.Mesh_MeshServices_Exclusive),
 	)
+}
+
+func waitForInboundRequestTimeout(namespace string, port uint32, timeout time.Duration) {
+	Eventually(func(g Gomega) {
+		xds, err := kubernetes.Cluster.GetEnvoyAdminTunnel("test-server", namespace).GetConfigDump()
+		g.Expect(err).ToNot(HaveOccurred())
+
+		hasTimeout, err := inboundHasRequestTimeout(xds, port, timeout)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(hasTimeout).To(BeTrue())
+	}, "30s", "1s").Should(Succeed())
+}
+
+func inboundHasRequestTimeout(cfg *config_dump.EnvoyConfig, port uint32, timeout time.Duration) (bool, error) {
+	for _, dl := range cfg.Listeners.DynamicListeners {
+		if dl.ActiveState == nil {
+			continue
+		}
+
+		var listener envoy_listener_v3.Listener
+		if err := util_proto.UnmarshalAnyTo(dl.ActiveState.Listener, &listener); err != nil {
+			return false, err
+		}
+		if !strings.HasPrefix(listener.GetName(), "inbound:") ||
+			listener.GetAddress().GetSocketAddress().GetPortValue() != port {
+			continue
+		}
+
+		for _, fc := range listener.GetFilterChains() {
+			for _, filter := range fc.GetFilters() {
+				if filter.GetName() != "envoy.filters.network.http_connection_manager" {
+					continue
+				}
+
+				hcm := &envoy_hcm_v3.HttpConnectionManager{}
+				if err := util_proto.UnmarshalAnyTo(filter.GetTypedConfig(), hcm); err != nil {
+					return false, err
+				}
+				for _, virtualHost := range hcm.GetRouteConfig().GetVirtualHosts() {
+					for _, route := range virtualHost.GetRoutes() {
+						if route.GetRoute().GetTimeout().AsDuration() == timeout {
+							return true, nil
+						}
+					}
+				}
+			}
+		}
+
+		return false, nil
+	}
+
+	return false, fmt.Errorf("no listener on port %d found in config dump", port)
 }

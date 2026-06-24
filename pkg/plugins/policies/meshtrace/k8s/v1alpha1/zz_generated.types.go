@@ -8,11 +8,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policy "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshTrace enables distributed tracing to track requests as they flow through multiple services in the mesh. It supports exporting trace data to backends like Zipkin, Datadog, and OpenTelemetry, with configurable sampling rates and custom tags for detailed observability and debugging of service interactions.
@@ -111,7 +111,7 @@ func (l *MeshTraceList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTrace{}, &MeshTraceList{})
+	knownTypes = append(knownTypes, &MeshTrace{}, &MeshTraceList{})
 	registry.RegisterObjectType(&policy.MeshTrace{}, &MeshTrace{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

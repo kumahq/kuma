@@ -10,17 +10,17 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/containers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
-	gatewayapi_controllers "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi"
-	k8s_webhooks "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/containers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	gatewayapi_controllers "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi"
+	k8s_webhooks "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 var requiredGatewayCRDs = map[string]string{
@@ -96,7 +96,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		cpURL, caCert, rt.Config().GetEnvoyAdminPort(), rt.Config().GetEnvoyReadinessPort(),
 		cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS,
 		false, rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket, false, false, 0,
-		cfg.UnifiedResourceNamingEnabled, cfg.OtelPipeEnabled, cfg.Spire.Enabled,
+		cfg.UnifiedResourceNamingEnabled, cfg.OtelPipeEnabled, cfg.Spire.Enabled, rt.Config().Experimental.DeltaXds,
 	)
 
 	kubeConfig := mgr.GetConfig()

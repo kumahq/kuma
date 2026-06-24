@@ -9,50 +9,50 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	"github.com/kumahq/kuma/v2/pkg/api-server/customization"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/core/access"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/dataplane"
-	mesh_managers "github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
-	resources_access "github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	secret_cipher "github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	"github.com/kumahq/kuma/v2/pkg/dp-server/server"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	envoyadmin_access "github.com/kumahq/kuma/v2/pkg/envoy/admin/access"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
-	"github.com/kumahq/kuma/v2/pkg/intercp"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/certs"
-	"github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin"
-	leader_memory "github.com/kumahq/kuma/v2/pkg/plugins/leader/memory"
-	resources_memory "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
-	tokens_builtin "github.com/kumahq/kuma/v2/pkg/tokens/builtin"
-	tokens_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
-	mesh_cache "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_runtime "github.com/kumahq/kuma/v2/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	xds_server "github.com/kumahq/kuma/v2/pkg/xds/server"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	"github.com/kumahq/kuma/v3/pkg/api-server/customization"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/core/access"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
+	mesh_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
+	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	secret_cipher "github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v3/pkg/dns/vips"
+	"github.com/kumahq/kuma/v3/pkg/dp-server/server"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
+	"github.com/kumahq/kuma/v3/pkg/intercp"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
+	"github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
+	leader_memory "github.com/kumahq/kuma/v3/pkg/plugins/leader/memory"
+	resources_memory "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	tokens_builtin "github.com/kumahq/kuma/v3/pkg/tokens/builtin"
+	tokens_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
+	mesh_cache "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
@@ -102,9 +102,13 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		return nil, err
 	}
 	builder.WithXDS(xdsCtx)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
-	}))
+	})
+	if err != nil {
+		return nil, err
+	}
+	builder.WithDpServer(dpServer)
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg))
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
 	if err != nil {
@@ -126,7 +130,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		DataplaneToken: tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
 		ZoneToken:      tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
-	builder.WithInterCPClientPool(intercp.DefaultClientPool())
+	builder.WithInterCPClientPool(intercp.DefaultClientPool(int(builder.Config().Multizone.Global.KDS.MaxMsgSize)))
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 
@@ -198,7 +202,7 @@ type DummyEnvoyAdminClient struct {
 	ClustersCalled   int
 }
 
-func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
+func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	d.StatsCalled++
 	if format == v1alpha1.AdminOutputFormat_JSON {
 		return []byte("{\"server.live\": 1}\n"), nil

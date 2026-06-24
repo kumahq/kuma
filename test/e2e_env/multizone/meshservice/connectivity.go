@@ -1,6 +1,7 @@
 package meshservice
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -10,15 +11,15 @@ import (
 	"golang.org/x/sync/errgroup"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Connectivity() {
@@ -219,7 +220,7 @@ spec:
 		Expect(group.Wait()).To(Succeed())
 
 		Expect(multizone.KubeZone1.WaitApp("statefulset-test-server", namespace, 1)).To(Succeed())
-		for _, pod := range k8s.ListPods(multizone.KubeZone1.GetTesting(),
+		for _, pod := range k8s.ListPodsContext(multizone.KubeZone1.GetTesting(), context.Background(),
 			multizone.KubeZone1.GetKubectlOptions(namespace),
 			kube_meta.ListOptions{
 				LabelSelector: "app=statefulset-test-server",

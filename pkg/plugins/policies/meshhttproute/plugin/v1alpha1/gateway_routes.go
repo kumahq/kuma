@@ -1,30 +1,31 @@
 package v1alpha1
 
 import (
+	"reflect"
 	"slices"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
-	meshroute_gateway "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute/gateway"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
+	meshroute_gateway "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute/gateway"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/route"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 type ruleByHostname struct {
@@ -217,7 +218,34 @@ func generateEnvoyRouteEntries(
 		}
 	}
 
-	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
+	return dedupRouteEntries(plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries))
+}
+
+// dedupRouteEntries removes exact duplicate route entries while preserving order.
+//
+// Duplicates can happen when a single virtual host is covered by multiple
+// overlapping hostname rules that emit identical route.Entry values (e.g.
+// `foo.example.com` and `*.example.com` both producing the same entry for
+// `foo.example.com`). Equality is determined by reflect.DeepEqual on the whole
+// route.Entry, so entries that differ in any field remain distinct.
+func dedupRouteEntries(entries []route.Entry) []route.Entry {
+	if len(entries) < 2 {
+		return entries
+	}
+	out := make([]route.Entry, 0, len(entries))
+	for _, e := range entries {
+		duplicate := false
+		for _, kept := range out {
+			if reflect.DeepEqual(e, kept) {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 func makeHttpRouteEntry(
@@ -239,6 +267,8 @@ func makeHttpRouteEntry(
 			if ref.ReferencesRealResource() {
 				if d, port, ok := meshroute.DestinationPortFromRef(meshCtx, ref.RealResourceBackendRef()); ok {
 					dest = map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, d, port)}
+				} else {
+					dest = map[string]string{mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag}
 				}
 			}
 		}

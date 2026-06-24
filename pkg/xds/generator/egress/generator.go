@@ -6,16 +6,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	generator_core "github.com/kumahq/kuma/v2/pkg/xds/generator/core"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	generator_secrets "github.com/kumahq/kuma/v2/pkg/xds/generator/secrets"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	generator_core "github.com/kumahq/kuma/v3/pkg/xds/generator/core"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	generator_secrets "github.com/kumahq/kuma/v3/pkg/xds/generator/secrets"
 )
 
 // Generator generates xDS resources for an entire ZoneEgress.
@@ -44,7 +45,7 @@ func (g Generator) Generate(
 	statPrefix := getName(inboundContextualID, "")
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TLSInspector())
 

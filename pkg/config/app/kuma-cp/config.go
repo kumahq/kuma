@@ -8,25 +8,26 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/config/access"
-	api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/apis"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/config/diagnostics"
-	dns_server "github.com/kumahq/kuma/v2/pkg/config/dns-server"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/config/eventbus"
-	"github.com/kumahq/kuma/v2/pkg/config/intercp"
-	"github.com/kumahq/kuma/v2/pkg/config/mads"
-	"github.com/kumahq/kuma/v2/pkg/config/multizone"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/policies"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime"
-	"github.com/kumahq/kuma/v2/pkg/config/tracing"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/config/xds"
-	"github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/config/access"
+	api_server "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/apis"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/diagnostics"
+	dns_server "github.com/kumahq/kuma/v3/pkg/config/dns-server"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/config/eventbus"
+	"github.com/kumahq/kuma/v3/pkg/config/intercp"
+	"github.com/kumahq/kuma/v3/pkg/config/mads"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/policies"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/runtime"
+	"github.com/kumahq/kuma/v3/pkg/config/tracing"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/config/xds"
+	"github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 )
 
 var _ config.Config = &Config{}
@@ -294,7 +295,7 @@ var DefaultConfig = func() Config {
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
 				DelayFullResync:    false,
 			},
-			SidecarContainers: false,
+			SidecarContainers: true,
 			DeltaXds:          false,
 		},
 		Proxy:         xds.DefaultProxyConfig(),
@@ -318,6 +319,10 @@ var DefaultConfig = func() Config {
 		MeshService: MeshServiceConfig{
 			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
 			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
+			LabelPropagation: MeshServiceLabelPropagation{
+				Enabled:          false,
+				AllowedLabelKeys: []string{},
+			},
 		},
 	}
 }
@@ -383,6 +388,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.IPAM.Validate(); err != nil {
 		return errors.Wrap(err, "IPAM validation failed")
+	}
+	if err := c.MeshService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshService validation failed")
 	}
 	return nil
 }
@@ -593,8 +601,24 @@ type MeshServiceConfig struct {
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
 	// How long we wait before deleting a MeshService if all Dataplanes are gone
 	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD"`
+	// LabelPropagation controls propagation of user-defined labels from MeshService to generated resources.
+	LabelPropagation MeshServiceLabelPropagation `json:"labelPropagation"`
 }
 
 func (i MeshServiceConfig) Validate() error {
+	for _, k := range i.LabelPropagation.AllowedLabelKeys {
+		if mesh_proto.IsReservedLabelKey(k) {
+			return errors.Errorf(".MeshService.LabelPropagation.AllowedLabelKeys contains reserved key %q", k)
+		}
+	}
 	return nil
+}
+
+type MeshServiceLabelPropagation struct {
+	// If true, propagate allowed user-defined labels from MeshService to generated resources.
+	Enabled bool `json:"enabled" envconfig:"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED"`
+	// AllowedLabelKeys is the list of non-reserved label keys eligible for propagation.
+	// When empty and Enabled is true, all non-reserved labels are propagated.
+	// Reserved keys (kuma.io/ and k8s.kuma.io/ prefixes) are rejected at validation time.
+	AllowedLabelKeys []string `json:"allowedLabelKeys" envconfig:"KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS"`
 }

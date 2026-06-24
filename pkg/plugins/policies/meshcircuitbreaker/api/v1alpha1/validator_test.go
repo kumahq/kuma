@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 var _ = Describe("MeshCircuitBreaker", func() {
@@ -239,6 +239,24 @@ to:
   - targetRef:
       kind: MeshMultiZoneService
       name: web-backend
+    default:
+      connectionLimits: { }`),
+			Entry("with MeshExternalService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: external
+    default:
+      connectionLimits: { }`),
+			Entry("top level Dataplane to MeshExternalService", `
+targetRef:
+  kind: Dataplane
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: external
     default:
       connectionLimits: { }`),
 			Entry("gateway example", `

@@ -6,10 +6,11 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/v2/pkg/util/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
 // stream callbacks
@@ -184,6 +185,12 @@ func (d *discoveryResponse) VersionInfo() string {
 	return d.GetVersionInfo()
 }
 
+func (d *discoveryResponse) ByteSize() int {
+	return proto.Size(d.DiscoveryResponse)
+}
+
+var _ xds.DiscoveryResponse = &discoveryResponse{}
+
 type deltaDiscoveryRequest struct {
 	*envoy_sd.DeltaDiscoveryRequest
 }
@@ -244,6 +251,10 @@ func (d *deltaDiscoveryResponse) GetResources() []*anypb.Any {
 
 func (d *deltaDiscoveryResponse) GetNumberOfResources() int {
 	return len(d.Resources)
+}
+
+func (d *deltaDiscoveryResponse) ByteSize() int {
+	return proto.Size(d.DeltaDiscoveryResponse)
 }
 
 var _ xds.DeltaDiscoveryResponse = &deltaDiscoveryResponse{}

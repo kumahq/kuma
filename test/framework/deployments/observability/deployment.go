@@ -4,13 +4,14 @@ import (
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type Observability interface {
 	ZipkinCollectorURL() string
 	OTelCollectorTraceURL() string
 	TracedServices() ([]string, error)
+	TracesForService(service string, limit int) ([]Trace, error)
 	Name() string
 }
 

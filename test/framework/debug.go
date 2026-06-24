@@ -1,10 +1,12 @@
 package framework
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -12,12 +14,15 @@ import (
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	io_prometheus_client "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"go.uber.org/multierr"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/report"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 func ControlPlaneAssertions(cluster Cluster) {
@@ -38,6 +43,49 @@ func ControlPlaneAssertions(cluster Cluster) {
 	default:
 		ginkgo.Fail("unknown cluster")
 	}
+	assertNoXdsNacks(cluster)
+}
+
+// assertNoXdsNacks scrapes the CP /metrics endpoint and fails if any xDS
+// request has been answered with a NACK. A non-zero counter means the CP
+// produced a config that Envoy rejected.
+func assertNoXdsNacks(cluster Cluster) {
+	ginkgo.GinkgoHelper()
+	raw, err := cluster.GetKuma().GetMetrics()
+	Expect(err).ToNot(HaveOccurred(), "failed to scrape metrics from CP %s", cluster.Name())
+
+	parser := expfmt.NewTextParser(model.UTF8Validation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(raw))
+	Expect(err).ToNot(HaveOccurred(), "failed to parse metrics from CP %s", cluster.Name())
+
+	for _, metricName := range []string{"xds_requests_received", "delta_xds_requests_received"} {
+		family, ok := families[metricName]
+		if !ok {
+			continue
+		}
+		for _, metric := range family.GetMetric() {
+			isNack := false
+			for _, label := range metric.GetLabel() {
+				if label.GetName() == "confirmation" && label.GetValue() == "NACK" {
+					isNack = true
+					break
+				}
+			}
+			if !isNack {
+				continue
+			}
+			Expect(metric.GetCounter().GetValue()).To(BeNumerically("<", 3),
+				"CP %s reported %s NACK(s) for labels %s", cluster.Name(), metricName, formatLabels(metric.GetLabel()))
+		}
+	}
+}
+
+func formatLabels(labels []*io_prometheus_client.LabelPair) string {
+	parts := make([]string, 0, len(labels))
+	for _, label := range labels {
+		parts = append(parts, fmt.Sprintf("%s=%q", label.GetName(), label.GetValue()))
+	}
+	return "{" + strings.Join(parts, ",") + "}"
 }
 
 // DebugUniversal prints state of the cluster. Useful in case of failure.
@@ -120,7 +168,7 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 	defaultKubeOptions := *cluster.GetKubectlOptions("default") // copy to not override fields globally
 	defaultKubeOptions.Logger = logger.Discard
 	var errs error
-	out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "get", "pods", "-A")
+	out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &defaultKubeOptions, "get", "pods", "-A")
 	if err != nil {
 		errs = multierr.Combine(errs, fmt.Errorf("failed to get pods, %w", err))
 	} else {
@@ -128,7 +176,7 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 	}
 
 	Logf("debug nodes and print resource usage of cluster %q", cluster.Name())
-	nodes, err := k8s.GetNodesE(cluster.GetTesting(), &defaultKubeOptions)
+	nodes, err := k8s.GetNodesContextE(cluster.GetTesting(), context.Background(), &defaultKubeOptions)
 	if err != nil {
 		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err.Error())
 		errs = multierr.Combine(errs, fmt.Errorf("failed to get nodes, %w", err))
@@ -140,7 +188,7 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 			report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "nodes.json"), nodesJson)
 		}
 		for _, node := range nodes {
-			out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
+			out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &defaultKubeOptions, "describe", "node", node.Name)
 			if err != nil {
 				errs = multierr.Combine(errs, fmt.Errorf("failed to describe node %s, %w", node.Name, err))
 			} else {
@@ -162,13 +210,13 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	var errs error
 	kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
 	kubeOptions.Logger = logger.Discard                  // to not print on stdout
-	out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
+	out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "all,kuma", "-oyaml")
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("kubectl get for namespace %s failed with error: %w", namespace, err))
 	}
 
 	// Ignore it if we don't have Gateway API resources installed
-	gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
+	gatewayAPIOut, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "gateway-api", "-oyaml")
 	if err == nil {
 		out += gatewayAPIOut
 	} else {
@@ -176,7 +224,7 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	}
 	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
 
-	deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+	deployments, err := k8s.ListDeploymentsContextE(cluster.GetTesting(), context.Background(), &kubeOptions, kube_meta.ListOptions{})
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to list deployments in namespace %s, %w", namespace, err))
 	} else {

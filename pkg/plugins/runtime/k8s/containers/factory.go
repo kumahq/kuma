@@ -12,10 +12,10 @@ import (
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	runtime_k8s "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -41,6 +41,7 @@ type DataplaneProxyFactory struct {
 	unifiedResourceNamingEnabled bool
 	otelPipeEnabled              bool
 	spireEnabled                 bool
+	deltaXdsEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -58,6 +59,7 @@ func NewDataplaneProxyFactory(
 	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
+	deltaXdsEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -74,6 +76,7 @@ func NewDataplaneProxyFactory(
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		otelPipeEnabled:              otelPipeEnabled,
 		spireEnabled:                 spireEnabled,
+		deltaXdsEnabled:              deltaXdsEnabled,
 	}
 }
 
@@ -299,12 +302,10 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: i.ControlPlaneCACert,
 		},
 	}
-	if i.envoyAdminUnixSocket {
-		// When admin is on UDS, force readiness reporter to use TCP so
-		// K8s probes (which only support TCP/HTTP) can reach it.
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
+	if i.deltaXdsEnabled {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
+			Value: "DELTA_GRPC",
 		}
 	}
 	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
@@ -428,15 +429,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars[envName] = kube_core.EnvVar{
 			Name:  envName,
 			Value: envVal,
-		}
-	}
-
-	// Re-assert readiness env var after user overrides — overriding this
-	// would desync kuma-dp from the injected probes and break readiness.
-	if i.envoyAdminUnixSocket {
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
 		}
 	}
 

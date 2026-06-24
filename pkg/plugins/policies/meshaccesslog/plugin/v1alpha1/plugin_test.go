@@ -11,45 +11,45 @@ import (
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	meshroute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	meshhttproute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
-	meshtcproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
+	meshtcproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -82,6 +82,7 @@ var _ = Describe("MeshAccessLog", func() {
 		dataplaneLabels     map[string]string
 		inboundTagsDisabled bool
 		inboundName         string
+		extraInbounds       []*builders.InboundBuilder
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -123,6 +124,9 @@ var _ = Describe("MeshAccessLog", func() {
 				WithName("backend").
 				WithMesh("default").
 				AddInbound(inboundBuilder)
+			for _, extra := range given.extraInbounds {
+				dpBuilder = dpBuilder.AddInbound(extra)
+			}
 			if given.dataplaneLabels != nil {
 				dpBuilder = dpBuilder.WithLabels(given.dataplaneLabels)
 			}
@@ -174,6 +178,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -198,6 +203,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/log",
 									},
@@ -247,6 +253,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/meshservice/log",
 									},
@@ -258,6 +265,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/route-2/log",
 									},
@@ -269,6 +277,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/route-3/log",
 									},
@@ -318,6 +327,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/meshservice/log",
 									},
@@ -350,6 +360,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/log",
 									},
@@ -371,6 +382,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -391,6 +403,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
@@ -414,6 +427,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
@@ -440,6 +454,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.TCPBackendType,
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 								},
@@ -479,6 +494,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 								},
@@ -492,6 +508,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 									Body: &apiextensionsv1.JSON{
@@ -508,6 +525,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "other-otel-collector:5317",
 									Body: &apiextensionsv1.JSON{
@@ -560,6 +578,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 								},
@@ -573,6 +592,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
 									Body: &apiextensionsv1.JSON{
@@ -589,6 +609,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "other-otel-collector:5317",
 									Body: &apiextensionsv1.JSON{
@@ -626,6 +647,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.TCPBackendType,
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
@@ -649,6 +671,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.TCPBackendType,
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
@@ -678,6 +701,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -692,7 +716,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
@@ -717,6 +741,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -726,23 +751,85 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
 			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
 		}),
+		Entry("inbound with two services on the same port does not duplicate access log", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			extraInbounds: []*builders.InboundBuilder{
+				builders.Inbound().
+					WithService("backend-canary").
+					WithAddress("127.0.0.1").
+					WithPort(17777).
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Subset: subsetutils.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					}},
+				},
+			},
+			expectedListeners: []string{"inbound_route_duplicate_port.listener.golden.yaml"},
+		}),
 		Entry("inbound route with inbound tags disabled", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
@@ -773,6 +860,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -782,19 +870,20 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
 							}},
-						}},
+						},
 					}},
 				},
 			},
 			expectedListeners: []string{"inbound_route_tags_disabled.listener.golden.yaml"},
 		}),
-		Entry("outbound otel backend with workload identity", sidecarTestCase{
+		Entry("outbound otel backend with workload identity and legacy placeholder key", sidecarTestCase{
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
@@ -817,16 +906,18 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
 									OpenTelemetry: &api.OtelBackend{
 										Endpoint: "otel-collector",
 										Body: &apiextensionsv1.JSON{
 											Raw: []byte("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
 										},
-										Attributes: &[]api.JsonValue{
+										Attributes: &[]api.OtelAttribute{
 											{Key: "mesh", Value: "%KUMA_MESH%"},
 											{Key: "zone", Value: "%KUMA_ZONE%"},
 											{Key: "workload", Value: "%KUMA_WORKLOAD%"},
-											{Key: "%KUMA_ZONE%", Value: "static-zone-value"},
+											{Key: "static.zone", Value: "static-zone-value"},
+											{Key: "%KUMA_ZONE%", Value: "legacy-zone-key"},
 										},
 									},
 								}},
@@ -861,6 +952,7 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: []any{
 							api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/log",
 										Format: &api.Format{
@@ -874,6 +966,121 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			},
 			expectedListeners: []string{"outbound_file_workload_identity.listener.golden.yaml"},
+		}),
+		Entry("inbound with rules[].matches[].spiffeID and catch-all (parallel logging)", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound",
+				Origin: metadata.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(
+							HttpInboundRoutes(
+								envoy_names.GetInboundRouteName("backend"),
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {
+						{
+							Match: &common_api.Match{
+								SpiffeID: &common_api.SpiffeIDMatch{
+									Type:  common_api.ExactMatchType,
+									Value: "spiffe://default/ns/clients/sa/specific-client",
+								},
+							},
+							Conf: api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{Path: "/tmp/specific.log"},
+								}},
+							},
+						},
+						{
+							Conf: api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{Path: "/tmp/all.log"},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
+		}),
+		Entry("zone egress listener with rules[].matches[].sni", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound:zoneegress",
+				Origin: metadata.OriginEgress,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(MatchTransportProtocol("tls")).
+						Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+						Configure(TcpProxyDeprecated("aws-aurora", envoy_common.NewCluster(envoy_common.WithService("aws-aurora")))),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10002}: {{
+						Match: &common_api.Match{
+							SNI: &common_api.SNIMatch{
+								Type:  common_api.SNIExactMatchType,
+								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+							},
+						},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
+								File: &api.FileBackend{Path: "/tmp/aurora.log"},
+							}},
+						},
+					}},
+				},
+			},
+			expectedListeners: []string{"zoneegress_matches_sni.listener.golden.yaml"},
+		}),
+		Entry("zone ingress listener with rules[].matches[].spiffeID", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "inbound:zoneingress",
+				Origin: metadata.OriginIngress,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP, true).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(MatchTransportProtocol("tls")).
+						Configure(MatchServerNames("inbound-backend{mesh=default}")).
+						Configure(TcpProxyDeprecated("backend", envoy_common.NewCluster(envoy_common.WithService("backend")))),
+					)).MustBuild(),
+			}},
+			fromRules: core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10001}: {{
+						Match: &common_api.Match{
+							SpiffeID: &common_api.SpiffeIDMatch{
+								Type:  common_api.PrefixMatchType,
+								Value: "spiffe://default/ns/clients/",
+							},
+						},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Type: api.FileBackendType,
+								File: &api.FileBackend{Path: "/tmp/ingress.log"},
+							}},
+						},
+					}},
+				},
+			},
+			expectedListeners: []string{"zoneingress_matches_spiffeid.listener.golden.yaml"},
 		}),
 	)
 
@@ -889,8 +1096,9 @@ var _ = Describe("MeshAccessLog", func() {
 
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
 		motb.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: backendName,
+			Mesh:   "default",
+			Name:   backendName,
+			Labels: map[string]string{mesh_proto.DisplayName: backendName},
 		})
 		motb.Spec.Endpoint = &motb_api.Endpoint{
 			Address: pointer.To("collector.mesh"),
@@ -953,10 +1161,11 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
-										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: backendName,
+										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+										Labels: map[string]string{mesh_proto.DisplayName: backendName},
 									},
 								},
 							}},
@@ -1052,6 +1261,7 @@ var _ = Describe("MeshAccessLog", func() {
 						}},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
+								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
 										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
@@ -1168,6 +1378,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/from-log",
 									},
@@ -1178,15 +1389,16 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 8080}: {
-						{Conf: &api.Rule{
-							Default: api.Conf{
+						{
+							Conf: api.Conf{
 								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
 									File: &api.FileBackend{
 										Path: "/tmp/from-log",
 									},
 								}},
 							},
-						}},
+						},
 					},
 				},
 				ToRules: core_rules.GatewayToRules{
@@ -1196,6 +1408,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									Backends: &[]api.Backend{{
+										Type: api.FileBackendType,
 										File: &api.FileBackend{
 											Path: "/tmp/to-log",
 										},

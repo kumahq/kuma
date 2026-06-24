@@ -6,14 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var _ = Describe("FullPath", func() {
@@ -46,8 +46,8 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 	Describe("priority order", func() {
 		backendRef := &common_api.BackendResourceRef{
-			Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-			Name: "my-backend",
+			Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+			Labels: map[string]string{mesh_proto.DisplayName: "my-backend"},
 		}
 		motbList := &motb_api.MeshOpenTelemetryBackendResourceList{}
 
@@ -97,13 +97,13 @@ var _ = Describe("ResolveOtelBackend", func() {
 			}
 		}
 		backendRef := &common_api.BackendResourceRef{
-			Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-			Name: "collector",
+			Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+			Labels: map[string]string{mesh_proto.DisplayName: "collector"},
 		}
 
 		It("should default to port 4317 and empty address when endpoint is nil", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
-			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
+			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default", Labels: map[string]string{mesh_proto.DisplayName: "collector"}})
 			backend.Spec.Protocol = new(motb_api.ProtocolGRPC)
 
 			result := policies_xds.ResolveOtelBackend(
@@ -116,7 +116,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 		It("should default to port 4317 when only address is set", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
-			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
+			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default", Labels: map[string]string{mesh_proto.DisplayName: "collector"}})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Address: new("collector.example")}
 			backend.Spec.Protocol = new(motb_api.ProtocolGRPC)
 
@@ -130,7 +130,7 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 		It("should use empty address when only port is set", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
-			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default"})
+			backend.SetMeta(&test_model.ResourceMeta{Name: "collector", Mesh: "default", Labels: map[string]string{mesh_proto.DisplayName: "collector"}})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Port: new(int32(4318))}
 			backend.Spec.Protocol = new(motb_api.ProtocolGRPC)
 
@@ -155,14 +155,14 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 		It("should enable HTTPS for HTTP protocol on port 443", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
-			backend.SetMeta(&test_model.ResourceMeta{Name: "https-collector", Mesh: "default"})
+			backend.SetMeta(&test_model.ResourceMeta{Name: "https-collector", Mesh: "default", Labels: map[string]string{mesh_proto.DisplayName: "https-collector"}})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Address: new("collector.example"), Port: new(int32(443))}
 			backend.Spec.Protocol = new(motb_api.ProtocolHTTP)
 
 			result := policies_xds.ResolveOtelBackend(
 				&common_api.BackendResourceRef{
-					Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-					Name: "https-collector",
+					Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+					Labels: map[string]string{mesh_proto.DisplayName: "https-collector"},
 				},
 				"",
 				dummyParser,
@@ -175,14 +175,14 @@ var _ = Describe("ResolveOtelBackend", func() {
 
 		It("should not enable HTTPS for HTTP protocol on non-443 port", func() {
 			backend := motb_api.NewMeshOpenTelemetryBackendResource()
-			backend.SetMeta(&test_model.ResourceMeta{Name: "http-collector", Mesh: "default"})
+			backend.SetMeta(&test_model.ResourceMeta{Name: "http-collector", Mesh: "default", Labels: map[string]string{mesh_proto.DisplayName: "http-collector"}})
 			backend.Spec.Endpoint = &motb_api.Endpoint{Address: new("collector.example"), Port: new(int32(4318))}
 			backend.Spec.Protocol = new(motb_api.ProtocolHTTP)
 
 			result := policies_xds.ResolveOtelBackend(
 				&common_api.BackendResourceRef{
-					Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-					Name: "http-collector",
+					Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+					Labels: map[string]string{mesh_proto.DisplayName: "http-collector"},
 				},
 				"",
 				dummyParser,
@@ -453,6 +453,27 @@ var _ = Describe("BuildSignalRuntimePlan", func() {
 		Expect(plan.EnvInputPresent).To(BeTrue())
 		Expect(plan.MissingFields).To(BeEmpty())
 		Expect(plan.BlockedReasons).To(BeEmpty())
+	})
+
+	It("should allow per-signal overrides when env block is omitted", func() {
+		plan := policies_xds.BuildSignalRuntimePlan(
+			&core_xds.OtelBootstrapInventory{
+				Shared: &core_xds.OtelSignalEnvInventory{
+					EndpointPresent: true,
+				},
+				Traces: &core_xds.OtelSignalEnvInventory{
+					OverrideKinds: []string{"endpoint"},
+				},
+			},
+			nil,
+			core_xds.OtelSignalTraces,
+			policies_xds.AddResolvedBackendOptions{},
+		)
+
+		Expect(plan.Enabled).To(BeTrue())
+		Expect(plan.EnvInputPresent).To(BeTrue())
+		Expect(plan.OverrideKinds).To(ConsistOf("endpoint"))
+		Expect(plan.BlockedReasons).NotTo(ContainElement(core_xds.OtelBlockedReasonSignalOverridesBlocked))
 	})
 
 	It("should mark disabled env mode with env input as blocked by policy", func() {

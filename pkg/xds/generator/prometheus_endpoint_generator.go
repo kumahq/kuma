@@ -6,17 +6,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-generator")
@@ -93,7 +94,7 @@ func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.Res
 		case mesh_proto.PrometheusTlsConfig_providedTLS:
 			match = envoy_listeners.MatchTransportProtocol("tls")
 		}
-		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
+		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 			WithOverwriteName(prometheusListenerName).
 			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
 			Configure(envoy_listeners.FilterChain(
@@ -141,7 +142,7 @@ func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.Res
 		}
 		listener, err = listenerBuilder.Build()
 	} else {
-		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
+		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 			WithOverwriteName(prometheusListenerName).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName, []*envoy_common.StaticEndpointPath{

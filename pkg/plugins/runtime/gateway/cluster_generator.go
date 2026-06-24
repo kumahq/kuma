@@ -6,22 +6,23 @@ import (
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/route"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 // ClusterGenerator generates Envoy clusters and their corresponding
@@ -59,6 +60,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			)
 			if r == nil && err == nil {
 				log.Info("skipping backendRef", "backendRef", dest.BackendRef)
+				dest.Name = metadata.UnresolvedBackendServiceTag
 				continue
 			}
 			isExternalService := xdsCtx.Mesh.IsExternalService(service)
@@ -164,7 +166,15 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
-	sni := meshroute.SniForBackendRef(backendRef, meshCtx, systemNamespace)
+	var sni string
+	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
+		if errs := core_sni.ValidateKRI(backendRef.Resource); len(errs) > 0 {
+			return nil, "", nil
+		}
+		sni = core_sni.FromKRI(backendRef.Resource)
+	} else {
+		sni = meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
+	}
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(
 			clusters.EdsCluster(),

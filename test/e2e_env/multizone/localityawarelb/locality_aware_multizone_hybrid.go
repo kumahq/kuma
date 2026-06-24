@@ -1,6 +1,7 @@
 package localityawarelb
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,14 +12,14 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	mesh_http_route_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	mesh_loadbalancing_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	mesh_http_route_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	mesh_loadbalancing_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 func LocalityAwareLB() {
@@ -418,10 +419,10 @@ func resetCounter(cluster Cluster, name string, namespace string) error {
 
 // TODO(lukidzi): use test-server implementation: https://github.com/kumahq/kuma/issues/8245
 func DeleteK8sApp(c Cluster, name string, namespace string) error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "service", name); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), "delete", "service", name); err != nil {
 		return err
 	}
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "deployment", name); err != nil {
+	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), "delete", "deployment", name); err != nil {
 		return err
 	}
 	return nil

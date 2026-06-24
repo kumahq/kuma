@@ -4,25 +4,25 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
@@ -52,15 +52,18 @@ func (p plugin) Apply(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
+	applyTrackRemaining(policies_xds.GatherAllClusters(rs))
+
 	if proxy.ZoneEgressProxy != nil {
 		return applyToEgressRealResources(rs, proxy)
 	}
+
+	clusters := policies_xds.GatherClusters(rs)
+
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
 	if !ok {
 		return nil
 	}
-
-	clusters := policies_xds.GatherClusters(rs)
 
 	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
@@ -79,6 +82,12 @@ func (p plugin) Apply(
 	}
 
 	return nil
+}
+
+func applyTrackRemaining(clusters []*envoy_cluster.Cluster) {
+	for _, cluster := range clusters {
+		plugin_xds.EnsureTrackRemaining(cluster)
+	}
 }
 
 func applyToInbounds(
@@ -265,8 +274,9 @@ func applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
 	rules outbound.ResourceRules,
+	filters ...func(*core_xds.Resource) bool,
 ) error {
-	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+	for uri, resType := range rs.IndexByOrigin(filters...) {
 		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
 			return err
 		}

@@ -4,16 +4,17 @@ import (
 	"context"
 	stdsync "sync"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/xds/sync"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-tracker")
 
-func NewDataplaneSyncTracker(factoryFunc sync.DataplaneWatchdogFactory) DataplaneCallbacks {
+func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
+		appCtx:               appCtx,
 		newDataplaneWatchdog: factoryFunc,
 		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
 	}
@@ -29,6 +30,7 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 // that indicates that the stream was already associated
 
 type dataplaneSyncTracker struct {
+	appCtx               context.Context
 	newDataplaneWatchdog sync.DataplaneWatchdogFactory
 
 	stdsync.RWMutex // protects access to the fields below
@@ -44,7 +46,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	t.Lock()
 	defer t.Unlock()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.appCtx)
 	state := &watchdogState{
 		cancelFunc: cancel,
 		stopped:    make(chan struct{}),

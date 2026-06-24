@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,17 +11,17 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/api"
-	framework_client "github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/api"
+	framework_client "github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func ProducerPolicyFlow() {
@@ -110,8 +111,8 @@ spec:
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				multizone.KubeZone1.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				multizone.KubeZone1.GetTesting(), context.Background(),
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
@@ -159,8 +160,8 @@ spec:
 
 		// should not get synced to zone 1
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				multizone.KubeZone1.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				multizone.KubeZone1.GetTesting(), context.Background(),
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())
@@ -234,8 +235,8 @@ spec:
 
 		// check 'timeout-on-http-route' synced to test-client's zone
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				multizone.KubeZone1.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				multizone.KubeZone1.GetTesting(), context.Background(),
 				multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
 				"get", "meshtimeouts")
 			g.Expect(err).ToNot(HaveOccurred())

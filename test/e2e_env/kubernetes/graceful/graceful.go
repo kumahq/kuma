@@ -13,11 +13,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/util/channels"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/util/channels"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Graceful() {
@@ -199,8 +199,8 @@ spec:
 		Entry("a service", testCase{
 			deploymentName: name,
 			scaleFn: func(replicas int) error {
-				return k8s.RunKubectlE(
-					kubernetes.Cluster.GetTesting(),
+				return k8s.RunKubectlContextE(
+					kubernetes.Cluster.GetTesting(), context.Background(),
 					kubernetes.Cluster.GetKubectlOptions(namespace),
 					"scale", "deployment", name, "--replicas", strconv.Itoa(replicas),
 				)

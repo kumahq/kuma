@@ -1,6 +1,7 @@
 package compatibility
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -11,9 +12,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 )
 
 // Ensure that the upstream Kuma help repository is configured
@@ -27,10 +28,10 @@ var _ = E2ESynchronizedBeforeSuite(
 		// Adding the same repo multiple times is idempotent. The
 		// `--force-update` flag prevents helm emitting an error
 		// in this case.
-		Expect(helm.RunHelmCommandAndGetOutputE(t, &opts,
+		Expect(helm.RunHelmCommandAndGetOutputContextE(t, context.Background(), &opts,
 			"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().ToNot(HaveOccurred())
 
-		Expect(helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")).Error().ToNot(HaveOccurred())
+		Expect(helm.RunHelmCommandAndGetOutputContextE(t, context.Background(), &opts, "repo", "update")).Error().ToNot(HaveOccurred())
 		return nil
 	},
 	func(_ []byte) {})
@@ -48,13 +49,14 @@ func CpCompatibilityMultizoneKubernetes() {
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 		E2EDeferCleanup(func() {
+			ControlPlaneAssertions(globalCluster)
 			Expect(globalCluster.DeleteKuma()).To(Succeed())
 			Expect(globalCluster.DismissCluster()).To(Succeed())
 		})
 
 		globalReleaseName = fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		// Zone CP
@@ -62,6 +64,7 @@ func CpCompatibilityMultizoneKubernetes() {
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 		E2EDeferCleanup(func() {
+			ControlPlaneAssertions(zoneCluster)
 			Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 			Expect(zoneCluster.DeleteKuma()).To(Succeed())
 			Expect(zoneCluster.DismissCluster()).To(Succeed())
@@ -69,7 +72,7 @@ func CpCompatibilityMultizoneKubernetes() {
 
 		zoneReleaseName = fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 	})
 
@@ -115,7 +118,7 @@ metadata:
 		// then the resource is synchronized when old remote is connected (KDS is backwards compatible)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
-			return k8s.RunKubectlAndGetOutputE(zoneCluster.GetTesting(), zoneCluster.GetKubectlOptions(), "get", "meshes")
+			return k8s.RunKubectlAndGetOutputContextE(zoneCluster.GetTesting(), context.Background(), zoneCluster.GetKubectlOptions(), "get", "meshes")
 		}, "30s", "1s").Should(ContainSubstring("demo"))
 
 		// when new resources is created on Zone
@@ -124,7 +127,7 @@ metadata:
 		// then resource is synchronized to Global
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
-			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("kuma-system"), "get", "dataplanes")
+			return k8s.RunKubectlAndGetOutputContextE(globalCluster.GetTesting(), context.Background(), globalCluster.GetKubectlOptions("kuma-system"), "get", "dataplanes")
 		}, "30s", "1s").Should(ContainSubstring("demo-client"))
 	},
 		EntryDescription("from version: %s"),

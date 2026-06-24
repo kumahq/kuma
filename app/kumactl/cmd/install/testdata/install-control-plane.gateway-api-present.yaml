@@ -36,7 +36,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -86,7 +86,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -200,7 +200,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -252,7 +252,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -602,7 +602,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -893,6 +893,25 @@ spec:
                         injection will be applied
                       items:
                         properties:
+                          sni:
+                            description: SNI defines a matcher configuration for matching
+                              by SNI value carried on the TLS connection
+                            properties:
+                              type:
+                                description: Type defines how to match traffic by
+                                  SNI. Only `Exact` is supported.
+                                enum:
+                                - Exact
+                                type: string
+                              value:
+                                description: Value is the SNI carried on the TLS connection
+                                  that needs to match for the configuration to be
+                                  applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
                           spiffeID:
                             description: SpiffeID defines a matcher configuration
                               for SpiffeID matching
@@ -905,7 +924,7 @@ spec:
                                 - Prefix
                                 type: string
                               value:
-                                description: Value is SpiffeId of a client that needs
+                                description: Value is SpiffeID of a client that needs
                                   to match for the configuration to be applied
                                 type: string
                             required:
@@ -1146,7 +1165,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -1373,7 +1392,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -1729,7 +1748,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -1779,7 +1798,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -1831,7 +1850,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -2228,7 +2247,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2915,7 +2934,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshidentities.kuma.io
 spec:
   group: kuma.io
@@ -3200,7 +3219,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -3250,7 +3269,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -3300,7 +3319,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -3970,7 +3989,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -4024,8 +4043,9 @@ spec:
                 description: MeshMetric configuration.
                 properties:
                   applications:
-                    description: Applications is a list of application that Dataplane
-                      Proxy will scrape
+                    description: |-
+                      Applications is a list of applications that Dataplane Proxy will scrape.
+                      Ignored on zone-proxy-only Dataplanes (zone ingress/egress exist without a co-located workload).
                     items:
                       properties:
                         address:
@@ -4069,15 +4089,9 @@ spec:
                                   additionalProperties:
                                     type: string
                                   description: |-
-                                    Labels to match the referenced resource. Use for cross-zone references
-                                    where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                    Name. When multiple resources match, the oldest by creation time wins.
+                                    Labels to match the referenced resource. When multiple resources match,
+                                    the oldest by creation time wins.
                                   type: object
-                                name:
-                                  description: |-
-                                    Name of the referenced resource (metadata.name). Use for same-cluster
-                                    references. Mutually exclusive with Labels.
-                                  type: string
                               required:
                               - kind
                               type: object
@@ -4336,7 +4350,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -4577,7 +4591,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshopentelemetrybackends.kuma.io
 spec:
   group: kuma.io
@@ -4648,16 +4662,32 @@ spec:
                 description: |-
                   Env controls whether standard OTEL exporter env vars participate in the
                   final exporter config for this backend.
+                  Defaults to mode: Optional, precedence: EnvFirst, allowSignalOverrides: true
+                  when omitted.
                 properties:
                   allowSignalOverrides:
                     description: |-
-                      AllowSignalOverrides controls whether signal-specific OTEL env vars such
-                      as `OTEL_EXPORTER_OTLP_TRACES_*` may diverge from the shared config.
+                      AllowSignalOverrides controls whether per-signal OTEL env vars
+                      (OTEL_EXPORTER_OTLP_TRACES_*, OTEL_EXPORTER_OTLP_METRICS_*,
+                      OTEL_EXPORTER_OTLP_LOGS_*) may diverge from the shared
+                      OTEL_EXPORTER_OTLP_* values.
+                      true (default): per-signal vars override the shared values for that
+                      signal.
+                      false: per-signal vars are ignored; the shared values apply to all
+                      signals. When per-signal overrides are dropped this way,
+                      SignalOverridesDisallowed appears in blockedReasons (a soft block -
+                      export still works via the shared config).
                     type: boolean
                   mode:
                     default: Optional
-                    description: Mode controls whether OTEL env vars are ignored,
-                      allowed, or required.
+                    description: |-
+                      Mode controls whether OTEL env vars participate in the merge.
+                      Disabled: env vars are skipped entirely; only explicit backend fields and
+                      built-in defaults apply.
+                      Optional (default): env vars are used when present; absence is fine.
+                      Required: env vars must supply the missing fields - if any required field
+                      is missing the signal is blocked (state: missing, RequiredEnvMissing in
+                      blockedReasons) even when an explicit value or default could fill it.
                     enum:
                     - Disabled
                     - Optional
@@ -4666,8 +4696,11 @@ spec:
                   precedence:
                     default: EnvFirst
                     description: |-
-                      Precedence controls whether explicit backend fields or env vars win when
-                      both are present for the same field.
+                      Precedence controls which source wins when both an explicit backend field
+                      and an env var are present for the same field.
+                      EnvFirst (default): env vars win; explicit backend fields fill gaps.
+                      ExplicitFirst: explicit backend fields win; env vars fill gaps.
+                      In either case, built-in defaults are the last fallback.
                     enum:
                     - ExplicitFirst
                     - EnvFirst
@@ -4734,7 +4767,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -4912,7 +4945,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -5468,7 +5501,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -5712,9 +5745,7 @@ spec:
                   type: object
                 type: array
               rules:
-                description: |-
-                  Rules defines inbound rate limiting configurations. Currently limited to
-                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                description: Rules defines inbound rate limiting configurations.
                 items:
                   properties:
                     default:
@@ -5836,6 +5867,51 @@ spec:
                               type: object
                           type: object
                       type: object
+                    matches:
+                      description: Matches define additional conditions for applying
+                        this rate limit rule.
+                      items:
+                        properties:
+                          sni:
+                            description: SNI defines a matcher configuration for matching
+                              by SNI value carried on the TLS connection
+                            properties:
+                              type:
+                                description: Type defines how to match traffic by
+                                  SNI. Only `Exact` is supported.
+                                enum:
+                                - Exact
+                                type: string
+                              value:
+                                description: Value is the SNI carried on the TLS connection
+                                  that needs to match for the configuration to be
+                                  applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                          spiffeID:
+                            description: SpiffeID defines a matcher configuration
+                              for SpiffeID matching
+                            properties:
+                              type:
+                                description: Type defines how to match incoming traffic
+                                  by SpiffeID. `Exact` or `Prefix` are allowed.
+                                enum:
+                                - Exact
+                                - Prefix
+                                type: string
+                              value:
+                                description: Value is SpiffeID of a client that needs
+                                  to match for the configuration to be applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                        type: object
+                      type: array
                   type: object
                 type: array
               targetRef:
@@ -6106,7 +6182,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -6623,7 +6699,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -6857,7 +6933,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -6929,7 +7005,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -7223,7 +7299,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -7401,8 +7477,8 @@ spec:
                 type: array
               rules:
                 description: |-
-                  Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
-                  default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
+                  Rules defines inbound timeout configurations. When matches are present, the rule is applied only
+                  to traffic selected by the given source and destination matchers.
                 items:
                   properties:
                     default:
@@ -7455,6 +7531,51 @@ spec:
                             it can lead to connection leaking. Default value is 1h.
                           type: string
                       type: object
+                    matches:
+                      description: Matches define predicates for selecting traffic
+                        this configuration applies to.
+                      items:
+                        properties:
+                          sni:
+                            description: SNI defines a matcher configuration for matching
+                              by SNI value carried on the TLS connection
+                            properties:
+                              type:
+                                description: Type defines how to match traffic by
+                                  SNI. Only `Exact` is supported.
+                                enum:
+                                - Exact
+                                type: string
+                              value:
+                                description: Value is the SNI carried on the TLS connection
+                                  that needs to match for the configuration to be
+                                  applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                          spiffeID:
+                            description: SpiffeID defines a matcher configuration
+                              for SpiffeID matching
+                            properties:
+                              type:
+                                description: Type defines how to match incoming traffic
+                                  by SpiffeID. `Exact` or `Prefix` are allowed.
+                                enum:
+                                - Exact
+                                - Prefix
+                                type: string
+                              value:
+                                description: Value is SpiffeID of a client that needs
+                                  to match for the configuration to be applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                        type: object
+                      type: array
                   type: object
                 type: array
               targetRef:
@@ -7657,7 +7778,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -7963,7 +8084,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -8065,15 +8186,9 @@ spec:
                                   additionalProperties:
                                     type: string
                                   description: |-
-                                    Labels to match the referenced resource. Use for cross-zone references
-                                    where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                    Name. When multiple resources match, the oldest by creation time wins.
+                                    Labels to match the referenced resource. When multiple resources match,
+                                    the oldest by creation time wins.
                                   type: object
-                                name:
-                                  description: |-
-                                    Name of the referenced resource (metadata.name). Use for same-cluster
-                                    references. Mutually exclusive with Labels.
-                                  type: string
                               required:
                               - kind
                               type: object
@@ -8325,7 +8440,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -8475,6 +8590,25 @@ spec:
                             access will be allowed
                           items:
                             properties:
+                              sni:
+                                description: SNI defines a matcher configuration for
+                                  matching by SNI value carried on the TLS connection
+                                properties:
+                                  type:
+                                    description: Type defines how to match traffic
+                                      by SNI. Only `Exact` is supported.
+                                    enum:
+                                    - Exact
+                                    type: string
+                                  value:
+                                    description: Value is the SNI carried on the TLS
+                                      connection that needs to match for the configuration
+                                      to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
                               spiffeID:
                                 description: SpiffeID defines a matcher configuration
                                   for SpiffeID matching
@@ -8488,7 +8622,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -8503,6 +8637,25 @@ spec:
                             requests are denied
                           items:
                             properties:
+                              sni:
+                                description: SNI defines a matcher configuration for
+                                  matching by SNI value carried on the TLS connection
+                                properties:
+                                  type:
+                                    description: Type defines how to match traffic
+                                      by SNI. Only `Exact` is supported.
+                                    enum:
+                                    - Exact
+                                    type: string
+                                  value:
+                                    description: Value is the SNI carried on the TLS
+                                      connection that needs to match for the configuration
+                                      to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
                               spiffeID:
                                 description: SpiffeID defines a matcher configuration
                                   for SpiffeID matching
@@ -8516,7 +8669,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -8530,6 +8683,25 @@ spec:
                             will be denied
                           items:
                             properties:
+                              sni:
+                                description: SNI defines a matcher configuration for
+                                  matching by SNI value carried on the TLS connection
+                                properties:
+                                  type:
+                                    description: Type defines how to match traffic
+                                      by SNI. Only `Exact` is supported.
+                                    enum:
+                                    - Exact
+                                    type: string
+                                  value:
+                                    description: Value is the SNI carried on the TLS
+                                      connection that needs to match for the configuration
+                                      to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
                               spiffeID:
                                 description: SpiffeID defines a matcher configuration
                                   for SpiffeID matching
@@ -8543,7 +8715,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -8632,7 +8804,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtrusts.kuma.io
 spec:
   group: kuma.io
@@ -8743,7 +8915,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshzoneaddresses.kuma.io
 spec:
   group: kuma.io
@@ -8807,7 +8979,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -8857,7 +9029,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -8907,7 +9079,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -8957,7 +9129,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -9007,7 +9179,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -9057,7 +9229,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -9107,7 +9279,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -9157,7 +9329,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -9207,7 +9379,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -9257,7 +9429,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -9307,7 +9479,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -9357,7 +9529,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: workloads.kuma.io
 spec:
   group: kuma.io
@@ -9438,7 +9610,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -9496,7 +9668,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -9546,7 +9718,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -9596,7 +9768,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -9654,7 +9826,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -9705,7 +9877,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -9755,7 +9927,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -9807,7 +9979,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -9857,7 +10029,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -9950,7 +10122,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -10067,7 +10239,8 @@ spec:
                                 properties:
                                   attributes:
                                     description: |-
-                                      Attributes can contain placeholders available on
+                                      Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                      OpenTelemetry attribute names. Values can contain placeholders available on
                                       https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     example:
                                     - key: mesh
@@ -10075,8 +10248,12 @@ spec:
                                     items:
                                       properties:
                                         key:
+                                          description: Key is the OpenTelemetry attribute
+                                            name.
+                                          pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                           type: string
                                         value:
+                                          description: Value can contain Kuma placeholders.
                                           type: string
                                       required:
                                       - key
@@ -10097,15 +10274,9 @@ spec:
                                         additionalProperties:
                                           type: string
                                         description: |-
-                                          Labels to match the referenced resource. Use for cross-zone references
-                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                          Name. When multiple resources match, the oldest by creation time wins.
+                                          Labels to match the referenced resource. When multiple resources match,
+                                          the oldest by creation time wins.
                                         type: object
-                                      name:
-                                        description: |-
-                                          Name of the referenced resource (metadata.name). Use for same-cluster
-                                          references. Mutually exclusive with Labels.
-                                        type: string
                                     required:
                                     - kind
                                     type: object
@@ -10259,9 +10430,7 @@ spec:
                   type: object
                 type: array
               rules:
-                description: |-
-                  Rules defines inbound access log configurations. Currently limited to
-                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                description: Rules defines inbound access log configurations.
                 items:
                   properties:
                     default:
@@ -10325,7 +10494,8 @@ spec:
                                 properties:
                                   attributes:
                                     description: |-
-                                      Attributes can contain placeholders available on
+                                      Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                      OpenTelemetry attribute names. Values can contain placeholders available on
                                       https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     example:
                                     - key: mesh
@@ -10333,8 +10503,12 @@ spec:
                                     items:
                                       properties:
                                         key:
+                                          description: Key is the OpenTelemetry attribute
+                                            name.
+                                          pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                           type: string
                                         value:
+                                          description: Value can contain Kuma placeholders.
                                           type: string
                                       required:
                                       - key
@@ -10355,15 +10529,9 @@ spec:
                                         additionalProperties:
                                           type: string
                                         description: |-
-                                          Labels to match the referenced resource. Use for cross-zone references
-                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                          Name. When multiple resources match, the oldest by creation time wins.
+                                          Labels to match the referenced resource. When multiple resources match,
+                                          the oldest by creation time wins.
                                         type: object
-                                      name:
-                                        description: |-
-                                          Name of the referenced resource (metadata.name). Use for same-cluster
-                                          references. Mutually exclusive with Labels.
-                                        type: string
                                     required:
                                     - kind
                                     type: object
@@ -10447,6 +10615,53 @@ spec:
                             type: object
                           type: array
                       type: object
+                    matches:
+                      description: |-
+                        Matches defines a list of conditions (by SpiffeID or SNI) that select the
+                        traffic this rule applies to. Rules fire independently: a connection that
+                        satisfies multiple rules is logged to every matching rule's backends.
+                      items:
+                        properties:
+                          sni:
+                            description: SNI defines a matcher configuration for matching
+                              by SNI value carried on the TLS connection
+                            properties:
+                              type:
+                                description: Type defines how to match traffic by
+                                  SNI. Only `Exact` is supported.
+                                enum:
+                                - Exact
+                                type: string
+                              value:
+                                description: Value is the SNI carried on the TLS connection
+                                  that needs to match for the configuration to be
+                                  applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                          spiffeID:
+                            description: SpiffeID defines a matcher configuration
+                              for SpiffeID matching
+                            properties:
+                              type:
+                                description: Type defines how to match incoming traffic
+                                  by SpiffeID. `Exact` or `Prefix` are allowed.
+                                enum:
+                                - Exact
+                                - Prefix
+                                type: string
+                              value:
+                                description: Value is SpiffeID of a client that needs
+                                  to match for the configuration to be applied
+                                type: string
+                            required:
+                            - type
+                            - value
+                            type: object
+                        type: object
+                      type: array
                   required:
                   - default
                   type: object
@@ -10583,7 +10798,8 @@ spec:
                                 properties:
                                   attributes:
                                     description: |-
-                                      Attributes can contain placeholders available on
+                                      Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                      OpenTelemetry attribute names. Values can contain placeholders available on
                                       https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     example:
                                     - key: mesh
@@ -10591,8 +10807,12 @@ spec:
                                     items:
                                       properties:
                                         key:
+                                          description: Key is the OpenTelemetry attribute
+                                            name.
+                                          pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                           type: string
                                         value:
+                                          description: Value can contain Kuma placeholders.
                                           type: string
                                       required:
                                       - key
@@ -10613,15 +10833,9 @@ spec:
                                         additionalProperties:
                                           type: string
                                         description: |-
-                                          Labels to match the referenced resource. Use for cross-zone references
-                                          where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                          Name. When multiple resources match, the oldest by creation time wins.
+                                          Labels to match the referenced resource. When multiple resources match,
+                                          the oldest by creation time wins.
                                         type: object
-                                      name:
-                                        description: |-
-                                          Name of the referenced resource (metadata.name). Use for same-cluster
-                                          references. Mutually exclusive with Labels.
-                                        type: string
                                     required:
                                     - kind
                                     type: object
@@ -10827,7 +11041,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -12284,7 +12498,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: f682bf0be13a5363a8fe433d046be85b64bbd62026cabcead33f236e51de8fa0
+        checksum/tls-secrets: 037b75e7a91465d94401c948c7fb17c9d74e43f2becf66ab2dbadae773b7f1ea
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -12342,6 +12556,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -12696,6 +12912,8 @@ webhooks:
           values:
             - enabled
         - key: kuma.io/mesh
+          operator: Exists
+        - key: k8s.kuma.io/zone-proxy-type
           operator: Exists
     clientConfig:
       caBundle: XYZ

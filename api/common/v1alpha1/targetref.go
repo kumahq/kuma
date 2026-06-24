@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type TargetRefKind string
@@ -157,18 +157,13 @@ const (
 )
 
 // BackendResourceRef is a reference to a backend resource within the same
-// mesh. Used by observability policies to point at a
-// MeshOpenTelemetryBackend. Use Name for same-cluster references, Labels
-// for cross-zone references where KDS hashes the resource name.
+// mesh. Used by observability policies to point at a MeshOpenTelemetryBackend
+// via label matching. When multiple resources match, the oldest by creation time wins.
 type BackendResourceRef struct {
 	// Kind of the backend resource.
 	Kind BackendResourceKind `json:"kind"`
-	// Name of the referenced resource (metadata.name). Use for same-cluster
-	// references. Mutually exclusive with Labels.
-	Name string `json:"name,omitempty"`
-	// Labels to match the referenced resource. Use for cross-zone references
-	// where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-	// Name. When multiple resources match, the oldest by creation time wins.
+	// Labels to match the referenced resource. When multiple resources match,
+	// the oldest by creation time wins.
 	Labels map[string]string `json:"labels,omitempty"`
 }
 

@@ -7,29 +7,30 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
-	secrets_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	secrets_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/v2/pkg/core/tokens"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	ca_builtin "github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin"
-	"github.com/kumahq/kuma/v2/pkg/plugins/ca/provided"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	test_resources "github.com/kumahq/kuma/v2/pkg/test/resources"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
+	secrets_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	secrets_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	ca_builtin "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
+	"github.com/kumahq/kuma/v3/pkg/plugins/ca/provided"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	test_resources "github.com/kumahq/kuma/v3/pkg/test/resources"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Mesh Manager", func() {
@@ -61,6 +62,7 @@ var _ = Describe("Mesh Manager", func() {
 				Defaults: &kuma_cp.Defaults{
 					CreateMeshRoutingResources: false,
 				},
+				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 		unsafeDeleteResManager = mesh.NewMeshManager(
 			resStore, manager, caManagers, test_resources.Global(),
@@ -72,6 +74,7 @@ var _ = Describe("Mesh Manager", func() {
 				Defaults: &kuma_cp.Defaults{
 					CreateMeshRoutingResources: false,
 				},
+				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 	})
 

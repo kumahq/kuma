@@ -2,6 +2,7 @@ package callbacks
 
 import (
 	"context"
+	"slices"
 
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 )
@@ -38,8 +39,7 @@ func (chain Chain) OnEndpointHealthResponse(streamID int64, response *envoy_serv
 }
 
 func (chain Chain) OnStreamClosed(streamID int64) {
-	for i := len(chain) - 1; i >= 0; i-- {
-		cb := chain[i]
+	for _, cb := range slices.Backward(chain) {
 		cb.OnStreamClosed(streamID)
 	}
 }

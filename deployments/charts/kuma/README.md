@@ -36,6 +36,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | controlPlane.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
 | controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | Target metrics for the HPA to scale on |
+| controlPlane.autoscaling.behavior | object | `{}` | Scaling behavior for the HPA (https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#configurable-scaling-behavior). Omit to use Kubernetes defaults. |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
 | controlPlane.tolerations | list | `[]` | Tolerations for the Kuma Control Plane pods |
 | controlPlane.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
@@ -174,6 +175,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
 | ingress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
 | ingress.podAnnotations | object | `{}` | Additional pod annotations |
+| ingress.deploymentAnnotations | object | `{}` | Annotations to add to the Deployment resource. |
 | ingress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.tolerations | list | `[]` | Tolerations for the Ingress pods |
 | ingress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
@@ -212,6 +214,7 @@ A Helm chart for the Kuma Control Plane
 | egress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
 | egress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
 | egress.podAnnotations | object | `{}` | Additional pod annotations |
+| egress.deploymentAnnotations | object | `{}` | Annotations to add to the Deployment resource. |
 | egress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
 | egress.tolerations | list | `[]` | Tolerations for the Egress pods |
 | egress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
@@ -231,25 +234,41 @@ A Helm chart for the Kuma Control Plane
 | zoneProxyImage.registry | string | `"registry.k8s.io"` | The pause image registry |
 | zoneProxyImage.repository | string | `"pause"` | The pause image repository |
 | zoneProxyImage.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
+| meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
+| meshZoneProxyDefaults.ingress.service.port | int | `10001` | Default port for zone ingress Service. |
+| meshZoneProxyDefaults.ingress.service.targetPort | int | `10001` | Container port the zone ingress listens on. Do not change unless the zone proxy binary is reconfigured. |
+| meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
+| meshZoneProxyDefaults.egress.service.port | int | `10002` | Default port for zone egress Service. |
+| meshZoneProxyDefaults.egress.service.targetPort | int | `10002` | Container port the zone egress listens on. Do not change unless the zone proxy binary is reconfigured. |
 | meshes[0].name | string | `"default"` | The mesh must already exist or be created separately; this Helm chart will not create it. |
 | meshes[0].ingress.enabled | bool | `false` | Deploy a zone ingress for this mesh. |
-| meshes[0].ingress.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
+| meshes[0].ingress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.ingress.service.type when unset. |
+| meshes[0].ingress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.ingress.service.port when unset. |
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
-| meshes[0].ingress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
-| meshes[0].ingress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
-| meshes[0].ingress.containerResources | object | `{}` | Resource requests and limits for the pause container. |
+| meshes[0].ingress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
+| meshes[0].ingress.service.labels | object | `{}` | Labels to add to the Service resource. |
+| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
+| meshes[0].ingress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
+| meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
+| meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
 | meshes[0].egress.enabled | bool | `false` | Deploy a zone egress for this mesh. |
-| meshes[0].egress.replicas | int | `1` |  |
 | meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
+| meshes[0].egress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.egress.service.type when unset. |
+| meshes[0].egress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.egress.service.port when unset. |
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
-| meshes[0].egress.resources | object | `{}` | Resource requests and limits for the pod (pod-level resources). Applied to all containers in the pod (pause + injected kuma-sidecar). |
-| meshes[0].egress.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext). |
-| meshes[0].egress.containerResources | object | `{}` | Resource requests and limits for the pause container. |
+| meshes[0].egress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
+| meshes[0].egress.service.labels | object | `{}` | Labels to add to the Service resource. |
+| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
+| meshes[0].egress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
+| meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
+| meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].egress.hpa.enabled | bool | `false` |  |
 | meshes[0].egress.hpa.minReplicas | int | `2` |  |
 | meshes[0].egress.hpa.maxReplicas | int | `5` |  |
@@ -260,7 +279,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.35.4@sha256:e8bc9c71a813d90d5f7689fa57516b2aacd7a02bb9d70d3ab6664ed6d202fc10"` | The kubectl image tag |
+| kubectl.image.tag | string | `"v1.36.2@sha256:b0d792e0d8dfb9bb1b922b78b23137e2a34bb6f9667640353a9d2aadd1fd7761"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.annotations | object | `{}` | Extra annotations to add to hook Job resources. Useful for tools like ArgoCD that need to control job lifecycle (e.g. argocd.argoproj.io/hook-delete-policy). |
@@ -321,9 +340,10 @@ A Helm chart for the Kuma Control Plane
 | experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
 | experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
 | experimental.ebpf.programsSourcePath | string | `"/tmp/kuma-ebpf"` | Path where compiled eBPF programs which will be installed can be found |
-| experimental.sidecarContainers | bool | `false` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
+| experimental.sidecarContainers | bool | `true` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
 | experimental.inboundTagsDisabled | bool | `false` | If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching. |
 | experimental.envoyAdminUnixSocket | bool | `true` | If true, Envoy admin API binds to a Unix domain socket instead of TCP. |
+| experimental.deltaXds | bool | `false` | If true, uses Delta xDS (incremental) protocol to deliver changes to sidecars instead of State of the World (SOTW). |
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |

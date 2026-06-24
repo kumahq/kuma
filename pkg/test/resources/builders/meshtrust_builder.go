@@ -7,14 +7,14 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	meshtrust_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	meshtrust_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 type MeshTrustBuilder struct {

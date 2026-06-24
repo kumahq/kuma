@@ -8,14 +8,14 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func TransparentProxyConfigMap() {
@@ -76,6 +76,7 @@ func TransparentProxyConfigMap() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.TriggerDeleteNamespace(namespaceExternal)).To(Succeed())
 		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())

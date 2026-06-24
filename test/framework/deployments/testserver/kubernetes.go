@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 const secondaryPort = 9090
@@ -349,10 +349,10 @@ func (k *k8SDeployment) Delete(c framework.Cluster) error {
 	// then we can rely on code below to delete tht deployment.
 
 	// TODO(lukidzi): https://github.com/kumahq/kuma/issues/8245
-	// if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "service", k.opts.Name); err != nil {
+	// if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(k.opts.Namespace), "delete", "service", k.opts.Name); err != nil {
 	// 	return err
 	// }
-	// if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "deployment", k.opts.Name); err != nil {
+	// if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(k.opts.Namespace), "delete", "deployment", k.opts.Name); err != nil {
 	// 	return err
 	// }
 	return nil

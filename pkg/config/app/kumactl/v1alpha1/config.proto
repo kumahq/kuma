@@ -4,7 +4,7 @@ package kumactl.config.v1alpha1;
 
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/config/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/config/v1alpha1";
 
 // Configuration defines configuration of `kumactl`.
 message Configuration {
@@ -57,6 +57,9 @@ message ControlPlaneCoordinates {
 
     // Authentication configuration for defined authentication type
     map<string, string> auth_conf = 7;
+
+    // SkipVerify disables verification of the Control Plane API Server's TLS certificate.
+    bool skip_verify = 8;
   }
 
   ApiServer api_server = 1 [(validate.rules).message.required = true];

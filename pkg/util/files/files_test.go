@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/util/files"
+	"github.com/kumahq/kuma/v3/pkg/util/files"
 )
 
 var _ = DescribeTable("",
@@ -35,12 +35,12 @@ var _ = DescribeTable("RelativeToPkgMod",
 		"/github.com/kumahq/kuma@v1.8.0-20231106140736-df9c4e43a672/pkg/test/store/postgres/test_container.go",
 	),
 	Entry("v2 module path",
-		"/home/ubuntu/go/pkg/mod/github.com/kumahq/kuma/v2@v2.0.0-20251106140736-df9c4e43a672/pkg/test/store/postgres/test_container.go",
-		"/github.com/kumahq/kuma/v2@v2.0.0-20251106140736-df9c4e43a672/pkg/test/store/postgres/test_container.go",
+		"/home/ubuntu/go/pkg/mod/github.com/kumahq/kuma/v3@v2.0.0-20251106140736-df9c4e43a672/pkg/test/store/postgres/test_container.go",
+		"/github.com/kumahq/kuma/v3@v2.0.0-20251106140736-df9c4e43a672/pkg/test/store/postgres/test_container.go",
 	),
 	Entry("v2 module path with app directory",
-		"/home/ubuntu/go/pkg/mod/github.com/kumahq/kuma/v2@v2.0.0-20251106140736-df9c4e43a672/app/kumactl/cmd/root.go",
-		"/github.com/kumahq/kuma/v2@v2.0.0-20251106140736-df9c4e43a672/app/kumactl/cmd/root.go",
+		"/home/ubuntu/go/pkg/mod/github.com/kumahq/kuma/v3@v2.0.0-20251106140736-df9c4e43a672/app/kumactl/cmd/root.go",
+		"/github.com/kumahq/kuma/v3@v2.0.0-20251106140736-df9c4e43a672/app/kumactl/cmd/root.go",
 	),
 	Entry("different org v2 module path",
 		"/home/ubuntu/go/pkg/mod/github.com/example/project/v2@v2.1.0/pkg/main.go",

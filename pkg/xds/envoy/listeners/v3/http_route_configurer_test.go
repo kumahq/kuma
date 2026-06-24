@@ -4,16 +4,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 var _ = Describe("HttpDynamicRouteConfigurer", func() {
 	It("should generate proper Envoy config", func() {
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP, true).
 			WithOverwriteName("inbound").
 			Configure(
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(
@@ -31,7 +31,6 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
         socketAddress:
           address: 127.0.0.1
           portValue: 99
-      enableReusePort: false
       filterChains:
       - filters:
         - name: envoy.filters.network.http_connection_manager
@@ -55,13 +54,13 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
                   prefixLen: 128
       name: inbound
       trafficDirection: INBOUND
-`))
+      enableReusePort: true`))
 	})
 })
 
 var _ = Describe("HttpScopedRouteConfigurer", func() {
 	It("should fail", func() {
-		_, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
+		_, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP, true).
 			WithOverwriteName("inbound").
 			Configure(
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(

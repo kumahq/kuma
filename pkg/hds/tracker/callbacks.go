@@ -11,21 +11,21 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	hds_callbacks "github.com/kumahq/kuma/v2/pkg/hds/callbacks"
-	hds_metrics "github.com/kumahq/kuma/v2/pkg/hds/metrics"
-	"github.com/kumahq/kuma/v2/pkg/util/watchdog"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	hds_callbacks "github.com/kumahq/kuma/v3/pkg/hds/callbacks"
+	hds_metrics "github.com/kumahq/kuma/v3/pkg/hds/metrics"
+	"github.com/kumahq/kuma/v3/pkg/util/watchdog"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
 
 type streams struct {
@@ -109,7 +109,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 
 	proxyId, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
 	if err != nil {
-		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamid", streamID, "req", req)
+		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamID", streamID, "req", req)
 		return nil
 	}
 
@@ -133,7 +133,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 			defer cancel()
 			watchdog.Start(ctx)
 		}()
-		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
+		t.log.V(1).Info("started Watchdog for a Dataplane", "streamID", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 	}
 	t.dpStreams[dataplaneKey] = streams
 	t.streamsAssociation[streamID] = dataplaneKey

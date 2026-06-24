@@ -6,12 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
 )
 
 type EnvoyAdminProcessor interface {
@@ -85,7 +85,7 @@ func (s *envoyAdminProcessor) StartProcessingStats(
 		}
 		go func() { // schedule in the background to be able to quickly process more requests
 			stats, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-				return s.adminClient.Stats(ctx, proxy, req.Format)
+				return s.adminClient.Stats(ctx, proxy, req.Format, req.UsedOnly)
 			})
 
 			resp := &mesh_proto.StatsResponse{

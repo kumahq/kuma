@@ -8,17 +8,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("AdminProxyGenerator", func() {
@@ -140,15 +140,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 		}),
-		Entry("should generate admin resources, readiness with Unix socket", testCase{
-			dataplaneFile:    "08.dataplane.input.yaml",
-			expected:         "08.envoy-config.golden.yaml",
-			adminAddress:     "127.0.0.1",
-			readinessPort:    9902,
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+		Entry("should generate admin resources, legacy DP advertising readiness Unix socket", testCase{
+			dataplaneFile: "08.dataplane.input.yaml",
+			expected:      "08.envoy-config.golden.yaml",
+			adminAddress:  "127.0.0.1",
+			readinessPort: 9902,
 			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
+				xds_types.FeatureReadinessUnixSocket: true,
 			},
 		}),
 		Entry("should generate admin resources, admin with Unix socket", testCase{
@@ -160,7 +158,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
 			},
 		}),
 	)
@@ -213,7 +210,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 9902,
 		}),
 		Entry("should return error when readiness port is 0", testCase{
-			expected:      "ReadinessPort has to be in (0, 65353] range",
+			expected:      "ReadinessPort has to be in (0, 65535] range",
 			adminAddress:  "127.0.0.1",
 			readinessPort: 0,
 		}),

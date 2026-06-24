@@ -1,12 +1,14 @@
 package certmanager
 
 import (
+	"context"
+
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type k8sDeployment struct {
@@ -26,7 +28,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	// Install cert-manager via Helm
-	_, err := helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", "cert-manager",
+	_, err := helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", "cert-manager",
 		"--namespace", t.namespace,
 		"--create-namespace",
 		"--repo", "https://charts.jetstack.io",
@@ -58,7 +60,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 
 func (t *k8sDeployment) isPodReady(cluster framework.Cluster, selector string) error {
 	return errors.Wrapf(
-		k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
+		k8s.WaitUntilNumPodsCreatedContextE(cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(t.namespace),
 			metav1.ListOptions{
 				LabelSelector: selector,

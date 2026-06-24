@@ -10,16 +10,16 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	network_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	bldrs_matchers "github.com/kumahq/kuma/v2/pkg/envoy/builders/xds/matchers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
-	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	bldrs_matchers "github.com/kumahq/kuma/v3/pkg/envoy/builders/xds/matchers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 type RBACConfigurer struct {
@@ -119,14 +119,22 @@ func rbacUpdater(
 
 func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
+
+	// Merged policies can arrive in a broad-to-specific order (for example a
+	// mesh-wide allow before a listener-scoped deny). Envoy stops at the first
+	// matching action, so all deny matchers need to be emitted before allow
+	// matchers across the merged rule set.
 	for _, rule := range c.InboundRules {
-		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
+		conf := rule.Conf.(policies_api.RuleConf)
 		denyMatchers, err := buildMatchers(pointer.Deref(conf.Deny), rbac_config.RBAC_DENY, rule.Origin)
 		if err != nil {
 			return nil, err
 		}
 		fieldMatchers = append(fieldMatchers, denyMatchers)
+	}
 
+	for _, rule := range c.InboundRules {
+		conf := rule.Conf.(policies_api.RuleConf)
 		allowMatchers, err := buildMatchers(append(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny)...), rbac_config.RBAC_ALLOW, rule.Origin)
 		if err != nil {
 			return nil, err
@@ -145,7 +153,7 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
 	for _, rule := range c.InboundRules {
-		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
+		conf := rule.Conf.(policies_api.RuleConf)
 		if conf.AllowWithShadowDeny == nil {
 			continue
 		}

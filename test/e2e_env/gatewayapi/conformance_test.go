@@ -22,10 +22,10 @@ import (
 	"sigs.k8s.io/gateway-api/pkg/features"
 	"sigs.k8s.io/yaml"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/version"
-	. "github.com/kumahq/kuma/v2/test/framework"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/version"
+	. "github.com/kumahq/kuma/v3/test/framework"
 )
 
 var clusterName = Kuma1
@@ -53,7 +53,7 @@ func TestConformance(t *testing.T) {
 
 	t.Cleanup(func() {
 		var meshNamespaces []string
-		clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
+		clientset, err := k8s.GetKubernetesClientFromOptionsContextE(t, context.Background(), opts)
 		if err == nil {
 			if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
 				metav1.ListOptions{
@@ -66,13 +66,11 @@ func TestConformance(t *testing.T) {
 		}
 
 		if t.Failed() {
-			if len(meshNamespaces) > 0 {
-				g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
-					RegisterFailHandler(g.Fail)
-					DebugKube(cluster, "default", meshNamespaces...)
-					return nil
-				}()).To(Succeed())
-			}
+			g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
+				RegisterFailHandler(g.Fail)
+				DebugKube(cluster, "default", meshNamespaces...)
+				return nil
+			}()).To(Succeed())
 		}
 
 		for _, ns := range meshNamespaces {

@@ -11,15 +11,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane Overview Endpoints", func() {
@@ -131,6 +131,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	"mesh": "mesh1",
 	"creationTime": "2018-07-17T16:05:36.995Z",
 	"modificationTime": "2018-07-17T16:05:36.995Z",
+	"kri": "kri_dp_mesh1___dp-1_",
 	"dataplane": {
 		"networking": {
 			"address": "127.0.0.1",

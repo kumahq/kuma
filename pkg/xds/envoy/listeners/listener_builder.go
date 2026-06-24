@@ -4,10 +4,10 @@ import (
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 // ListenerBuilder is responsible for generating an Envoy listener
@@ -40,11 +40,12 @@ func NewInboundListenerBuilder(
 	address string,
 	port uint32,
 	protocol core_xds.SocketAddressProtocol,
+	enableReusedPorts bool,
 ) *ListenerBuilder {
 	listenerName := envoy_names.GetInboundListenerName(address, port)
 
 	return NewListenerBuilder(apiVersion, listenerName).
-		Configure(InboundListener(address, port, protocol))
+		Configure(InboundListener(address, port, protocol, enableReusedPorts))
 }
 
 // NewOutboundListenerBuilder creates an Outbound ListenBuilder

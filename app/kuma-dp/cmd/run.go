@@ -14,37 +14,37 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/accesslogs"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/certificate"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/configfetcher"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/dnsproxy"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/dnsserver"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/meshmetrics"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/metrics"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelreceiver"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/probes"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/readiness"
-	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kumadp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	dns_dpapi "github.com/kumahq/kuma/v2/pkg/dns/dpapi"
-	meshmetric_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	kuma_net "github.com/kumahq/kuma/v2/pkg/util/net"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/certificate"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/configfetcher"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/dnsproxy"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/dnsserver"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/meshmetrics"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/otelenv"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/otelreceiver"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/probes"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/readiness"
+	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kumadp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	dns_dpapi "github.com/kumahq/kuma/v3/pkg/dns/dpapi"
+	meshmetric_dpapi "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/dpapi"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	kuma_net "github.com/kumahq/kuma/v3/pkg/util/net"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 var runLog = dataplaneLog.WithName("run")
@@ -221,6 +221,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
+			if cfg.DataplaneRuntime.SocketDir != "" && cfg.DataplaneRuntime.SocketDir != tmpDir {
+				if err := os.MkdirAll(cfg.DataplaneRuntime.SocketDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to create socket directory")
+					return err
+				}
+			}
+
 			if cfg.DataplaneRuntime.SystemCaPath == "" {
 				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath()
 			}
@@ -268,11 +276,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
 			}
-			if !cfg.Dataplane.ReadinessUnixSocketDisabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReadinessUnixSocket)
-			}
 			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
+			}
+			if cfg.DataplaneRuntime.ReusePortEnabled {
+				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePort)
 			}
 
 			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
@@ -411,18 +419,27 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				// When admin is on UDS, bind readiness reporter so K8s
-				// probes (podIP) and PostStart hooks (localhost) can
-				// reach /ready. Only /ready is served on this listener.
-				readinessAddr = "0.0.0.0"
-				if kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address) {
+				// When admin is on UDS, the readiness reporter also reverse-
+				// proxies read-only Envoy admin endpoints on this listener
+				// (mutating endpoints are blocked); see readiness.Reporter.
+				// On Kubernetes the listener must accept probes from the
+				// kubelet (podIP), so we bind wildcard. Outside Kubernetes
+				// we default to loopback to avoid exposing admin info on the
+				// host network. POD_NAME is set by the sidecar injector.
+				_, inKubernetes := os.LookupEnv("POD_NAME")
+				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
+				switch {
+				case inKubernetes && ipv6:
 					readinessAddr = "::"
+				case inKubernetes:
+					readinessAddr = "0.0.0.0"
+				case ipv6:
+					readinessAddr = "::1"
+				default:
+					readinessAddr = "127.0.0.1"
 				}
 			}
 			readinessReporter := readiness.NewReporter(
-				cfg.Dataplane.ReadinessUnixSocketDisabled,
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-				cfg.DataplaneRuntime.SocketDir,
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort,
 				adminSocketPath,
@@ -500,6 +517,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().DurationVar(&cfg.Dataplane.DrainTime.Duration, "drain-time", cfg.Dataplane.DrainTime.Duration, `drain time for Envoy connections on Kuma DP shutdown`)
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
+	cmd.PersistentFlags().BoolVar(&cfg.ControlPlane.TlsSkipVerify, "skip-verify", cfg.ControlPlane.TlsSkipVerify, "Skip TLS verification of the Control Plane certificate (insecure, for development/testing only)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
 	//nolint:staticcheck // SA1019 Backward compatibility: preserve deprecated ConfigDir flag for migration

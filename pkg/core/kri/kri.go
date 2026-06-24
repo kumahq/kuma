@@ -7,9 +7,9 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/exp/constraints"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 )
 
 type Identifier struct {
@@ -70,9 +70,16 @@ func FromResourceMetaE[T ~string](rm core_model.ResourceMeta, resourceType T) (I
 
 	rType := core_model.ResourceType(resourceType)
 
-	if desc, err := registry.Global().DescriptorFor(rType); err != nil {
+	// an overview shares its base resource's identity: DataplaneOverview -> Dataplane
+	if base, isOverview := strings.CutSuffix(string(rType), "Overview"); isOverview {
+		rType = core_model.ResourceType(base)
+	}
+
+	desc, err := registry.Global().DescriptorFor(rType)
+	if err != nil {
 		return Identifier{}, err
-	} else if desc.ShortName == "" {
+	}
+	if desc.ShortName == "" { // types without a ShortName aren't addressable by KRI
 		return Identifier{}, nil
 	}
 

@@ -10,10 +10,10 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 )
 
 var DefaultConfig = func() Config {
@@ -43,6 +43,7 @@ var DefaultConfig = func() Config {
 			IPv6Enabled:               true,
 			StrictInboundPortsEnabled: true,
 			OtelPipeEnabled:           true,
+			ReusePortEnabled:          true,
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -99,6 +100,8 @@ type ControlPlane struct {
 	CaCert string `json:"caCert" envconfig:"kuma_control_plane_ca_cert"`
 	// CaCertFile defines a file for Certificate Authority that will be used to verify connection to the Control Plane.
 	CaCertFile string `json:"caCertFile" envconfig:"kuma_control_plane_ca_cert_file"`
+	// TlsSkipVerify disables verification of the Control Plane's TLS certificate. Insecure, intended for development and testing only.
+	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_control_plane_tls_skip_verify"`
 }
 
 type ApiServer struct {
@@ -143,10 +146,7 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
-	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
-	// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
-	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
-	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
+	// Port that exposes kuma-dp readiness status on localhost. Must be in (0, 65535]; 0 is rejected.
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
 	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
@@ -262,6 +262,10 @@ type DataplaneRuntime struct {
 	// When false, observability policy backendRefs (MeshTrace, MeshAccessLog, MeshMetric)
 	// use direct Envoy clusters instead of routing through kuma-dp Unix sockets. Default: true.
 	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_dataplane_runtime_otel_pipe_enabled"`
+	// ReusePortEnabled controls whether kuma-dp advertises FeatureReusePort to the CP.
+	// When true, the CP generates Envoy listeners with enable_reuse_port=true so each worker
+	// owns its own LISTEN socket. Default: true.
+	ReusePortEnabled bool `json:"reusePortEnabled" envconfig:"kuma_dataplane_runtime_reuse_port_enabled"`
 }
 
 type Spire struct {
@@ -366,8 +370,8 @@ func (d *Dataplane) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
-	if d.ReadinessPort > 65353 || d.ReadinessPort == 0 {
-		errs = multierr.Append(errs, errors.Errorf(".ReadinessPort has to be in (0, 65353] range"))
+	if d.ReadinessPort > 65535 || d.ReadinessPort == 0 {
+		errs = multierr.Append(errs, errors.Errorf(".ReadinessPort has to be in (0, 65535] range"))
 	}
 
 	return errs

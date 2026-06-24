@@ -4,7 +4,7 @@ import (
 	chartcommon "helm.sh/helm/v4/pkg/chart/common"
 	releaseutilv1 "helm.sh/helm/v4/pkg/release/v1/util"
 
-	"github.com/kumahq/kuma/v2/pkg/util/data"
+	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
 // customInstallOrder extends Helm v4's default InstallOrder with Gateway API resources.

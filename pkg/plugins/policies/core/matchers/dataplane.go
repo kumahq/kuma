@@ -7,21 +7,21 @@ import (
 	"maps"
 	"slices"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResource, referencableResources xds_context.Resources) (bool, error) {
@@ -185,6 +185,7 @@ func DppSelectedByPolicy(
 	case common_api.Mesh:
 		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(nil, dpp, gateway)
+			inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
 			return inbounds, gwListeners, gateway, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
@@ -197,6 +198,17 @@ func DppSelectedByPolicy(
 			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
 				return core_rules.InboundListener{Address: i.DataplaneIP, Port: i.DataplanePort}
 			})
+			sectionName := pointer.Deref(ref.SectionName)
+			for _, l := range dpp.Spec.GetNetworking().GetListeners() {
+				if sectionName != "" && l.GetSectionName() != sectionName {
+					continue
+				}
+				addr := l.GetAddress()
+				if addr == "" {
+					addr = dpp.Spec.GetNetworking().GetAddress()
+				}
+				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
+			}
 			return inbounds, nil, dpp.Spec.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
@@ -404,4 +416,16 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 		_ = rv.AddItem(r)
 	}
 	return rv
+}
+
+func embeddedListenersAsInboundListeners(dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
+	var result []core_rules.InboundListener
+	for _, l := range dpp.Spec.GetNetworking().GetListeners() {
+		addr := l.GetAddress()
+		if addr == "" {
+			addr = dpp.Spec.GetNetworking().GetAddress()
+		}
+		result = append(result, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
+	}
+	return result
 }

@@ -6,7 +6,7 @@ import "envoy/service/discovery/v3/discovery.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
 message KumaResource {
   message Meta {
@@ -109,6 +109,11 @@ message StatsRequest {
   string resource_mesh = 4;
   // format is the format in which we return the clusters.
   AdminOutputFormat format = 5;
+  // used_only filters out stats that have never been written to. Envoy
+  // pre-registers stats for every configured cluster/listener, so for
+  // dataplanes with many unused upstreams this dramatically shrinks the
+  // response and keeps it under the KDS gRPC message size cap.
+  bool used_only = 6;
 }
 
 // StatsResponse is a response containing result of kuma-dp stats execution on

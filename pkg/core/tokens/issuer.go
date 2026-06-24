@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 )
 
 // Issuer generates tokens.

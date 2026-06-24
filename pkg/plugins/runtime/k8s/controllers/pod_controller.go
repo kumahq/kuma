@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -22,15 +24,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	util_k8s "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 const (
@@ -48,6 +50,52 @@ const (
 	// so listener generation is skipped.
 	ZoneProxyListenersSkippedReason = "ZoneProxyListenersSkipped"
 )
+
+// errSamplerWindow is the dedup window for parse-error log sampling.
+const errSamplerWindow = time.Minute
+
+// parseSampler rate-limits repeated "failed to parse Dataplane" errors so a
+// single malformed resource does not flood the log on every reconcile.
+var parseSampler = newErrSampler()
+
+// errSampler allows at most one Error log per unique key per errSamplerWindow.
+// It prevents tight loops from flooding the log when the same parse error
+// repeats for the same resource across reconcile passes.
+// The key should be a stable identifier (e.g. namespace/name), not include
+// variable error text - that avoids cardinality explosions from embedded
+// resource names in error messages.
+type errSampler struct {
+	mu         sync.Mutex
+	last       map[string]time.Time
+	suppressed map[string]int
+}
+
+func newErrSampler() *errSampler {
+	return &errSampler{
+		last:       map[string]time.Time{},
+		suppressed: map[string]int{},
+	}
+}
+
+// allow reports whether the caller should log for key.
+// The second return value is the number of calls suppressed since the last
+// allowed log (zero on first occurrence in a window).
+func (s *errSampler) allow(key string) (bool, int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	if t, ok := s.last[key]; ok {
+		if now.Sub(t) < errSamplerWindow {
+			s.suppressed[key]++
+			return false, 0
+		}
+		// window expired - fall through and re-allow
+	}
+	suppressed := s.suppressed[key]
+	s.last[key] = now
+	s.suppressed[key] = 0
+	return true, suppressed
+}
 
 // PodReconciler reconciles a Pod object
 type PodReconciler struct {
@@ -307,7 +355,10 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 		dataplane := allDataplanes.Items[i]
 		dp := core_mesh.NewDataplaneResource()
 		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
-			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
+			name := kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: dataplane.Name}
+			if ok, suppressed := parseSampler.allow(name.String()); ok {
+				converterLog.Error(err, "failed to parse Dataplane", "dataplane_ref", name.String(), "suppressed_count", suppressed)
+			}
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 		if dataplane.Mesh == mesh {
@@ -371,10 +422,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
-		log.Info("Dataplane created")
+		log.V(1).Info("Dataplane created")
 		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Dataplane: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
-		log.Info("Dataplane updated")
+		log.V(1).Info("Dataplane updated")
 		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Dataplane: %s", pod.Name)
 	}
 	return nil

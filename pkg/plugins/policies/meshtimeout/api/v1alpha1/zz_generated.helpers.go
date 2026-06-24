@@ -4,10 +4,10 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (x *MeshTimeout) GetTargetRef() common_api.TargetRef {
@@ -50,6 +50,10 @@ func (x *MeshTimeout) GetToList() []core_model.PolicyItem {
 
 func (x *Rule) GetDefault() interface{} {
 	return x.Default
+}
+
+func (x *Rule) GetMatches() []common_api.Match {
+	return pointer.DerefOr(x.Matches, []common_api.Match{})
 }
 
 func (x *MeshTimeout) GetRules() []inbound.RuleEntry {

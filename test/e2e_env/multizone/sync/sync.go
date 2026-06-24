@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,14 +11,14 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/api"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/api"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Sync() {
@@ -223,7 +224,7 @@ spec:
 
 		policySyncedToZones := func(name string) {
 			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute")
+				return k8s.RunKubectlAndGetOutputContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute")
 			}, "30s", "1s").Should(ContainSubstring(name))
 			Eventually(func() (string, error) {
 				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-routes", "-m", meshName)
@@ -331,7 +332,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 			// then
 			hashedName := hash.HashedName(meshName, "tr-update")
 			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", hashedName, "-oyaml")
+				return k8s.RunKubectlAndGetOutputContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", hashedName, "-oyaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 			Eventually(func() (string, error) {
 				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
@@ -346,7 +347,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 			})
 
 			It("should deny creating policy on Kube Zone CP", func() {
-				err := k8s.KubectlApplyFromStringE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), kubernetesPolicyNamed("denied", 100))
+				err := k8s.KubectlApplyFromStringContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), kubernetesPolicyNamed("denied", 100))
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -357,7 +358,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 
 			It("should deny update on Kube Zone CP", func() {
 				policyUpdate := kubernetesPolicyNamed(name, 101)
-				err := k8s.KubectlApplyFromStringE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), policyUpdate)
+				err := k8s.KubectlApplyFromStringContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), policyUpdate)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -368,7 +369,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 			})
 
 			It("should deny delete on Kube Zone CP", func() {
-				err := k8s.RunKubectlE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "delete", "trafficroute", name)
+				err := k8s.RunKubectlContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "delete", "trafficroute", name)
 				Expect(err).To(HaveOccurred())
 			})
 

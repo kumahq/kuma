@@ -8,19 +8,19 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	test_xds "github.com/kumahq/kuma/v2/pkg/test/xds"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	test_xds "github.com/kumahq/kuma/v3/pkg/test/xds"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
@@ -278,7 +278,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "2-envoy-config.golden.yaml",
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -314,11 +314,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "3-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureReadinessUnixSocket: true,
-			},
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -358,11 +355,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "4-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureReadinessUnixSocket: true,
-			},
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -391,7 +385,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			expected:        "5-envoy-config.golden.yaml",
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
 			},
 		}),
 	)

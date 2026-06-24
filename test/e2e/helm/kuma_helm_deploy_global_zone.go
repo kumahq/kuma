@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,12 +14,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/intercp/catalog"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func ZoneAndGlobalWithHelmChart() {
@@ -35,7 +36,7 @@ func ZoneAndGlobalWithHelmChart() {
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		err := NewClusterSetup().
@@ -81,6 +82,8 @@ interCp:
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(c1)
+		ControlPlaneAssertions(c2)
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(c1.DeleteKuma()).To(Succeed())
 		Expect(c2.DeleteKuma()).To(Succeed())
@@ -91,7 +94,7 @@ interCp:
 	It("should deploy Zone and Global on 2 clusters", func() {
 		Eventually(func(g Gomega) {
 			path := fmt.Sprintf("%s/zones/_overview", global.GetAPIServerAddress())
-			status, response := http_helper.HttpGet(c1.GetTesting(), path, nil)
+			status, response := http_helper.HTTPGetContext(c1.GetTesting(), context.Background(), path, nil)
 			g.Expect(status).To(Equal(http.StatusOK), "unable to contact server %q", path)
 			var parsed map[string]any
 			g.Expect(json.Unmarshal([]byte(response), &parsed)).To(Succeed())
@@ -102,7 +105,7 @@ interCp:
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
-			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "dataplanes")
+			output, err := k8s.RunKubectlAndGetOutputContextE(c1.GetTesting(), context.Background(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
 		}, "5s", "500ms").Should(ContainSubstring("demo-client"))
@@ -119,7 +122,7 @@ interCp:
 
 	Context("Intercommunication CP server catalog on Global CP", func() {
 		fetchInstances := func() (map[string]struct{}, error) {
-			out, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "configmap", "cp-catalog", "-o", "jsonpath={.data.config}")
+			out, err := k8s.RunKubectlAndGetOutputContextE(c1.GetTesting(), context.Background(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "configmap", "cp-catalog", "-o", "jsonpath={.data.config}")
 			if err != nil {
 				return nil, err
 			}
@@ -145,7 +148,7 @@ interCp:
 			}, "30s", "1s").Should(Succeed())
 
 			// when
-			_, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "rollout", "restart", "deployment", Config.KumaServiceName)
+			_, err := k8s.RunKubectlAndGetOutputContextE(c1.GetTesting(), context.Background(), c1.GetKubectlOptions(Config.KumaNamespace), "rollout", "restart", "deployment", Config.KumaServiceName)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

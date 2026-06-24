@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	common_postgres "github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	common_postgres "github.com/kumahq/kuma/v3/pkg/plugins/common/postgres"
 )
 
 var log = core.Log.WithName("postgres-event-listener")

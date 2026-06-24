@@ -9,11 +9,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policy "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshTrafficPermission controls which services are allowed to communicate with each other in the mesh. It provides fine-grained access control by allowing you to define allow/deny rules based on service identity, enabling zero-trust security and supporting shadow mode for testing permission changes before enforcement.
@@ -99,7 +99,7 @@ func (l *MeshTrafficPermissionList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTrafficPermission{}, &MeshTrafficPermissionList{})
+	knownTypes = append(knownTypes, &MeshTrafficPermission{}, &MeshTrafficPermissionList{})
 	registry.RegisterObjectType(&policy.MeshTrafficPermission{}, &MeshTrafficPermission{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

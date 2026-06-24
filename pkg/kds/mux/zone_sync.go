@@ -12,31 +12,40 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/kds"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	"github.com/kumahq/kuma/v2/pkg/kds/util"
-	kds_client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
-	kds_server_metrics "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
-	"github.com/kumahq/kuma/v2/pkg/log"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	kds_client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
+	kds_server_metrics "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
+	kds_sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	"github.com/kumahq/kuma/v3/pkg/log"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var clientLog = core.Log.WithName("kds-delta-client")
+
+// serverStreamAdapter wraps a gRPC server stream to satisfy
+// KDSSyncServiceStream. Server streams signal completion by returning
+// from the handler, so CloseSend is a no-op.
+type serverStreamAdapter struct {
+	mesh_proto.KDSSyncService_ZoneToGlobalSyncServer
+}
+
+func (serverStreamAdapter) CloseSend() error { return nil }
 
 type KDSSyncServiceServer struct {
 	filters    []kds_context.FilterV2
@@ -53,6 +62,7 @@ type KDSSyncServiceServer struct {
 	k8sStore        bool
 	systemNamespace string
 	responseBackoff time.Duration
+	logPayloads     bool
 	metrics         *kds_server_metrics.Metrics
 }
 
@@ -76,6 +86,7 @@ func NewKDSSyncServiceServer(
 		k8sStore:        rt.Config().Store.Type == config_store.KubernetesStore,
 		systemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		responseBackoff: rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
+		logPayloads:     rt.Config().Multizone.Global.KDS.LogPayloads,
 		metrics:         metrics,
 	}
 }
@@ -209,7 +220,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
 			return
 		}
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zone, g.instanceID, "", len(g.typesSentByZone))
+		kdsStream := kds_client_v2.NewDeltaKDSStream(serverStreamAdapter{stream}, zone, g.instanceID, "", len(g.typesSentByZone))
 		cb := kds_sync_store_v2.GlobalSyncCallback(
 			stream.Context(),
 			g.resourceSyncer,
@@ -226,7 +237,10 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			g.typesSentByZone,
 			kdsStream,
 			cb,
-			g.responseBackoff,
+			kds_client_v2.SyncClientConfig{
+				ResponseBackoff: g.responseBackoff,
+				LogPayloads:     g.logPayloads,
+			},
 		)
 		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
 			processingErrorsCh <- errors.Wrap(err, "KDSSyncClient finished with an error")

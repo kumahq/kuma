@@ -38,14 +38,20 @@ const FeatureUnifiedResourceNaming string = "feature-unified-resource-naming"
 // Currently supported only on Kubernetes.
 const FeatureSpire string = "feature-spire"
 
-// FeatureReadinessUnixSocket indicates the readiness probe of kuma-sidecar is responded from the kuma-dp process via Unix socket.
-// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
-const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
-
 // FeatureStrictInboundPorts indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
 const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
+
+// FeatureReadinessUnixSocket indicates the readiness probe of kuma-sidecar is responded from the kuma-dp process via Unix socket.
+// New DPs no longer advertise this feature (readiness is TCP-only), but the CP still honors it for older DPs during upgrades.
+// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
+const FeatureReadinessUnixSocket = "feature-readiness-unix-socket"
 
 // FeatureOtelViaKumaDp indicates that kuma-dp can act as a gRPC proxy for OTel
 // traces and access logs. When present, the CP routes the OTel cluster to a Unix
 // socket instead of connecting directly to the collector.
 const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
+
+// FeatureReusePort indicates that the DP wants Envoy listeners generated
+// with SO_REUSEPORT enabled. When absent, the CP sets it to false to not break
+// upgrade, as `enable_reuse_port` cannot be changed during runtime.
+const FeatureReusePort = "feature-reuse-port"

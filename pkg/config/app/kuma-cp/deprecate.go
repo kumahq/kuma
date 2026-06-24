@@ -4,8 +4,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 )
 
 var deprecations = []config.Deprecation{

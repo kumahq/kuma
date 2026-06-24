@@ -329,12 +329,14 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-{{- if .Values.experimental.sidecarContainers }}
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  value: "true"
-{{- end }}
+  value: {{ .Values.experimental.sidecarContainers | quote }}
 {{- if .Values.experimental.inboundTagsDisabled }}
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
+  value: "true"
+{{- end }}
+{{- if .Values.experimental.deltaXds }}
+- name: KUMA_EXPERIMENTAL_DELTA_XDS
   value: "true"
 {{- end }}
 - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET

@@ -6,16 +6,16 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/api/openapi/types"
-	kumactl_app "github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
-	config_proto "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	kumactl_app "github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	config_proto "github.com/kumahq/kuma/v3/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 var defaultArgs = kumactl_cmd.RootArgs{

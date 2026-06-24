@@ -16,7 +16,7 @@ import (
 	"github.com/moby/sys/mountinfo"
 	"golang.org/x/sys/unix"
 
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 )
 
 const (

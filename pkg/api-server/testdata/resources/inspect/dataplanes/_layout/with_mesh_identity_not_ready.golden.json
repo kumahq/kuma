@@ -12,5 +12,6 @@
   "kuma.io/workload": "my-app",
   "kuma.io/zone": "test-zone"
  },
+ "listeners": [],
  "outbounds": []
 }

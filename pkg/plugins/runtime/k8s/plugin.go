@@ -10,24 +10,24 @@ import (
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	externalservice "github.com/kumahq/kuma/v2/pkg/core/managers/apis/external_service"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/ratelimit"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/zone"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/v2/pkg/dns"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	k8s_extensions "github.com/kumahq/kuma/v2/pkg/plugins/extensions/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	k8s_controllers "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
-	k8s_webhooks "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks/injector"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	externalservice "github.com/kumahq/kuma/v3/pkg/core/managers/apis/external_service"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/ratelimit"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/v3/pkg/dns"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	k8s_extensions "github.com/kumahq/kuma/v3/pkg/plugins/extensions/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	k8s_controllers "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	k8s_webhooks "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks/injector"
 )
 
 var (
@@ -194,6 +194,8 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		K8sStore:                   rt.Config().Store.Type == store.KubernetesStore,
 		SystemNamespace:            rt.Config().Store.Kubernetes.SystemNamespace,
 		CaManagers:                 rt.CaManagers(),
+		CpMode:                     rt.Config().Mode,
+		CpZone:                     rt.Config().Multizone.Zone.Name,
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")
@@ -405,6 +407,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,
 			rt.Config().Store.Kubernetes.SystemNamespace,
 			rt.Metrics(),
+			rt.Config().Experimental.DeltaXds,
 		)
 		if err != nil {
 			return err

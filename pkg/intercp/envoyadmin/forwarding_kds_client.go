@@ -7,17 +7,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	"github.com/kumahq/kuma/v3/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
 
 var clientLog = core.Log.WithName("intercp").WithName("envoyadmin").WithName("client")
@@ -114,15 +114,17 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 	return forward(f, ctx, proxy, service.ConfigDumpRPC, fallback, doRequest, handleResponse)
 }
 
-func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
+func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	fallback := func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-		return f.fallbackClient.Stats(ctx, proxy, format)
+		return f.fallbackClient.Stats(ctx, proxy, format, usedOnly)
 	}
 	doRequest := func(ctx context.Context, client mesh_proto.InterCPEnvoyAdminForwardServiceClient) (*mesh_proto.StatsResponse, error) {
 		req := &mesh_proto.StatsRequest{
 			ResourceType: string(proxy.Descriptor().Name),
 			ResourceName: proxy.GetMeta().GetName(),
 			ResourceMesh: proxy.GetMeta().GetMesh(),
+			Format:       format,
+			UsedOnly:     usedOnly,
 		}
 		return client.Stats(ctx, req)
 	}

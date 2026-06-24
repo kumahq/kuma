@@ -8,13 +8,13 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
 var statusTrackerLog = core.Log.WithName("xds").WithName("status-tracker")
@@ -178,12 +178,12 @@ func (c *dataplaneStatusTracker) onStreamRequest(
 			if md.GetVersion() != nil {
 				state.subscription.Version = md.GetVersion()
 			} else {
-				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "mode", mode, "metadata", req.Metadata())
+				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamID", streamID, "mode", mode, "metadata", req.Metadata())
 			}
 			// Kick off the async Dataplane status flusher.
 			go c.createStatusSink(req.Metadata(), state).Start(state.stop)
 		} else {
-			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "mode", mode, "req", req)
+			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamID", streamID, "mode", mode, "req", req)
 		}
 	}
 
@@ -221,7 +221,7 @@ func (c *dataplaneStatusTracker) onStreamRequest(
 		if !statusTrackerLog.V(1).Enabled() { // it was already added, no need to add it twice
 			log = log.WithValues("resourceNames", req.GetResourceNames())
 		}
-		log.Info("config requested")
+		log.V(1).Info("config requested")
 	}
 	return nil
 }

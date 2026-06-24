@@ -3,13 +3,15 @@ package globalinsight
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 )
 
 type GlobalInsightService interface {
@@ -17,13 +19,17 @@ type GlobalInsightService interface {
 }
 
 type defaultGlobalInsightService struct {
-	resourceStore core_store.ResourceStore
+	resourceStore             core_store.ResourceStore
+	globalResourceDescriptors []core_model.ResourceTypeDescriptor
 }
 
 var _ GlobalInsightService = &defaultGlobalInsightService{}
 
 func NewDefaultGlobalInsightService(resourceStore core_store.ResourceStore) GlobalInsightService {
-	return &defaultGlobalInsightService{resourceStore: resourceStore}
+	return &defaultGlobalInsightService{
+		resourceStore:             resourceStore,
+		globalResourceDescriptors: globalResourceDescriptors(),
+	}
 }
 
 func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsightBase, error) {
@@ -38,7 +44,9 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 
 	gis.aggregateDataplanes(meshInsights, globalInsights)
 	gis.aggregatePolicies(meshInsights, globalInsights)
-	gis.aggregateResources(meshInsights, globalInsights)
+	if err := gis.aggregateResources(ctx, meshInsights, globalInsights); err != nil {
+		return nil, err
+	}
 
 	if err := gis.aggregateServices(ctx, globalInsights); err != nil {
 		return nil, err
@@ -100,20 +108,58 @@ func (gis *defaultGlobalInsightService) aggregatePolicies(
 }
 
 func (gis *defaultGlobalInsightService) aggregateResources(
+	ctx context.Context,
 	meshInsights *mesh.MeshInsightResourceList,
 	globalInsight *api_types.GlobalInsightBase,
-) {
+) error {
 	globalInsight.Resources = map[string]api_types.ResourceStats{}
 	for _, meshInsight := range meshInsights.GetItems() {
 		for resName, resStat := range meshInsight.GetSpec().(*mesh_proto.MeshInsight).Resources {
-			stats, ok := globalInsight.Resources[resName]
-			if !ok {
-				stats = api_types.ResourceStats{}
-			}
-			stats.Total += int(resStat.Total)
-			globalInsight.Resources[resName] = stats
+			addResourceTotal(globalInsight.Resources, resName, int(resStat.Total))
 		}
 	}
+
+	for _, descriptor := range gis.globalResourceDescriptors {
+		list := descriptor.NewList()
+		if err := gis.resourceStore.List(ctx, list); err != nil {
+			return err
+		}
+
+		count := len(list.GetItems())
+		if count == 0 {
+			continue
+		}
+
+		globalInsight.Resources[string(descriptor.Name)] = api_types.ResourceStats{
+			Total: count,
+		}
+	}
+
+	return nil
+}
+
+func globalResourceDescriptors() []core_model.ResourceTypeDescriptor {
+	return registry.Global().ObjectDescriptors(
+		core_model.HasScope(core_model.ScopeGlobal),
+		core_model.HasWsEnabled(),
+		core_model.TypeFilterFn(func(descriptor core_model.ResourceTypeDescriptor) bool {
+			return !descriptor.AdminOnly
+		}),
+		core_model.Not(core_model.IsInsight()),
+		core_model.Not(core_model.Named(
+			mesh.MeshType,
+			system.ZoneType,
+			mesh.ZoneIngressType,
+			mesh.ZoneEgressType,
+			system.ConfigType,
+		)),
+	)
+}
+
+func addResourceTotal(resources map[string]api_types.ResourceStats, resourceName string, total int) {
+	stats := resources[resourceName]
+	stats.Total += total
+	resources[resourceName] = stats
 }
 
 func (gis *defaultGlobalInsightService) aggregateServices(

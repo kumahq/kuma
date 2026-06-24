@@ -9,11 +9,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policy "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshTimeout configures timeout limits for service-to-service communication to prevent requests from hanging indefinitely. It supports connection timeouts, idle timeouts, and HTTP-specific timeouts (request, stream, headers) to ensure timely failure detection and improve service responsiveness.
@@ -99,7 +99,7 @@ func (l *MeshTimeoutList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTimeout{}, &MeshTimeoutList{})
+	knownTypes = append(knownTypes, &MeshTimeout{}, &MeshTimeoutList{})
 	registry.RegisterObjectType(&policy.MeshTimeout{}, &MeshTimeout{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

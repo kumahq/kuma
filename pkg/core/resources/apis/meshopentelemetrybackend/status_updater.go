@@ -12,20 +12,20 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	meshaccesslog_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	meshmetric_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	meshtrace_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_time "github.com/kumahq/kuma/v2/pkg/util/time"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshmetric_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshtrace_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_time "github.com/kumahq/kuma/v3/pkg/util/time"
 )
 
 type StatusUpdater struct {
@@ -219,18 +219,10 @@ func buildBackendIndex(motbs []*motb_api.MeshOpenTelemetryBackendResource) map[s
 	return indexByMesh
 }
 
-// resolveRef resolves a BackendResourceRef to a MOTB name within a mesh.
-// Handles both Name-based (direct lookup) and Labels-based (label matching,
-// oldest wins) references.
+// resolveRef resolves a BackendResourceRef to a MOTB name within a mesh via label matching (oldest wins).
 func resolveRef(indexByMesh map[string]*backendIndex, mesh string, ref *common_api.BackendResourceRef) (string, bool) {
 	idx := indexByMesh[mesh]
 	if idx == nil {
-		return "", false
-	}
-	if ref.Name != "" {
-		if _, exists := idx.byName[ref.Name]; exists {
-			return ref.Name, true
-		}
 		return "", false
 	}
 	if len(ref.Labels) > 0 {
@@ -255,13 +247,8 @@ func matchByLabels(resources []motbEntry, selector map[string]string) (string, b
 	return "", false
 }
 
-// backendRefKey returns a string key for a BackendResourceRef for use in
-// deduplication maps. Name-based refs use the name directly, labels-based
-// refs use a sorted label representation.
+// backendRefKey returns a string key for a BackendResourceRef for use in deduplication maps.
 func backendRefKey(ref *common_api.BackendResourceRef) string {
-	if ref.Name != "" {
-		return ref.Name
-	}
 	parts := make([]string, 0, len(ref.Labels))
 	for _, k := range util_maps.SortedKeys(ref.Labels) {
 		parts = append(parts, k+"="+ref.Labels[k])
@@ -437,9 +424,9 @@ func (s *StatusUpdater) updateResourceCondition(
 	log := s.logger.WithValues(logKey, resource.GetMeta().GetName(), "mesh", resource.GetMeta().GetMesh())
 	if err := s.resManager.Update(ctx, resource); err != nil {
 		if store.IsConflict(err) {
-			log.Info(fmt.Sprintf("couldn't update %s, will retry next interval", typeName), "interval", s.interval)
+			log.Info("couldn't update status, will retry next interval", "resourceType", typeName, "interval", s.interval)
 		} else {
-			log.Error(err, fmt.Sprintf("could not update %s status", typeName))
+			log.Error(err, "could not update status", "resourceType", typeName)
 		}
 	}
 }

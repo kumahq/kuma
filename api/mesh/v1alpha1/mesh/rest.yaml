@@ -95,6 +95,15 @@ components:
                   type: array
               type: object
           type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -170,6 +179,11 @@ components:
               description: Name of the enabled backend
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         mtls:
           description: |-
             mTLS settings.

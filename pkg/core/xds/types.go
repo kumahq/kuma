@@ -13,18 +13,18 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type APIVersion string
@@ -114,10 +114,16 @@ type Locality struct {
 
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
-	Target          string
-	UnixDomainPath  string
-	Port            uint32
-	Tags            map[string]string
+	Target         string
+	UnixDomainPath string
+	Port           uint32
+	Tags           map[string]string
+
+	// Labels holds resource/workload labels for this endpoint. Unlike Tags (which
+	// are derived from Dataplane inbound configuration), Labels are sourced from
+	// resource metadata (for example, pod labels in Kubernetes mode) and remain
+	// available even when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is true.
+	Labels          map[string]string
 	Weight          uint32
 	Locality        *Locality
 	ExternalService *ExternalService

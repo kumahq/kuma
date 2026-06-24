@@ -1,0 +1,13 @@
+type: MeshTimeout
+name: mt-mesh-other
+mesh: multizone-label-validation
+labels:
+  kuma.io/mesh: nonexistent-mesh
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

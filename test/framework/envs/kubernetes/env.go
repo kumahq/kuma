@@ -6,10 +6,10 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 var Cluster *framework.K8sCluster
@@ -40,8 +40,8 @@ func SetupAndGetState() []byte {
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
-	if framework.Config.KumaExperimentalSidecarContainers {
-		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
+	if !framework.Config.KumaExperimentalSidecarContainers {
+		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "false"))
 	}
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))

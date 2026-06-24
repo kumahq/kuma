@@ -3,19 +3,22 @@ package mesh
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/tokens"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var log = core.Log.WithName("defaults").WithName("mesh")
@@ -36,6 +39,9 @@ func EnsureDefaultMeshResources(
 	createMeshDefaultRoutingResources bool,
 	k8sStore bool,
 	systemNamespace string,
+	cpMode config_core.CpMode,
+	cpZone string,
+	reconcileExistingOnly bool,
 ) error {
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
@@ -85,7 +91,7 @@ func EnsureDefaultMeshResources(
 
 		var msg string
 		if !slices.Contains(skippedPolicies, string(resource.Descriptor().Name)) {
-			err, created := ensureDefaultResource(ctx, resManager, resource, key)
+			err, created := ensureDefaultResource(ctx, resManager, resource, key, cpMode, cpZone, k8sStore, systemNamespace, reconcileExistingOnly)
 			if err != nil {
 				return errors.Wrapf(err, "could not create default %s %q", resource.Descriptor().Name, key.Name)
 			}
@@ -103,15 +109,62 @@ func EnsureDefaultMeshResources(
 	return nil
 }
 
-func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (error, bool) {
+func ensureDefaultResource(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	res model.Resource,
+	resourceKey model.ResourceKey,
+	cpMode config_core.CpMode,
+	cpZone string,
+	k8sStore bool,
+	systemNamespace string,
+	reconcileExistingOnly bool,
+) (error, bool) {
+	computeLabels := func(existing map[string]string) (map[string]string, error) {
+		namespace := resource_labels.UnsetNamespace
+		if k8sStore {
+			namespace = resource_labels.NewNamespace(systemNamespace, true)
+		}
+		return resource_labels.Compute(
+			res.Descriptor(),
+			res.GetSpec(),
+			existing,
+			resourceKey.Mesh,
+			resource_labels.WithMode(cpMode),
+			resource_labels.WithZone(cpZone),
+			resource_labels.WithK8s(k8sStore),
+			resource_labels.WithNamespace(namespace),
+		)
+	}
+
 	err := resManager.Get(ctx, res, store.GetBy(resourceKey), store.GetConsistent())
 	if err == nil {
+		desired, err := computeLabels(res.GetMeta().GetLabels())
+		if err != nil {
+			return errors.Wrap(err, "could not compute labels for a default resource"), false
+		}
+		if maps.Equal(res.GetMeta().GetLabels(), desired) {
+			return nil, false
+		}
+		// Older CP versions persisted these without computed labels. Rewrite them in place.
+		if err := resManager.Update(ctx, res, store.UpdateWithLabels(desired)); err != nil {
+			return errors.Wrap(err, "could not reconcile labels of a default resource"), false
+		}
 		return nil, false
 	}
 	if !store.IsNotFound(err) {
 		return errors.Wrap(err, "could not retrieve a resource"), false
 	}
-	if err := resManager.Create(ctx, res, store.CreateBy(resourceKey)); err != nil {
+	if reconcileExistingOnly {
+		// Boot-time reconciliation only heals labels of existing default
+		// resources; it must not recreate ones an operator deleted.
+		return nil, false
+	}
+	desired, err := computeLabels(nil)
+	if err != nil {
+		return errors.Wrap(err, "could not compute labels for a default resource"), false
+	}
+	if err := resManager.Create(ctx, res, store.CreateBy(resourceKey), store.CreateWithLabels(desired)); err != nil {
 		return errors.Wrap(err, "could not create a resource"), false
 	}
 	return nil, true

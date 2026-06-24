@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 var _ = Describe("DNSConfigurer", func() {
@@ -20,7 +20,7 @@ var _ = Describe("DNSConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 1234, xds.SocketAddressProtocolUDP).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 1234, xds.SocketAddressProtocolUDP, true).
 				WithOverwriteName(names.GetDNSListenerName()).
 				Configure(DNS(given.vips)).
 				Build()
@@ -45,7 +45,6 @@ var _ = Describe("DNSConfigurer", func() {
                 address: 192.168.0.1
                 portValue: 1234
                 protocol: UDP
-            enableReusePort: true
             listenerFilters:
             - name: envoy.filters.udp.dns_filter
               typedConfig:
@@ -75,7 +74,7 @@ var _ = Describe("DNSConfigurer", func() {
                 statPrefix: kuma_dns
             name: kuma:dns
             trafficDirection: INBOUND
-`,
+            enableReusePort: true`,
 		}),
 	)
 })

@@ -13,16 +13,16 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/auth"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/auth"
 )
 
 type testAuthenticator struct {
@@ -214,6 +214,36 @@ var _ = Describe("Auth Callbacks", func() {
 
 		// then
 		Expect(err).To(MatchError("stream was authenticated for ID default.web-01. Received request is for node with ID default.web-02. Node ID cannot be changed after stream is initialized"))
+	})
+
+	It("should accept delta requests that omit Node after the first request", func() {
+		// given
+		deltaCallbacks := v3.AdaptDeltaCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
+		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
+		streamID := int64(1)
+
+		// when
+		err := deltaCallbacks.OnDeltaStreamOpen(ctx, streamID, "")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when first delta request carries Node
+		err = deltaCallbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.web-01",
+			},
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when subsequent delta request omits Node (per xDS spec)
+		err = deltaCallbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(testAuth.callCounter).To(Equal(1)) // auth must not be called again when Node is absent
 	})
 
 	It("should not authenticate when DP is absent in the CP and it's not passed through Envoy metadata", func() {

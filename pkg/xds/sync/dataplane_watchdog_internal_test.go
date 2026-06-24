@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
 )
 
 var _ = Describe("DataplaneWatchdog syncOtelStatus", func() {

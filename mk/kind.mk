@@ -9,7 +9,7 @@ else
 endif
 
 # renovate[docker]: depName=kindest/node
-CI_KUBERNETES_VERSION ?= v1.35.1@sha256:05d7bcdefbda08b4e038f644c4df690cdac3fba8b06f8289f30e10026720a1ab
+CI_KUBERNETES_VERSION ?= v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
@@ -67,6 +67,21 @@ kind/cluster/wait:
 			exit 1; \
 		fi; \
 	done
+
+KIND_CLUSTER_START_RETRIES ?= 3
+
+.PHONY: kind/cluster/start/with-retry
+kind/cluster/start/with-retry:
+	@attempts=0; \
+	while [ $$attempts -lt $(KIND_CLUSTER_START_RETRIES) ]; do \
+		attempts=$$((attempts + 1)); \
+		echo "==> kind cluster $(CLUSTER_NAME) start attempt $$attempts/$(KIND_CLUSTER_START_RETRIES)"; \
+		$(MAKE) kind/cluster/start && exit 0; \
+		echo "==> Attempt $$attempts failed, tearing down $(CLUSTER_NAME)..."; \
+		$(MAKE) kind/cluster/stop || true; \
+	done; \
+	echo "==> All $(KIND_CLUSTER_START_RETRIES) attempts to start $(CLUSTER_NAME) failed"; \
+	exit 1
 
 .PHONY: kind/cluster/stop
 kind/cluster/stop: kind/cleanup-docker-credentials

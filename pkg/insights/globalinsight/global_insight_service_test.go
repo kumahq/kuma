@@ -9,17 +9,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Global Insight", func() {
@@ -44,6 +44,10 @@ var _ = Describe("Global Insight", func() {
 		err = createServiceInsight("si-1", "default", rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createServiceInsight("si-2", "payments", rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createHostnameGenerator("default-hg", rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createHostnameGenerator("payments-hg", rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createZoneInsight("zi-1", true, rs)
 		Expect(err).ToNot(HaveOccurred())
@@ -107,6 +111,16 @@ func createServiceInsight(name string, mesh string, rs store.ResourceStore) erro
 		AddService("test-delegated-gateway", &mesh_proto.ServiceInsight_Service{
 			ServiceType: mesh_proto.ServiceInsight_Service_gateway_delegated,
 			Status:      mesh_proto.ServiceInsight_Service_offline,
+		}).
+		Create(rs)
+}
+
+func createHostnameGenerator(name string, rs store.ResourceStore) error {
+	return builders.HostnameGenerator().
+		WithName(name).
+		WithTemplate("{{ .Name }}.mesh").
+		WithMeshServiceMatchLabels(map[string]string{
+			"kuma.io/service": name,
 		}).
 		Create(rs)
 }

@@ -8,19 +8,16 @@ import (
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_route "github.com/kumahq/kuma/v2/pkg/envoy/builders/route"
-	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 func AccessLogs(builders []*Builder[envoy_accesslog.AccessLog]) Configurer[envoy_listener.Listener] {
 	return func(l *envoy_listener.Listener) error {
 		accessLogs := []*envoy_accesslog.AccessLog{}
 		for _, b := range builders {
-			if b == nil {
-				continue
-			}
 			al, err := b.Build()
 			if err != nil {
 				return err
@@ -36,6 +33,28 @@ func AccessLogs(builders []*Builder[envoy_accesslog.AccessLog]) Configurer[envoy
 			}
 			if err := listeners_v3.UpdateTCPProxy(chain, func(tcpProxy *envoy_tcp.TcpProxy) error {
 				tcpProxy.AccessLog = append(tcpProxy.AccessLog, accessLogs...)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+// FlushTCPProxyAccessLogOnConnected configures every tcp_proxy filter on the
+// listener to emit its access log entries as soon as a downstream connection
+// is established, in addition to the default emission on close. Required for
+// long-lived tunnels (e.g. cross-zone sidecar→zone-ingress mTLS) where the
+// connection-close log would otherwise never fire in practice.
+func FlushTCPProxyAccessLogOnConnected() Configurer[envoy_listener.Listener] {
+	return func(l *envoy_listener.Listener) error {
+		for _, chain := range l.FilterChains {
+			if err := listeners_v3.UpdateTCPProxy(chain, func(tcpProxy *envoy_tcp.TcpProxy) error {
+				if tcpProxy.AccessLogOptions == nil {
+					tcpProxy.AccessLogOptions = &envoy_tcp.TcpProxy_TcpAccessLogOptions{}
+				}
+				tcpProxy.AccessLogOptions.FlushAccessLogOnConnected = true
 				return nil
 			}); err != nil {
 				return err

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -16,11 +18,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 type AppMode string
@@ -77,7 +79,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 		verbose:       runOptions.Verbose,
 		mesh:          mesh,
 		appName:       appName,
-		containerName: fmt.Sprintf("%s_%s_%s", clusterName, appName, random.UniqueId()),
+		containerName: fmt.Sprintf("%s_%s_%s", clusterName, appName, random.UniqueID()),
 		concurrency:   runOptions.DPConcurrency,
 		clusterName:   clusterName,
 		dockerBackend: runOptions.DockerBackend,
@@ -229,8 +231,6 @@ func (s *UniversalApp) ReStart() error {
 	if err := s.KillMainApp(); err != nil {
 		return err
 	}
-	// No needed but this just in case kill -9 is not instant
-	time.Sleep(1 * time.Second)
 	return s.StartMainApp()
 }
 
@@ -240,7 +240,15 @@ func (s *UniversalApp) KillMainApp() error {
 	if err != nil {
 		return err
 	}
-	return nil
+
+	pattern := s.mainAppProcessPattern()
+	if pattern == "" {
+		return nil
+	}
+	if err := s.killMainAppProcess(pattern); err != nil {
+		return err
+	}
+	return s.waitMainAppProcessStopped(pattern)
 }
 
 func (s *UniversalApp) StartMainApp() error {
@@ -257,6 +265,59 @@ func (s *UniversalApp) CreateMainApp(cmd string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (s *UniversalApp) mainAppProcessPattern() string {
+	lines := strings.Split(s.mainAppCmd, "\n")
+	for _, line := range slices.Backward(lines) {
+		line := strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		return line
+	}
+	return strings.TrimSpace(s.mainAppCmd)
+}
+
+func (s *UniversalApp) killMainAppProcess(pattern string) error {
+	_, _, err := s.universalNetworking.RunCommand(fmt.Sprintf("pkill -9 -f %q", s.mainAppProcessRegex(pattern)))
+	if isExitStatus(err, 1) {
+		return nil
+	}
+	return err
+}
+
+func (s *UniversalApp) waitMainAppProcessStopped(pattern string) error {
+	cmd := fmt.Sprintf("pgrep -f %q", s.mainAppProcessRegex(pattern))
+	for range 20 {
+		out, _, err := s.universalNetworking.RunCommand(cmd)
+		if isExitStatus(err, 1) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		Logf("App:%q process still running: %q", s.appName, strings.TrimSpace(out))
+		time.Sleep(500 * time.Millisecond)
+	}
+	return errors.Errorf("timed out waiting for app:%q process to stop", s.appName)
+}
+
+func (s *UniversalApp) mainAppProcessRegex(pattern string) string {
+	executable, args, found := strings.Cut(pattern, " ")
+	if strings.Contains(executable, "/") {
+		return "^" + regexp.QuoteMeta(pattern)
+	}
+	prefix := "^(.*/)?" + regexp.QuoteMeta(executable)
+	if !found {
+		return prefix
+	}
+	return prefix + `[[:space:]]+` + regexp.QuoteMeta(args)
+}
+
+func isExitStatus(err error, status int) bool {
+	var exitError *ssh.ExitError
+	return errors.As(err, &exitError) && exitError.ExitStatus() == status
 }
 
 func (s *UniversalApp) CreateSpireAgent(
@@ -289,21 +350,37 @@ func (s *UniversalApp) CreateDP(
 	transparent bool,
 	dpVersion string,
 ) error {
-	cmd := &strings.Builder{}
-	// create the token file on the app container
-	_, _ = cmd.WriteString("#!/bin/sh\n")
-	_, _ = fmt.Fprintf(cmd, "printf %q > /kuma/token-%s\n", token, name)
 	if dpVersion != "" {
 		// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
 		url := fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-%[2]s/versions/%[1]s/kuma-%[1]s-linux-%[2]s.tar.gz", dpVersion, Config.Arch)
 		newPathOut := fmt.Sprintf("/tmp/kuma/kuma-%s/bin", dpVersion)
 
-		_, _ = fmt.Fprintf(cmd, `
-mkdir -p /tmp/
-curl --no-progress-bar --fail '%s' | tar xvzf - --directory /tmp/kuma/
+		// Run the install synchronously so a failed download fails the test fast
+		// instead of silently falling through to the image's bundled binaries.
+		installScript := fmt.Sprintf(`set -e
+rm -f /usr/bin/kuma-dp /usr/bin/envoy
+mkdir -p /tmp/kuma/
+curl --no-progress-bar --fail '%s' -o /tmp/kuma/kuma.tar.gz
+tar xzf /tmp/kuma/kuma.tar.gz --directory /tmp/kuma/
 cp %s/kuma-dp /usr/bin/kuma-dp
 cp %s/envoy /usr/bin/envoy
-		`, url, newPathOut, newPathOut)
+`, url, newPathOut, newPathOut)
+		if stdout, stderr, err := s.universalNetworking.RunCommand(installScript); err != nil {
+			return errors.Wrapf(err, "failed to install kuma-dp %s: stdout=%q stderr=%q", dpVersion, stdout, stderr)
+		}
+	}
+	cmd := &strings.Builder{}
+	// create the token file on the app container
+	_, _ = cmd.WriteString("#!/bin/sh\n")
+	_, _ = fmt.Fprintf(cmd, "printf %q > /kuma/token-%s\n", token, name)
+	if envsMap == nil {
+		envsMap = map[string]string{}
+	}
+	// Skip CP cert verification via env var instead of the --skip-verify flag so
+	// that older kuma-dp versions (compatibility tests) silently ignore it
+	// instead of erroring on an unknown flag.
+	if _, ok := envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"]; !ok {
+		envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"] = "true"
 	}
 	for k, v := range envsMap {
 		_, _ = fmt.Fprintf(cmd, "export %s=%s\n", k, utils.ShellEscape(v))

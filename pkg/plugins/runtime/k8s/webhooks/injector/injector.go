@@ -19,20 +19,20 @@ import (
 	kube_podcmd "k8s.io/kubectl/pkg/cmd/util/podcmd"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	core_config "github.com/kumahq/kuma/v2/pkg/config"
-	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/containers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
-	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
-	tproxy_k8s "github.com/kumahq/kuma/v2/pkg/transparentproxy/kubernetes"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	core_config "github.com/kumahq/kuma/v3/pkg/config"
+	runtime_k8s "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/containers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_consts "github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
+	tproxy_k8s "github.com/kumahq/kuma/v3/pkg/transparentproxy/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 const (
@@ -107,6 +107,7 @@ func New(
 	envoyAdminUnixSocket bool,
 	systemNamespace string,
 	metrics core_metrics.Metrics,
+	deltaXdsEnabled bool,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -138,7 +139,7 @@ func New(
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
-			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
+			cfg.OtelPipeEnabled, cfg.Spire.Enabled, deltaXdsEnabled,
 		),
 		systemNamespace: systemNamespace,
 		metrics:         im,

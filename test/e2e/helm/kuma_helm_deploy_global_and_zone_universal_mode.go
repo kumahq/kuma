@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/postgres"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/postgres"
 )
 
 func GlobalAndZoneInUniversalModeWithHelmChart() {
@@ -29,7 +29,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		err = NewClusterSetup().
@@ -87,6 +87,8 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(globalCluster)
+		ControlPlaneAssertions(zoneCluster)
 		DebugCPLogs(globalCluster)
 		DebugCPLogs(zoneCluster)
 		Expect(globalCluster.DeleteKuma()).To(Succeed())

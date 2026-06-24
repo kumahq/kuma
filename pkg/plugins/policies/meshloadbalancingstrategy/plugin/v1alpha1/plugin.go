@@ -13,35 +13,35 @@ import (
 	"github.com/pkg/errors"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/origin"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	bldrs_clusters "github.com/kumahq/kuma/v2/pkg/envoy/builders/cluster"
-	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_endpoint "github.com/kumahq/kuma/v2/pkg/envoy/builders/endpoint"
-	bldrs_listener "github.com/kumahq/kuma/v2/pkg/envoy/builders/listener"
-	bldrs_route "github.com/kumahq/kuma/v2/pkg/envoy/builders/route"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	rules_outbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	gateway_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	generator_metadata "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_clusters "github.com/kumahq/kuma/v3/pkg/envoy/builders/cluster"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_endpoint "github.com/kumahq/kuma/v3/pkg/envoy/builders/endpoint"
+	bldrs_listener "github.com/kumahq/kuma/v3/pkg/envoy/builders/listener"
+	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_outbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	gateway_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
@@ -138,7 +138,7 @@ func (p plugin) configureDPP(
 	clusterModifier := func(cluster *envoy_cluster.Cluster, conf api.Conf) error {
 		return NewModifier(cluster).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound))).
+			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound))).
 			Modify()
 	}
 
@@ -156,7 +156,7 @@ func (p plugin) configureDPP(
 			}
 		}
 		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound)).Modify(); err != nil {
+			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound)).Modify(); err != nil {
 				return err
 			}
 		}
@@ -184,20 +184,20 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 	case *envoy_cluster.Cluster:
 		return NewModifier(envoyResource).
 			Configure(clusterConfigurer(rctx.Conf())).
-			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
 		return NewModifier(envoyResource).
-			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Zone, false, generator_metadata.OriginOutbound)).
+			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound)).
 			Modify()
 	}
 	return nil
 }
 
-func staticCLAConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, localZone string, egressEnabled bool, origin origin.Origin) Configurer[envoy_cluster.Cluster] {
+func staticCLAConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string, egressEnabled bool, origin origin.Origin) Configurer[envoy_cluster.Cluster] {
 	return func(c *envoy_cluster.Cluster) error {
 		return NewModifier(c.LoadAssignment).
-			Configure(claConfigurer(conf, tags, localZone, egressEnabled, origin)).
+			Configure(claConfigurer(conf, tags, podLabels, localZone, egressEnabled, origin)).
 			Modify()
 	}
 }
@@ -235,13 +235,13 @@ func clusterConfigurer(conf api.Conf) Configurer[envoy_cluster.Cluster] {
 	}
 }
 
-func claConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, localZone string, egressEnabled bool, origin origin.Origin) Configurer[envoy_endpoint.ClusterLoadAssignment] {
+func claConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string, egressEnabled bool, origin origin.Origin) Configurer[envoy_endpoint.ClusterLoadAssignment] {
 	return func(cla *envoy_endpoint.ClusterLoadAssignment) error {
 		atLeastOneLocalityGroup := conf.LocalityAwareness != nil && (conf.LocalityAwareness.LocalZone != nil || conf.LocalityAwareness.CrossZone != nil)
 		isLocalityAware := conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled)
 		return NewModifier(cla).
 			Configure(bldrs_endpoint.NonLocalPriority(isLocalityAware, localZone)).
-			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, tags, pointer.To(conf), localZone, egressEnabled, origin)))).
+			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, tags, podLabels, pointer.To(conf), localZone, egressEnabled, origin)))).
 			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.OverprovisioningFactor(overprovisioningFactor(conf)))).
 			Modify()
 	}
@@ -426,14 +426,14 @@ func (p plugin) configureGateway(
 
 						err := NewModifier(cluster).
 							Configure(clusterConfigurer(*localityConf)).
-							Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Zone, egressEnabled, gateway_metadata.OriginGateway))).
+							Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, egressEnabled, gateway_metadata.OriginGateway))).
 							Modify()
 						if err != nil {
 							return err
 						}
 
 						for _, cla := range endpoints[serviceName] {
-							if err := NewModifier(cla).Configure(claConfigurer(*localityConf, proxy.Dataplane.Spec.TagSet(), proxy.Zone, egressEnabled, gateway_metadata.OriginGateway)).Modify(); err != nil {
+							if err := NewModifier(cla).Configure(claConfigurer(*localityConf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, egressEnabled, gateway_metadata.OriginGateway)).Modify(); err != nil {
 								return err
 							}
 						}
@@ -490,7 +490,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 
 			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 			for _, cla := range endpoints[clusterName] {
-				if err := NewModifier(cla).Configure(claConfigurer(conf, mesh_proto.MultiValueTagSet{}, proxy.Zone, true, generator_metadata.OriginEgress)).Modify(); err != nil {
+				if err := NewModifier(cla).Configure(claConfigurer(conf, mesh_proto.MultiValueTagSet{}, nil, proxy.Zone, true, generator_metadata.OriginEgress)).Modify(); err != nil {
 					return err
 				}
 			}

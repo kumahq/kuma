@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -17,7 +18,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/test/framework/universal"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
 )
 
 const DockerNetworkName = "kuma"
@@ -38,12 +39,12 @@ type DockerBackend interface {
 type LocalDockerBackend struct{}
 
 func (*LocalDockerBackend) RunAndGetIDE(t testing.TestingT, image string, options *docker.RunOptions) (string, error) {
-	return docker.RunAndGetIDE(t, image, options)
+	return docker.RunAndGetIDContextE(t, context.Background(), image, options)
 }
 
 // StopE runs the 'docker stop' command for the given containers and returns any errors.
 func (*LocalDockerBackend) StopE(t testing.TestingT, containers []string, options *docker.StopOptions) (string, error) {
-	return docker.StopE(t, containers, options)
+	return docker.StopContextE(t, context.Background(), containers, options)
 }
 
 func (*LocalDockerBackend) GetPublishedDockerPorts(
@@ -65,7 +66,7 @@ func (*LocalDockerBackend) GetPublishedDockerPorts(
 		// Since we didn't retry, tests were failing with and an error
 		// `missing port in address` on OSX.
 		for range 10 {
-			out, err = shell.RunCommandAndGetStdOutE(t, cmd)
+			out, err = shell.RunCommandContextAndGetStdOutE(t, context.Background(), &cmd)
 			if err != nil {
 				time.Sleep(time.Millisecond * 500)
 			}
@@ -103,7 +104,7 @@ func (*LocalDockerBackend) RunCommandAndGetStdOutE(t testing.TestingT, cmdName s
 		Logger:  log,
 	}
 
-	return shell.RunCommandAndGetStdOutE(t, cmd)
+	return shell.RunCommandContextAndGetStdOutE(t, context.Background(), &cmd)
 }
 
 type VmPortForward struct {
@@ -124,7 +125,7 @@ func (u *RemoteDockerBackend) RunAndGetIDE(t testing.TestingT, image string, opt
 
 	if len(options.Volumes) > 0 {
 		files := make(map[string]string)
-		uploadDir := fmt.Sprintf("/tmp/smoke-%s", random.UniqueId())
+		uploadDir := fmt.Sprintf("/tmp/smoke-%s", random.UniqueID())
 
 		for i := 0; i < len(options.Volumes); i++ {
 			parts := strings.Split(options.Volumes[i], ":")

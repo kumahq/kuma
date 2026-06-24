@@ -10,11 +10,11 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 // +kubebuilder:object:root=true
@@ -42,7 +42,7 @@ type ZoneList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Zone{}, &ZoneList{})
+	knownTypes = append(knownTypes, &Zone{}, &ZoneList{})
 }
 
 func (cb *Zone) GetObjectMeta() *metav1.ObjectMeta {
@@ -147,7 +147,7 @@ type ZoneInsightList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneInsight{}, &ZoneInsightList{})
+	knownTypes = append(knownTypes, &ZoneInsight{}, &ZoneInsightList{})
 }
 
 func (cb *ZoneInsight) GetObjectMeta() *metav1.ObjectMeta {

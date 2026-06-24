@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("ServerSideStaticMTLS", func() {
@@ -27,7 +27,7 @@ var _ = Describe("ServerSideStaticMTLS", func() {
 		)
 
 		// when
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
 				Configure(ServerSideStaticMTLS(certs)).
 				Configure(TcpProxyDeprecated("localhost:8080", cluster)))).
@@ -42,7 +42,6 @@ var _ = Describe("ServerSideStaticMTLS", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.tcp_proxy
@@ -69,6 +68,7 @@ var _ = Describe("ServerSideStaticMTLS", func() {
                         inlineBytes: Y2FQRU0=
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND`))
+            trafficDirection: INBOUND
+            enableReusePort: true`))
 	})
 })

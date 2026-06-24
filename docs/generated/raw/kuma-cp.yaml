@@ -100,6 +100,12 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
+    # Cap on the gRPC C-Core receive flow-control window for the kuma-dp xDS
+    # client. Set as the GoogleGrpc channel arg `grpc.max_receive_message_length`.
+    # Default 4 MiB is large enough for gateway DPs with 450+ listeners; the
+    # gRPC C-Core default of 4 MiB sizes the per-stream HTTP/2 receive window
+    # too small for the initial xDS push on those DPs and stalls the stream.
+    xdsGrpcMaxReceiveMessageBytes: 4194304 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Whether the MADS server is enabled
@@ -200,8 +206,7 @@ apiServer:
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
-  corsAllowedDomains:
-    - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
+  corsAllowedDomains: [] # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
   # Can be used if you use a reverse proxy
   rootUrl: "" # ENV: KUMA_API_SERVER_ROOT_URL
   # The path to serve the API from
@@ -599,6 +604,8 @@ multizone:
       # Response backoff is a time Global CP waits before sending ACK/NACK.
       # This is a way to slow down Zone CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
+      # If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
+      logPayloads: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_LOG_PAYLOADS
       tracing:
         # Defines whether tracing is enabled for all gRPC methods
         # of GlobalKDSServer and KDSSyncService or completely disabled
@@ -626,6 +633,8 @@ multizone:
       # Response backoff is a time Zone CP waits before sending ACK/NACK.
       # This is a way to slow down Global CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
+      # If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
+      logPayloads: false # ENV: KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
     # IngressUpdateInterval is the interval between the CP updating the list of
@@ -673,6 +682,10 @@ dpServer:
   # Tokens e2e tests, which started flaking a lot after introducing explicit
   # 1s timeout)
   readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
+  # GracefulShutdownTimeout should be smaller than controller-runtime's
+  # shutdown budget (30s upstream default) and the pod's
+  # terminationGracePeriodSeconds.
+  gracefulShutdownTimeout: 10s # ENV: KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT
   # Authn defines an authentication configuration for the DP Server
   authn:
     # Configuration for data plane proxy authentication.
@@ -848,7 +861,7 @@ experimental:
   autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
   # Enables sidecar containers in Kubernetes if supported by the Kubernetes
   # environment.
-  sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+  sidecarContainers: true # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   # If true uses Delta xDS to deliver changes to sidecars.
   deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
 proxy:
@@ -933,3 +946,9 @@ meshService:
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
+  # Controls propagation of user-defined labels from MeshService to generated resources.
+  labelPropagation:
+    # If true, propagate allowed user-defined labels from MeshService to generated resources.
+    enabled: false # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED
+    # List of non-reserved label keys eligible for propagation. When empty and enabled is true, all non-reserved labels are propagated. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
+    allowedLabelKeys: [] # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS

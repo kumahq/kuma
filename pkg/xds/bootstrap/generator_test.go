@@ -10,21 +10,21 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	xds_config "github.com/kumahq/kuma/v2/pkg/config/xds"
-	bootstrap_config "github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	. "github.com/kumahq/kuma/v2/pkg/xds/bootstrap"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	xds_config "github.com/kumahq/kuma/v3/pkg/config/xds"
+	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	. "github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 var defaultVersion = types.Version{
@@ -186,11 +186,12 @@ var _ = Describe("bootstrapGenerator", func() {
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				return &bootstrap_config.BootstrapServerConfig{
 					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminAccessLogPath: "/var/log",
-						XdsHost:            "localhost",
-						XdsPort:            15678,
-						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
+						AdminAddress:                  "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+						AdminAccessLogPath:            "/var/log",
+						XdsHost:                       "localhost",
+						XdsPort:                       15678,
+						XdsConnectTimeout:             config_types.Duration{Duration: 2 * time.Second},
+						XdsGrpcMaxReceiveMessageBytes: 16777216,
 					},
 				}
 			}(),
@@ -236,11 +237,12 @@ var _ = Describe("bootstrapGenerator", func() {
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				return &bootstrap_config.BootstrapServerConfig{
 					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminAccessLogPath: "/var/log",
-						XdsHost:            "localhost",
-						XdsPort:            15678,
-						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
+						AdminAddress:                  "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+						AdminAccessLogPath:            "/var/log",
+						XdsHost:                       "localhost",
+						XdsPort:                       15678,
+						XdsConnectTimeout:             config_types.Duration{Duration: 2 * time.Second},
+						XdsGrpcMaxReceiveMessageBytes: 16777216,
 					},
 				}
 			}(),

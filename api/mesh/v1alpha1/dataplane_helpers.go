@@ -14,6 +14,11 @@ import (
 )
 
 const (
+	KumaIOPrefix    = "kuma.io/"
+	K8sKumaIOPrefix = "k8s.kuma.io/"
+)
+
+const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	KubeServiceTag   = "k8s.kuma.io/service-name"
 	KubePortTag      = "k8s.kuma.io/service-port"
@@ -21,6 +26,11 @@ const (
 	// currently only disabled/enabled is supported
 	KDSSyncLabel = "kuma.io/kds-sync"
 )
+
+// IsReservedLabelKey reports whether k belongs to a Kuma-reserved label namespace.
+func IsReservedLabelKey(k string) bool {
+	return strings.HasPrefix(k, KumaIOPrefix) || strings.HasPrefix(k, K8sKumaIOPrefix)
+}
 
 const (
 	KubernetesEnvironment = "kubernetes"
@@ -86,6 +96,12 @@ const (
 	// DeletionGracePeriodStartedLabel is used when generating MeshServices on
 	// universal, it's here to avoid import cycles
 	DeletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
+
+	// ListenerZoneIngressLabel is auto-computed when a Dataplane has at least one ZoneIngress listener.
+	ListenerZoneIngressLabel = "kuma.io/listener-zoneingress"
+
+	// ListenerZoneEgressLabel is auto-computed when a Dataplane has at least one ZoneEgress listener.
+	ListenerZoneEgressLabel = "kuma.io/listener-zoneegress"
 )
 
 type ResourceOrigin string
@@ -306,6 +322,18 @@ func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string)
 	return selectedInbounds
 }
 
+// ListenersSelectedBySectionName returns the list of embedded zone-proxy listeners selected by
+// sectionName. It returns all listeners if sectionName is empty.
+func (n *Dataplane_Networking) ListenersSelectedBySectionName(sectionName string) []*Dataplane_Networking_Listener {
+	var selected []*Dataplane_Networking_Listener
+	for _, l := range n.Listeners {
+		if sectionName == "" || l.GetSectionName() == sectionName {
+			selected = append(selected, l)
+		}
+	}
+	return selected
+}
+
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
 	iface := InboundInterface{
 		DataplanePort: inbound.Port,
@@ -406,6 +434,17 @@ func (d *Dataplane_Networking_Inbound) GetSectionName() string {
 		return d.Name
 	}
 	return strconv.Itoa(int(d.Port))
+}
+
+// GetSectionName returns either listener name or stringified port value.
+func (l *Dataplane_Networking_Listener) GetSectionName() string {
+	if l == nil {
+		return ""
+	}
+	if l.Name != "" {
+		return l.Name
+	}
+	return strconv.Itoa(int(l.Port))
 }
 
 // GetService returns a service name represented by this outbound interface.

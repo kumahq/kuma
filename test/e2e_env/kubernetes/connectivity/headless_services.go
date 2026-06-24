@@ -1,6 +1,8 @@
 package connectivity
 
 import (
+	"context"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -8,11 +10,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func HeadlessServices() {
@@ -38,8 +40,8 @@ func HeadlessServices() {
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = k8s.RunKubectlE(
-			kubernetes.Cluster.GetTesting(),
+		err = k8s.RunKubectlContextE(
+			kubernetes.Cluster.GetTesting(), context.Background(),
 			kubernetes.Cluster.GetKubectlOptions(namespace),
 			"delete", "svc", "test-server", "-n", namespace,
 		)

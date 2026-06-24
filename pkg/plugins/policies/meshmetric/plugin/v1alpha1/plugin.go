@@ -13,27 +13,27 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/mads"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/metadata"
-	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/xds"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	generator_metadata "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/mads"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/dpapi"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/metadata"
+	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/plugin/xds"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/dynconf"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var (
@@ -47,7 +47,47 @@ const (
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
 	WorkloadAttributeKey         = "kuma.workload"
+	ProxyRoleAttributeKey        = "kuma.proxy_role"
+
+	// ProxyRole* are stable enumerated values for the kuma.proxy_role metric label.
+	// Dashboards, alerts, and downstream consumers may key off these strings, so
+	// treat any rename or value change as a breaking metric-contract change.
+	ProxyRoleSidecar     = "sidecar"
+	ProxyRoleZoneEgress  = "zone-egress"
+	ProxyRoleZoneIngress = "zone-ingress"
+	ProxyRoleZoneProxy   = "zone-proxy"
+	ProxyRoleGateway     = "gateway"
 )
+
+func deriveProxyRole(networking *mesh_proto.Dataplane_Networking) string {
+	if networking == nil {
+		return ProxyRoleSidecar
+	}
+	if networking.GetGateway() != nil {
+		return ProxyRoleGateway
+	}
+	if !networking.HasZoneProxyListeners() {
+		return ProxyRoleSidecar
+	}
+	var hasIngress, hasEgress bool
+	for _, l := range networking.GetListeners() {
+		switch l.Type {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			hasIngress = true
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			hasEgress = true
+		}
+	}
+	switch {
+	case hasIngress && hasEgress:
+		return ProxyRoleZoneProxy
+	case hasIngress:
+		return ProxyRoleZoneIngress
+	case hasEgress:
+		return ProxyRoleZoneEgress
+	}
+	return ProxyRoleSidecar
+}
 
 type plugin struct{}
 
@@ -67,7 +107,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	conf := policies.SingleItemRules.Rules[0].Conf.(api.Conf)
+	rule := policies.SingleItemRules.Rules[0]
+	policyNames := make([]string, 0, len(rule.Origin))
+	for _, o := range rule.Origin {
+		policyNames = append(policyNames, o.GetName())
+	}
+	conf := sanitizeConfForProxy(rule.Conf.(api.Conf), proxy, policyNames)
 
 	if len(pointer.Deref(conf.Backends)) == 0 {
 		return nil
@@ -308,14 +353,22 @@ func createDynamicConfig(
 	if zone := proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.ZoneTag]; zone != "" {
 		extraLabels["zone"] = zone
 	}
-	if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
-		extraLabels[WorkloadAttributeKey] = workloadName
+	isZoneProxyOnly := proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly()
+	extraLabels[ProxyRoleAttributeKey] = deriveProxyRole(proxy.Dataplane.Spec.GetNetworking())
+	// Zone-proxy-only Dataplanes have no co-located workload, so kuma.workload is not meaningful.
+	// kuma.proxy_role identifies the proxy's purpose instead.
+	if !isZoneProxyOnly {
+		if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
+			extraLabels[WorkloadAttributeKey] = workloadName
+		}
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		if extraLabels[WorkloadAttributeKey] == "" {
-			extraLabels["service"] = proxy.Dataplane.IdentifyingName(inboundTagsDisabled)
+			if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
+				extraLabels["service"] = service
+			}
 		}
 	}
 
@@ -408,4 +461,28 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 func backendNameFrom(endpoint string) string {
 	// we need to remove "/" as this name will be used as directory name
 	return strings.ReplaceAll(strings.ReplaceAll(endpoint, "/", ""), ":", "-")
+}
+
+// sanitizeConfForProxy drops config fields that are meaningless on the target proxy shape.
+// Applications is irrelevant on a zone-proxy-only DPP because there is no co-located
+// workload to scrape — zone ingress/egress only carry mesh traffic.
+// policyNames is used for log attribution only.
+func sanitizeConfForProxy(conf api.Conf, proxy *core_xds.Proxy, policyNames []string) api.Conf {
+	if proxy.Dataplane == nil {
+		return conf
+	}
+	if !proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
+		return conf
+	}
+	if len(pointer.Deref(conf.Applications)) == 0 {
+		return conf
+	}
+	// V(1) because Apply runs on every xDS recompute; logging at default level would flood the log.
+	log.V(1).Info("ignoring 'applications' on zone-proxy-only Dataplane; field has no effect without a co-located workload",
+		"dataplane", proxy.Dataplane.GetMeta().GetName(),
+		"mesh", proxy.Dataplane.GetMeta().GetMesh(),
+		"policy", strings.Join(policyNames, ","),
+	)
+	conf.Applications = nil
+	return conf
 }

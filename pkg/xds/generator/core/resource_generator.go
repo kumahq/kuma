@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 type ResourceGenerator interface {

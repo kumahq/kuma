@@ -9,43 +9,45 @@ import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
-	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	"github.com/kumahq/kuma/v2/pkg/envoy/builders/filter/network/hcm"
-	bldrs_listener "github.com/kumahq/kuma/v2/pkg/envoy/builders/listener"
-	bldrs_matcher "github.com/kumahq/kuma/v2/pkg/envoy/builders/matcher"
-	bldrs_route "github.com/kumahq/kuma/v2/pkg/envoy/builders/route"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/model"
-	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_accesslog "github.com/kumahq/kuma/v3/pkg/envoy/builders/accesslog"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	"github.com/kumahq/kuma/v3/pkg/envoy/builders/filter/network/hcm"
+	bldrs_listener "github.com/kumahq/kuma/v3/pkg/envoy/builders/listener"
+	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
+	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/xds"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/model"
+	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -108,6 +110,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
 		return err
 	}
+	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+		return err
+	}
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI, inboundTagsDisabled); err != nil {
 		return err
 	}
@@ -160,6 +165,7 @@ func applyToInbounds(
 	workloadKRI string,
 	inboundTagsDisabled bool,
 ) error {
+	configured := map[core_rules.InboundListener]struct{}{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -167,12 +173,15 @@ func applyToInbounds(
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
+		if _, ok := configured[listenerKey]; ok {
+			continue
+		}
 		listener, ok := inboundListeners[listenerKey]
 		if !ok {
 			continue
 		}
+		configured[listenerKey] = struct{}{}
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
 			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
@@ -182,7 +191,56 @@ func applyToInbounds(
 			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 		}
-		if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
+		if err := configureListenerFromRules(rules.InboundRules[listenerKey], listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyToZoneProxyListeners(
+	rs *core_xds.ResourceSet,
+	rules core_rules.FromRules,
+	dataplane *core_mesh.DataplaneResource,
+	backends *EndpointAccumulator,
+	accessLogSocketPath string,
+	zone string,
+	workloadKRI string,
+) error {
+	for _, res := range rs.Resources(envoy_resource.ListenerType) {
+		if res.Origin != metadata.OriginEgress && res.Origin != metadata.OriginIngress {
+			continue
+		}
+		listener, ok := res.Resource.(*envoy_listener.Listener)
+		if !ok {
+			continue
+		}
+		dpAddress := listener.GetAddress().GetSocketAddress()
+		listenerKey := core_rules.InboundListener{
+			Address: dpAddress.GetAddress(),
+			Port:    dpAddress.GetPortValue(),
+		}
+		inboundRules, ok := rules.InboundRules[listenerKey]
+		if !ok || len(inboundRules) == 0 {
+			continue
+		}
+		kumaValues := listeners_v3.KumaValues{
+			SourceService:      mesh_proto.ServiceUnknown,
+			SourceIP:           dataplane.GetIP(),
+			DestinationService: mesh_proto.ServiceUnknown,
+			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
+			TrafficDirection:   envoy.TrafficDirectionUnspecified,
+		}
+		if err := configureListenerFromRules(inboundRules, listener, backends, DefaultFormat(core_meta.ProtocolTCP), kumaValues, accessLogSocketPath); err != nil {
+			return err
+		}
+		// Without flushing on connect, access logs for TCP connections are populated only when the connection closes.
+		// Extending this to sidecar listeners is tracked in https://github.com/kumahq/kuma/issues/16763.
+		if err := (NewModifier(listener).
+			Configure(bldrs_listener.FlushTCPProxyAccessLogOnConnected()).
+			Modify()); err != nil {
 			return err
 		}
 	}
@@ -352,7 +410,6 @@ func applyToGateway(
 		}
 
 		if fromListenerRules, ok := rules.InboundRules[listenerKey]; ok {
-			conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromListenerRules)
 			kumaValues := listeners_v3.KumaValues{
 				SourceService:      mesh_proto.ServiceUnknown,
 				SourceIP:           proxy.Dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
@@ -362,7 +419,7 @@ func applyToGateway(
 				WorkloadKRI:        workloadKRI,
 				TrafficDirection:   envoy.TrafficDirectionInbound,
 			}
-			if err := configureListener(conf, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
+			if err := configureListenerFromRules(fromListenerRules, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
 				return err
 			}
 		}
@@ -382,11 +439,53 @@ func configureListener[T ~string](
 	return NewModifier(listener).
 		Configure(bldrs_listener.AccessLogs(
 			util_slices.Map(
-				pointer.Deref(conf.Backends),
-				func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
+				ResolveBackends(pointer.Deref(conf.Backends), backendsAcc),
+				func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
 					return BaseAccessLogBuilder(b, string(defaultFormat), backendsAcc, values, accessLogSocketPath)
 				}))).
 		Modify()
+}
+
+func configureListenerFromRules(
+	rules []*rules_inbound.Rule,
+	listener *envoy_listener.Listener,
+	backendsAcc *EndpointAccumulator,
+	defaultFormat string,
+	values listeners_v3.KumaValues,
+	accessLogSocketPath string,
+) error {
+	if len(rules) == 0 {
+		return nil
+	}
+	if err := (NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(BuildAccessLogBuildersFromRules(
+			rules, defaultFormat, backendsAcc, values, accessLogSocketPath,
+		))).
+		Modify()); err != nil {
+		return err
+	}
+	if hasSNIMatch(rules) {
+		return ensureTLSInspector(listener)
+	}
+	return nil
+}
+
+func hasSNIMatch(rules []*rules_inbound.Rule) bool {
+	for _, rule := range rules {
+		if rule.Match != nil && rule.Match.SNI != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func ensureTLSInspector(listener *envoy_listener.Listener) error {
+	for _, lf := range listener.ListenerFilters {
+		if lf.Name == listeners_v3.TlsInspectorName {
+			return nil
+		}
+	}
+	return (&listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
 }
 
 func applyToRealResource(
@@ -416,7 +515,7 @@ func applyToRealResource(
 		TrafficDirection:   envoy.TrafficDirectionOutbound,
 	}
 
-	backends := pointer.Deref(rctx.Conf().Backends)
+	backends := ResolveBackends(pointer.Deref(rctx.Conf().Backends), backendsAcc)
 
 	routesConfs, err := buildRoutesMap(listener, rctx)
 	if err != nil {
@@ -424,30 +523,25 @@ func applyToRealResource(
 	}
 
 	routesIds := slices.SortedStableFunc(maps.Keys(routesConfs), kri.Compare)
+	routesBackends := util_maps.MapValues(routesConfs, func(_ kri.Identifier, conf api.Conf) []ResolvedBackend {
+		return ResolveBackends(pointer.Deref(conf.Backends), backendsAcc)
+	})
 
-	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesConfs), func(conf api.Conf) bool {
-		return len(pointer.Deref(conf.Backends)) > 0
+	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesBackends), func(backends []ResolvedBackend) bool {
+		return len(backends) > 0
 	})) > 0
 
-	builderForSharedBackend := func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-		base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
-		if base == nil {
-			return nil
-		}
-		return base.
+	builderForSharedBackend := func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
 			Configure(If(core_meta.IsHTTPBased(r.Protocol), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
 				Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 				Configure(bldrs_matcher.NullValue())),
 			))
 	}
 
-	builderForRouteBackend := func(routeID kri.Identifier) func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-		return func(b api.Backend) *Builder[envoy_accesslog.AccessLog] {
-			base := BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath)
-			if base == nil {
-				return nil
-			}
-			return base.
+	builderForRouteBackend := func(routeID kri.Identifier) func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+		return func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
 				Configure(bldrs_accesslog.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
 					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
 					Configure(bldrs_matcher.ExactValue(routeID.String()))))
@@ -467,7 +561,7 @@ func applyToRealResource(
 				routesIds,
 				func(id kri.Identifier) []*Builder[envoy_accesslog.AccessLog] {
 					return util_slices.Map(
-						pointer.Deref(routesConfs[id].Backends),
+						routesBackends[id],
 						builderForRouteBackend(id),
 					)
 				}))).

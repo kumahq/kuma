@@ -1,35 +1,40 @@
 package client_test
 
 import (
+	"bytes"
 	"context"
+	stderrors "errors"
 	"fmt"
 	"sync"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/grpc"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/setup"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
+	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/grpc"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
 )
 
 var _ = Describe("Zone Delta Sync", func() {
@@ -93,11 +98,13 @@ var _ = Describe("Zone Delta Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		wg.Go(func() {
+			kdsStream := client_v2.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", "", len(kdsCtx.TypesSentByGlobal))
 			policySync := client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				kdsCtx.TypesSentByGlobal,
-				client_v2.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", "", len(kdsCtx.TypesSentByGlobal)),
-				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"), 0,
+				kdsStream,
+				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
+				client_v2.SyncClientConfig{},
 			)
 			_ = policySync.Receive()
 		})
@@ -357,4 +364,74 @@ var _ = Describe("Zone Delta Sync", func() {
 			}
 		}, "5s", "100ms").Should(Succeed())
 	})
+})
+
+var _ = Describe("KDSSyncClient logging", func() {
+	DescribeTable("should log received responses according to config",
+		func(logPayloads bool, expected []string, unexpected []string) {
+			logBuf := &bytes.Buffer{}
+			clientStream := grpc.NewMockDeltaClientStream()
+			kdsStream := client_v2.NewDeltaKDSStream(clientStream, "zone-1", "zone-inst", "", 1)
+			DeferCleanup(func() {
+				close(clientStream.RecvCh)
+				Expect(kdsStream.CloseSend()).To(Succeed())
+			})
+
+			clientStream.RecvCh <- &envoy_sd.DeltaDiscoveryResponse{
+				TypeUrl: string(mesh.MeshType),
+				Nonce:   "nonce-1",
+				ControlPlane: &envoy_core.ControlPlane{
+					Identifier: "cp-1",
+				},
+			}
+
+			syncClient := client_v2.NewKDSSyncClient(
+				kuma_log.NewLoggerTo(logBuf, kuma_log.DebugLevel),
+				[]model.ResourceType{mesh.MeshType},
+				kdsStream,
+				&client_v2.Callbacks{
+					OnResourcesReceived: func(client_v2.UpstreamResponse) (error, error) {
+						return stderrors.New("stop processing"), nil
+					},
+				},
+				client_v2.SyncClientConfig{
+					LogPayloads: logPayloads,
+				},
+			)
+
+			err := syncClient.Receive()
+
+			Expect(err).To(MatchError(ContainSubstring("stop processing")))
+			for _, substring := range expected {
+				Expect(logBuf.String()).To(ContainSubstring(substring))
+			}
+			for _, substring := range unexpected {
+				Expect(logBuf.String()).ToNot(ContainSubstring(substring))
+			}
+		},
+		Entry("summary logging by default",
+			false,
+			[]string{
+				"DeltaDiscoveryResponse received",
+				"nonce",
+				"addedResourcesCount",
+				"removedResourcesCount",
+			},
+			[]string{
+				"cp-1",
+			},
+		),
+		Entry("full payload logging when enabled",
+			true,
+			[]string{
+				"DeltaDiscoveryResponse received",
+				"cp-1",
+				"nonce-1",
+			},
+			[]string{
+				"addedResourcesCount",
+				"removedResourcesCount",
+			},
+		),
+	)
 })

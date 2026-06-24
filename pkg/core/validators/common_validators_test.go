@@ -1,67 +1,62 @@
-package validators
+package validators_test
 
-import "testing"
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-func TestValidateBandwidth(t *testing.T) {
-	path := []string{"path"}
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+)
 
-	tests := []struct {
-		name  string
-		input string
-		err   string
-	}{
-		{
-			name:  "sanity",
-			input: "1kbps",
-		},
-		{
-			name:  "without number",
-			input: "Mbps",
-		},
-		{
-			name:  "not exact match",
-			input: "1bpsp",
-			err: func() string {
-				e := &ValidationError{}
-				e.AddViolationAt(path, MustHaveBPSUnit)
-				return e.Error()
-			}(),
-		},
-		{
-			name:  "bps is not allowed",
-			input: "1bps",
-			err: func() string {
-				e := &ValidationError{}
-				e.AddViolationAt(path, MustHaveBPSUnit)
-				return e.Error()
-			}(),
-		},
-		{
-			name:  "float point number is not supported",
-			input: "0.1kbps",
-			err: func() string {
-				e := &ValidationError{}
-				e.AddViolationAt(path, MustHaveBPSUnit)
-				return e.Error()
-			}(),
-		},
-		{
-			name:  "not defined",
-			input: "",
-			err: func() string {
-				e := &ValidationError{}
-				e.AddViolationAt(path, MustBeDefined)
-				return e.Error()
-			}(),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := ValidateBandwidth(path, tt.input)
-			if actual.Error() != tt.err {
-				t.Errorf("ValidateBandwidth(%s): expected %s, actual %s", tt.input, tt.err, actual)
-			}
-		})
+func validationError(msg string) validators.ValidationError {
+	return validators.ValidationError{
+		Violations: []validators.Violation{{
+			Field:   "path",
+			Message: msg,
+		}},
 	}
 }
+
+var _ = Describe("Common validators", func() {
+	path := validators.RootedAt("path")
+	invalidOtelAttributeName := validationError(validators.MustMatchOtelAttributeNameFormat)
+
+	DescribeTable("ValidateBandwidth",
+		func(input string, expected validators.ValidationError) {
+			// when
+			actual := validators.ValidateBandwidth(path, input)
+
+			// then
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("sanity", "1kbps", validators.ValidationError{}),
+		Entry("without number", "Mbps", validators.ValidationError{}),
+		Entry("not exact match", "1bpsp", validationError(validators.MustHaveBPSUnit)),
+		Entry("bps is not allowed", "1bps", validationError(validators.MustHaveBPSUnit)),
+		Entry("float point number is not supported", "0.1kbps", validationError(validators.MustHaveBPSUnit)),
+		Entry("not defined", "", validationError(validators.MustBeDefined)),
+	)
+
+	DescribeTable("ValidateOtelAttributeName",
+		func(input string, expected validators.ValidationError) {
+			// when
+			actual := validators.ValidateOtelAttributeName(path, input)
+
+			// then
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("single segment", "mesh", validators.ValidationError{}),
+		Entry("dotted segments", "service.version", validators.ValidationError{}),
+		Entry("underscored segment", "process_command_args", validators.ValidationError{}),
+		Entry("mixed dotted and underscored segments", "process.command_args", validators.ValidationError{}),
+		Entry("placeholder key", "%KUMA_ZONE%", validationError(validators.MustBeStaticOtelAttributeName)),
+		Entry("reserved prefix", "otel.attribute", validationError(validators.MustNotUseReservedOtelPrefix)),
+		Entry("space", "my custom attribute", invalidOtelAttributeName),
+		Entry("uppercase segment", "service.Version", invalidOtelAttributeName),
+		Entry("hyphenated segment", "request-id", invalidOtelAttributeName),
+		Entry("leading digit", "1service", invalidOtelAttributeName),
+		Entry("consecutive delimiters", "service..version", invalidOtelAttributeName),
+		Entry("mixed consecutive delimiters", "service._version", invalidOtelAttributeName),
+		Entry("trailing dot", "service.", invalidOtelAttributeName),
+		Entry("trailing underscore", "service_", invalidOtelAttributeName),
+	)
+})

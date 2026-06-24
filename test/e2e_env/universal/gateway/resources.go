@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Resources() {
@@ -97,21 +97,6 @@ spec:
 		return net.JoinHostPort(universal.Cluster.GetApp(gatewayName).GetIP(), fmt.Sprintf("%d", gatewayPort))
 	}
 
-	keepConnectionOpen := func() {
-		GinkgoHelper()
-		defer GinkgoRecover()
-
-		addr := gatewayAddr()
-		ip, _, _ := net.SplitHostPort(addr)
-		// Send HTTP/1.1 keep-alive requests in a loop to prevent request_headers_timeout
-		// from closing the connection, keeping the TCP slot continuously occupied.
-		cmd := fmt.Sprintf(
-			`bash -c 'while true; do printf "GET / HTTP/1.1\r\nHost: %s\r\nConnection: keep-alive\r\n\r\n"; sleep 0.3; done | ncat %s %d'`,
-			addr, ip, gatewayPort,
-		)
-		_, _, _ = universal.Cluster.Exec("", "", "resources-wait-client", cmd)
-	}
-
 	Specify("connection limit is respected", func() {
 		target := fmt.Sprintf("http://%s/", gatewayAddr())
 
@@ -127,7 +112,7 @@ spec:
 
 		By("allowing more than 1 connection without a limit")
 
-		go keepConnectionOpen()
+		cancelFirstConn := HoldConnection(universal.Cluster, "resources-wait-client", gatewayName, gatewayPort)
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(
@@ -141,10 +126,10 @@ spec:
 
 		Expect(universal.Cluster.Install(YamlUniversal(meshGatewayWithLimit))).To(Succeed())
 
-		// Kill existing ncat to close the open connection, then re-occupy the single slot.
-		Expect(universal.Cluster.Kill("resources-wait-client", "ncat")).To(Succeed())
-
-		go keepConnectionOpen()
+		// Close the first keep-alive, then re-occupy the single slot.
+		cancelFirstConn()
+		cancelSecondConn := HoldConnection(universal.Cluster, "resources-wait-client", gatewayName, gatewayPort)
+		defer cancelSecondConn()
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(

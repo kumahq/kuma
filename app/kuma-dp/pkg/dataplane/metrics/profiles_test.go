@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
 var _ = Describe("Profiles", func() {
@@ -77,6 +77,11 @@ var _ = Describe("Profiles", func() {
 			input:    "mixed.in",
 			expected: "mixed.golden",
 			profiles: "mixed.yaml",
+		}),
+		Entry("Basic must not treat name-selectors as label-value selectors", testCase{
+			input:    "basic_user_labels.in",
+			expected: "basic_user_labels.golden",
+			profiles: "basic_user_labels.yaml",
 		}),
 	)
 })

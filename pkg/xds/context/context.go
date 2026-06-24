@@ -3,19 +3,19 @@ package context
 import (
 	"encoding/base64"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")
@@ -105,6 +105,10 @@ type MeshContext struct {
 	// DataplaneZoneEgressEndpointMap is the shared endpoint map for embedded zone egress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
 	DataplaneZoneEgressEndpointMap xds.EgressEndpointMap
+	// ZonesWithMeshScopedProxy is the set of zones that have at least one
+	// MeshZoneAddress, meaning their zone ingress uses the new mesh-scoped zone proxy.
+	// Clusters targeting services in these zones must use the KRI-derived SNI format (MADR 101).
+	ZonesWithMeshScopedProxy map[string]bool
 }
 
 type ServiceInformation struct {

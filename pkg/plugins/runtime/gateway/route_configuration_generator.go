@@ -1,9 +1,9 @@
 package gateway
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
 )
 
 func GenerateRouteConfig(proxy *xds.Proxy, protocol mesh_proto.MeshGateway_Listener_Protocol, name string) *envoy_routes.RouteConfigurationBuilder {

@@ -10,24 +10,24 @@ import (
 	envoy_service_runtime_v3 "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/permissions"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/match"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/merge"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
-	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/permissions"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/merge"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/route"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
+	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 // RoutePolicyTypes specifies the resource types the gateway will bind
@@ -156,8 +156,7 @@ func gatewayListenerInfoFromProxy(
 		return nil
 	}
 
-	log.V(1).Info(fmt.Sprintf("matched gateway %q to dataplane %q",
-		gateway.Meta.GetName(), proxy.Dataplane.Meta.GetName()))
+	log.V(1).Info("matched gateway to dataplane", "gateway", gateway.Meta.GetName(), "dataplane", proxy.Dataplane.Meta.GetName())
 
 	// Canonicalize the tags on each listener to be the merged resources
 	// of dataplane, gateway and listener tags.

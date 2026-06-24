@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 	k8s_exec "k8s.io/client-go/util/exec"
 
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
-	"github.com/kumahq/kuma/v2/test/server/types"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
+	"github.com/kumahq/kuma/v3/test/server/types"
 )
 
 type CollectResponsesOpts struct {
@@ -450,7 +450,17 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		}
 	}
 
-	stdout, _, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
+	// Retry on empty stdout with no exec error: the Kubernetes SPDY exec stream can
+	// close before stdout is delivered when the process exits immediately (e.g. DNS
+	// failure, exit code 6). One retry is enough to recover from the race.
+	var stdout string
+	var err error
+	for range 2 {
+		stdout, _, err = cluster.Exec(opts.namespace, appPodName, container, cmd...)
+		if stdout != "" || err != nil {
+			break
+		}
+	}
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.

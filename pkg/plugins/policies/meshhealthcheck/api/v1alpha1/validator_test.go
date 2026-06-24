@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshhealthcheck_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshhealthcheck_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
@@ -93,6 +93,30 @@ to:
       interval: 10s
       tcp: # it will pick the protocol as described in 'protocol selection' section
         disabled: true # new, default false, can be disabled for override
+`),
+			Entry("to level MeshExternalService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: external
+    default:
+      interval: 10s
+      tcp: # it will pick the protocol as described in 'protocol selection' section
+        disabled: true # new, default false, can be disabled for override
+`),
+			Entry("top level Dataplane to MeshExternalService", `
+targetRef:
+  kind: Dataplane
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: external
+    default:
+      interval: 10s
+      tcp:
+        disabled: true
 `),
 		)
 

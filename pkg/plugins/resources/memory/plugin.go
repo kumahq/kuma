@@ -3,10 +3,10 @@ package memory
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/events"
 )
 
 var (

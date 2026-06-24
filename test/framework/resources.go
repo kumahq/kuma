@@ -13,16 +13,27 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
 )
 
+var kumactlConnectionErrorSubstrings = []string{
+	"connect: connection refused",
+	"connection reset by peer",
+	"EOF",
+	"failed to retrieve server version",
+	"use of closed network connection",
+	"unexpected EOF",
+}
+
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
-	_, err := retry.DoWithRetryE(
-		cluster.GetTesting(),
+	mode := cluster.GetKuma().Mode()
+	_, err := retry.DoWithRetryContextE(
+		cluster.GetTesting(), context.Background(),
 		"delete mesh resources",
 		10,
 		time.Second,
@@ -31,11 +42,11 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 
 			for _, desc := range descriptor {
 				if _, ok := cluster.(*K8sCluster); ok {
-					errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
+					errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, mode, desc))
 					continue
 				}
 
-				errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
+				errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, mode, desc))
 			}
 
 			return "", errors.Join(errs...)
@@ -44,16 +55,36 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 	return err
 }
 
+// isManagedByMode reports whether a resource with the given metadata is
+// managed by a CP running in the given mode. A CP can only delete resources
+// it owns: Global owns global-origin resources, Zone owns zone-origin
+// resources. Unlabeled resources are considered owned by any CP (matching
+// the validator in pkg/api-server/resource_endpoints.go which only rejects
+// when origin is explicitly set and wrong).
+func isManagedByMode(meta core_model.ResourceMeta, mode core.CpMode) bool {
+	origin, ok := core_model.ResourceOrigin(meta)
+	if !ok {
+		return true
+	}
+	switch mode {
+	case core.Global:
+		return origin == mesh_proto.GlobalResourceOrigin
+	case core.Zone:
+		return origin == mesh_proto.ZoneResourceOrigin
+	}
+	return true
+}
+
 func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string, mesh ...string) error {
-	_, err := retry.DoWithRetryE(
-		cluster.GetTesting(),
+	_, err := retry.DoWithRetryContextE(
+		cluster.GetTesting(), context.Background(),
 		"delete policy",
 		10,
 		time.Second,
 		func() (string, error) {
 			if _, ok := cluster.(*K8sCluster); ok {
-				return k8s.RunKubectlAndGetOutputE(
-					cluster.GetTesting(),
+				return k8s.RunKubectlAndGetOutputContextE(
+					cluster.GetTesting(), context.Background(),
 					cluster.GetKubectlOptions(Config.KumaNamespace),
 					"delete",
 					descriptor.KumactlArg,
@@ -67,12 +98,15 @@ func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceType
 	return err
 }
 
-func deleteMeshResourcesUniversal(kumactl kumactl.KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
+func deleteMeshResourcesUniversal(kumactl kumactl.KumactlOptions, mesh string, mode core.CpMode, descriptor core_model.ResourceTypeDescriptor) error {
 	list, err := allResourcesOfType(kumactl, descriptor, mesh)
 	if err != nil {
 		return err
 	}
 	for _, item := range list.GetItems() {
+		if !isManagedByMode(item.GetMeta(), mode) {
+			continue
+		}
 		_, err := kumactl.RunKumactlAndGetOutput("delete", descriptor.KumactlArg, item.GetMeta().GetName(), "-m", mesh)
 		if err != nil {
 			return err
@@ -93,13 +127,24 @@ func allResourcesOfType(kumactl kumactl.KumactlOptions, descriptor core_model.Re
 	return list, err
 }
 
-func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_model.ResourceTypeDescriptor) error {
+func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, mode core.CpMode, resource core_model.ResourceTypeDescriptor) error {
 	args := []string{"delete", strings.ReplaceAll(strings.ToLower(resource.PluralDisplayName), " ", "")}
 	if resource.IsPluginOriginated {
-		// because all new policies have a mesh label, we can just delete by selecting a label
-		args = append(args, "--all-namespaces", "--selector", fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh))
-		if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), args...); err != nil {
-			return err
+		// Delete only resources owned by this CP: those matching the CP mode
+		// in their origin label and those without an origin label at all.
+		// Resources synced from other CPs (origin != mode) are managed by the
+		// originating CP and must be skipped — the REST API rejects writes to
+		// them (see pkg/api-server/resource_endpoints.go validateOriginForWrite).
+		selectors := []string{
+			fmt.Sprintf("%s=%s,%s=%s", mesh_proto.MeshTag, mesh, mesh_proto.ResourceOriginLabel, originLabelFor(mode)),
+			fmt.Sprintf("%s=%s,!%s", mesh_proto.MeshTag, mesh, mesh_proto.ResourceOriginLabel),
+		}
+		for _, sel := range selectors {
+			delArgs := append([]string{}, args...)
+			delArgs = append(delArgs, "--all-namespaces", "--selector", sel)
+			if err := k8s.RunKubectlContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), delArgs...); err != nil {
+				return err
+			}
 		}
 	} else {
 		list, err := allResourcesOfType(*cluster.GetKumactlOptions(), resource, mesh)
@@ -107,13 +152,23 @@ func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_m
 			return err
 		}
 		for _, item := range list.GetItems() {
+			if !isManagedByMode(item.GetMeta(), mode) {
+				continue
+			}
 			itemDelArgs := append(args, item.GetMeta().GetName())
-			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
+			if err := k8s.RunKubectlContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+func originLabelFor(mode core.CpMode) string {
+	if mode == core.Global {
+		return string(mesh_proto.GlobalResourceOrigin)
+	}
+	return string(mesh_proto.ZoneResourceOrigin)
 }
 
 func WaitForMesh(mesh string, clusters []Cluster) error {
@@ -126,8 +181,8 @@ func WaitForMesh(mesh string, clusters []Cluster) error {
 // to ensure KDS registration and MeshService propagation have completed
 // before running cross-zone assertions.
 func WaitForZoneOnline(global Cluster, zoneName string) error {
-	_, err := retry.DoWithRetryE(
-		global.GetTesting(),
+	_, err := retry.DoWithRetryContextE(
+		global.GetTesting(), context.Background(),
 		fmt.Sprintf("wait for zone %s online", zoneName),
 		// 120 retries * 3s = 6 min. Cold-start KDS connection on
 		// IPv6 kindIpv6 clusters can take 60-90s; the previous 60s
@@ -157,13 +212,20 @@ func WaitForZoneOnline(global Cluster, zoneName string) error {
 
 func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_model.ResourceKey, clusters ...Cluster) error {
 	for _, c := range clusters {
-		_, err := retry.DoWithRetryE(c.GetTesting(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
+		_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				args := []string{"get", descriptor.KumactlArg, key.Name}
 				if key.Mesh != "" {
 					args = append(args, "-m", key.Mesh)
 				}
-				_, err := c.GetKumactlOptions().RunKumactlAndGetOutput(args...)
+				out, err := c.GetKumactlOptions().RunKumactlAndGetOutput(args...)
+				if err != nil && isKumactlConnectionError(out, err) {
+					if cluster, ok := c.(*K8sCluster); ok {
+						if refreshErr := cluster.RefreshKumaCPPortForwards(); refreshErr != nil {
+							return "", errors.Join(err, refreshErr)
+						}
+					}
+				}
 				return "", err
 			})
 		if err != nil {
@@ -171,6 +233,20 @@ func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_mode
 		}
 	}
 	return nil
+}
+
+func isKumactlConnectionError(output string, err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := output + "\n" + err.Error()
+	for _, substring := range kumactlConnectionErrorSubstrings {
+		if strings.Contains(msg, substring) {
+			return true
+		}
+	}
+	return false
 }
 
 func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (int, error) {
