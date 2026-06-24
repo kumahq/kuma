@@ -88,7 +88,10 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restfu
 	}
 
 	generateAndRecord := func(svc model.Resource, svcType types.InspectHostnamesParamsServiceType, svcZone string, hg *hostnamegenerator_api.HostnameGeneratorResource, byHostname map[string]map[string]struct{}) error {
-		host, err := generatorsForType[svcType].GenerateHostname(svcZone, hg, svc)
+		// validateDNS=false: this is a read-only view that also runs on the global CP for
+		// services synced from zones. Older zones generated hostnames before the RFC 1123
+		// check existed; we still want to display those instead of failing the whole request.
+		host, err := generatorsForType[svcType].GenerateHostname(svcZone, hg, svc, false)
 		if err != nil {
 			return err
 		}
