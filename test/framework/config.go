@@ -64,6 +64,11 @@ type E2eConfig struct {
 	Debug                             bool              `json:"debug" envconfig:"KUMA_DEBUG"`
 	DumpDir                           string            `json:"dumpDir" envconfig:"KUMA_DUMP_DIR"`
 	DumpOnSuccess                     bool              `json:"dumpOnSuccess,omitempty" envconfig:"DUMP_ON_SUCCESS"`
+	// Kuma3Preflight* gate the opt-in kuma3-preflight capture hook (see
+	// test/framework/preflight.go). Bin+Dir empty == disabled, so a normal run is a no-op.
+	Kuma3PreflightBin     string        `json:"kuma3PreflightBin,omitempty" envconfig:"KUMA3_PREFLIGHT_BIN"`
+	Kuma3PreflightDir     string        `json:"kuma3PreflightDir,omitempty" envconfig:"KUMA3_PREFLIGHT_DIR"`
+	Kuma3PreflightTimeout time.Duration `json:"kuma3PreflightTimeout,omitempty" envconfig:"KUMA3_PREFLIGHT_TIMEOUT"`
 }
 
 func (c E2eConfig) SupportedVersions() []versions.Version {
@@ -248,6 +253,7 @@ var defaultConf = E2eConfig{
 	KumaExperimentalSidecarContainers: true,
 	DumpDir:                           path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
 	DumpOnSuccess:                     false,
+	Kuma3PreflightTimeout:             45 * time.Second,
 }
 
 func Init(configModificationFunctions ...func(*E2eConfig)) {

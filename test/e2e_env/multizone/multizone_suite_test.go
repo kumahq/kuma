@@ -47,6 +47,11 @@ var (
 	_ = E2ESynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
 	_ = SynchronizedAfterSuite(func() {}, multizone.SynchronizedAfterSuite)
 	_ = ReportAfterSuite("multizone after suite", multizone.AfterSuite)
+	// Opt-in (KUMA3_PREFLIGHT_BIN + KUMA3_PREFLIGHT_DIR): snapshot the GLOBAL CP after each
+	// spec — one audit of the global covers every zone (resources sync over KDS). No-op otherwise.
+	_ = AfterEach(func() {
+		CapturePreflightCluster(CurrentSpecReport().FullText(), multizone.Global)
+	})
 )
 
 var (

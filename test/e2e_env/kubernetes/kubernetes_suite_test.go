@@ -49,6 +49,11 @@ var (
 	_ = E2ESynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.RestoreState)
 	_ = SynchronizedAfterSuite(func() {}, kubernetes.SynchronizedAfterSuite)
 	_ = ReportAfterSuite("kubernetes after suite", kubernetes.AfterSuite)
+	// Opt-in (KUMA3_PREFLIGHT_BIN + KUMA3_PREFLIGHT_DIR): snapshot the CP after each spec
+	// so kuma3-preflight can classify which tests use Kuma-3.0-removed features. No-op otherwise.
+	_ = AfterEach(func() {
+		CapturePreflightCluster(CurrentSpecReport().FullText(), kubernetes.Cluster)
+	})
 )
 
 var (
