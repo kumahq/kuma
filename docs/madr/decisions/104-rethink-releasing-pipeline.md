@@ -9,7 +9,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/16973
 Pushing a `vX.Y.Z` tag runs the full `build-test-distribute.yaml`, including the
 entire e2e suite, before any artifact ships. Recent tag runs: v2.13.8 218m,
 v2.14.0 124m, v2.12.12 119m, v2.11.16 102m (~2–3.5h), on top of the manual steps in
-`.claude/rules/release.md`.
+the team-mesh release issues.
 
 On a tag push (`FULL_MATRIX=true`):
 
@@ -18,7 +18,8 @@ On a tag push (`FULL_MATRIX=true`):
   multizone / gatewayapi × versions × amd64/arm64 × CNI × IPv6) at `max-parallel: 5`,
   ~25–35m each. This is the long pole.
 - `build_publish` is `needs: [check, test]`, so it waits for the whole matrix;
-  the build itself is cheap (binaries ~13m, images ~6–8m parallel).
+  the build itself is cheap (binaries ~13m, independently reducible via build
+  caching; images ~6–8m parallel).
 - `provenance` (tags only) plus `distributions`.
 
 The core inefficiency: the tag is HEAD of `release-X.Y`, which already ran the full
@@ -27,11 +28,13 @@ we re-run ~90–150m of e2e and gate all publishing behind it. Secondary problem
 the flakiest CI stage, so a flake can fail an otherwise-good release.
 
 One constraint shapes the options. The version is ldflags-injected from the git tag
-(`version.sh`, `mk/build.mk`), so release-branch artifacts (`2.14.1-<hash>`) cannot be
-byte-promoted to GA (`2.14.0`). Any fix either rebuilds on the tag or changes how the
-version is derived.
+(`version.sh`, `mk/build.mk`): a build on `release-2.14` is stamped as the next-patch
+preview (`X.Y.Z-preview.<hash>`), not the version its GA tag carries (`X.Y.Z`), so
+branch artifacts cannot be byte-promoted to GA. Any fix either rebuilds on the tag or
+changes how the version is derived.
 
-Goals: tag-to-artifacts well under an hour; no weaker supply-chain
+Goals: the tag re-runs no step already validated on the green release-branch SHA
+(build and publish only, not re-test); no weaker supply-chain
 (SBOM/provenance/signing/scan); fewer release failures from flakes or operator error.
 Non-goals: changing cadence/branching/tag format; adopting external infra (Prow/GCB).
 
@@ -58,8 +61,11 @@ on GitHub Actions, the closest templates for us.
 
 ### Option 1 — Skip e2e on the tag; gate on the branch (recommended)
 
-- No e2e (and no e2e smoke) on the tag. Keep `test_unit` and container-structure
-  tests, which are fast and validate the artifact. Drop the ~90–150m matrix.
+- No re-test on the tag: drop unit and e2e. The source is identical to the green
+  branch SHA, so re-running them adds nothing. Verify only what the tag build *changes*
+  versus that SHA — the ldflags version. That is covered by the container-structure
+  tests on the freshly-built image (already in `_build_publish.yaml`) plus an assert
+  that the built binary reports the tag version.
 - Build and publish without the e2e gate, so the build starts right after the gate.
 - Hard-enforce a green tagged SHA. The first job asserts the commit has a passing
   `build-test-distribute` run on its branch (`gh api` check-runs), else it fails.
@@ -102,21 +108,23 @@ Today the release path lives in `build-test-distribute.yaml` via scattered
 - A, more conditionals in the shared workflow. (+) smallest diff. (−) more
   tag-vs-PR branching in an already-conditional workflow; release stays hard to read;
   shared concurrency/permissions.
-- B, a dedicated `release-publish.yaml` (`tags: ["v*"]`) reusing
+- B, a dedicated `release-publish.yaml` triggered on release tags, reusing
   `_build_publish.yaml` and `_provenance.yaml`, never `_test.yaml`; drop the tag trigger
   from `build-test-distribute.yaml`; `release.yaml` keeps changelog/version
-  bookkeeping. (+) linear readable release flow; own concurrency/permissions; no
-  duplicated build logic; matches the Envoy/Cilium/Argo pattern; natural host for the
-  rehearsal and a future RC. (−) new file plus a one-time trigger migration.
+  bookkeeping. The tag filter must match `v?X.Y.Z`, not just `v*`: older branches like
+  `release-2.9` ship *unprefixed* `2.9.x` tags. (+) linear readable release flow; own
+  concurrency/permissions; no duplicated build logic; matches the Envoy/Cilium/Argo
+  pattern; natural host for the rehearsal and a future RC. (−) new file plus a one-time
+  trigger migration.
 
 Picked B.
 
 ### Release rehearsal (scheduled dry-run)
 
 Moving the gate off the tag introduces a risk: the release machinery breaks and we find
-out only at release time. A scheduled rehearsal de-risks it. Checking the
-Makefiles, `version.sh`, `helm.sh`, the workflows, and the tool docs shows this is mostly
-config, not new tooling:
+out only at release time. A scheduled rehearsal de-risks it. The
+Makefiles, `version.sh`, `helm.sh`, the workflows, and the tool docs confirm this is
+mostly config, not new tooling:
 
 - Already runs on every master and `release-X.Y` push: `version.sh` stamps a
   `-preview.v<hash>` version that auto-routes to `notary-internal` and preview
@@ -161,7 +169,9 @@ Option 1 ships now, with Options 2 and 3 as follow-up.
 - Dropping the redundant e2e removes the flakiest release gate.
 - Residual risk: the branch run goes stale against the tag. The exact green-SHA gate,
   RC soak, or a one-off branch matrix before tagging mitigate this.
-- `test_unit` and container-structure tests act as a fast tag tripwire.
+- Container-structure on the freshly-built image plus a binary-version assert are the
+  only tag-specific checks; they verify exactly what the tag build changes (the
+  ldflags), nothing the green branch run already covered.
 - The rehearsal continuously validates build, publish, and sign (plus provenance and
   helm once the gates loosen). Only the real GitHub Release and prod routing stay
   tag-only.
@@ -180,7 +190,8 @@ Adopt Option 1, as a dedicated release workflow plus a scheduled rehearsal:
 - A dedicated `release-publish.yaml` reusing `_build_publish.yaml` and
   `_provenance.yaml`, never `_test.yaml`; drop the tag trigger from
   `build-test-distribute.yaml`.
-- No e2e or smoke on the tag; keep `test_unit` and container-structure tests.
+- No re-test on the tag: drop unit and e2e; keep container-structure on the
+  freshly-built image plus a binary-version assert (the ldflags delta).
 - Hard-enforce a green tagged SHA.
 - A scheduled rehearsal of build, publish, sign, SBOM, scan, and provenance (loosen
   the tag-only `if`s, keep the preview/internal targets); route the helm release to a
@@ -192,7 +203,9 @@ decoupling is undecided.
 
 ## Notes
 
-Resolved: no smoke e2e on the tag; the green-SHA gate is hard-enforced; RC tags deferred.
+Resolved: no re-test on the tag (drop unit and e2e; keep only container-structure plus
+a binary-version assert, the ldflags delta); the green-SHA gate is hard-enforced; RC
+tags deferred.
 
 Open: version decoupling (undecided; rebuild-on-tag is fine for Option 1); the exact
 green-SHA mechanism and rehearsal cadence/scope (impl detail); provisioning a test
