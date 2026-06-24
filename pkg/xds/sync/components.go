@@ -5,6 +5,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
@@ -62,6 +63,7 @@ func DefaultDataplaneWatchdogFactory(
 		config,
 		apiVersion,
 	)
+	dataplaneProxyBuilder.policyMatchingCache = matchers.NewPolicyMatchingCache(xdsMetrics.PolicyMatchingCache)
 
 	ingressProxyBuilder := DefaultIngressProxyBuilder(
 		rt,
