@@ -13,23 +13,23 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-	config "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
-	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	config "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
 // errOnGetStore wraps a real store but returns getErr for Gets of the specified resource type.
@@ -44,6 +44,20 @@ func (s *errOnGetStore) Get(ctx context.Context, res model.Resource, opts ...cor
 		return s.getErr
 	}
 	return s.ResourceStore.Get(ctx, res, opts...)
+}
+
+// errOnListStore wraps a real store but returns listErr for Lists of the specified resource type.
+type errOnListStore struct {
+	core_store.ResourceStore
+	listErr     error
+	listErrType model.ResourceType
+}
+
+func (s *errOnListStore) List(ctx context.Context, list model.ResourceList, opts ...core_store.ListOptionsFunc) error {
+	if s.listErr != nil && list.GetItemType() == s.listErrType {
+		return s.listErr
+	}
+	return s.ResourceStore.List(ctx, list, opts...)
 }
 
 var _ = Describe("Resource Endpoints", func() {
@@ -415,5 +429,66 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
 		}))
+	})
+
+	It("should return 500 and not drop the connection when the mesh context build fails on _rules", func() {
+		// given: a store that fails to List policies, so building the mesh context
+		// inside the _rules handler returns an error
+		realStore := core_store.NewPaginationStore(memory.NewStore())
+		failingStore := &errOnListStore{
+			ResourceStore: realStore,
+			listErr:       fmt.Errorf("connection refused"),
+			listErrType:   v1alpha1.MeshTrafficPermissionType,
+		}
+		apiServerWithErr, _, stopErr := StartApiServer(
+			NewTestApiServerConfigurer().
+				WithStore(failingStore).
+				WithDisableOriginLabelValidation(true),
+		)
+		defer stopErr()
+
+		// pre-create mesh + dataplane (Gets go to the real store and succeed)
+		Expect(realStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("default", model.NoMesh))).To(Succeed())
+		dp := builders.Dataplane().WithName("dp-1").WithServices("backend").Build()
+		Expect(realStore.Create(context.Background(), dp, core_store.CreateByKey("dp-1", "default"))).To(Succeed())
+
+		// when: GET _rules - BuildBaseMeshContextIfChanged fails on the policy List
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
+			fmt.Sprintf("http://%s/meshes/default/dataplanes/dp-1/_rules", apiServerWithErr.Address()), http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		resp, err := http.DefaultClient.Do(req)
+
+		// then: a clean error response, not a panic that drops the connection
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+	})
+
+	It("should return 400 when a policy carries a non-system policy-role label", func() {
+		// given
+		apiServer, store, stop := createServer(false, false)
+		defer stop()
+		createMesh(store)
+
+		// when: PUT a MeshTrafficPermission with a non-system kuma.io/policy-role
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-role",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+				Labels: map[string]string{
+					mesh_proto.PolicyRoleLabel: string(mesh_proto.WorkloadOwnerPolicyRole),
+				},
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-role", res)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 	})
 })

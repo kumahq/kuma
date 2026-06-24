@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func DefaultTimeout() *mesh_proto.Timeout_Conf {

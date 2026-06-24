@@ -14,9 +14,9 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/bakito/go-log-logr-adapter/adapter"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/httpclient"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 )
 
 const (

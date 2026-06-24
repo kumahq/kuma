@@ -3,9 +3,9 @@ package tokens
 import (
 	"time"
 
-	"github.com/kumahq/kuma/v2/pkg/tokens"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/server/types"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	"github.com/kumahq/kuma/v3/pkg/tokens"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/server/types"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 func NewZoneTokenClient(client util_http.Client) ZoneTokenClient {

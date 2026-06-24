@@ -3,7 +3,7 @@ package mesh
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 type Status string

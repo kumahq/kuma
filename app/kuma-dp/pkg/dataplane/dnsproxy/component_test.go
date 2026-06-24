@@ -15,8 +15,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus "github.com/prometheus/client_model/go"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/dnsproxy"
-	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/dnsproxy"
+	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
 var _ = Describe("components", func() {

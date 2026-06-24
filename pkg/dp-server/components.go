@@ -1,8 +1,8 @@
 package dp_server
 
 import (
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 )
 
 func SetupServer(rt runtime.Runtime) error {

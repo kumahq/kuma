@@ -9,10 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/api/openapi/types"
-	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 type PolicyInspectClient interface {

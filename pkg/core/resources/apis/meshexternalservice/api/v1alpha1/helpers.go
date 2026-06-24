@@ -3,13 +3,13 @@ package v1alpha1
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/vip"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/sni"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/vip"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/sni"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 )
 
 func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {

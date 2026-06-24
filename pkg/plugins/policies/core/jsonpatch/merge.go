@@ -8,8 +8,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var patchApplyOptions = &jsonpatch.ApplyOptions{

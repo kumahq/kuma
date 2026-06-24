@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/diagnostics"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	"github.com/kumahq/kuma/v3/pkg/diagnostics"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var _ = Describe("Logging handlers", func() {

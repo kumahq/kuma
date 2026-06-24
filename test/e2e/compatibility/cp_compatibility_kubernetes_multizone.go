@@ -12,9 +12,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 )
 
 // Ensure that the upstream Kuma help repository is configured
@@ -49,6 +49,7 @@ func CpCompatibilityMultizoneKubernetes() {
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 		E2EDeferCleanup(func() {
+			ControlPlaneAssertions(globalCluster)
 			Expect(globalCluster.DeleteKuma()).To(Succeed())
 			Expect(globalCluster.DismissCluster()).To(Succeed())
 		})
@@ -63,6 +64,7 @@ func CpCompatibilityMultizoneKubernetes() {
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 		E2EDeferCleanup(func() {
+			ControlPlaneAssertions(zoneCluster)
 			Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 			Expect(zoneCluster.DeleteKuma()).To(Succeed())
 			Expect(zoneCluster.DismissCluster()).To(Succeed())

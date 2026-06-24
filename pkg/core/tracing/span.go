@@ -3,7 +3,7 @@ package tracing
 import (
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 )
 
 var log = core.Log.WithName("tracing")
