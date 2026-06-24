@@ -13,14 +13,14 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/multizone"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	kds_middleware "github.com/kumahq/kuma/v2/pkg/kds/middleware"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	kds_middleware "github.com/kumahq/kuma/v3/pkg/kds/middleware"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 const (

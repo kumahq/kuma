@@ -12,14 +12,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
-	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 type testPolicyInspectClient struct {

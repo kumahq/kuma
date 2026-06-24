@@ -4,10 +4,10 @@ package v1alpha1
 import (
 	"fmt"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 )
 
 // MeshMultiZoneService provides global load balancing and service discovery across multiple zones in a multi-zone mesh deployment. It aggregates MeshServices from different zones by label selectors, creating a unified service endpoint with automatic VIP assignment and hostname generation for cross-zone communication and failover.

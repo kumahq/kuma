@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 )
 
 func newUninstallTransparentProxy() *cobra.Command {

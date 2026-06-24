@@ -6,14 +6,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	"github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/dynconf"
-	generator_core "github.com/kumahq/kuma/v2/pkg/xds/generator/core"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	"github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/dynconf"
+	generator_core "github.com/kumahq/kuma/v3/pkg/xds/generator/core"
 )
 
 func NewGenerator() generator_core.ResourceGenerator {

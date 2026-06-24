@@ -3,7 +3,7 @@ package version
 import (
 	"github.com/spf13/cobra"
 
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 func NewVersionCmd() *cobra.Command {

@@ -6,11 +6,11 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 type UpstreamTLSContextConfigure struct {

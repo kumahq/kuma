@@ -12,11 +12,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	core_config "github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/firewalld"
+	core_config "github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/firewalld"
 )
 
 const (

@@ -6,9 +6,9 @@ import (
 
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/sni"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 )
 
 func (t *MeshExternalServiceResource) Deprecations() []string {
