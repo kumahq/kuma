@@ -64,20 +64,6 @@
     {
       "customType": "regex",
       "description": [
-        " Keep the kuma3-preflight release that the e2e v3-readiness nightly downloads",
-        " up to date. The hint sits above the version assignment, e.g.:",
-        " # renovate[github-releases]: depName=Kong/kong-mesh-v3-readiness"
-      ],
-      "managerFilePatterns": ["/^\\.github/workflows/e2e-v3-readiness\\.yml$/"],
-      "matchStrings": [
-        "# renovate\\[(?<datasource>[0-9a-z-]+)\\]: depName=(?<depName>\\S+)\\s+\\w+:\\s*(?<currentValue>\\S+)"
-      ],
-      "datasourceTemplate": "{{{datasource}}}",
-      "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
-      "description": [
         " Parse version pins in Makefiles and .mk files using an inline Renovate hint placed above",
         " a VERSION-like variable assignment. The following line must assign a version variable,",
         " e.g.: 'OAPI_TOOL_VERSION ?= v1.1.7@sha256:…' or 'export FOO_VERSION := \"1.2.3\"'",

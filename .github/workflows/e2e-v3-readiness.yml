@@ -7,11 +7,6 @@
 #
 # kuma3-preflight is downloaded (checksum-verified) from the public GoReleaser release
 # in github.com/Kong/kong-mesh-v3-readiness — not vendored.
-#
-# kong-mesh consumes this by COPY, not call: its tools/dev/sync_ci.sh syncs it to
-# `kuma-e2e-v3-readiness.yaml`, patching in a kuma checkout (its e2e make includes
-# $(KUMA_DIR)/mk/...) and Kong runners. Keep `runs-on: ubuntu-latest` literal so the
-# sync's use_custom_runners can swap it.
 
 name: E2E v3 readiness
 
@@ -24,9 +19,9 @@ permissions:
   contents: read
 
 env:
-  # kuma3-preflight release to download; kept current by Renovate (see renovate.json).
-  # renovate[github-releases]: depName=Kong/kong-mesh-v3-readiness
-  TOOL_VERSION: v0.1.0
+  # kuma3-preflight release to download; kept current by Renovate.
+  # renovate: datasource=github-releases depName=Kong/kong-mesh-v3-readiness versioning=semver
+  TOOL_VERSION: "v0.1.0"
 
 jobs:
   audit:
@@ -39,17 +34,15 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Download kuma3-preflight (checksum-verified)
+        id: preflight
+        uses: ./.github/actions/download-kuma3-preflight
+        with:
+          version: ${{ env.TOOL_VERSION }}
+
+      - name: Configure capture env
         run: |
-          set -euo pipefail
-          base="https://github.com/Kong/kong-mesh-v3-readiness/releases/download/${TOOL_VERSION}"
-          asset="kuma3-preflight_linux_amd64.tar.gz"
-          mkdir -p "${RUNNER_TEMP}/bin"
-          curl -fsSL "${base}/${asset}" -o "${RUNNER_TEMP}/${asset}"
-          curl -fsSL "${base}/checksums.txt" -o "${RUNNER_TEMP}/checksums.txt"
-          ( cd "${RUNNER_TEMP}" && grep " ${asset}\$" checksums.txt | sha256sum -c - )
-          tar -xzf "${RUNNER_TEMP}/${asset}" -C "${RUNNER_TEMP}/bin" kuma3-preflight
           {
-            echo "KUMA3_PREFLIGHT_BIN=${RUNNER_TEMP}/bin/kuma3-preflight"
+            echo "KUMA3_PREFLIGHT_BIN=${{ steps.preflight.outputs.bin }}"
             echo "KUMA3_PREFLIGHT_DIR=${RUNNER_TEMP}/preflight-${{ matrix.env }}"
           } >> "$GITHUB_ENV"
 
@@ -81,15 +74,10 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Download kuma3-preflight (checksum-verified)
-        run: |
-          set -euo pipefail
-          base="https://github.com/Kong/kong-mesh-v3-readiness/releases/download/${TOOL_VERSION}"
-          asset="kuma3-preflight_linux_amd64.tar.gz"
-          mkdir -p "${RUNNER_TEMP}/bin"
-          curl -fsSL "${base}/${asset}" -o "${RUNNER_TEMP}/${asset}"
-          curl -fsSL "${base}/checksums.txt" -o "${RUNNER_TEMP}/checksums.txt"
-          ( cd "${RUNNER_TEMP}" && grep " ${asset}\$" checksums.txt | sha256sum -c - )
-          tar -xzf "${RUNNER_TEMP}/${asset}" -C "${RUNNER_TEMP}/bin" kuma3-preflight
+        id: preflight
+        uses: ./.github/actions/download-kuma3-preflight
+        with:
+          version: ${{ env.TOOL_VERSION }}
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -97,9 +85,11 @@ jobs:
           path: ${{ runner.temp }}/snapshots
 
       - name: Classify + write report to the job summary
+        env:
+          PREFLIGHT_BIN: ${{ steps.preflight.outputs.bin }}
         run: |
           set -euo pipefail
-          bin="${RUNNER_TEMP}/bin/kuma3-preflight"
+          bin="${PREFLIGHT_BIN}"
           mkdir -p report
           echo "# Kuma 3.0 e2e readiness — $(date -u +%Y-%m-%d)" >> "$GITHUB_STEP_SUMMARY"
           echo >> "$GITHUB_STEP_SUMMARY"
