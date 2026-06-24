@@ -42,7 +42,7 @@ func MigrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 			if err != nil {
 				return 0, err
 			}
-			if cfg.SkipMigrationCheck {
+			if cfg.SkipMigrationCheck && dbVer > appVer {
 				migrateLog.Info("DB is at a newer migration version than the binary; skipping migration because SkipMigrationCheck is enabled", "dbVersion", dbVer, "binaryVersion", appVer)
 				return dbVer, core_plugins.AlreadyMigrated
 			}

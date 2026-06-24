@@ -61,6 +61,7 @@ var _ = Describe("Migrate", func() {
 
 		sql, err := common_postgres.ConnectToDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
+		defer sql.Close()
 		res, err := sql.Exec("UPDATE schema_migrations SET version = 9999999999")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res.RowsAffected()).To(Equal(int64(1)))
