@@ -11,11 +11,14 @@ import (
 	"github.com/pkg/errors"
 
 	postgres_cfg "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v3/pkg/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	common_postgres "github.com/kumahq/kuma/v3/pkg/plugins/common/postgres"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/migrations"
 	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
+
+var migrateLog = core.Log.WithName("postgres-migrate")
 
 func MigrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, error) {
 	m, err := newMigrate(cfg)
@@ -38,6 +41,10 @@ func MigrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 			appVer, err := newestMigration()
 			if err != nil {
 				return 0, err
+			}
+			if cfg.TolerateNewerDBVersions && dbVer > appVer {
+				migrateLog.Info("DB is at a newer migration version than the binary; tolerating because TolerateNewerDBVersions is enabled", "dbVersion", dbVer, "binaryVersion", appVer)
+				return dbVer, core_plugins.AlreadyMigrated
 			}
 			return 0, errors.Errorf("DB is migrated to newer version than Kuma. DB migration version %d. Kuma migration version %d. Run newer version of Kuma", dbVer, appVer)
 		}
@@ -75,7 +82,7 @@ func IsDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	dbVer, _, err := m.Version()
+	dbVer, dirty, err := m.Version()
 	if err != nil {
 		if err == migrate.ErrNilVersion {
 			return false, nil
@@ -88,6 +95,12 @@ func IsDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 		return false, err
 	}
 
+	if cfg.TolerateNewerDBVersions {
+		if dirty {
+			return false, errors.Errorf("database schema_migrations row is dirty at version %d (a migration is in progress or failed); refusing to boot even with TolerateNewerDBVersions enabled", dbVer)
+		}
+		return dbVer >= fileVer, nil
+	}
 	return dbVer == fileVer, nil
 }
 
