@@ -13,20 +13,16 @@ import (
 	util_cache "github.com/kumahq/kuma/v3/pkg/util/cache"
 )
 
-// defaultPolicyMatchingCacheSize caps the number of cached entries. Each entry
-// stores one TypedMatchingPolicies per (policy-type × dataplane) pair, so this
-// bounds worst-case memory to O(policyTypes × dataplanes).
+// bounds worst-case memory to O(policyTypes × dataplanes)
 const defaultPolicyMatchingCacheSize = 10_000
 
 var _ core_plugins.PolicyMatchingCacheAccessor = &PolicyMatchingCache{}
 
-// PolicyMatchingCache is a bounded LRU cache for TypedMatchingPolicies results.
-// It is safe for concurrent use.
+// PolicyMatchingCache is a bounded LRU cache for TypedMatchingPolicies; safe for concurrent use.
 type PolicyMatchingCache struct {
 	c cache.Cache
 }
 
-// NewPolicyMatchingCache creates a PolicyMatchingCache wired to the given Prometheus metric.
 func NewPolicyMatchingCache(metric *prometheus.CounterVec) *PolicyMatchingCache {
 	c := cache.New(
 		cache.WithMaximumSize(defaultPolicyMatchingCacheSize),
@@ -47,10 +43,6 @@ func (p *PolicyMatchingCache) Put(key string, value core_xds.TypedMatchingPolici
 	p.c.Put(key, value)
 }
 
-// BuildCacheKey returns a compact cache key for a MatchedPolicies call.
-// The key encodes: resource type, shadow flag, dataplane identity, and the
-// policy-matching hash (which covers all matching-relevant mesh resources
-// but excludes the Dataplane roster).
 func BuildCacheKey(rType string, includeShadow bool, dpp *core_mesh.DataplaneResource, policyMatchingHash string) string {
 	h := fnv.New128a()
 	_, _ = h.Write([]byte(rType))

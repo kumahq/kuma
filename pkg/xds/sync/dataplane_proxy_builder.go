@@ -36,8 +36,7 @@ type DataplaneProxyBuilder struct {
 	APIVersion        core_xds.APIVersion
 	InternalAddresses []core_xds.InternalAddress
 	IncludeShadow     bool
-	// policyMatchingCache is the shared LRU cache for MatchedPolicies results.
-	// Nil disables caching (inspect, test, egress paths).
+	// nil disables caching (inspect, test, egress paths)
 	policyMatchingCache core_plugins.PolicyMatchingCacheAccessor
 }
 

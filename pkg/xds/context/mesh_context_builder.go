@@ -142,7 +142,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		return latestMeshCtx, nil
 	}
 
-	// Compute policy-matching hash after the overall hash (managedTypes is already sorted by m.hash).
+	// managedTypes already sorted by m.hash above
 	policyMatchingHash := base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
 
 	dataplanes := resources.Dataplanes().Items
@@ -600,10 +600,8 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	return hasher.Sum(nil)
 }
 
-// policyMatchingHashDenySet contains resource types that are NOT relevant for policy matching:
-// the Dataplane roster and all insight types. Adding a new type to the deny set requires
-// verifying it is not read by DppSelectedByPolicy or BuildToRules. Omitting a deny-set member
-// is safe (causes spurious cache misses, never stale xDS); an allow-list would fail dangerous.
+// policyMatchingHashDenySet: types irrelevant for policy matching (roster, insights).
+// Omitting a member is safe (spurious cache misses); including a wrong one causes stale xDS.
 var policyMatchingHashDenySet = map[core_model.ResourceType]struct{}{
 	core_mesh.DataplaneType:          {},
 	core_mesh.DataplaneInsightType:   {},
@@ -615,17 +613,12 @@ var policyMatchingHashDenySet = map[core_model.ResourceType]struct{}{
 	core_mesh.MeshInsightType:        {},
 }
 
-// computePolicyMatchingHash returns a hash over matching-relevant resources only. It excludes
-// the Dataplane roster so the hash stays stable across DP-registration waves. Called after
-// m.hash(), so managedTypes is already sorted.
 func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(globalContext.hash)
 	_, _ = hasher.Write(baseMeshContext.hash)
 	for _, resType := range managedTypes {
 		if _, denied := policyMatchingHashDenySet[resType]; !denied {
-			// Fail-safe: include any managed type not in the deny set in case a future
-			// matching-relevant type is added to the type set.
 			_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
 		}
 	}
