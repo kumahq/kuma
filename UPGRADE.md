@@ -6,7 +6,7 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-## Upgrade to `2.13.7`, `2.12.11`, `2.11.14`, `2.9.16`, `2.7.26`
+## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
 
@@ -53,6 +53,22 @@ A new explicit flag preserves the previous insecure behavior:
 - `kumactl config control-planes add --skip-verify`
 
 Do not use this in production.
+
+## Upgrade to `2.12.11`
+
+See [Insecure TLS fallback removed when no CA cert is provided](#insecure-tls-fallback-removed-when-no-ca-cert-is-provided).
+
+## Upgrade to `2.11.14`
+
+See [Insecure TLS fallback removed when no CA cert is provided](#insecure-tls-fallback-removed-when-no-ca-cert-is-provided).
+
+## Upgrade to `2.9.16`
+
+See [Insecure TLS fallback removed when no CA cert is provided](#insecure-tls-fallback-removed-when-no-ca-cert-is-provided).
+
+## Upgrade to `2.7.26`
+
+See [Insecure TLS fallback removed when no CA cert is provided](#insecure-tls-fallback-removed-when-no-ca-cert-is-provided).
 
 ## Upgrade to `2.14.x`
 
