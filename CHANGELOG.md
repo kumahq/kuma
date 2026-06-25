@@ -234,6 +234,14 @@
 * test(meshservice): universal e2e for label propagation [#16573](https://github.com/kumahq/kuma/pull/16573) @Automaat
 
 
+## 2.11.16
+> Released on 2026/06/23
+
+* chore(deps): bump envoy from 1.35.11 to 1.35.12 [#16934](https://github.com/kumahq/kuma/pull/16934) @kumahq
+* chore(deps): bump go version from 1.26.3 to 1.26.4 [#16880](https://github.com/kumahq/kuma/pull/16880) @renovate
+* fix(policy): match ignored inbounds for Dataplane [#16914](https://github.com/kumahq/kuma/pull/16914) @slonka
+
+
 ## 2.13.8
 > Released on 2026/06/05
 
@@ -738,7 +746,7 @@
 * feat(api): introduce extension of api validators [#15045](https://github.com/kumahq/kuma/pull/15045) @lukidzi
 * feat(api-server): add shortName field to /_resources endpoint response [#14506](https://github.com/kumahq/kuma/pull/14506) @copilot-swe-agent
 * feat(config): disable virtual probes by default [#15113](https://github.com/kumahq/kuma/pull/15113) @Automaat
-* feat(deps): migrate module path to github.com/kumahq/kuma/v2 [#14886](https://github.com/kumahq/kuma/pull/14886) @bartsmykla
+* feat(deps): migrate module path to github.com/kumahq/kuma/v3 [#14886](https://github.com/kumahq/kuma/pull/14886) @bartsmykla
 * feat(helm): enable RuntimeDefault seccomp for control plane pods [#14666](https://github.com/kumahq/kuma/pull/14666) @bartsmykla
 * feat(helm): support cert-manager CA injection for webhook configurations [#15035](https://github.com/kumahq/kuma/pull/15035) @slonka
 * feat(kuma-cp): add disallowMultipleMeshesPerNamespace to block multi-mesh namespaces [#15102](https://github.com/kumahq/kuma/pull/15102) @slonka
@@ -796,7 +804,7 @@
 
 * chore(deps): bump `go` to `1.24.9` [#14822](https://github.com/kumahq/kuma/pull/14822) @bartsmykla
 * chore(deps): bump golang.org/x/crypto from 0.40.0 to 0.43.0 [#14993](https://github.com/kumahq/kuma/pull/14993) @renovate
-* feat(deps)!: migrate module path to github.com/kumahq/kuma/v2 [#15010](https://github.com/kumahq/kuma/pull/15010) @bartsmykla
+* feat(deps)!: migrate module path to github.com/kumahq/kuma/v3 [#15010](https://github.com/kumahq/kuma/pull/15010) @bartsmykla
 * fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (backport of #14875) [#14879](https://github.com/kumahq/kuma/pull/14879) @kumahq
 * fix(meshpassthrough): sort IP address to provide predictable order (backport of #14857) [#14864](https://github.com/kumahq/kuma/pull/14864) @kumahq
 * fix(xds): set keepalive configuration for dpp to cpp connection (backport of #14912) [#14925](https://github.com/kumahq/kuma/pull/14925) @kumahq
@@ -809,7 +817,7 @@
 * chore(deps): bump `go` to `1.24.9` [#14821](https://github.com/kumahq/kuma/pull/14821) [#14825](https://github.com/kumahq/kuma/pull/14825) @bartsmykla
 * chore(deps): bump github.com/containerd/containerd from 1.7.27 to 1.7.29 [#14930](https://github.com/kumahq/kuma/pull/14930) @renovate
 * chore(deps): bump golang.org/x/crypto from 0.40.0 to 0.43.0 [#14996](https://github.com/kumahq/kuma/pull/14996) @renovate
-* feat(deps)!: migrate module path to github.com/kumahq/kuma/v2 [#15032](https://github.com/kumahq/kuma/pull/15032) @bartsmykla
+* feat(deps)!: migrate module path to github.com/kumahq/kuma/v3 [#15032](https://github.com/kumahq/kuma/pull/15032) @bartsmykla
 * fix(xds): set keepalive configuration for dpp to cpp connection (backport of #14912) [#14924](https://github.com/kumahq/kuma/pull/14924) @kumahq
 * perf(rules): optimize SubsetIter to enumerate only correct subsets (backport of #14862) [#14868](https://github.com/kumahq/kuma/pull/14868) @kumahq
 
@@ -817,7 +825,7 @@
 ## 2.12.4
 > Released on 2025/11/14
 
-* feat(deps)!: migrate module path to github.com/kumahq/kuma/v2 [#14968](https://github.com/kumahq/kuma/pull/14968) @bartsmykla
+* feat(deps)!: migrate module path to github.com/kumahq/kuma/v3 [#14968](https://github.com/kumahq/kuma/pull/14968) @bartsmykla
 * feat(mise): move golang dependency to mise (backport of #14884) [#14887](https://github.com/kumahq/kuma/pull/14887) @kumahq
 * fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (backport of #14875) [#14880](https://github.com/kumahq/kuma/pull/14880) @kumahq
 * fix(meshpassthrough): sort IP address to provide predictable order (backport of #14857) [#14863](https://github.com/kumahq/kuma/pull/14863) @kumahq
@@ -829,7 +837,7 @@
 
 * chore(deps): bump `go` to `1.24.9` [#14823](https://github.com/kumahq/kuma/pull/14823) @bartsmykla
 * chore(deps): bump golang.org/x/crypto from 0.40.0 to 0.43.0 [#14994](https://github.com/kumahq/kuma/pull/14994) @renovate
-* feat(deps)!: migrate module path to github.com/kumahq/kuma/v2 [#14979](https://github.com/kumahq/kuma/pull/14979) @bartsmykla
+* feat(deps)!: migrate module path to github.com/kumahq/kuma/v3 [#14979](https://github.com/kumahq/kuma/pull/14979) @bartsmykla
 * feat(mise): move golang dependency to mise (backport of #14884) [#14888](https://github.com/kumahq/kuma/pull/14888) @kumahq
 * fix(MeshCircuitBreaker): properly configure inbounds with servicePort set (backport of #14875) [#14881](https://github.com/kumahq/kuma/pull/14881) @kumahq
 * fix(meshpassthrough): sort IP address to provide predictable order (backport of #14857) [#14865](https://github.com/kumahq/kuma/pull/14865) @kumahq

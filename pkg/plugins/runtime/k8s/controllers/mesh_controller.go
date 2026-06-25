@@ -7,17 +7,17 @@ import (
 	"github.com/pkg/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	core_managers "github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	defaults_mesh "github.com/kumahq/kuma/v2/pkg/defaults/mesh"
-	common_k8s "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	core_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	defaults_mesh "github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	common_k8s "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 // MeshReconciler creates default resources for created Mesh and ensures that CA was created

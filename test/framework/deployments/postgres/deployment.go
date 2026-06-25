@@ -3,7 +3,7 @@ package postgres
 import (
 	"errors"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
+	. "github.com/kumahq/kuma/v3/test/framework"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 	DefaultPostgresDBName   = "kuma"
 	DefaultPreloadImages    = true
 
-	PostgresImage = "postgres:latest@sha256:8ff36f3c66371cba71d20ceedccfc3de9669a68737607888c4ef0af93abe8e39"
+	PostgresImage = "postgres:latest@sha256:29ee7bb30d804447dc9a91fd0d74322ae1dc3a4072cc6346f70a5ed6e783b565"
 
 	PostgresEnvVarUser     = "POSTGRES_USER"
 	PostgresEnvVarPassword = "POSTGRES_PASSWORD" // #nosec G101 -- Env var not actual password

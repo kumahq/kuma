@@ -9,11 +9,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func AppDeploymentWithCniAndTaintController() {
@@ -61,6 +61,7 @@ metadata:
 	})
 
 	E2EAfterEach(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())

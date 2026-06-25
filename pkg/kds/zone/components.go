@@ -3,13 +3,13 @@ package zone
 import (
 	"net/url"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	kds_server "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
+	kds_sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
 )
 
 var (

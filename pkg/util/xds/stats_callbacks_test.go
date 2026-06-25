@@ -13,11 +13,11 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 )
 
 var _ = Describe("Stats callbacks", func() {

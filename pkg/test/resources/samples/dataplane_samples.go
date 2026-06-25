@@ -1,9 +1,9 @@
 package samples
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
 func DataplaneBackendBuilder() *builders.DataplaneBuilder {

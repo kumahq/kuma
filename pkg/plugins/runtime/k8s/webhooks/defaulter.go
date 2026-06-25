@@ -9,12 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 func DefaultingWebhookFor(scheme *runtime.Scheme, converter k8s_common.Converter, checker ResourceAdmissionChecker) *admission.Webhook {

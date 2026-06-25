@@ -19,12 +19,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sethvargo/go-retry"
 
-	config "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/common/postgres"
-	pgx_config "github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
+	config "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/common/postgres"
+	pgx_config "github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
 )
 
 type pgxResourceStore struct {

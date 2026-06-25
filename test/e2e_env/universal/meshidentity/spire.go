@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/spire"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/spire"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Spire() {

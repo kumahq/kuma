@@ -8,12 +8,12 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	workload_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/k8s/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	workload_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/k8s/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("CachingConverter", func() {

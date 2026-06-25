@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/httpclient"
 )
 
 var waitLog = dataplaneLog.WithName("wait")

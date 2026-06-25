@@ -11,14 +11,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 func ResourceValidation() {

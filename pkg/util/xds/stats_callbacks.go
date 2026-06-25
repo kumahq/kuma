@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 )
 
 var statsLogger = core.Log.WithName("stats-callbacks")

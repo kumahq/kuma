@@ -5,14 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 )
 
 func NewDataplaneManager(

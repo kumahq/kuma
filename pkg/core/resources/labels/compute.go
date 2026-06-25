@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // Namespace type allows to avoid carrying both 'namespace' and 'systemNamespace' around the code base

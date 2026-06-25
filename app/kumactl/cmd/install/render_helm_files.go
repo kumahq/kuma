@@ -20,7 +20,7 @@ import (
 	"helm.sh/helm/v4/pkg/engine"
 	"k8s.io/client-go/rest"
 
-	"github.com/kumahq/kuma/v2/pkg/util/data"
+	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
 func labelRegex(label string) *regexp.Regexp {

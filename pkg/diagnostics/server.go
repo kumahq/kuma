@@ -15,13 +15,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	diagnostics_config "github.com/kumahq/kuma/v2/pkg/config/diagnostics"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	kuma_srv "github.com/kumahq/kuma/v2/pkg/util/http/server"
+	diagnostics_config "github.com/kumahq/kuma/v3/pkg/config/diagnostics"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
 )
 
 var diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")

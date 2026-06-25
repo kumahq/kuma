@@ -18,8 +18,8 @@ import (
 	"helm.sh/helm/v4/pkg/engine"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/deployments"
-	"github.com/kumahq/kuma/v2/pkg/util/data"
+	"github.com/kumahq/kuma/v3/deployments"
+	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
 // hookStripLabels strips Helm-managed labels from rendered content, matching the

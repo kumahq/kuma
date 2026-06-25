@@ -3,9 +3,9 @@ package ca
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/tls"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/tls"
 )
 
 type Cert = []byte

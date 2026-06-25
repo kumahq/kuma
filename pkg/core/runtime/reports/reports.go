@@ -14,17 +14,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/sha256"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/sha256"
 )
 
 const (

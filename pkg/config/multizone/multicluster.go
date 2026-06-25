@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 )
 
 var _ config.Config = &MultizoneConfig{}

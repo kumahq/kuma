@@ -10,10 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
 type ResourceAdmissionChecker struct {

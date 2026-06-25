@@ -5,9 +5,9 @@ import (
 
 	kube_core "k8s.io/api/core/v1"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	util_k8s "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 const (

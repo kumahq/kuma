@@ -12,9 +12,9 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger logr.Logger) (string, error) {

@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 )
 
 // RunKubectlWithStdinAndGetOutputE runs kubectl with the given args, piping

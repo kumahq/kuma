@@ -11,14 +11,14 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/api"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/api"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Sync() {

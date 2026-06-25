@@ -14,12 +14,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/intercp/catalog"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func ZoneAndGlobalWithHelmChart() {
@@ -82,6 +82,8 @@ interCp:
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(c1)
+		ControlPlaneAssertions(c2)
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(c1.DeleteKuma()).To(Succeed())
 		Expect(c2.DeleteKuma()).To(Succeed())

@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("Metadata()", func() {

@@ -8,11 +8,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	policy "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	policy "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshExternalService represents external services (outside the mesh) that mesh services can communicate with securely. It enables mesh services to reach external APIs, databases, or third-party services by defining endpoints, ports, protocols, and optional TLS configuration for secure outbound connections with hostname-based routing support.

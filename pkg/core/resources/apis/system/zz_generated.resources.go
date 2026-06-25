@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 )
 
 const (

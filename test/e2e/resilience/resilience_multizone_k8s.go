@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func ResilienceMultizoneK8s() {
@@ -56,6 +56,8 @@ func ResilienceMultizoneK8s() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zone1)
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())

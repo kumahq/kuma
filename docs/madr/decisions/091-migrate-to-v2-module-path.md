@@ -36,7 +36,7 @@ module github.com/Kong/kong-mesh
 1. **Fixes Existing Breakage**: Current state already violates Go module semantics (issue opened 2021)
 2. **Combined with v-prefix**: We're already changing tag format (`2.12.4` → `v2.12.4`)
 3. **One-Time Pain**: Delaying spreads migration across more releases
-4. **Clear Migration**: Simple find-replace: `github.com/kumahq/kuma/` → `github.com/kumahq/kuma/v2/`
+4. **Clear Migration**: Simple find-replace: `github.com/kumahq/kuma/` → `github.com/kumahq/kuma/v3/`
 
 #### Arguments AGAINST Patch Releases
 
@@ -71,7 +71,7 @@ For affected users, migration is a simple find-replace operation:
 ```bash
 # Update imports
 find . -name "*.go" -type f -exec sed -i.bak \
-  's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v2/|g' {} +
+  's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v3/|g' {} +
 go mod tidy
 ```
 
@@ -116,20 +116,20 @@ Update module path to `/v2` on all active branches in-place.
 
 ```go
 // go.mod
-module github.com/kumahq/kuma/v2
+module github.com/kumahq/kuma/v3
 
 // All imports
-import "github.com/kumahq/kuma/v2/pkg/..."
+import "github.com/kumahq/kuma/v3/pkg/..."
 ```
 
 **Result**:
 
 ```go
 // Tagged releases
-github.com/kumahq/kuma/v2 v2.12.4
+github.com/kumahq/kuma/v3 v2.12.4
 
 // Untagged commits
-github.com/kumahq/kuma/v2 v2.0.0-20251103153646-fc66bbfced92
+github.com/kumahq/kuma/v3 v2.0.0-20251103153646-fc66bbfced92
 ```
 
 **Pros**:
@@ -149,7 +149,7 @@ github.com/kumahq/kuma/v2 v2.0.0-20251103153646-fc66bbfced92
 
 ```bash
 find . -name "*.go" -type f -exec sed -i.bak \
-  's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v2/|g' {} +
+  's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v3/|g' {} +
 go mod tidy
 ```
 
@@ -196,7 +196,7 @@ Kong Mesh must migrate to `/v2` module path as part of this effort.
 
 Kong Mesh depends on Kuma, so migration must happen in phases:
 
-1. **Phase 1** (before Kuma migration): Update `mk/upgrade.mk` to use `github.com/kumahq/kuma/v2@`
+1. **Phase 1** (before Kuma migration): Update `mk/upgrade.mk` to use `github.com/kumahq/kuma/v3@`
 2. **Phase 2** (after Kuma migration): Migrate Kong Mesh module path to `github.com/Kong/kong-mesh/v2`
 3. **Phase 3** (ongoing): Handle automatic Kuma upgrade PRs with import fixes
 
@@ -233,7 +233,7 @@ Adopt Major Branch Approach with `/v2` path across all 5 active branches for bot
 
 ### Phase 1: Kong Mesh Preparation
 
-Update `mk/upgrade.mk` in Kong Mesh to use `github.com/kumahq/kuma/v2@`. Must complete before Phase 2.
+Update `mk/upgrade.mk` in Kong Mesh to use `github.com/kumahq/kuma/v3@`. Must complete before Phase 2.
 
 ### Phase 2: Kuma Migration
 
@@ -250,31 +250,31 @@ For each branch (`master`, `release-2.12`, `release-2.11`, `release-2.10`, `rele
 **Step 1: Update go.mod module declaration**
 
 ```sh
-sed -i.bak 's|^module github.com/kumahq/kuma$|module github.com/kumahq/kuma/v2|' go.mod
+sed -i.bak 's|^module github.com/kumahq/kuma$|module github.com/kumahq/kuma/v3|' go.mod
 ```
 
 **Step 2: Update all Go imports**
 
 ```sh
-find . -name '*.go' -type f -not -path './vendor/*' -exec sed -i.bak 's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v2/|g' {} +
+find . -name '*.go' -type f -not -path './vendor/*' -exec sed -i.bak 's|"github.com/kumahq/kuma/|"github.com/kumahq/kuma/v3/|g' {} +
 ```
 
 **Step 3: Update .golangci.yml**
 
 ```sh
-sed -i.bak 's|github.com/kumahq/kuma/|github.com/kumahq/kuma/v2/|g' .golangci.yml
+sed -i.bak 's|github.com/kumahq/kuma/|github.com/kumahq/kuma/v3/|g' .golangci.yml
 ```
 
 **Step 4: Update makefiles**
 
 ```sh
-find mk -name '*.mk' -type f -exec sed -i.bak 's|github.com/kumahq/kuma|github.com/kumahq/kuma/v2|g' {} +
+find mk -name '*.mk' -type f -exec sed -i.bak 's|github.com/kumahq/kuma|github.com/kumahq/kuma/v3|g' {} +
 ```
 
 **Step 5: Update shell scripts**
 
 ```sh
-find tools -name '*.sh' -type f -exec sed -i.bak 's|github.com/kumahq/kuma|github.com/kumahq/kuma/v2|g' {} +
+find tools -name '*.sh' -type f -exec sed -i.bak 's|github.com/kumahq/kuma|github.com/kumahq/kuma/v3|g' {} +
 ```
 
 **Step 6: Update vulnerable dependencies script (use prefix check instead of exact match)**
@@ -286,7 +286,7 @@ sed -i.bak 's#select(.name != "github.com/kumahq/kuma")#select(.name | startswit
 **Step 7: Update .proto files go_package option**
 
 ```sh
-find api pkg/config pkg/plugins test/server/grpc/api -name '*.proto' -type f | xargs sed -i.bak 's|go_package = "github.com/kumahq/kuma/|go_package = "github.com/kumahq/kuma/v2/|g'
+find api pkg/config pkg/plugins test/server/grpc/api -name '*.proto' -type f | xargs sed -i.bak 's|go_package = "github.com/kumahq/kuma/|go_package = "github.com/kumahq/kuma/v3/|g'
 ```
 
 **Step 8: Clean up backup files**
@@ -312,7 +312,7 @@ make clean/tools generate
 **Step 11: Verify module path**
 
 ```sh
-grep '^module github.com/kumahq/kuma/v2$' go.mod
+grep '^module github.com/kumahq/kuma/v3$' go.mod
 ```
 
 **Step 12: Verify no old imports remain**

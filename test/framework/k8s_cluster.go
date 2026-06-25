@@ -32,15 +32,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	resources_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
 )
 
 type K8sNetworkingState struct {

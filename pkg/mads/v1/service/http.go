@@ -10,10 +10,10 @@ import (
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/jsonpb" //nolint:depguard
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
-	rest_error_types "github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
-	mads_v1 "github.com/kumahq/kuma/v2/pkg/mads/v1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
+	rest_error_types "github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
+	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1"
 )
 
 var log = core.Log.WithName("mads.v1.service")

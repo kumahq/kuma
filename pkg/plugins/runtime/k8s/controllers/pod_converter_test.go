@@ -17,16 +17,16 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 )
 
 func Parse[T any](values []string) ([]T, error) {

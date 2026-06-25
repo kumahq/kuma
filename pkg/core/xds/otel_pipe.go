@@ -3,8 +3,8 @@ package xds
 import (
 	"slices"
 
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 const OtelDynconfPath = "/otel"

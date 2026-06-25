@@ -6,15 +6,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/defaults/mesh"
-	policies_defaults "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/defaults"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 )
 
 var _ = Describe("TimeoutConfigurer", func() {

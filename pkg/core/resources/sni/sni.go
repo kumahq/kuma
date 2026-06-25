@@ -6,9 +6,9 @@ import (
 
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 )
 
 const (

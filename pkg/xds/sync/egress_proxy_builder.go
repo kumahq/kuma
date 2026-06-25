@@ -6,17 +6,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/faultinjections"
-	"github.com/kumahq/kuma/v2/pkg/core/permissions"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/ratelimits"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/faultinjections"
+	"github.com/kumahq/kuma/v3/pkg/core/permissions"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/ratelimits"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 type EgressProxyBuilder struct {

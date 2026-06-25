@@ -14,11 +14,11 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 
-	"github.com/kumahq/kuma/v2/pkg/config/tracing"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/config/tracing"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 )
 
 func init() {

@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	. "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 )
 
 type countingDpCallbacks struct {

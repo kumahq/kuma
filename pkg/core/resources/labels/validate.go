@@ -8,8 +8,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 type Violation struct {

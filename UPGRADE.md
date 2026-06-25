@@ -58,6 +58,8 @@ Do not use this in production.
 
 ### Inbound listeners now use SO_REUSEPORT by default
 
+> **Affected versions:** this change is in `2.13.7`+ and all `2.14.x`, not just `2.14`. The rolling-upgrade note below applies any time you upgrade from a version without it (before `2.13.7`) to one with it — including a `2.13.x` upgrade that crosses `2.13.7`.
+
 The data plane now advertises the `feature-reuse-port` capability to the control plane, which causes inbound Envoy listeners to be generated with `enable_reuse_port: true`. This lets each Envoy worker thread own its own listen socket, improving connection distribution under load.
 
 **Note:** `enable_reuse_port` cannot be changed on a running Envoy listener. If a data plane is upgraded and the flag later toggled, the listener will not pick up the change until the data plane restarts.
@@ -550,7 +552,7 @@ We strongly recommend migrating to Application Probe Proxy, which is the support
 
 **Breaking Change for Library Users**
 
-If you use Kuma as a Go library or have custom extensions, the module path has changed from `github.com/kumahq/kuma` to `github.com/kumahq/kuma/v2`.
+If you use Kuma as a Go library or have custom extensions, the module path has changed from `github.com/kumahq/kuma` to `github.com/kumahq/kuma/v3`.
 
 **What changed:**
 - Go module path now includes `/v2` suffix following Go modules semantic versioning conventions
@@ -568,8 +570,8 @@ import "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1
 
 **After:**
 ```go
-import "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-import "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+import "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+import "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 ```
 
 Run `go mod tidy` after updating imports.

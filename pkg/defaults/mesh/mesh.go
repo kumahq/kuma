@@ -10,15 +10,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/tokens"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var log = core.Log.WithName("defaults").WithName("mesh")
