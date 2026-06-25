@@ -21,7 +21,7 @@ permissions:
 env:
   # kuma3-preflight release to download; kept current by Renovate.
   # renovate: datasource=github-releases depName=Kong/kong-mesh-v3-readiness versioning=semver
-  TOOL_VERSION: "v0.3.0"
+  TOOL_VERSION: "v0.4.0"
 
 jobs:
   audit:
