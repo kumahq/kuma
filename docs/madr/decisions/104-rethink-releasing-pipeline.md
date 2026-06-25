@@ -63,19 +63,23 @@ on GitHub Actions, the closest templates for us.
 
 - No re-test on the tag: drop unit and e2e. The source is identical to the green
   branch SHA, so re-running them adds nothing. Verify only what the tag build *changes*
-  versus that SHA — the ldflags version. That is covered by the container-structure
-  tests on the freshly-built image (already in `_build_publish.yaml`) plus an assert
-  that the built binary reports the tag version.
-- Build and publish without the e2e gate, so the build starts right after the gate.
-- Hard-enforce a green tagged SHA. The first job asserts the commit has a passing
-  `build-test-distribute` run on its branch (`gh api` check-runs), else it fails.
+  versus that SHA, the ldflags version, via the container-structure tests on the
+  freshly-built image (already in `_build_publish.yaml`) plus an assert that the built
+  binary reports the tag version.
+- `check`'s lint/`make check`/SBOM is redundant for the same reason; only its metadata
+  outputs (`IMAGES`/`REGISTRY`/`VERSION_NAME`) are needed downstream, so keep those.
+- With e2e skipped, `test` completes immediately and `build_publish` publishes right
+  away instead of waiting ~90m.
+- Hard-enforce a green tagged SHA: the tagged commit must have a passing
+  `build-test-distribute` run (full matrix) on its branch, else the release fails. This
+  reuses the existing run, not new machinery.
 
-After this, green-SHA gate ~1m, `build_publish` ~15m, plus provenance/distributions,
-lands at roughly 20–30m versus the current 100–220m.
+After this, `build_publish` ~15m plus provenance/distributions lands at roughly 20–30m
+versus the current 100–220m.
 
 - (+) Answers the issue; no new infra, staging, or version change; removes the flakiest stage.
-- (−) Loses the exact-tag re-test (mitigated by the hard green-SHA gate, RC soak, and
-  rehearsal); still rebuilds on the tag (~15m, fine).
+- (−) Loses the exact-tag re-test (mitigated by the hard green-SHA gate and, for risky
+  releases, RC soak); still rebuilds on the tag (~15m, fine).
 
 ### Option 2 — RC + promotion by digest (build once, ship the tested bits)
 
@@ -100,60 +104,55 @@ one tool (extend `release-tool`), like Envoy and `cmrel`.
 
 Keep re-testing on the tag. This is the problem itself, and the lone outlier among peers.
 
-### Implementation: dedicated release workflow vs. conditionals (orthogonal to Options 1–4)
+### Implementation: reuse the existing skip mechanism vs. a dedicated workflow
 
-Today the release path lives in `build-test-distribute.yaml` via scattered
-`ref_type=='tag'` / `FULL_MATRIX` / `ALLOW_PUSH` conditionals.
+Orthogonal to Options 1–4: how to wire the tag pipeline. Today the release path lives in
+`build-test-distribute.yaml`, which runs on every PR, master, and release-branch push,
+so it builds and publishes a preview on every push.
 
-- A, more conditionals in the shared workflow. (+) smallest diff. (−) more
-  tag-vs-PR branching in an already-conditional workflow; release stays hard to read;
-  shared concurrency/permissions.
-- B, a dedicated `release-publish.yaml` triggered on release tags, reusing
-  `_build_publish.yaml` and `_provenance.yaml`, never `_test.yaml`; drop the tag trigger
-  from `build-test-distribute.yaml`; `release.yaml` keeps changelog/version
-  bookkeeping. The tag filter must match `v?X.Y.Z`, not just `v*`: older branches like
-  `release-2.9` ship *unprefixed* `2.9.x` tags. (+) linear readable release flow; own
-  concurrency/permissions; no duplicated build logic; matches the Envoy/Cilium/Argo
-  pattern; natural host for the rehearsal and a future RC. (−) new file plus a one-time
+- A, stay in the monolith and reuse the existing `ci/skip-test` mechanism. Tags don't
+  skip today: `_test.yaml` keys the skip off PR labels
+  (`github.event.pull_request.labels`), which are empty on a tag push, so the full matrix
+  runs. Add `github.ref_type == 'tag'` next to that condition and e2e/unit skip on the
+  tag; the existing `needs:` chain then lets `build_publish` proceed. (+) roughly a
+  one-condition change, no new workflow; the publish path stays exercised on every push,
+  so it cannot rot between releases. (−) the monolith keeps its tag-vs-PR conditionals.
+- B, a dedicated `release-publish.yaml` on tags, reusing `_build_publish.yaml` and
+  `_provenance.yaml`, never `_test.yaml`. (+) a linear, readable release flow. (−) it
+  runs only on tags, so the publish path is no longer exercised between releases and can
+  break unnoticed (the predictability the monolith gives for free); plus a new file and
   trigger migration.
 
-Picked B.
+Picked A. The monolith already publishes on every push, the strongest guard that the
+release machinery works, and reusing `ci/skip-test` keeps the change tiny. (An earlier
+draft picked B with a scheduled rehearsal to re-create that exercise; maintainer review
+pointed out the monolith already provides it, making both the dedicated workflow and the
+rehearsal unnecessary.)
 
-### Release rehearsal (scheduled dry-run)
+### The publish path is already exercised continuously (no separate rehearsal)
 
-Moving the gate off the tag introduces a risk: the release machinery breaks and we find
-out only at release time. A scheduled rehearsal de-risks it. The
-Makefiles, `version.sh`, `helm.sh`, the workflows, and the tool docs confirm this is
-mostly config, not new tooling:
+Moving the gate off the tag raises a question: does the release machinery still get
+exercised? It does, for free. `build-test-distribute.yaml` runs on every master and
+`release-X.Y` push with `ALLOW_PUSH=true`, so every push already builds, pushes, signs,
+and pulps a `-preview.<hash>` artifact through the same `_build_publish.yaml` the release
+uses (`version.sh` auto-routes preview versions to `notary-internal` and the preview
+Cloudsmith repo). That continuous run is the rehearsal; a separate scheduled one would be
+redundant machinery.
 
-- Already runs on every master and `release-X.Y` push: `version.sh` stamps a
-  `-preview.v<hash>` version that auto-routes to `notary-internal` and preview
-  Cloudsmith, and `ALLOW_PUSH=true` triggers a real build, push, sign, and pulp plus a
-  helm *package* via `_build_publish.yaml`. The rehearsal just decouples this from e2e
-  and schedules it.
-- Provenance: SLSA generators v2.1.0 support `schedule`, `push`, and `workflow_dispatch`
-  (not `pull_request`); the generic one still emits `.intoto.jsonl` when
-  `upload-assets=false` (already wired as `upload-assets: ref_type=='tag'`); containers
-  push to an alt repo. So we loosen the job `if`, no new mode.
-- Sign, SBOM, and scan (Kong actions): `signature_registry` is free-form (already
-  `notary-internal`), OIDC signing is keyless (no tag needed), and
-  `upload-sbom-release-assets` defaults to false. Already off-tag ready.
-- Helm release (`cr` 1.8.1): `cr upload` and `cr index` target any owner/repo via flags
-  (`helm.sh` routes `GH_OWNER`/`GH_REPO`). Point them at a throwaway test charts repo
-  (plus a token).
-
-Excluded by design: a real GitHub Release on `kumahq/kuma`, and prod
-registry/notary/Cloudsmith. Caveats: run on `schedule` or `workflow_dispatch`, and
-provision a test charts repo. This follows the nightly-build pattern (Istio, Knative,
-k8s `krel stage`, `cmrel --mock`). It complements the existing `release.yaml` daily
-`--check`, which verifies the *last* release's prod artifacts.
+The only steps not exercised between releases are the tag-gated ones: SLSA provenance
+upload, the helm chart release to `kumahq/charts`, and the GitHub Release. They are first
+exercised at release time. If that risk ever bites, revisit it with Option 2 rather than
+standing up separate rehearsal machinery.
 
 ### Evolution
 
 This started from the issue's "skip the full suite on the tag." Peer research confirmed
-it is the industry norm; only Linkerd re-tests. The bigger wins, digest promotion and
-the stage/publish split, depend on a version rework and an RC process Kuma lacks. So
-Option 1 ships now, with Options 2 and 3 as follow-up.
+it is the industry norm; only Linkerd re-tests. An early draft added a dedicated
+`release-publish.yaml` plus a scheduled rehearsal; maintainer review showed the monolith
+already publishes a preview on every push, so reusing the existing `ci/skip-test`
+mechanism is enough and the extra machinery was dropped. The bigger wins, digest
+promotion and the stage/publish split, depend on a version rework and an RC process Kuma
+lacks. So Option 1 ships now, with Options 2 and 3 as follow-up.
 
 ## Security implications and review
 
@@ -172,9 +171,10 @@ Option 1 ships now, with Options 2 and 3 as follow-up.
 - Container-structure on the freshly-built image plus a binary-version assert are the
   only tag-specific checks; they verify exactly what the tag build changes (the
   ldflags), nothing the green branch run already covered.
-- The rehearsal continuously validates build, publish, and sign (plus provenance and
-  helm once the gates loosen). Only the real GitHub Release and prod routing stay
-  tag-only.
+- Every push already builds and publishes a preview through the release's own
+  `_build_publish.yaml`, so the publish/sign path is validated continuously; only the
+  tag-gated steps (provenance upload, helm release, GitHub Release) are first exercised
+  at release time.
 
 ## Implications for Kong Mesh
 
@@ -185,36 +185,34 @@ Option 1 ships now, with Options 2 and 3 as follow-up.
 
 ## Decision
 
-Adopt Option 1, as a dedicated release workflow plus a scheduled rehearsal:
+Adopt Option 1, implemented in the existing `build-test-distribute.yaml`. No new
+workflow, no scheduled rehearsal:
 
-- A dedicated `release-publish.yaml` reusing `_build_publish.yaml` and
-  `_provenance.yaml`, never `_test.yaml`; drop the tag trigger from
-  `build-test-distribute.yaml`.
-- No re-test on the tag: drop unit and e2e; keep container-structure on the
-  freshly-built image plus a binary-version assert (the ldflags delta).
-- Hard-enforce a green tagged SHA.
-- A scheduled rehearsal of build, publish, sign, SBOM, scan, and provenance (loosen
-  the tag-only `if`s, keep the preview/internal targets); route the helm release to a
-  test charts repo; run on `schedule` or `workflow_dispatch`.
+- Skip e2e and unit on the tag by extending the existing `ci/skip-test` condition with
+  `github.ref_type == 'tag'`; the existing `needs:` chain then lets `build_publish`
+  publish immediately.
+- Verify only the ldflags delta: container-structure on the freshly-built image plus a
+  binary-version assert. Keep `check`'s metadata computation, skip its redundant
+  validation.
+- Hard-enforce a green tagged SHA, reusing the commit's existing branch run.
+- No separate rehearsal: every push already builds and publishes a preview through the
+  same `_build_publish.yaml`.
 
-This cuts ~100–220m down to ~20–30m with no new infra. Options 2 (RC plus digest
-promotion) and 3 (stage/publish split) are follow-up; RC is deferred; version
-decoupling is undecided.
+This cuts ~100–220m to ~20–30m with roughly a one-condition change. Options 2 (RC plus
+digest promotion, the KEG/k8s model) and 3 (stage/publish split) are follow-up; RC is
+deferred; version decoupling is undecided.
 
 ## Notes
 
-Resolved: no re-test on the tag (drop unit and e2e; keep only container-structure plus
-a binary-version assert, the ldflags delta); the green-SHA gate is hard-enforced; RC
-tags deferred.
+Resolved: no re-test on the tag (drop unit and e2e; keep only container-structure plus a
+binary-version assert, the ldflags delta); implement via the existing `ci/skip-test`
+mechanism in the monolith, not a new workflow; no separate rehearsal (per-push preview
+builds already exercise publish); the green-SHA gate is hard-enforced; RC tags deferred.
 
 Open: version decoupling (undecided; rebuild-on-tag is fine for Option 1); the exact
-green-SHA mechanism and rehearsal cadence/scope (impl detail); provisioning a test
-charts repo and token for the helm rehearsal leg.
+green-SHA enforcement mechanism (impl detail).
 
 Sources. Peer projects: Kubernetes (sig-release handbook, promo-tools), Istio (release-builder,
 daily-release), Envoy (RELEASES.md, `_publish_build.yml`), Cilium
 (`build-images-releases.yaml`), cert-manager (`cmrel`), Knative (`hack/release.sh`),
-Argo CD (`release.yaml`), Linkerd (`release.yml`). Tools: slsa-github-generator
-generic+container READMEs; helm/chart-releaser `cr` flags; Kong/public-shared-actions
-security-actions (`upload-sbom-release-assets` default false, free-form
-`signature_registry`).
+Argo CD (`release.yaml`), Linkerd (`release.yml`).
