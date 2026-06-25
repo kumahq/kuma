@@ -83,11 +83,10 @@ var _ = Describe("PolicyMatchingCache", func() {
 			resources, _ := readPolicies(filepath.Join(testDir, "01.policies.yaml"))
 			rType := meshtrafficpermission_api.MeshTrafficPermissionType
 
-			// uncached
 			uncached, err := matchers.MatchedPolicies(rType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())
 
-			// cached — first call is a miss, computes the result
+			// first call: cache miss, computes result
 			c := matchers.NewPolicyMatchingCache(newMetric())
 			const hash = "mesh-hash-stable"
 			first, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
@@ -95,7 +94,7 @@ var _ = Describe("PolicyMatchingCache", func() {
 			Expect(first.Type).To(Equal(uncached.Type))
 			Expect(first.DataplanePolicies).To(HaveLen(len(uncached.DataplanePolicies)))
 
-			// second call — must be a cache hit; must match first
+			// second call: must be a cache hit
 			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(second.Type).To(Equal(first.Type))
@@ -111,8 +110,6 @@ var _ = Describe("PolicyMatchingCache", func() {
 			_, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, "hash-v1"))
 			Expect(err).ToNot(HaveOccurred())
 
-			// Storing a sentinel under the new key to verify it's a fresh compute, not the prior result.
-			// A miss triggers re-computation; the result should still match the uncached path.
 			result2, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, "hash-v2"))
 			Expect(err).ToNot(HaveOccurred())
 
@@ -127,7 +124,7 @@ var _ = Describe("PolicyMatchingCache", func() {
 			resources, _ := readPolicies(filepath.Join(testDir, "01.policies.yaml"))
 			rType := meshtrafficpermission_api.MeshTrafficPermissionType
 
-			result, err := matchers.MatchedPolicies(rType, dpp, resources) // no WithCache option
+			result, err := matchers.MatchedPolicies(rType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result.Type).To(Equal(rType))
 		})
