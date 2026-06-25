@@ -52,7 +52,7 @@ var _ = Describe("Migrate", func() {
 		Expect(err).To(MatchError(fmt.Sprintf("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version %d. Run newer version of Kuma", dbVersion)))
 	})
 
-	It("should not error when DB has a newer migration version and SkipMigrationCheck is enabled", func() {
+	It("should not error when DB has a newer migration version and TolerateNewerDBVersions is enabled", func() {
 		// given a DB migrated past the binary's newest migration
 		cfg, err := c.Config()
 		Expect(err).ToNot(HaveOccurred())
@@ -67,7 +67,7 @@ var _ = Describe("Migrate", func() {
 		Expect(res.RowsAffected()).To(Equal(int64(1)))
 
 		// when the bypass flag is set
-		cfg.SkipMigrationCheck = true
+		cfg.TolerateNewerDBVersions = true
 		ver, err := postgres.MigrateDb(cfg)
 
 		// then MigrateDb returns AlreadyMigrated with the DB version

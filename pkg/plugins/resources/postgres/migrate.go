@@ -42,8 +42,8 @@ func MigrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 			if err != nil {
 				return 0, err
 			}
-			if cfg.SkipMigrationCheck && dbVer > appVer {
-				migrateLog.Info("DB is at a newer migration version than the binary; skipping migration because SkipMigrationCheck is enabled", "dbVersion", dbVer, "binaryVersion", appVer)
+			if cfg.TolerateNewerDBVersions && dbVer > appVer {
+				migrateLog.Info("DB is at a newer migration version than the binary; tolerating because TolerateNewerDBVersions is enabled", "dbVersion", dbVer, "binaryVersion", appVer)
 				return dbVer, core_plugins.AlreadyMigrated
 			}
 			return 0, errors.Errorf("DB is migrated to newer version than Kuma. DB migration version %d. Kuma migration version %d. Run newer version of Kuma", dbVer, appVer)
@@ -95,7 +95,7 @@ func IsDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 		return false, err
 	}
 
-	if cfg.SkipMigrationCheck {
+	if cfg.TolerateNewerDBVersions {
 		return dbVer >= fileVer, nil
 	}
 	return dbVer == fileVer, nil

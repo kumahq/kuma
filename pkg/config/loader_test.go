@@ -127,7 +127,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
 			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
 			Expect(cfg.Store.Postgres.ReadReplica.Ratio).To(Equal(uint(80)))
-			Expect(cfg.Store.Postgres.SkipMigrationCheck).To(BeTrue())
+			Expect(cfg.Store.Postgres.TolerateNewerDBVersions).To(BeTrue())
 
 			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
 			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
@@ -450,7 +450,7 @@ store:
       host: ro.host
       port: 35432
       ratio: 80
-    skipMigrationCheck: true
+    tolerateNewerDBVersions: true
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -907,7 +907,7 @@ meshService:
 				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
 				"KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME":                                             "99s",
-				"KUMA_STORE_POSTGRES_SKIP_MIGRATION_CHECK":                                                 "true",
+				"KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS":                                           "true",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
