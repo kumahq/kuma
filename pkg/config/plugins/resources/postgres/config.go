@@ -76,6 +76,14 @@ type PostgresStoreConfig struct {
 	// from strict equality (dbVer == fileVer) to dbVer >= fileVer. Intended
 	// for blue/green CP upgrades where a newer CP owns schema migrations and
 	// an older CP shares the same DB.
+	//
+	// Safety precondition: every migration in the skew range MUST be
+	// backwards compatible. New columns must be nullable or have a default;
+	// no drops, renames, type changes, NOT NULL additions without a default,
+	// or NOTIFY-trigger payload changes that an older CP reads or writes.
+	// The flag does not verify this; the operator is responsible. Boot is
+	// still refused when schema_migrations is dirty (a migration is in
+	// progress or failed).
 	TolerateNewerDBVersions bool `json:"tolerateNewerDBVersions" envconfig:"kuma_store_postgres_tolerate_newer_db_versions"`
 }
 

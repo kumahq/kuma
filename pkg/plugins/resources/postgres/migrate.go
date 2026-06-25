@@ -82,7 +82,7 @@ func IsDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	dbVer, _, err := m.Version()
+	dbVer, dirty, err := m.Version()
 	if err != nil {
 		if err == migrate.ErrNilVersion {
 			return false, nil
@@ -96,6 +96,9 @@ func IsDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 	}
 
 	if cfg.TolerateNewerDBVersions {
+		if dirty {
+			return false, errors.Errorf("database schema_migrations row is dirty at version %d (a migration is in progress or failed); refusing to boot even with TolerateNewerDBVersions enabled", dbVer)
+		}
 		return dbVer >= fileVer, nil
 	}
 	return dbVer == fileVer, nil
