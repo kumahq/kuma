@@ -107,7 +107,6 @@ func New(
 	envoyAdminUnixSocket bool,
 	systemNamespace string,
 	metrics core_metrics.Metrics,
-	deltaXdsEnabled bool,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -139,7 +138,7 @@ func New(
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
-			cfg.OtelPipeEnabled, cfg.Spire.Enabled, deltaXdsEnabled,
+			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
 		metrics:         im,

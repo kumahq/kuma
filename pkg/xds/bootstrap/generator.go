@@ -39,7 +39,6 @@ func NewDefaultBootstrapGenerator(
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
-	deltaXdsEnabled bool,
 	inboundTagsDisabled bool,
 	envoyAdminUnixSocket bool,
 ) (BootstrapGenerator, error) {
@@ -62,7 +61,6 @@ func NewDefaultBootstrapGenerator(
 		dpServerCert:            dpServerCert,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
-		deltaXdsEnabled:         deltaXdsEnabled,
 		inboundTagsDisabled:     inboundTagsDisabled,
 		envoyAdminUnixSocket:    envoyAdminUnixSocket,
 	}, nil
@@ -78,7 +76,6 @@ type bootstrapGenerator struct {
 	dpServerCert            *x509.Certificate
 	hdsEnabled              bool
 	defaultAdminPort        uint32
-	deltaXdsEnabled         bool
 	inboundTagsDisabled     bool
 	envoyAdminUnixSocket    bool
 }

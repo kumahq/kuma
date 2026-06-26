@@ -6,6 +6,36 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `3.0.0`
+
+### Delta xDS is now the only xDS protocol
+
+The control plane previously delivered configuration to data plane proxies using
+state-of-the-world (SOTW) xDS by default, with incremental (Delta) xDS available
+behind an experimental flag. Delta xDS is now always used and the SOTW code path
+has been removed. The control plane no longer serves `StreamAggregatedResources`;
+only `DeltaAggregatedResources` is implemented.
+
+The following configuration has been removed:
+
+- Control plane: `experimental.deltaXds` (`KUMA_EXPERIMENTAL_DELTA_XDS`) and the
+  Helm value `experimental.deltaXds`.
+- Data plane: `dataplaneRuntime.envoyXdsTransportProtocolVariant`
+  (`KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT`) and the
+  `kuma.io/xds-transport-protocol-variant` pod annotation.
+
+**Action required**
+
+Remove the settings above from your control plane config, Helm values, and pod
+annotations. Setting `KUMA_EXPERIMENTAL_DELTA_XDS` no longer has any effect.
+
+The protocol a proxy uses is fixed in its Envoy bootstrap at startup, so a proxy
+that started against an older control plane keeps using SOTW until it reconnects
+with a fresh bootstrap. Restart `kuma-dp` instances (or roll the workloads on
+Kubernetes) after upgrading the control plane so every proxy switches to Delta;
+proxies still on a SOTW stream stop receiving updates once the control plane is
+upgraded.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

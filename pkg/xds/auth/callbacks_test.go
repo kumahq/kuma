@@ -113,7 +113,7 @@ var _ = Describe("Auth Callbacks", func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
 		testAuth = &testAuthenticator{}
-		callbacks = v3.AdaptCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
+		callbacks = v3.AdaptDeltaCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -131,13 +131,13 @@ var _ = Describe("Auth Callbacks", func() {
 		streamID := int64(1)
 
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 			},
@@ -156,7 +156,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamOpen(ctx, streamID, "")
+		err = callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -165,7 +165,7 @@ var _ = Describe("Auth Callbacks", func() {
 		res := rest.From.Resource(dpRes)
 		jsonRes, err := json.Marshal(res)
 		Expect(err).ToNot(HaveOccurred())
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 				Metadata: &structpb.Struct{
@@ -190,13 +190,13 @@ var _ = Describe("Auth Callbacks", func() {
 		streamID := int64(1)
 
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 			},
@@ -206,7 +206,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-02",
 			},
@@ -252,13 +252,13 @@ var _ = Describe("Auth Callbacks", func() {
 		streamID := int64(1)
 
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-02",
 			},
@@ -274,13 +274,13 @@ var _ = Describe("Auth Callbacks", func() {
 		streamID := int64(1)
 
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 			},
@@ -296,13 +296,13 @@ var _ = Describe("Auth Callbacks", func() {
 		streamID := int64(1)
 
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: ".ingress",
 				Metadata: &structpb.Struct{
@@ -328,13 +328,13 @@ var _ = Describe("Auth Callbacks", func() {
 		streamID := int64(1)
 
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: ".egress",
 				Metadata: &structpb.Struct{

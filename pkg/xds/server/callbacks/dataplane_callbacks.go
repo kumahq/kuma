@@ -31,7 +31,6 @@ type xdsCallbacks struct {
 	util_xds.NoopCallbacks
 
 	sync.RWMutex
-	dpStreams      map[core_xds.StreamID]dpStream
 	dpDeltaStreams map[core_xds.StreamID]dpStream
 	// we don't need separate map for stream because we use here resource key
 	activeStreams map[core_model.ResourceKey]core_xds.StreamID
@@ -40,7 +39,6 @@ type xdsCallbacks struct {
 func DataplaneCallbacksToXdsCallbacks(callbacks DataplaneCallbacks) util_xds.MultiXDSCallbacks {
 	return &xdsCallbacks{
 		callbacks:      callbacks,
-		dpStreams:      map[core_xds.StreamID]dpStream{},
 		dpDeltaStreams: map[core_xds.StreamID]dpStream{},
 		activeStreams:  map[core_model.ResourceKey]core_xds.StreamID{},
 	}
@@ -51,34 +49,18 @@ type dpStream struct {
 	ctx context.Context
 }
 
-func (d *xdsCallbacks) getDpStream() map[core_xds.StreamID]dpStream {
-	return d.dpStreams
-}
-
 func (d *xdsCallbacks) getDpDeltaStream() map[core_xds.StreamID]dpStream {
 	return d.dpDeltaStreams
 }
 
 var _ util_xds.MultiXDSCallbacks = &xdsCallbacks{}
 
-func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
-	d.onStreamClosed(streamID, d.getDpStream)
-}
-
 func (d *xdsCallbacks) OnDeltaStreamClosed(streamID core_xds.StreamID) {
 	d.onStreamClosed(streamID, d.getDpDeltaStream)
 }
 
-func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_xds.DiscoveryRequest) error {
-	return d.onStreamRequest(streamID, request, d.getDpStream)
-}
-
 func (d *xdsCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, request util_xds.DeltaDiscoveryRequest) error {
 	return d.onStreamRequest(streamID, request, d.getDpDeltaStream)
-}
-
-func (d *xdsCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
-	return d.onStreamOpen(ctx, streamID, d.getDpStream)
 }
 
 func (d *xdsCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {

@@ -57,7 +57,6 @@ type XdsMode string
 
 const (
 	DELTA_GRPC XdsMode = "DELTA_GRPC"
-	GRPC       XdsMode = "GRPC"
 )
 
 // Callbacks defines Callbacks for xDS streaming requests. The difference over real go-control-plane Callbacks is that it takes an DiscoveryRequest / DiscoveryResponse interface.

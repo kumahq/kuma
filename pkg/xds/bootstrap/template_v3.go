@@ -120,10 +120,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			},
 		})
 	}
-	configType := envoy_core_v3.ApiConfigSource_GRPC
-	if parameters.Features.HasFeature(xds_types.FeatureDeltaGRPC) {
-		configType = envoy_core_v3.ApiConfigSource_DELTA_GRPC
-	}
+	configType := envoy_core_v3.ApiConfigSource_DELTA_GRPC
 
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{

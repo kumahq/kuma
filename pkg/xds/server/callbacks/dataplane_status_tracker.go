@@ -38,7 +38,6 @@ func NewDataplaneStatusTracker(
 	return &dataplaneStatusTracker{
 		runtimeInfo:      runtimeInfo,
 		createStatusSink: createStatusSink,
-		streams:          make(map[int64]*streamState),
 		deltaStreams:     make(map[int64]*streamState),
 	}
 }
@@ -49,14 +48,8 @@ type dataplaneStatusTracker struct {
 	util_xds.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink DataplaneInsightSinkFactoryFunc
-	muStreams        sync.RWMutex
 	muDeltaStreams   sync.RWMutex
-	streams          map[int64]*streamState
 	deltaStreams     map[int64]*streamState
-}
-
-func (d *dataplaneStatusTracker) getStreamsState() map[int64]*streamState {
-	return d.streams
 }
 
 func (d *dataplaneStatusTracker) getDeltaStreamsState() map[int64]*streamState {
@@ -70,21 +63,10 @@ type streamState struct {
 	subscription *mesh_proto.DiscoverySubscription
 }
 
-// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
-	return c.onStreamOpen(streamID, typ, util_xds.GRPC, &c.muStreams, c.getStreamsState)
-}
-
 // OnDeltaStreamOpen is called once a Delta xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnDeltaStreamOpen will still be called.
 func (c *dataplaneStatusTracker) OnDeltaStreamOpen(_ context.Context, streamID int64, typ string) error {
 	return c.onStreamOpen(streamID, typ, util_xds.DELTA_GRPC, &c.muDeltaStreams, c.getDeltaStreamsState)
-}
-
-// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
-	c.onStreamClose(streamID, util_xds.GRPC, &c.muStreams, c.getStreamsState)
 }
 
 // OnDeltaStreamClosed is called immediately prior to closing an Delta xDS stream with a stream ID.
@@ -92,21 +74,10 @@ func (c *dataplaneStatusTracker) OnDeltaStreamClosed(streamID int64) {
 	c.onStreamClose(streamID, util_xds.DELTA_GRPC, &c.muDeltaStreams, c.getDeltaStreamsState)
 }
 
-// OnStreamRequest is called once a request is received on a stream.
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.DiscoveryRequest) error {
-	return c.onStreamRequest(streamID, req, util_xds.GRPC, &c.muStreams, c.getStreamsState)
-}
-
 // OnStreamDeltaRequest is called once a request is received on a delta stream.
 // Returning an error will end processing and close the stream. OnStreamDeltaRequest will still be called.
 func (c *dataplaneStatusTracker) OnStreamDeltaRequest(streamID int64, req util_xds.DeltaDiscoveryRequest) error {
 	return c.onStreamRequest(streamID, req, util_xds.DELTA_GRPC, &c.muDeltaStreams, c.getDeltaStreamsState)
-}
-
-// OnStreamResponse is called immediately prior to sending a response on a stream.
-func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.DiscoveryRequest, resp util_xds.DiscoveryResponse) {
-	c.onStreamResponse(streamID, req, resp, util_xds.GRPC, &c.muStreams, c.getStreamsState)
 }
 
 // OnStreamDeltaResponse is called immediately prior to sending a response on a delta stream.
@@ -124,7 +95,7 @@ func shortEnvoyType(typeURL string) string {
 }
 
 func (c *dataplaneStatusTracker) GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool) {
-	state, ok := c.streams[streamID]
+	state, ok := c.deltaStreams[streamID]
 	return state, ok
 }
 

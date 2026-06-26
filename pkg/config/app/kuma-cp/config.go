@@ -296,7 +296,6 @@ var DefaultConfig = func() Config {
 				DelayFullResync:    false,
 			},
 			SidecarContainers: true,
-			DeltaXds:          false,
 		},
 		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
@@ -487,8 +486,6 @@ type ExperimentalConfig struct {
 	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
 	// environment.
 	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
-	// If true uses Delta xDS to deliver changes to sidecars.
-	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
 }
