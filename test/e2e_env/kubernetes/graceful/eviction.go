@@ -45,11 +45,15 @@ spec:
   containers:
   - name: alpine-evict
     image: alpine
-    args:
+    command:
     - /bin/ash
     - -c
-    - --
-    - "while true; do cat /usr/bin/* ; done"
+    - |
+      i=0
+      while true; do
+        dd if=/dev/zero of="/tmp/evict-${i}" bs=1M count=1 >/dev/null 2>&1 || true
+        i=$((i + 1))
+      done
     resources:
       limits:
         ephemeral-storage: 10Ki
