@@ -325,23 +325,6 @@ destinations:
 	return YamlUniversal(tp)
 }
 
-func TrafficPermissionKubernetes(name string) InstallFunc {
-	tp := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
-mesh: %[1]s
-metadata:
-  name: allow-all-%[1]s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'`, name)
-	return YamlK8s(tp)
-}
-
 func TimeoutUniversal(name string) InstallFunc {
 	timeout := fmt.Sprintf(`
 type: Timeout
@@ -390,56 +373,6 @@ spec:
       maxStreamDuration: 0s
 `, name)
 	return YamlK8s(timeout)
-}
-
-func CircuitBreakerUniversal(name string) InstallFunc {
-	cb := fmt.Sprintf(`
-type: CircuitBreaker
-mesh: %[1]s
-name: circuit-breaker-all-%[1]s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: '*'
-conf:
-  thresholds:
-    maxConnections: 1024
-    maxPendingRequests: 1024
-    maxRequests: 1024
-    maxRetries: 3`, name)
-	return YamlUniversal(cb)
-}
-
-func RetryUniversal(name string) InstallFunc {
-	retry := fmt.Sprintf(`
-type: Retry
-name: retry-all-%[1]s
-mesh: %[1]s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: '*'
-conf:
-  http:
-    numRetries: 5
-    perTryTimeout: 16s
-    backOff:
-      baseInterval: 25ms
-      maxInterval: 250s
-  grpc:
-    numRetries: 5
-    perTryTimeout: 16s
-    backOff:
-      baseInterval: 25ms
-      maxInterval: 250ms
-  tcp:
-    maxConnectAttempts: 5
-`, name)
-	return YamlUniversal(retry)
 }
 
 func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
