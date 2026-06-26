@@ -614,14 +614,23 @@ spec:
 				}
 
 				clusterName := fmt.Sprintf("%s:%s", meshName, service)
-				hostCount := -1
+				if cluster := gatewayClusters.GetCluster(clusterName); cluster != nil {
+					return len(cluster.HostStatuses), nil
+				}
+
+				matchedCluster := ""
+				hostCount := 0
 				for _, cluster := range gatewayClusters.Clusters {
-					if cluster.Name != clusterName && !strings.Contains(cluster.Name, service) {
+					if !strings.Contains(cluster.Name, service) {
 						continue
 					}
-					hostCount = max(hostCount, len(cluster.HostStatuses))
+					if matchedCluster != "" {
+						return 0, fmt.Errorf("found multiple gateway clusters for service %q: %q and %q", service, matchedCluster, cluster.Name)
+					}
+					matchedCluster = cluster.Name
+					hostCount = len(cluster.HostStatuses)
 				}
-				if hostCount == -1 {
+				if matchedCluster == "" {
 					return 0, fmt.Errorf("gateway cluster for service %q not found", service)
 				}
 				return hostCount, nil

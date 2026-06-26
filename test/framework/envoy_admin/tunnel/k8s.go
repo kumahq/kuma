@@ -68,7 +68,7 @@ func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 }
 
 func (t *K8sTunnel) GetClusters() (*clusters.Clusters, error) {
-	url := fmt.Sprintf("http://%s/stats?format=json", t.endpoint)
+	url := fmt.Sprintf("http://%s/clusters?format=json", t.endpoint)
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, http.NoBody)
 	if err != nil {
