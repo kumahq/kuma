@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -606,17 +607,41 @@ spec:
 		})
 
 		It("should route to only one instance", func() {
+			gatewayBackendHostCount := func(service string) (int, error) {
+				gatewayClusters, err := kubernetes.Cluster.GetEnvoyAdminTunnel("simple-gateway", namespace).GetClusters()
+				if err != nil {
+					return 0, err
+				}
+
+				clusterName := fmt.Sprintf("%s:%s", meshName, service)
+				hostCount := -1
+				for _, cluster := range gatewayClusters.Clusters {
+					if cluster.Name != clusterName && !strings.Contains(cluster.Name, service) {
+						continue
+					}
+					hostCount = max(hostCount, len(cluster.HostStatuses))
+				}
+				if hostCount == -1 {
+					return 0, fmt.Errorf("gateway cluster for service %q not found", service)
+				}
+				return hostCount, nil
+			}
+
 			Eventually(func(g Gomega) {
-				responses, err := client.CollectResponsesByInstance(
+				hostCount, err := gatewayBackendHostCount("test-server-mlbs_simple-gateway_svc_80")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(hostCount).To(Equal(3))
+			}, "30s", "1s").Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/mlbs",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 					client.WithHeader("x-header", "value"),
 				)
-
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(responses).To(HaveLen(3))
 			}, "30s", "1s").Should(Succeed())
 
 			Expect(YamlK8s(mlbs)(kubernetes.Cluster)).To(Succeed())
