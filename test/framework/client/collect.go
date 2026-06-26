@@ -475,7 +475,7 @@ func redactedCommand(command []string) []string {
 
 func redactedHeaderArgument(header string) string {
 	trimmed := strings.TrimSpace(header)
-	if len(trimmed) == 0 {
+	if trimmed == "" {
 		return header
 	}
 
