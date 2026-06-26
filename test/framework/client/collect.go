@@ -413,9 +413,9 @@ func addCollectDiagnostic(reason string, result collectResponseResult, err error
 		Destination: result.destination,
 		Method:      result.opts.Method,
 		URL:         result.opts.URL,
-		Headers:     result.opts.Headers,
+		Headers:     redactedHeaders(result.opts.Headers),
 		Flags:       result.opts.Flags,
-		Command:     result.command,
+		Command:     redactedCommand(result.command),
 		Stdout:      truncateDiagnosticString(result.stdout),
 		Stderr:      truncateDiagnosticString(result.stderr),
 	}
@@ -432,6 +432,91 @@ func addCollectDiagnostic(reason string, result collectResponseResult, err error
 		fmt.Sprintf("client-collect-%d-%s-%s.json", time.Now().UnixNano(), result.cluster.Name(), result.container),
 		data,
 	)
+}
+
+const redactedDiagnosticValue = "[redacted]"
+
+func redactedHeaders(headers map[string]string) map[string]string {
+	if len(headers) == 0 {
+		return nil
+	}
+
+	redacted := make(map[string]string, len(headers))
+	for key, value := range headers {
+		if shouldRedactHeader(key) {
+			redacted[key] = redactedDiagnosticValue
+			continue
+		}
+		redacted[key] = value
+	}
+	return redacted
+}
+
+func redactedCommand(command []string) []string {
+	if len(command) == 0 {
+		return nil
+	}
+
+	redacted := append([]string(nil), command...)
+	for i := 0; i < len(redacted); i++ {
+		arg := redacted[i]
+		switch {
+		case (arg == "--header" || arg == "-H") && i+1 < len(redacted):
+			i++
+			redacted[i] = redactedHeaderArgument(redacted[i])
+		case strings.HasPrefix(arg, "--header="):
+			redacted[i] = "--header=" + redactedHeaderArgument(strings.TrimPrefix(arg, "--header="))
+		case strings.HasPrefix(arg, "-H") && len(arg) > len("-H"):
+			redacted[i] = "-H" + redactedHeaderArgument(strings.TrimSpace(strings.TrimPrefix(arg, "-H")))
+		}
+	}
+	return redacted
+}
+
+func redactedHeaderArgument(header string) string {
+	trimmed := strings.TrimSpace(header)
+	if len(trimmed) == 0 {
+		return header
+	}
+
+	quote := byte(0)
+	if len(trimmed) >= 2 {
+		first := trimmed[0]
+		last := trimmed[len(trimmed)-1]
+		if (first == '\'' || first == '"') && last == first {
+			quote = first
+			trimmed = trimmed[1 : len(trimmed)-1]
+		}
+	}
+
+	name, _, found := strings.Cut(trimmed, ":")
+	if !found || !shouldRedactHeader(name) {
+		return header
+	}
+
+	value := strings.TrimSpace(name) + ": " + redactedDiagnosticValue
+	if quote != 0 {
+		return string(quote) + value + string(quote)
+	}
+	return value
+}
+
+func shouldRedactHeader(name string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	for _, token := range []string{
+		"authorization",
+		"token",
+		"secret",
+		"cookie",
+		"credential",
+		"api-key",
+		"apikey",
+	} {
+		if strings.Contains(normalized, token) {
+			return true
+		}
+	}
+	return false
 }
 
 func truncateDiagnosticString(value string) string {
@@ -738,7 +823,7 @@ func addConcurrentDiagnostic(destination string, opts CollectResponsesOpts, fail
 		FailedIndex:           failed.idx,
 		Error:                 failed.err.Error(),
 		PartialResponses:      responses,
-		Headers:               opts.Headers,
+		Headers:               redactedHeaders(opts.Headers),
 		Flags:                 opts.Flags,
 		InstanceHistogram:     instanceHistogram(responses),
 		ResponseCodeHistogram: responseCodeHistogram(responses),
