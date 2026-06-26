@@ -624,11 +624,10 @@ spec:
 					if !strings.Contains(cluster.Name, service) {
 						continue
 					}
-					if matchedCluster != "" {
-						return 0, fmt.Errorf("found multiple gateway clusters for service %q: %q and %q", service, matchedCluster, cluster.Name)
-					}
 					matchedCluster = cluster.Name
-					hostCount = len(cluster.HostStatuses)
+					if len(cluster.HostStatuses) > hostCount {
+						hostCount = len(cluster.HostStatuses)
+					}
 				}
 				if matchedCluster == "" {
 					return 0, fmt.Errorf("gateway cluster for service %q not found", service)
