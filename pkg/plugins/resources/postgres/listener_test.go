@@ -283,14 +283,26 @@ func (p *tcpProxy) accept(listener net.Listener) {
 }
 
 func (p *tcpProxy) forward(source net.Conn) {
-	target, err := (&net.Dialer{}).DialContext(context.Background(), "tcp", p.target)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	target, err := (&net.Dialer{}).DialContext(ctx, "tcp", p.target)
 	if err != nil {
 		_ = source.Close()
 		return
 	}
 
-	p.track(source)
-	p.track(target)
+	if !p.track(source) {
+		_ = source.Close()
+		_ = target.Close()
+		return
+	}
+	if !p.track(target) {
+		p.untrack(source)
+		_ = source.Close()
+		_ = target.Close()
+		return
+	}
 	defer func() {
 		p.untrack(source)
 		p.untrack(target)
@@ -314,10 +326,15 @@ func (p *tcpProxy) forward(source net.Conn) {
 	<-doneCh
 }
 
-func (p *tcpProxy) track(conn net.Conn) {
+func (p *tcpProxy) track(conn net.Conn) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.listener == nil {
+		_ = conn.Close()
+		return false
+	}
 	p.conns[conn] = struct{}{}
+	return true
 }
 
 func (p *tcpProxy) untrack(conn net.Conn) {
