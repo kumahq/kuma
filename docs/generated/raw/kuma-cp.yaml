@@ -55,6 +55,11 @@ store:
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+    # TolerateNewerDBVersions makes `migrate up` a no-op when the DB is at a
+    # newer version than the binary, and relaxes the boot-time migration gate
+    # from strict equality (dbVer == fileVer) to dbVer >= fileVer. Intended
+    # for blue/green CP upgrades where a newer CP owns schema migrations.
+    tolerateNewerDBVersions: false # ENV: KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS
     # ReadReplica is a setting for a DB replica used only for read queries
     readReplica:
       # Host of the Postgres DB read replica. If not set, read replica is not used.
