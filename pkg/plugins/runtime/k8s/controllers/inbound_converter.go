@@ -28,6 +28,18 @@ func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 		if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
 			return false
 		}
+	} else {
+		// When no container declares the inbound port, check all
+		// non-sidecar app containers for readiness so that
+		// the inbound is not marked ready before the app starts.
+		for _, c := range pod.Spec.Containers {
+			if c.Name == util_k8s.KumaSidecarContainerName {
+				continue
+			}
+			if cs := util_k8s.FindContainerStatus(c.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+				return false
+			}
+		}
 	}
 	if cs := util_k8s.FindContainerOrInitContainerStatus(
 		util_k8s.KumaSidecarContainerName,
