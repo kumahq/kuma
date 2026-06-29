@@ -63,17 +63,24 @@ func (p *PodConverter) PodToDataplane(
 	}
 	// we need to validate if the labels have changed
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
+	existingLabels := mergeLabels(dataplane.GetLabels(), pod.Labels)
+	if pod.Spec.ServiceAccountName != "" {
+		existingLabels[metadata.KumaServiceAccount] = pod.Spec.ServiceAccountName
+	}
+	if workloadName != "" {
+		existingLabels[metadata.KumaWorkload] = workloadName
+	}
 	labels, err := resource_labels.Compute(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
-		mergeLabels(dataplane.GetLabels(), pod.Labels),
+		existingLabels,
 		dataplane.Mesh,
+		dataplane.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
 		resource_labels.WithK8s(true),
 		resource_labels.WithZone(p.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
-		resource_labels.WithWorkload(workloadName),
+		resource_labels.WithPrivileged(true),
 	)
 	if err != nil {
 		return err
@@ -105,16 +112,21 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		return err
 	}
 	// we need to validate if the labels have changed
+	existingLabels := mergeLabels(zoneIngress.GetLabels(), pod.Labels)
+	if pod.Spec.ServiceAccountName != "" {
+		existingLabels[metadata.KumaServiceAccount] = pod.Spec.ServiceAccountName
+	}
 	labels, err := resource_labels.Compute(
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
-		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
+		existingLabels,
 		model.NoMesh,
+		zoneIngress.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
 		resource_labels.WithK8s(true),
 		resource_labels.WithZone(p.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithPrivileged(true),
 	)
 	if err != nil {
 		return err
@@ -146,16 +158,21 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		return err
 	}
 	// we need to validate if the labels have changed
+	existingLabels := mergeLabels(zoneEgress.GetLabels(), pod.Labels)
+	if pod.Spec.ServiceAccountName != "" {
+		existingLabels[metadata.KumaServiceAccount] = pod.Spec.ServiceAccountName
+	}
 	labels, err := resource_labels.Compute(
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
-		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
+		existingLabels,
 		model.NoMesh,
+		zoneEgress.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
 		resource_labels.WithK8s(true),
 		resource_labels.WithZone(p.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithPrivileged(true),
 	)
 	if err != nil {
 		return err

@@ -1,1 +1,2 @@
+Warning: kuma.io/workload is managed by the control plane and is not applicable in this context; the supplied value 'my-workload' was removed
 meshexternalservice.kuma.io/mes-workload created

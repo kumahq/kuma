@@ -3,9 +3,15 @@ metadata:
   labels:
     app: kuma-egress
     k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: kuma-egress-74c9b794cf-vft7l
+    kuma.io/env: kubernetes
     kuma.io/mesh: default
+    kuma.io/origin: zone
     kuma.io/proxy-type: sidecar
+    kuma.io/zone: zone-1
     pod-template-hash: 74c9b794cf
+  name: kuma-egress-74c9b794cf-vft7l
+  namespace: kuma-system
 spec:
   networking:
     address: 10.244.0.8

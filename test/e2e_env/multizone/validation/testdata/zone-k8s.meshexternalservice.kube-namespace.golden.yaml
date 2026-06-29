@@ -1,1 +1,2 @@
+Warning: k8s.kuma.io/namespace is computed by the control plane (expected 'kuma-system'); the supplied value 'other-namespace' was overridden
 meshexternalservice.kuma.io/mes-kube-namespace created

@@ -3,10 +3,11 @@ kind: MeshExternalService
 metadata:
   name: mes-workload
   namespace: {{ .KumaNamespace }}
+  annotations:
+    kuma.io/workload: my-workload
   labels:
     kuma.io/mesh: multizone-label-validation
     kuma.io/origin: zone
-    kuma.io/workload: my-workload
 spec:
   match:
     type: HostnameGenerator

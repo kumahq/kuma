@@ -56,16 +56,21 @@ func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Contex
 		return nil
 	}
 
+	existingLabels := mergeLabels(dataplane.GetLabels(), pod.Labels)
+	if pod.Spec.ServiceAccountName != "" {
+		existingLabels[metadata.KumaServiceAccount] = pod.Spec.ServiceAccountName
+	}
 	labels, err := resource_labels.Compute(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		dataplaneProto,
-		mergeLabels(dataplane.GetLabels(), pod.Labels),
+		existingLabels,
 		dataplane.Mesh,
+		dataplane.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
 		resource_labels.WithMode(r.PodConverter.Mode),
 		resource_labels.WithK8s(true),
 		resource_labels.WithZone(r.PodConverter.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithPrivileged(true),
 	)
 	if err != nil {
 		return err
