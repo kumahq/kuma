@@ -463,6 +463,40 @@ var _ = Describe("Reconcile", func() {
 			Expect(spy.deliveredVersions).To(ContainElement("demo.empty-delivery-test" + resource.SecretType))
 		})
 
+		It("should discard delta delivery metric keys on clear", func() {
+			withSecret := envoy_cache.Snapshot{}
+			withSecret.Resources[envoy_types.Secret] = envoy_cache.Resources{
+				Items: map[string]envoy_types.ResourceWithTTL{
+					"secret": {Resource: &envoy_auth.Secret{Name: "secret"}},
+				},
+			}
+
+			spy := &spyStatsCallbacks{}
+			r := &reconciler{
+				generator: snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+					return &withSecret, nil
+				}),
+				cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
+				statsCallbacks: spy,
+			}
+
+			proxy := &xds_model.Proxy{
+				Id: *xds_model.BuildProxyId("demo", "clear-delivery-test"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{Mesh: "demo", Name: "clear-delivery-test"},
+					Spec: &mesh_proto.Dataplane{},
+				},
+			}
+
+			_, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+
+			err = r.Clear(&proxy.Id)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(spy.discardedVersions).To(ContainElement("demo.clear-delivery-test" + resource.SecretType))
+		})
+
 		It("should frame hash inputs and produce fixed-width versions", func() {
 			secretVersion, err := resourcesVersion("demo0", map[string]envoy_types.ResourceWithTTL{
 				"secret": {Resource: &envoy_auth.Secret{Name: "secret"}},
@@ -480,13 +514,16 @@ var _ = Describe("Reconcile", func() {
 type spyStatsCallbacks struct {
 	util_xds.NoopCallbacks
 	deliveredVersions []string
+	discardedVersions []string
 }
 
 func (s *spyStatsCallbacks) ConfigReadyForDelivery(v string) {
 	s.deliveredVersions = append(s.deliveredVersions, v)
 }
 
-func (s *spyStatsCallbacks) DiscardConfig(string) {}
+func (s *spyStatsCallbacks) DiscardConfig(v string) {
+	s.discardedVersions = append(s.discardedVersions, v)
+}
 
 type snapshotGeneratorFunc func(context.Context, xds_context.Context, *xds_model.Proxy) (*envoy_cache.Snapshot, error)
 

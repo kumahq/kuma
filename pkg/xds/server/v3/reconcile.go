@@ -50,9 +50,12 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	if err != nil {
 		return // already cleared
 	}
-	for _, res := range snap.Resources {
+	for i, res := range snap.Resources {
 		if res.Version != "" {
 			r.statsCallbacks.DiscardConfig(res.Version)
+		}
+		if typeURL := resourceTypeURL(i); typeURL != "" {
+			r.statsCallbacks.DiscardConfig(nodeId.Id + typeURL)
 		}
 	}
 }
