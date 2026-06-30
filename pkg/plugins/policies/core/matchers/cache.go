@@ -1,7 +1,6 @@
 package matchers
 
 import (
-	"encoding/base64"
 	"hash/fnv"
 
 	"github.com/goburrow/cache"
@@ -13,9 +12,6 @@ import (
 	util_cache "github.com/kumahq/kuma/v3/pkg/util/cache"
 )
 
-// bounds worst-case memory to O(policyTypes × dataplanes)
-const defaultPolicyMatchingCacheSize = 10_000
-
 var _ core_plugins.PolicyMatchingCacheAccessor = &PolicyMatchingCache{}
 
 // PolicyMatchingCache is a bounded LRU cache for TypedMatchingPolicies; safe for concurrent use.
@@ -23,9 +19,9 @@ type PolicyMatchingCache struct {
 	c cache.Cache
 }
 
-func NewPolicyMatchingCache(metric *prometheus.CounterVec) *PolicyMatchingCache {
+func NewPolicyMatchingCache(metric *prometheus.CounterVec, maxSize int) *PolicyMatchingCache {
 	c := cache.New(
-		cache.WithMaximumSize(defaultPolicyMatchingCacheSize),
+		cache.WithMaximumSize(maxSize),
 		cache.WithStatsCounter(&util_cache.PrometheusStatsCounter{Metric: metric}),
 	)
 	return &PolicyMatchingCache{c: c}
@@ -53,5 +49,5 @@ func BuildCacheKey(rType string, includeShadow bool, dpp *core_mesh.DataplaneRes
 	}
 	_, _ = h.Write(dpp.Hash())
 	_, _ = h.Write([]byte(policyMatchingHash))
-	return base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+	return string(h.Sum(nil))
 }

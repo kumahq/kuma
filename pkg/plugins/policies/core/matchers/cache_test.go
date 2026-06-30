@@ -53,13 +53,13 @@ var _ = Describe("PolicyMatchingCache", func() {
 
 	Describe("GetIfPresent / Put", func() {
 		It("returns miss on empty cache", func() {
-			c := matchers.NewPolicyMatchingCache(newMetric())
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
 			_, ok := c.GetIfPresent("no-such-key")
 			Expect(ok).To(BeFalse())
 		})
 
 		It("returns hit after Put", func() {
-			c := matchers.NewPolicyMatchingCache(newMetric())
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
 			want := core_model.ResourceType("MeshTrafficPermission")
 			c.Put("k", core_xds.TypedMatchingPolicies{Type: want})
 			got, ok := c.GetIfPresent("k")
@@ -68,7 +68,7 @@ var _ = Describe("PolicyMatchingCache", func() {
 		})
 
 		It("returns miss for different key", func() {
-			c := matchers.NewPolicyMatchingCache(newMetric())
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
 			c.Put("k1", core_xds.TypedMatchingPolicies{Type: "Type1"})
 			_, ok := c.GetIfPresent("k2")
 			Expect(ok).To(BeFalse())
@@ -87,25 +87,23 @@ var _ = Describe("PolicyMatchingCache", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// first call: cache miss, computes result
-			c := matchers.NewPolicyMatchingCache(newMetric())
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
 			const hash = "mesh-hash-stable"
 			first, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(first.Type).To(Equal(uncached.Type))
-			Expect(first.DataplanePolicies).To(HaveLen(len(uncached.DataplanePolicies)))
+			Expect(first).To(BeComparableTo(uncached))
 
 			// second call: must be a cache hit
 			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(second.Type).To(Equal(first.Type))
-			Expect(second.DataplanePolicies).To(HaveLen(len(first.DataplanePolicies)))
+			Expect(second).To(BeComparableTo(first))
 		})
 
 		It("different policyMatchingHash causes a cache miss", func() {
 			dpp := readDPP(filepath.Join(testDir, "01.dataplane.yaml"))
 			resources, _ := readPolicies(filepath.Join(testDir, "01.policies.yaml"))
 			rType := meshtrafficpermission_api.MeshTrafficPermissionType
-			c := matchers.NewPolicyMatchingCache(newMetric())
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
 
 			_, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, "hash-v1"))
 			Expect(err).ToNot(HaveOccurred())
@@ -115,8 +113,7 @@ var _ = Describe("PolicyMatchingCache", func() {
 
 			uncached, err := matchers.MatchedPolicies(rType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(result2.Type).To(Equal(uncached.Type))
-			Expect(result2.DataplanePolicies).To(HaveLen(len(uncached.DataplanePolicies)))
+			Expect(result2).To(BeComparableTo(uncached))
 		})
 
 		It("nil cache uses uncached path transparently", func() {
