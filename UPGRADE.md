@@ -27,14 +27,21 @@ The following configuration has been removed:
 **Action required**
 
 Remove the settings above from your control plane config, Helm values, and pod
-annotations. Setting `KUMA_EXPERIMENTAL_DELTA_XDS` no longer has any effect.
+annotations. Setting `KUMA_EXPERIMENTAL_DELTA_XDS` no longer has any effect in
+Kuma 3.0.0.
+
+For zero-downtime upgrades, first enable Delta xDS with
+`KUMA_EXPERIMENTAL_DELTA_XDS=true` on the old control plane version, then restart
+all `kuma-dp` instances (or roll the workloads on Kubernetes) so their Envoy
+bootstraps use Delta xDS. After every data plane proxy is connected with Delta
+xDS, upgrade the control plane to Kuma 3.0.0 and roll the data plane proxies
+again as part of the normal upgrade flow.
 
 The protocol a proxy uses is fixed in its Envoy bootstrap at startup, so a proxy
 that started against an older control plane keeps using SOTW until it reconnects
-with a fresh bootstrap. Restart `kuma-dp` instances (or roll the workloads on
-Kubernetes) after upgrading the control plane so every proxy switches to Delta;
-proxies still on a SOTW stream stop receiving updates once the control plane is
-upgraded.
+with a fresh bootstrap. Once the control plane is upgraded to Kuma 3.0.0, any
+proxy still trying to use the removed SOTW stream cannot establish ADS and must
+be restarted with a Delta xDS bootstrap.
 
 ## Upgrade to `2.13.7`
 
