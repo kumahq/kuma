@@ -30,8 +30,8 @@ func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 		}
 	} else {
 		// When no container declares the inbound port, check all
-		// non-sidecar app containers for readiness so that
-		// the inbound is not marked ready before the app starts.
+		// non-sidecar containers for readiness so that the
+		// inbound is not marked ready before the app starts.
 		for _, c := range pod.Spec.Containers {
 			if c.Name == util_k8s.KumaSidecarContainerName {
 				continue

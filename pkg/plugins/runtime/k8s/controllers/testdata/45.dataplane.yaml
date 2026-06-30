@@ -1,0 +1,38 @@
+mesh: default
+metadata:
+  labels:
+    app: demo
+    k8s.kuma.io/namespace: demo
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+    version: "0.1"
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health:
+        ready: true
+      port: 8080
+      protocol: tcp
+      tags:
+        app: demo
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: demo-svc
+        k8s.kuma.io/service-port: "80"
+        kuma.io/protocol: tcp
+        kuma.io/service: demo-svc_demo_svc_80
+        kuma.io/zone: zone-1
+        version: "0.1"
+    - health: {}
+      port: 8443
+      protocol: tcp
+      state: NotReady
+      tags:
+        app: demo
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: demo-svc
+        k8s.kuma.io/service-port: "443"
+        kuma.io/protocol: tcp
+        kuma.io/service: demo-svc_demo_svc_443
+        kuma.io/zone: zone-1
+        version: "0.1"

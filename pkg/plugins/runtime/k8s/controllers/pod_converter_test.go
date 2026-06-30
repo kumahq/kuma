@@ -419,6 +419,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:        "44.dataplane.yaml",
 			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
 		}),
+		Entry("45. Inbound with numeric targetPort not declared by any container, non-sidecar container not ready", testCase{
+			pod:            "45.pod.yaml",
+			servicesForPod: "45.services-for-pod.yaml",
+			dataplane:      "45.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
