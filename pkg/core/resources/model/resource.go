@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"hash"
 	"hash/fnv"
 	"reflect"
 	"strings"
@@ -107,11 +108,22 @@ func Hash(resource Resource) []byte {
 func HashMeta(r Resource) []byte {
 	meta := r.GetMeta()
 	hasher := fnv.New128a()
+	writeMetaIdentity(hasher, r)
+	_, _ = hasher.Write([]byte(meta.GetVersion()))
+	return hasher.Sum(nil)
+}
+
+func HashMetaIdentity(r Resource) []byte {
+	hasher := fnv.New128a()
+	writeMetaIdentity(hasher, r)
+	return hasher.Sum(nil)
+}
+
+func writeMetaIdentity(hasher hash.Hash, r Resource) {
+	meta := r.GetMeta()
 	_, _ = hasher.Write([]byte(r.Descriptor().Name))
 	_, _ = hasher.Write([]byte(meta.GetMesh()))
 	_, _ = hasher.Write([]byte(meta.GetName()))
-	_, _ = hasher.Write([]byte(meta.GetVersion()))
-	return hasher.Sum(nil)
 }
 
 func Deprecations(resource Resource) []string {
