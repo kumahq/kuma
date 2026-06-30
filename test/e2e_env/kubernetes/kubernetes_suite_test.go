@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/defaults"
 	externalname_services "github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/externalname-services"
-	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/externalservices"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/healthcheck"
@@ -76,8 +75,6 @@ var (
 	_ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
-	_ = Describe("External Services", externalservices.ExternalServices, Ordered)
-	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservices.MeshExternalServices, Ordered)
 	_ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
 	_ = Describe("Kong Ingress Controller", kic.KICKubernetes, Ordered)

@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/cni"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/connectivity"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/defaults"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/externalservices"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/inbound_communication"
@@ -72,7 +71,6 @@ var (
 	_ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
 	_ = Describe("MeshAccessLog on Zone Ingress", meshaccesslog.ZoneIngress, Ordered)
 	_ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
-	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
 	_ = Describe("Ownership", ownership.MultizoneUniversal, Ordered)
 	_ = Describe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)

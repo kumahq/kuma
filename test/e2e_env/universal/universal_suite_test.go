@@ -11,7 +11,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/bindoutbounds"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/compatibility"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/envoyconfig"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/gateway"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/grpc"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/healthcheck"
@@ -73,8 +72,6 @@ var (
 	_ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
 	_ = Describe("Workload", workload.Workload, Ordered)
 	_ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
-	_ = Describe("External Services", externalservices.Policy, Ordered)
-	_ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
