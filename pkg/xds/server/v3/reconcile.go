@@ -154,7 +154,9 @@ func validateResource(r envoy_types.Resource) error {
 // autoVersion computes deterministic xxHash64 content hashes for each resource
 // type in n, seeded with nodeId+type-index. The seed keeps delivery metric keys
 // distinct because StatsCallbacks tracks in-flight configs by version string.
-// Empty slots keep version "".
+// Empty slots keep version "" unless they are clearing a previously non-empty
+// slot, in which case they get a deterministic clear version so Envoy observes
+// the removal.
 // The cluster version is folded into the endpoint version when endpoints are
 // non-empty to force EDS re-push on cluster changes (prevents warming stalls).
 // Returns the versions that changed relative to old.
@@ -164,6 +166,9 @@ func autoVersion(nodeId string, old, n *envoy_cache.Snapshot) (*envoy_cache.Snap
 		ver, err := resourcesVersion(seed, n.Resources[i].Items)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to hash resources for type %d", i)
+		}
+		if ver == "" && old.Resources[i].Version != "" {
+			ver = emptyResourcesVersion(seed)
 		}
 		n.Resources[i].Version = ver
 	}
@@ -210,6 +215,13 @@ func mixVersions(a, b string) string {
 	h := xxhash.New()
 	writeHashField(h, []byte(a))
 	writeHashField(h, []byte(b))
+	return formatHash(h.Sum64())
+}
+
+func emptyResourcesVersion(seed string) string {
+	h := xxhash.New()
+	writeHashField(h, []byte(seed))
+	writeHashField(h, nil)
 	return formatHash(h.Sum64())
 }
 

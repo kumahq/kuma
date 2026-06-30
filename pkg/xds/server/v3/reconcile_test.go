@@ -213,18 +213,34 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			By("verifying that snapshot versions are empty for empty snapshot")
+			By("verifying that snapshot versions are changed for cleared resources")
 			// when
 			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
-			// and: empty snapshot produces empty ("") versions, not new UUIDs
-			Expect(snapshot.GetVersion(resource.ListenerType)).To(BeEmpty())
-			Expect(snapshot.GetVersion(resource.RouteType)).To(BeEmpty())
-			Expect(snapshot.GetVersion(resource.ClusterType)).To(BeEmpty())
-			Expect(snapshot.GetVersion(resource.EndpointType)).To(BeEmpty())
-			Expect(snapshot.GetVersion(resource.SecretType)).To(BeEmpty())
+			// and: clearing previously populated resources produces deterministic
+			// non-empty versions so Envoy observes removals.
+			Expect(snapshot.GetVersion(resource.ListenerType)).To(SatisfyAll(
+				Not(Equal(listenerV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.GetVersion(resource.RouteType)).To(SatisfyAll(
+				Not(Equal(routeV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.GetVersion(resource.ClusterType)).To(SatisfyAll(
+				Not(Equal(clusterV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.GetVersion(resource.EndpointType)).To(SatisfyAll(
+				Not(Equal(endpointV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.GetVersion(resource.SecretType)).To(SatisfyAll(
+				Not(Equal(secretV1)),
+				Not(BeEmpty()),
+			))
 
 			By("simulating clear")
 			// when
@@ -395,11 +411,10 @@ var _ = Describe("Reconcile", func() {
 			Expect(changed).To(BeFalse())
 		})
 
-		It("should not pass empty version to ConfigReadyForDelivery when types clear", func() {
+		It("should pass a non-empty version to ConfigReadyForDelivery when types clear", func() {
 			// First snapshot has a Secret; second is fully empty.
-			// When Secret transitions secretHash→"", the "" must NOT reach
-			// ConfigReadyForDelivery: stats_callbacks.OnStreamRequest skips
-			// requests with VersionInfo=="" so the key would never be consumed.
+			// When Secret transitions secretHash -> empty, Envoy still needs a
+			// non-empty version to observe the resource removal.
 			withSecret := envoy_cache.Snapshot{}
 			withSecret.Resources[envoy_types.Secret] = envoy_cache.Resources{
 				Items: map[string]envoy_types.ResourceWithTTL{
@@ -434,11 +449,12 @@ var _ = Describe("Reconcile", func() {
 			_, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy)
 			Expect(err).ToNot(HaveOccurred())
 
-			By("second reconcile — Secret clears, transitioning secretHash→\"\"")
+			By("second reconcile — Secret clears")
 			_, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(spy.deliveredVersions).ToNot(ContainElement(""))
+			Expect(spy.deliveredVersions).To(HaveLen(2))
 		})
 
 		It("should frame hash inputs and produce fixed-width versions", func() {
