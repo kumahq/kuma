@@ -603,14 +603,11 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 // policyMatchingHashDenySet: mesh-scoped types irrelevant for policy matching (roster, insights).
 // Omitting a member is safe (spurious cache misses); including a wrong one causes stale xDS.
 var policyMatchingHashDenySet = map[core_model.ResourceType]struct{}{
-	core_mesh.DataplaneType:          {},
-	core_mesh.DataplaneInsightType:   {},
-	core_mesh.ZoneIngressType:        {},
-	core_mesh.ZoneIngressInsightType: {},
-	core_mesh.ZoneEgressType:         {},
-	core_mesh.ZoneEgressInsightType:  {},
-	core_mesh.ServiceInsightType:     {},
-	core_mesh.MeshInsightType:        {},
+	core_mesh.DataplaneType:         {},
+	core_mesh.DataplaneInsightType:  {},
+	core_mesh.DataplaneOverviewType: {},
+	core_mesh.ServiceInsightType:    {},
+	core_mesh.ServiceOverviewType:   {},
 }
 
 // policyMatchingGlobalHashDenySet: global-scoped types irrelevant for policy matching

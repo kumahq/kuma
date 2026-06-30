@@ -27,6 +27,8 @@ type XdsServerConfig struct {
 	DataplaneDeregistrationDelay config_types.Duration `json:"dataplaneDeregistrationDelay" envconfig:"kuma_xds_dataplane_deregistration_delay"`
 	// Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
 	NACKBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_xds_server_nack_backoff"`
+	// Maximum number of policy matching results kept in the shared Dataplane xDS reconciliation cache.
+	PolicyMatchingCacheSize int `json:"policyMatchingCacheSize" envconfig:"kuma_xds_server_policy_matching_cache_size"`
 }
 
 func (x *XdsServerConfig) Validate() error {
@@ -35,6 +37,9 @@ func (x *XdsServerConfig) Validate() error {
 	}
 	if x.DataplaneStatusFlushInterval.Duration <= 0 {
 		return errors.New("DataplaneStatusFlushInterval must be positive")
+	}
+	if x.PolicyMatchingCacheSize <= 0 {
+		return errors.New("PolicyMatchingCacheSize must be positive")
 	}
 	return nil
 }
@@ -45,6 +50,7 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 		DataplaneStatusFlushInterval:          config_types.Duration{Duration: 10 * time.Second},
 		DataplaneDeregistrationDelay:          config_types.Duration{Duration: 10 * time.Second},
 		NACKBackoff:                           config_types.Duration{Duration: 5 * time.Second},
+		PolicyMatchingCacheSize:               100_000,
 	}
 }
 

@@ -62,8 +62,10 @@ func DefaultDataplaneWatchdogFactory(
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
 		config,
 		apiVersion,
-	)
-	dataplaneProxyBuilder.policyMatchingCache = matchers.NewPolicyMatchingCache(xdsMetrics.PolicyMatchingCache)
+	).WithPolicyMatchingCache(matchers.NewPolicyMatchingCache(
+		xdsMetrics.PolicyMatchingCache,
+		config.XdsServer.PolicyMatchingCacheSize,
+	))
 
 	ingressProxyBuilder := DefaultIngressProxyBuilder(
 		rt,

@@ -40,6 +40,11 @@ type DataplaneProxyBuilder struct {
 	policyMatchingCache core_plugins.PolicyMatchingCacheAccessor
 }
 
+func (p *DataplaneProxyBuilder) WithPolicyMatchingCache(cache core_plugins.PolicyMatchingCacheAccessor) *DataplaneProxyBuilder {
+	p.policyMatchingCache = cache
+	return p
+}
+
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meta *core_xds.DataplaneMetadata, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
 	dp, found := meshContext.DataplanesByName[key.Name]
 	if !found {

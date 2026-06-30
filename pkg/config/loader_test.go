@@ -321,6 +321,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.XdsServer.DataplaneDeregistrationDelay.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.XdsServer.NACKBackoff.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.XdsServer.PolicyMatchingCacheSize).To(Equal(1234))
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
 			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
@@ -724,6 +725,7 @@ xdsServer:
   dataplaneStatusFlushInterval: 7s
   dataplaneDeregistrationDelay: 11s
   nackBackoff: 10s
+  policyMatchingCacheSize: 1234
 metrics:
   zone:
     subscriptionLimit: 23
@@ -1103,6 +1105,7 @@ meshService:
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
 				"KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY":                                                  "11s",
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
+				"KUMA_XDS_SERVER_POLICY_MATCHING_CACHE_SIZE":                                               "1234",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
