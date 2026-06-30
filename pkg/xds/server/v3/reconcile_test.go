@@ -18,6 +18,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -38,10 +40,7 @@ func hcmForRoute(routeName string) *anypb.Any {
 		},
 	}
 
-	a, err := proto.MarshalAnyDeterministic(&hcm)
-	Expect(err).To(Succeed())
-
-	return a
+	return proto.MustMarshalAny(&hcm)
 }
 
 var _ = Describe("Reconcile", func() {
@@ -441,6 +440,17 @@ var _ = Describe("Reconcile", func() {
 
 			Expect(spy.deliveredVersions).ToNot(ContainElement(""))
 		})
+
+		It("should frame hash inputs and produce fixed-width versions", func() {
+			secretVersion, err := resourcesVersion("demo0", map[string]envoy_types.ResourceWithTTL{
+				"secret": {Resource: &envoy_auth.Secret{Name: "secret"}},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secretVersion).To(HaveLen(16))
+
+			Expect(mixVersions("ab", "cdef")).To(HaveLen(16))
+			Expect(mixVersions("ab", "cdef")).ToNot(Equal(mixVersions("abcd", "ef")))
+		})
 	})
 })
 
@@ -462,35 +472,126 @@ func (f snapshotGeneratorFunc) GenerateSnapshot(ctx context.Context, xdsCtx xds_
 	return f(ctx, xdsCtx, proxy)
 }
 
-// buildRealisticSnapshot returns a snapshot with 20 clusters, 20 endpoints,
-// and 5 listeners — representative of a non-trivial data plane.
-func buildRealisticSnapshot() *envoy_cache.Snapshot {
+// buildRealisticSnapshot returns a snapshot with nested xDS resources: 100
+// clusters, 100 endpoint assignments, 100 routes, and 100 listeners.
+func buildRealisticSnapshot(changedCluster int) *envoy_cache.Snapshot {
 	snap := &envoy_cache.Snapshot{}
 
-	clusterItems := make(map[string]envoy_types.ResourceWithTTL, 20)
-	endpointItems := make(map[string]envoy_types.ResourceWithTTL, 20)
-	for i := range 20 {
+	clusterItems := make(map[string]envoy_types.ResourceWithTTL, 100)
+	endpointItems := make(map[string]envoy_types.ResourceWithTTL, 100)
+	routeItems := make(map[string]envoy_types.ResourceWithTTL, 100)
+	for i := range 100 {
 		name := "cluster-" + strconv.Itoa(i)
+		connectTimeout := durationpb.New(5_000_000_000)
+		if i == changedCluster {
+			connectTimeout = durationpb.New(10_000_000_000)
+		}
 		clusterItems[name] = envoy_types.ResourceWithTTL{
 			Resource: &envoy_cluster.Cluster{
 				Name:                 name,
 				ClusterDiscoveryType: &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS},
+				ConnectTimeout:       connectTimeout,
+				EdsClusterConfig: &envoy_cluster.Cluster_EdsClusterConfig{
+					EdsConfig: &envoy_core.ConfigSource{
+						ResourceApiVersion: envoy_core.ApiVersion_V3,
+						ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
+							Ads: &envoy_core.AggregatedConfigSource{},
+						},
+					},
+				},
+				CircuitBreakers: &envoy_cluster.CircuitBreakers{
+					Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{{
+						MaxConnections:     wrapperspb.UInt32(1024),
+						MaxPendingRequests: wrapperspb.UInt32(1024),
+						MaxRequests:        wrapperspb.UInt32(2048),
+						MaxRetries:         wrapperspb.UInt32(3),
+					}},
+				},
+				HealthChecks: []*envoy_core.HealthCheck{{
+					Timeout:            durationpb.New(1_000_000_000),
+					Interval:           durationpb.New(5_000_000_000),
+					UnhealthyThreshold: wrapperspb.UInt32(2),
+					HealthyThreshold:   wrapperspb.UInt32(1),
+					HealthChecker: &envoy_core.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoy_core.HealthCheck_HttpHealthCheck{
+							Path: "/ready",
+						},
+					},
+				}},
+				TransportSocket: &envoy_core.TransportSocket{
+					Name: "envoy.transport_sockets.tls",
+					ConfigType: &envoy_core.TransportSocket_TypedConfig{
+						TypedConfig: proto.MustMarshalAny(&envoy_auth.UpstreamTlsContext{}),
+					},
+				},
 			},
 		}
 		endpointItems[name] = envoy_types.ResourceWithTTL{
-			Resource: &envoy_endpoint.ClusterLoadAssignment{ClusterName: name},
+			Resource: &envoy_endpoint.ClusterLoadAssignment{
+				ClusterName: name,
+				Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
+					Locality: &envoy_core.Locality{
+						Region: "region-1",
+						Zone:   "zone-" + strconv.Itoa(i%3),
+					},
+					LbEndpoints: []*envoy_endpoint.LbEndpoint{
+						lbEndpoint("10.0."+strconv.Itoa(i/255)+"."+strconv.Itoa(i%255), 8080),
+						lbEndpoint("10.1."+strconv.Itoa(i/255)+"."+strconv.Itoa(i%255), 8081),
+					},
+				}},
+			},
+		}
+		routeName := "route-" + strconv.Itoa(i)
+		routeItems[routeName] = envoy_types.ResourceWithTTL{
+			Resource: &envoy_route.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*envoy_route.VirtualHost{{
+					Name:    "vh-" + strconv.Itoa(i),
+					Domains: []string{"service-" + strconv.Itoa(i) + ".mesh"},
+					Routes: []*envoy_route.Route{{
+						Match: &envoy_route.RouteMatch{
+							PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/"},
+						},
+						Action: &envoy_route.Route_Route{
+							Route: &envoy_route.RouteAction{
+								ClusterSpecifier: &envoy_route.RouteAction_Cluster{Cluster: name},
+								Timeout:          durationpb.New(15_000_000_000),
+							},
+						},
+					}},
+				}},
+			},
 		}
 	}
 	snap.Resources[envoy_types.Cluster] = envoy_cache.Resources{Items: clusterItems}
 	snap.Resources[envoy_types.Endpoint] = envoy_cache.Resources{Items: endpointItems}
+	snap.Resources[envoy_types.Route] = envoy_cache.Resources{Items: routeItems}
 
-	// Listeners reference no RDS route configs, so no Route resources are
-	// required for Consistent() to pass.
-	listenerItems := make(map[string]envoy_types.ResourceWithTTL, 5)
-	for i := range 5 {
+	listenerItems := make(map[string]envoy_types.ResourceWithTTL, 100)
+	for i := range 100 {
 		lName := "listener-" + strconv.Itoa(i)
 		listenerItems[lName] = envoy_types.ResourceWithTTL{
-			Resource: &envoy_listener.Listener{Name: lName},
+			Resource: &envoy_listener.Listener{
+				Name: lName,
+				Address: &envoy_core.Address{
+					Address: &envoy_core.Address_SocketAddress{
+						SocketAddress: &envoy_core.SocketAddress{
+							Address: "127.0.0.1",
+							PortSpecifier: &envoy_core.SocketAddress_PortValue{
+								PortValue: uint32(10_000 + i),
+							},
+						},
+					},
+				},
+				FilterChains: []*envoy_listener.FilterChain{{
+					Filters: []*envoy_listener.Filter{{
+						Name: "envoy.filters.network.http_connection_manager",
+						ConfigType: &envoy_listener.Filter_TypedConfig{
+							TypedConfig: hcmForRoute("route-" + strconv.Itoa(i)),
+						},
+					}},
+				}},
+			},
 		}
 	}
 	snap.Resources[envoy_types.Listener] = envoy_cache.Resources{Items: listenerItems}
@@ -498,9 +599,28 @@ func buildRealisticSnapshot() *envoy_cache.Snapshot {
 	return snap
 }
 
+func lbEndpoint(address string, port uint32) *envoy_endpoint.LbEndpoint {
+	return &envoy_endpoint.LbEndpoint{
+		HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
+			Endpoint: &envoy_endpoint.Endpoint{
+				Address: &envoy_core.Address{
+					Address: &envoy_core.Address_SocketAddress{
+						SocketAddress: &envoy_core.SocketAddress{
+							Address: address,
+							PortSpecifier: &envoy_core.SocketAddress_PortValue{
+								PortValue: port,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func BenchmarkAutoVersion(b *testing.B) {
 	nodeId := "demo.benchmark"
-	snap := buildRealisticSnapshot()
+	snap := buildRealisticSnapshot(-1)
 
 	// Populate an "old" snapshot with content hashes.
 	populated, _, err := autoVersion(nodeId, &envoy_cache.Snapshot{}, snap)
@@ -508,15 +628,25 @@ func BenchmarkAutoVersion(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// Each iteration mirrors the real hot path: generator allocates a new
-		// snapshot, autoVersion hashes it and compares to the cached version.
-		n := buildRealisticSnapshot()
-		if _, _, err := autoVersion(nodeId, populated, n); err != nil {
-			b.Fatal(err)
+	b.Run("unchanged", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			// Each iteration mirrors the real hot path: generator allocates a new
+			// snapshot, autoVersion hashes it and compares to the cached version.
+			n := buildRealisticSnapshot(-1)
+			if _, _, err := autoVersion(nodeId, populated, n); err != nil {
+				b.Fatal(err)
+			}
 		}
-	}
+	})
+
+	b.Run("one-cluster-changed", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			n := buildRealisticSnapshot(42)
+			if _, _, err := autoVersion(nodeId, populated, n); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }
 
 func BenchmarkReconcileUnchanged(b *testing.B) {
@@ -532,7 +662,7 @@ func BenchmarkReconcileUnchanged(b *testing.B) {
 	xdsCtx := NewXdsContext()
 	r := &reconciler{
 		generator: snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
-			return buildRealisticSnapshot(), nil
+			return buildRealisticSnapshot(-1), nil
 		}),
 		cacher:         &simpleSnapshotCacher{xdsCtx.Hasher(), xdsCtx.Cache()},
 		statsCallbacks: statsCallbacks,

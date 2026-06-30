@@ -9,6 +9,7 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20260622121138-ddf65ac69581
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/cilium/ebpf v0.22.0
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.9.1
@@ -152,7 +153,6 @@ require (
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect

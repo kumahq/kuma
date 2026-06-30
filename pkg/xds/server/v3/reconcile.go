@@ -2,9 +2,12 @@ package v3
 
 import (
 	"context"
-	"hash/fnv"
+	"encoding/binary"
+	"fmt"
+	"hash"
 	"strconv"
 
+	"github.com/cespare/xxhash/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -125,6 +128,9 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 
 	for _, version := range changed {
+		// Empty versions mark resource types that became empty. Envoy ACKs those
+		// with VersionInfo=="", and StatsCallbacks treats empty VersionInfo as an
+		// initial request, so enqueueing "" would leak delivery metric state.
 		if version != "" {
 			r.statsCallbacks.ConfigReadyForDelivery(version)
 		}
@@ -145,8 +151,10 @@ func validateResource(r envoy_types.Resource) error {
 	}
 }
 
-// autoVersion computes deterministic FNV-64a content hashes for each resource
-// type in n, seeded with nodeId+type-index. Empty slots keep version "".
+// autoVersion computes deterministic xxHash64 content hashes for each resource
+// type in n, seeded with nodeId+type-index. The seed keeps delivery metric keys
+// distinct because StatsCallbacks tracks in-flight configs by version string.
+// Empty slots keep version "".
 // The cluster version is folded into the endpoint version when endpoints are
 // non-empty to force EDS re-push on cluster changes (prevents warming stalls).
 // Returns the versions that changed relative to old.
@@ -177,32 +185,43 @@ func autoVersion(nodeId string, old, n *envoy_cache.Snapshot) (*envoy_cache.Snap
 	return n, changed, nil
 }
 
-// resourcesVersion returns a hex FNV-64a hash over sorted resource names and
+// resourcesVersion returns a hex xxHash64 hash over sorted resource names and
 // their deterministic proto serializations, seeded with seed. Returns "" for
 // empty slots so that two empty slots compare equal without versioning.
 func resourcesVersion(seed string, items map[string]envoy_types.ResourceWithTTL) (string, error) {
 	if len(items) == 0 {
 		return "", nil
 	}
-	h := fnv.New64a()
-	h.Write([]byte(seed))
+	h := xxhash.New()
+	writeHashField(h, []byte(seed))
 	for _, key := range maps.SortedKeys(items) {
-		h.Write([]byte(key))
+		writeHashField(h, []byte(key))
 		b, err := envoy_cache.MarshalResource(items[key].Resource)
 		if err != nil {
 			return "", err
 		}
-		h.Write(b)
+		writeHashField(h, b)
 	}
-	return strconv.FormatUint(h.Sum64(), 16), nil
+	return formatHash(h.Sum64()), nil
 }
 
-// mixVersions combines two version strings into a single FNV-64a hash.
+// mixVersions combines two version strings into a single xxHash64 hash.
 func mixVersions(a, b string) string {
-	h := fnv.New64a()
-	h.Write([]byte(a))
-	h.Write([]byte(b))
-	return strconv.FormatUint(h.Sum64(), 16)
+	h := xxhash.New()
+	writeHashField(h, []byte(a))
+	writeHashField(h, []byte(b))
+	return formatHash(h.Sum64())
+}
+
+func writeHashField(h hash.Hash, b []byte) {
+	var lenBuf [8]byte
+	binary.LittleEndian.PutUint64(lenBuf[:], uint64(len(b)))
+	h.Write(lenBuf[:])
+	h.Write(b)
+}
+
+func formatHash(sum uint64) string {
+	return fmt.Sprintf("%016x", sum)
 }
 
 type snapshotGenerator interface {
