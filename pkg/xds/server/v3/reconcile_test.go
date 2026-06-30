@@ -327,8 +327,10 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			clusterV1 := cached.GetVersion(resource.ClusterType)
 			endpointV1 := cached.GetVersion(resource.EndpointType)
+			endpointDeltaV1 := cached.GetVersionMap(resource.EndpointType)["cluster"]
 			Expect(clusterV1).ToNot(BeEmpty())
 			Expect(endpointV1).ToNot(BeEmpty())
+			Expect(endpointDeltaV1).ToNot(BeEmpty())
 
 			By("second reconcile — different cluster, identical endpoint content")
 			changed, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
@@ -338,9 +340,11 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			clusterV2 := cached.GetVersion(resource.ClusterType)
 			endpointV2 := cached.GetVersion(resource.EndpointType)
+			endpointDeltaV2 := cached.GetVersionMap(resource.EndpointType)["cluster"]
 			// Cluster changed → endpoint version must change too (EDS warming fold).
 			Expect(clusterV2).ToNot(Equal(clusterV1))
 			Expect(endpointV2).ToNot(Equal(endpointV1))
+			Expect(endpointDeltaV2).ToNot(Equal(endpointDeltaV1))
 
 			By("third reconcile — back to original cluster")
 			changed, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
@@ -351,6 +355,7 @@ var _ = Describe("Reconcile", func() {
 			// Deterministic: same content as first reconcile → same hashes.
 			Expect(cached.GetVersion(resource.ClusterType)).To(Equal(clusterV1))
 			Expect(cached.GetVersion(resource.EndpointType)).To(Equal(endpointV1))
+			Expect(cached.GetVersionMap(resource.EndpointType)["cluster"]).To(Equal(endpointDeltaV1))
 		})
 
 		It("should leave empty resource types unversioned", func() {
@@ -454,7 +459,8 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(spy.deliveredVersions).ToNot(ContainElement(""))
-			Expect(spy.deliveredVersions).To(HaveLen(2))
+			Expect(spy.deliveredVersions).To(HaveLen(4))
+			Expect(spy.deliveredVersions).To(ContainElement("demo.empty-delivery-test" + resource.SecretType))
 		})
 
 		It("should frame hash inputs and produce fixed-width versions", func() {

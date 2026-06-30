@@ -99,7 +99,7 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	if err := snapshot.Consistent(); err != nil {
 		return false, errors.Wrap(err, "inconsistent snapshot")
 	}
-	log.Info("config has changed", "versions", changed)
+	log.Info("config has changed", "versions", versionStrings(changed))
 
 	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
 		return false, errors.Wrap(err, "failed to store snapshot")
@@ -128,11 +128,11 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 
 	for _, version := range changed {
-		// Empty versions mark resource types that became empty. Envoy ACKs those
-		// with VersionInfo=="", and StatsCallbacks treats empty VersionInfo as an
-		// initial request, so enqueueing "" would leak delivery metric state.
-		if version != "" {
-			r.statsCallbacks.ConfigReadyForDelivery(version)
+		if version.version != "" {
+			r.statsCallbacks.ConfigReadyForDelivery(version.version)
+		}
+		if version.typeURL != "" {
+			r.statsCallbacks.ConfigReadyForDelivery(node.Id + version.typeURL)
 		}
 	}
 	return true, nil
@@ -160,7 +160,7 @@ func validateResource(r envoy_types.Resource) error {
 // The cluster version is folded into the endpoint version when endpoints are
 // non-empty to force EDS re-push on cluster changes (prevents warming stalls).
 // Returns the versions that changed relative to old.
-func autoVersion(nodeId string, old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string, error) {
+func autoVersion(nodeId string, old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changedVersion, error) {
 	for i := range n.Resources {
 		seed := nodeId + strconv.Itoa(i)
 		ver, err := resourcesVersion(seed, n.Resources[i].Items)
@@ -180,14 +180,34 @@ func autoVersion(nodeId string, old, n *envoy_cache.Snapshot) (*envoy_cache.Snap
 		n.Resources[envoy_types.Endpoint].Version = mixVersions(ep, n.Resources[envoy_types.Cluster].Version)
 	}
 
-	var changed []string
+	if err := constructVersionMap(n); err != nil {
+		return nil, nil, err
+	}
+
+	var changed []changedVersion
 	for i, resource := range n.Resources {
 		if old.Resources[i].Version != resource.Version {
-			changed = append(changed, resource.Version)
+			changed = append(changed, changedVersion{
+				version: resource.Version,
+				typeURL: resourceTypeURL(i),
+			})
 		}
 	}
 
 	return n, changed, nil
+}
+
+type changedVersion struct {
+	version string
+	typeURL string
+}
+
+func versionStrings(changed []changedVersion) []string {
+	versions := make([]string, 0, len(changed))
+	for _, version := range changed {
+		versions = append(versions, version.version)
+	}
+	return versions
 }
 
 // resourcesVersion returns a hex xxHash64 hash over sorted resource names and
@@ -208,6 +228,59 @@ func resourcesVersion(seed string, items map[string]envoy_types.ResourceWithTTL)
 		writeHashField(h, b)
 	}
 	return formatHash(h.Sum64()), nil
+}
+
+func constructVersionMap(s *envoy_cache.Snapshot) error {
+	s.VersionMap = make(map[string]map[string]string)
+
+	for i, resources := range s.Resources {
+		typeURL := resourceTypeURL(i)
+		if typeURL == "" {
+			continue
+		}
+
+		s.VersionMap[typeURL] = make(map[string]string, len(resources.Items))
+		for _, resource := range resources.Items {
+			marshaled, err := envoy_cache.MarshalResource(resource.Resource)
+			if err != nil {
+				return err
+			}
+			version := envoy_cache.HashResource(marshaled)
+			if i == int(envoy_types.Endpoint) && s.Resources[envoy_types.Cluster].Version != "" {
+				version = mixVersions(version, s.Resources[envoy_types.Cluster].Version)
+			}
+			s.VersionMap[typeURL][envoy_cache.GetResourceName(resource.Resource)] = version
+		}
+	}
+
+	return nil
+}
+
+func resourceTypeURL(i int) string {
+	switch envoy_types.ResponseType(i) {
+	case envoy_types.Endpoint:
+		return envoy_resource.EndpointType
+	case envoy_types.Cluster:
+		return envoy_resource.ClusterType
+	case envoy_types.Route:
+		return envoy_resource.RouteType
+	case envoy_types.ScopedRoute:
+		return envoy_resource.ScopedRouteType
+	case envoy_types.VirtualHost:
+		return envoy_resource.VirtualHostType
+	case envoy_types.Listener:
+		return envoy_resource.ListenerType
+	case envoy_types.Secret:
+		return envoy_resource.SecretType
+	case envoy_types.Runtime:
+		return envoy_resource.RuntimeType
+	case envoy_types.ExtensionConfig:
+		return envoy_resource.ExtensionConfigType
+	case envoy_types.RateLimitConfig:
+		return envoy_resource.RateLimitConfigType
+	default:
+		return ""
+	}
 }
 
 // mixVersions combines two version strings into a single xxHash64 hash.
