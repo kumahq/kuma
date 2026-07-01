@@ -17,6 +17,10 @@
 apiVersion: v1
 kind: List
 items:
+  - apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: {{ .Namespace }}
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -47,7 +51,9 @@ items:
             -   env:
                   - name: COLLECTOR_ZIPKIN_HOST_PORT
                     value: "9411"
-                image: jaegertracing/all-in-one:1.24
+                  - name: COLLECTOR_OTLP_ENABLED
+                    value: "true"
+                image: jaegertracing/all-in-one:1.76.0@sha256:ab6f1a1f0fb49ea08bcd19f6b84f6081d0d44b364b6de148e1798eb5816bacac
                 name: jaeger
                 ports:
                   - containerPort: 5775
@@ -61,6 +67,10 @@ items:
                   - containerPort: 16686
                     protocol: TCP
                   - containerPort: 9411
+                    protocol: TCP
+                  - containerPort: 4317
+                    protocol: TCP
+                  - containerPort: 4318
                     protocol: TCP
                 readinessProbe:
                   httpGet:
@@ -109,6 +119,14 @@ items:
           port: 9411
           protocol: TCP
           targetPort: 9411
+        - name: grpc-otlp
+          port: 4317
+          protocol: TCP
+          targetPort: 4317
+        - name: http-otlp
+          port: 4318
+          protocol: TCP
+          targetPort: 4318
       selector:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: all-in-one
@@ -163,4 +181,3 @@ items:
       selector:
         app.kubernetes.io/name: jaeger
         app.kubernetes.io/component: all-in-one
-
