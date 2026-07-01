@@ -21,9 +21,13 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 )
 
+<<<<<<< HEAD
 var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache) *SnapshotGenerator {
+=======
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
+>>>>>>> 5304a81307 (fix(mads): remove noisy MeshMetrics/metrics coexistence log (#17069))
 	return &SnapshotGenerator{
 		resourceManager:   resourceManager,
 		resourceGenerator: resourceGenerator,
@@ -46,10 +50,6 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 	meshes, err := s.getMeshesWithPrometheusEnabled(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(meshes) > 0 && len(meshesWithMeshMetrics) > 0 {
-		log.Info("it is not supported to use both MeshMetrics policy and 'metrics' under Mesh resource. For now MeshMetrics will take precedence. If migrating please remove the 'metrics' section and apply an equivalent MeshMetrics resource")
 	}
 
 	var resources []*core_xds.Resource
