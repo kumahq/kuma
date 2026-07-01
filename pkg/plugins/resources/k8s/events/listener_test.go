@@ -3,6 +3,8 @@ package events
 import (
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -63,8 +65,12 @@ func TestKubernetesObjectFromEvent(t *testing.T) {
 }
 
 func TestListenerSkipsUnexpectedObjects(t *testing.T) {
+	droppedEvents := prometheus.NewCounter(prometheus.CounterOpts{Name: "test_dropped_events"})
 	emitter := &recordingEmitter{}
-	l := &listener{out: emitter}
+	l := &listener{
+		out:           emitter,
+		droppedEvents: droppedEvents,
+	}
 
 	l.OnAdd("mesh-1", false)
 	l.OnUpdate(nil, cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
@@ -73,41 +79,85 @@ func TestListenerSkipsUnexpectedObjects(t *testing.T) {
 	if len(emitter.events) != 0 {
 		t.Fatalf("expected no events for unexpected payloads, got %#v", emitter.events)
 	}
+	if got := counterValue(t, droppedEvents); got != 3 {
+		t.Fatalf("expected dropped event counter to be 3, got %f", got)
+	}
 }
 
-func TestListenerOnDeleteHandlesDeletedFinalStateUnknown(t *testing.T) {
+func TestListenerHandlersAcceptDeletedFinalStateUnknown(t *testing.T) {
 	scheme := runtime.NewScheme()
 	if err := kuma_v1alpha1.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to add Kuma scheme: %v", err)
 	}
 
-	emitter := &recordingEmitter{}
-	l := &listener{
-		mgr: &schemeManager{scheme: scheme},
-		out: emitter,
-	}
-
-	l.OnDelete(cache.DeletedFinalStateUnknown{
-		Key: "mesh-1",
-		Obj: &kuma_v1alpha1.Mesh{
-			ObjectMeta: metav1.ObjectMeta{Name: "mesh-1"},
+	testCases := []struct {
+		name      string
+		operation kuma_events.Op
+		call      func(*listener, any)
+	}{
+		{
+			name:      "add",
+			operation: kuma_events.Create,
+			call: func(l *listener, obj any) {
+				l.OnAdd(obj, false)
+			},
 		},
-	})
+		{
+			name:      "update",
+			operation: kuma_events.Update,
+			call: func(l *listener, obj any) {
+				l.OnUpdate(nil, obj)
+			},
+		},
+		{
+			name:      "delete",
+			operation: kuma_events.Delete,
+			call: func(l *listener, obj any) {
+				l.OnDelete(obj)
+			},
+		},
+	}
 
-	if len(emitter.events) != 1 {
-		t.Fatalf("expected one event, got %#v", emitter.events)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			emitter := &recordingEmitter{}
+			l := &listener{
+				mgr: &schemeManager{scheme: scheme},
+				out: emitter,
+			}
+
+			tc.call(l, cache.DeletedFinalStateUnknown{
+				Key: "mesh-1",
+				Obj: &kuma_v1alpha1.Mesh{
+					ObjectMeta: metav1.ObjectMeta{Name: "mesh-1"},
+				},
+			})
+
+			if len(emitter.events) != 1 {
+				t.Fatalf("expected one event, got %#v", emitter.events)
+			}
+			event, ok := emitter.events[0].(kuma_events.ResourceChangedEvent)
+			if !ok {
+				t.Fatalf("expected ResourceChangedEvent, got %T", emitter.events[0])
+			}
+			if event.Operation != tc.operation {
+				t.Fatalf("expected %v operation, got %v", tc.operation, event.Operation)
+			}
+			if event.Type != core_model.ResourceType("Mesh") {
+				t.Fatalf("expected Mesh type, got %q", event.Type)
+			}
+			if event.Key != (core_model.ResourceKey{Name: "mesh-1"}) {
+				t.Fatalf("expected mesh-1 key, got %#v", event.Key)
+			}
+		})
 	}
-	event, ok := emitter.events[0].(kuma_events.ResourceChangedEvent)
-	if !ok {
-		t.Fatalf("expected ResourceChangedEvent, got %T", emitter.events[0])
+}
+
+func counterValue(t *testing.T, counter prometheus.Counter) float64 {
+	t.Helper()
+	metric := &dto.Metric{}
+	if err := counter.Write(metric); err != nil {
+		t.Fatalf("failed to read counter: %v", err)
 	}
-	if event.Operation != kuma_events.Delete {
-		t.Fatalf("expected delete operation, got %v", event.Operation)
-	}
-	if event.Type != core_model.ResourceType("Mesh") {
-		t.Fatalf("expected Mesh type, got %q", event.Type)
-	}
-	if event.Key != (core_model.ResourceKey{Name: "mesh-1"}) {
-		t.Fatalf("expected mesh-1 key, got %#v", event.Key)
-	}
+	return metric.GetCounter().GetValue()
 }
