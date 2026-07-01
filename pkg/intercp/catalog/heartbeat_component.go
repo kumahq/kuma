@@ -114,15 +114,16 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 }
 
 // backoff returns the delay until the next heartbeat: the configured interval
-// on success, or an exponentially growing delay (capped) after consecutive
-// failures.
+// on success, or an exponentially growing delay after consecutive failures.
+// The cap never reduces the delay below the configured interval.
 func (h *heartbeatComponent) backoff() time.Duration {
 	if h.failures == 0 {
 		return h.interval
 	}
 	backoff := h.interval << min(h.failures, 16)
-	if backoff <= 0 || backoff > maxHeartbeatBackoff {
-		return maxHeartbeatBackoff
+	maxBackoff := max(maxHeartbeatBackoff, h.interval)
+	if backoff <= 0 || backoff > maxBackoff {
+		return maxBackoff
 	}
 	return backoff
 }
