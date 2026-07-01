@@ -51,7 +51,7 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	}
 	for i, res := range snap.Resources {
 		if res.Version != "" {
-			r.statsCallbacks.DiscardConfig(res.Version)
+			r.statsCallbacks.DiscardConfig(nodeId.Id + res.Version)
 		}
 		if typeURL := resourceTypeURL(i); typeURL != "" {
 			r.statsCallbacks.DiscardConfig(nodeId.Id + typeURL)
@@ -131,7 +131,10 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 
 	for _, version := range changed {
 		if version.version != "" {
-			r.statsCallbacks.ConfigReadyForDelivery(version.version)
+			// Content hashes aren't node-seeded, so two nodes can share a
+			// version string for a resource type; prefix with nodeId so the
+			// delivery-metric queue doesn't cross-match between them.
+			r.statsCallbacks.ConfigReadyForDelivery(node.Id + version.version)
 		}
 		if version.typeURL != "" {
 			r.statsCallbacks.ConfigReadyForDelivery(node.Id + version.typeURL)
