@@ -65,7 +65,10 @@ func TestKubernetesObjectFromEvent(t *testing.T) {
 }
 
 func TestListenerSkipsUnexpectedObjects(t *testing.T) {
-	droppedEvents := prometheus.NewCounter(prometheus.CounterOpts{Name: "test_dropped_events"})
+	droppedEvents := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "test_dropped_events",
+		Help: "Test counter for dropped Kubernetes events.",
+	})
 	emitter := &recordingEmitter{}
 	l := &listener{
 		out:           emitter,
