@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash"
-	"strconv"
 
 	"github.com/cespare/xxhash/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -74,7 +73,7 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 		previous = &envoy_cache.Snapshot{}
 	}
 
-	snapshot, changed, err := autoVersion(node.Id, previous, snapshot)
+	snapshot, changed, err := autoVersion(previous, snapshot)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to compute snapshot versions")
 	}
@@ -155,23 +154,21 @@ func validateResource(r envoy_types.Resource) error {
 }
 
 // autoVersion computes deterministic xxHash64 content hashes for each resource
-// type in n, seeded with nodeId+type-index. The seed keeps delivery metric keys
-// distinct because StatsCallbacks tracks in-flight configs by version string.
+// type in n.
 // Empty slots keep version "" unless they are clearing a previously non-empty
 // slot, in which case they get a deterministic clear version so Envoy observes
 // the removal.
 // The cluster version is folded into the endpoint version when endpoints are
 // non-empty to force EDS re-push on cluster changes (prevents warming stalls).
 // Returns the versions that changed relative to old.
-func autoVersion(nodeId string, old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changedVersion, error) {
+func autoVersion(old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changedVersion, error) {
 	for i := range n.Resources {
-		seed := nodeId + strconv.Itoa(i)
-		ver, err := resourcesVersion(seed, n.Resources[i].Items)
+		ver, err := resourcesVersion(n.Resources[i].Items)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to hash resources for type %d", i)
 		}
 		if ver == "" && old.Resources[i].Version != "" {
-			ver = emptyResourcesVersion(seed)
+			ver = emptyResourcesVersion()
 		}
 		n.Resources[i].Version = ver
 	}
@@ -214,14 +211,13 @@ func versionStrings(changed []changedVersion) []string {
 }
 
 // resourcesVersion returns a hex xxHash64 hash over sorted resource names and
-// their deterministic proto serializations, seeded with seed. Returns "" for
+// their deterministic proto serializations. Returns "" for
 // empty slots so that two empty slots compare equal without versioning.
-func resourcesVersion(seed string, items map[string]envoy_types.ResourceWithTTL) (string, error) {
+func resourcesVersion(items map[string]envoy_types.ResourceWithTTL) (string, error) {
 	if len(items) == 0 {
 		return "", nil
 	}
 	h := xxhash.New()
-	writeHashField(h, []byte(seed))
 	for _, key := range maps.SortedKeys(items) {
 		writeHashField(h, []byte(key))
 		b, err := envoy_cache.MarshalResource(items[key].Resource)
@@ -294,9 +290,8 @@ func mixVersions(a, b string) string {
 	return formatHash(h.Sum64())
 }
 
-func emptyResourcesVersion(seed string) string {
+func emptyResourcesVersion() string {
 	h := xxhash.New()
-	writeHashField(h, []byte(seed))
 	writeHashField(h, nil)
 	return formatHash(h.Sum64())
 }

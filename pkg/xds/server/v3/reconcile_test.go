@@ -498,7 +498,7 @@ var _ = Describe("Reconcile", func() {
 		})
 
 		It("should frame hash inputs and produce fixed-width versions", func() {
-			secretVersion, err := resourcesVersion("demo0", map[string]envoy_types.ResourceWithTTL{
+			secretVersion, err := resourcesVersion(map[string]envoy_types.ResourceWithTTL{
 				"secret": {Resource: &envoy_auth.Secret{Name: "secret"}},
 			})
 			Expect(err).ToNot(HaveOccurred())
@@ -678,11 +678,10 @@ func lbEndpoint(address string, port uint32) *envoy_endpoint.LbEndpoint {
 }
 
 func BenchmarkAutoVersion(b *testing.B) {
-	nodeId := "demo.benchmark"
 	snap := buildRealisticSnapshot(-1)
 
 	// Populate an "old" snapshot with content hashes.
-	populated, _, err := autoVersion(nodeId, &envoy_cache.Snapshot{}, snap)
+	populated, _, err := autoVersion(&envoy_cache.Snapshot{}, snap)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -692,7 +691,7 @@ func BenchmarkAutoVersion(b *testing.B) {
 			// Each iteration mirrors the real hot path: generator allocates a new
 			// snapshot, autoVersion hashes it and compares to the cached version.
 			n := buildRealisticSnapshot(-1)
-			if _, _, err := autoVersion(nodeId, populated, n); err != nil {
+			if _, _, err := autoVersion(populated, n); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -701,7 +700,7 @@ func BenchmarkAutoVersion(b *testing.B) {
 	b.Run("one-cluster-changed", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			n := buildRealisticSnapshot(42)
-			if _, _, err := autoVersion(nodeId, populated, n); err != nil {
+			if _, _, err := autoVersion(populated, n); err != nil {
 				b.Fatal(err)
 			}
 		}
