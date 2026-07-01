@@ -87,7 +87,11 @@ func resourceKey(obj model.KubernetesObject) core_model.ResourceKey {
 }
 
 func (k *listener) OnAdd(obj any, _ bool) {
-	kobj := obj.(model.KubernetesObject)
+	kobj, ok := kubernetesObjectFromEvent(obj)
+	if !ok {
+		log.Error(nil, "unexpected object type on add, skipping", "type", fmt.Sprintf("%T", obj))
+		return
+	}
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
 		return
@@ -100,7 +104,11 @@ func (k *listener) OnAdd(obj any, _ bool) {
 }
 
 func (k *listener) OnUpdate(oldObj, newObj any) {
-	kobj := newObj.(model.KubernetesObject)
+	kobj, ok := kubernetesObjectFromEvent(newObj)
+	if !ok {
+		log.Error(nil, "unexpected object type on update, skipping", "type", fmt.Sprintf("%T", newObj))
+		return
+	}
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
 		return
@@ -113,7 +121,11 @@ func (k *listener) OnUpdate(oldObj, newObj any) {
 }
 
 func (k *listener) OnDelete(obj any) {
-	kobj := obj.(model.KubernetesObject)
+	kobj, ok := kubernetesObjectFromEvent(obj)
+	if !ok {
+		log.Error(nil, "unexpected object type on delete, skipping", "type", fmt.Sprintf("%T", obj))
+		return
+	}
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
 		return
@@ -123,6 +135,15 @@ func (k *listener) OnDelete(obj any) {
 		Type:      core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
 		Key:       resourceKey(kobj),
 	})
+}
+
+func kubernetesObjectFromEvent(obj any) (model.KubernetesObject, bool) {
+	if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		obj = tombstone.Obj
+	}
+
+	kobj, ok := obj.(model.KubernetesObject)
+	return kobj, ok
 }
 
 func (k *listener) NeedLeaderElection() bool {
