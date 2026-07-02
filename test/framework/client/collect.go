@@ -21,6 +21,7 @@ import (
 	k8s_exec "k8s.io/client-go/util/exec"
 
 	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 	"github.com/kumahq/kuma/v3/test/framework/utils"
 	"github.com/kumahq/kuma/v3/test/server/types"
 )
@@ -299,22 +300,60 @@ func CollectResponse(
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (string, string, error) {
+	execResult := collectResponse(cluster, container, destination, fn...)
+	if execResult.err != nil {
+		addCollectDiagnostic("exec-error", execResult, execResult.err)
+	}
+	return execResult.stdout, execResult.stderr, execResult.err
+}
+
+type collectResponseResult struct {
+	cluster     framework.Cluster
+	container   string
+	destination string
+	opts        CollectResponsesOpts
+	command     []string
+	namespace   string
+	podName     string
+	stdout      string
+	stderr      string
+	err         error
+}
+
+func collectResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) collectResponseResult {
 	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		opts.ShellEscaped(opts.URL),
 	)
 
+	result := collectResponseResult{
+		cluster:     cluster,
+		container:   container,
+		destination: destination,
+		opts:        opts,
+		command:     cmd,
+		namespace:   opts.namespace,
+	}
+
 	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
 		var err error
 		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return "", "", err
+			result.err = err
+			return result
 		}
 	}
+	result.podName = appPodName
 
-	return cluster.Exec(opts.namespace, appPodName, container, cmd...)
+	result.stdout, result.stderr, result.err = cluster.Exec(opts.namespace, appPodName, container, cmd...)
+	return result
 }
 
 func CollectEchoResponse(
@@ -323,21 +362,169 @@ func CollectEchoResponse(
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (types.EchoResponse, error) {
-	stdout, stderr, err := CollectResponse(cluster, container, destination, fn...)
-	if err != nil {
-		return types.EchoResponse{}, fmt.Errorf("stderr: '%s', %v", stderr, err)
+	execResult := collectResponse(cluster, container, destination, fn...)
+	if execResult.err != nil {
+		addCollectDiagnostic("exec-error", execResult, execResult.err)
+		return types.EchoResponse{}, fmt.Errorf("stderr: '%s', %v", execResult.stderr, execResult.err)
 	}
 
 	response := &types.EchoResponse{}
-	if err := json.Unmarshal([]byte(stdout), response); err != nil {
-		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", stdout)
+	if err := json.Unmarshal([]byte(execResult.stdout), response); err != nil {
+		addCollectDiagnostic("unmarshal-error", execResult, err)
+		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", execResult.stdout)
 	}
 
 	if response.Instance == "" {
+		addCollectDiagnostic("empty-instance", execResult, errors.New("'instance' field is empty"))
 		return types.EchoResponse{}, errors.New("'instance' field is empty ")
 	}
 
 	return *response, nil
+}
+
+type collectDiagnostic struct {
+	Reason      string            `json:"reason"`
+	Error       string            `json:"error,omitempty"`
+	Timestamp   time.Time         `json:"timestamp"`
+	Cluster     string            `json:"cluster"`
+	Source      string            `json:"source"`
+	Namespace   string            `json:"namespace,omitempty"`
+	Application string            `json:"application,omitempty"`
+	PodName     string            `json:"podName,omitempty"`
+	Destination string            `json:"destination"`
+	Method      string            `json:"method"`
+	URL         string            `json:"url"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	Flags       []string          `json:"flags,omitempty"`
+	Command     []string          `json:"command"`
+	Stdout      string            `json:"stdout"`
+	Stderr      string            `json:"stderr"`
+}
+
+func addCollectDiagnostic(reason string, result collectResponseResult, err error) {
+	diagnostic := collectDiagnostic{
+		Reason:      reason,
+		Timestamp:   time.Now().UTC(),
+		Cluster:     result.cluster.Name(),
+		Source:      result.container,
+		Namespace:   result.namespace,
+		Application: result.opts.application,
+		PodName:     result.podName,
+		Destination: result.destination,
+		Method:      result.opts.Method,
+		URL:         result.opts.URL,
+		Headers:     redactedHeaders(result.opts.Headers),
+		Flags:       result.opts.Flags,
+		Command:     redactedCommand(result.command),
+		Stdout:      truncateDiagnosticString(result.stdout),
+		Stderr:      truncateDiagnosticString(result.stderr),
+	}
+	if err != nil {
+		diagnostic.Error = err.Error()
+	}
+
+	data, jsonErr := json.MarshalIndent(diagnostic, "", "  ")
+	if jsonErr != nil {
+		framework.Logf("failed to marshal collect diagnostic: %v", jsonErr)
+		return
+	}
+	report.AddFileToReportEntry(
+		fmt.Sprintf("client-collect-%d-%s-%s.json", time.Now().UnixNano(), result.cluster.Name(), result.container),
+		data,
+	)
+}
+
+const redactedDiagnosticValue = "[redacted]"
+
+func redactedHeaders(headers map[string]string) map[string]string {
+	if len(headers) == 0 {
+		return nil
+	}
+
+	redacted := make(map[string]string, len(headers))
+	for key, value := range headers {
+		if shouldRedactHeader(key) {
+			redacted[key] = redactedDiagnosticValue
+			continue
+		}
+		redacted[key] = value
+	}
+	return redacted
+}
+
+func redactedCommand(command []string) []string {
+	if len(command) == 0 {
+		return nil
+	}
+
+	redacted := append([]string(nil), command...)
+	for i := 0; i < len(redacted); i++ {
+		arg := redacted[i]
+		switch {
+		case (arg == "--header" || arg == "-H") && i+1 < len(redacted):
+			i++
+			redacted[i] = redactedHeaderArgument(redacted[i])
+		case strings.HasPrefix(arg, "--header="):
+			redacted[i] = "--header=" + redactedHeaderArgument(strings.TrimPrefix(arg, "--header="))
+		case strings.HasPrefix(arg, "-H") && len(arg) > len("-H"):
+			redacted[i] = "-H" + redactedHeaderArgument(strings.TrimSpace(strings.TrimPrefix(arg, "-H")))
+		}
+	}
+	return redacted
+}
+
+func redactedHeaderArgument(header string) string {
+	trimmed := strings.TrimSpace(header)
+	if trimmed == "" {
+		return header
+	}
+
+	quote := byte(0)
+	if len(trimmed) >= 2 {
+		first := trimmed[0]
+		last := trimmed[len(trimmed)-1]
+		if (first == '\'' || first == '"') && last == first {
+			quote = first
+			trimmed = trimmed[1 : len(trimmed)-1]
+		}
+	}
+
+	name, _, found := strings.Cut(trimmed, ":")
+	if !found || !shouldRedactHeader(name) {
+		return header
+	}
+
+	value := strings.TrimSpace(name) + ": " + redactedDiagnosticValue
+	if quote != 0 {
+		return string(quote) + value + string(quote)
+	}
+	return value
+}
+
+func shouldRedactHeader(name string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	for _, token := range []string{
+		"authorization",
+		"token",
+		"secret",
+		"cookie",
+		"credential",
+		"api-key",
+		"apikey",
+	} {
+		if strings.Contains(normalized, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func truncateDiagnosticString(value string) string {
+	const maxDiagnosticBytes = 32 * 1024
+	if len(value) <= maxDiagnosticBytes {
+		return value
+	}
+	return value[:maxDiagnosticBytes] + "\n...[truncated]"
 }
 
 // MakeDirectRequest collects responses using http client that calls the server from outside the cluster
@@ -593,11 +780,92 @@ func callConcurrently(destination string, call func() (any, error), fn ...Collec
 		res := <-results
 		if res.err != nil {
 			framework.Logf("got error idx: %d err: %v", res.idx, res.err)
-			return nil, res.err
+			addConcurrentDiagnostic(destination, opts, res, responses)
+			return nil, fmt.Errorf(
+				"request %d/%d failed after %d successful responses: %w",
+				res.idx+1,
+				opts.numberOfRequests,
+				len(responses),
+				res.err,
+			)
 		}
 		responses = append(responses, res.res)
 	}
 	return responses, nil
+}
+
+type concurrentDiagnostic struct {
+	Timestamp             time.Time         `json:"timestamp"`
+	Destination           string            `json:"destination"`
+	URL                   string            `json:"url"`
+	Method                string            `json:"method"`
+	NumberOfRequests      uint              `json:"numberOfRequests"`
+	MaxConcurrentRequests uint              `json:"maxConcurrentRequests"`
+	CompletedResponses    int               `json:"completedResponses"`
+	FailedIndex           uint              `json:"failedIndex"`
+	Error                 string            `json:"error"`
+	PartialResponses      []any             `json:"partialResponses,omitempty"`
+	Headers               map[string]string `json:"headers,omitempty"`
+	Flags                 []string          `json:"flags,omitempty"`
+	InstanceHistogram     map[string]int    `json:"instanceHistogram,omitempty"`
+	ResponseCodeHistogram map[int]int       `json:"responseCodeHistogram,omitempty"`
+}
+
+func addConcurrentDiagnostic(destination string, opts CollectResponsesOpts, failed result, responses []any) {
+	diagnostic := concurrentDiagnostic{
+		Timestamp:             time.Now().UTC(),
+		Destination:           destination,
+		URL:                   opts.URL,
+		Method:                opts.Method,
+		NumberOfRequests:      opts.numberOfRequests,
+		MaxConcurrentRequests: opts.maxConcurrentRequests,
+		CompletedResponses:    len(responses),
+		FailedIndex:           failed.idx,
+		Error:                 failed.err.Error(),
+		PartialResponses:      responses,
+		Headers:               redactedHeaders(opts.Headers),
+		Flags:                 opts.Flags,
+		InstanceHistogram:     instanceHistogram(responses),
+		ResponseCodeHistogram: responseCodeHistogram(responses),
+	}
+
+	data, err := json.MarshalIndent(diagnostic, "", "  ")
+	if err != nil {
+		framework.Logf("failed to marshal concurrent diagnostic: %v", err)
+		return
+	}
+	report.AddFileToReportEntry(
+		fmt.Sprintf("client-concurrent-%d.json", time.Now().UnixNano()),
+		data,
+	)
+}
+
+func instanceHistogram(responses []any) map[string]int {
+	histogram := map[string]int{}
+	for _, response := range responses {
+		echo, ok := response.(types.EchoResponse)
+		if ok && echo.Instance != "" {
+			histogram[echo.Instance]++
+		}
+	}
+	if len(histogram) == 0 {
+		return nil
+	}
+	return histogram
+}
+
+func responseCodeHistogram(responses []any) map[int]int {
+	histogram := map[int]int{}
+	for _, response := range responses {
+		failure, ok := response.(FailureResponse)
+		if ok {
+			histogram[failure.ResponseCode]++
+		}
+	}
+	if len(histogram) == 0 {
+		return nil
+	}
+	return histogram
 }
 
 func CollectResponsesByInstance(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (map[string]int, error) {
