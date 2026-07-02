@@ -305,13 +305,15 @@ func addResourcesEndpoints(
 			endpointsCtx.zoneName = cfg.Multizone.Zone.Name
 		}
 		endpoints := resourceEndpoints{
-			resourceEndpointsContext:     endpointsCtx,
-			k8sMapper:                    k8sMapper,
-			federatedZone:                cfg.IsFederatedZoneCP(),
-			filter:                       filters.Resource(definition),
-			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
-			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
-			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			resourceCrudHandler: &resourceCrudHandler{
+				resourceEndpointsContext:     endpointsCtx,
+				k8sMapper:                    k8sMapper,
+				federatedZone:                cfg.IsFederatedZoneCP(),
+				filter:                       filters.Resource(definition),
+				disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
+				systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
+				isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			},
 			inspect: &resourceInspectHandler{
 				resourceEndpointsContext: endpointsCtx,
 				meshContextBuilder:       meshContextBuilder,
