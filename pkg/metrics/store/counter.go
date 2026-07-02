@@ -128,11 +128,26 @@ func (s *storeCounter) countMeshScopedResources(ctx context.Context, resourceCou
 	if err := s.resManager.List(ctx, insights); err != nil {
 		return err
 	}
+	// Zone CPs do not create MeshInsight resources, so count dataplanes directly
+	// from the store to keep the Dataplane metric available there as well.
+	if len(insights.Items) == 0 {
+		log.V(1).Info("no MeshInsight found, counting dataplanes from store directly")
+		return s.countDataplanesWithoutInsights(ctx, resourceCount)
+	}
 	for _, meshInsight := range insights.Items {
 		resourceCount[string(mesh.DataplaneType)] += meshInsight.Spec.GetDataplanes().GetTotal()
 		for policy, stats := range meshInsight.Spec.GetPolicies() {
 			resourceCount[policy] += stats.GetTotal()
 		}
 	}
+	return nil
+}
+
+func (s *storeCounter) countDataplanesWithoutInsights(ctx context.Context, resourceCount map[string]uint32) error {
+	dataplanes := &mesh.DataplaneResourceList{}
+	if err := s.resManager.List(ctx, dataplanes); err != nil {
+		return err
+	}
+	resourceCount[string(mesh.DataplaneType)] += uint32(len(dataplanes.GetItems()))
 	return nil
 }
