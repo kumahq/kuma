@@ -4,6 +4,11 @@ on:
     branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
   pull_request:
+    # 'labeled'/'unlabeled' let CI re-run when a ci/ label is added/removed:
+    # its jobs read github.event.pull_request.labels, which the 'opened' event
+    # doesn't yet reflect for labels applied right after creation (e.g. backports).
+    # GitHub can't filter label names in 'on:', so the check job gates on ci/ below.
+    types: [opened, reopened, synchronize, labeled, unlabeled]
     branches: ["master", "release-*"]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
@@ -18,10 +23,20 @@ env:
   GOLANGCI_LINT_VERSION: "v2.12.2"
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 concurrency:
-  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
+  # A non-ci/ label change must not share the PR's group, or it would cancel a
+  # real in-flight build and then skip (the check job is gated below). Give it a
+  # unique throwaway group. A ci/ label change keeps the PR group so it cancels
+  # and replaces the running build with a labelled (e.g. full-matrix) one.
+  group: ${{ format('{0}-{1}-{2}{3}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name, ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && !startsWith(github.event.label.name, 'ci/')) && format('-noop-{0}', github.run_id) || '') }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
 jobs:
   check:
+    # On label events only proceed for ci/ labels; other labels skip the whole
+    # pipeline (check is the root every job depends on). GitHub can't filter
+    # label names in 'on:', so gate here.
+    if: >-
+      (github.event.action != 'labeled' && github.event.action != 'unlabeled')
+      || startsWith(github.event.label.name, 'ci/')
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
@@ -200,7 +215,11 @@ jobs:
     permissions:
       id-token: write
     timeout-minutes: 10
-    if: ${{ always() }}
+    # always(), but still skip non-ci/ label events (check gates the rest).
+    if: >-
+      ${{ always()
+      && ((github.event.action != 'labeled' && github.event.action != 'unlabeled')
+      || startsWith(github.event.label.name, 'ci/')) }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     env:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
