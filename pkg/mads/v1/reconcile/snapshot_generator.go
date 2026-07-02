@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
