@@ -212,6 +212,9 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not reconcile")
 	}
+	if syncForConfig && d.XdsMetrics != nil {
+		d.XdsMetrics.DataplaneConfigRegenerated.WithLabelValues(d.key.Mesh).Inc()
+	}
 	d.lastHash = meshCtx.Hash
 	d.lastIdentityHash = identityHash
 
