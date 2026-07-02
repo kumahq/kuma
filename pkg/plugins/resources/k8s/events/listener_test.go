@@ -65,10 +65,10 @@ func TestKubernetesObjectFromEvent(t *testing.T) {
 }
 
 func TestListenerSkipsUnexpectedObjects(t *testing.T) {
-	droppedEvents := prometheus.NewCounter(prometheus.CounterOpts{
+	droppedEvents := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "test_dropped_events",
 		Help: "Test counter for dropped Kubernetes events.",
-	})
+	}, []string{"operation"})
 	emitter := &recordingEmitter{}
 	l := &listener{
 		out:           emitter,
@@ -79,11 +79,17 @@ func TestListenerSkipsUnexpectedObjects(t *testing.T) {
 	l.OnUpdate(nil, cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
 	l.OnDelete(cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
 
+	if got := counterValue(t, droppedEvents.WithLabelValues("add")); got != 1 {
+		t.Fatalf("expected dropped event counter for add to be 1, got %f", got)
+	}
+	if got := counterValue(t, droppedEvents.WithLabelValues("update")); got != 1 {
+		t.Fatalf("expected dropped event counter for update to be 1, got %f", got)
+	}
+	if got := counterValue(t, droppedEvents.WithLabelValues("delete")); got != 1 {
+		t.Fatalf("expected dropped event counter for delete to be 1, got %f", got)
+	}
 	if len(emitter.events) != 0 {
 		t.Fatalf("expected no events for unexpected payloads, got %#v", emitter.events)
-	}
-	if got := counterValue(t, droppedEvents); got != 3 {
-		t.Fatalf("expected dropped event counter to be 3, got %f", got)
 	}
 }
 
