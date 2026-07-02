@@ -158,7 +158,7 @@ var _ = Describe("Heartbeats", func() {
 
 		// then failures are recorded as connectivity problems
 		Eventually(func(g Gomega) {
-			metric := test_metrics.FindMetric(metrics, "component_heartbeat_failures", "reason", "unreachable")
+			metric := test_metrics.FindMetric(metrics, "component_heartbeat_failures")
 			g.Expect(metric).ToNot(BeNil())
 			g.Expect(metric.Counter.GetValue()).To(BeNumerically(">", 0))
 		}, "10s", "100ms").Should(Succeed())

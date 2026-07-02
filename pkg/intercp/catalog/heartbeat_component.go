@@ -6,8 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -24,14 +22,9 @@ var heartbeatLog = core.Log.WithName("intercp").WithName("catalog").WithName("he
 // high-volume stream of failure logs.
 const maxHeartbeatBackoff = 1 * time.Minute
 
-const (
-	reasonUnreachable = "unreachable"
-	reasonError       = "error"
-)
-
 type heartbeatMetrics struct {
 	interval prometheus.Histogram
-	failures *prometheus.CounterVec
+	failures prometheus.Counter
 }
 
 type heartbeatComponent struct {
@@ -61,10 +54,10 @@ func NewHeartbeatComponent(
 			Name: "component_heartbeat",
 			Help: "Summary of Inter CP Heartbeat component interval",
 		}),
-		failures: prometheus.NewCounterVec(prometheus.CounterOpts{
+		failures: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "component_heartbeat_failures",
-			Help: "Counter of failed Inter CP heartbeats to the leader by reason",
-		}, []string{"reason"}),
+			Help: "Counter of failed Inter CP heartbeats to the leader",
+		}),
 	}
 	if err := metrics.BulkRegister(m.interval, m.failures); err != nil {
 		return nil, err
@@ -173,26 +166,17 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 	client, err := h.getClientFn(h.leader.InterCpURL())
 	if err != nil {
 		log.Error(err, "could not get or create a client to a leader")
-		h.recordFailure(reasonError)
+		h.recordFailure()
 		return false
 	}
 	resp, err := client.Ping(ctx, h.request)
 	if err != nil {
-		if isConnectivityError(err) {
-			h.recordFailure(reasonUnreachable)
-			log.Info(
-				"leader is currently unreachable, will retry with backoff. This is a connectivity problem, not a leader change",
-				"cause", err,
-				"consecutiveFailures", h.failures,
-			)
-		} else {
-			h.recordFailure(reasonError)
-			log.Info(
-				"could not send a heartbeat to a leader",
-				"cause", err,
-				"consecutiveFailures", h.failures,
-			)
-		}
+		h.recordFailure()
+		log.Info(
+			"could not send a heartbeat to a leader, will retry with backoff. This is a connectivity problem, not a leader change",
+			"cause", err,
+			"consecutiveFailures", h.failures,
+		)
 		return false
 	}
 	h.failures = 0
@@ -205,24 +189,9 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 	return true
 }
 
-func (h *heartbeatComponent) recordFailure(reason string) {
+func (h *heartbeatComponent) recordFailure() {
 	h.failures++
-	h.metrics.failures.WithLabelValues(reason).Inc()
-}
-
-// isConnectivityError reports whether err indicates the leader could not be
-// reached (as opposed to an application-level error).
-func isConnectivityError(err error) bool {
-	s, ok := status.FromError(err)
-	if !ok {
-		return false
-	}
-	switch s.Code() {
-	case codes.Unavailable, codes.DeadlineExceeded:
-		return true
-	default:
-		return false
-	}
+	h.metrics.failures.Inc()
 }
 
 func (h *heartbeatComponent) NeedLeaderElection() bool {
