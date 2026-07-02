@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -19,8 +18,6 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 )
-
-var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache) *SnapshotGenerator {
 	return &SnapshotGenerator{
@@ -45,10 +42,6 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]ut
 	meshes, err := s.getMeshesWithPrometheusEnabled(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(meshes) > 0 && len(meshesWithMeshMetrics) > 0 {
-		log.Info("it is not supported to use both MeshMetrics policy and 'metrics' under Mesh resource. For now MeshMetrics will take precedence. If migrating please remove the 'metrics' section and apply an equivalent MeshMetrics resource")
 	}
 
 	var resources []*core_xds.Resource
