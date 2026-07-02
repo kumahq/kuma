@@ -106,9 +106,8 @@ func Hash(resource Resource) []byte {
 }
 
 func HashMeta(r Resource) []byte {
-	meta := r.GetMeta()
 	hasher := fnv.New128a()
-	writeMetaIdentity(hasher, r)
+	meta := writeMetaIdentity(hasher, r)
 	_, _ = hasher.Write([]byte(meta.GetVersion()))
 	return hasher.Sum(nil)
 }
@@ -119,11 +118,12 @@ func HashMetaIdentity(r Resource) []byte {
 	return hasher.Sum(nil)
 }
 
-func writeMetaIdentity(hasher hash.Hash, r Resource) {
+func writeMetaIdentity(hasher hash.Hash, r Resource) ResourceMeta {
 	meta := r.GetMeta()
 	_, _ = hasher.Write([]byte(r.Descriptor().Name))
 	_, _ = hasher.Write([]byte(meta.GetMesh()))
 	_, _ = hasher.Write([]byte(meta.GetName()))
+	return meta
 }
 
 func Deprecations(resource Resource) []string {
