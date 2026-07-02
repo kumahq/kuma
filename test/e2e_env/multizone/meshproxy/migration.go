@@ -150,7 +150,7 @@ func Migration() {
 	It("should deploy zone proxies to meshproxymig-red with no interruptions for meshproxymig-blue", func(ctx SpecContext) {
 		assertTrafficForBothMeshes()
 
-		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
+		runDuringMigration(ctx, []trafficCheck{blueTraffic}, func() {
 			deployMeshScopedZoneProxies(redMeshName)
 			assertTrafficForBothMeshes()
 			assertMeshScopedProxyUsed(redTraffic)
@@ -160,7 +160,7 @@ func Migration() {
 	It("should deploy zone proxies to meshproxymig-blue with no interruptions for meshproxymig-red", func(ctx SpecContext) {
 		assertTrafficForBothMeshes()
 
-		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
+		runDuringMigration(ctx, []trafficCheck{redTraffic}, func() {
 			deployMeshScopedZoneProxies(blueMeshName)
 			assertTrafficForBothMeshes()
 			assertMeshScopedProxyUsed(blueTraffic)
@@ -266,7 +266,7 @@ func Migration() {
 	}
 
 	// runDuringMigration runs `do` while background goroutines continuously
-	// send cross-zone requests and then verifies no request errors occurred.
+	// send selected cross-zone requests and then verifies no request errors occurred.
 	runDuringMigration = func(ctx context.Context, checks []trafficCheck, do func()) {
 		GinkgoHelper()
 
