@@ -101,7 +101,6 @@ spec:
 						observability.Install(
 							config.ObservabilityDeploymentName,
 							observability.WithNamespace(config.NamespaceOutsideMesh),
-							observability.WithComponents(observability.JaegerComponent),
 						),
 						kic.KongIngressController(
 							kic.WithName(config.Mesh),

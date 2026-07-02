@@ -51,7 +51,7 @@ func PluginTest() {
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),
 				testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns)),
-				obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent)),
+				obs.Install(obsDeployment, obs.WithNamespace(obsNs)),
 			)).
 			Setup(kubernetes.Cluster)
 		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
