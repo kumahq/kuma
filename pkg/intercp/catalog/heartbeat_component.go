@@ -30,9 +30,8 @@ const (
 )
 
 type heartbeatMetrics struct {
-	interval      prometheus.Histogram
-	failures      *prometheus.CounterVec
-	leaderChanges prometheus.Counter
+	interval prometheus.Histogram
+	failures *prometheus.CounterVec
 }
 
 type heartbeatComponent struct {
@@ -66,12 +65,8 @@ func NewHeartbeatComponent(
 			Name: "component_heartbeat_failures",
 			Help: "Counter of failed Inter CP heartbeats to the leader by reason",
 		}, []string{"reason"}),
-		leaderChanges: prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "component_heartbeat_leader_changes",
-			Help: "Counter of observed Inter CP leader changes",
-		}),
 	}
-	if err := metrics.BulkRegister(m.interval, m.failures, m.leaderChanges); err != nil {
+	if err := metrics.BulkRegister(m.interval, m.failures); err != nil {
 		return nil, err
 	}
 
@@ -161,7 +156,6 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 					"previousLeaderAddress", previousLeaderAddress,
 					"newLeaderAddress", newLeader.Address,
 				)
-				h.metrics.leaderChanges.Inc()
 			}
 			h.failures = 0
 		}

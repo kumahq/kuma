@@ -153,14 +153,6 @@ var _ = Describe("Heartbeats", func() {
 			g.Expect(pingClient.ServerURL()).To(Equal("grpcs://192.168.0.1:1234"))
 		}, "10s", "100ms").Should(Succeed())
 
-		// the initial connection to the leader counts as one change
-		leaderChanges := func() float64 {
-			metric := test_metrics.FindMetric(metrics, "component_heartbeat_leader_changes")
-			Expect(metric).ToNot(BeNil())
-			return metric.Counter.GetValue()
-		}
-		Eventually(leaderChanges, "10s", "100ms").Should(Equal(float64(1)))
-
 		// when the leader becomes unreachable
 		pingClient.SetError(status.Error(codes.Unavailable, "connection refused"))
 
@@ -171,9 +163,8 @@ var _ = Describe("Heartbeats", func() {
 			g.Expect(metric.Counter.GetValue()).To(BeNumerically(">", 0))
 		}, "10s", "100ms").Should(Succeed())
 
-		// and the stable leader is never reported as changed while unreachable
+		// and the stable leader connection is never replaced while unreachable
 		Consistently(func(g Gomega) {
-			g.Expect(leaderChanges()).To(Equal(float64(1)))
 			g.Expect(pingClient.ServerURL()).To(Equal("grpcs://192.168.0.1:1234"))
 		}, "1s", "100ms").Should(Succeed())
 	})
