@@ -75,6 +75,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	baseMeshContext, err := dle.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build MeshContext")
+		return
 	}
 
 	if baseMeshContext.Mesh.Spec.MeshServicesMode() != v1alpha1.Mesh_MeshServices_Exclusive {
