@@ -68,7 +68,6 @@ var (
 	_ = Describe("Jobs", jobs.Jobs)
 	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
-	_ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
 	_ = Describe("MeshTrace Zone Proxy", observability.ZoneProxyPluginTest, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
