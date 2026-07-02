@@ -63,7 +63,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	getNameOrDefault := system_names.GetNameOrDefault(meshResource != nil &&
 		parameters.Features != nil &&
 		parameters.Features.HasFeature(xds_types.FeatureUnifiedResourceNaming) &&
-		meshResource.Spec.GetMeshServices().GetMode() == mesh_proto.Mesh_MeshServices_Exclusive,
+		meshResource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive,
 	)
 
 	staticClusters, err := buildStaticClusters(

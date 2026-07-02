@@ -649,8 +649,8 @@ func (p MeshServiceExclusivePredicate) Update(e event.UpdateEvent) bool {
 		return false
 	}
 
-	oldMSMode := oldMesh.(*mesh_proto.Mesh).GetMeshServices().GetMode()
-	newMSMode := newMesh.(*mesh_proto.Mesh).GetMeshServices().GetMode()
+	oldMSMode := oldMesh.(*mesh_proto.Mesh).MeshServicesMode()
+	newMSMode := newMesh.(*mesh_proto.Mesh).MeshServicesMode()
 
 	// MeshService mode changed to Exclusive
 	if newMSMode == mesh_proto.Mesh_MeshServices_Exclusive &&

@@ -13,5 +13,5 @@ func Enabled(meta *core_xds.DataplaneMetadata, mesh *core_mesh.MeshResource) boo
 	}
 
 	return meta.HasFeature(xds_types.FeatureUnifiedResourceNaming) &&
-		mesh.Spec.GetMeshServices().GetMode() == mesh_proto.Mesh_MeshServices_Exclusive
+		mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive
 }
