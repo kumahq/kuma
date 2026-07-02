@@ -1,0 +1,13 @@
+# mesh-1 false
+type: Mesh
+name: mesh-1
+---
+type: Workload
+name: backend
+mesh: mesh-1
+spec: {}
+status:
+  dataplaneProxies:
+    total: 1
+    connected: 1
+    healthy: 1
