@@ -21,7 +21,7 @@ var _ = Describe("EvaluateTemplate", func() {
 
 	DescribeTable("should evaluate template",
 		func(given testCase) {
-			result, err := hostname.EvaluateTemplate(given.localZone, given.template, given.meta)
+			result, err := hostname.EvaluateTemplate(given.localZone, given.template, given.meta, true)
 			if given.errMsg != "" {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(given.errMsg))
