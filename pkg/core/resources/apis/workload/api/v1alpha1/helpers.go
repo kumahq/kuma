@@ -14,8 +14,8 @@ func (w *WorkloadResource) IsLocalWorkload() bool {
 }
 
 func (w *WorkloadResource) Hash() []byte {
-	// xDS currently depends on Workload identity/membership only. Future
-	// xDS-relevant Workload fields must revisit this hash; re-adding version
-	// or status would restore mesh-wide recomputes on status-only writes.
+	// Hashes identity only, not version/status, so status-only writes don't
+	// trigger mesh-wide xDS recomputes. xDS currently depends on Workload
+	// identity/membership only.
 	return core_model.HashMetaIdentity(w)
 }
