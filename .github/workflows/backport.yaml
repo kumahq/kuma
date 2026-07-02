@@ -78,7 +78,7 @@ jobs:
           # Carry the original PR's labels over to the backport PR. Drop labels
           # that would auto-act on the backport (auto-merge, publish).
           LABELS=$(echo -n "$PR_INFO_JSON" | jq -r '
-            [.labels[].name | select(. != "ci/auto-merge" and . != "ci/force-publish")]
+            [(.labels // [])[].name | select(. != "ci/auto-merge" and . != "ci/force-publish")]
             | join(",")')
 
           {
