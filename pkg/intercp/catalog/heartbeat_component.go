@@ -102,8 +102,6 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 			if h.heartbeat(ctx, true) {
 				h.metrics.interval.Observe(float64(core.Now().Sub(start).Milliseconds()))
 			}
-			// back off while the leader is unreachable to avoid a
-			// high-volume stream of failure logs on a persistent issue.
 			timer.Reset(h.backoff())
 		case <-stop:
 			// send final heartbeat to gracefully signal that the instance is going down
@@ -134,36 +132,41 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 		"ready", ready,
 	)
 
-	newLeader, err := Leader(ctx, h.catalog)
-	if err != nil {
-		if errors.Is(err, ErrNoLeader) {
-			log.Info("leader is not yet present in the cluster. No heartbeat to send")
-		} else {
-			log.Error(err, "could not resolve the leader from the catalog")
-		}
-		return false
-	}
-
-	// The catalog is the source of truth for who the leader is. Only report a
-	// leader change when the resolved instance id actually differs from the
-	// previously known one - a failed heartbeat is a connectivity problem, not
-	// a leader change.
-	if h.leader == nil || h.leader.Id != newLeader.Id {
-		if newLeader.Id != h.request.InstanceId {
-			previousLeaderAddress := ""
-			if h.leader != nil {
-				previousLeaderAddress = h.leader.Address
+	// The catalog is only consulted when the leader is unknown or heartbeats
+	// are currently failing - in the calm state we keep talking to the
+	// already-known leader instead of reading the catalog on every tick.
+	if h.leader == nil || h.failures > 0 {
+		newLeader, err := Leader(ctx, h.catalog)
+		if err != nil {
+			if errors.Is(err, ErrNoLeader) {
+				log.Info("leader is not yet present in the cluster. No heartbeat to send")
+			} else {
+				log.Error(err, "could not resolve the leader from the catalog")
 			}
-			log.Info(
-				"leader has changed. Creating connection to the new leader.",
-				"previousLeaderAddress", previousLeaderAddress,
-				"newLeaderAddress", newLeader.Address,
-			)
-			h.metrics.leaderChanges.Inc()
+			return false
 		}
-		h.failures = 0
+
+		// The catalog is the source of truth for who the leader is. Only report a
+		// leader change when the resolved instance id actually differs from the
+		// previously known one - a failed heartbeat is a connectivity problem, not
+		// a leader change.
+		if h.leader == nil || h.leader.Id != newLeader.Id {
+			if newLeader.Id != h.request.InstanceId {
+				previousLeaderAddress := ""
+				if h.leader != nil {
+					previousLeaderAddress = h.leader.Address
+				}
+				log.Info(
+					"leader has changed. Creating connection to the new leader.",
+					"previousLeaderAddress", previousLeaderAddress,
+					"newLeaderAddress", newLeader.Address,
+				)
+				h.metrics.leaderChanges.Inc()
+			}
+			h.failures = 0
+		}
+		h.leader = &newLeader
 	}
-	h.leader = &newLeader
 
 	if h.leader.Id == h.request.InstanceId {
 		log.V(1).Info("this instance is a leader. No need to send a heartbeat.")
@@ -200,9 +203,10 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 	}
 	h.failures = 0
 	if !resp.Leader {
-		// the instance no longer considers itself the leader; the leader will
-		// be re-resolved from the catalog on the next tick.
+		// the instance no longer considers itself the leader; clear it so the
+		// leader is re-resolved from the catalog on the next tick.
 		log.V(1).Info("instance responded that it is no longer a leader")
+		h.leader = nil
 	}
 	return true
 }
