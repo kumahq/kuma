@@ -28,6 +28,7 @@ var _ = Describe("XdsServerConfig", func() {
 		// and
 		Expect(cfg.DataplaneConfigurationRefreshInterval.Duration).To(Equal(3 * time.Second))
 		Expect(cfg.DataplaneStatusFlushInterval.Duration).To(Equal(5 * time.Second))
+		Expect(cfg.PolicyMatchingCacheSize).To(Equal(1234))
 	})
 
 	Context("with modified environment variables", func() {
@@ -50,6 +51,7 @@ var _ = Describe("XdsServerConfig", func() {
 			env := map[string]string{
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
+				"KUMA_XDS_SERVER_POLICY_MATCHING_CACHE_SIZE":               "1234",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -67,6 +69,7 @@ var _ = Describe("XdsServerConfig", func() {
 			// and
 			Expect(cfg.DataplaneConfigurationRefreshInterval.Duration).To(Equal(3 * time.Second))
 			Expect(cfg.DataplaneStatusFlushInterval.Duration).To(Equal(5 * time.Second))
+			Expect(cfg.PolicyMatchingCacheSize).To(Equal(1234))
 		})
 	})
 

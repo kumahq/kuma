@@ -142,6 +142,9 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		return latestMeshCtx, nil
 	}
 
+	// managedTypes already sorted by m.hash above
+	policyMatchingHash := base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
+
 	dataplanes := resources.Dataplanes().Items
 	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
 	for _, dp := range dataplanes {
@@ -265,6 +268,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	return &MeshContext{
 		Hash:                            newHash,
+		PolicyMatchingHash:              policyMatchingHash,
 		Resource:                        mesh,
 		Resources:                       resources,
 		BaseMeshContext:                 baseMeshContext,
@@ -592,6 +596,47 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
 		_, _ = hasher.Write([]byte(m))
 		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
+	}
+	return hasher.Sum(nil)
+}
+
+// policyMatchingHashDenySet: mesh-scoped types irrelevant for policy matching (roster, insights).
+// Omitting a member is safe (spurious cache misses); including a wrong one causes stale xDS.
+var policyMatchingHashDenySet = map[core_model.ResourceType]struct{}{
+	core_mesh.DataplaneType:         {},
+	core_mesh.DataplaneInsightType:  {},
+	core_mesh.DataplaneOverviewType: {},
+	core_mesh.ServiceInsightType:    {},
+	core_mesh.ServiceOverviewType:   {},
+}
+
+// policyMatchingGlobalHashDenySet: global-scoped types irrelevant for policy matching
+// (zone roster and operational insight data that cause churn without affecting which policies match).
+var policyMatchingGlobalHashDenySet = map[core_model.ResourceType]struct{}{
+	core_mesh.ZoneIngressType:         {},
+	core_mesh.ZoneIngressInsightType:  {},
+	core_mesh.ZoneIngressOverviewType: {},
+	core_mesh.ZoneEgressType:          {},
+	core_mesh.ZoneEgressInsightType:   {},
+	core_mesh.ZoneEgressOverviewType:  {},
+	core_mesh.MeshInsightType:         {},
+	system.ZoneType:                   {},
+	system.ZoneInsightType:            {},
+	system.ZoneOverviewType:           {},
+}
+
+func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
+	hasher := fnv.New128a()
+	for _, resType := range maps.SortedKeys(globalContext.ResourceMap) {
+		if _, denied := policyMatchingGlobalHashDenySet[resType]; !denied {
+			_, _ = hasher.Write(core_model.ResourceListHash(globalContext.ResourceMap[resType]))
+		}
+	}
+	_, _ = hasher.Write(baseMeshContext.hash)
+	for _, resType := range managedTypes {
+		if _, denied := policyMatchingHashDenySet[resType]; !denied {
+			_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+		}
 	}
 	return hasher.Sum(nil)
 }
