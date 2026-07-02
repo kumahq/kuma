@@ -20,13 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
-<<<<<<< HEAD
-var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
-
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache) *SnapshotGenerator {
-=======
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
->>>>>>> 5304a81307 (fix(mads): remove noisy MeshMetrics/metrics coexistence log (#17069))
 	return &SnapshotGenerator{
 		resourceManager:   resourceManager,
 		resourceGenerator: resourceGenerator,
