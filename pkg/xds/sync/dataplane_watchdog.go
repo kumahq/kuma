@@ -20,6 +20,7 @@ import (
 	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
 )
 
 type DataplaneWatchdogDependencies struct {
@@ -32,6 +33,7 @@ type DataplaneWatchdogDependencies struct {
 	EnvoyCpCtx            *xds_context.ControlPlaneContext
 	MeshCache             *mesh.Cache
 	ResManager            core_manager.ReadOnlyResourceManager
+	XdsMetrics            *xds_metrics.Metrics
 }
 
 type Status string
@@ -196,6 +198,9 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not reconcile")
+	}
+	if syncForConfig && d.XdsMetrics != nil {
+		d.XdsMetrics.DataplaneConfigRegenerated.WithLabelValues(d.key.Mesh).Inc()
 	}
 	d.lastHash = meshCtx.Hash
 	d.lastIdentityHash = identityHash
