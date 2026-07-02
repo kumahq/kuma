@@ -24,7 +24,7 @@ spec:
         kuma.io/zone: zone-1
         version: "0.1"
     - health:
-        ready: true
+        ready: false
       port: 8443
       protocol: tcp
       tags:
