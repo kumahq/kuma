@@ -6,6 +6,43 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `3.0.0`
+
+### Delta xDS is now the only xDS protocol
+
+The control plane previously delivered configuration to data plane proxies using
+state-of-the-world (SOTW) xDS by default, with incremental (Delta) xDS available
+behind an experimental flag. Delta xDS is now always used and the SOTW code path
+has been removed. The control plane no longer serves `StreamAggregatedResources`;
+only `DeltaAggregatedResources` is implemented.
+
+The following configuration has been removed:
+
+- Control plane: `experimental.deltaXds` (`KUMA_EXPERIMENTAL_DELTA_XDS`) and the
+  Helm value `experimental.deltaXds`.
+- Data plane: `dataplaneRuntime.envoyXdsTransportProtocolVariant`
+  (`KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT`) and the
+  `kuma.io/xds-transport-protocol-variant` pod annotation.
+
+**Action required**
+
+Remove the settings above from your control plane config, Helm values, and pod
+annotations. Setting `KUMA_EXPERIMENTAL_DELTA_XDS` no longer has any effect in
+Kuma 3.0.0.
+
+For zero-downtime upgrades, first enable Delta xDS with
+`KUMA_EXPERIMENTAL_DELTA_XDS=true` on the old control plane version, then restart
+all `kuma-dp` instances (or roll the workloads on Kubernetes) so their Envoy
+bootstraps use Delta xDS. After every data plane proxy is connected with Delta
+xDS, upgrade the control plane to Kuma 3.0.0 and roll the data plane proxies
+again as part of the normal upgrade flow.
+
+The protocol a proxy uses is fixed in its Envoy bootstrap at startup, so a proxy
+that started against an older control plane keeps using SOTW until it reconnects
+with a fresh bootstrap. Once the control plane is upgraded to Kuma 3.0.0, any
+proxy still trying to use the removed SOTW stream cannot establish ADS and must
+be restarted with a Delta xDS bootstrap.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

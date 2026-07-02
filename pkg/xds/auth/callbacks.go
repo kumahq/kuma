@@ -40,7 +40,6 @@ func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator
 	return &authCallbacks{
 		resManager:      resManager,
 		authenticator:   authenticator,
-		streams:         map[core_xds.StreamID]stream{},
 		deltaStreams:    map[core_xds.StreamID]stream{},
 		dpNotFoundRetry: dpNotFoundRetry,
 	}
@@ -53,13 +52,8 @@ type authCallbacks struct {
 	authenticator   Authenticator
 	dpNotFoundRetry DPNotFoundRetry
 
-	sync.RWMutex // protects streams
-	streams      map[core_xds.StreamID]stream
+	sync.RWMutex // protects deltaStreams
 	deltaStreams map[core_xds.StreamID]stream
-}
-
-func (d *authCallbacks) getStreams() map[core_xds.StreamID]stream {
-	return d.streams
 }
 
 func (d *authCallbacks) getDeltaStreams() map[core_xds.StreamID]stream {
@@ -77,29 +71,6 @@ type stream struct {
 }
 
 var _ util_xds.MultiXDSCallbacks = &authCallbacks{}
-
-func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
-	a.Lock()
-	defer a.Unlock()
-
-	a.streams[streamID] = stream{
-		ctx:      ctx,
-		resource: nil,
-	}
-	log.V(1).Info("OnStreamOpen", "streamID", streamID)
-	return nil
-}
-
-func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
-	a.Lock()
-	delete(a.streams, streamID)
-	a.Unlock()
-}
-
-func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
-	log.V(1).Info("OnStreamRequest auth", "req", req)
-	return a.onStreamRequest(streamID, req, a.getStreams)
-}
 
 func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
 	a.Lock()
