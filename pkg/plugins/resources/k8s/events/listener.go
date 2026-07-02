@@ -32,14 +32,14 @@ var log = core.Log.WithName("k8s-event-listener")
 type listener struct {
 	mgr           manager.Manager
 	out           events.Emitter
-	droppedEvents prometheus.Counter
+	droppedEvents *prometheus.CounterVec
 }
 
 func NewListener(mgr manager.Manager, out events.Emitter, metrics core_metrics.Metrics) (component.Component, error) {
-	droppedEvents := prometheus.NewCounter(prometheus.CounterOpts{
+	droppedEvents := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "k8s_events_dropped_total",
 		Help: "Number of Kubernetes informer events dropped because their payload could not be converted to a Kuma Kubernetes object",
-	})
+	}, []string{"operation"})
 	if err := metrics.Register(droppedEvents); err != nil {
 		return nil, err
 	}
@@ -163,9 +163,9 @@ func kubernetesObjectFromEvent(obj any) (model.KubernetesObject, bool) {
 
 func (k *listener) recordDroppedEvent(operation string, obj any) {
 	if k.droppedEvents != nil {
-		k.droppedEvents.Inc()
+		k.droppedEvents.WithLabelValues(operation).Inc()
 	}
-	log.Error(nil, fmt.Sprintf("unexpected object type on %s, skipping", operation), "type", fmt.Sprintf("%T", obj))
+	log.Error(errors.Errorf("unexpected object type on %s", operation), "skipping Kubernetes informer event", "type", fmt.Sprintf("%T", obj))
 }
 
 func (k *listener) NeedLeaderElection() bool {
