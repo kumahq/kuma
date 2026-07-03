@@ -71,7 +71,7 @@ spec:
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -91,7 +91,7 @@ spec:
 			// check that test-server is unhealthy
 			Consistently(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
@@ -532,7 +532,7 @@ spec:
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -554,7 +554,7 @@ spec:
 			// check that test-server is unhealthy
 			Consistently(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))

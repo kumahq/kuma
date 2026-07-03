@@ -159,7 +159,7 @@ spec:
 
 		makeRequest := func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}
@@ -383,7 +383,7 @@ spec:
 		headerValue := "headervalue"
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 				client.WithHeader("X-TeSt", headerValue),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -478,7 +478,7 @@ spec:
 		// 52 is empty response but the TCP connection succeeded
 		makeRequest := func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, AppModeDemoClient, "ext-service.mesh",
+				universal.Cluster, AppModeDemoClient, "ext-service.extsvc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Equal(52))
@@ -513,7 +513,7 @@ spec:
 
 		makeRequest := func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}

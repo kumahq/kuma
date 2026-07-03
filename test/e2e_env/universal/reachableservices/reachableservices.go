@@ -35,7 +35,7 @@ func ReachableServices() {
 		Eventually(func(g Gomega) {
 			// when
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "first-test-server.mesh",
+				universal.Cluster, "demo-client", "first-test-server.svc.mesh.local",
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
@@ -46,7 +46,7 @@ func ReachableServices() {
 		Consistently(func(g Gomega) {
 			// when
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "second-test-server.mesh",
+				universal.Cluster, "demo-client", "second-test-server.svc.mesh.local",
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())

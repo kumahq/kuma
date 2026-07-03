@@ -54,10 +54,10 @@ func UniversalCompatibility() {
 
 			Eventually(func(g Gomega) {
 				// New client can reach new server
-				_, err := client.CollectEchoResponse(universal.Cluster, "demo-client-latest", "test-server-latest.mesh")
+				_, err := client.CollectEchoResponse(universal.Cluster, "demo-client-latest", "test-server-latest.svc.mesh.local")
 				g.Expect(err).ToNot(HaveOccurred())
 				// Old client can reach new server
-				_, err = client.CollectEchoResponse(universal.Cluster, clientName, "test-server-latest.mesh")
+				_, err = client.CollectEchoResponse(universal.Cluster, clientName, "test-server-latest.svc.mesh.local")
 				g.Expect(err).ToNot(HaveOccurred())
 				// New client can reach old server
 				_, err = client.CollectEchoResponse(universal.Cluster, "demo-client-latest", serverName+".mesh")

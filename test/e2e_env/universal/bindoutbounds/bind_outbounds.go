@@ -58,14 +58,14 @@ func BindToLoopbackAddresses() {
 	It("should send request through real bound listener", func() {
 		// check there is no iptables
 		Eventually(func(g Gomega) {
-			response, err := client.CollectFailure(universal, "demo-client", "test-server.mesh")
+			response, err := client.CollectFailure(universal, "demo-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(6), Equal(22)))
 		}, "30s", "1s").Should(Succeed())
 
 		// then when resolve return correct address
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(universal, "demo-client", "test-server.mesh", client.Resolve("test-server.mesh:80", "127.1.0.1"))
+			stdout, _, err := client.CollectResponse(universal, "demo-client", "test-server.svc.mesh.local", client.Resolve("test-server.mesh:80", "127.1.0.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("test-server"))
 		}, "30s", "1s").Should(Succeed())

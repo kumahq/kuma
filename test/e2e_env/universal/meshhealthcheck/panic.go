@@ -87,7 +87,7 @@ networking:
 	It("should switch to panic mode and dismiss all requests", func() {
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(503))
