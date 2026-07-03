@@ -381,6 +381,7 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		ShortName: "{{.ShortName}}",{{- end}}
 		IsExperimental: {{.IsExperimental}},
         IsProxy: {{.IsProxy}},
+        AffectsPolicyMatching: {{not .PolicyMatchingExempt}},
 {{- if .HasInsights}}
 		Insight: New{{.ResourceType}}InsightResource(),
 		Overview: New{{.ResourceType}}OverviewResource(),

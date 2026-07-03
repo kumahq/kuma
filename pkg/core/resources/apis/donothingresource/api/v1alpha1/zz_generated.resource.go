@@ -191,6 +191,7 @@ var DoNothingResourceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Do Nothing Resource",
 	PluralDisplayName:            "Do Nothing Resources",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,

@@ -203,6 +203,7 @@ var MeshOpenTelemetryBackendResourceTypeDescriptor = model.ResourceTypeDescripto
 	SingularDisplayName:          "Mesh OpenTelemetry Backend",
 	PluralDisplayName:            "Mesh OpenTelemetry Backends",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
