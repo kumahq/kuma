@@ -33,7 +33,11 @@ func BindToLoopbackAddresses() {
 				WithEnv("KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR", cidrMes),
 				WithEnv("KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR", cidrMmzs),
 			)).
-			Install(MeshUniversal(mesh)).
+			// The first test exercises the legacy DNS-VIP bound listener
+			// (test-server resolves to 127.1.0.1 from KUMA_DNS_SERVER_CIDR),
+			// which only exists in non-Exclusive mode. The MeshService variant
+			// below uses its own Exclusive mesh.
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(mesh).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Disabled).Build())).
 			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshMs).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).Build())).
 			Install(DemoClientUniversal("demo-client", mesh, WithBindOutbounds())).
 			Install(DemoClientUniversal("demo-client-ms", meshMs, WithBindOutbounds())).
@@ -58,14 +62,14 @@ func BindToLoopbackAddresses() {
 	It("should send request through real bound listener", func() {
 		// check there is no iptables
 		Eventually(func(g Gomega) {
-			response, err := client.CollectFailure(universal, "demo-client", "test-server.svc.mesh.local")
+			response, err := client.CollectFailure(universal, "demo-client", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(6), Equal(22)))
 		}, "30s", "1s").Should(Succeed())
 
 		// then when resolve return correct address
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(universal, "demo-client", "test-server.svc.mesh.local", client.Resolve("test-server.svc.mesh.local:80", "127.1.0.1"))
+			stdout, _, err := client.CollectResponse(universal, "demo-client", "test-server.mesh", client.Resolve("test-server.mesh:80", "127.1.0.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("test-server"))
 		}, "30s", "1s").Should(Succeed())

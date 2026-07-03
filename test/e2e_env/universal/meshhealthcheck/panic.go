@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
@@ -51,8 +53,13 @@ networking:
 	}
 
 	BeforeAll(func() {
+		// This test simulates unhealthy endpoints with registered-but-never-connected
+		// dataplanes (dp-echo-7..10). Under Exclusive, MeshService endpoints only
+		// include connected dataplanes, so those never enter the cluster and panic
+		// mode never triggers. Pin to Disabled to keep the legacy EDS behavior the
+		// test relies on.
 		err := NewClusterSetup().
-			Install(MeshUniversal(meshName)).
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
 			Install(YamlUniversal(healthCheck)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -87,7 +94,7 @@ networking:
 	It("should switch to panic mode and dismiss all requests", func() {
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
+				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(503))

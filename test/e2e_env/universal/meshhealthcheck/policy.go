@@ -463,7 +463,7 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server-1
+        name: test-server
       default:
         interval: 10s
         timeout: 2s
@@ -473,63 +473,55 @@ spec:
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
         reuseConnection: true
-        http:
+        http: 
           path: /%s
-          expectedStatuses:
-          - %s
-    - targetRef:
-        kind: MeshService
-        name: test-server-2
-      default:
-        interval: 10s
-        timeout: 2s
-        unhealthyThreshold: 3
-        healthyThreshold: 1
-        failTrafficOnPanic: true
-        noTrafficInterval: 1s
-        healthyPanicThreshold: 0
-        reuseConnection: true
-        http:
-          path: /%s
-          expectedStatuses:
-          - %s`, mesh, method, status, method, status)
+          expectedStatuses: 
+          - %s`, mesh, method, status)
 		}
 
 		meshHttpRoute := fmt.Sprintf(`
 type: MeshHTTPRoute
 mesh: %s
 name: http-route-1
-spec:
-  targetRef:
+spec: 
+  targetRef: 
     kind: MeshService
     name: dp-demo-client
-  to:
-    - targetRef:
+  to: 
+    - targetRef: 
         kind: MeshService
-        name: test-server-1
-      rules:
-        - matches:
-            - path:
+        name: test-server
+      rules: 
+        - matches: 
+            - path: 
                 value: /
                 type: PathPrefix
-          default:
-            backendRefs:
-              - kind: MeshService
-                name: test-server-1
+          default: 
+            backendRefs: 
+              - kind: MeshServiceSubset
+                name: test-server
+                tags: 
+                  version: v1
                 weight: 50
-              - kind: MeshService
-                name: test-server-2
+              - kind: MeshServiceSubset
+                name: test-server
+                tags: 
+                  version: v2
                 weight: 50`, meshName)
 
 		BeforeAll(func() {
+			// This test splits traffic across kuma.io/service version subsets via
+			// MeshServiceSubset backendRefs, which resolve only in non-Exclusive
+			// mode. Exclusive-native MeshService health checking is covered by the
+			// "HTTP to real MeshService" describe above. Pin to Disabled.
 			err := NewClusterSetup().
-				Install(MeshUniversal(meshName)).
+				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceName("test-server-1"))).
-				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceName("test-server-2"))).
+				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v1"))).
+				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v2"))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())
@@ -544,7 +536,7 @@ spec:
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "dp-demo-client", "test-server-1.svc.mesh.local/content",
+					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -566,7 +558,7 @@ spec:
 			// check that test-server is unhealthy
 			Consistently(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "dp-demo-client", "test-server-1.svc.mesh.local/content",
+					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
