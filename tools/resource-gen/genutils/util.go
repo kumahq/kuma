@@ -89,7 +89,7 @@ type ResourceInfo struct {
 	AdditionalPrinterColumns []string
 	HasInsights              bool
 	IsProxy                  bool
-	PolicyMatchingExempt     bool
+	AffectsPolicyMatching    bool
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
@@ -113,7 +113,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
 		HasInsights:              r.HasInsights,
 		IsProxy:                  r.IsProxy,
-		PolicyMatchingExempt:     r.PolicyMatchingExempt,
+		AffectsPolicyMatching:    !r.PolicyMatchingExempt,
 		KdsDirection:             r.Kds,
 	}
 	if r.Ws != nil {
