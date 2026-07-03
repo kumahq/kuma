@@ -118,6 +118,8 @@ func MeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
+meshServices:
+  mode: Disabled
 `, name)
 	return YamlUniversal(mesh)
 }
@@ -141,6 +143,9 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: %s
+spec:
+  meshServices:
+    mode: Disabled
 `, name)
 	return YamlK8s(mesh)
 }
@@ -165,6 +170,8 @@ kind: Mesh
 metadata:
   name: %s
 spec:
+  meshServices:
+    mode: Disabled
   mtls:
     enabledBackend: ca-1
     backends:
@@ -181,6 +188,8 @@ kind: Mesh
 metadata:
   name: %s
 spec:
+  meshServices:
+    mode: Disabled
   routing:
     zoneEgress: true
   mtls:
@@ -246,6 +255,8 @@ func MTLSMeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
+meshServices:
+  mode: Disabled
 mtls:
   enabledBackend: ca-1
   backends:
