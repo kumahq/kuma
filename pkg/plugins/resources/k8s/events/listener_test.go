@@ -1,8 +1,8 @@
 package events
 
 import (
-	"testing"
-
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,141 +32,90 @@ func (e *recordingEmitter) Send(event kuma_events.Event) {
 	e.events = append(e.events, event)
 }
 
-func TestKubernetesObjectFromEvent(t *testing.T) {
+func counterValue(counter prometheus.Counter) float64 {
+	metric := &dto.Metric{}
+	ExpectWithOffset(1, counter.Write(metric)).To(Succeed())
+	return metric.GetCounter().GetValue()
+}
+
+var _ = Describe("kubernetesObjectFromEvent", func() {
 	mesh := &kuma_v1alpha1.Mesh{
 		ObjectMeta: metav1.ObjectMeta{Name: "mesh-1"},
 	}
 
-	t.Run("returns Kubernetes object directly", func(t *testing.T) {
+	It("returns Kubernetes object directly", func() {
 		got, ok := kubernetesObjectFromEvent(mesh)
-		if !ok {
-			t.Fatalf("expected Kubernetes object")
-		}
-		if got != mesh {
-			t.Fatalf("expected original object, got %#v", got)
-		}
+		Expect(ok).To(BeTrue())
+		Expect(got).To(BeIdenticalTo(mesh))
 	})
 
-	t.Run("unwraps DeletedFinalStateUnknown", func(t *testing.T) {
+	It("unwraps DeletedFinalStateUnknown", func() {
 		got, ok := kubernetesObjectFromEvent(cache.DeletedFinalStateUnknown{Obj: mesh})
-		if !ok {
-			t.Fatalf("expected Kubernetes object from tombstone")
-		}
-		if got != mesh {
-			t.Fatalf("expected unwrapped object, got %#v", got)
-		}
+		Expect(ok).To(BeTrue())
+		Expect(got).To(BeIdenticalTo(mesh))
 	})
 
-	t.Run("rejects unexpected payload", func(t *testing.T) {
-		if got, ok := kubernetesObjectFromEvent(cache.DeletedFinalStateUnknown{Obj: "mesh-1"}); ok {
-			t.Fatalf("expected tombstone with string payload to be rejected, got %#v", got)
-		}
+	It("rejects unexpected payload", func() {
+		_, ok := kubernetesObjectFromEvent(cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
+		Expect(ok).To(BeFalse())
 	})
-}
+})
 
-func TestListenerSkipsUnexpectedObjects(t *testing.T) {
-	droppedEvents := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "test_dropped_events",
-		Help: "Test counter for dropped Kubernetes events.",
-	}, []string{"operation"})
-	emitter := &recordingEmitter{}
-	l := &listener{
-		out:           emitter,
-		droppedEvents: droppedEvents,
-	}
+var _ = Describe("listener", func() {
+	It("skips unexpected objects and records dropped events per operation", func() {
+		droppedEvents := prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "test_dropped_events",
+			Help: "Test counter for dropped Kubernetes events.",
+		}, []string{"operation"})
+		emitter := &recordingEmitter{}
+		l := &listener{
+			out:           emitter,
+			droppedEvents: droppedEvents,
+		}
 
-	l.OnAdd("mesh-1", false)
-	l.OnUpdate(nil, cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
-	l.OnDelete(cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
+		l.OnAdd("mesh-1", false)
+		l.OnUpdate(nil, cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
+		l.OnDelete(cache.DeletedFinalStateUnknown{Obj: "mesh-1"})
 
-	if got := counterValue(t, droppedEvents.WithLabelValues("add")); got != 1 {
-		t.Fatalf("expected dropped event counter for add to be 1, got %f", got)
-	}
-	if got := counterValue(t, droppedEvents.WithLabelValues("update")); got != 1 {
-		t.Fatalf("expected dropped event counter for update to be 1, got %f", got)
-	}
-	if got := counterValue(t, droppedEvents.WithLabelValues("delete")); got != 1 {
-		t.Fatalf("expected dropped event counter for delete to be 1, got %f", got)
-	}
-	if len(emitter.events) != 0 {
-		t.Fatalf("expected no events for unexpected payloads, got %#v", emitter.events)
-	}
-}
+		Expect(counterValue(droppedEvents.WithLabelValues("add"))).To(Equal(float64(1)))
+		Expect(counterValue(droppedEvents.WithLabelValues("update"))).To(Equal(float64(1)))
+		Expect(counterValue(droppedEvents.WithLabelValues("delete"))).To(Equal(float64(1)))
+		Expect(emitter.events).To(BeEmpty())
+	})
 
-func TestListenerHandlersAcceptDeletedFinalStateUnknown(t *testing.T) {
-	scheme := runtime.NewScheme()
-	if err := kuma_v1alpha1.AddToScheme(scheme); err != nil {
-		t.Fatalf("failed to add Kuma scheme: %v", err)
-	}
+	DescribeTable("handlers accept DeletedFinalStateUnknown tombstones",
+		func(operation kuma_events.Op, call func(*listener, any)) {
+			scheme := runtime.NewScheme()
+			Expect(kuma_v1alpha1.AddToScheme(scheme)).To(Succeed())
 
-	testCases := []struct {
-		name      string
-		operation kuma_events.Op
-		call      func(*listener, any)
-	}{
-		{
-			name:      "add",
-			operation: kuma_events.Create,
-			call: func(l *listener, obj any) {
-				l.OnAdd(obj, false)
-			},
-		},
-		{
-			name:      "update",
-			operation: kuma_events.Update,
-			call: func(l *listener, obj any) {
-				l.OnUpdate(nil, obj)
-			},
-		},
-		{
-			name:      "delete",
-			operation: kuma_events.Delete,
-			call: func(l *listener, obj any) {
-				l.OnDelete(obj)
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
 			emitter := &recordingEmitter{}
 			l := &listener{
 				mgr: &schemeManager{scheme: scheme},
 				out: emitter,
 			}
 
-			tc.call(l, cache.DeletedFinalStateUnknown{
+			call(l, cache.DeletedFinalStateUnknown{
 				Key: "mesh-1",
 				Obj: &kuma_v1alpha1.Mesh{
 					ObjectMeta: metav1.ObjectMeta{Name: "mesh-1"},
 				},
 			})
 
-			if len(emitter.events) != 1 {
-				t.Fatalf("expected one event, got %#v", emitter.events)
-			}
+			Expect(emitter.events).To(HaveLen(1))
 			event, ok := emitter.events[0].(kuma_events.ResourceChangedEvent)
-			if !ok {
-				t.Fatalf("expected ResourceChangedEvent, got %T", emitter.events[0])
-			}
-			if event.Operation != tc.operation {
-				t.Fatalf("expected %v operation, got %v", tc.operation, event.Operation)
-			}
-			if event.Type != core_model.ResourceType("Mesh") {
-				t.Fatalf("expected Mesh type, got %q", event.Type)
-			}
-			if event.Key != (core_model.ResourceKey{Name: "mesh-1"}) {
-				t.Fatalf("expected mesh-1 key, got %#v", event.Key)
-			}
-		})
-	}
-}
-
-func counterValue(t *testing.T, counter prometheus.Counter) float64 {
-	t.Helper()
-	metric := &dto.Metric{}
-	if err := counter.Write(metric); err != nil {
-		t.Fatalf("failed to read counter: %v", err)
-	}
-	return metric.GetCounter().GetValue()
-}
+			Expect(ok).To(BeTrue())
+			Expect(event.Operation).To(Equal(operation))
+			Expect(event.Type).To(Equal(core_model.ResourceType("Mesh")))
+			Expect(event.Key).To(Equal(core_model.ResourceKey{Name: "mesh-1"}))
+		},
+		Entry("add", kuma_events.Create, func(l *listener, obj any) {
+			l.OnAdd(obj, false)
+		}),
+		Entry("update", kuma_events.Update, func(l *listener, obj any) {
+			l.OnUpdate(nil, obj)
+		}),
+		Entry("delete", kuma_events.Delete, func(l *listener, obj any) {
+			l.OnDelete(obj)
+		}),
+	)
+})
