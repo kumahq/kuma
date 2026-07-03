@@ -53,8 +53,6 @@ spec:
           match:
             name: envoy.filters.http.router
             origin: outbound
-            listenerTags:
-              kuma.io/service: test-server
           value: |
             name: envoy.filters.http.lua
             typedConfig:

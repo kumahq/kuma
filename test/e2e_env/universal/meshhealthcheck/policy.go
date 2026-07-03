@@ -234,7 +234,7 @@ spec:
 		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.svc.mesh.local 80\""}
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -252,7 +252,7 @@ spec:
 			}, "30s", "500ms").Should(Succeed())
 
 			Consistently(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.svc.mesh.local 80\""}
 				stdout, _, _ := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 
 				// there is no real attempt to setup a connection with test-server, but Envoy may return either
@@ -328,7 +328,7 @@ spec:
 		It("should mark host as unhealthy if it doesn't reply to health checks when Permissive mTLS enabled", func() {
 			// check that test-server-mtls is healthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.svc.mesh.local 80\""}
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -346,7 +346,7 @@ spec:
 			}, "30s", "500ms").Should(Succeed())
 
 			Consistently(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.svc.mesh.local 80\""}
 				stdout, _, _ := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 
 				// there is no real attempt to setup a connection with test-server, but Envoy may return either
@@ -388,7 +388,7 @@ spec:
 				Install(YamlUniversal(healthCheck(meshName))).
 				Install(TestServerUniversal("test-client", meshName,
 					WithServiceName("test-client"),
-					WithArgs([]string{"grpc", "client", "--address", "test-server.mesh:80"}),
+					WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80"}),
 					WithTransparentProxy(true),
 				)).
 				Install(TestServerUniversal(
@@ -463,7 +463,7 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        name: test-server-1
       default:
         interval: 10s
         timeout: 2s
@@ -473,40 +473,52 @@ spec:
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: /%s
-          expectedStatuses: 
-          - %s`, mesh, method, status)
+          expectedStatuses:
+          - %s
+    - targetRef:
+        kind: MeshService
+        name: test-server-2
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuseConnection: true
+        http:
+          path: /%s
+          expectedStatuses:
+          - %s`, mesh, method, status, method, status)
 		}
 
 		meshHttpRoute := fmt.Sprintf(`
 type: MeshHTTPRoute
 mesh: %s
 name: http-route-1
-spec: 
-  targetRef: 
+spec:
+  targetRef:
     kind: MeshService
     name: dp-demo-client
-  to: 
-    - targetRef: 
+  to:
+    - targetRef:
         kind: MeshService
-        name: test-server
-      rules: 
-        - matches: 
-            - path: 
+        name: test-server-1
+      rules:
+        - matches:
+            - path:
                 value: /
                 type: PathPrefix
-          default: 
-            backendRefs: 
-              - kind: MeshServiceSubset
-                name: test-server
-                tags: 
-                  version: v1
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: test-server-1
                 weight: 50
-              - kind: MeshServiceSubset
-                name: test-server
-                tags: 
-                  version: v2
+              - kind: MeshService
+                name: test-server-2
                 weight: 50`, meshName)
 
 		BeforeAll(func() {
@@ -516,8 +528,8 @@ spec:
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v1"))).
-				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v2"))).
+				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceName("test-server-1"))).
+				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceName("test-server-2"))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())
@@ -532,7 +544,7 @@ spec:
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
+					universal.Cluster, "dp-demo-client", "test-server-1.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -554,7 +566,7 @@ spec:
 			// check that test-server is unhealthy
 			Consistently(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
+					universal.Cluster, "dp-demo-client", "test-server-1.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))

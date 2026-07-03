@@ -17,9 +17,17 @@ import (
 )
 
 func meshMTLSOn(mesh string) string {
+	// This suite exercises the legacy ExternalService resource together with
+	// legacy version-based FaultInjection/RateLimit policies routed through the
+	// zone egress. That behaviour relies on the legacy kuma.io/service VIP DNS
+	// (external-service.mesh), which is not served under the Exclusive
+	// meshServices default. Pin the mesh to Disabled to keep this legacy
+	// coverage intact.
 	return fmt.Sprintf(`
 type: Mesh
 name: %s
+meshServices:
+  mode: Disabled
 mtls:
   enabledBackend: ca-1
   backends:
@@ -121,7 +129,7 @@ func ExternalServices() {
 
 			Eventually(func(g Gomega) {
 				_, stderr, err := client.CollectResponse(
-					universal.Cluster, "demo-client", "external-service.extsvc.mesh.local",
+					universal.Cluster, "demo-client", "external-service.mesh",
 					client.WithVerbose(),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -161,7 +169,7 @@ conf:
 
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "demo-client", "external-service.extsvc.mesh.local",
+					universal.Cluster, "demo-client", "external-service.mesh",
 					client.WithMaxTime(8),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -196,7 +204,7 @@ spec:
 
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "demo-client", "external-service.extsvc.mesh.local",
+					universal.Cluster, "demo-client", "external-service.mesh",
 					client.WithMaxTime(8),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -232,7 +240,7 @@ conf:
 
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "demo-client", "external-service.extsvc.mesh.local",
+					universal.Cluster, "demo-client", "external-service.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(429))
@@ -273,7 +281,7 @@ spec:
 
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "demo-client", "external-service.extsvc.mesh.local",
+					universal.Cluster, "demo-client", "external-service.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(429))

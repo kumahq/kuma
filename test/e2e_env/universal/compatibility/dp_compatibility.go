@@ -60,7 +60,7 @@ func UniversalCompatibility() {
 				_, err = client.CollectEchoResponse(universal.Cluster, clientName, "test-server-latest.svc.mesh.local")
 				g.Expect(err).ToNot(HaveOccurred())
 				// New client can reach old server
-				_, err = client.CollectEchoResponse(universal.Cluster, "demo-client-latest", serverName+".mesh")
+				_, err = client.CollectEchoResponse(universal.Cluster, "demo-client-latest", serverName+".svc.mesh.local")
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "20s", "250ms").Should(Succeed())
 		},

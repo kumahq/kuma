@@ -65,7 +65,7 @@ func BindToLoopbackAddresses() {
 
 		// then when resolve return correct address
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(universal, "demo-client", "test-server.svc.mesh.local", client.Resolve("test-server.mesh:80", "127.1.0.1"))
+			stdout, _, err := client.CollectResponse(universal, "demo-client", "test-server.svc.mesh.local", client.Resolve("test-server.svc.mesh.local:80", "127.1.0.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("test-server"))
 		}, "30s", "1s").Should(Succeed())

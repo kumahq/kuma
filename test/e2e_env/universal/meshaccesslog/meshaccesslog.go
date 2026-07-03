@@ -442,14 +442,19 @@ spec:
 
 	It("supports logging traffic to an ExternalService using MeshService (without ZoneIngress)", func() {
 		externalService := fmt.Sprintf(`
-type: ExternalService
-name: external-service
+type: MeshExternalService
+name: ext-service
 mesh: meshaccesslog
-tags:
-  kuma.io/service: ext-service
-  kuma.io/protocol: tcp
-networking:
-  address: "%s:80"
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: tcp
+  endpoints:
+    - address: "%s"
+      port: 80
 `, externalServiceDockerName)
 		accesslog := fmt.Sprintf(`
 type: MeshAccessLog
@@ -461,7 +466,7 @@ spec:
    name: demo-client
  to:
    - targetRef:
-       kind: MeshService
+       kind: MeshExternalService
        name: ext-service
      default:
        backends:
