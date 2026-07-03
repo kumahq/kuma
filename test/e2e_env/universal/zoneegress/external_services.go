@@ -19,7 +19,7 @@ import (
 func meshMTLSOn(mesh string) string {
 	// This suite exercises the legacy ExternalService resource together with
 	// legacy version-based FaultInjection/RateLimit policies routed through the
-	// zone egress. That behaviour relies on the legacy kuma.io/service VIP DNS
+	// zone egress. That behavior relies on the legacy kuma.io/service VIP DNS
 	// (external-service.mesh), which is not served under the Exclusive
 	// meshServices default. Pin the mesh to Disabled to keep this legacy
 	// coverage intact.
