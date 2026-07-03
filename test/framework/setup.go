@@ -21,13 +21,13 @@ import (
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v3/pkg/config/core"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	core_rest "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
-	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v3/pkg/tls"
-	tproxy_consts "github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_rest "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/tls"
+	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
 )
 
 type InstallFunc func(cluster Cluster) error
@@ -118,8 +118,6 @@ func MeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
-meshServices:
-  mode: Disabled
 `, name)
 	return YamlUniversal(mesh)
 }
@@ -143,9 +141,6 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: %s
-spec:
-  meshServices:
-    mode: Disabled
 `, name)
 	return YamlK8s(mesh)
 }
@@ -170,8 +165,6 @@ kind: Mesh
 metadata:
   name: %s
 spec:
-  meshServices:
-    mode: Disabled
   mtls:
     enabledBackend: ca-1
     backends:
@@ -188,8 +181,6 @@ kind: Mesh
 metadata:
   name: %s
 spec:
-  meshServices:
-    mode: Disabled
   routing:
     zoneEgress: true
   mtls:
@@ -255,8 +246,6 @@ func MTLSMeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
-meshServices:
-  mode: Disabled
 mtls:
   enabledBackend: ca-1
   backends:
@@ -336,6 +325,23 @@ destinations:
 	return YamlUniversal(tp)
 }
 
+func TrafficPermissionKubernetes(name string) InstallFunc {
+	tp := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: %[1]s
+metadata:
+  name: allow-all-%[1]s
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: '*'`, name)
+	return YamlK8s(tp)
+}
+
 func TimeoutUniversal(name string) InstallFunc {
 	timeout := fmt.Sprintf(`
 type: Timeout
@@ -384,6 +390,56 @@ spec:
       maxStreamDuration: 0s
 `, name)
 	return YamlK8s(timeout)
+}
+
+func CircuitBreakerUniversal(name string) InstallFunc {
+	cb := fmt.Sprintf(`
+type: CircuitBreaker
+mesh: %[1]s
+name: circuit-breaker-all-%[1]s
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: '*'
+conf:
+  thresholds:
+    maxConnections: 1024
+    maxPendingRequests: 1024
+    maxRequests: 1024
+    maxRetries: 3`, name)
+	return YamlUniversal(cb)
+}
+
+func RetryUniversal(name string) InstallFunc {
+	retry := fmt.Sprintf(`
+type: Retry
+name: retry-all-%[1]s
+mesh: %[1]s
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: '*'
+conf:
+  http:
+    numRetries: 5
+    perTryTimeout: 16s
+    backOff:
+      baseInterval: 25ms
+      maxInterval: 250s
+  grpc:
+    numRetries: 5
+    perTryTimeout: 16s
+    backOff:
+      baseInterval: 25ms
+      maxInterval: 250ms
+  tcp:
+    maxConnectAttempts: 5
+`, name)
+	return YamlUniversal(retry)
 }
 
 func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
