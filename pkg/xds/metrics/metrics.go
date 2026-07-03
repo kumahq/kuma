@@ -8,9 +8,10 @@ import (
 )
 
 type Metrics struct {
-	XdsGenerations       *prometheus.SummaryVec
-	XdsGenerationsErrors prometheus.Counter
-	KubeAuthCache        *prometheus.CounterVec
+	XdsGenerations             *prometheus.SummaryVec
+	XdsGenerationsErrors       prometheus.Counter
+	KubeAuthCache              *prometheus.CounterVec
+	DataplaneConfigRegenerated *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -27,13 +28,23 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		"kube_auth_cache",
 		"Number of cache operations for Kubernetes authentication on XDS connection",
 	)
-	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache); err != nil {
+	dataplaneConfigRegenerated := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "xds_dataplane_config_regenerated_total",
+		Help: "Counter of successful Dataplane xDS reconcile attempts triggered by mesh-context hash changes.",
+	}, []string{"mesh"})
+	if err := metrics.BulkRegister(
+		xdsGenerations,
+		xdsGenerationsErrors,
+		kubeAuthCache,
+		dataplaneConfigRegenerated,
+	); err != nil {
 		return nil, err
 	}
 
 	return &Metrics{
-		XdsGenerations:       xdsGenerations,
-		XdsGenerationsErrors: xdsGenerationsErrors,
-		KubeAuthCache:        kubeAuthCache,
+		XdsGenerations:             xdsGenerations,
+		XdsGenerationsErrors:       xdsGenerationsErrors,
+		KubeAuthCache:              kubeAuthCache,
+		DataplaneConfigRegenerated: dataplaneConfigRegenerated,
 	}, nil
 }
