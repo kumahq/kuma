@@ -63,7 +63,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: test-client_mesh-proxy-patch_svc_80
+    name: test-client
   default:
     appendModifications:
       - httpFilter:
@@ -87,7 +87,7 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server_mesh-proxy-patch_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server.mesh-proxy-patch.svc.cluster.local", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())
@@ -106,7 +106,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: test-client_mesh-proxy-patch_svc_80
+    name: test-client
   default:
     appendModifications:
       - networkFilter:
@@ -129,7 +129,7 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server_mesh-proxy-patch_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server.mesh-proxy-patch.svc.cluster.local", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())
