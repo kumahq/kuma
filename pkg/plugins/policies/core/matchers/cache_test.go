@@ -23,9 +23,7 @@ var _ = Describe("PolicyMatchingCache", func() {
 	}
 
 	Describe("BuildCacheKey", func() {
-		cacheKeyConfig := func(opts ...core_plugins.MatchedPoliciesOption) *core_plugins.MatchedPoliciesConfig {
-			return core_plugins.NewMatchedPoliciesConfig(opts...)
-		}
+		cacheKeyConfig := core_plugins.NewMatchedPoliciesConfig
 
 		It("returns distinct keys for different resource types", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
