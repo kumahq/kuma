@@ -364,19 +364,19 @@ func CollectEchoResponse(
 ) (types.EchoResponse, error) {
 	execResult := collectResponse(cluster, container, destination, fn...)
 	if execResult.err != nil {
-		addCollectDiagnostic("exec-error", execResult, execResult.err)
-		return types.EchoResponse{}, fmt.Errorf("stderr: '%s', %v", execResult.stderr, execResult.err)
+		err := fmt.Errorf("stderr: '%s', %v", execResult.stderr, execResult.err)
+		return types.EchoResponse{}, withCollectDiagnostic("exec-error", execResult, err)
 	}
 
 	response := &types.EchoResponse{}
 	if err := json.Unmarshal([]byte(execResult.stdout), response); err != nil {
-		addCollectDiagnostic("unmarshal-error", execResult, err)
-		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", execResult.stdout)
+		err = errors.Wrapf(err, "failed to unmarshal response: %q", execResult.stdout)
+		return types.EchoResponse{}, withCollectDiagnostic("unmarshal-error", execResult, err)
 	}
 
 	if response.Instance == "" {
-		addCollectDiagnostic("empty-instance", execResult, errors.New("'instance' field is empty"))
-		return types.EchoResponse{}, errors.New("'instance' field is empty ")
+		err := errors.New("'instance' field is empty ")
+		return types.EchoResponse{}, withCollectDiagnostic("empty-instance", execResult, err)
 	}
 
 	return *response, nil
@@ -401,7 +401,34 @@ type collectDiagnostic struct {
 	Stderr      string            `json:"stderr"`
 }
 
-func addCollectDiagnostic(reason string, result collectResponseResult, err error) {
+type diagnosticError struct {
+	err  error
+	file string
+}
+
+func (e diagnosticError) Error() string {
+	return e.err.Error()
+}
+
+func (e diagnosticError) Unwrap() error {
+	return e.err
+}
+
+func withCollectDiagnostic(reason string, result collectResponseResult, err error) error {
+	return diagnosticError{
+		err:  err,
+		file: addCollectDiagnostic(reason, result, err),
+	}
+}
+
+func diagnosticFileName(prefix string) string {
+	return fmt.Sprintf("%s-%d.json", prefix, time.Now().UnixNano())
+}
+
+func addCollectDiagnostic(reason string, result collectResponseResult, err error) string {
+	name := diagnosticFileName(
+		fmt.Sprintf("client-collect-%s-%s", result.cluster.Name(), result.container),
+	)
 	diagnostic := collectDiagnostic{
 		Reason:      reason,
 		Timestamp:   time.Now().UTC(),
@@ -413,10 +440,10 @@ func addCollectDiagnostic(reason string, result collectResponseResult, err error
 		Destination: result.destination,
 		Method:      result.opts.Method,
 		URL:         result.opts.URL,
-		Headers:     result.opts.Headers,
+		Headers:     redactedHeaders(result.opts.Headers),
 		Flags:       result.opts.Flags,
-		Command:     result.command,
-		Stdout:      truncateDiagnosticString(result.stdout),
+		Command:     redactedCommand(result.command),
+		Stdout:      truncateDiagnosticString(redactedCollectStdout(result.stdout)),
 		Stderr:      truncateDiagnosticString(result.stderr),
 	}
 	if err != nil {
@@ -426,12 +453,158 @@ func addCollectDiagnostic(reason string, result collectResponseResult, err error
 	data, jsonErr := json.MarshalIndent(diagnostic, "", "  ")
 	if jsonErr != nil {
 		framework.Logf("failed to marshal collect diagnostic: %v", jsonErr)
-		return
+		return name
 	}
-	report.AddFileToReportEntry(
-		fmt.Sprintf("client-collect-%d-%s-%s.json", time.Now().UnixNano(), result.cluster.Name(), result.container),
-		data,
-	)
+	report.AddFileToReportEntry(name, data)
+	return name
+}
+
+const redactedDiagnosticValue = "[redacted]"
+
+func redactedHeaders(headers map[string]string) map[string]string {
+	if len(headers) == 0 {
+		return nil
+	}
+
+	redacted := make(map[string]string, len(headers))
+	for key, value := range headers {
+		if shouldRedactHeader(key) {
+			redacted[key] = redactedDiagnosticValue
+			continue
+		}
+		redacted[key] = value
+	}
+	return redacted
+}
+
+func redactedEchoHeaders(headers map[string][]string) map[string][]string {
+	if len(headers) == 0 {
+		return nil
+	}
+
+	redacted := make(map[string][]string, len(headers))
+	for key, values := range headers {
+		if shouldRedactHeader(key) {
+			replacement := make([]string, len(values))
+			for i := range replacement {
+				replacement[i] = redactedDiagnosticValue
+			}
+			redacted[key] = replacement
+			continue
+		}
+		redacted[key] = append([]string(nil), values...)
+	}
+	return redacted
+}
+
+func redactedEchoResponse(response types.EchoResponse) types.EchoResponse {
+	response.Received.Headers = redactedEchoHeaders(response.Received.Headers)
+	return response
+}
+
+func redactedDiagnosticResponse(response any) any {
+	switch value := response.(type) {
+	case types.EchoResponse:
+		return redactedEchoResponse(value)
+	default:
+		return value
+	}
+}
+
+func redactedDiagnosticResponses(responses []any) []any {
+	if len(responses) == 0 {
+		return nil
+	}
+
+	redacted := make([]any, len(responses))
+	for i, response := range responses {
+		redacted[i] = redactedDiagnosticResponse(response)
+	}
+	return redacted
+}
+
+func redactedCommand(command []string) []string {
+	if len(command) == 0 {
+		return nil
+	}
+
+	redacted := append([]string(nil), command...)
+	for i := 0; i < len(redacted); i++ {
+		arg := redacted[i]
+		switch {
+		case (arg == "--header" || arg == "-H") && i+1 < len(redacted):
+			i++
+			redacted[i] = redactedHeaderArgument(redacted[i])
+		case strings.HasPrefix(arg, "--header="):
+			redacted[i] = "--header=" + redactedHeaderArgument(strings.TrimPrefix(arg, "--header="))
+		case strings.HasPrefix(arg, "-H") && len(arg) > len("-H"):
+			redacted[i] = "-H" + redactedHeaderArgument(strings.TrimSpace(strings.TrimPrefix(arg, "-H")))
+		}
+	}
+	return redacted
+}
+
+func redactedHeaderArgument(header string) string {
+	trimmed := strings.TrimSpace(header)
+	if trimmed == "" {
+		return header
+	}
+
+	quote := byte(0)
+	if len(trimmed) >= 2 {
+		first := trimmed[0]
+		last := trimmed[len(trimmed)-1]
+		if (first == '\'' || first == '"') && last == first {
+			quote = first
+			trimmed = trimmed[1 : len(trimmed)-1]
+		}
+	}
+
+	name, _, found := strings.Cut(trimmed, ":")
+	if !found || !shouldRedactHeader(name) {
+		return header
+	}
+
+	value := strings.TrimSpace(name) + ": " + redactedDiagnosticValue
+	if quote != 0 {
+		return string(quote) + value + string(quote)
+	}
+	return value
+}
+
+func shouldRedactHeader(name string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	for _, token := range []string{
+		"authorization",
+		"token",
+		"secret",
+		"cookie",
+		"credential",
+		"api-key",
+		"apikey",
+	} {
+		if strings.Contains(normalized, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func redactedCollectStdout(stdout string) string {
+	if stdout == "" {
+		return ""
+	}
+
+	var response types.EchoResponse
+	if err := json.Unmarshal([]byte(stdout), &response); err != nil {
+		return stdout
+	}
+
+	redacted, err := json.Marshal(redactedEchoResponse(response))
+	if err != nil {
+		return stdout
+	}
+	return string(redacted)
 }
 
 func truncateDiagnosticString(value string) string {
@@ -556,12 +729,25 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 	// close before stdout is delivered when the process exits immediately (e.g. DNS
 	// failure, exit code 6). One retry is enough to recover from the race.
 	var stdout string
+	var stderr string
 	var err error
 	for range 2 {
-		stdout, _, err = cluster.Exec(opts.namespace, appPodName, container, cmd...)
+		stdout, stderr, err = cluster.Exec(opts.namespace, appPodName, container, cmd...)
 		if stdout != "" || err != nil {
 			break
 		}
+	}
+	execResult := collectResponseResult{
+		cluster:     cluster,
+		container:   container,
+		destination: destination,
+		opts:        opts,
+		command:     cmd,
+		namespace:   opts.namespace,
+		podName:     appPodName,
+		stdout:      stdout,
+		stderr:      stderr,
+		err:         err,
 	}
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
@@ -571,18 +757,20 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 	if jsonErr := json.Unmarshal([]byte(stdout), &response); jsonErr != nil {
 		// Prefer the original error to a JSON decoding error.
 		if err == nil {
-			return response, jsonErr
+			return response, withCollectDiagnostic("unmarshal-error", execResult, jsonErr)
 		}
+		return response, withCollectDiagnostic("exec-error", execResult, err)
 	}
 
 	// 2. If there was no error response, we still prefer the original
 	// error, but fall back to reporting that the JSON  is missing.
 	if response == empty {
 		if err != nil {
-			return response, err
+			return response, withCollectDiagnostic("exec-error", execResult, err)
 		}
 
-		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
+		err := errors.Errorf("empty JSON response from curl: %q", stdout)
+		return response, withCollectDiagnostic("empty-response", execResult, err)
 	}
 
 	// for k8s
@@ -710,47 +898,64 @@ func callConcurrently(destination string, call func() (any, error), fn ...Collec
 }
 
 type concurrentDiagnostic struct {
-	Timestamp             time.Time         `json:"timestamp"`
-	Destination           string            `json:"destination"`
-	URL                   string            `json:"url"`
-	Method                string            `json:"method"`
-	NumberOfRequests      uint              `json:"numberOfRequests"`
-	MaxConcurrentRequests uint              `json:"maxConcurrentRequests"`
-	CompletedResponses    int               `json:"completedResponses"`
-	FailedIndex           uint              `json:"failedIndex"`
-	Error                 string            `json:"error"`
-	PartialResponses      []any             `json:"partialResponses,omitempty"`
-	Headers               map[string]string `json:"headers,omitempty"`
-	Flags                 []string          `json:"flags,omitempty"`
-	InstanceHistogram     map[string]int    `json:"instanceHistogram,omitempty"`
-	ResponseCodeHistogram map[int]int       `json:"responseCodeHistogram,omitempty"`
+	Timestamp               time.Time         `json:"timestamp"`
+	Destination             string            `json:"destination"`
+	URL                     string            `json:"url"`
+	Method                  string            `json:"method"`
+	NumberOfRequests        uint              `json:"numberOfRequests"`
+	MaxConcurrentRequests   uint              `json:"maxConcurrentRequests"`
+	CompletedResponses      int               `json:"completedResponses"`
+	FailedIndex             uint              `json:"failedIndex"`
+	Error                   string            `json:"error"`
+	FailedRequestDiagnostic string            `json:"failedRequestDiagnostic,omitempty"`
+	PartialResponses        []any             `json:"partialResponses,omitempty"`
+	Headers                 map[string]string `json:"headers,omitempty"`
+	Flags                   []string          `json:"flags,omitempty"`
+	InstanceHistogram       map[string]int    `json:"instanceHistogram,omitempty"`
+	ResponseCodeHistogram   map[int]int       `json:"responseCodeHistogram,omitempty"`
+}
+
+func diagnosticReference(err error) string {
+	var diagnosticErr diagnosticError
+	if errors.As(err, &diagnosticErr) {
+		return diagnosticErr.file
+	}
+	return ""
+}
+
+func buildConcurrentDiagnostic(destination string, opts CollectResponsesOpts, failed result, responses []any) concurrentDiagnostic {
+	reference := diagnosticReference(failed.err)
+	diagnostic := concurrentDiagnostic{
+		Timestamp:               time.Now().UTC(),
+		Destination:             destination,
+		NumberOfRequests:        opts.numberOfRequests,
+		MaxConcurrentRequests:   opts.maxConcurrentRequests,
+		CompletedResponses:      len(responses),
+		FailedIndex:             failed.idx,
+		Error:                   failed.err.Error(),
+		FailedRequestDiagnostic: reference,
+		PartialResponses:        redactedDiagnosticResponses(responses),
+		InstanceHistogram:       instanceHistogram(responses),
+		ResponseCodeHistogram:   responseCodeHistogram(responses),
+	}
+	if reference == "" {
+		diagnostic.URL = opts.URL
+		diagnostic.Method = opts.Method
+		diagnostic.Headers = redactedHeaders(opts.Headers)
+		diagnostic.Flags = opts.Flags
+	}
+	return diagnostic
 }
 
 func addConcurrentDiagnostic(destination string, opts CollectResponsesOpts, failed result, responses []any) {
-	diagnostic := concurrentDiagnostic{
-		Timestamp:             time.Now().UTC(),
-		Destination:           destination,
-		URL:                   opts.URL,
-		Method:                opts.Method,
-		NumberOfRequests:      opts.numberOfRequests,
-		MaxConcurrentRequests: opts.maxConcurrentRequests,
-		CompletedResponses:    len(responses),
-		FailedIndex:           failed.idx,
-		Error:                 failed.err.Error(),
-		PartialResponses:      responses,
-		Headers:               opts.Headers,
-		Flags:                 opts.Flags,
-		InstanceHistogram:     instanceHistogram(responses),
-		ResponseCodeHistogram: responseCodeHistogram(responses),
-	}
-
+	diagnostic := buildConcurrentDiagnostic(destination, opts, failed, responses)
 	data, err := json.MarshalIndent(diagnostic, "", "  ")
 	if err != nil {
 		framework.Logf("failed to marshal concurrent diagnostic: %v", err)
 		return
 	}
 	report.AddFileToReportEntry(
-		fmt.Sprintf("client-concurrent-%d.json", time.Now().UnixNano()),
+		diagnosticFileName("client-concurrent"),
 		data,
 	)
 }
