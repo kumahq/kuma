@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/intercp"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshexternalservice"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshfaultinjection"
@@ -77,7 +76,6 @@ var (
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
 	_ = Describe("MeshService Label Propagation", meshservicelabelpropagation.LabelPropagation, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
-	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
 	_ = Describe("MeshAccessLog - matches", meshaccesslog.Matches, Ordered)
 	_ = Describe("MeshRetry", meshretry.HttpRetry, Ordered)

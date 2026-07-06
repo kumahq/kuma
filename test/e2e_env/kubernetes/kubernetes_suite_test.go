@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/jobs"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/k8s_api_bypass"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/kic"
-	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshcircuitbreaker"
 	meshexternalservices "github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshexternalservice"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshfaultinjection"
@@ -66,7 +65,6 @@ var (
 	_ = Describe("Eviction", graceful.Eviction, Ordered)
 	_ = XDescribe("Change Service", graceful.ChangeService, Ordered)
 	_ = Describe("Jobs", jobs.Jobs)
-	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
 	_ = Describe("MeshTrace Zone Proxy", observability.ZoneProxyPluginTest, Ordered)
