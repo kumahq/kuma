@@ -2,6 +2,7 @@ package mesh_test
 
 import (
 	"net"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,6 +12,7 @@ import (
 	. "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -749,4 +751,140 @@ var _ = Describe("Dataplane", func() {
 			}),
 		)
 	})
+
+	Describe("Hash()", func() {
+		newDataplane := func() *DataplaneResource {
+			return builders.Dataplane().
+				WithName("dp-1").
+				WithMesh("default").
+				WithVersion("1").
+				WithLabels(map[string]string{
+					mesh_proto.ZoneTag: "zone-1",
+					"team":             "infra",
+				}).
+				WithAddress("127.0.0.1").
+				WithServices("backend").
+				Build()
+		}
+
+		It("is stable when only the resourceVersion changes", func() {
+			original := newDataplane()
+			originalHash := original.Hash()
+
+			changed := newDataplane()
+			changed.Meta.(*test_model.ResourceMeta).Version = "2"
+
+			Expect(changed.Hash()).To(Equal(originalHash))
+		})
+
+		It("changes when a label is added", func() {
+			original := newDataplane()
+			originalHash := original.Hash()
+
+			changed := newDataplane()
+			changed.Meta.(*test_model.ResourceMeta).Labels["new-label"] = "value"
+
+			Expect(changed.Hash()).NotTo(Equal(originalHash))
+		})
+
+		It("changes when a label value changes", func() {
+			original := newDataplane()
+			originalHash := original.Hash()
+
+			changed := newDataplane()
+			changed.Meta.(*test_model.ResourceMeta).Labels["team"] = "platform"
+
+			Expect(changed.Hash()).NotTo(Equal(originalHash))
+		})
+
+		It("changes when a label is removed", func() {
+			original := newDataplane()
+			originalHash := original.Hash()
+
+			changed := newDataplane()
+			delete(changed.Meta.(*test_model.ResourceMeta).Labels, "team")
+
+			Expect(changed.Hash()).NotTo(Equal(originalHash))
+		})
+
+		It("changes when the spec changes", func() {
+			original := newDataplane()
+			originalHash := original.Hash()
+
+			changed := newDataplane()
+			changed.Spec.Networking.Address = "10.0.0.1"
+
+			Expect(changed.Hash()).NotTo(Equal(originalHash))
+		})
+
+		It("is stable across semantically equal labels built in different order", func() {
+			first := builders.Dataplane().
+				WithName("dp-1").
+				WithMesh("default").
+				WithLabels(map[string]string{
+					mesh_proto.ZoneTag: "zone-1",
+					"team":             "infra",
+				}).
+				WithAddress("127.0.0.1").
+				WithServices("backend").
+				Build()
+
+			second := builders.Dataplane().
+				WithName("dp-1").
+				WithMesh("default").
+				WithLabels(map[string]string{
+					"team":             "infra",
+					mesh_proto.ZoneTag: "zone-1",
+				}).
+				WithAddress("127.0.0.1").
+				WithServices("backend").
+				Build()
+
+			Expect(first.Hash()).To(Equal(second.Hash()))
+		})
+
+		It("does not treat label key/value boundaries ambiguously", func() {
+			first := builders.Dataplane().
+				WithName("dp-1").
+				WithMesh("default").
+				WithLabels(map[string]string{"a": "bc"}).
+				WithAddress("127.0.0.1").
+				WithServices("backend").
+				Build()
+
+			second := builders.Dataplane().
+				WithName("dp-1").
+				WithMesh("default").
+				WithLabels(map[string]string{"ab": "c"}).
+				WithAddress("127.0.0.1").
+				WithServices("backend").
+				Build()
+
+			Expect(first.Hash()).NotTo(Equal(second.Hash()))
+		})
+	})
 })
+
+func BenchmarkDataplaneHash(b *testing.B) {
+	dp := builders.Dataplane().
+		WithName("dp-1").
+		WithMesh("default").
+		WithVersion("1").
+		WithLabels(map[string]string{
+			mesh_proto.ZoneTag:          "zone-1",
+			mesh_proto.KubeNamespaceTag: "default",
+			"team":                      "infra",
+			"app":                       "backend",
+		}).
+		WithAddress("127.0.0.1").
+		WithServices("backend").
+		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+		WithTransparentProxying(15001, 15006, "").
+		Build()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = dp.Hash()
+	}
+}

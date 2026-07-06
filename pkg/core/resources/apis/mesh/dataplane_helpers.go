@@ -1,9 +1,12 @@
 package mesh
 
 import (
+	"encoding/binary"
+	"hash"
 	"hash/fnv"
 	"net"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -168,12 +171,48 @@ func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
 	return defaultAdminPort
 }
 
+// Hash returns a content-based hash of the Dataplane used to gate xDS
+// regeneration. It intentionally excludes meta.GetVersion() (the Kubernetes
+// resourceVersion) so that writes irrelevant to xDS generation - status,
+// annotations, managedFields - don't invalidate the mesh-wide xDS context.
+// Labels are included because they affect policy matching.
 func (d *DataplaneResource) Hash() []byte {
 	hasher := fnv.New128a()
-	_, _ = hasher.Write(core_model.HashMeta(d))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
+	_, _ = hasher.Write(core_model.HashMetaIdentity(d))
+	writeSortedLabels(hasher, d.GetMeta().GetLabels())
+	specBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(d.Spec)
+	if err == nil {
+		_, _ = hasher.Write(specBytes)
+	} else {
+		// Deterministic marshaling should never fail for a well-formed Dataplane
+		// spec, but fall back to a value that still changes with the spec
+		// instead of silently treating every Dataplane as identical.
+		_, _ = hasher.Write([]byte(d.Spec.String()))
+	}
 	return hasher.Sum(nil)
+}
+
+// writeSortedLabels writes labels into hasher in a deterministic,
+// unambiguous order regardless of map iteration order. Keys and values are
+// length-prefixed so that e.g. {"a":"bc"} and {"ab":"c"} don't collide.
+func writeSortedLabels(hasher hash.Hash, labels map[string]string) {
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var lenBuf [8]byte
+	writeLenPrefixed := func(s string) {
+		binary.BigEndian.PutUint64(lenBuf[:], uint64(len(s)))
+		_, _ = hasher.Write(lenBuf[:])
+		_, _ = hasher.Write([]byte(s))
+	}
+
+	for _, k := range keys {
+		writeLenPrefixed(k)
+		writeLenPrefixed(labels[k])
+	}
 }
 
 // InboundIdentifyingName returns a dataplane KRI with portName as section name
