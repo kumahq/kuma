@@ -141,4 +141,45 @@ var _ = Describe("hash", func() {
 			Expect(afterContext).To(Equal(beforeContext), "context should be the exact same object")
 		}
 	}, test.EntriesForFolder("meshcontext_hash"))
+
+	It("should not recompute the mesh context when a Dataplane write only bumps resourceVersion", func() {
+		// given a mesh with a single Dataplane
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+`)).To(Succeed())
+
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when the Dataplane is written again with an identical spec (only resourceVersion changes)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+`)).To(Succeed())
+
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the cached context is reused and the mesh hash is unchanged
+		Expect(after).To(BeIdenticalTo(before), "resourceVersion-only write should not trigger mesh-wide xDS recomputation")
+		Expect(after.Hash).To(Equal(before.Hash))
+	})
 })
