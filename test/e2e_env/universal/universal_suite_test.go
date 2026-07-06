@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/intercp"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshexternalservice"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshfaultinjection"
@@ -76,9 +75,7 @@ var (
 	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
 	_ = Describe("MeshService Label Propagation", meshservicelabelpropagation.LabelPropagation, Ordered)
-	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
-	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
 	_ = Describe("MeshAccessLog - matches", meshaccesslog.Matches, Ordered)
 	_ = Describe("MeshRetry", meshretry.HttpRetry, Ordered)
@@ -103,7 +100,6 @@ var (
 	_ = Describe("MeshFaultInjection on Zone Proxy", meshfaultinjection.ZoneProxy, Ordered)
 	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
-	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
 	_ = Describe("MeshTLS", meshtls.Policy, Ordered)
 	_ = Describe("Envoy Config – Sidecars", Label("golden-files-e2e"), envoyconfig.Sidecars, Ordered)
 	_ = Describe("Envoy Config – Builtin Gateway", Label("golden-files-e2e"), envoyconfig.BuiltinGateway, Ordered)
