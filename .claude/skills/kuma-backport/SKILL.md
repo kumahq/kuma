@@ -61,7 +61,10 @@ Master is `github.com/kumahq/kuma/v3`. Release branches differ and are **not uni
 
    ```bash
    git show $UPSTREAM/<rel>:<file> > <file>
-   git diff $UPSTREAM/<other-rel> backport-<other-ver> -- <file> | sed 's|/v2|<path>|g' | git apply -
+   SOURCE_MODULE_PATH=$(git show $UPSTREAM/<other-rel>:go.mod | awk 'NR==1 { print $2 }')
+   git diff $UPSTREAM/<other-rel> backport-<other-ver> -- <file> \
+     | perl -pe 's#\Q'"$SOURCE_MODULE_PATH"'\E#<branch-module-path>#g' \
+     | git apply -
    ```
 
    Reuse a patch produced from an already-fixed sibling branch — the fix hunks are identical across branches even when the surrounding file isn't.
@@ -75,7 +78,7 @@ Master is `github.com/kumahq/kuma/v3`. Release branches differ and are **not uni
 - Sweep for leftovers before committing:
 
   ```bash
-  grep -rn '<<<<<<<\|kumahq/kuma/v3' <changed-dirs>
+  grep -Ern '<<<<<<<|kumahq/kuma/v3' <changed-dirs>
   ```
 
 ## 4. Validate locally
