@@ -5701,7 +5701,15 @@ components:
                       when a
 
                       numeric targetPort has no matching declared container
-                      port.
+                      port. A string
+
+                      targetPort with no matching named container port is not
+                      represented
+
+                      here at all: the inbound is dropped instead of being
+                      emitted with an
+
+                      empty name.
                     type: string
                   port:
                     description: >-
@@ -17786,7 +17794,15 @@ components:
                           or when a
 
                           numeric targetPort has no matching declared container
-                          port.
+                          port. A string
+
+                          targetPort with no matching named container port is
+                          not represented
+
+                          here at all: the inbound is dropped instead of being
+                          emitted with an
+
+                          empty name.
                         type: string
                       port:
                         description: >-
