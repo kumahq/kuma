@@ -413,10 +413,10 @@ func addCollectDiagnostic(reason string, result collectResponseResult, err error
 		Destination: result.destination,
 		Method:      result.opts.Method,
 		URL:         result.opts.URL,
-		Headers:     redactedHeaders(result.opts.Headers),
+		Headers:     result.opts.Headers,
 		Flags:       result.opts.Flags,
-		Command:     redactedCommand(result.command),
-		Stdout:      truncateDiagnosticString(redactedCollectStdout(result.stdout)),
+		Command:     result.command,
+		Stdout:      truncateDiagnosticString(result.stdout),
 		Stderr:      truncateDiagnosticString(result.stderr),
 	}
 	if err != nil {
@@ -432,154 +432,6 @@ func addCollectDiagnostic(reason string, result collectResponseResult, err error
 		fmt.Sprintf("client-collect-%d-%s-%s.json", time.Now().UnixNano(), result.cluster.Name(), result.container),
 		data,
 	)
-}
-
-const redactedDiagnosticValue = "[redacted]"
-
-func redactedHeaders(headers map[string]string) map[string]string {
-	if len(headers) == 0 {
-		return nil
-	}
-
-	redacted := make(map[string]string, len(headers))
-	for key, value := range headers {
-		if shouldRedactHeader(key) {
-			redacted[key] = redactedDiagnosticValue
-			continue
-		}
-		redacted[key] = value
-	}
-	return redacted
-}
-
-func redactedEchoHeaders(headers map[string][]string) map[string][]string {
-	if len(headers) == 0 {
-		return nil
-	}
-
-	redacted := make(map[string][]string, len(headers))
-	for key, values := range headers {
-		if shouldRedactHeader(key) {
-			replacement := make([]string, len(values))
-			for i := range replacement {
-				replacement[i] = redactedDiagnosticValue
-			}
-			redacted[key] = replacement
-			continue
-		}
-		redacted[key] = append([]string(nil), values...)
-	}
-	return redacted
-}
-
-func redactedEchoResponse(response types.EchoResponse) types.EchoResponse {
-	response.Received.Headers = redactedEchoHeaders(response.Received.Headers)
-	return response
-}
-
-func redactedDiagnosticResponse(response any) any {
-	switch value := response.(type) {
-	case types.EchoResponse:
-		return redactedEchoResponse(value)
-	default:
-		return value
-	}
-}
-
-func redactedDiagnosticResponses(responses []any) []any {
-	if len(responses) == 0 {
-		return nil
-	}
-
-	redacted := make([]any, len(responses))
-	for i, response := range responses {
-		redacted[i] = redactedDiagnosticResponse(response)
-	}
-	return redacted
-}
-
-func redactedCommand(command []string) []string {
-	if len(command) == 0 {
-		return nil
-	}
-
-	redacted := append([]string(nil), command...)
-	for i := 0; i < len(redacted); i++ {
-		arg := redacted[i]
-		switch {
-		case (arg == "--header" || arg == "-H") && i+1 < len(redacted):
-			i++
-			redacted[i] = redactedHeaderArgument(redacted[i])
-		case strings.HasPrefix(arg, "--header="):
-			redacted[i] = "--header=" + redactedHeaderArgument(strings.TrimPrefix(arg, "--header="))
-		case strings.HasPrefix(arg, "-H") && len(arg) > len("-H"):
-			redacted[i] = "-H" + redactedHeaderArgument(strings.TrimSpace(strings.TrimPrefix(arg, "-H")))
-		}
-	}
-	return redacted
-}
-
-func redactedHeaderArgument(header string) string {
-	trimmed := strings.TrimSpace(header)
-	if trimmed == "" {
-		return header
-	}
-
-	quote := byte(0)
-	if len(trimmed) >= 2 {
-		first := trimmed[0]
-		last := trimmed[len(trimmed)-1]
-		if (first == '\'' || first == '"') && last == first {
-			quote = first
-			trimmed = trimmed[1 : len(trimmed)-1]
-		}
-	}
-
-	name, _, found := strings.Cut(trimmed, ":")
-	if !found || !shouldRedactHeader(name) {
-		return header
-	}
-
-	value := strings.TrimSpace(name) + ": " + redactedDiagnosticValue
-	if quote != 0 {
-		return string(quote) + value + string(quote)
-	}
-	return value
-}
-
-func shouldRedactHeader(name string) bool {
-	normalized := strings.ToLower(strings.TrimSpace(name))
-	for _, token := range []string{
-		"authorization",
-		"token",
-		"secret",
-		"cookie",
-		"credential",
-		"api-key",
-		"apikey",
-	} {
-		if strings.Contains(normalized, token) {
-			return true
-		}
-	}
-	return false
-}
-
-func redactedCollectStdout(stdout string) string {
-	if stdout == "" {
-		return ""
-	}
-
-	var response types.EchoResponse
-	if err := json.Unmarshal([]byte(stdout), &response); err != nil {
-		return stdout
-	}
-
-	redacted, err := json.Marshal(redactedEchoResponse(response))
-	if err != nil {
-		return stdout
-	}
-	return string(redacted)
 }
 
 func truncateDiagnosticString(value string) string {
@@ -885,8 +737,8 @@ func addConcurrentDiagnostic(destination string, opts CollectResponsesOpts, fail
 		CompletedResponses:    len(responses),
 		FailedIndex:           failed.idx,
 		Error:                 failed.err.Error(),
-		PartialResponses:      redactedDiagnosticResponses(responses),
-		Headers:               redactedHeaders(opts.Headers),
+		PartialResponses:      responses,
+		Headers:               opts.Headers,
 		Flags:                 opts.Flags,
 		InstanceHistogram:     instanceHistogram(responses),
 		ResponseCodeHistogram: responseCodeHistogram(responses),
