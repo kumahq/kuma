@@ -23,11 +23,9 @@ var _ = Describe("PolicyMatchingCache", func() {
 	}
 
 	Describe("BuildCacheKey", func() {
-		cacheKeyConfig := core_plugins.NewMatchedPoliciesConfig
-
 		It("returns distinct keys for different resource types", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			cfg := cacheKeyConfig(core_plugins.WithCache(nil, "hash1"))
+			cfg := core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1"))
 			k1 := matchers.BuildCacheKey("TypeA", cfg, dpp)
 			k2 := matchers.BuildCacheKey("TypeB", cfg, dpp)
 			Expect(k1).ToNot(Equal(k2))
@@ -35,21 +33,21 @@ var _ = Describe("PolicyMatchingCache", func() {
 
 		It("returns distinct keys for different policyMatchingHash", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			k1 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash1")), dpp)
-			k2 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash2")), dpp)
+			k1 := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1")), dpp)
+			k2 := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash2")), dpp)
 			Expect(k1).ToNot(Equal(k2))
 		})
 
 		It("returns distinct keys for different includeShadow", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			k1 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash1")), dpp)
-			k2 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash1"), core_plugins.IncludeShadow()), dpp)
+			k1 := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1")), dpp)
+			k2 := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1"), core_plugins.IncludeShadow()), dpp)
 			Expect(k1).ToNot(Equal(k2))
 		})
 
 		It("returns the same key for identical inputs", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			cfg := cacheKeyConfig(core_plugins.WithCache(nil, "hash1"))
+			cfg := core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1"))
 			k1 := matchers.BuildCacheKey("TypeA", cfg, dpp)
 			k2 := matchers.BuildCacheKey("TypeA", cfg, dpp)
 			Expect(k1).To(Equal(k2))
