@@ -607,7 +607,11 @@ type Dataplane_Networking_Inbound struct {
 	ServiceProbe *Dataplane_Networking_Inbound_ServiceProbe `protobuf:"bytes,8,opt,name=serviceProbe,proto3" json:"serviceProbe,omitempty"`
 	// State describes the current state of the listener.
 	State Dataplane_Networking_Inbound_State `protobuf:"varint,9,opt,name=state,proto3,enum=kuma.mesh.v1alpha1.Dataplane_Networking_Inbound_State" json:"state,omitempty"`
-	// Name adds another way of referencing this port, usable with MeshService
+	// Name adds another way of referencing this port, usable with MeshService.
+	// On Kubernetes, this is derived from the pod container port name that
+	// matches the Service's targetPort, not from the Service port name. It
+	// is empty when the matched container port is unnamed, or when a
+	// numeric targetPort has no matching declared container port.
 	Name string `protobuf:"bytes,10,opt,name=name,proto3" json:"name,omitempty"`
 	// Protocol of the service (tcp, http, grpc, etc).
 	Protocol      string `protobuf:"bytes,11,opt,name=protocol,proto3" json:"protocol,omitempty"`

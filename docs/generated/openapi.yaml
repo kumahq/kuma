@@ -5689,7 +5689,19 @@ components:
                   name:
                     description: >-
                       Name adds another way of referencing this port, usable
-                      with MeshService
+                      with MeshService.
+
+                      On Kubernetes, this is derived from the pod container port
+                      name that
+
+                      matches the Service's targetPort, not from the Service
+                      port name. It
+
+                      is empty when the matched container port is unnamed, or
+                      when a
+
+                      numeric targetPort has no matching declared container
+                      port.
                     type: string
                   port:
                     description: >-
@@ -17762,7 +17774,19 @@ components:
                       name:
                         description: >-
                           Name adds another way of referencing this port, usable
-                          with MeshService
+                          with MeshService.
+
+                          On Kubernetes, this is derived from the pod container
+                          port name that
+
+                          matches the Service's targetPort, not from the Service
+                          port name. It
+
+                          is empty when the matched container port is unnamed,
+                          or when a
+
+                          numeric targetPort has no matching declared container
+                          port.
                         type: string
                       port:
                         description: >-

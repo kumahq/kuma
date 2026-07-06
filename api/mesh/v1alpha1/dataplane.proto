@@ -153,7 +153,11 @@ message Dataplane {
       // State describes the current state of the listener.
       State state = 9;
 
-      // Name adds another way of referencing this port, usable with MeshService
+      // Name adds another way of referencing this port, usable with MeshService.
+      // On Kubernetes, this is derived from the pod container port name that
+      // matches the Service's targetPort, not from the Service port name. It
+      // is empty when the matched container port is unnamed, or when a
+      // numeric targetPort has no matching declared container port.
       string name = 10;
 
       // Protocol of the service (tcp, http, grpc, etc).
