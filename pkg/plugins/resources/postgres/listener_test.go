@@ -3,10 +3,8 @@ package postgres_test
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
-	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -24,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
 	events_postgres "github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/events"
+	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
 var _ = Describe("Events", func() {
@@ -37,7 +36,7 @@ var _ = Describe("Events", func() {
 			// given
 			listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh := setupChannels()
 			defer close(eventBusStopCh)
-			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
+			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh, 5*time.Second)
 			storeCtx, stopStore := context.WithCancel(context.Background())
 			storeDoneCh := triggerNotifications(storeCtx, cfg, driverName, storeErrCh)
 			defer func() {
@@ -68,7 +67,7 @@ var _ = Describe("Events", func() {
 			// given
 			cfg, err := c.Config()
 			Expect(err).ToNot(HaveOccurred())
-			proxy, err := newTCPProxy(net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)))
+			proxy, err := test.NewTCPProxy(net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)))
 			Expect(err).ToNot(HaveOccurred())
 			defer func() {
 				Expect(proxy.Stop()).To(Succeed())
@@ -143,7 +142,7 @@ func setupListeners(
 	driverName string,
 	listenerErrCh chan error,
 	listenerStopCh chan struct{},
-	restartBackoff ...time.Duration,
+	restartBackoff time.Duration,
 ) kuma_events.Listener {
 	cfg.DriverName = driverName
 	metrics, err := core_metrics.NewMetrics("")
@@ -152,11 +151,7 @@ func setupListeners(
 	Expect(err).ToNot(HaveOccurred())
 	listener := eventsBus.Subscribe()
 	l := events_postgres.NewListener(cfg, eventsBus)
-	backoff := 5 * time.Second
-	if len(restartBackoff) > 0 {
-		backoff = restartBackoff[0]
-	}
-	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l, backoff, 1*time.Minute)
+	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l, restartBackoff, 1*time.Minute)
 	go func() {
 		listenerErrCh <- resilientListener.Start(listenerStopCh)
 	}()
@@ -184,6 +179,11 @@ func triggerNotifications(ctx context.Context, cfg config_postgres.PostgresStore
 				case storeErrCh <- err:
 				default:
 				}
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(10 * time.Millisecond):
+				}
 			}
 		}
 	}()
@@ -198,149 +198,6 @@ func waitForPostgres(cfg config_postgres.PostgresStoreConfig) {
 		}
 		return db.Close()
 	}, "10s", "100ms").Should(Succeed())
-}
-
-type tcpProxy struct {
-	target string
-
-	mu         sync.Mutex
-	listenAddr string
-	listener   net.Listener
-	conns      map[net.Conn]struct{}
-}
-
-func newTCPProxy(target string) (*tcpProxy, error) {
-	proxy := &tcpProxy{
-		target:     target,
-		listenAddr: "127.0.0.1:0",
-		conns:      map[net.Conn]struct{}{},
-	}
-	if err := proxy.Start(); err != nil {
-		return nil, err
-	}
-	return proxy, nil
-}
-
-func (p *tcpProxy) Host() string {
-	host, _, err := net.SplitHostPort(p.listenAddr)
-	Expect(err).ToNot(HaveOccurred())
-	return host
-}
-
-func (p *tcpProxy) Port() int {
-	_, port, err := net.SplitHostPort(p.listenAddr)
-	Expect(err).ToNot(HaveOccurred())
-	parsed, err := strconv.Atoi(port)
-	Expect(err).ToNot(HaveOccurred())
-	return parsed
-}
-
-func (p *tcpProxy) Start() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.listener != nil {
-		return nil
-	}
-	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", p.listenAddr)
-	if err != nil {
-		return err
-	}
-	p.listenAddr = listener.Addr().String()
-	p.listener = listener
-	go p.accept(listener)
-	return nil
-}
-
-func (p *tcpProxy) Stop() error {
-	p.mu.Lock()
-	listener := p.listener
-	p.listener = nil
-	conns := make([]net.Conn, 0, len(p.conns))
-	for conn := range p.conns {
-		conns = append(conns, conn)
-	}
-	p.conns = map[net.Conn]struct{}{}
-	p.mu.Unlock()
-
-	for _, conn := range conns {
-		_ = conn.Close()
-	}
-	if listener == nil {
-		return nil
-	}
-	return listener.Close()
-}
-
-func (p *tcpProxy) accept(listener net.Listener) {
-	for {
-		source, err := listener.Accept()
-		if err != nil {
-			return
-		}
-		go p.forward(source)
-	}
-}
-
-func (p *tcpProxy) forward(source net.Conn) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	target, err := (&net.Dialer{}).DialContext(ctx, "tcp", p.target)
-	if err != nil {
-		_ = source.Close()
-		return
-	}
-
-	if !p.track(source) {
-		_ = source.Close()
-		_ = target.Close()
-		return
-	}
-	if !p.track(target) {
-		p.untrack(source)
-		_ = source.Close()
-		_ = target.Close()
-		return
-	}
-	defer func() {
-		p.untrack(source)
-		p.untrack(target)
-		_ = source.Close()
-		_ = target.Close()
-	}()
-
-	doneCh := make(chan struct{}, 2)
-	go func() {
-		_, _ = io.Copy(target, source)
-		doneCh <- struct{}{}
-	}()
-	go func() {
-		_, _ = io.Copy(source, target)
-		doneCh <- struct{}{}
-	}()
-
-	<-doneCh
-	_ = source.Close()
-	_ = target.Close()
-	<-doneCh
-}
-
-func (p *tcpProxy) track(conn net.Conn) bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.listener == nil {
-		_ = conn.Close()
-		return false
-	}
-	p.conns[conn] = struct{}{}
-	return true
-}
-
-func (p *tcpProxy) untrack(conn net.Conn) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	delete(p.conns, conn)
 }
 
 func channelClosesWithoutErrors(listenerErrCh chan error) func() bool {
