@@ -119,9 +119,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
@@ -138,7 +136,7 @@ spec:
           name: test-http-server-2
           namespace: %s
           port: 80
-`, Config.KumaNamespace, meshName, namespace, namespace)
+`, namespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -149,9 +147,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
@@ -162,7 +158,7 @@ spec:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, Config.KumaNamespace, meshName, namespace)
+`, namespace, meshName, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
@@ -213,9 +209,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
@@ -232,7 +226,7 @@ spec:
           name: test-http-server-2
           namespace: %s
           port: 80
-`, Config.KumaNamespace, meshName, namespace, namespace)
+`, namespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -243,9 +237,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
@@ -256,7 +248,7 @@ spec:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, Config.KumaNamespace, meshName, namespace)
+`, namespace, meshName, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 

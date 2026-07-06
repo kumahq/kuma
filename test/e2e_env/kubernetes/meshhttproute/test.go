@@ -70,9 +70,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
@@ -97,7 +95,7 @@ spec:
                 namespace: %s
                 port: 80
                 weight: 1
-`, Config.KumaNamespace, meshName, namespace, namespace))(kubernetes.Cluster)).To(Succeed())
+`, namespace, meshName, namespace, namespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then receive redirect response
 		Eventually(func(g Gomega) {
@@ -120,9 +118,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
@@ -146,7 +142,7 @@ spec:
                 namespace: %s
                 port: 80
                 weight: 1
-`, Config.KumaNamespace, meshName, namespace, namespace))(kubernetes.Cluster)).To(Succeed())
+`, namespace, meshName, namespace, namespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then receive redirect response
 		Eventually(func(g Gomega) {

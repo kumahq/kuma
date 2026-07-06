@@ -62,9 +62,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   default:
     appendModifications:
       - httpFilter:
@@ -80,7 +78,7 @@ spec:
                 function envoy_on_request(request_handle)
                   request_handle:headers():add("X-Header", "test")
                 end
-`, Config.KumaNamespace, meshName)
+`, namespace, meshName)
 
 		// when
 		err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))
@@ -106,9 +104,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: test-client
+    kind: Mesh
   default:
     appendModifications:
       - networkFilter:
@@ -123,7 +119,7 @@ spec:
                 header:
                   key: X-Header
                   value: test
-`, Config.KumaNamespace, meshName)
+`, namespace, meshName)
 
 		// when
 		err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))
