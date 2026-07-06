@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -20,6 +21,7 @@ import (
 	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/events"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	kuma_v1alpha1 "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -28,15 +30,24 @@ import (
 var log = core.Log.WithName("k8s-event-listener")
 
 type listener struct {
-	mgr manager.Manager
-	out events.Emitter
+	mgr           manager.Manager
+	out           events.Emitter
+	droppedEvents *prometheus.CounterVec
 }
 
-func NewListener(mgr manager.Manager, out events.Emitter) component.Component {
-	return &listener{
-		mgr: mgr,
-		out: out,
+func NewListener(mgr manager.Manager, out events.Emitter, metrics core_metrics.Metrics) (component.Component, error) {
+	droppedEvents := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "k8s_events_dropped_total",
+		Help: "Number of Kubernetes informer events dropped because their payload could not be converted to a Kuma Kubernetes object",
+	}, []string{"operation"})
+	if err := metrics.Register(droppedEvents); err != nil {
+		return nil, err
 	}
+	return &listener{
+		mgr:           mgr,
+		out:           out,
+		droppedEvents: droppedEvents,
+	}, nil
 }
 
 func (k *listener) Start(stop <-chan struct{}) error {
@@ -87,7 +98,11 @@ func resourceKey(obj model.KubernetesObject) core_model.ResourceKey {
 }
 
 func (k *listener) OnAdd(obj any, _ bool) {
-	kobj := obj.(model.KubernetesObject)
+	kobj, ok := kubernetesObjectFromEvent(obj)
+	if !ok {
+		k.recordDroppedEvent("add", obj)
+		return
+	}
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
 		return
@@ -100,7 +115,13 @@ func (k *listener) OnAdd(obj any, _ bool) {
 }
 
 func (k *listener) OnUpdate(oldObj, newObj any) {
-	kobj := newObj.(model.KubernetesObject)
+	// Delete tombstones are expected on delete callbacks, but unwrap defensively
+	// here too so malformed update payloads fail closed instead of panicking.
+	kobj, ok := kubernetesObjectFromEvent(newObj)
+	if !ok {
+		k.recordDroppedEvent("update", newObj)
+		return
+	}
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
 		return
@@ -113,7 +134,11 @@ func (k *listener) OnUpdate(oldObj, newObj any) {
 }
 
 func (k *listener) OnDelete(obj any) {
-	kobj := obj.(model.KubernetesObject)
+	kobj, ok := kubernetesObjectFromEvent(obj)
+	if !ok {
+		k.recordDroppedEvent("delete", obj)
+		return
+	}
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
 		return
@@ -123,6 +148,24 @@ func (k *listener) OnDelete(obj any) {
 		Type:      core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
 		Key:       resourceKey(kobj),
 	})
+}
+
+func kubernetesObjectFromEvent(obj any) (model.KubernetesObject, bool) {
+	if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		// Client-go stores the last observed object in the tombstone. If that
+		// payload is itself another tombstone, treat it as malformed.
+		obj = tombstone.Obj
+	}
+
+	kobj, ok := obj.(model.KubernetesObject)
+	return kobj, ok
+}
+
+func (k *listener) recordDroppedEvent(operation string, obj any) {
+	if k.droppedEvents != nil {
+		k.droppedEvents.WithLabelValues(operation).Inc()
+	}
+	log.Error(errors.Errorf("unexpected object type on %s", operation), "skipping Kubernetes informer event", "type", fmt.Sprintf("%T", obj))
 }
 
 func (k *listener) NeedLeaderElection() bool {
