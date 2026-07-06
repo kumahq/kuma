@@ -222,7 +222,6 @@ spec:
 			err := kubernetes.Cluster.Install(testserver.Install(
 				testserver.WithName("tcp-external-service"),
 				testserver.WithServicePortAppProtocol("tcp"),
-				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 			))
 			Expect(err).ToNot(HaveOccurred())
