@@ -127,7 +127,17 @@ spec:
 					HaveKeyWithValue(MatchRegexp(`^alias-zone2.*`), Not(BeNil())),
 				),
 			)
-		}, "30s", "500ms").Should(Succeed())
+		}, "30s", "500ms").MustPassRepeatedly(3).Should(Succeed())
+
+		response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).To(
+			And(
+				Not(HaveKey(MatchRegexp(`^zone1.*`))),
+				Not(HaveKey(MatchRegexp(`^zone2.*`))),
+				HaveKeyWithValue(MatchRegexp(`^alias-zone2.*`), Not(BeNil())),
+			),
+		)
 	})
 
 	// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9346
