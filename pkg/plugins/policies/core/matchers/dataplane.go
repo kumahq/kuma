@@ -49,7 +49,7 @@ func MatchedPolicies(
 
 	var cacheKey string
 	if mpOpts.Cache != nil {
-		cacheKey = BuildCacheKey(string(rType), mpOpts.IncludeShadow, dpp, mpOpts.PolicyMatchingHash)
+		cacheKey = BuildCacheKey(string(rType), mpOpts, dpp)
 		if cached, ok := mpOpts.Cache.GetIfPresent(cacheKey); ok {
 			return cached, nil
 		}

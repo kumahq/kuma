@@ -95,4 +95,16 @@ var _ = Describe("XdsServerConfig", func() {
 		// then
 		Expect(err).To(MatchError("parsing configuration from file 'testdata/invalid-config.input.yaml' failed: configuration validation failed: DataplaneConfigurationRefreshInterval must be positive"))
 	})
+
+	It("should reject negative policy matching cache size", func() {
+		// given
+		cfg := kuma_xds.DefaultXdsServerConfig()
+		cfg.PolicyMatchingCacheSize = -1
+
+		// when
+		err := cfg.Validate()
+
+		// then
+		Expect(err).To(MatchError("PolicyMatchingCacheSize must be non-negative"))
+	})
 })

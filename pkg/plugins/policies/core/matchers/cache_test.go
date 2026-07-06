@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -22,31 +23,37 @@ var _ = Describe("PolicyMatchingCache", func() {
 	}
 
 	Describe("BuildCacheKey", func() {
+		cacheKeyConfig := func(opts ...core_plugins.MatchedPoliciesOption) *core_plugins.MatchedPoliciesConfig {
+			return core_plugins.NewMatchedPoliciesConfig(opts...)
+		}
+
 		It("returns distinct keys for different resource types", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			k1 := matchers.BuildCacheKey("TypeA", false, dpp, "hash1")
-			k2 := matchers.BuildCacheKey("TypeB", false, dpp, "hash1")
+			cfg := cacheKeyConfig(core_plugins.WithCache(nil, "hash1"))
+			k1 := matchers.BuildCacheKey("TypeA", cfg, dpp)
+			k2 := matchers.BuildCacheKey("TypeB", cfg, dpp)
 			Expect(k1).ToNot(Equal(k2))
 		})
 
 		It("returns distinct keys for different policyMatchingHash", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			k1 := matchers.BuildCacheKey("TypeA", false, dpp, "hash1")
-			k2 := matchers.BuildCacheKey("TypeA", false, dpp, "hash2")
+			k1 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash1")), dpp)
+			k2 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash2")), dpp)
 			Expect(k1).ToNot(Equal(k2))
 		})
 
 		It("returns distinct keys for different includeShadow", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			k1 := matchers.BuildCacheKey("TypeA", false, dpp, "hash1")
-			k2 := matchers.BuildCacheKey("TypeA", true, dpp, "hash1")
+			k1 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash1")), dpp)
+			k2 := matchers.BuildCacheKey("TypeA", cacheKeyConfig(core_plugins.WithCache(nil, "hash1"), core_plugins.IncludeShadow()), dpp)
 			Expect(k1).ToNot(Equal(k2))
 		})
 
 		It("returns the same key for identical inputs", func() {
 			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
-			k1 := matchers.BuildCacheKey("TypeA", false, dpp, "hash1")
-			k2 := matchers.BuildCacheKey("TypeA", false, dpp, "hash1")
+			cfg := cacheKeyConfig(core_plugins.WithCache(nil, "hash1"))
+			k1 := matchers.BuildCacheKey("TypeA", cfg, dpp)
+			k2 := matchers.BuildCacheKey("TypeA", cfg, dpp)
 			Expect(k1).To(Equal(k2))
 		})
 	})
@@ -72,6 +79,20 @@ var _ = Describe("PolicyMatchingCache", func() {
 			c.Put("k1", core_xds.TypedMatchingPolicies{Type: "Type1"})
 			_, ok := c.GetIfPresent("k2")
 			Expect(ok).To(BeFalse())
+		})
+
+		It("counts hits and misses", func() {
+			metric := newMetric()
+			c := matchers.NewPolicyMatchingCache(metric, 100)
+			c.Put("k", core_xds.TypedMatchingPolicies{Type: "Type1"})
+
+			_, ok := c.GetIfPresent("k")
+			Expect(ok).To(BeTrue())
+			_, ok = c.GetIfPresent("missing")
+			Expect(ok).To(BeFalse())
+
+			Expect(testutil.ToFloat64(metric.WithLabelValues("hit"))).To(Equal(1.0))
+			Expect(testutil.ToFloat64(metric.WithLabelValues("miss"))).To(Equal(1.0))
 		})
 	})
 
