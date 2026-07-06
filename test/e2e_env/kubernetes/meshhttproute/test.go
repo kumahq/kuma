@@ -72,13 +72,15 @@ spec:
   targetRef:
     kind: MeshService
     name: test-client
+    namespace: %s
   to:
     - targetRef:
         kind: MeshService
         name: test-server
-      rules: 
+        namespace: %s
+      rules:
         - matches:
-            - path: 
+            - path:
                 type: PathPrefix
                 value: /
           default:
@@ -92,8 +94,9 @@ spec:
             backendRefs:
               - kind: MeshService
                 name: test-server
+                namespace: %s
                 weight: 1
-`, Config.KumaNamespace, meshName))(kubernetes.Cluster)).To(Succeed())
+`, namespace, meshName, namespace, namespace, namespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then receive redirect response
 		Eventually(func(g Gomega) {
@@ -118,13 +121,15 @@ spec:
   targetRef:
     kind: MeshService
     name: test-client
+    namespace: %s
   to:
     - targetRef:
         kind: MeshService
         name: test-server
-      rules: 
+        namespace: %s
+      rules:
         - matches:
-            - path: 
+            - path:
                 type: PathPrefix
                 value: /prefix
           default:
@@ -137,8 +142,9 @@ spec:
             backendRefs:
               - kind: MeshService
                 name: test-server
+                namespace: %s
                 weight: 1
-`, Config.KumaNamespace, meshName))(kubernetes.Cluster)).To(Succeed())
+`, namespace, meshName, namespace, namespace, namespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then receive redirect response
 		Eventually(func(g Gomega) {

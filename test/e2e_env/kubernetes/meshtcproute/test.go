@@ -121,10 +121,12 @@ spec:
   targetRef:
     kind: MeshService
     name: test-client
+    namespace: %s
   to:
   - targetRef:
       kind: MeshService
       name: test-http-server
+      namespace: %s
     rules:
     - matches:
       - path:
@@ -134,7 +136,8 @@ spec:
         backendRefs:
         - kind: MeshService
           name: test-http-server-2
-`, Config.KumaNamespace, meshName)
+          namespace: %s
+`, namespace, meshName, namespace, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -147,16 +150,18 @@ spec:
   targetRef:
     kind: MeshService
     name: test-client
+    namespace: %s
   to:
   - targetRef:
       kind: MeshService
       name: test-http-server
+      namespace: %s
     rules:
     - default:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, Config.KumaNamespace, meshName)
+`, namespace, meshName, namespace, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
@@ -209,10 +214,12 @@ spec:
   targetRef:
     kind: MeshService
     name: test-client
+    namespace: %s
   to:
   - targetRef:
       kind: MeshService
       name: test-tcp-server
+      namespace: %s
     rules:
     - matches:
       - path:
@@ -222,7 +229,8 @@ spec:
         backendRefs:
         - kind: MeshService
           name: test-http-server-2
-`, Config.KumaNamespace, meshName)
+          namespace: %s
+`, namespace, meshName, namespace, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -235,16 +243,18 @@ spec:
   targetRef:
     kind: MeshService
     name: test-client
+    namespace: %s
   to:
   - targetRef:
       kind: MeshService
       name: test-tcp-server
+      namespace: %s
     rules:
     - default:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, Config.KumaNamespace, meshName)
+`, namespace, meshName, namespace, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
