@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -123,36 +124,8 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 	// The catalog is only consulted when the leader is unknown or heartbeats
 	// are currently failing - in the calm state we keep talking to the
 	// already-known leader instead of reading the catalog on every tick.
-	if h.leader == nil || h.failures > 0 {
-		newLeader, err := Leader(ctx, h.catalog)
-		if err != nil {
-			if errors.Is(err, ErrNoLeader) {
-				log.Info("leader is not yet present in the cluster. No heartbeat to send")
-			} else {
-				log.Error(err, "could not resolve the leader from the catalog")
-			}
-			return false
-		}
-
-		// The catalog is the source of truth for who the leader is. Only report a
-		// leader change when the resolved instance id actually differs from the
-		// previously known one - a failed heartbeat is a connectivity problem, not
-		// a leader change.
-		if h.leader == nil || h.leader.Id != newLeader.Id {
-			if newLeader.Id != h.request.InstanceId {
-				previousLeaderAddress := ""
-				if h.leader != nil {
-					previousLeaderAddress = h.leader.Address
-				}
-				log.Info(
-					"leader has changed. Creating connection to the new leader.",
-					"previousLeaderAddress", previousLeaderAddress,
-					"newLeaderAddress", newLeader.Address,
-				)
-			}
-			h.failures = 0
-		}
-		h.leader = &newLeader
+	if (h.leader == nil || h.failures > 0) && !h.resolveLeader(ctx, log) {
+		return false
 	}
 
 	if h.leader.Id == h.request.InstanceId {
@@ -185,6 +158,41 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 		// leader is re-resolved from the catalog on the next tick.
 		log.V(1).Info("instance responded that it is no longer a leader")
 		h.leader = nil
+	}
+	return true
+}
+
+func (h *heartbeatComponent) resolveLeader(ctx context.Context, log logr.Logger) bool {
+	newLeader, err := Leader(ctx, h.catalog)
+	if err != nil {
+		if errors.Is(err, ErrNoLeader) {
+			log.Info("leader is not yet present in the cluster. No heartbeat to send")
+		} else {
+			log.Error(err, "could not resolve the leader from the catalog")
+			h.recordFailure()
+		}
+		return false
+	}
+
+	leaderChanged := h.leader == nil || h.leader.Id != newLeader.Id
+	if !leaderChanged {
+		h.leader = &newLeader
+		return true
+	}
+
+	previousLeaderAddress := ""
+	if h.leader != nil {
+		previousLeaderAddress = h.leader.Address
+	}
+	h.failures = 0
+	h.leader = &newLeader
+
+	if newLeader.Id != h.request.InstanceId {
+		log.Info(
+			"leader has changed. Creating connection to the new leader.",
+			"previousLeaderAddress", previousLeaderAddress,
+			"newLeaderAddress", newLeader.Address,
+		)
 	}
 	return true
 }

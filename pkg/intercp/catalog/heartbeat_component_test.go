@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -169,6 +170,35 @@ var _ = Describe("Heartbeats", func() {
 		}, "1s", "100ms").Should(Succeed())
 	})
 
+	It("should record failures when the catalog cannot be read", func() {
+		failingMetrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		failingComponent, err := catalog.NewHeartbeatComponent(
+			failingCatalog{err: errors.New("catalog read failed")},
+			currentInstance,
+			10*time.Millisecond,
+			func(string) (system_proto.InterCpPingServiceClient, error) {
+				return pingClient, nil
+			},
+			failingMetrics,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		failingStopCh := make(chan struct{})
+		defer close(failingStopCh)
+		go func() {
+			defer GinkgoRecover()
+			err := failingComponent.Start(failingStopCh)
+			Expect(err).ToNot(HaveOccurred())
+		}()
+
+		Eventually(func(g Gomega) {
+			metric := test_metrics.FindMetric(failingMetrics, "component_heartbeat_failures")
+			g.Expect(metric).ToNot(BeNil())
+			g.Expect(metric.Counter.GetValue()).To(BeNumerically(">", 0))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
 	It("should not send heartbeat if the instance is a leader", func() {
 		// given
 		instance := currentInstance
@@ -183,6 +213,28 @@ var _ = Describe("Heartbeats", func() {
 		}, "1s", "100ms").Should(Succeed())
 	})
 })
+
+type failingCatalog struct {
+	err error
+}
+
+var _ catalog.Catalog = failingCatalog{}
+
+func (f failingCatalog) Instances(context.Context) ([]catalog.Instance, error) {
+	return nil, f.err
+}
+
+func (f failingCatalog) Replace(context.Context, []catalog.Instance) (bool, error) {
+	return false, f.err
+}
+
+func (f failingCatalog) ReplaceLeader(context.Context, catalog.Instance) error {
+	return f.err
+}
+
+func (f failingCatalog) DropLeader(context.Context, catalog.Instance) error {
+	return f.err
+}
 
 type staticPingClient struct {
 	received  *system_proto.PingRequest
