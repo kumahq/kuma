@@ -120,8 +120,8 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: test-client
-    namespace: %s
+    labels:
+      kuma.io/display-name: test-client
   to:
   - targetRef:
       kind: MeshService
@@ -137,7 +137,8 @@ spec:
         - kind: MeshService
           name: test-http-server-2
           namespace: %s
-`, namespace, meshName, namespace, namespace, namespace)
+          port: 80
+`, Config.KumaNamespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -149,8 +150,8 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: test-client
-    namespace: %s
+    labels:
+      kuma.io/display-name: test-client
   to:
   - targetRef:
       kind: MeshService
@@ -161,7 +162,7 @@ spec:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, namespace, meshName, namespace, namespace)
+`, Config.KumaNamespace, meshName, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
@@ -213,8 +214,8 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: test-client
-    namespace: %s
+    labels:
+      kuma.io/display-name: test-client
   to:
   - targetRef:
       kind: MeshService
@@ -230,7 +231,8 @@ spec:
         - kind: MeshService
           name: test-http-server-2
           namespace: %s
-`, namespace, meshName, namespace, namespace, namespace)
+          port: 80
+`, Config.KumaNamespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -242,8 +244,8 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: test-client
-    namespace: %s
+    labels:
+      kuma.io/display-name: test-client
   to:
   - targetRef:
       kind: MeshService
@@ -254,7 +256,7 @@ spec:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, namespace, meshName, namespace, namespace)
+`, Config.KumaNamespace, meshName, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
