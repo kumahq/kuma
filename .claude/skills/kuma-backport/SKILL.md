@@ -109,6 +109,8 @@ git push --no-verify --force-with-lease $UPSTREAM HEAD:chore/backport-<rel>-<PR>
 
 `--reset-author` makes the author match the local identity whose `Signed-off-by` the `-s` adds — that equality is exactly what the DCO probot checks. Add `-S` if you GPG-sign commits. Do this even on conflict-free backport PRs when DCO is red.
 
+A backport commit always needs rewriting (drop conflict markers, fix the author/sign-off), so the push is inherently non-fast-forward — a plain push is rejected and a fixup commit on top can't fix DCO on the underlying bot commit. Force is unavoidable. If a git hook or policy blocks force-pushes in your environment, resolve every branch locally first, then hand the exact `git push --force-with-lease $UPSTREAM <local>:chore/backport-<rel>-<PR>` commands to a human to run rather than trying to work around the block.
+
 ## 6. PR hygiene
 
 For each PR:
