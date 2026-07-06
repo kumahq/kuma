@@ -159,7 +159,7 @@ func addReproManifestToReport() {
 			"goarch":     runtime.GOARCH,
 			"goVersion":  runtime.Version(),
 			"numCPU":     runtime.NumCPU(),
-			"workingDir": mustGetwd(),
+			"workingDir": getwd(),
 		},
 		"env":   filteredReproEnv(),
 		"tools": toolVersions(),
@@ -270,7 +270,7 @@ func commandOutput(timeout time.Duration, name string, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-func mustGetwd() string {
+func getwd() string {
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Sprintf("unknown: %v", err)

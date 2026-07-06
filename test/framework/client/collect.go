@@ -416,7 +416,7 @@ func addCollectDiagnostic(reason string, result collectResponseResult, err error
 		Headers:     redactedHeaders(result.opts.Headers),
 		Flags:       result.opts.Flags,
 		Command:     redactedCommand(result.command),
-		Stdout:      truncateDiagnosticString(result.stdout),
+		Stdout:      truncateDiagnosticString(redactedCollectStdout(result.stdout)),
 		Stderr:      truncateDiagnosticString(result.stderr),
 	}
 	if err != nil {
@@ -448,6 +448,52 @@ func redactedHeaders(headers map[string]string) map[string]string {
 			continue
 		}
 		redacted[key] = value
+	}
+	return redacted
+}
+
+func redactedEchoHeaders(headers map[string][]string) map[string][]string {
+	if len(headers) == 0 {
+		return nil
+	}
+
+	redacted := make(map[string][]string, len(headers))
+	for key, values := range headers {
+		if shouldRedactHeader(key) {
+			replacement := make([]string, len(values))
+			for i := range replacement {
+				replacement[i] = redactedDiagnosticValue
+			}
+			redacted[key] = replacement
+			continue
+		}
+		redacted[key] = append([]string(nil), values...)
+	}
+	return redacted
+}
+
+func redactedEchoResponse(response types.EchoResponse) types.EchoResponse {
+	response.Received.Headers = redactedEchoHeaders(response.Received.Headers)
+	return response
+}
+
+func redactedDiagnosticResponse(response any) any {
+	switch value := response.(type) {
+	case types.EchoResponse:
+		return redactedEchoResponse(value)
+	default:
+		return value
+	}
+}
+
+func redactedDiagnosticResponses(responses []any) []any {
+	if len(responses) == 0 {
+		return nil
+	}
+
+	redacted := make([]any, len(responses))
+	for i, response := range responses {
+		redacted[i] = redactedDiagnosticResponse(response)
 	}
 	return redacted
 }
@@ -517,6 +563,23 @@ func shouldRedactHeader(name string) bool {
 		}
 	}
 	return false
+}
+
+func redactedCollectStdout(stdout string) string {
+	if stdout == "" {
+		return ""
+	}
+
+	var response types.EchoResponse
+	if err := json.Unmarshal([]byte(stdout), &response); err != nil {
+		return stdout
+	}
+
+	redacted, err := json.Marshal(redactedEchoResponse(response))
+	if err != nil {
+		return stdout
+	}
+	return string(redacted)
 }
 
 func truncateDiagnosticString(value string) string {
@@ -822,7 +885,7 @@ func addConcurrentDiagnostic(destination string, opts CollectResponsesOpts, fail
 		CompletedResponses:    len(responses),
 		FailedIndex:           failed.idx,
 		Error:                 failed.err.Error(),
-		PartialResponses:      responses,
+		PartialResponses:      redactedDiagnosticResponses(responses),
 		Headers:               redactedHeaders(opts.Headers),
 		Flags:                 opts.Flags,
 		InstanceHistogram:     instanceHistogram(responses),
