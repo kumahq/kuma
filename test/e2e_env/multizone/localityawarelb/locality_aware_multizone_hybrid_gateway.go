@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
@@ -87,7 +86,7 @@ conf:
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(mesh).Build())).
+			Install(MTLSMeshWithMeshServicesUniversal(mesh, "Disabled")).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())

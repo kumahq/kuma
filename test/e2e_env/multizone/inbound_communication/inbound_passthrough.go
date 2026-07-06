@@ -127,11 +127,11 @@ func InboundPassthrough() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.80.mesh", "k8s-bound-pod"),
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal binds to podip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.cluster.local", "k8s-bound-wildcard"),
+			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.cluster.local", "k8s-bound-pod"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.kuma-4.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal binds to podip", "uni-test-server-containerip.svc.kuma-4.mesh.local", "uni-bound-containerip"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.kuma-4.mesh.local", "uni-bound-wildcard-no-tp"),
 		)
 		DescribeTable("should fail when application",
 			func(url string) {
@@ -145,8 +145,8 @@ func InboundPassthrough() {
 					g.Expect(err).To(HaveOccurred())
 				}).Should(Succeed())
 			},
-			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.80.mesh"),
-			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.cluster.local"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.svc.kuma-4.mesh.local"),
 		)
 	})
 
@@ -162,11 +162,11 @@ func InboundPassthrough() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal binds to container ip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.80.mesh", "k8s-bound-pod"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.kuma-4.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal binds to container ip", "uni-test-server-containerip.svc.kuma-4.mesh.local", "uni-bound-containerip"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.kuma-4.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.kuma-1.mesh.local", "k8s-bound-wildcard"),
+			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.kuma-1.mesh.local", "k8s-bound-pod"),
 		)
 		DescribeTable("should fail when application",
 			func(url string) {
@@ -177,8 +177,8 @@ func InboundPassthrough() {
 					Expect(err).To(HaveOccurred())
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh"),
-			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.80.mesh"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.svc.kuma-4.mesh.local"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.kuma-1.mesh.local"),
 		)
 	})
 }

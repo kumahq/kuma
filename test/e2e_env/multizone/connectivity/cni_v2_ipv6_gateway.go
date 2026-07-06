@@ -53,7 +53,7 @@ func GatewayIPV6CNIV2() {
 
 	It("client should communicate with server", func() {
 		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(multizone.KubeZone2, "demo-client", "http://test-server_gw-ipv6-cniv2_svc_80.mesh",
+			response, err := client.CollectEchoResponse(multizone.KubeZone2, "demo-client", "http://test-server.gw-ipv6-cniv2.svc.kuma-2.mesh.local",
 				client.FromKubernetesPod(meshName, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

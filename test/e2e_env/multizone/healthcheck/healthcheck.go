@@ -65,7 +65,7 @@ func ApplicationOnUniversalClientOnK8s() {
 
 	It("should not load balance requests to unhealthy instance", func() {
 		expectHealthyInstances := func(g Gomega) {
-			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.mesh",
+			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.svc.kuma-5.mesh.local",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 			)

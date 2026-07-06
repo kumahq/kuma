@@ -93,12 +93,15 @@ name: route-alias-test-server
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: MeshSubset
+    tags:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: kuma-5
       rules:
         - matches:
           - path:
@@ -106,15 +109,16 @@ spec:
               type: PathPrefix
           default:
             backendRefs:
-              - kind: MeshServiceSubset
-                name: alias-test-server
-                weight: 100
-                tags:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: alias-test-server
                   kuma.io/zone: kuma-5
+                port: 80
+                weight: 100
 `, meshName))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.svc.kuma-5.mesh.local", client.WithNumberOfRequests(100))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(
 				And(

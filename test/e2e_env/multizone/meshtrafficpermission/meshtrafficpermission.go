@@ -123,10 +123,10 @@ func MeshTrafficPermission() {
 	}
 
 	It("should allow the traffic with allow-all meshtrafficpermission", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
+		serverHostname := fmt.Sprintf("test-server.svc.%s.mesh.local", multizone.UniZone1.ZoneName())
 
-		// when mesh traffic permission with MeshService
+		trafficBlocked(serverHostname)
+
 		yaml := `
 type: MeshTrafficPermission
 name: mtp-1
@@ -143,8 +143,7 @@ spec:
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
-		trafficAllowed("test-server.mesh")
+		trafficAllowed(serverHostname)
 	})
 
 	It("should allow the traffic with kuma.io/zone", func() {
