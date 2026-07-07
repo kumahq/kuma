@@ -237,6 +237,7 @@ spec:
 	})
 
 	It("should allow the traffic to the external service through the egress", func() {
+		Skip("MeshTrafficPermission cannot gate a MeshExternalService without Zone Proxy + MeshIdentity (SNI rules); tracked in https://github.com/kumahq/kuma/issues/17160")
 		trafficAllowed("external-service.extsvc.mesh.local")
 	})
 }
