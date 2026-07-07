@@ -104,6 +104,24 @@ func TestRedactedCollectStdout(t *testing.T) {
 	}
 }
 
+func TestRedactedCollectStdoutPreservesUnknownJSON(t *testing.T) {
+	stdout := `{"error":"denied","details":{"reason":"rbac"}}`
+
+	got := redactedCollectStdout(stdout)
+
+	var response map[string]any
+	if err := json.Unmarshal([]byte(got), &response); err != nil {
+		t.Fatalf("failed to unmarshal preserved stdout: %v", err)
+	}
+	if response["error"] != "denied" {
+		t.Fatalf("expected original JSON fields to be preserved, got %v", response)
+	}
+	details, ok := response["details"].(map[string]any)
+	if !ok || details["reason"] != "rbac" {
+		t.Fatalf("expected nested JSON fields to be preserved, got %v", response)
+	}
+}
+
 func TestRedactedDiagnosticResponses(t *testing.T) {
 	responses := []any{
 		types.EchoResponse{

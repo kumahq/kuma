@@ -20,6 +20,8 @@ import (
 
 var suiteFailed bool
 
+const redactedReproValue = "[redacted]"
+
 func ShouldSkipCleanup() bool {
 	suiteConfig, _ := ginkgo.GinkgoConfiguration()
 
@@ -191,13 +193,17 @@ func addReproManifestToReport() {
 }
 
 func filteredReproEnv() map[string]string {
+	return filteredReproEnvFrom(os.Environ())
+}
+
+func filteredReproEnvFrom(environ []string) map[string]string {
 	env := map[string]string{}
-	for _, pair := range os.Environ() {
+	for _, pair := range environ {
 		key, value, ok := strings.Cut(pair, "=")
-		if !ok || !isReproEnvKey(key) || looksSensitive(key) {
+		if !ok || !isReproEnvKey(key) {
 			continue
 		}
-		env[key] = value
+		env[key] = reproEnvValue(key, value)
 	}
 	return env
 }
@@ -228,15 +234,81 @@ func isReproEnvKey(key string) bool {
 		strings.HasPrefix(key, "KIND_")
 }
 
-func looksSensitive(key string) bool {
-	key = strings.ToUpper(key)
-	return strings.Contains(key, "TOKEN") ||
-		strings.Contains(key, "SECRET") ||
-		strings.Contains(key, "PASSWORD") ||
-		strings.Contains(key, "KEY") ||
-		strings.Contains(key, "PRIVATE") ||
-		strings.Contains(key, "CREDENTIAL") ||
-		strings.Contains(key, "AUTH")
+func reproEnvValue(key, value string) string {
+	if isSafeReproEnvValueKey(key) {
+		return value
+	}
+	return redactedReproValue
+}
+
+func isSafeReproEnvValueKey(key string) bool {
+	if slices.Contains([]string{
+		"ARCH",
+		"CI",
+		"CI_K3S_VERSION",
+		"DOCKER_NETWORK",
+		"GINKGO_E2E_TEST_FLAGS",
+		"GINKGO_OPTS",
+		"IPV6",
+		"K8S_CLUSTER_TOOL",
+		"K8SCLUSTERS",
+		"K3D_NETWORK_CNI",
+		"K3S_VERSION",
+		"KIND",
+		"KIND_EXPERIMENTAL_DOCKER_NETWORK",
+		"KUBECONFIG",
+		"KUMA_CNI_IMAGE_REPOSITORY",
+		"KUMA_CP_IMAGE_REPOSITORY",
+		"KUMA_DEBUG",
+		"KUMA_DEFAULT_RETRIES",
+		"KUMA_DEFAULT_TIMEOUT",
+		"KUMA_DP_IMAGE_REPOSITORY",
+		"KUMA_DUMP_DIR",
+		"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS",
+		"KUMA_GLOBAL_IMAGE_REGISTRY",
+		"KUMA_GLOBAL_IMAGE_TAG",
+		"KUMA_INIT_IMAGE_REPOSITORY",
+		"KUMA_K8S_TYPE",
+		"KUMA_USE_HOSTNAME_INSTEAD_OF_ID",
+		"KUMA_USE_LOAD_BALANCER",
+		"KUMA_ZONE_EGRESS_APP",
+		"KUMA_ZONE_INGRESS_APP",
+		"OS",
+		"PORT_PREFIX",
+	}, key) {
+		return true
+	}
+
+	for _, prefix := range []string{
+		"GITHUB_ACTION",
+		"GITHUB_ACTOR",
+		"GITHUB_API_URL",
+		"GITHUB_BASE_REF",
+		"GITHUB_ENV",
+		"GITHUB_EVENT_NAME",
+		"GITHUB_GRAPHQL_URL",
+		"GITHUB_HEAD_REF",
+		"GITHUB_JOB",
+		"GITHUB_OUTPUT",
+		"GITHUB_PATH",
+		"GITHUB_REF",
+		"GITHUB_REPOSITORY",
+		"GITHUB_RETENTION_DAYS",
+		"GITHUB_RUN_",
+		"GITHUB_SERVER_URL",
+		"GITHUB_SHA",
+		"GITHUB_STEP_SUMMARY",
+		"GITHUB_TRIGGERING_ACTOR",
+		"GITHUB_WORKFLOW",
+		"GITHUB_WORKSPACE",
+		"KUBECONFIG",
+	} {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func toolVersions() map[string]string {

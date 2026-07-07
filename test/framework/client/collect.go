@@ -595,16 +595,50 @@ func redactedCollectStdout(stdout string) string {
 		return ""
 	}
 
-	var response types.EchoResponse
-	if err := json.Unmarshal([]byte(stdout), &response); err != nil {
+	var payload any
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
 		return stdout
 	}
 
-	redacted, err := json.Marshal(redactedEchoResponse(response))
+	redactJSONEchoHeaders(payload)
+
+	redacted, err := json.Marshal(payload)
 	if err != nil {
 		return stdout
 	}
 	return string(redacted)
+}
+
+func redactJSONEchoHeaders(payload any) {
+	root, ok := payload.(map[string]any)
+	if !ok {
+		return
+	}
+	received, ok := root["received"].(map[string]any)
+	if !ok {
+		return
+	}
+	headers, ok := received["headers"].(map[string]any)
+	if !ok {
+		return
+	}
+	for name, value := range headers {
+		if shouldRedactHeader(name) {
+			headers[name] = redactedHeaderJSONValue(value)
+		}
+	}
+}
+
+func redactedHeaderJSONValue(value any) any {
+	values, ok := value.([]any)
+	if !ok {
+		return redactedDiagnosticValue
+	}
+	redacted := make([]any, len(values))
+	for i := range values {
+		redacted[i] = redactedDiagnosticValue
+	}
+	return redacted
 }
 
 func truncateDiagnosticString(value string) string {
