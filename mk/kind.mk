@@ -134,11 +134,6 @@ kind/cluster/deploy/kuma/global: kind/cluster/deploy/kuma
 kind/cluster/deploy/kuma/local: KUMA_MODE=local
 kind/cluster/deploy/kuma/local: kind/cluster/deploy/kuma
 
-.PHONY: kind/cluster/deploy/observability
-kind/cluster/deploy/observability: build/kumactl
-	@KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) ${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install observability | KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) apply -f -
-	@KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n kuma-observability pods -l app=prometheus
-
 .PHONY: kind/cluster/deploy/metrics-server
 kind/cluster/deploy/metrics-server:
 	@KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.4.1/components.yaml
@@ -157,7 +152,6 @@ LEGACY_TARGET_ALIASES := \
 	kind/deploy/helm=kind/cluster/deploy/helm \
 	kind/deploy/kuma/global=kind/cluster/deploy/kuma/global \
 	kind/deploy/kuma/local=kind/cluster/deploy/kuma/local \
-	kind/deploy/observability=kind/cluster/deploy/observability \
 	kind/deploy/metrics-server=kind/cluster/deploy/metrics-server
 
 define _LEGACY_ALIAS

@@ -48,21 +48,6 @@ func simpleTemplateRenderer(text data.File) (templateRenderer, error) {
 	return tmpl, nil
 }
 
-// Template filters
-
-type ExcludePrefixesFilter struct {
-	Prefixes []string
-}
-
-func (f ExcludePrefixesFilter) Filter(name string) bool {
-	for _, prefix := range f.Prefixes {
-		if len(name) > len(prefix) && name[:len(prefix)] == prefix {
-			return false
-		}
-	}
-	return true
-}
-
 type NoneFilter struct{}
 
 func (f NoneFilter) Filter(name string) bool {

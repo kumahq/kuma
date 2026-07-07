@@ -162,14 +162,6 @@ func (k *KumactlOptions) KumactlInstallCP(args ...string) (string, error) {
 		cmd...)
 }
 
-func (k *KumactlOptions) KumactlInstallObservability(namespace string, components []string) (string, error) {
-	args := []string{"install", "observability", "--namespace", namespace}
-	if len(components) != 0 {
-		args = append(args, "--components", strings.Join(components, ","))
-	}
-	return k.RunKumactlAndGetOutput(args...)
-}
-
 func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string, headers []string) error {
 	_, err := retry.DoWithRetryContextE(k.t, context.Background(), "kumactl config control-planes add", k.Retries, k.Timeout,
 		func() (string, error) {
