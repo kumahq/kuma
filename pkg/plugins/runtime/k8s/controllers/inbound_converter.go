@@ -31,12 +31,8 @@ func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 		}
 	} else {
 		// No container declares the service's targetPort — check all non-sidecar app containers
-		for _, c := range pod.Spec.Containers {
-			if c.Name != util_k8s.KumaSidecarContainerName {
-				if cs := util_k8s.FindContainerStatus(c.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
-					return false
-				}
-			}
+		if !appContainersReady(pod) {
+			return false
 		}
 	}
 	if cs := util_k8s.FindContainerOrInitContainerStatus(
@@ -48,6 +44,19 @@ func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 	}
 	if pod.DeletionTimestamp != nil {
 		return false
+	}
+	return true
+}
+
+// appContainersReady checks if all non-sidecar app containers in the pod are ready.
+// Returns true if all are ready, false if any is not ready.
+func appContainersReady(pod *kube_core.Pod) bool {
+	for _, c := range pod.Spec.Containers {
+		if c.Name != util_k8s.KumaSidecarContainerName {
+			if cs := util_k8s.FindContainerStatus(c.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+				return false
+			}
+		}
 	}
 	return true
 }
@@ -131,13 +140,9 @@ func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Po
 		Ready: true,
 	}
 
-	for _, container := range pod.Spec.Containers {
-		if container.Name != util_k8s.KumaSidecarContainerName {
-			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
-				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
-				health.Ready = false
-			}
-		}
+	if !appContainersReady(pod) {
+		state = mesh_proto.Dataplane_Networking_Inbound_NotReady
+		health.Ready = false
 	}
 
 	// also we're checking whether kuma-sidecar container is ready
