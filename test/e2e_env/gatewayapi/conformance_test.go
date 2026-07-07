@@ -113,6 +113,7 @@ func TestConformance(t *testing.T) {
 		ConfigurableOptions: suite.ConfigurableOptions{
 			GatewayClassName:     "kuma",
 			CleanupBaseResources: false,
+			CleanupTestResources: true,
 			Debug:                Config.Debug,
 			NamespaceLabels: map[string]string{
 				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
