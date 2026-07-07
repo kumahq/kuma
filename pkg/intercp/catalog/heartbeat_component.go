@@ -162,6 +162,10 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 	return true
 }
 
+// resolveLeader refreshes h.leader from the catalog. It returns true when a
+// leader is available and a heartbeat should be sent this tick, and false when
+// there is no leader yet or the catalog read failed (in which case this tick is
+// skipped).
 func (h *heartbeatComponent) resolveLeader(ctx context.Context, log logr.Logger) bool {
 	newLeader, err := Leader(ctx, h.catalog)
 	if err != nil {
@@ -174,9 +178,8 @@ func (h *heartbeatComponent) resolveLeader(ctx context.Context, log logr.Logger)
 		return false
 	}
 
-	leaderChanged := h.leader == nil || h.leader.Id != newLeader.Id
-	if !leaderChanged {
-		h.leader = &newLeader
+	if h.leader != nil && h.leader.Id == newLeader.Id {
+		// same leader as before, nothing to update
 		return true
 	}
 
