@@ -43,6 +43,7 @@ mtls:
       type: builtin
 routing:
   zoneEgress: true
+  defaultForbidMeshExternalServiceAccess: true
 `, name)
 	return YamlUniversal(mesh)
 }
