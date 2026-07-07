@@ -33,7 +33,7 @@ Backport PRs are created by workflow_dispatch (there is **no** label-driven back
 Facts about what the action produces (this shapes all later steps):
 
 - Head branches: `chore/backport-<release-branch>-<PR>`, pushed to kumahq/kuma directly.
-- Committer is `kumahq[bot]`, author is the original PR author. If the author's email doesn't match the `Signed-off-by` trailer, **DCO fails** — this happens even on conflict-free backports, so check DCO on every PR, not just conflicted ones.
+- Committer and author are both `kumahq[bot]`. That bot-authored cherry-pick commonly trips **DCO** because the bot's `Signed-off-by` is not a human attestation, and it happens even on conflict-free backports, so check DCO on every PR, not just conflicted ones.
 - On conflict the action runs `git add . && git cherry-pick --continue` **blindly**: conflict markers get committed into files, and files new on master land with master's import paths. The PR is opened as draft with a `conflict` label and the `git status` dump in the body.
 
 ## 3. Resolve conflicts per branch
@@ -107,7 +107,7 @@ git commit --amend --no-edit --reset-author -s
 git push --no-verify --force-with-lease $UPSTREAM HEAD:chore/backport-<rel>-<PR>
 ```
 
-`--reset-author` makes the author match the local identity whose `Signed-off-by` the `-s` adds — that equality is exactly what the DCO probot checks. Add `-S` if you GPG-sign commits. Do this even on conflict-free backport PRs when DCO is red.
+`--reset-author` replaces the bot-authored cherry-pick with your local identity, and `-s` adds the matching human `Signed-off-by` trailer the DCO probot expects. Add `-S` if you GPG-sign commits. Do this even on conflict-free backport PRs when DCO is red.
 
 A backport commit always needs rewriting (drop conflict markers, fix the author/sign-off), so the push is inherently non-fast-forward — a plain push is rejected and a fixup commit on top can't fix DCO on the underlying bot commit. Force is unavoidable. If a git hook or policy blocks force-pushes in your environment, resolve every branch locally first, then hand the exact `git push --force-with-lease $UPSTREAM <local>:chore/backport-<rel>-<PR>` commands to a human to run rather than trying to work around the block.
 
