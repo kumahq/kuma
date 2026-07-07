@@ -209,11 +209,27 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		Expect(os.WriteFile(manifestsExportPath, []byte(out), 0o600)).To(Succeed())
 		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), manifestsExportPath)
 
+<<<<<<< HEAD
 		deployDetailsJson := ""
 		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
 		if err == nil {
 			for _, deployment := range deployments {
 				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+=======
+	events, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "events", "--sort-by=.lastTimestamp", "-owide")
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to get events for namespace %s, %w", namespace, err))
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, "events.txt"), events)
+	}
+
+	deployments, err := k8s.ListDeploymentsContextE(cluster.GetTesting(), context.Background(), &kubeOptions, kube_meta.ListOptions{})
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to list deployments in namespace %s, %w", namespace, err))
+	} else {
+		for _, deployment := range deployments {
+			deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+>>>>>>> 62e80d799d (test(e2e): improve failure diagnostics (#17036))
 
 				for _, pod := range deployDetails.Pods {
 					for container, log := range pod.Logs {
