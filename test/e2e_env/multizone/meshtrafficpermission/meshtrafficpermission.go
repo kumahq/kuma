@@ -85,7 +85,7 @@ func MeshTrafficPermission() {
 		Expect(err).ToNot(HaveOccurred())
 
 		esIp := multizone.UniZone1.GetApp("external-service").GetIP()
-		Expect(multizone.Global.Install(externalService(meshName, esIp))).To(Succeed())
+		Expect(multizone.UniZone1.Install(externalService(meshName, esIp))).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
