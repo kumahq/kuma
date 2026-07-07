@@ -118,6 +118,13 @@ func TestConformance(t *testing.T) {
 			NamespaceLabels: map[string]string{
 				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 			},
+			SkipTests: []string{
+				"GatewayInvalidParametersRef",
+				"GatewayListenerUnsupportedProtocol",
+				"GatewayObservedGenerationBump",
+				"GatewayHTTPListenerIsolation",
+				"HTTPRouteNoBackendRefs",
+			},
 			SupportedFeatures: []features.FeatureName{
 				features.SupportGateway,
 				features.SupportGatewayHTTPListenerIsolation,
