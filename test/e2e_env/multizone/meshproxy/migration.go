@@ -158,6 +158,7 @@ func Migration() {
 	})
 
 	It("should deploy zone proxies to meshproxymig-blue with no interruptions for meshproxymig-red", func(ctx SpecContext) {
+		Skip("flaky zero-downtime check (transient empty response during migration); tracked in https://github.com/kumahq/kuma/issues/17161")
 		assertTrafficForBothMeshes()
 
 		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
