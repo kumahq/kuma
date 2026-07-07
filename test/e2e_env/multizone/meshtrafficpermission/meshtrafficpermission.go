@@ -21,8 +21,6 @@ func externalService(mesh string, ip string) InstallFunc {
 type: MeshExternalService
 name: external-service
 mesh: "%s"
-labels:
-  kuma.io/origin: zone
 spec:
   match:
     type: HostnameGenerator
@@ -85,7 +83,7 @@ func MeshTrafficPermission() {
 		Expect(err).ToNot(HaveOccurred())
 
 		esIp := multizone.UniZone1.GetApp("external-service").GetIP()
-		Expect(multizone.UniZone1.Install(externalService(meshName, esIp))).To(Succeed())
+		Expect(multizone.Global.Install(externalService(meshName, esIp))).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

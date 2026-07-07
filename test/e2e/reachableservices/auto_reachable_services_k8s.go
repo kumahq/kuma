@@ -21,7 +21,20 @@ func AutoReachableServices() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(esNamespace)).
-			Install(MTLSMeshKubernetes(meshName)).
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: Disabled
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, meshName))).
 			Install(Parallel(
 				testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),
 				testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),

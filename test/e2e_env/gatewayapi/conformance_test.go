@@ -88,6 +88,18 @@ func TestConformance(t *testing.T) {
 			)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
 
+	g.Eventually(func() error {
+		return YamlK8s(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  meshServices:
+    mode: Disabled
+`)(cluster)
+	}, "30s", "3s").Should(Succeed())
+
 	configPath, err := opts.GetConfigPath(t)
 	g.Expect(err).ToNot(HaveOccurred())
 
