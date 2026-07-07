@@ -17,15 +17,15 @@ import (
 
 func Test() {
 	_ = Describe("No Zone Egress", func() {
-		test("meshhttproute", samples.MeshMTLSBuilder())
+		test("meshhttproute", samples.MeshMTLSBuilder(), false)
 	}, Ordered)
 
 	_ = Describe("Zone Egress", func() {
-		test("meshhttproute-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled())
+		test("meshhttproute-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled(), true)
 	}, FlakeAttempts(3), Ordered)
 }
 
-func test(meshName string, meshBuilder *builders.MeshBuilder) {
+func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
@@ -140,17 +140,50 @@ spec:
 		)
 	})
 
-	It("should use MeshHTTPRoute for cross-zone with multiple MeshServices", func() {
-		Expect(YamlUniversal(fmt.Sprintf(`
+	if withEgress {
+		It("should use MeshHTTPRoute for cross-zone with a MeshMultiZoneService", func() {
+			Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshMultiZoneService
+name: test-server
+mesh: %s
+labels:
+  kuma.io/origin: global
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: test-server
+  ports:
+  - port: 80
+    appProtocol: http
+`, meshName))(multizone.Global)).To(Succeed())
+
+			Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+name: mzms-no-locality
+mesh: %s
+spec:
+  to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: test-server
+      sectionName: '80'
+    default:
+      localityAwareness:
+        disabled: true
+`, meshName))(multizone.Global)).To(Succeed())
+
+			Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
-name: route-test-server-subset
+name: route-test-server-mzms
 mesh: %s
 spec:
   targetRef:
     kind: Mesh
   to:
     - targetRef:
-        kind: MeshService
+        kind: MeshMultiZoneService
         labels:
           kuma.io/display-name: test-server
       rules:
@@ -160,22 +193,23 @@ spec:
               type: PathPrefix
           default:
             backendRefs:
-              - kind: MeshService
+              - kind: MeshMultiZoneService
                 labels:
                   kuma.io/display-name: test-server
                 port: 80
                 weight: 1
 `, meshName))(multizone.Global)).To(Succeed())
 
-		Eventually(func(g Gomega) {
-			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.svc.mesh.local", client.WithNumberOfRequests(100))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response).To(
-				And(
-					HaveKey(MatchRegexp(`^zone1-v1.*`)),
-					HaveKey(MatchRegexp(`^zone2-.*`)),
-				),
-			)
-		}, "60s", "5s").Should(Succeed())
-	})
+			Eventually(func(g Gomega) {
+				response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mzsvc.mesh.local", client.WithNumberOfRequests(100))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response).To(
+					And(
+						HaveKey(MatchRegexp(`^zone1-v1.*`)),
+						HaveKey(MatchRegexp(`^zone2-.*`)),
+					),
+				)
+			}, "60s", "5s").Should(Succeed())
+		})
+	}
 }
