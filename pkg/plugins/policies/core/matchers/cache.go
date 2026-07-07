@@ -14,25 +14,33 @@ import (
 var _ core_plugins.PolicyMatchingCacheAccessor = &PolicyMatchingCache{}
 
 // PolicyMatchingCache is a bounded LRU cache for TypedMatchingPolicies; safe for concurrent use.
+// Cached values share maps and slices by reference across every hit — callers must treat the
+// returned TypedMatchingPolicies as read-only (no in-place sort/append), same invariant as
+// pkg/core/resources/manager/cache.go.
 type PolicyMatchingCache struct {
-	c      cache.Cache
-	metric *prometheus.CounterVec
+	c           cache.Cache
+	hitCounter  prometheus.Counter
+	missCounter prometheus.Counter
 }
 
 func NewPolicyMatchingCache(metric *prometheus.CounterVec, maxSize int) *PolicyMatchingCache {
 	c := cache.New(
 		cache.WithMaximumSize(maxSize),
 	)
-	return &PolicyMatchingCache{c: c, metric: metric}
+	return &PolicyMatchingCache{
+		c:           c,
+		hitCounter:  metric.WithLabelValues("hit"),
+		missCounter: metric.WithLabelValues("miss"),
+	}
 }
 
 func (p *PolicyMatchingCache) GetIfPresent(key string) (core_xds.TypedMatchingPolicies, bool) {
 	v, ok := p.c.GetIfPresent(key)
 	if !ok {
-		p.metric.WithLabelValues("miss").Inc()
+		p.missCounter.Inc()
 		return core_xds.TypedMatchingPolicies{}, false
 	}
-	p.metric.WithLabelValues("hit").Inc()
+	p.hitCounter.Inc()
 	return v.(core_xds.TypedMatchingPolicies), true
 }
 

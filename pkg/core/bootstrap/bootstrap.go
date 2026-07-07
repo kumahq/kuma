@@ -537,6 +537,10 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	if builder.Config().Experimental.AutoReachableServices {
 		rsGraphBuilder = graph.Builder
 	}
+	var mcbOpts []xds_context.MeshContextBuilderOption
+	if builder.Config().XdsServer.PolicyMatchingCacheSize > 0 {
+		mcbOpts = append(mcbOpts, xds_context.WithPolicyMatchingHash())
+	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
 		xds_server.MeshResourceTypes(),
@@ -547,6 +551,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.ServiceVipPort,
 		rsGraphBuilder,
 		builder.CAProvider(),
+		mcbOpts...,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

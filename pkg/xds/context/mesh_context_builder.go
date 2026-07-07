@@ -33,15 +33,27 @@ import (
 )
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
-	vipPort         uint32
-	rsGraphBuilder  ReachableServicesGraphBuilder
-	caProvider      secrets.CaProvider
+	rm                     manager.ReadOnlyResourceManager
+	typeSet                map[core_model.ResourceType]struct{}
+	ipFunc                 lookup.LookupIPFunc
+	zone                   string
+	vipsPersistence        *vips.Persistence
+	topLevelDomain         string
+	vipPort                uint32
+	rsGraphBuilder         ReachableServicesGraphBuilder
+	caProvider             secrets.CaProvider
+	withPolicyMatchingHash bool
+}
+
+// MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
+type MeshContextBuilderOption func(*meshContextBuilder)
+
+// WithPolicyMatchingHash enables computing MeshContext.PolicyMatchingHash (the MatchedPolicies
+// cache key). It is skipped by default to avoid hashing work when the cache is disabled.
+func WithPolicyMatchingHash() MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.withPolicyMatchingHash = true
+	}
 }
 
 // MeshContextBuilder
@@ -73,13 +85,14 @@ func NewMeshContextBuilder(
 	vipPort uint32,
 	rsGraphBuilder ReachableServicesGraphBuilder,
 	caProvider secrets.CaProvider,
+	opts ...MeshContextBuilderOption,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
 		typeSet[typ] = struct{}{}
 	}
 
-	return &meshContextBuilder{
+	builder := &meshContextBuilder{
 		rm:              rm,
 		typeSet:         typeSet,
 		ipFunc:          ipFunc,
@@ -90,6 +103,10 @@ func NewMeshContextBuilder(
 		rsGraphBuilder:  rsGraphBuilder,
 		caProvider:      caProvider,
 	}
+	for _, opt := range opts {
+		opt(builder)
+	}
+	return builder
 }
 
 func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshContext, error) {
@@ -142,8 +159,10 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		return latestMeshCtx, nil
 	}
 
-	// managedTypes already sorted by m.hash above
-	policyMatchingHash := base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
+	var policyMatchingHash string
+	if m.withPolicyMatchingHash {
+		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
+	}
 
 	dataplanes := resources.Dataplanes().Items
 	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
