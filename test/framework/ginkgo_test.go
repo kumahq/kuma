@@ -6,13 +6,13 @@ import (
 )
 
 func TestFilteredReproEnvRedactsUnknownAllowedKeys(t *testing.T) {
-	t.Setenv("KUMA_K8S_TYPE", "kind")
-	t.Setenv("KUMA_DB_URL", "postgres://user:pass@db")
-	t.Setenv("GITHUB_SHA", "abc123")
-	t.Setenv("GITHUB_TOKEN", "secret")
-	t.Setenv("IGNORED_KEY", "ignored")
-
-	got := filteredReproEnv()
+	got := filteredReproEnvFrom([]string{
+		"KUMA_K8S_TYPE=kind",
+		"KUMA_DB_URL=postgres://user:pass@db",
+		"GITHUB_SHA=abc123",
+		"GITHUB_TOKEN=secret",
+		"IGNORED_KEY=ignored",
+	})
 
 	want := map[string]string{
 		"GITHUB_SHA":    "abc123",
