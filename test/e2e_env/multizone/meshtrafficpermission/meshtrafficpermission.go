@@ -148,7 +148,7 @@ spec:
 
 	It("should allow the traffic with kuma.io/zone", func() {
 		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
+		trafficBlocked("test-server.svc.kuma-4.mesh.local")
 
 		// when mesh traffic permission with MeshService
 		yaml := fmt.Sprintf(`
@@ -171,12 +171,12 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("test-server.mesh")
+		trafficAllowed("test-server.svc.kuma-4.mesh.local")
 	})
 
 	It("should allow the traffic with k8s.kuma.io/namespace", func() {
 		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
+		trafficBlocked("test-server.svc.kuma-4.mesh.local")
 
 		// when mesh traffic permission with MeshSubset
 		yaml := `
@@ -199,12 +199,12 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("test-server.mesh")
+		trafficAllowed("test-server.svc.kuma-4.mesh.local")
 	})
 
 	It("should allow the traffic with tags added dynamically on Kubernetes", func() {
 		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
+		trafficBlocked("test-server.svc.kuma-4.mesh.local")
 
 		// when mesh traffic permission with MeshSubset
 		yaml := `
@@ -231,7 +231,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("test-server.mesh")
+		trafficAllowed("test-server.svc.kuma-4.mesh.local")
 	})
 
 	It("should allow the traffic to the external service through the egress", func() {

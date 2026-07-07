@@ -132,10 +132,10 @@ func InboundPassthroughDisabled() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.kuma-5.mesh.local", "uni-bound-wildcard"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.kuma-5.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.mesh.local", "uni-bound-wildcard-no-tp"),
 			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.kuma-2.mesh.local", "k8s-bound-wildcard"),
-			Entry("on universal binds to containerip", "uni-test-server-containerip.svc.kuma-5.mesh.local", "uni-bound-containerip"),
+			Entry("on universal binds to containerip", "uni-test-server-containerip.svc.mesh.local", "uni-bound-containerip"),
 			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.kuma-2.mesh.local", "k8s-bound-pod"),
 		)
 	})

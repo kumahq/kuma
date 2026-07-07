@@ -162,9 +162,9 @@ func InboundPassthrough() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.kuma-4.mesh.local", "uni-bound-wildcard"),
-			Entry("on universal binds to container ip", "uni-test-server-containerip.svc.kuma-4.mesh.local", "uni-bound-containerip"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.kuma-4.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal binds to container ip", "uni-test-server-containerip.svc.mesh.local", "uni-bound-containerip"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.mesh.local", "uni-bound-wildcard-no-tp"),
 			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.kuma-1.mesh.local", "k8s-bound-wildcard"),
 			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.kuma-1.mesh.local", "k8s-bound-pod"),
 		)
@@ -177,7 +177,7 @@ func InboundPassthrough() {
 					Expect(err).To(HaveOccurred())
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to localhost", "uni-test-server-localhost.svc.kuma-4.mesh.local"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.svc.mesh.local"),
 			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.kuma-1.mesh.local"),
 		)
 	})
