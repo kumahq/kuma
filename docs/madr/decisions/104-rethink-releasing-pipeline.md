@@ -8,7 +8,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/16973
 
 Pushing a `vX.Y.Z` tag runs the full `build-test-distribute.yaml`, including the
 entire e2e suite, before any artifact ships. Recent tag runs: v2.13.8 218m,
-v2.14.0 124m, v2.12.12 119m, v2.11.16 102m (~2–3.5h), on top of the manual steps in
+v2.14.0 124m, v2.12.12 119m, v2.11.16 102m (~1.7–3.6h), on top of the manual steps in
 the team-mesh release issues.
 
 On a tag push (`FULL_MATRIX=true`):
@@ -70,16 +70,19 @@ on GitHub Actions, the closest templates for us.
   outputs (`IMAGES`/`REGISTRY`/`VERSION_NAME`) are needed downstream, so keep those.
 - With e2e skipped, `test` completes immediately and `build_publish` publishes right
   away instead of waiting ~90m.
-- Hard-enforce a green tagged SHA: the tagged commit must have a passing
-  `build-test-distribute` run (full matrix) on its branch, else the release fails. This
-  reuses the existing run, not new machinery.
+
+- Hard-enforce a green tagged SHA: a guard job on the tag fails the release unless the
+  tagged commit already has a trustworthy full-matrix `build-test-distribute` run on its
+  branch (mechanism in "Enforcing the green tagged SHA"). This reads an existing run, not
+  new test machinery.
 
 After this, `build_publish` ~15m plus provenance/distributions lands at roughly 20–30m
 versus the current 100–220m.
 
 - (+) Answers the issue; no new infra, staging, or version change; removes the flakiest stage.
-- (−) Loses the exact-tag re-test (mitigated by the hard green-SHA gate and, for risky
-  releases, RC soak); still rebuilds on the tag (~15m, fine).
+- (−) Loses the exact-tag re-test, mitigated by the hard green-SHA gate. (Kuma has no RC
+  process today, so RC soak is not a current fallback; it only becomes available under
+  Option 2.) Still rebuilds on the tag (~15m, fine).
 
 ### Option 2 — RC + promotion by digest (build once, ship the tested bits)
 
@@ -110,13 +113,14 @@ Orthogonal to Options 1–4: how to wire the tag pipeline. Today the release pat
 `build-test-distribute.yaml`, which runs on every PR, master, and release-branch push,
 so it builds and publishes a preview on every push.
 
-- A, stay in the monolith and reuse the existing `ci/skip-test` mechanism. Tags don't
-  skip today: `_test.yaml` keys the skip off PR labels
-  (`github.event.pull_request.labels`), which are empty on a tag push, so the full matrix
-  runs. Add `github.ref_type == 'tag'` next to that condition and e2e/unit skip on the
-  tag; the existing `needs:` chain then lets `build_publish` proceed. (+) roughly a
-  one-condition change, no new workflow; the publish path stays exercised on every push,
-  so it cannot rot between releases. (−) the monolith keeps its tag-vs-PR conditionals.
+- A, stay in the monolith. Tags carry no PR labels, so `ci/skip-test` can't fire on a tag;
+  instead add `|| github.ref_type == 'tag'` to the two guards that label drives —
+  `test_unit`'s `if:` (`_test.yaml:21`) and the `SKIP_E2E_TESTS` env (`_test.yaml:82`,
+  which empties the e2e matrix). That skips unit and e2e on the tag; the existing `needs:`
+  chain then lets `build_publish` proceed. (+) two-line change, no new workflow; the
+  publish path stays exercised on every push, so it can't rot. (−) the monolith keeps its
+  tag-vs-PR conditionals.
+
 - B, a dedicated `release-publish.yaml` on tags, reusing `_build_publish.yaml` and
   `_provenance.yaml`, never `_test.yaml`. (+) a linear, readable release flow. (−) it
   runs only on tags, so the publish path is no longer exercised between releases and can
@@ -124,17 +128,55 @@ so it builds and publishes a preview on every push.
   trigger migration.
 
 Picked A. The monolith already publishes on every push, the strongest guard that the
-release machinery works, and reusing `ci/skip-test` keeps the change tiny. (An earlier
-draft picked B with a scheduled rehearsal to re-create that exercise; maintainer review
+release machinery works, and extending the existing skip guards keeps the change tiny.
+(An earlier draft picked B with a scheduled rehearsal to re-create that exercise; review
 pointed out the monolith already provides it, making both the dedicated workflow and the
 rehearsal unnecessary.)
+
+### Enforcing the green tagged SHA
+
+The `github.ref_type == 'tag'` skip is unconditional on its own; nothing about it ties the
+skip to the tagged commit being green, so by itself it would happily ship an untested tag.
+A guard job runs first on the tag and gates the rest of the pipeline on a verified-green
+SHA. There are two ways to react to a missing green run:
+
+- Fail-hard (chosen): if the tagged SHA has no trustworthy green run, the tag fails
+  immediately, before anything builds. The releaser greens the branch (or
+  `workflow_dispatch` a full run on that SHA) and re-tags.
+
+- Re-run-on-tag (rejected): fall back to running unit and e2e on the tag when no green run
+  is found. Rejected because it re-introduces the flaky ~90–150m e2e this MADR removes,
+  precisely at release time; it keeps a second, rarely-exercised code path that rots; and a
+  tag-run flake can fail the release, the secondary problem the MADR set out to fix. It is
+  also the lone-outlier (Linkerd) model we are moving away from.
+
+We pick fail-hard: the premise is that the branch SHA is already fully tested, so the gate
+must *enforce* that invariant, not silently re-test when it is absent. The failure surfaces
+in seconds and is actionable, and because `workflow_dispatch` also runs the full matrix,
+recovery is "dispatch a run on the SHA, then tag."
+
+Picking the run is the fiddly part (a SHA can have several runs, and older `pull_request`
+runs may have skipped e2e), so the lookup is explicit:
+
+- List `build-test-distribute.yaml` runs for the tagged SHA (`head_sha`), completed, with
+  `event` in {`push`, `workflow_dispatch`}; both force `FULL_MATRIX=true` and carry no PR
+  labels, so e2e always ran. This excludes `pull_request` runs, the only ones that can set
+  `SKIP_E2E_TESTS` or reduce the matrix.
+
+- Keep `conclusion == success` and take the most recent.
+
+- Guard against an emptied matrix: fetch that run's jobs and require `test_unit` and the
+  `test_e2e*` jobs to be present and successful. A skipped-e2e run still reports overall
+  success but has no e2e jobs, so presence is the real check.
+
+- No match ⇒ fail the tag, with a message pointing at branch CI / `workflow_dispatch`.
 
 ### The publish path is already exercised continuously (no separate rehearsal)
 
 Moving the gate off the tag raises a question: does the release machinery still get
 exercised? It does, for free. `build-test-distribute.yaml` runs on every master and
 `release-X.Y` push with `ALLOW_PUSH=true`, so every push already builds, pushes, signs,
-and pulps a `-preview.<hash>` artifact through the same `_build_publish.yaml` the release
+and publishes a `-preview.<hash>` artifact through the same `_build_publish.yaml` the release
 uses (`version.sh` auto-routes preview versions to `notary-internal` and the preview
 Cloudsmith repo). That continuous run is the rehearsal; a separate scheduled one would be
 redundant machinery.
@@ -149,9 +191,9 @@ standing up separate rehearsal machinery.
 This started from the issue's "skip the full suite on the tag." Peer research confirmed
 it is the industry norm; only Linkerd re-tests. An early draft added a dedicated
 `release-publish.yaml` plus a scheduled rehearsal; maintainer review showed the monolith
-already publishes a preview on every push, so reusing the existing `ci/skip-test`
-mechanism is enough and the extra machinery was dropped. The bigger wins, digest
-promotion and the stage/publish split, depend on a version rework and an RC process Kuma
+already publishes a preview on every push, so extending the existing skip guards with a
+`ref_type=='tag'` clause is enough and the extra machinery was dropped. The bigger wins,
+digest promotion and the stage/publish split, depend on a version rework and an RC process Kuma
 lacks. So Option 1 ships now, with Options 2 and 3 as follow-up.
 
 ## Security implications and review
@@ -166,8 +208,9 @@ lacks. So Option 1 ships now, with Options 2 and 3 as follow-up.
 
 - Faster releases mean faster security-patch turnaround.
 - Dropping the redundant e2e removes the flakiest release gate.
-- Residual risk: the branch run goes stale against the tag. The exact green-SHA gate,
-  RC soak, or a one-off branch matrix before tagging mitigate this.
+- Residual risk: the branch run goes stale against the tag. The hard (fail-hard) green-SHA
+  gate mitigates this today; RC soak would add to it once Option 2 lands.
+
 - Container-structure on the freshly-built image plus a binary-version assert are the
   only tag-specific checks; they verify exactly what the tag build changes (the
   ldflags), nothing the green branch run already covered.
@@ -188,29 +231,39 @@ lacks. So Option 1 ships now, with Options 2 and 3 as follow-up.
 Adopt Option 1, implemented in the existing `build-test-distribute.yaml`. No new
 workflow, no scheduled rehearsal:
 
-- Skip e2e and unit on the tag by extending the existing `ci/skip-test` condition with
-  `github.ref_type == 'tag'`; the existing `needs:` chain then lets `build_publish`
-  publish immediately.
+- Skip e2e and unit on the tag by adding a `github.ref_type == 'tag'` clause to the two
+  guards the `ci/skip-test` label drives — `test_unit`'s `if:` (`_test.yaml:21`) and the
+  `SKIP_E2E_TESTS` env (`_test.yaml:82`) that empties the e2e matrix; the existing
+  `needs:` chain then lets `build_publish` publish immediately.
+
 - Verify only the ldflags delta: container-structure on the freshly-built image plus a
   binary-version assert. Keep `check`'s metadata computation, skip its redundant
   validation.
-- Hard-enforce a green tagged SHA, reusing the commit's existing branch run.
+
+- Hard-enforce a green tagged SHA via a guard job that fails the tag unless the commit has
+  a green full-matrix run (fail-hard; see "Enforcing the green tagged SHA").
+
 - No separate rehearsal: every push already builds and publishes a preview through the
   same `_build_publish.yaml`.
 
-This cuts ~100–220m to ~20–30m with roughly a one-condition change. Options 2 (RC plus
-digest promotion, the KEG/k8s model) and 3 (stage/publish split) are follow-up; RC is
-deferred; version decoupling is undecided.
+This cuts ~100–220m to ~20–30m with a two-line change. Options 2 (RC plus
+digest promotion, the k8s/Istio model) and 3 (stage/publish split) are follow-up; RC is
+deferred. Version decoupling is out of scope here: Option 1 rebuilds on the tag and stamps
+the correct version, so it needs no decoupling; it is a prerequisite only for Option 2 and
+is decided there if that is ever taken up.
 
 ## Notes
 
 Resolved: no re-test on the tag (drop unit and e2e; keep only container-structure plus a
-binary-version assert, the ldflags delta); implement via the existing `ci/skip-test`
-mechanism in the monolith, not a new workflow; no separate rehearsal (per-push preview
-builds already exercise publish); the green-SHA gate is hard-enforced; RC tags deferred.
+binary-version assert, the ldflags delta); implement by extending the two skip guards
+(`_test.yaml:21` and `:82`) in the monolith, not a new workflow (the `ci/skip-test` label
+never fires on a tag, so this is a `ref_type=='tag'` clause, not the label); no separate
+rehearsal (per-push preview builds already exercise publish); the green-SHA gate is
+hard-enforced (fail-hard, not re-run-on-tag); RC tags deferred; version decoupling is out
+of scope for Option 1 (rebuild-on-tag stamps the version) and belongs to Option 2.
 
-Open: version decoupling (undecided; rebuild-on-tag is fine for Option 1); the exact
-green-SHA enforcement mechanism (impl detail).
+Open: none for Option 1. Option 2 (digest promotion) still needs version decoupling and an
+RC cadence before it can be adopted.
 
 Sources. Peer projects: Kubernetes (sig-release handbook, promo-tools), Istio (release-builder,
 daily-release), Envoy (RELEASES.md, `_publish_build.yml`), Cilium
