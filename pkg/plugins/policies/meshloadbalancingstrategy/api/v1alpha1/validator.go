@@ -151,8 +151,11 @@ func validateCrossZone(crossZone *CrossZone, to To) validators.ValidationError {
 	if crossZone == nil {
 		return verr
 	}
-	if to.TargetRef.Kind == common_api.MeshService && (pointer.Deref(to.TargetRef.SectionName) != "" || len(pointer.Deref(to.TargetRef.Labels)) > 0) {
-		verr.AddViolationAt(validators.Root(), fmt.Sprintf("%s: MeshService traffic is local", validators.MustNotBeSet))
+	if to.TargetRef.Kind != common_api.MeshMultiZoneService {
+		verr.AddViolationAt(
+			validators.Root(),
+			fmt.Sprintf("%s: crossZone only applies when targetRef.kind is MeshMultiZoneService", validators.MustNotBeSet),
+		)
 	}
 
 	for idx, failover := range pointer.Deref(crossZone.Failover) {

@@ -35,7 +35,7 @@ to: []
 				Message: "value 'MeshServiceSubset' is not supported",
 			}, {
 				Field:   "spec.to[1].default.localityAwareness.crossZone",
-				Message: "must not be set: MeshService traffic is local",
+				Message: "must not be set: crossZone only applies when targetRef.kind is MeshMultiZoneService",
 			}},
 			`
 type: MeshLoadBalancingStrategy
@@ -52,8 +52,7 @@ to:
         version: v1
   - targetRef:
       kind: MeshService
-      name: real-mesh-service
-      sectionName: http
+      name: svc-3
     default:
       localityAwareness:
         crossZone: {}
@@ -243,7 +242,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -323,7 +322,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -345,7 +344,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -393,7 +392,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-1
     default:
       localityAwareness:
@@ -623,7 +622,7 @@ targetRef:
   name: svc-1
 to: 
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-2
     default:
       localityAwareness:
@@ -648,7 +647,7 @@ targetRef:
   name: svc-1
 to:
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-2
     default:
       localityAwareness:
@@ -669,7 +668,7 @@ targetRef:
   name: svc-1
 to: 
   - targetRef:
-      kind: MeshService
+      kind: MeshMultiZoneService
       name: svc-2
     default:
       localityAwareness:
