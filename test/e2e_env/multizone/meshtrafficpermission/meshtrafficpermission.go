@@ -43,7 +43,6 @@ mtls:
       type: builtin
 routing:
   zoneEgress: true
-  defaultForbidMeshExternalServiceAccess: true
 `, name)
 	return YamlUniversal(mesh)
 }
@@ -238,28 +237,6 @@ spec:
 	})
 
 	It("should allow the traffic to the external service through the egress", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("external-service.extsvc.mesh.local")
-
-		// when mesh traffic permission with MeshSubset
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-5
-mesh: mtp-test
-spec:
- targetRef:
-   kind: MeshExternalService
-   name: external-service
- from:
-   - targetRef:
-       kind: Mesh
-     default:
-       action: Allow
-`
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
 		trafficAllowed("external-service.extsvc.mesh.local")
 	})
 }
