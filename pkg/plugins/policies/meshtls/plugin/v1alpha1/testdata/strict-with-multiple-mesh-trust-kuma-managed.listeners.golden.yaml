@@ -30,13 +30,13 @@ resources:
               defaultValidationContext:
                 matchTypedSubjectAltNames:
                 - matcher:
-                    prefix: spiffe://domain-a/
+                    prefix: spiffe://domain-a
                   sanType: URI
                 - matcher:
-                    prefix: spiffe://domain-b/
+                    prefix: spiffe://domain-b
                   sanType: URI
                 - matcher:
-                    prefix: spiffe://domain-c/
+                    prefix: spiffe://domain-c
                   sanType: URI
               validationContextSdsSecretConfig:
                 name: system_trust_bundle
@@ -86,13 +86,13 @@ resources:
               defaultValidationContext:
                 matchTypedSubjectAltNames:
                 - matcher:
-                    prefix: spiffe://domain-a/
+                    prefix: spiffe://domain-a
                   sanType: URI
                 - matcher:
-                    prefix: spiffe://domain-b/
+                    prefix: spiffe://domain-b
                   sanType: URI
                 - matcher:
-                    prefix: spiffe://domain-c/
+                    prefix: spiffe://domain-c
                   sanType: URI
               validationContextSdsSecretConfig:
                 name: system_trust_bundle
