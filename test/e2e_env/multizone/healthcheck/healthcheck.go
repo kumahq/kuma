@@ -21,7 +21,7 @@ func ApplicationOnUniversalClientOnK8s() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
-			Install(TrafficPermissionUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

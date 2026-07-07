@@ -3,7 +3,6 @@ package meshtrafficpermission
 import (
 	"context"
 	"fmt"
-	"net"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,15 +18,20 @@ import (
 
 func externalService(mesh string, ip string) InstallFunc {
 	return YamlUniversal(fmt.Sprintf(`
-type: ExternalService
+type: MeshExternalService
+name: external-service
 mesh: "%s"
-name: es-1
-tags:
-  kuma.io/service: external-service
-  kuma.io/protocol: http
-networking:
-  address: "%s"
-`, mesh, net.JoinHostPort(ip, "80")))
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: "%s"
+      port: 80
+`, mesh, ip))
 }
 
 func mtlsAndEgressMeshUniversal(name string) InstallFunc {
@@ -236,7 +240,7 @@ spec:
 
 	It("should allow the traffic to the external service through the egress", func() {
 		// given no mesh traffic permissions
-		trafficBlocked("external-service.mesh")
+		trafficBlocked("external-service.extsvc.mesh.local")
 
 		// when mesh traffic permission with MeshSubset
 		yaml := `
@@ -245,7 +249,7 @@ name: mtp-5
 mesh: mtp-test
 spec:
  targetRef:
-   kind: MeshService
+   kind: MeshExternalService
    name: external-service
  from:
    - targetRef:
@@ -257,6 +261,6 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("external-service.mesh")
+		trafficAllowed("external-service.extsvc.mesh.local")
 	})
 }
