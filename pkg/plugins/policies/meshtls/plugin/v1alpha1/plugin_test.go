@@ -19,6 +19,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -52,10 +53,11 @@ import (
 
 var _ = Describe("MeshTLS", func() {
 	type testCase struct {
-		caseName         string
-		meshBuilder      *builders.MeshBuilder
-		meshService      bool
-		workloadIdentity *core_xds.WorkloadIdentity
+		caseName            string
+		meshBuilder         *builders.MeshBuilder
+		meshService         bool
+		workloadIdentity    *core_xds.WorkloadIdentity
+		trustsByTrustDomain []string // trust domain names to populate TrustsByTrustDomain
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -64,6 +66,12 @@ var _ = Describe("MeshTLS", func() {
 			context := *xds_builders.Context().
 				WithMeshBuilder(mesh).
 				Build()
+			if len(given.trustsByTrustDomain) > 0 {
+				context.Mesh.TrustsByTrustDomain = make(map[string][]*meshtrust_api.MeshTrust)
+				for _, domain := range given.trustsByTrustDomain {
+					context.Mesh.TrustsByTrustDomain[domain] = nil
+				}
+			}
 			resourceSet := core_xds.NewResourceSet()
 			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
 			if given.meshService {
@@ -186,63 +194,6 @@ var _ = Describe("MeshTLS", func() {
 				},
 			},
 		}),
-<<<<<<< HEAD
-=======
-		Entry("strict with MeshTrust", testCase{
-			caseName:    "strict-with-mesh-trust",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			meshService: true,
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-1": {
-					xds_context.PEMBytes("123"),
-				},
-			},
-		}),
-		Entry("strict using external validator", testCase{
-			caseName:    "strict-with-external-validator",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			meshService: true,
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"ca-bundle",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-1": {
-					xds_context.PEMBytes("123"),
-				},
-			},
-		}),
-		Entry("strict with MeshTrust and kuma managed identity", testCase{
-			caseName:    "strict-with-mesh-trust-kuma-managed",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			meshService: true,
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				ManagementMode: core_xds.KumaManagementMode,
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-1": {
-					xds_context.PEMBytes("123"),
-				},
-			},
-		}),
 		Entry("strict with multiple MeshTrust and kuma managed identity", testCase{
 			caseName:    "strict-with-multiple-mesh-trust-kuma-managed",
 			meshBuilder: samples.MeshMTLSBuilder(),
@@ -256,44 +207,16 @@ var _ = Describe("MeshTLS", func() {
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
-			},
-			// deliberately out of alphabetical order to verify SANs are sorted
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-c": {xds_context.PEMBytes("123")},
-				"domain-a": {xds_context.PEMBytes("456")},
-				"domain-b": {xds_context.PEMBytes("789")},
-			},
-		}),
-		Entry("strict mode + strict mesh = no passthrough listeners", testCase{
-			caseName:    "strict-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
-		}),
-		Entry("permissive mode + strict mesh = passthrough listeners", testCase{
-			caseName:    "permissive-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
-		}),
-		Entry("workload identity without CA = passthrough listeners", testCase{
-			caseName:    "strict-with-workload-identity-no-ca",
-			meshBuilder: samples.MeshDefaultBuilder(),
-			meshService: true,
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+				ValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
+						"system_trust_bundle",
 						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
 					)
 				},
 			},
+			// deliberately out of alphabetical order to verify SANs are sorted
+			trustsByTrustDomain: []string{"domain-c", "domain-a", "domain-b"},
 		}),
-		Entry("strict inbound ports feature = port filtering", testCase{
-			caseName:    "strict-with-feature-strict-inbound-ports",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
-			features: xds_types.Features{
-				xds_types.FeatureStrictInboundPorts: true,
-			},
-		}),
->>>>>>> 07c1f4b1ae (fix(meshtls): sort inbound SAN matchers (#17144))
 	)
 
 	DescribeTable("should generate proper Envoy config for builtin Gateway",

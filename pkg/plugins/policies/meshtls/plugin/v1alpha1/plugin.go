@@ -9,7 +9,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
-<<<<<<< HEAD
 	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
@@ -29,6 +28,7 @@ import (
 	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	"github.com/kumahq/kuma/v2/pkg/util/proto"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
@@ -39,39 +39,6 @@ import (
 	xds_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-=======
-	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
-	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
-	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
-	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
-	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	xds_tls "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
->>>>>>> 07c1f4b1ae (fix(meshtls): sort inbound SAN matchers (#17144))
 )
 
 var logger = core.Log.WithName("MeshTLS")
@@ -401,11 +368,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 	// TODO: do we need this validator since we have a better validator of CA matched with TrustDomain
 	// check: pkg/core/resources/apis/meshtrust/generator/v1alpha1/secrets.go
 	if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode {
-<<<<<<< HEAD
-		for trustDomain := range xdsCtx.Mesh.TrustsByTrustDomain {
-=======
-		for _, trustDomain := range util_maps.SortedKeys(xdsCtx.Mesh.CAsByTrustDomain) {
->>>>>>> 07c1f4b1ae (fix(meshtls): sort inbound SAN matchers (#17144))
+		for _, trustDomain := range util_maps.SortedKeys(xdsCtx.Mesh.TrustsByTrustDomain) {
 			id, err := spiffeid.TrustDomainFromString(trustDomain)
 			if err != nil {
 				return nil, err
