@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -159,7 +158,7 @@ spec:
 
 		// and
 		// start constant requests
-		reqError := atomic.Value{}
+		recorder := client.NewTrafficRecorder("meshidentity-migration", 100)
 		stopCh := make(chan struct{})
 		defer close(stopCh)
 		go func() {
@@ -173,7 +172,9 @@ spec:
 					client.FromKubernetesPod(namespace, "demo-client"),
 				)
 				if err != nil {
-					reqError.Store(err)
+					recorder.RecordError("cross-zone kube-zone-1 to kube-zone-2", err)
+				} else {
+					recorder.RecordSuccess("cross-zone kube-zone-1 to kube-zone-2")
 				}
 				// the same zone request
 				_, err = client.CollectEchoResponse(
@@ -181,7 +182,9 @@ spec:
 					client.FromKubernetesPod(namespace, "demo-client"),
 				)
 				if err != nil {
-					reqError.Store(err)
+					recorder.RecordError("same-zone kube-zone-1", err)
+				} else {
+					recorder.RecordSuccess("same-zone kube-zone-1")
 				}
 				time.Sleep(200 * time.Millisecond)
 			}
@@ -353,7 +356,7 @@ spec:
 
 		// then
 		Consistently(func(g Gomega) {
-			g.Expect(reqError.Load()).To(BeNil())
+			g.Expect(recorder.FirstError()).ToNot(HaveOccurred())
 		}, "5s", "1s").Should(Succeed())
 	})
 }
