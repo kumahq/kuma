@@ -1,0 +1,14 @@
+kind: Service
+metadata:
+  namespace: demo
+  name: test-service
+  labels:
+    app: example
+spec:
+  selector:
+    app: example
+  ports:
+    - name: http
+      port: 8443
+      targetPort: 8443
+      protocol: TCP

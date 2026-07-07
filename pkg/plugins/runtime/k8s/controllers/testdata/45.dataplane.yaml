@@ -1,0 +1,22 @@
+type: Dataplane
+mesh: default
+metadata:
+  name: test-server-1-1
+  namespace: demo
+  labels:
+    kuma.io/zone: zone-1
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+      - port: 8443
+        tags:
+          kuma.io/service: test-service_demo_svc
+          kuma.io/protocol: tcp
+          kuma.io/port: "8443"
+          kuma.io/namespace: demo
+          app: example
+          version: "0.1"
+        state: NotReady
+        health:
+          ready: false

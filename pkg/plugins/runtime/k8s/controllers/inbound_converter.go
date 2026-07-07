@@ -21,12 +21,22 @@ import (
 
 // podReady returns false when any of the following is true:
 //   - the given container (if non-nil) is not ready
+//   - when container is nil (no container declares the service's targetPort), any non-sidecar app container is not ready
 //   - the kuma-sidecar container is not ready
 //   - the pod has a DeletionTimestamp (terminating)
 func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 	if container != nil {
 		if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
 			return false
+		}
+	} else {
+		// No container declares the service's targetPort — check all non-sidecar app containers
+		for _, c := range pod.Spec.Containers {
+			if c.Name != util_k8s.KumaSidecarContainerName {
+				if cs := util_k8s.FindContainerStatus(c.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+					return false
+				}
+			}
 		}
 	}
 	if cs := util_k8s.FindContainerOrInitContainerStatus(
