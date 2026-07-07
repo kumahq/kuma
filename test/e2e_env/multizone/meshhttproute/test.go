@@ -140,19 +140,19 @@ spec:
 		)
 	})
 
-	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
+	It("should use MeshHTTPRoute for cross-zone with multiple MeshServices", func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
 name: route-test-server-subset
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
           - path:
@@ -160,28 +160,20 @@ spec:
               type: PathPrefix
           default:
             backendRefs:
-              - kind: MeshServiceSubset
-                name: test-server
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server
+                port: 80
                 weight: 1
-                tags:
-                  kuma.io/zone: kuma-5
-                  version: v1
-              - kind: MeshServiceSubset
-                name: test-server
-                weight: 1
-                tags:
-                  kuma.io/zone: kuma-5
-                  version: v2
 `, meshName))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.svc.mesh.local", client.WithNumberOfRequests(100))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(
 				And(
-					HaveKey(MatchRegexp(`^.*-v1.*`)),
-					HaveKey(MatchRegexp(`^zone2-v2.*`)),
-					Not(HaveKey(MatchRegexp(`^zone2-v3.*`))),
+					HaveKey(MatchRegexp(`^zone1-v1.*`)),
+					HaveKey(MatchRegexp(`^zone2-.*`)),
 				),
 			)
 		}, "60s", "5s").Should(Succeed())
