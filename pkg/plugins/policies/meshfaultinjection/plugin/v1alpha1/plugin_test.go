@@ -10,31 +10,32 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	test_matchers "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshFaultInjection", func() {
@@ -312,6 +313,68 @@ var _ = Describe("MeshFaultInjection", func() {
 			expectedListeners: []string{"basic_listener_1_rules.golden.yaml", "basic_listener_2_rules.golden.yaml"},
 		}),
 	)
+
+	It("should generate proper Envoy config for zone egress listener with rules[].matches[].sni", func() {
+		name := naming.ContextualZoneEgressListenerName("ze-port")
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:   name,
+			Origin: metadata.OriginEgress,
+			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(listeners.InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+					Configure(listeners.MatchTransportProtocol("tls")).
+					Configure(listeners.MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+					Configure(listeners.HttpConnectionManager("mes-http", false, nil, true)).
+					Configure(listeners.AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+				)).
+				MustBuild(),
+		})
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("zone-proxy-egress").
+					WithMesh("default").
+					WithAddress("10.20.30.40").
+					With(func(d *core_mesh.DataplaneResource) {
+						d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.20.30.40",
+							Port:    10002,
+							Name:    "ze-port",
+						}}
+					}),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, core_rules.FromRules{
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "10.20.30.40", Port: 10002}: {{
+						Match: &common_api.Match{
+							SNI: &common_api.SNIMatch{
+								Type:  common_api.SNIExactMatchType,
+								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+							},
+						},
+						Conf: api.Conf{
+							Http: &[]api.FaultInjectionConf{{
+								Abort: &api.AbortConf{
+									HttpStatus: 503,
+									Percentage: intstr.FromString("50"),
+								},
+							}},
+						},
+						Origin: policyOrigin("mfi-zone-egress"),
+					}},
+				},
+			})).
+			Build()
+
+		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+		Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[0].Resource)).To(
+			test_matchers.MatchGoldenYAML(path.Join("testdata", "zoneegress_matches_sni.listener.golden.yaml")),
+		)
+	})
 
 	It("should generate proper Envoy config for Egress", func() {
 		// given

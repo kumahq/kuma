@@ -9,12 +9,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/postgres"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/postgres"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func ZoneAndGlobalInUniversalModeWithHelmChart() {
@@ -99,6 +99,8 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(globalCluster)
+		ControlPlaneAssertions(zoneCluster)
 		Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
@@ -124,7 +126,7 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 
 	It("communication in between apps in zone works", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(zoneCluster, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
+			_, err := client.CollectEchoResponse(zoneCluster, "demo-client", "http://test-server.kuma-test.svc.cluster.local",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

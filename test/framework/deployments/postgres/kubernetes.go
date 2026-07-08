@@ -11,7 +11,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 // NOTE: We intentionally do not use the tag form like
@@ -71,26 +71,28 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		opts.SetValues[fmt.Sprintf("cluster.initdb.postInitSQL[%d]", i)] = script
 	}
 
-	// Preload chart images into the cluster's container runtime so pod
-	// startup does not hit ghcr.io at test time. The CNPG cluster wait has a
-	// hard 180s budget; transient ghcr.io timeouts during runtime pulls of
-	// the operator and postgres images are the dominant cause of this
-	// BeforeAll flaking on CI.
-	if k8sCluster, ok := cluster.(*framework.K8sCluster); ok {
-		opImages, err := renderChartImages(cluster, nil, cnpgChart, "cnpg")
-		if err != nil {
-			return errors.Wrap(err, "render cnpg operator chart")
-		}
-		clImages, err := renderChartImages(cluster, opts, clusterChart, t.options.primaryName)
-		if err != nil {
-			return errors.Wrap(err, "render cnpg cluster chart")
-		}
-		// postgresImage is consumed by the CNPG operator (via the Cluster
-		// CR) rather than appearing directly in the rendered chart, so add
-		// it explicitly.
-		images := dedupe(append(append(opImages, clImages...), postgresImage))
-		if err := k8sCluster.PreloadImages(images...); err != nil {
-			return errors.Wrap(err, "preload postgres images")
+	if t.options.preloadImages {
+		// Preload chart images into the cluster's container runtime so pod
+		// startup does not hit ghcr.io at test time. The CNPG cluster wait has a
+		// hard 180s budget; transient ghcr.io timeouts during runtime pulls of
+		// the operator and postgres images are the dominant cause of this
+		// BeforeAll flaking on CI.
+		if k8sCluster, ok := cluster.(*framework.K8sCluster); ok {
+			opImages, err := renderChartImages(cluster, nil, cnpgChart, "cnpg")
+			if err != nil {
+				return errors.Wrap(err, "render cnpg operator chart")
+			}
+			clImages, err := renderChartImages(cluster, opts, clusterChart, t.options.primaryName)
+			if err != nil {
+				return errors.Wrap(err, "render cnpg cluster chart")
+			}
+			// postgresImage is consumed by the CNPG operator (via the Cluster
+			// CR) rather than appearing directly in the rendered chart, so add
+			// it explicitly.
+			images := dedupe(append(append(opImages, clImages...), postgresImage))
+			if err := k8sCluster.PreloadImages(images...); err != nil {
+				return errors.Wrap(err, "preload postgres images")
+			}
 		}
 	}
 

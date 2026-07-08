@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func GatewayHybrid() {
@@ -48,7 +48,6 @@ func GatewayHybrid() {
 					GatewayProxyUniversal(meshName, "edge-gateway"),
 					TestServerUniversal("test-server", meshName,
 						WithArgs([]string{"echo", "--instance", UniResponse}),
-						WithServiceName("test-server_gateway-hybrid_svc_80"),
 					),
 					TestServerUniversal("gateway-client", meshName, WithoutDataplane()),
 				)).
@@ -97,39 +96,58 @@ conf:
 `,
 					)).
 					Install(YamlUniversal(fmt.Sprintf(`
-type: MeshGatewayRoute
+type: MeshHTTPRoute
 mesh: gateway-hybrid
 name: edge-gateway
-selectors:
-- match:
-    kuma.io/service: edge-gateway
-conf:
-  http:
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+  - targetRef:
+      kind: Mesh
     rules:
     - matches:
       - path:
-          match: PREFIX
+          type: PathPrefix
           value: /kubernetes
-      backends:
-      - destination:
-          kuma.io/service: test-server_gateway-hybrid_svc_80
-          kuma.io/zone: %s 
+      default:
+        backendRefs:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: test-server
+            kuma.io/zone: %[1]s
+            k8s.kuma.io/namespace: %[3]s
+          port: 80
     - matches:
       - path:
-          match: PREFIX
+          type: PathPrefix
           value: /universal
-      backends:
-      - destination:
-          kuma.io/service: test-server_gateway-hybrid_svc_80
-          kuma.io/zone: kuma-4
+      default:
+        backendRefs:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: test-server
+            kuma.io/zone: %[2]s
+          port: 80
     - matches:
       - path:
-          match: PREFIX
+          type: PathPrefix
           value: /all
-      backends:
-      - destination:
-          kuma.io/service: test-server_gateway-hybrid_svc_80
-`, multizone.KubeZone1.ZoneName()))).
+      default:
+        backendRefs:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: test-server
+            kuma.io/zone: %[1]s
+            k8s.kuma.io/namespace: %[3]s
+          port: 80
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: test-server
+            kuma.io/zone: %[2]s
+          port: 80
+`, multizone.KubeZone1.ZoneName(), multizone.UniZone1.ZoneName(), namespace))).
 					Setup(multizone.Global)
 				Expect(err).ToNot(HaveOccurred())
 

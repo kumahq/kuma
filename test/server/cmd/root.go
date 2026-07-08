@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var testServerLog = core.Log.WithName("test-server")

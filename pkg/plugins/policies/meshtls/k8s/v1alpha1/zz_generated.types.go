@@ -9,11 +9,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policy "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshTLS configures TLS and mutual TLS (mTLS) settings for secure communication between services in the mesh. It allows you to enforce encryption, configure TLS versions and cipher suites, and control whether mTLS is required (strict mode) or optional (permissive mode) for inbound traffic.

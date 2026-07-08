@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"strings"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 // OTLP/HTTP signal path suffixes per the OpenTelemetry Protocol specification.
@@ -81,17 +81,13 @@ func ResolveOtelBackend(
 
 func resolveFromBackendRef(ref *common_api.BackendResourceRef, resources xds_context.Resources) *ResolvedOtelBackend {
 	var backend *motb_api.MeshOpenTelemetryBackendResource
-	switch {
-	case ref.Name != "":
-		backend = resolveBackendResourceByName(resources, ref.Name)
-	case len(ref.Labels) > 0:
+	if len(ref.Labels) > 0 {
 		backend = resolveBackendResourceByLabels(resources, ref.Labels)
 	}
 
 	if backend == nil {
 		otelLog.Info(
 			"MeshOpenTelemetryBackend not found, skipping backend",
-			"name", ref.Name,
 			"labels", ref.Labels,
 		)
 		return nil
@@ -123,20 +119,6 @@ func resolvedFromSpec(backend *motb_api.MeshOpenTelemetryBackendResource) *Resol
 		Path:      basePath,
 		Name:      core_model.GetDisplayName(backend.GetMeta()),
 	}
-}
-
-// resolveBackendResourceByName looks up by display name (the user-facing name
-// without the namespace suffix that Kubernetes adds internally).
-func resolveBackendResourceByName(
-	resources xds_context.Resources,
-	name string,
-) *motb_api.MeshOpenTelemetryBackendResource {
-	for _, backend := range resources.MeshOpenTelemetryBackends().Items {
-		if core_model.GetDisplayName(backend.GetMeta()) == name {
-			return backend
-		}
-	}
-	return nil
 }
 
 // resolveBackendResourceByLabels matches all labels and picks the oldest on collision.

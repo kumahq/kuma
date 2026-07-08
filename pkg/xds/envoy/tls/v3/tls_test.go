@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls/v3"
 )
 
 type caRequest struct {

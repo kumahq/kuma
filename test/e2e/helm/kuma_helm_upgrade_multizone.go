@@ -10,14 +10,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	meshtimeout "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/api"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/versions"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/api"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/versions"
 )
 
 func UpgradingWithHelmChartMultizone() {
@@ -42,6 +42,9 @@ func UpgradingWithHelmChartMultizone() {
 	})
 
 	E2EAfterEach(func() {
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zoneK8s)
+		ControlPlaneAssertions(zoneUniversal)
 		grp := sync.WaitGroup{}
 		grp.Add(3)
 		go func() {
@@ -158,15 +161,28 @@ spec:
 				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
 			}
 
+			// Scale down ingress before upgrading so the pod is never running against a
+			// mixed-version CP. Without this, the ingress can connect to an old CP replica
+			// first (enable_reuse_port=false) and then receive enable_reuse_port=true from
+			// the upgraded CP, which Envoy rejects indefinitely. ingress.replicas=0 ensures
+			// Helm does not override the scale-down during the upgrade.
+			By("scale down zone ingress before upgrade")
+			Expect(zoneK8s.(*K8sCluster).StopZoneIngress()).To(Succeed())
+
 			By("upgrade Zone")
 			// when
 			err = zoneK8s.(*K8sCluster).UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),
+				WithHelmOpt("ingress.replicas", "0"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 
+			// Wait until the upgraded zone CP has re-established its KDS connection to
+			// global before starting the ingress, so the ingress always connects to the
+			// new CP and never to a stale replica.
+			By("wait for upgraded zone CP to connect to global")
 			Eventually(func(g Gomega) {
 				result := &system.ZoneInsightResource{}
 				api.FetchResource(g, global, result, "", "kuma-2")
@@ -180,6 +196,9 @@ spec:
 				}
 				g.Expect(newZoneConnected).To(BeTrue())
 			}, "60s", "1s").Should(Succeed())
+
+			By("start zone ingress after upgrade")
+			Expect(zoneK8s.(*K8sCluster).StartZoneIngress()).To(Succeed())
 
 			// Wait for zone ingresses to settle after upgrade before checking consistency.
 			// After Helm upgrade returns, the old zone ingress pod may still be in Terminating

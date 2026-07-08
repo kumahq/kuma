@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/util/data"
+	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
 type templateFilter interface {
@@ -46,21 +46,6 @@ func simpleTemplateRenderer(text data.File) (templateRenderer, error) {
 		return nil, errors.Wrap(err, "Failed to parse k8s resource template")
 	}
 	return tmpl, nil
-}
-
-// Template filters
-
-type ExcludePrefixesFilter struct {
-	Prefixes []string
-}
-
-func (f ExcludePrefixesFilter) Filter(name string) bool {
-	for _, prefix := range f.Prefixes {
-		if len(name) > len(prefix) && name[:len(prefix)] == prefix {
-			return false
-		}
-	}
-	return true
 }
 
 type NoneFilter struct{}

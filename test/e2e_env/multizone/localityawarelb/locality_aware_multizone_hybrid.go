@@ -12,14 +12,14 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	mesh_http_route_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	mesh_loadbalancing_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	mesh_http_route_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	mesh_loadbalancing_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 func LocalityAwareLB() {
@@ -29,7 +29,7 @@ func LocalityAwareLB() {
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(mesh)).
+			Install(MTLSMeshWithMeshServicesUniversal(mesh, "Disabled")).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())

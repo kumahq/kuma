@@ -1,9 +1,9 @@
 package certs
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/plugins"
 )
 
 const PluginName = "adminClientCerts"

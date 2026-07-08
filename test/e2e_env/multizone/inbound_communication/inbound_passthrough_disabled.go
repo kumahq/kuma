@@ -5,11 +5,11 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func InboundPassthroughDisabled() {
@@ -112,11 +112,11 @@ func InboundPassthroughDisabled() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
-			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-pod"),
-			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.cluster.local", "k8s-bound-wildcard"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.kuma-5.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.kuma-5.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.cluster.local", "k8s-bound-pod"),
+			Entry("on universal binds to containerip", "uni-test-server-containerip.svc.kuma-5.mesh.local", "uni-bound-containerip"),
 		)
 	})
 
@@ -132,11 +132,11 @@ func InboundPassthroughDisabled() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
-			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-pod"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.kuma-2.mesh.local", "k8s-bound-wildcard"),
+			Entry("on universal binds to containerip", "uni-test-server-containerip.svc.mesh.local", "uni-bound-containerip"),
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.kuma-2.mesh.local", "k8s-bound-pod"),
 		)
 	})
 }

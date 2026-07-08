@@ -493,7 +493,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 17cc83c6da6ba7f3e2dfc73221800aadb333ead12495e0bc051f7fcddb84151b
+        checksum/tls-secrets: 7b3fbcc00b79d18122d34a8cf32a29c0f7ba9cdfb7845a5f1a63b5d99fda3d7f
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -908,6 +908,8 @@ webhooks:
           values:
             - enabled
         - key: kuma.io/mesh
+          operator: Exists
+        - key: k8s.kuma.io/zone-proxy-type
           operator: Exists
     clientConfig:
       caBundle: XYZ

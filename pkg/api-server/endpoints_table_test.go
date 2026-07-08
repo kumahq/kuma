@@ -9,11 +9,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Describe("Endpoints", func() {

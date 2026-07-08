@@ -6,12 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/kic"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/kic"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func KICKubernetes() {
@@ -36,7 +36,24 @@ func KICKubernetes() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshKubernetes(mesh)).
+			// The "should route to service using Kuma DNS" test resolves the
+			// legacy VIP hostname test-server.kic.svc.80.mesh. Under the
+			// Exclusive meshServices default that hostname is no longer served,
+			// so pin the mesh to Disabled to keep exercising Kuma VIP DNS.
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: Disabled
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, mesh))).
 			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceOutsideMesh)).

@@ -13,12 +13,12 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
-	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	"github.com/kumahq/kuma/v2/tools/xds-client/stream"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	"github.com/kumahq/kuma/v3/tools/xds-client/stream"
 )
 
 func newRootCmd() *cobra.Command {
@@ -151,12 +151,12 @@ func newRunCmd() *cobra.Command {
 							if err != nil {
 								return errors.Wrap(err, "failed to receive a discovery response")
 							}
-							nodeLog.Info("received xDS resources", "type", resp.TypeUrl, "version", resp.VersionInfo, "nonce", resp.Nonce, "resources", len(resp.Resources))
+							nodeLog.Info("received xDS resources", "type", resp.TypeUrl, "version", resp.SystemVersionInfo, "nonce", resp.Nonce, "resources", len(resp.Resources))
 
 							if err := stream.ACK(resp.TypeUrl); err != nil {
 								return errors.Wrap(err, "failed to ACK a discovery response")
 							}
-							nodeLog.Info("ACKed discovery response", "type", resp.TypeUrl, "version", resp.VersionInfo, "nonce", resp.Nonce)
+							nodeLog.Info("ACKed discovery response", "type", resp.TypeUrl, "version", resp.SystemVersionInfo, "nonce", resp.Nonce)
 						}
 					}()
 				}(i)

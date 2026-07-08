@@ -4,7 +4,7 @@ defaultRegexEngine:
     '@type': type.googleapis.com/envoy.extensions.regex_engines.v3.GoogleRE2
 dynamicResources:
   adsConfig:
-    apiType: GRPC
+    apiType: DELTA_GRPC
     grpcServices:
     - googleGrpc:
         callCredentials:
@@ -22,6 +22,8 @@ dynamicResources:
               intValue: "10000"
             grpc.keepalive_timeout_ms:
               intValue: "30000"
+            grpc.max_receive_message_length:
+              intValue: "4194304"
         channelCredentials:
           sslCredentials:
             rootCerts:
@@ -58,6 +60,8 @@ hdsConfig:
             intValue: "10000"
           grpc.keepalive_timeout_ms:
             intValue: "30000"
+          grpc.max_receive_message_length:
+            intValue: "4194304"
       channelCredentials:
         sslCredentials:
           rootCerts:

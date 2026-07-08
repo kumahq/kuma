@@ -12,28 +12,28 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/generate"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	cache_mesh "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/server"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/generate"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/dns/vips"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	cache_mesh "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 type countingResourceManager struct {
@@ -360,6 +360,41 @@ var _ = Describe("MeshService generator", func() {
 		}, time.Until(gracePeriodEndsAt.Add(-50*time.Millisecond)).String(), "50ms").Should(Succeed())
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).ToNot(Succeed())
+		}, "2s", "100ms").Should(Succeed())
+	})
+
+	It("should not delete MeshService synced from another zone", func() {
+		// MeshService generated in another zone and synced here via KDS: it
+		// keeps the generator's managed-by label but has origin=global and no
+		// local Dataplane backing it. The generator must leave it untouched.
+		ms := meshservice_api.NewMeshServiceResource()
+		ms.Spec = &meshservice_api.MeshService{
+			Selector: meshservice_api.Selector{
+				DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "remote-backend"},
+			},
+			Ports: []meshservice_api.Port{{
+				Name:        pointer.To("80"),
+				Port:        80,
+				TargetPort:  pointer.To(intstr.FromInt(80)),
+				AppProtocol: core_meta.ProtocolTCP,
+			}},
+		}
+		Expect(resManager.Create(
+			context.Background(),
+			ms,
+			store.CreateByKey("remote-backend", model.DefaultMesh),
+			store.CreateWithLabels(map[string]string{
+				mesh_proto.ManagedByLabel:      "meshservice-generator",
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+				mesh_proto.ZoneTag:             "other-zone",
+			}),
+		)).To(Succeed())
+
+		// It's never marked for deletion nor removed.
+		Consistently(func(g Gomega) {
+			synced := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), synced, store.GetByKey("remote-backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(synced.GetMeta().GetLabels()).ToNot(HaveKey(mesh_proto.DeletionGracePeriodStartedLabel))
 		}, "2s", "100ms").Should(Succeed())
 	})
 

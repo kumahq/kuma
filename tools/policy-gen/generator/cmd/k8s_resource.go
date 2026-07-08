@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
-	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
+	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
+	"github.com/kumahq/kuma/v3/tools/policy-gen/generator/pkg/parse"
 )
 
 func newK8sResource(rootArgs *args) *cobra.Command {
@@ -104,13 +104,15 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	policy "{{.GoModule}}/{{.ResourceDir}}/api/{{.Package}}"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 	{{- if not .SkipRegistration }}
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 	{{- end }}
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	{{- if not (eq (printf "%s" .Scope) "Global") }}
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	{{- end }}
 )
 
 {{- if .Description }}
@@ -157,18 +159,27 @@ func (cb *{{.Name}}) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *{{.Name}}) GetMesh() string {
+{{- if eq (printf "%s" .Scope) "Global" }}
+	// {{.Name}} is a Global-scoped resource and is not bound to a mesh.
+	return ""
+{{- else }}
 	if mesh, ok := cb.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
 		return core_model.DefaultMesh
 	}
+{{- end }}
 }
 
 func (cb *{{.Name}}) SetMesh(mesh string) {
+{{- if eq (printf "%s" .Scope) "Global" }}
+	// {{.Name}} is a Global-scoped resource, the mesh label must not be set.
+{{- else }}
 	if cb.Labels == nil {
 		cb.Labels = map[string]string{}
 	}
 	cb.Labels[metadata.KumaMeshLabel] = mesh
+{{- end }}
 }
 
 func (cb *{{.Name}}) GetSpec() (core_model.ResourceSpec, error) {

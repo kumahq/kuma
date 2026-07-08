@@ -10,13 +10,13 @@ import (
 	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {

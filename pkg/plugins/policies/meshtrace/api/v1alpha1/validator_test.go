@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshtrace_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshtrace_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
 )
 
 var _ = Describe("MeshTrace", func() {
@@ -113,7 +113,8 @@ default:
       openTelemetry:
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: my-otel
+          labels:
+            kuma.io/display-name: my-otel
 `),
 		)
 
@@ -464,14 +465,15 @@ default:
         endpoint: otel-collector:4317
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: my-otel
+          labels:
+            kuma.io/display-name: my-otel
 `,
 				expected: `
 violations:
   - field: spec.default.backends[0].openTelemetry
     message: "openTelemetry must have only one type defined: endpoint, backendRef"`,
 			}),
-			Entry("openTelemetry backendRef neither name nor labels", testCase{
+			Entry("openTelemetry backendRef no labels", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -486,7 +488,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends[0].openTelemetry.backendRef
-    message: "backendRef must have exactly one defined: name, labels"`,
+    message: "backendRef must have exactly one defined: labels"`,
 			}),
 			Entry("gateway listener tags not allowed", testCase{
 				inputYaml: `

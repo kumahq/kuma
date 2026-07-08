@@ -8,9 +8,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/util/files"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/util/files"
 )
 
 var _ config.Config = &BootstrapServerConfig{}
@@ -63,6 +63,11 @@ type BootstrapParamsConfig struct {
 	XdsPort uint32 `json:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout config_types.Duration `json:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
+	// Sets `grpc.max_receive_message_length` on the GoogleGrpc xDS channel in
+	// Envoy's bootstrap. Caps inbound xDS message size and sizes the per-stream
+	// HTTP/2 receive window.
+	// Default: 4 MiB.
+	XdsGrpcMaxReceiveMessageBytes uint32 `json:"xdsGrpcMaxReceiveMessageBytes" envconfig:"kuma_bootstrap_server_params_xds_grpc_max_receive_message_bytes"`
 	// Path to the template of Corefile for data planes to use
 	CorefileTemplatePath string `json:"corefileTemplatePath" envconfig:"kuma_bootstrap_server_params_corefile_template_path"`
 }
@@ -89,6 +94,9 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.XdsConnectTimeout.Duration < 0 {
 		return errors.New("XdsConnectTimeout cannot be negative")
 	}
+	if b.XdsGrpcMaxReceiveMessageBytes == 0 {
+		return errors.New("XdsGrpcMaxReceiveMessageBytes cannot be zero")
+	}
 	if b.CorefileTemplatePath != "" && !files.FileExists(b.CorefileTemplatePath) {
 		return errors.New("CorefileTemplatePath must point to an existing file")
 	}
@@ -97,14 +105,15 @@ func (b *BootstrapParamsConfig) Validate() error {
 
 func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
-		AdminAddress:         "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
-		AdminPort:            9901,
-		EnvoyAdminUnixSocket: true,
-		ReadinessPort:        9902,
-		AdminAccessLogPath:   os.DevNull,
-		XdsHost:              "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
-		XdsPort:              0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
-		XdsConnectTimeout:    config_types.Duration{Duration: 1 * time.Second},
-		CorefileTemplatePath: "", // by default, data plane will use the embedded Corefile to be the template
+		AdminAddress:                  "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
+		AdminPort:                     9901,
+		EnvoyAdminUnixSocket:          true,
+		ReadinessPort:                 9902,
+		AdminAccessLogPath:            os.DevNull,
+		XdsHost:                       "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
+		XdsPort:                       0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+		XdsConnectTimeout:             config_types.Duration{Duration: 1 * time.Second},
+		XdsGrpcMaxReceiveMessageBytes: 4194304,
+		CorefileTemplatePath:          "", // by default, data plane will use the embedded Corefile to be the template
 	}
 }

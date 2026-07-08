@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 var _ = Describe("MeshOpenTelemetryBackend", func() {

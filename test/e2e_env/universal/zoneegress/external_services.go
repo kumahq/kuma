@@ -7,19 +7,27 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshfaultinjection_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	meshratelimit_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshratelimit_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func meshMTLSOn(mesh string) string {
+	// This suite exercises the legacy ExternalService resource together with
+	// legacy version-based FaultInjection/RateLimit policies routed through the
+	// zone egress. That behavior relies on the legacy kuma.io/service VIP DNS
+	// (external-service.mesh), which is not served under the Exclusive
+	// meshServices default. Pin the mesh to Disabled to keep this legacy
+	// coverage intact.
 	return fmt.Sprintf(`
 type: Mesh
 name: %s
+meshServices:
+  mode: Disabled
 mtls:
   enabledBackend: ca-1
   backends:

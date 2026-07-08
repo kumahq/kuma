@@ -1,8 +1,8 @@
 package types
 
 import (
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 )
 
 type BootstrapRequest struct {

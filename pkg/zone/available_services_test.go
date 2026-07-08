@@ -10,23 +10,23 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	cache_mesh "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/server"
-	"github.com/kumahq/kuma/v2/pkg/zone"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/dns/vips"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	cache_mesh "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
+	"github.com/kumahq/kuma/v3/pkg/zone"
 )
 
 var _ = Describe("AvailableServices Tracker", func() {
@@ -42,7 +42,9 @@ var _ = Describe("AvailableServices Tracker", func() {
 			resourceStore := memory.NewStore()
 			resManager = manager.NewResourceManager(resourceStore)
 
-			Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Create(resManager)).To(Succeed())
+			// Available services from kuma.io/service tags are only tracked when
+			// meshServices.mode is not Exclusive (the default), so opt into Disabled.
+			Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Create(resManager)).To(Succeed())
 
 			meshContextBuilder = xds_context.NewMeshContextBuilder(
 				resManager,

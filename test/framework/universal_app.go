@@ -18,11 +18,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 type AppMode string
@@ -350,21 +350,37 @@ func (s *UniversalApp) CreateDP(
 	transparent bool,
 	dpVersion string,
 ) error {
-	cmd := &strings.Builder{}
-	// create the token file on the app container
-	_, _ = cmd.WriteString("#!/bin/sh\n")
-	_, _ = fmt.Fprintf(cmd, "printf %q > /kuma/token-%s\n", token, name)
 	if dpVersion != "" {
 		// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
 		url := fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-%[2]s/versions/%[1]s/kuma-%[1]s-linux-%[2]s.tar.gz", dpVersion, Config.Arch)
 		newPathOut := fmt.Sprintf("/tmp/kuma/kuma-%s/bin", dpVersion)
 
-		_, _ = fmt.Fprintf(cmd, `
-mkdir -p /tmp/
-curl --no-progress-bar --fail '%s' | tar xvzf - --directory /tmp/kuma/
+		// Run the install synchronously so a failed download fails the test fast
+		// instead of silently falling through to the image's bundled binaries.
+		installScript := fmt.Sprintf(`set -e
+rm -f /usr/bin/kuma-dp /usr/bin/envoy
+mkdir -p /tmp/kuma/
+curl --no-progress-bar --fail '%s' -o /tmp/kuma/kuma.tar.gz
+tar xzf /tmp/kuma/kuma.tar.gz --directory /tmp/kuma/
 cp %s/kuma-dp /usr/bin/kuma-dp
 cp %s/envoy /usr/bin/envoy
-		`, url, newPathOut, newPathOut)
+`, url, newPathOut, newPathOut)
+		if stdout, stderr, err := s.universalNetworking.RunCommand(installScript); err != nil {
+			return errors.Wrapf(err, "failed to install kuma-dp %s: stdout=%q stderr=%q", dpVersion, stdout, stderr)
+		}
+	}
+	cmd := &strings.Builder{}
+	// create the token file on the app container
+	_, _ = cmd.WriteString("#!/bin/sh\n")
+	_, _ = fmt.Fprintf(cmd, "printf %q > /kuma/token-%s\n", token, name)
+	if envsMap == nil {
+		envsMap = map[string]string{}
+	}
+	// Skip CP cert verification via env var instead of the --skip-verify flag so
+	// that older kuma-dp versions (compatibility tests) silently ignore it
+	// instead of erroring on an unknown flag.
+	if _, ok := envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"]; !ok {
+		envsMap["KUMA_CONTROL_PLANE_TLS_SKIP_VERIFY"] = "true"
 	}
 	for k, v := range envsMap {
 		_, _ = fmt.Fprintf(cmd, "export %s=%s\n", k, utils.ShellEscape(v))
@@ -392,7 +408,6 @@ cp %s/envoy /usr/bin/envoy
 		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
-		"--skip-verify",
 		"--dataplane-token-file=/kuma/token-" + name,
 		"--binary-path", "/usr/local/bin/envoy",
 	}

@@ -22,9 +22,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
 )
 
 var _ ControlPlane = &K8sControlPlane{}
@@ -70,6 +70,10 @@ func NewK8sControlPlane(
 
 func (c *K8sControlPlane) GetName() string {
 	return c.name
+}
+
+func (c *K8sControlPlane) Mode() core.CpMode {
+	return c.mode
 }
 
 func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {

@@ -1,5 +1,6 @@
 items:
 - creationTime: "2018-07-17T16:05:36.995Z"
+  kri: kri_zi____zone-ingress-1_
   modificationTime: "2019-07-17T18:08:41Z"
   name: zone-ingress-1
   type: ZoneIngressOverview
@@ -39,6 +40,7 @@ items:
           gitTag: v1.0.2
           version: 1.0.2
 - creationTime: "2018-07-17T16:05:36.995Z"
+  kri: kri_zi____zone-ingress-2_
   modificationTime: "2019-07-17T18:08:41Z"
   name: zone-ingress-2
   type: ZoneIngressOverview
@@ -80,6 +82,7 @@ items:
           gitTag: v1.0.2
           version: 1.0.2
 - creationTime: "2018-07-17T16:05:36.995Z"
+  kri: kri_zi____zone-ingress-3_
   modificationTime: "2019-07-17T18:08:41Z"
   name: zone-ingress-3
   type: ZoneIngressOverview

@@ -4,7 +4,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type Observability interface {
@@ -23,7 +23,6 @@ type Deployment interface {
 type deployOptions struct {
 	namespace      string
 	deploymentName string
-	components     []Component
 }
 type deployOptionsFunc func(*deployOptions)
 
@@ -37,26 +36,10 @@ func WithNamespace(namespace string) deployOptionsFunc {
 	}
 }
 
-type Component string
-
-const (
-	JaegerComponent     Component = "jaeger"
-	PrometheusComponent Component = "prometheus"
-	GrafanaComponent    Component = "grafana"
-	LokiComponent       Component = "loki"
-)
-
-func WithComponents(components ...Component) deployOptionsFunc {
-	return func(o *deployOptions) {
-		o.components = components
-	}
-}
-
 func Install(name string, optFns ...deployOptionsFunc) framework.InstallFunc {
 	opts := &deployOptions{
 		deploymentName: name,
 		namespace:      framework.Config.DefaultObservabilityNamespace,
-		components:     []Component{JaegerComponent, PrometheusComponent, GrafanaComponent, LokiComponent},
 	}
 	for _, optFn := range optFns {
 		optFn(opts)
@@ -68,7 +51,6 @@ func Install(name string, optFns ...deployOptionsFunc) framework.InstallFunc {
 			deployment = &k8SDeployment{
 				namespace:      opts.namespace,
 				deploymentName: opts.deploymentName,
-				components:     opts.components,
 			}
 		case *framework.UniversalCluster:
 			deployment = &universalDeployment{

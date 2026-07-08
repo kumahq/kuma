@@ -13,42 +13,42 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
-	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_policies "github.com/kumahq/kuma/v2/pkg/test/policies"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_policies "github.com/kumahq/kuma/v3/pkg/test/policies"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshTLS", func() {
@@ -244,6 +244,27 @@ var _ = Describe("MeshTLS", func() {
 				"domain-1": {
 					xds_context.PEMBytes("123"),
 				},
+			},
+		}),
+		Entry("strict with multiple MeshTrust and kuma managed identity", testCase{
+			caseName:    "strict-with-multiple-mesh-trust-kuma-managed",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			meshService: true,
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				ManagementMode: core_xds.KumaManagementMode,
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
+			// deliberately out of alphabetical order to verify SANs are sorted
+			casByTrustDomain: map[string][]xds_context.PEMBytes{
+				"domain-c": {xds_context.PEMBytes("123")},
+				"domain-a": {xds_context.PEMBytes("456")},
+				"domain-b": {xds_context.PEMBytes("789")},
 			},
 		}),
 		Entry("strict mode + strict mesh = no passthrough listeners", testCase{

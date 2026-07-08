@@ -3,9 +3,9 @@ package v1alpha1
 import (
 	"cmp"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func comparePath(a *PathMatch, b *PathMatch) int {

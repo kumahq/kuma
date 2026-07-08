@@ -7,10 +7,10 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers/golden"
-	"github.com/kumahq/kuma/v2/pkg/util/data"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers/golden"
+	"github.com/kumahq/kuma/v3/pkg/util/data"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 func TestInstallCmd(t *testing.T) {

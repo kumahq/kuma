@@ -1,10 +1,10 @@
 package context
 
 import (
-	"github.com/kumahq/kuma/v2/deployments"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/util/data"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/deployments"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/util/data"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 type InstallControlPlaneArgs struct {
@@ -59,6 +59,7 @@ type InstallControlPlaneArgs struct {
 	ValueFiles                                   []string
 	Values                                       []string
 	SkipKinds                                    []string
+	SkipCRDs                                     bool
 	// APIVersions is a hidden, internal option
 	APIVersions        []string
 	DumpValues         bool

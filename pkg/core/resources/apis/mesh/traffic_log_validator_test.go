@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	. "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	. "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("TrafficLog", func() {

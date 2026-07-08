@@ -5007,7 +5007,7 @@ components:
           x-go-type: common_api.Match
           x-go-type-import:
             name: common_api
-            path: github.com/kumahq/kuma/v2/api/common/v1alpha1
+            path: github.com/kumahq/kuma/v3/api/common/v1alpha1
         origin:
           type: array
           description: >-
@@ -5472,6 +5472,15 @@ components:
       type: object
     DataplaneItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -5503,6 +5512,11 @@ components:
               description: Type of the backend (Kuma ships with 'prometheus')
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -6271,6 +6285,15 @@ components:
                   type: array
               type: object
           type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -6357,6 +6380,11 @@ components:
               description: Name of the enabled backend
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         mtls:
           description: |-
             mTLS settings.
@@ -6687,22 +6715,10 @@ components:
                                         type: string
                                       description: >-
                                         Labels to match the referenced resource.
-                                        Use for cross-zone references
+                                        When multiple resources match,
 
-                                        where KDS adds a hash suffix to
-                                        metadata.name. Mutually exclusive with
-
-                                        Name. When multiple resources match, the
-                                        oldest by creation time wins.
+                                        the oldest by creation time wins.
                                       type: object
-                                    name:
-                                      description: >-
-                                        Name of the referenced resource
-                                        (metadata.name). Use for same-cluster
-
-                                        references. Mutually exclusive with
-                                        Labels.
-                                      type: string
                                   required:
                                     - kind
                                   type: object
@@ -6994,22 +7010,10 @@ components:
                                         type: string
                                       description: >-
                                         Labels to match the referenced resource.
-                                        Use for cross-zone references
+                                        When multiple resources match,
 
-                                        where KDS adds a hash suffix to
-                                        metadata.name. Mutually exclusive with
-
-                                        Name. When multiple resources match, the
-                                        oldest by creation time wins.
+                                        the oldest by creation time wins.
                                       type: object
-                                    name:
-                                      description: >-
-                                        Name of the referenced resource
-                                        (metadata.name). Use for same-cluster
-
-                                        references. Mutually exclusive with
-                                        Labels.
-                                      type: string
                                   required:
                                     - kind
                                   type: object
@@ -7363,22 +7367,10 @@ components:
                                         type: string
                                       description: >-
                                         Labels to match the referenced resource.
-                                        Use for cross-zone references
+                                        When multiple resources match,
 
-                                        where KDS adds a hash suffix to
-                                        metadata.name. Mutually exclusive with
-
-                                        Name. When multiple resources match, the
-                                        oldest by creation time wins.
+                                        the oldest by creation time wins.
                                       type: object
-                                    name:
-                                      description: >-
-                                        Name of the referenced resource
-                                        (metadata.name). Use for same-cluster
-
-                                        references. Mutually exclusive with
-                                        Labels.
-                                      type: string
                                   required:
                                     - kind
                                   type: object
@@ -10174,11 +10166,25 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
         mesh:
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
           type: string
         name:
           type: string
@@ -12526,22 +12532,11 @@ components:
                                 additionalProperties:
                                   type: string
                                 description: >-
-                                  Labels to match the referenced resource. Use
-                                  for cross-zone references
+                                  Labels to match the referenced resource. When
+                                  multiple resources match,
 
-                                  where KDS adds a hash suffix to metadata.name.
-                                  Mutually exclusive with
-
-                                  Name. When multiple resources match, the
-                                  oldest by creation time wins.
+                                  the oldest by creation time wins.
                                 type: object
-                              name:
-                                description: >-
-                                  Name of the referenced resource
-                                  (metadata.name). Use for same-cluster
-
-                                  references. Mutually exclusive with Labels.
-                                type: string
                             required:
                               - kind
                             type: object
@@ -14043,12 +14038,7 @@ components:
                 type: object
               type: array
             rules:
-              description: >-
-                Rules defines inbound rate limiting configurations. Currently
-                limited to
-
-                selecting all inbound traffic, as L7 matching is not yet
-                implemented.
+              description: Rules defines inbound rate limiting configurations.
               items:
                 properties:
                   default:
@@ -14185,6 +14175,58 @@ components:
                             type: object
                         type: object
                     type: object
+                  matches:
+                    description: >-
+                      Matches define additional conditions for applying this
+                      rate limit rule.
+                    items:
+                      properties:
+                        sni:
+                          description: >-
+                            SNI defines a matcher configuration for matching by
+                            SNI value carried on the TLS connection
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match traffic by SNI. Only
+                                `Exact` is supported.
+                              enum:
+                                - Exact
+                              type: string
+                            value:
+                              description: >-
+                                Value is the SNI carried on the TLS connection
+                                that needs to match for the configuration to be
+                                applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                        spiffeID:
+                          description: >-
+                            SpiffeID defines a matcher configuration for
+                            SpiffeID matching
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match incoming traffic by
+                                SpiffeID. `Exact` or `Prefix` are allowed.
+                              enum:
+                                - Exact
+                                - Prefix
+                              type: string
+                            value:
+                              description: >-
+                                Value is SpiffeID of a client that needs to
+                                match for the configuration to be applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                      type: object
+                    type: array
                 type: object
               type: array
             targetRef:
@@ -16621,22 +16663,11 @@ components:
                                 additionalProperties:
                                   type: string
                                 description: >-
-                                  Labels to match the referenced resource. Use
-                                  for cross-zone references
+                                  Labels to match the referenced resource. When
+                                  multiple resources match,
 
-                                  where KDS adds a hash suffix to metadata.name.
-                                  Mutually exclusive with
-
-                                  Name. When multiple resources match, the
-                                  oldest by creation time wins.
+                                  the oldest by creation time wins.
                                 type: object
-                              name:
-                                description: >-
-                                  Name of the referenced resource
-                                  (metadata.name). Use for same-cluster
-
-                                  references. Mutually exclusive with Labels.
-                                type: string
                             required:
                               - kind
                             type: object
@@ -17380,10 +17411,24 @@ components:
           example: '0001-01-01T00:00:00Z'
     ZoneEgressItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -17440,10 +17485,24 @@ components:
                 type: object
             type: object
           type: array
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -18405,6 +18464,11 @@ components:
       type: object
     SecretItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
         data:
           description: Value of the secret
           format: byte
@@ -18414,6 +18478,11 @@ components:
             type: string
           type: object
         mesh:
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
           type: string
         name:
           type: string
@@ -18546,6 +18615,29 @@ components:
           type: string
           readOnly: true
           example: kri_extsvc_default_zone-east_kuma-system_myresource1_
+        snis:
+          description: >-
+            List of SNIs (Server Name Indication) advertised by xDS for this
+            destination, one entry per port, sorted by port ascending. Present
+            for MeshService, MeshMultiZoneService and MeshExternalService.
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - port
+              - sni
+            properties:
+              port:
+                type: integer
+                format: int32
+                description: The destination port this SNI corresponds to.
+              sni:
+                type: string
+                description: The SNI string advertised by xDS for this port.
+          example:
+            - port: 8080
+              sni: sni.extsvc.default.zone-east.kuma-system.myresource1.8080
         name:
           description: Name of the Kuma resource
           type: string
@@ -19236,6 +19328,29 @@ components:
           type: string
           readOnly: true
           example: kri_mzsvc_default_zone-east_kuma-demo_myresource1_
+        snis:
+          description: >-
+            List of SNIs (Server Name Indication) advertised by xDS for this
+            destination, one entry per port, sorted by port ascending. Present
+            for MeshService, MeshMultiZoneService and MeshExternalService.
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - port
+              - sni
+            properties:
+              port:
+                type: integer
+                format: int32
+                description: The destination port this SNI corresponds to.
+              sni:
+                type: string
+                description: The SNI string advertised by xDS for this port.
+          example:
+            - port: 8080
+              sni: sni.mzsvc.default.zone-east.kuma-demo.myresource1.8080
         name:
           description: Name of the Kuma resource
           type: string
@@ -19746,6 +19861,29 @@ components:
           type: string
           readOnly: true
           example: kri_msvc_default_zone-east_kuma-demo_myresource1_
+        snis:
+          description: >-
+            List of SNIs (Server Name Indication) advertised by xDS for this
+            destination, one entry per port, sorted by port ascending. Present
+            for MeshService, MeshMultiZoneService and MeshExternalService.
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - port
+              - sni
+            properties:
+              port:
+                type: integer
+                format: int32
+                description: The destination port this SNI corresponds to.
+              sni:
+                type: string
+                description: The SNI string advertised by xDS for this port.
+          example:
+            - port: 8080
+              sni: sni.msvc.default.zone-east.kuma-demo.myresource1.8080
         name:
           description: Name of the Kuma resource
           type: string

@@ -8,12 +8,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 var KubeCluster *K8sCluster
@@ -57,7 +57,9 @@ spec:
 					WithName(meshName).
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			// standalone zone CP without global resolves {{ .Zone }} to "default"
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName,
+				fmt.Sprintf("%s.default.mesh.local", meshName))).
 			Install(YamlK8s(meshIdentity)).
 			Install(Parallel(
 				testserver.Install(
@@ -80,6 +82,7 @@ spec:
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(KubeCluster)
 		Expect(KubeCluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(KubeCluster.DeleteMesh(meshName)).To(Succeed())
 	})

@@ -26,34 +26,34 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	"github.com/kumahq/kuma/v2/pkg/api-server/filters"
-	api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	resources_access "github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/certs"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	secrets_k8s "github.com/kumahq/kuma/v2/pkg/plugins/secrets/k8s"
-	tokens_server "github.com/kumahq/kuma/v2/pkg/tokens/builtin/server"
-	kuma_srv "github.com/kumahq/kuma/v2/pkg/util/http/server"
-	util_prometheus "github.com/kumahq/kuma/v2/pkg/util/prometheus"
-	"github.com/kumahq/kuma/v2/pkg/version"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/hooks"
-	"github.com/kumahq/kuma/v2/pkg/xds/server"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	"github.com/kumahq/kuma/v3/pkg/api-server/filters"
+	api_server "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/dns/vips"
+	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	secrets_k8s "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
+	tokens_server "github.com/kumahq/kuma/v3/pkg/tokens/builtin/server"
+	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
+	util_prometheus "github.com/kumahq/kuma/v3/pkg/util/prometheus"
+	"github.com/kumahq/kuma/v3/pkg/version"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/hooks"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 var log = core.Log.WithName("api-server")
@@ -295,23 +295,29 @@ func addResourcesEndpoints(
 		default:
 			definition.ReadOnly = definition.IsReadOnly(cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP())
 		}
-		endpoints := resourceEndpoints{
-			k8sMapper:                    k8sMapper,
-			mode:                         cfg.Mode,
-			federatedZone:                cfg.IsFederatedZoneCP(),
-			resManager:                   resManager,
-			descriptor:                   definition,
-			resourceAccess:               resourceAccess,
-			filter:                       filters.Resource(definition),
-			meshContextBuilder:           meshContextBuilder,
-			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
-			xdsHooks:                     xdsHooks,
-			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
-			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
-			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
+		endpointsCtx := resourceEndpointsContext{
+			mode:           cfg.Mode,
+			resManager:     resManager,
+			descriptor:     definition,
+			resourceAccess: resourceAccess,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
-			endpoints.zoneName = cfg.Multizone.Zone.Name
+			endpointsCtx.zoneName = cfg.Multizone.Zone.Name
+		}
+		endpoints := resourceEndpoints{
+			resourceEndpointsContext:     endpointsCtx,
+			k8sMapper:                    k8sMapper,
+			federatedZone:                cfg.IsFederatedZoneCP(),
+			filter:                       filters.Resource(definition),
+			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
+			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
+			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			inspect: &resourceInspectHandler{
+				resourceEndpointsContext: endpointsCtx,
+				meshContextBuilder:       meshContextBuilder,
+				xdsHooks:                 xdsHooks,
+				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
+			},
 		}
 		if defType == system.SecretType || defType == system.GlobalSecretType {
 			endpoints.k8sMapper = k8sSecretMapper

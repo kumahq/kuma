@@ -1,10 +1,10 @@
 package gateway
 
 import (
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 // TODO(jpeach) It's a lot to ask operators to tune these defaults,

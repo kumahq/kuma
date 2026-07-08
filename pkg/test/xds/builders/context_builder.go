@@ -3,14 +3,14 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/test/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 type ContextBuilder struct {

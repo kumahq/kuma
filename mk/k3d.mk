@@ -16,14 +16,14 @@ K3S_IMAGE   ?= rancher/k3s:$(K3S_VERSION)
 # --- MetalLB ---
 
 # renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
-METALLB_VERSION ?= v0.16.0
+METALLB_VERSION ?= v0.16.1
 METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 METALLB_NAMESPACE ?= metallb-system
 
 # --- Calico ---
 
 # renovate: datasource=github-releases depName=projectcalico/tigera-operator packageName=projectcalico/calico versioning=semver
-CALICO_VERSION ?= v3.32.0
+CALICO_VERSION ?= v3.32.1
 CALICO_NAMESPACE ?= tigera-operator
 CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
 CALICO_HELM_REPO_NAME ?= projectcalico
@@ -142,6 +142,7 @@ endif
 
 K3D_IMAGE_IMPORT_MODE    ?= direct
 K3D_IMAGE_IMPORT_RETRIES ?= 5
+K3D_CLUSTER_START_RETRIES ?= 3
 K3D_IMAGE_IMPORT_VERBOSE ?= true
 K3D_IMAGE_IMPORT_VERBOSE_FLAG := $(if $(filter true 1,$(K3D_IMAGE_IMPORT_VERBOSE)),--verbose,)
 
@@ -308,6 +309,19 @@ k3d/cluster/start:
 	$(Q)$(MAKE) k3d/cluster/ebpf/setup
 	$(Q)$(MAKE) k3d/cluster/wait
 	$(Q)$(MAKE) k3d/cluster/metallb/setup
+
+.PHONY: k3d/cluster/start/with-retry
+k3d/cluster/start/with-retry:
+	@attempts=0; \
+	while [ $$attempts -lt $(K3D_CLUSTER_START_RETRIES) ]; do \
+		attempts=$$((attempts + 1)); \
+		echo "==> k3d cluster $(CLUSTER_NAME) start attempt $$attempts/$(K3D_CLUSTER_START_RETRIES)"; \
+		$(MAKE) k3d/cluster/start && exit 0; \
+		echo "==> Attempt $$attempts failed, tearing down $(CLUSTER_NAME)..."; \
+		$(MAKE) k3d/cluster/stop || true; \
+	done; \
+	echo "==> All $(K3D_CLUSTER_START_RETRIES) attempts to start $(CLUSTER_NAME) failed"; \
+	exit 1
 
 # --- MetalLB ---
 

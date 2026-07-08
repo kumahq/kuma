@@ -6,15 +6,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshExternalServices() {
@@ -222,7 +222,6 @@ spec:
 			err := kubernetes.Cluster.Install(testserver.Install(
 				testserver.WithName("tcp-external-service"),
 				testserver.WithServicePortAppProtocol("tcp"),
-				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 			))
 			Expect(err).ToNot(HaveOccurred())

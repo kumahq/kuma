@@ -4,12 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func GatewayIPV6CNIV2() {
@@ -53,7 +53,7 @@ func GatewayIPV6CNIV2() {
 
 	It("client should communicate with server", func() {
 		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(multizone.KubeZone2, "demo-client", "http://test-server_gw-ipv6-cniv2_svc_80.mesh",
+			response, err := client.CollectEchoResponse(multizone.KubeZone2, "demo-client", "http://test-server.gw-ipv6-cniv2.svc.cluster.local",
 				client.FromKubernetesPod(meshName, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	v1alpha1 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	v1alpha1 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("GetLocalityGroups()", func() {

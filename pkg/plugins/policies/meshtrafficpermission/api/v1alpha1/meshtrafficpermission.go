@@ -2,7 +2,7 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshTrafficPermission controls which services are allowed to communicate with each other in the mesh. It provides fine-grained access control by allowing you to define allow/deny rules based on service identity, enabling zero-trust security and supporting shadow mode for testing permission changes before enforcement.

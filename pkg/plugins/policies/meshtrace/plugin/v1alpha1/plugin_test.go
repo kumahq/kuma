@@ -12,38 +12,38 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_matchers "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_matchers "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshTrace", func() {
@@ -562,7 +562,9 @@ var _ = Describe("MeshTrace", func() {
 								OpenTelemetry: &api.OpenTelemetryBackend{
 									BackendRef: &common_api.BackendResourceRef{
 										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: "non-existent-backend",
+										Labels: map[string]string{
+											"kuma.io/test": "non-existing",
+										},
 									},
 								},
 							}},
@@ -598,8 +600,9 @@ var _ = Describe("MeshTrace", func() {
 
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
 		motb.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: backendName,
+			Mesh:   "default",
+			Name:   backendName,
+			Labels: map[string]string{mesh_proto.DisplayName: backendName},
 		})
 		motb.Spec.Endpoint = &motb_api.Endpoint{
 			Address: new("collector.mesh"),
@@ -645,7 +648,9 @@ var _ = Describe("MeshTrace", func() {
 								OpenTelemetry: &api.OpenTelemetryBackend{
 									BackendRef: &common_api.BackendResourceRef{
 										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: backendName,
+										Labels: map[string]string{
+											"kuma.io/display-name": backendName,
+										},
 									},
 								},
 							}},

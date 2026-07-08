@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/config"
 )
 
 // Config defines DNS Server configuration

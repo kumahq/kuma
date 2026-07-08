@@ -7,22 +7,22 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/api/openapi/types"
-	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 type dataplaneLayoutEndpoint struct {
@@ -75,9 +75,10 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	baseMeshContext, err := dle.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build MeshContext")
+		return
 	}
 
-	if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() != v1alpha1.Mesh_MeshServices_Exclusive {
+	if baseMeshContext.Mesh.Spec.MeshServicesMode() != v1alpha1.Mesh_MeshServices_Exclusive {
 		rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _layout endpoint without meshService enabled"), "Bad Request")
 		return
 	}

@@ -4,10 +4,10 @@ import (
 	"math"
 	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var log = core.Log.WithName("mesh-load-balancing-strategy")

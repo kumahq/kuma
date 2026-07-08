@@ -18,15 +18,15 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/containers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/containers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 // MeshGatewayReconciler reconciles a GatewayAPI MeshGateway object.

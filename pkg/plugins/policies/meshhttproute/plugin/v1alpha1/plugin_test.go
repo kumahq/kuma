@@ -14,51 +14,52 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
-	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	plugin_gateway "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_policies "github.com/kumahq/kuma/v2/pkg/test/policies"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/cla"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	xds_server "github.com/kumahq/kuma/v2/pkg/xds/server"
-	"github.com/kumahq/kuma/v2/pkg/xds/sync"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/dns/vips"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_policies "github.com/kumahq/kuma/v3/pkg/test/policies"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
+	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
 var _ = Describe("MeshHTTPRoute", func() {
@@ -609,6 +610,225 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithMeshContext(mc).
 					With(func(ctx *xds_context.Context) {
 						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"local": true}
+					}).
+					Build(),
+				proxy: proxy,
+			}
+		}()),
+		Entry("default-meshmultizoneservice-legacy-zone", func() outboundsTestCase {
+			// Regression test: MZMS with a remote endpoint in "remote-zone" which has only a legacy
+			// ZoneIngress (absent from ZonesWithMeshScopedProxy). With WorkloadIdentity set, the
+			// cluster SNI must use the old hash-based format, not the new KRI format.
+			remoteMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend-remote", Mesh: "default",
+					Labels: map[string]string{
+						"service":                      "backend",
+						mesh_proto.ZoneTag:             "remote-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "backend",
+						},
+					},
+					State: meshservice_api.StateAvailable,
+				},
+				Status: &meshservice_api.MeshServiceStatus{},
+			}
+			meshMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: common_api.LabelSelector{
+							MatchLabels: &map[string]string{"service": "backend"},
+						},
+					},
+					Ports: []meshmultizoneservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.2"}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{Name: "backend-remote", Zone: "remote-zone", Mesh: "default"},
+					},
+				},
+			}
+			zoneIngress := builders.ZoneIngress().
+				WithZone("remote-zone").
+				WithAddress("10.10.10.1").
+				WithAdvertisedAddress("10.10.10.10").
+				WithAdvertisedPort(15050).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("web-01").
+				WithAddress("192.168.0.2").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				Build()
+			mc := meshContextWithResources(builders.Mesh(), dp, &remoteMeshSvc, &meshMZSvc, zoneIngress)
+
+			builder := &sync.DataplaneProxyBuilder{
+				Zone:       "zone-1",
+				APIVersion: envoy.APIV3,
+			}
+			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, &core_xds.DataplaneMetadata{}, *mc)
+			Expect(err).ToNot(HaveOccurred())
+
+			proxy.Outbounds = xds_types.Outbounds{{
+				Address:  "10.0.0.2",
+				Port:     80,
+				Resource: kri.WithSectionName(kri.From(&meshMZSvc), "80"),
+			}}
+			proxy.WorkloadIdentity = &core_xds.WorkloadIdentity{
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"identity_cert:secret:default",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					With(func(ctx *xds_context.Context) {
+						// "remote-zone" absent: it uses a legacy ZoneIngress, not a new zone proxy
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{}
+					}).
+					Build(),
+				proxy: proxy,
+			}
+		}()),
+		Entry("default-meshmultizoneservice-mixed-zones", func() outboundsTestCase {
+			// Regression test for the reviewer's concern: an MZMS spanning a zone with a new
+			// mesh-scoped zone proxy ("new-zone") and a zone with only a legacy ZoneIngress
+			// ("legacy-zone"). A single cluster-wide SNI can't satisfy both, so the cluster
+			// keeps the KRI SNI as the default transport socket (new-zone) and adds a per-zone
+			// transport_socket_match with the hash-based SNI for "legacy-zone".
+			newMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend-new", Mesh: "default",
+					Labels: map[string]string{
+						"service":                      "backend",
+						mesh_proto.ZoneTag:             "new-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{Type: meshservice_api.MeshServiceIdentityServiceTagType, Value: "backend"},
+					},
+					State: meshservice_api.StateAvailable,
+				},
+				Status: &meshservice_api.MeshServiceStatus{},
+			}
+			legacyMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend-legacy", Mesh: "default",
+					Labels: map[string]string{
+						"service":                      "backend",
+						mesh_proto.ZoneTag:             "legacy-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{Type: meshservice_api.MeshServiceIdentityServiceTagType, Value: "backend"},
+					},
+					State: meshservice_api.StateAvailable,
+				},
+				Status: &meshservice_api.MeshServiceStatus{},
+			}
+			meshMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: common_api.LabelSelector{
+							MatchLabels: &map[string]string{"service": "backend"},
+						},
+					},
+					Ports: []meshmultizoneservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.2"}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{Name: "backend-new", Zone: "new-zone", Mesh: "default"},
+						{Name: "backend-legacy", Zone: "legacy-zone", Mesh: "default"},
+					},
+				},
+			}
+			meshZoneAddress := meshzoneaddress_api.MeshZoneAddressResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mza-new-zone", Mesh: "default",
+					Labels: map[string]string{mesh_proto.ZoneTag: "new-zone"},
+				},
+				Spec: &meshzoneaddress_api.MeshZoneAddress{
+					Address: "10.20.20.20",
+					Port:    15050,
+				},
+			}
+			zoneIngress := builders.ZoneIngress().
+				WithZone("legacy-zone").
+				WithAddress("10.10.10.1").
+				WithAdvertisedAddress("10.10.10.10").
+				WithAdvertisedPort(15050).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("web-01").
+				WithAddress("192.168.0.2").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				Build()
+			mc := meshContextWithResources(builders.Mesh(), dp, &newMeshSvc, &legacyMeshSvc, &meshMZSvc, &meshZoneAddress, zoneIngress)
+
+			builder := &sync.DataplaneProxyBuilder{
+				Zone:       "zone-1",
+				APIVersion: envoy.APIV3,
+			}
+			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, &core_xds.DataplaneMetadata{}, *mc)
+			Expect(err).ToNot(HaveOccurred())
+
+			proxy.Outbounds = xds_types.Outbounds{{
+				Address:  "10.0.0.2",
+				Port:     80,
+				Resource: kri.WithSectionName(kri.From(&meshMZSvc), "80"),
+			}}
+			proxy.WorkloadIdentity = &core_xds.WorkloadIdentity{
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"identity_cert:secret:default",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					With(func(ctx *xds_context.Context) {
+						// "new-zone" has a mesh-scoped zone proxy; "legacy-zone" only a ZoneIngress
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"new-zone": true}
 					}).
 					Build(),
 				proxy: proxy,
@@ -2595,6 +2815,85 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("gateway-root-prefix", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"),
+				)
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					{
+						Subset: subsetutils.MeshSubset(),
+						Conf: api.PolicyDefault{
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefService("backend"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}},
+						},
+					},
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("gateway-real-mesh-service", func() outboundsTestCase {
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
@@ -3111,6 +3410,110 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											},
 										},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-builtingateway-with-multiple-listeners", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+								Hostname: "example.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8081,
+								Hostname: "another.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8082,
+								Hostname: "*.test.kuma.io",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8083,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("echo-service", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "echo-service", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)),
+				)
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+
+			// allRules combines both MeshHTTPRoute configs from builtingateway.go:
+			// - global (meshHTTPRoute): routes "/" to echo-service for any hostname
+			// - domain (meshHTTPRouteWithDomains): routes "/" only for the two explicit hostnames
+			pathRootRule := []api.Rule{{
+				Matches: []api.Match{{
+					Path: &api.PathMatch{
+						Type:  api.PathPrefix,
+						Value: "/",
+					},
+				}},
+				Default: api.RuleConf{
+					BackendRefs: &[]common_api.BackendRef{{
+						TargetRef: builders.TargetRefService("echo-service"),
+						Weight:    pointer.To(uint(100)),
+					}},
+				},
+			}}
+			allRules := core_rules.Rules{
+				{
+					Subset: subsetutils.MeshSubset(),
+					Conf:   api.PolicyDefault{Rules: pathRootRule},
+				},
+				{
+					Subset: subsetutils.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Hostnames: []string{"another.kuma.io", "app.test.kuma.io"},
+						Rules:     pathRootRule,
+					},
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "example.kuma.io"): {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "another.kuma.io"): {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, "*.test.kuma.io"):  {Rules: allRules},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*"):               {Rules: allRules},
 									},
 								},
 							}),

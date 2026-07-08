@@ -7,16 +7,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
-	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
+	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Unmarshal ResourceList", func() {

@@ -7,6 +7,7 @@
    "name": "gateway-builtin",
    "creationTime": "2018-07-17T16:05:36.995Z",
    "modificationTime": "2018-07-17T16:05:36.995Z",
+   "kri": "kri_dp_mesh1___gateway-builtin_",
    "dataplane": {
     "networking": {
      "address": "127.0.0.1",
@@ -42,6 +43,7 @@
    "name": "gateway-delegated",
    "creationTime": "2018-07-17T16:05:36.995Z",
    "modificationTime": "2018-07-17T16:05:36.995Z",
+   "kri": "kri_dp_mesh1___gateway-delegated_",
    "dataplane": {
     "networking": {
      "address": "127.0.0.1",

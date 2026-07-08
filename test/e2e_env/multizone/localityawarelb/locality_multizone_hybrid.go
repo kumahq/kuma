@@ -8,17 +8,19 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh string, zoneEgress string) string {
 	return fmt.Sprintf(`
 type: Mesh
 name: %s
+meshServices:
+  mode: Disabled
 mtls:
   enabledBackend: ca-1
   backends:

@@ -55,6 +55,11 @@ store:
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+    # TolerateNewerDBVersions makes `migrate up` a no-op when the DB is at a
+    # newer version than the binary, and relaxes the boot-time migration gate
+    # from strict equality (dbVer == fileVer) to dbVer >= fileVer. Intended
+    # for blue/green CP upgrades where a newer CP owns schema migrations.
+    tolerateNewerDBVersions: false # ENV: KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS
     # ReadReplica is a setting for a DB replica used only for read queries
     readReplica:
       # Host of the Postgres DB read replica. If not set, read replica is not used.
@@ -100,6 +105,12 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
+    # Cap on the gRPC C-Core receive flow-control window for the kuma-dp xDS
+    # client. Set as the GoogleGrpc channel arg `grpc.max_receive_message_length`.
+    # Default 4 MiB is large enough for gateway DPs with 450+ listeners; the
+    # gRPC C-Core default of 4 MiB sizes the per-stream HTTP/2 receive window
+    # too small for the initial xDS push on those DPs and stalls the stream.
+    xdsGrpcMaxReceiveMessageBytes: 4194304 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Whether the MADS server is enabled
@@ -856,8 +867,6 @@ experimental:
   # Enables sidecar containers in Kubernetes if supported by the Kubernetes
   # environment.
   sidecarContainers: true # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  # If true uses Delta xDS to deliver changes to sidecars.
-  deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming

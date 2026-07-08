@@ -12,10 +12,10 @@ import (
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	runtime_k8s "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -41,7 +41,6 @@ type DataplaneProxyFactory struct {
 	unifiedResourceNamingEnabled bool
 	otelPipeEnabled              bool
 	spireEnabled                 bool
-	deltaXdsEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -59,7 +58,6 @@ func NewDataplaneProxyFactory(
 	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
-	deltaXdsEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:              controlPlaneURL,
@@ -76,7 +74,6 @@ func NewDataplaneProxyFactory(
 		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
 		otelPipeEnabled:              otelPipeEnabled,
 		spireEnabled:                 spireEnabled,
-		deltaXdsEnabled:              deltaXdsEnabled,
 	}
 }
 
@@ -301,18 +298,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
 			Value: i.ControlPlaneCACert,
 		},
-	}
-	if i.deltaXdsEnabled {
-		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
-			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
-			Value: "DELTA_GRPC",
-		}
-	}
-	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
-		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
-			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
-			Value: xdsTransportProtocol,
-		}
 	}
 	if i.BuiltinDNS.Enabled {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{

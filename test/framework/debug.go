@@ -20,9 +20,9 @@ import (
 	"go.uber.org/multierr"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/report"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 func ControlPlaneAssertions(cluster Cluster) {
@@ -223,6 +223,13 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 		Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 	}
 	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
+
+	events, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "events", "--sort-by=.lastTimestamp", "-owide")
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to get events for namespace %s, %w", namespace, err))
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, "events.txt"), events)
+	}
 
 	deployments, err := k8s.ListDeploymentsContextE(cluster.GetTesting(), context.Background(), &kubeOptions, kube_meta.ListOptions{})
 	if err != nil {

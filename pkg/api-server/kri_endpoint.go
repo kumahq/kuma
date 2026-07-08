@@ -3,19 +3,19 @@ package api_server
 import (
 	"github.com/emicklei/go-restful/v3"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 type kriEndpoint struct {

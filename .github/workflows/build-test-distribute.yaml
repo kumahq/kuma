@@ -54,11 +54,12 @@ jobs:
           remove_android: true
           remove_dotnet: true
           remove_haskell: true
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Detect changed files
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
         id: changes
         with:
           filters: |
@@ -90,7 +91,7 @@ jobs:
           echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
       - name: Cache Go build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/go-build
@@ -98,13 +99,13 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         if: steps.changes.outputs.code == 'true'
         env:
           GOGC: "80" # run GC more aggressively

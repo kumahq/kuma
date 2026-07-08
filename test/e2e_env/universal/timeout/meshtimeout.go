@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func PluginTest() {
@@ -50,7 +50,7 @@ func PluginTest() {
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 				client.WithHeader("x-set-response-delay-ms", "3000"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -63,7 +63,7 @@ func PluginTest() {
 		By("eventually requests timeout consistently")
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 				client.WithHeader("x-set-response-delay-ms", "3000"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

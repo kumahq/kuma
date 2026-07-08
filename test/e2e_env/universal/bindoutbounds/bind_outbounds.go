@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
 )
 
 var msIPRegex = regexp.MustCompile(`ip: (.*)`)
@@ -33,7 +33,11 @@ func BindToLoopbackAddresses() {
 				WithEnv("KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR", cidrMes),
 				WithEnv("KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR", cidrMmzs),
 			)).
-			Install(MeshUniversal(mesh)).
+			// The first test exercises the legacy DNS-VIP bound listener
+			// (test-server resolves to 127.1.0.1 from KUMA_DNS_SERVER_CIDR),
+			// which only exists in non-Exclusive mode. The MeshService variant
+			// below uses its own Exclusive mesh.
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(mesh).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Disabled).Build())).
 			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshMs).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).Build())).
 			Install(DemoClientUniversal("demo-client", mesh, WithBindOutbounds())).
 			Install(DemoClientUniversal("demo-client-ms", meshMs, WithBindOutbounds())).

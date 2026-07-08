@@ -13,12 +13,12 @@ import (
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
@@ -458,7 +458,7 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 	if match.SpiffeID != nil {
 		_, err := spiffeid.FromString(match.SpiffeID.Value)
 		if err != nil {
-			verr.AddViolation("spiffeID", "must be a valid Spiffe ID")
+			verr.AddViolation("spiffeID", fmt.Sprintf("must be a valid Spiffe ID: %s", err))
 		}
 	}
 	if match.SNI != nil {

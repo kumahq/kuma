@@ -18,15 +18,15 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -598,6 +598,9 @@ var _ = Describe("PodReconciler", func() {
 			&mesh_k8s.Mesh{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name: "poc",
+				},
+				Spec: &apiextensionsv1.JSON{
+					Raw: []byte(`{"meshServices":{"mode":"Disabled"}}`),
 				},
 			},
 			&mesh_k8s.Mesh{

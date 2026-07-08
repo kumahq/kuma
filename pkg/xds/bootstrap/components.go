@@ -1,9 +1,9 @@
 package bootstrap
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 )
 
 func RegisterBootstrap(rt core_runtime.Runtime) error {
@@ -20,7 +20,6 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
-		rt.Config().Experimental.DeltaXds,
 		rt.Config().Experimental.InboundTagsDisabled,
 		rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,
 	)

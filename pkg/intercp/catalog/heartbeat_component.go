@@ -4,18 +4,29 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
 
 var heartbeatLog = core.Log.WithName("intercp").WithName("catalog").WithName("heartbeat")
+
+// maxHeartbeatBackoff caps the exponential backoff applied while the leader
+// cannot be reached, so a persistent connectivity problem does not produce a
+// high-volume stream of failure logs.
+const maxHeartbeatBackoff = 1 * time.Minute
+
+type heartbeatMetrics struct {
+	interval prometheus.Histogram
+	failures prometheus.Counter
+}
 
 type heartbeatComponent struct {
 	catalog     Catalog
@@ -23,8 +34,9 @@ type heartbeatComponent struct {
 	request     *system_proto.PingRequest
 	interval    time.Duration
 
-	leader *Instance
-	metric prometheus.Histogram
+	leader   *Instance
+	failures int
+	metrics  *heartbeatMetrics
 }
 
 var _ component.Component = &heartbeatComponent{}
@@ -38,11 +50,17 @@ func NewHeartbeatComponent(
 	newClientFn GetClientFn,
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
-	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_heartbeat",
-		Help: "Summary of Inter CP Heartbeat component interval",
-	})
-	if err := metrics.Register(metric); err != nil {
+	m := &heartbeatMetrics{
+		interval: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name: "component_heartbeat",
+			Help: "Summary of Inter CP Heartbeat component interval",
+		}),
+		failures: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "component_heartbeat_failures",
+			Help: "Counter of failed Inter CP heartbeats to the leader",
+		}),
+	}
+	if err := metrics.BulkRegister(m.interval, m.failures); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +73,7 @@ func NewHeartbeatComponent(
 		},
 		getClientFn: newClientFn,
 		interval:    interval,
-		metric:      metric,
+		metrics:     m,
 	}, nil
 }
 
@@ -63,16 +81,17 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 	heartbeatLog.Info("starting heartbeats to a leader")
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
-	ticker := time.NewTicker(h.interval)
+	timer := time.NewTimer(h.interval)
+	defer timer.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-timer.C:
 			start := core.Now()
-			if !h.heartbeat(ctx, true) {
-				continue
+			if h.heartbeat(ctx, true) {
+				h.metrics.interval.Observe(float64(core.Now().Sub(start).Milliseconds()))
 			}
-			h.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
+			timer.Reset(h.backoff())
 		case <-stop:
 			// send final heartbeat to gracefully signal that the instance is going down
 			_ = h.heartbeat(ctx, false)
@@ -81,67 +100,105 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 	}
 }
 
+// backoff returns the delay until the next heartbeat: the configured interval
+// on success, or an exponentially growing delay after consecutive failures.
+// The cap never reduces the delay below the configured interval.
+func (h *heartbeatComponent) backoff() time.Duration {
+	if h.failures == 0 {
+		return h.interval
+	}
+	backoff := h.interval << min(h.failures, 16)
+	maxBackoff := max(maxHeartbeatBackoff, h.interval)
+	if backoff <= 0 || backoff > maxBackoff {
+		return maxBackoff
+	}
+	return backoff
+}
+
 func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
-	heartbeatLog := heartbeatLog.WithValues(
+	log := heartbeatLog.WithValues(
 		"instanceId", h.request.InstanceId,
 		"ready", ready,
 	)
-	if h.leader == nil {
-		if err := h.connectToLeader(ctx); err != nil {
-			if err == ErrNoLeader {
-				heartbeatLog.Info("leader is not yet present in the cluster. No heartbeat to send")
-			} else {
-				heartbeatLog.Error(err, "could not connect to leader")
-			}
-			return false
-		}
+
+	// The catalog is only consulted when the leader is unknown or heartbeats
+	// are currently failing - in the calm state we keep talking to the
+	// already-known leader instead of reading the catalog on every tick.
+	if (h.leader == nil || h.failures > 0) && !h.ensureLeader(ctx, log) {
+		return false
 	}
+
 	if h.leader.Id == h.request.InstanceId {
-		heartbeatLog.V(1).Info("this instance is a leader. No need to send a heartbeat.")
+		log.V(1).Info("this instance is a leader. No need to send a heartbeat.")
 		return true
 	}
-	heartbeatLog = heartbeatLog.WithValues(
-		"leaderAddress", h.leader.Address,
-	)
-	heartbeatLog.V(1).Info("sending a heartbeat to a leader")
+	log = log.WithValues("leaderAddress", h.leader.Address)
+	log.V(1).Info("sending a heartbeat to a leader")
+
 	h.request.Ready = ready
 	client, err := h.getClientFn(h.leader.InterCpURL())
 	if err != nil {
-		heartbeatLog.Error(err, "could not get or create a client to a leader")
-		h.leader = nil
+		log.Error(err, "could not get or create a client to a leader")
+		h.recordFailure()
 		return false
 	}
 	resp, err := client.Ping(ctx, h.request)
 	if err != nil {
-		heartbeatLog.Info("could not send a heartbeat to a leader. It's likely due to leader change", "cause", err)
-		h.leader = nil
+		h.recordFailure()
+		log.Info(
+			"could not send a heartbeat to a leader, will retry with backoff. This is a connectivity problem, not a leader change",
+			"cause", err,
+			"consecutiveFailures", h.failures,
+		)
 		return false
 	}
+	h.failures = 0
 	if !resp.Leader {
-		heartbeatLog.V(1).Info("instance responded that it is no longer a leader")
+		// the instance no longer considers itself the leader; clear it so the
+		// leader is re-resolved from the catalog on the next tick.
+		log.V(1).Info("instance responded that it is no longer a leader")
 		h.leader = nil
 	}
 	return true
 }
 
-func (h *heartbeatComponent) connectToLeader(ctx context.Context) error {
+func (h *heartbeatComponent) ensureLeader(ctx context.Context, log logr.Logger) bool {
 	newLeader, err := Leader(ctx, h.catalog)
 	if err != nil {
-		return err
+		if errors.Is(err, ErrNoLeader) {
+			log.Info("leader is not yet present in the cluster. No heartbeat to send")
+		} else {
+			log.Error(err, "could not resolve the leader from the catalog")
+			h.recordFailure()
+		}
+		return false
 	}
+
+	if h.leader != nil && h.leader.Id == newLeader.Id {
+		// same leader as before, nothing to update
+		return true
+	}
+
+	previousLeaderAddress := ""
+	if h.leader != nil {
+		previousLeaderAddress = h.leader.Address
+	}
+	h.failures = 0
 	h.leader = &newLeader
-	if h.leader.Id == h.request.InstanceId {
-		return nil
+
+	if newLeader.Id != h.request.InstanceId {
+		log.Info(
+			"leader has changed. Creating connection to the new leader.",
+			"previousLeaderAddress", previousLeaderAddress,
+			"newLeaderAddress", newLeader.Address,
+		)
 	}
-	heartbeatLog.Info("leader has changed. Creating connection to the new leader.",
-		"previousLeaderAddress", h.leader.Address,
-		"newLeaderAddress", newLeader.Address,
-	)
-	_, err = h.getClientFn(h.leader.InterCpURL())
-	if err != nil {
-		return errors.Wrap(err, "could not create a client to a leader")
-	}
-	return nil
+	return true
+}
+
+func (h *heartbeatComponent) recordFailure() {
+	h.failures++
+	h.metrics.failures.Inc()
 }
 
 func (h *heartbeatComponent) NeedLeaderElection() bool {

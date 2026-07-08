@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 )
 
 type generateSigningKeyArgs struct {

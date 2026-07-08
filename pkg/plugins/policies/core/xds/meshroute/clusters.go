@@ -6,31 +6,32 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_sni "github.com/kumahq/kuma/v2/pkg/core/resources/sni"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
-	bldrs_matcher "github.com/kumahq/kuma/v2/pkg/envoy/builders/matcher"
-	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
 
 func GenerateClusters(
@@ -158,12 +159,31 @@ func GenerateClusters(
 							protocol = port.GetProtocol()
 						}
 						zone := realResourceRef.Resource.Zone
+						isMZMS := common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshMultiZoneService
 						// Local MeshService traffic stays sidecar-to-sidecar and never traverses a zone proxy,
 						// so ZonesWithMeshScopedProxy (a remote-zone capability check) doesn't apply.
 						// When the consuming proxy has WorkloadIdentity, always use the new KRI-based SNI for local MeshServices.
-						useKRISni := zone == "" || isLocalMeshService || meshCtx.ZonesWithMeshScopedProxy[zone]
+						// MeshMultiZoneService is always zone=="" (global resource) but aggregates MeshServices
+						// across zones into a single cluster. Each remote zone is reachable either through a new
+						// mesh-scoped zone proxy (matches the KRI SNI) or only through a legacy ZoneIngress (matches
+						// the hash-based SNI), so a single cluster-wide SNI can't satisfy a mix. We keep the KRI SNI
+						// as the default and add a per-zone transport socket match with the hash-based SNI for every
+						// remote zone that only has a legacy ZoneIngress.
+						var useKRISni bool
+						var legacyZones []string
+						if isMZMS {
+							endpoints := meshCtx.EndpointMap[destinationname.ResolveLegacyFromDestination(dest, port)]
+							var hasDefaultSNIEndpoint bool
+							legacyZones, hasDefaultSNIEndpoint = classifyMZMSEndpointZones(endpoints, meshCtx.ZonesWithMeshScopedProxy)
+							// Keep KRI SNI as the default unless every endpoint is reachable only
+							// through a legacy ZoneIngress, in which case fall back to the hash-based SNI.
+							useKRISni = len(legacyZones) == 0 || hasDefaultSNIEndpoint
+						} else {
+							useKRISni = zone == "" || isLocalMeshService || meshCtx.ZonesWithMeshScopedProxy[zone]
+						}
+						kriSNI := useKRISni && proxy.WorkloadIdentity != nil
 						var sni string
-						if useKRISni && proxy.WorkloadIdentity != nil {
+						if kriSNI {
 							if errs := core_sni.ValidateKRI(realResourceRef.Resource); len(errs) > 0 {
 								continue
 							}
@@ -173,11 +193,23 @@ func GenerateClusters(
 						}
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
-							upstreamCtx, err := UpstreamTLSContext(proxy, sni, Identities(realResourceRef, meshCtx, true))
+							sans := Identities(realResourceRef, meshCtx, true)
+							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
 							if err != nil {
 								return nil, err
 							}
-							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
+							var zoneMatches map[string]*envoy_tls.UpstreamTlsContext
+							if kriSNI && len(legacyZones) > 0 {
+								legacyCtx, err := UpstreamTLSContext(proxy, SniForBackendRef(realResourceRef, dest, port, systemNamespace), sans)
+								if err != nil {
+									return nil, err
+								}
+								zoneMatches = make(map[string]*envoy_tls.UpstreamTlsContext, len(legacyZones))
+								for _, lz := range legacyZones {
+									zoneMatches[lz] = legacyCtx
+								}
+							}
+							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContextWithZoneMatches(upstreamCtx, zoneMatches))
 						} else {
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
@@ -335,4 +367,24 @@ func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
 		return endpoints[0].IsMeshExternalService()
 	}
 	return false
+}
+
+// classifyMZMSEndpointZones partitions a MeshMultiZoneService cluster's
+// endpoints by the SNI format their zone expects. It returns the sorted,
+// deduplicated set of remote zones reachable only through a legacy ZoneIngress
+// (Locality.Zone set and absent from zonesWithProxy, matching the hash-based
+// SNI), and whether any endpoint expects the default KRI-based SNI: endpoints
+// without locality (local zone, sidecar-to-sidecar) or in a zone served by a
+// new-style mesh-scoped zone proxy (MeshZoneAddress).
+func classifyMZMSEndpointZones(endpoints []core_xds.Endpoint, zonesWithProxy map[string]bool) ([]string, bool) {
+	seen := map[string]struct{}{}
+	hasDefaultSNIEndpoint := false
+	for _, ep := range endpoints {
+		if ep.Locality == nil || ep.Locality.Zone == "" || zonesWithProxy[ep.Locality.Zone] {
+			hasDefaultSNIEndpoint = true
+			continue
+		}
+		seen[ep.Locality.Zone] = struct{}{}
+	}
+	return util_maps.SortedKeys(seen), hasDefaultSNIEndpoint
 }

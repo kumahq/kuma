@@ -8,16 +8,16 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/api/generic"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
-	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
+	"github.com/kumahq/kuma/v3/api/generic"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 )
 
 var lifecycleLog = core.Log.WithName("xds").WithName("dp-lifecycle")

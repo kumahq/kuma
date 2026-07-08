@@ -11,10 +11,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/test/e2e_env/universal/gateway"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/test/e2e_env/universal/gateway"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func TestPlugin() {
@@ -159,7 +159,7 @@ spec:
 
 		makeRequest := func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}
@@ -383,7 +383,7 @@ spec:
 		headerValue := "headervalue"
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 				client.WithHeader("X-TeSt", headerValue),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -442,14 +442,19 @@ spec:
 
 	It("supports logging traffic to an ExternalService using MeshService (without ZoneIngress)", func() {
 		externalService := fmt.Sprintf(`
-type: ExternalService
-name: external-service
+type: MeshExternalService
+name: ext-service
 mesh: meshaccesslog
-tags:
-  kuma.io/service: ext-service
-  kuma.io/protocol: tcp
-networking:
-  address: "%s:80"
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: tcp
+  endpoints:
+    - address: "%s"
+      port: 80
 `, externalServiceDockerName)
 		accesslog := fmt.Sprintf(`
 type: MeshAccessLog
@@ -461,7 +466,7 @@ spec:
    name: demo-client
  to:
    - targetRef:
-       kind: MeshService
+       kind: MeshExternalService
        name: ext-service
      default:
        backends:
@@ -478,7 +483,7 @@ spec:
 		// 52 is empty response but the TCP connection succeeded
 		makeRequest := func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, AppModeDemoClient, "ext-service.mesh",
+				universal.Cluster, AppModeDemoClient, "ext-service.extsvc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Equal(52))
@@ -513,7 +518,7 @@ spec:
 
 		makeRequest := func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}

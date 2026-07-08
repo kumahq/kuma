@@ -6,13 +6,13 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	gateway_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	generator_meta "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	generator_model "github.com/kumahq/kuma/v2/pkg/xds/generator/model"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	gateway_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	generator_meta "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	generator_model "github.com/kumahq/kuma/v3/pkg/xds/generator/model"
 )
 
 type Listeners struct {

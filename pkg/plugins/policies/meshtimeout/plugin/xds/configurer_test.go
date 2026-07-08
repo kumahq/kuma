@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 )
 
 var _ = Describe("MeshTimeout configurer", func() {

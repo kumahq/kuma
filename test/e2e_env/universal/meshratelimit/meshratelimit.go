@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -77,7 +77,7 @@ spec:
 	requestRateLimited := func(container string, svc string, responseCode int) func(g Gomega) {
 		return func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, container, fmt.Sprintf("%s.mesh", svc),
+				universal.Cluster, container, fmt.Sprintf("%s.svc.mesh.local", svc),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).Should(Equal(responseCode))

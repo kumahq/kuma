@@ -15,9 +15,9 @@ import (
 	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/dns/dpapi"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/dns/dpapi"
 )
 
 var log = core.Log.WithName("dnsproxy")

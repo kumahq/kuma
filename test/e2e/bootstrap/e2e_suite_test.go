@@ -5,9 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/test/e2e/bootstrap"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/test/e2e/bootstrap"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 func TestE2E(t *testing.T) {

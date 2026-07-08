@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/test/testenvconfig"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/test/testenvconfig"
 )
 
 var _ = Describe("Config loader", func() {
@@ -85,6 +85,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 			Expect(cfg.BootstrapServer.Params.XdsConnectTimeout.Duration).To(Equal(13 * time.Second))
+			Expect(cfg.BootstrapServer.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
 			Expect(cfg.BootstrapServer.Params.AdminAccessLogPath).To(Equal("/access/log/test"))
 			Expect(cfg.BootstrapServer.Params.AdminAddress).To(Equal("1.1.1.1"))
 
@@ -126,6 +127,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
 			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
 			Expect(cfg.Store.Postgres.ReadReplica.Ratio).To(Equal(uint(80)))
+			Expect(cfg.Store.Postgres.TolerateNewerDBVersions).To(BeTrue())
 
 			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
 			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
@@ -390,7 +392,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
-			Expect(cfg.Experimental.DeltaXds).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -448,6 +449,7 @@ store:
       host: ro.host
       port: 35432
       ratio: 80
+    tolerateNewerDBVersions: true
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -466,6 +468,7 @@ bootstrapServer:
     xdsHost: kuma-control-plane
     xdsPort: 4321
     xdsConnectTimeout: 13s
+    xdsGrpcMaxReceiveMessageBytes: 33554432
 apiServer:
   http:
     enabled: false # ENV: KUMA_API_SERVER_HTTP_ENABLED
@@ -822,7 +825,6 @@ experimental:
   sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
-  deltaXds: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -868,14 +870,15 @@ meshService:
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":             "1234",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":         "9903",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":               "kuma-control-plane",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":               "4321",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":    "13s",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":  "/access/log/test",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":          "1.1.1.1",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH": "/etc/resolv.conf",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                         "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_READINESS_PORT":                     "9903",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                           "kuma-control-plane",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                           "4321",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":                "13s",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES": "33554432",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":              "/access/log/test",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":                      "1.1.1.1",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH":             "/etc/resolv.conf",
 				"KUMA_ENVIRONMENT":                                                                         "kubernetes",
 				"KUMA_STORE_TYPE":                                                                          "postgres",
 				"KUMA_STORE_UNSAFE_DELETE":                                                                 "true",
@@ -902,6 +905,7 @@ meshService:
 				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
 				"KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME":                                             "99s",
+				"KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS":                                           "true",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
@@ -1168,7 +1172,6 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
-				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",

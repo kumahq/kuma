@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshtrafficpermissions_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshtrafficpermissions_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
 
 var _ = Describe("MeshTrafficPermission", func() {
@@ -287,11 +287,11 @@ rules:
 				expected: `
 violations:
   - field: spec.rules[0].allow[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
   - field: spec.rules[0].allowWithShadowDeny[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
   - field: spec.rules[0].deny[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
 `,
 			}),
 		)

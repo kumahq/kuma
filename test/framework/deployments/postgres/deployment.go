@@ -3,7 +3,7 @@ package postgres
 import (
 	"errors"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
+	. "github.com/kumahq/kuma/v3/test/framework"
 )
 
 const (
@@ -18,8 +18,9 @@ const (
 	DefaultPostgresUser     = "kuma"
 	DefaultPostgresPassword = "kuma"
 	DefaultPostgresDBName   = "kuma"
+	DefaultPreloadImages    = true
 
-	PostgresImage = "postgres:latest@sha256:8ff36f3c66371cba71d20ceedccfc3de9669a68737607888c4ef0af93abe8e39"
+	PostgresImage = "postgres:latest@sha256:4aabea78cf39b90e834caf3af7d602a18565f6fe2508705c8d01aa63245c2e20"
 
 	PostgresEnvVarUser     = "POSTGRES_USER"
 	PostgresEnvVarPassword = "POSTGRES_PASSWORD" // #nosec G101 -- Env var not actual password
@@ -46,6 +47,7 @@ type deployOptions struct {
 	primaryName      string
 	postgresPassword string
 	initScripts      []string
+	preloadImages    bool
 }
 type DeployOptionsFunc func(*deployOptions)
 
@@ -62,6 +64,7 @@ func Install(name string, optFns ...DeployOptionsFunc) InstallFunc {
 		username:         DefaultPostgresUser,
 		password:         DefaultPostgresPassword,
 		postgresPassword: DefaultPostgresPassword,
+		preloadImages:    DefaultPreloadImages,
 	}
 
 	for _, optFn := range optFns {
@@ -122,5 +125,11 @@ func WithPostgresPassword(postgresPassword string) DeployOptionsFunc {
 func WithInitScript(initScript string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.initScripts = append(o.initScripts, initScript)
+	}
+}
+
+func WithoutPreloadImages() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.preloadImages = false
 	}
 }
