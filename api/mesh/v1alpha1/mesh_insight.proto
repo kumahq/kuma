@@ -16,6 +16,7 @@ message MeshInsight {
   option (kuma.mesh.resource).ws.read_only = true;
   // MeshInsights are only managed globally
   option (kuma.mesh.resource).kds = "model.ProvidedByGlobalFlag";
+  option (kuma.mesh.resource).policy_matching_exempt = true;
 
   reserved 1; // formerly last_sync
 
