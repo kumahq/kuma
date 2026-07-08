@@ -113,28 +113,22 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	mesh string,
 	route *gatewayapi.HTTPRoute,
 ) (map[string]core_model.ResourceSpec, ParentConditions, error) {
-	routeNs := kube_core.Namespace{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Name: route.Namespace}, &routeNs); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			return nil, nil, nil
-		} else {
-			return nil, nil, err
-		}
-	}
-
 	routes := map[string]core_model.ResourceSpec{}
 
 	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
 
 	for i, ref := range route.Spec.ParentRefs {
-		refAttachment, refKind, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, route.Spec.Hostnames, &routeNs, ref)
+		refAttachment, refKind, err := attachment.EvaluateParentRefAttachment(ref)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
 		}
 
 		if refAttachment == attachment.Unknown {
-			// We don't care about this ref
+			// We don't care about this ref for route generation, but keeping
+			// it in the conditions map tells status merging to preserve any
+			// status we previously wrote for it.
+			conditions[ref] = nil
 			continue
 		}
 

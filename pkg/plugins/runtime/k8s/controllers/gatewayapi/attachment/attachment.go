@@ -1,10 +1,7 @@
 package attachment
 
 import (
-	"context"
-
 	kube_core "k8s.io/api/core/v1"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
@@ -27,10 +24,6 @@ const (
 // EvaluateParentRefAttachment reports whether a route in the given namespace can attach
 // via the given ParentRef.
 func EvaluateParentRefAttachment(
-	ctx context.Context,
-	client kube_client.Client,
-	routeHostnames []gatewayapi.Hostname,
-	routeNs *kube_core.Namespace,
 	ref gatewayapi.ParentReference,
 ) (Attachment, Kind, error) {
 	if *ref.Kind == "Service" && (*ref.Group == kube_core.GroupName || *ref.Group == gatewayapi.GroupName) {

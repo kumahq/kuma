@@ -15,24 +15,31 @@ The control plane no longer reconciles the north-south Gateway API resources
 built-in gateway via the Kubernetes Gateway API. `HTTPRoute` is still
 reconciled, but only for its east-west (GAMMA) use — `HTTPRoute`s whose
 `parentRefs` target a `Service` and get translated to `MeshHTTPRoute`.
-`HTTPRoute`s that target a `Gateway` are now silently ignored by the control
-plane.
+`HTTPRoute`s that target a `Gateway` are now ignored by the control plane.
+Any status that Kuma already wrote for those `Gateway` parent references is
+left unchanged, but it is no longer updated.
 
 The built-in gateway itself (`MeshGateway`, `MeshGatewayInstance`) is
 unaffected by this change.
 
 **Action required**
 
-- Delete any `Gateway`, `GatewayClass`, and `ReferenceGrant` resources you
+- Before upgrading, delete any `Gateway` and `ReferenceGrant` resources you
   created for the built-in gateway; the control plane no longer manages them
   and leaves them untouched on disk.
+- The `kuma` `GatewayClass` that the Helm chart used to install is no longer
+  installed. On startup, the control plane removes the legacy
+  `gateway-exists-finalizer.gateway.networking.k8s.io` finalizer from
+  Kuma-managed `GatewayClass` objects so Helm-pruned objects can finish
+  deleting. If you manage RBAC manually, grant the control plane `get`, `list`,
+  `patch`, and `update` on `gatewayclasses` and `get`, `patch`, and `update`
+  on `gatewayclasses/finalizers` during the upgrade, or remove that finalizer
+  before upgrading.
 - Any Kuma `Secret` that was copied from a Gateway API TLS `Secret` (name
   prefixed `gapi-`) is now orphaned and must be deleted manually.
-- The `kuma` `GatewayClass` that the Helm chart used to install is no longer
-  installed.
-- Cluster RBAC no longer grants access to `gateways`, `gatewayclasses`, and
-  `referencegrants`. It still grants access to `httproutes` for the GAMMA
-  path.
+- Cluster RBAC no longer grants access to `gateways` and `referencegrants`.
+  It still grants access to `httproutes` for the GAMMA path, plus narrow
+  `gatewayclasses` access for the finalizer cleanup described above.
 - The config field `runtime.kubernetes.supportGatewaySecretsInAllNamespaces`
   (env `KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES`)
   and the Helm value `controlPlane.supportGatewaySecretsInAllNamespaces` have
