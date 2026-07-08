@@ -1,0 +1,63 @@
+#/meshes/default/meshservices/orders-service/_dataplanes 200
+# Exclusive delta: the MeshService selector carries two dataplaneTags
+# (app + version). Only the dataplane matching BOTH tags is returned,
+# exercising the smallest-set AND-match algorithm (matchByTags) against the
+# shipping Exclusive default. The Disabled siblings in this directory only
+# ever select on a single tag.
+type: Mesh
+meshServices:
+  mode: Exclusive
+name: default
+---
+type: MeshService
+name: orders-service
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/env: universal
+spec:
+  selector:
+    dataplaneTags:
+      app: orders
+      version: v2
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+---
+type: Dataplane
+name: orders-v2-01
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 80
+      tags:
+        kuma.io/service: orders_kuma-demo_svc_80
+        app: orders
+        version: v2
+---
+type: Dataplane
+name: orders-v1-01
+mesh: default
+networking:
+  address: 127.0.0.2
+  inbound:
+    - port: 80
+      tags:
+        kuma.io/service: orders_kuma-demo_svc_80
+        app: orders
+        version: v1
+---
+type: Dataplane
+name: payments-v2-01
+mesh: default
+networking:
+  address: 127.0.0.3
+  inbound:
+    - port: 80
+      tags:
+        kuma.io/service: payments_kuma-demo_svc_80
+        app: payments
+        version: v2
