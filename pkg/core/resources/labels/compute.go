@@ -121,7 +121,8 @@ func Compute(
 		labels = maps.Clone(existingLabels)
 	}
 
-	// Do not rewrite labels imported from another CP.
+	// Only skip recomputation for resources imported from another CP (e.g. via
+	// KDS sync); locally-originated resources are always recomputed.
 	if labelsOpts.Privileged && !core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
 		return labels, nil
 	}

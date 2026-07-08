@@ -447,4 +447,38 @@ var _ = Describe("Compute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(labels).To(Equal(existing))
 	})
+
+	It("recomputes labels on privileged writes to locally-originated resources", func() {
+		// A privileged write (origin=zone on this zone) is locally originated,
+		// so it must still recompute CP-owned labels: the stale display-name is
+		// overwritten, unlike the imported-resource case above.
+		res := builders.MeshTimeout().
+			WithMesh("mesh-1").
+			WithName("idle-timeout").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+				IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+			}).
+			Build()
+		existing := map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			mesh_proto.MeshTag:             "mesh-1",
+			mesh_proto.DisplayName:         "stale-name",
+		}
+
+		labels, err := resource_labels.Compute(
+			res.Descriptor(),
+			res.GetSpec(),
+			existing,
+			"mesh-1",
+			"recomputed-name",
+			resource_labels.WithMode(core.Zone),
+			resource_labels.WithK8s(true),
+			resource_labels.WithZone("zone-1"),
+			resource_labels.WithPrivileged(true),
+		)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(labels).To(HaveKeyWithValue(mesh_proto.DisplayName, "recomputed-name"))
+	})
 })
