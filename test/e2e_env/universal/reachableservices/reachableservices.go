@@ -12,12 +12,20 @@ import (
 func ReachableServices() {
 	meshName := "reachable-svc"
 
+	// Under the Exclusive meshServices mode services are reached via
+	// auto-generated MeshServices, so restrict outbounds with reachableBackends
+	// referencing the MeshService rather than the legacy kuma.io/service list.
+	reachableBackends := `      refs:
+      - kind: MeshService
+        name: first-test-server
+        port: 80`
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(TestServerUniversal("first-test-server", meshName, WithArgs([]string{"echo"}), WithServiceName("first-test-server"))).
 			Install(TestServerUniversal("second-test-server", meshName, WithArgs([]string{"echo"}), WithServiceName("second-test-server"))).
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithReachableServices("first-test-server"))).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithReachableBackends(reachableBackends))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -35,7 +43,7 @@ func ReachableServices() {
 		Eventually(func(g Gomega) {
 			// when
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "first-test-server.mesh",
+				universal.Cluster, "demo-client", "first-test-server.svc.mesh.local",
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
@@ -46,7 +54,7 @@ func ReachableServices() {
 		Consistently(func(g Gomega) {
 			// when
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "second-test-server.mesh",
+				universal.Cluster, "demo-client", "second-test-server.svc.mesh.local",
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())

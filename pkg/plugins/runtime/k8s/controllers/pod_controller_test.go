@@ -599,6 +599,9 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name: "poc",
 				},
+				Spec: &apiextensionsv1.JSON{
+					Raw: []byte(`{"meshServices":{"mode":"Disabled"}}`),
+				},
 			},
 			&mesh_k8s.Mesh{
 				ObjectMeta: kube_meta.ObjectMeta{

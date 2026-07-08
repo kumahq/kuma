@@ -71,7 +71,7 @@ spec:
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -91,7 +91,7 @@ spec:
 			// check that test-server is unhealthy
 			Consistently(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.svc.mesh.local/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
@@ -234,7 +234,7 @@ spec:
 		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.svc.mesh.local 80\""}
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -252,7 +252,7 @@ spec:
 			}, "30s", "500ms").Should(Succeed())
 
 			Consistently(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.svc.mesh.local 80\""}
 				stdout, _, _ := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 
 				// there is no real attempt to setup a connection with test-server, but Envoy may return either
@@ -328,7 +328,7 @@ spec:
 		It("should mark host as unhealthy if it doesn't reply to health checks when Permissive mTLS enabled", func() {
 			// check that test-server-mtls is healthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.svc.mesh.local 80\""}
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -346,7 +346,7 @@ spec:
 			}, "30s", "500ms").Should(Succeed())
 
 			Consistently(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.svc.mesh.local 80\""}
 				stdout, _, _ := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 
 				// there is no real attempt to setup a connection with test-server, but Envoy may return either
@@ -388,7 +388,7 @@ spec:
 				Install(YamlUniversal(healthCheck(meshName))).
 				Install(TestServerUniversal("test-client", meshName,
 					WithServiceName("test-client"),
-					WithArgs([]string{"grpc", "client", "--address", "test-server.mesh:80"}),
+					WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80"}),
 					WithTransparentProxy(true),
 				)).
 				Install(TestServerUniversal(
@@ -510,8 +510,12 @@ spec:
                 weight: 50`, meshName)
 
 		BeforeAll(func() {
+			// This test splits traffic across kuma.io/service version subsets via
+			// MeshServiceSubset backendRefs, which resolve only in non-Exclusive
+			// mode. Exclusive-native MeshService health checking is covered by the
+			// "HTTP to real MeshService" describe above. Pin to Disabled.
 			err := NewClusterSetup().
-				Install(MeshUniversal(meshName)).
+				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),

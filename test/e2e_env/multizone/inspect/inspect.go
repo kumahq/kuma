@@ -197,6 +197,7 @@ func Inspect() {
 		})
 
 		It("should execute inspect rules of dataplane", func() {
+			Expect(multizone.Global.Install(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled"))).To(Succeed())
 			Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshTimeout
 name: mt1

@@ -60,7 +60,7 @@ spec:
     - /bin/bash
     - -c
     - --
-    - 'curl --max-time 3 --fail test-server_wait-for-envoy_svc_80.mesh && test-server echo --port 80'
+    - 'curl --max-time 3 --fail test-server.wait-for-envoy.svc.cluster.local && test-server echo --port 80'
     readinessProbe:
       httpGet:
         path: /

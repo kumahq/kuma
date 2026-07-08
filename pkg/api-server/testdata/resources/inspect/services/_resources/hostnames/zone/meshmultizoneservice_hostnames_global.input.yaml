@@ -1,5 +1,7 @@
 #/meshes/default/meshmultizoneservices/test-server/_hostnames 200
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default
 ---
 type: MeshMultiZoneService

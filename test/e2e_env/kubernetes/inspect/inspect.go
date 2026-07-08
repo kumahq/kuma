@@ -25,7 +25,12 @@ func Inspect() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(nsName)).
-			Install(MeshKubernetes(meshName)).
+			// This suite asserts on the legacy dataplane `_rules` inspect
+			// shape (MeshTimeout ToRules keyed by kuma.io/service outbounds).
+			// Under the Exclusive meshServices default those legacy outbound
+			// rules are gone, so pin the mesh to Disabled to keep the shape the
+			// assertions expect, matching the unit inspect goldens.
+			Install(MeshWithMeshServicesKubernetes(meshName, "Disabled")).
 			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
 			Install(TimeoutKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
