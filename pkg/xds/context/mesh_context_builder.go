@@ -637,7 +637,11 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 			_, _ = hasher.Write(core_model.ResourceListHash(globalContext.ResourceMap[resType]))
 		}
 	}
-	_, _ = hasher.Write(baseMeshContext.hash)
+	for _, resType := range maps.SortedKeys(baseMeshContext.ResourceMap) {
+		if affectsPolicyMatching(resType) {
+			_, _ = hasher.Write(core_model.ResourceListHash(baseMeshContext.ResourceMap[resType]))
+		}
+	}
 	for _, resType := range managedTypes {
 		if affectsPolicyMatching(resType) {
 			_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))

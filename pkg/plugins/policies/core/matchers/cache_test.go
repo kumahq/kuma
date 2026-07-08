@@ -12,7 +12,9 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 var _ = Describe("PolicyMatchingCache", func() {
@@ -51,6 +53,21 @@ var _ = Describe("PolicyMatchingCache", func() {
 			k1 := matchers.BuildCacheKey("TypeA", cfg, dpp)
 			k2 := matchers.BuildCacheKey("TypeA", cfg, dpp)
 			Expect(k1).To(Equal(k2))
+		})
+
+		It("returns distinct keys for the same dataplane name with different versions", func() {
+			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
+			cfg := core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1"))
+			k1 := matchers.BuildCacheKey("TypeA", cfg, dpp)
+
+			dppV2 := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
+			dppV2.SetMeta(&test_model.ResourceMeta{
+				Name:    dppV2.GetMeta().GetName(),
+				Mesh:    dppV2.GetMeta().GetMesh(),
+				Version: "v2",
+			})
+			k2 := matchers.BuildCacheKey("TypeA", cfg, dppV2)
+			Expect(k1).ToNot(Equal(k2))
 		})
 	})
 
@@ -111,6 +128,26 @@ var _ = Describe("PolicyMatchingCache", func() {
 			Expect(first).To(BeComparableTo(uncached))
 
 			// second call: must be a cache hit
+			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(second).To(BeComparableTo(first))
+		})
+
+		It("cached result is identical to uncached result for a gateway dataplane", func() {
+			gwTestDir := filepath.Join("testdata", "matchedpolicies", "meshgateways")
+			dpp := readDPP(filepath.Join(gwTestDir, "01.dataplane.yaml"))
+			resources, _ := readPolicies(filepath.Join(gwTestDir, "01.policies.yaml"))
+			rType := meshaccesslog_api.MeshAccessLogType
+
+			uncached, err := matchers.MatchedPolicies(rType, dpp, resources)
+			Expect(err).ToNot(HaveOccurred())
+
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
+			const hash = "mesh-hash-stable"
+			first, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(first).To(BeComparableTo(uncached))
+
 			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(second).To(BeComparableTo(first))
