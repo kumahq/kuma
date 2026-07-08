@@ -147,7 +147,7 @@ func Migration() {
 		Expect(multizone.Global.DeleteMesh(blueMeshName)).To(Succeed())
 	})
 
-	It("should deploy zone proxies to meshproxymig-red with no interruptions for meshproxymig-blue", func(ctx SpecContext) {
+	It("should deploy zone proxies to meshproxymig-red with no interruptions for both meshes", func(ctx SpecContext) {
 		assertTrafficForBothMeshes()
 
 		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
@@ -157,7 +157,7 @@ func Migration() {
 		})
 	})
 
-	It("should deploy zone proxies to meshproxymig-blue with no interruptions for meshproxymig-red", func(ctx SpecContext) {
+	It("should deploy zone proxies to meshproxymig-blue with no interruptions for both meshes", func(ctx SpecContext) {
 		assertTrafficForBothMeshes()
 
 		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
