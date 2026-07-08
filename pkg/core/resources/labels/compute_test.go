@@ -220,6 +220,7 @@ var _ = Describe("Compute", func() {
 			expectedLabels: map[string]string{
 				"kuma.io/display-name": "sample-timeout",
 				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
 			},
 		}),
 		Entry("mesh resource on non-federated zone", testCase{
@@ -232,6 +233,23 @@ var _ = Describe("Compute", func() {
 			},
 			expectedLabels: map[string]string{
 				"kuma.io/display-name": "mesh-1",
+				"kuma.io/origin":       "zone",
+			},
+		}),
+		Entry("plugin originated policy on global", testCase{
+			mode:  core.Global,
+			isK8s: true,
+			r: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("idle-timeout").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "global",
 			},
 		}),
 		Entry("plugin originated policy on zone-k8s on custom namespace", testCase{
