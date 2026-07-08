@@ -36,7 +36,24 @@ func KICKubernetes() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshKubernetes(mesh)).
+			// The "should route to service using Kuma DNS" test resolves the
+			// legacy VIP hostname test-server.kic.svc.80.mesh. Under the
+			// Exclusive meshServices default that hostname is no longer served,
+			// so pin the mesh to Disabled to keep exercising Kuma VIP DNS.
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: Disabled
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, mesh))).
 			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceOutsideMesh)).

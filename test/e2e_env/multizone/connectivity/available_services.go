@@ -26,7 +26,7 @@ func AvailableServices() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())

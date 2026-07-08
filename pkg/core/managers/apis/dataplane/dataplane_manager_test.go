@@ -319,7 +319,14 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
-		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		mesh := &core_mesh.MeshResource{
+			Spec: &mesh_proto.Mesh{
+				MeshServices: &mesh_proto.Mesh_MeshServices{
+					Mode: mesh_proto.Mesh_MeshServices_Disabled,
+				},
+			},
+		}
+		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given

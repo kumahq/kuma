@@ -48,10 +48,31 @@ func CrossMeshGatewayOnKubernetes() {
 		)
 	}
 
+	// Cross-mesh gateways are addressed via the legacy VIP hostname
+	// (gateway.mesh / gateway2.mesh). Under the Exclusive meshServices default
+	// those hostnames are no longer served, so pin the meshes to Disabled to
+	// keep exercising the legacy cross-mesh addressing.
+	mtlsMeshDisabledMeshServices := func(name string) InstallFunc {
+		return YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: Disabled
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, name))
+	}
+
 	BeforeAll(func() {
 		setup := NewClusterSetup().
-			Install(MTLSMeshKubernetes(gatewayMesh)).
-			Install(MTLSMeshKubernetes(gatewayOtherMesh)).
+			Install(mtlsMeshDisabledMeshServices(gatewayMesh)).
+			Install(mtlsMeshDisabledMeshServices(gatewayOtherMesh)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
@@ -158,7 +179,7 @@ func CrossMeshGatewayOnKubernetes() {
 			crossMeshGatewayInstanceYaml2 := MkGatewayInstance(crossMeshGatewayName, gatewayTestNamespace2, gatewayMesh2)
 
 			setup := NewClusterSetup().
-				Install(MTLSMeshKubernetes(gatewayMesh2)).
+				Install(mtlsMeshDisabledMeshServices(gatewayMesh2)).
 				Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh2)).
 				Install(YamlK8s(crossMeshGatewayYaml2)).
 				Install(YamlK8s(crossMeshGatewayInstanceYaml2))

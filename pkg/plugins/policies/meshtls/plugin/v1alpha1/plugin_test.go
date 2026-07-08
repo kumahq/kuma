@@ -246,6 +246,27 @@ var _ = Describe("MeshTLS", func() {
 				},
 			},
 		}),
+		Entry("strict with multiple MeshTrust and kuma managed identity", testCase{
+			caseName:    "strict-with-multiple-mesh-trust-kuma-managed",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			meshService: true,
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				ManagementMode: core_xds.KumaManagementMode,
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
+			// deliberately out of alphabetical order to verify SANs are sorted
+			casByTrustDomain: map[string][]xds_context.PEMBytes{
+				"domain-c": {xds_context.PEMBytes("123")},
+				"domain-a": {xds_context.PEMBytes("456")},
+				"domain-b": {xds_context.PEMBytes("789")},
+			},
+		}),
 		Entry("strict mode + strict mesh = no passthrough listeners", testCase{
 			caseName:    "strict-with-strict-mtls",
 			meshBuilder: samples.MeshMTLSBuilder(),

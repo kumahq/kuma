@@ -38,7 +38,7 @@ func TransparentProxy() {
 	It("should be able to re-install transparent proxy", func() {
 		// given
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponses(universal.Cluster, "tp-client", "test-server.mesh")
+			_, err := client.CollectResponses(universal.Cluster, "tp-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
 
@@ -52,7 +52,7 @@ func TransparentProxy() {
 
 		// then
 		Eventually(func(g Gomega) {
-			failures, err := client.CollectFailure(universal.Cluster, "tp-client", "test-server.mesh")
+			failures, err := client.CollectFailure(universal.Cluster, "tp-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(failures.Exitcode).To((Or(Equal(6), Equal(28))))
 		}).Should(Succeed())
@@ -68,7 +68,7 @@ func TransparentProxy() {
 
 		// then
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponses(universal.Cluster, "tp-client", "test-server.mesh")
+			_, err := client.CollectResponses(universal.Cluster, "tp-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
 	})

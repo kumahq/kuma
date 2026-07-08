@@ -1,3 +1,5 @@
 #/meshes/default/meshservices/test-server/_hostnames 404
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default
