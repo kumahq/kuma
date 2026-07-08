@@ -28,6 +28,7 @@ import (
 	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
 	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	"github.com/kumahq/kuma/v2/pkg/util/proto"
 	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
@@ -437,7 +438,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 	// TODO: do we need this validator since we have a better validator of CA matched with TrustDomain
 	// check: pkg/core/resources/apis/meshtrust/generator/v1alpha1/secrets.go
 	if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode {
-		for trustDomain := range xdsCtx.Mesh.CAsByTrustDomain {
+		for _, trustDomain := range util_maps.SortedKeys(xdsCtx.Mesh.CAsByTrustDomain) {
 			id, err := spiffeid.TrustDomainFromString(trustDomain)
 			if err != nil {
 				return nil, err
