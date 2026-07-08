@@ -115,22 +115,22 @@ spec:
 		},
 		Entry("402 when requests from the demo-client-blocked", testCase{
 			client:               "demo-client-blocked",
-			address:              "test-server.mesh",
+			address:              "test-server.svc.mesh.local",
 			expectedResponseCode: 402,
 		}),
 		Entry("421 when requests from any client are blocked", testCase{
 			client:               "demo-client",
-			address:              "test-service-block-all-sources.mesh",
+			address:              "test-service-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
 			client:               "demo-client-timeout",
-			address:              "test-service-block-all-sources.mesh",
+			address:              "test-service-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
 			client:               "demo-client-blocked",
-			address:              "test-service-block-all-sources.mesh",
+			address:              "test-service-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 	)
@@ -138,7 +138,7 @@ spec:
 	It("should not be affected by any fault", func() {
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
@@ -147,7 +147,7 @@ spec:
 	It("should delay responses for demo-client-timeout", func() {
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client-timeout", "test-server.mesh",
+				universal.Cluster, "demo-client-timeout", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))

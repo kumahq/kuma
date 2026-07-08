@@ -118,6 +118,7 @@ type appDeploymentOptions struct {
 	proxyOnly             bool
 	serviceProbe          bool
 	reachableServices     []string
+	reachableBackends     string
 	appendDataplaneConfig string
 	boundToContainerIp    bool
 	serviceAddress        string
@@ -588,6 +589,15 @@ func WithConcurrency(concurrency int) AppDeploymentOption {
 func WithReachableServices(services ...string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.reachableServices = services
+	})
+}
+
+// WithReachableBackends sets networking.transparentProxying.reachableBackends
+// on the Dataplane. The config is the YAML body under reachableBackends (e.g. a
+// `refs:` list of MeshService references). Only applies with transparent proxy.
+func WithReachableBackends(config string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.reachableBackends = config
 	})
 }
 

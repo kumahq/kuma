@@ -166,6 +166,23 @@
         "PostgresImage\\s*=\\s*\"(?<depName>postgres):(?<currentValue>[^@\"]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?\""
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": [
+        " Update the Gateway API CRD version installed by the e2e framework. The gomod manager",
+        " bumps the sigs.k8s.io/gateway-api and .../conformance modules, but the standard-install.yaml",
+        " CRDs are fetched from a hardcoded release URL. This keeps that URL in sync so the installed",
+        " CRDs' bundle-version matches the conformance suite version. Grouped with the module updates",
+        " via the shared kubernetes-sigs/gateway-api source URL"
+      ],
+      "managerFilePatterns": ["/test/framework/k8s\\.go$/"],
+      "matchStrings": [
+        "https://github\\.com/kubernetes-sigs/gateway-api/releases/download/(?<currentValue>v\\d+\\.\\d+\\.\\d+)/standard-install\\.yaml"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes-sigs/gateway-api",
+      "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
@@ -284,7 +301,7 @@
         " Group dependency bumps from selected GitHub sources into a single PR across managers",
         " (e.g., mise and gomod) to avoid separate PRs per manager"
       ],
-      "matchSourceUrls": ["https://github.com/{onsi/ginkgo,golangci/golangci-lint,helm/helm}"],
+      "matchSourceUrls": ["https://github.com/{onsi/ginkgo,golangci/golangci-lint,helm/helm,kubernetes-sigs/gateway-api}"],
       "groupName": "{{{replace 'https://github\\.com/[a-z-]+/' '' sourceUrl}}}"
     },
     {

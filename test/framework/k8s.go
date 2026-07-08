@@ -102,7 +102,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	if err := k8s.RunKubectlContextE(
 		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml"); err != nil {
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.0/standard-install.yaml"); err != nil {
 		return err
 	}
 

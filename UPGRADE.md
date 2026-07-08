@@ -8,6 +8,12 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `kumactl install observability` removed
+
+The deprecated `kumactl install observability` command has been removed for Kuma 3.0.
+Use separately managed observability components or your platform's preferred observability stack instead.
+Kuma still ships first-party Grafana dashboards in the release tarball under `dashboards/grafana/`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using

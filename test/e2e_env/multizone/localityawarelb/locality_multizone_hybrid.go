@@ -19,6 +19,8 @@ func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh string, zoneEgress string) str
 	return fmt.Sprintf(`
 type: Mesh
 name: %s
+meshServices:
+  mode: Disabled
 mtls:
   enabledBackend: ca-1
   backends:
