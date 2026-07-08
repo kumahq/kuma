@@ -22,6 +22,8 @@ func InternalServices() {
 	mesh := `
 type: Mesh
 name: ze-internal
+meshServices:
+  mode: Disabled
 mtls:
   enabledBackend: ca-1
   backends:

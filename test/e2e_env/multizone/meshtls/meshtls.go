@@ -82,7 +82,7 @@ spec:
 
 		Eventually(func(g Gomega) {
 			resp, err := framework_client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server_multizone-meshtls_svc_80.mesh",
+				multizone.KubeZone2, "demo-client", fmt.Sprintf("test-server.%s.svc.%s.mesh.local", k8sZoneNamespace, multizone.KubeZone1.ZoneName()),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -96,7 +96,7 @@ spec:
 		// traffic should still works
 		Eventually(func(g Gomega) {
 			resp, err := framework_client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server_multizone-meshtls_svc_80.mesh",
+				multizone.KubeZone2, "demo-client", fmt.Sprintf("test-server.%s.svc.%s.mesh.local", k8sZoneNamespace, multizone.KubeZone1.ZoneName()),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

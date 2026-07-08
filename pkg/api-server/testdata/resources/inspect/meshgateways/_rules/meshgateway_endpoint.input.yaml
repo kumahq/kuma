@@ -1,6 +1,8 @@
 #/meshes/default/meshgateways/the-gateway/_rules 200
 type: Mesh
 name: default
+meshServices:
+  mode: Disabled
 ---
 type: MeshGateway
 name: the-gateway

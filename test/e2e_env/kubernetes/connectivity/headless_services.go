@@ -2,6 +2,7 @@ package connectivity
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,9 +22,32 @@ func HeadlessServices() {
 	meshName := "headless-svc"
 	namespace := "headless-svc"
 
+	// The test reaches the headless Service through native kube DNS
+	// (test-server-headless:9090), which resolves to raw Pod IPs served by the
+	// legacy kuma.io/service headless VIP outbounds. Under the Exclusive
+	// meshServices default those per-endpoint outbounds are replaced by per-Pod
+	// MeshServices addressed via <pod>.<svc>.<ns>.svc.<zone>.mesh.local, so pin
+	// the mesh to Disabled to keep exercising the legacy native-DNS path.
+	mtlsMeshDisabledMeshServices := func(name string) InstallFunc {
+		return YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: Disabled
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, name))
+	}
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(meshName)).
+			Install(mtlsMeshDisabledMeshServices(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(

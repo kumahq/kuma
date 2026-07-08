@@ -77,7 +77,7 @@ func PluginTest() {
 		Eventually(func() ([]string, error) {
 			// when client sends requests to server
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			if err != nil {
 				return nil, err
