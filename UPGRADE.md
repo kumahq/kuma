@@ -8,6 +8,38 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### North-south Gateway API (built-in gateway) support removed
+
+The control plane no longer reconciles the north-south Gateway API resources
+`Gateway`, `GatewayClass`, and `ReferenceGrant` used to configure the
+built-in gateway via the Kubernetes Gateway API. `HTTPRoute` is still
+reconciled, but only for its east-west (GAMMA) use — `HTTPRoute`s whose
+`parentRefs` target a `Service` and get translated to `MeshHTTPRoute`.
+`HTTPRoute`s that target a `Gateway` are now silently ignored by the control
+plane.
+
+The built-in gateway itself (`MeshGateway`, `MeshGatewayInstance`) is
+unaffected by this change.
+
+**Action required**
+
+- Delete any `Gateway`, `GatewayClass`, and `ReferenceGrant` resources you
+  created for the built-in gateway; the control plane no longer manages them
+  and leaves them untouched on disk.
+- Any Kuma `Secret` that was copied from a Gateway API TLS `Secret` (name
+  prefixed `gapi-`) is now orphaned and must be deleted manually.
+- The `kuma` `GatewayClass` that the Helm chart used to install is no longer
+  installed.
+- Cluster RBAC no longer grants access to `gateways`, `gatewayclasses`, and
+  `referencegrants`. It still grants access to `httproutes` for the GAMMA
+  path.
+- The config field `runtime.kubernetes.supportGatewaySecretsInAllNamespaces`
+  (env `KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES`)
+  and the Helm value `controlPlane.supportGatewaySecretsInAllNamespaces` have
+  been removed. The control plane now always scopes its `Secret` watch to its
+  own system namespace. Remove this key from your config file and Helm
+  values — leaving it in place is harmless but has no effect.
+
 ### `kumactl install observability` removed
 
 The deprecated `kumactl install observability` command has been removed for Kuma 3.0.
