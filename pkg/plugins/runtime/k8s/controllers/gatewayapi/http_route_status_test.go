@@ -81,4 +81,39 @@ var _ = Describe("mergeHTTPRouteStatus", func() {
 		Expect(route.Status.Parents[1].ControllerName).To(Equal(otherController))
 		Expect(route.Status.Parents[2].ControllerName).To(Equal(common.ControllerName))
 	})
+
+	It("preserves previous status when parent conditions are intentionally empty", func() {
+		ref := makeParentRef("ns-a", "gateway-a", "listener-1")
+		route := &gatewayapi.HTTPRoute{
+			Status: gatewayapi.HTTPRouteStatus{
+				RouteStatus: gatewayapi.RouteStatus{
+					Parents: []gatewayapi.RouteParentStatus{
+						{
+							ParentRef:      ref,
+							ControllerName: common.ControllerName,
+							Conditions: []kube_meta.Condition{
+								{Type: string(gatewayapi.RouteConditionAccepted), Status: kube_meta.ConditionTrue, Reason: "Accepted"},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		mergeHTTPRouteStatus(route, ParentConditions{ref: nil})
+
+		Expect(route.Status.Parents).To(HaveLen(1))
+		Expect(route.Status.Parents[0].ParentRef).To(Equal(ref))
+		Expect(route.Status.Parents[0].Conditions).To(HaveLen(1))
+		Expect(route.Status.Parents[0].Conditions[0].Reason).To(Equal("Accepted"))
+	})
+
+	It("does not create an empty status when parent conditions are intentionally empty", func() {
+		ref := makeParentRef("ns-a", "gateway-a", "listener-1")
+		route := &gatewayapi.HTTPRoute{}
+
+		mergeHTTPRouteStatus(route, ParentConditions{ref: nil})
+
+		Expect(route.Status.Parents).To(BeEmpty())
+	})
 })

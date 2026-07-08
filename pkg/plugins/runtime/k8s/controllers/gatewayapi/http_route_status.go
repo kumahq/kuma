@@ -55,25 +55,34 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 	// existing status yet.
 	var ownedStatuses []gatewayapi.RouteParentStatus
 	for ref, conditions := range parentConditions {
-		previousStatus := gatewayapi.RouteParentStatus{
-			ParentRef:      ref,
-			ControllerName: common.ControllerName,
-		}
+		var previousStatus *gatewayapi.RouteParentStatus
 
 		// Look through previous statuses for one belonging to the same ref
 		// go abusing pointers as option types makes it very painful
-		for _, candidatePreviousStatus := range previousStatuses {
+		for i, candidatePreviousStatus := range previousStatuses {
 			if reflect.DeepEqual(candidatePreviousStatus.ParentRef, ref) {
-				previousStatus = candidatePreviousStatus
+				previousStatus = &previousStatuses[i]
 			}
+		}
+
+		if len(conditions) == 0 && previousStatus == nil {
+			continue
+		}
+
+		status := gatewayapi.RouteParentStatus{
+			ParentRef:      ref,
+			ControllerName: common.ControllerName,
+		}
+		if previousStatus != nil {
+			status = *previousStatus
 		}
 
 		for _, condition := range conditions {
 			condition.ObservedGeneration = route.GetGeneration()
-			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, condition)
+			kube_apimeta.SetStatusCondition(&status.Conditions, condition)
 		}
 
-		ownedStatuses = append(ownedStatuses, previousStatus)
+		ownedStatuses = append(ownedStatuses, status)
 	}
 
 	// Sort our controlled statuses by parent ref to ensure deterministic
