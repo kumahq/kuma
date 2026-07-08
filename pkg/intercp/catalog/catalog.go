@@ -15,7 +15,7 @@ type Instance struct {
 	InterCpPort uint16 `json:"interCpPort"`
 	Leader      bool   `json:"leader"`
 	// Version is an opaque label identifying which flavor of the CP this
-	// instance runs. It is empty in OSS; downstream builds can set it (via
+	// instance runs. By default empty, downstream builds can set it (via
 	// Catalog.InstanceVersion) to partition sharding across same-version
 	// instances while keeping a single shared catalog and leader.
 	Version string `json:"version,omitempty"`

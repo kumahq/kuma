@@ -47,7 +47,7 @@ type CatalogConfig struct {
 	// If empty then it's autoconfigured by taking the first IP of the nonloopback network interface.
 	InstanceAddress string `json:"instanceAddress" envconfig:"kuma_inter_cp_catalog_instance_address"`
 	// InstanceVersion is an opaque label recorded in the catalog for this instance.
-	// Empty in OSS; downstream builds set it to partition work across same-version instances.
+	// By default empty, downstream builds set it to partition work across same-version instances.
 	InstanceVersion string `json:"instanceVersion" envconfig:"kuma_inter_cp_catalog_instance_version"`
 	// Interval on which CP will send heartbeat to a leader.
 	HeartbeatInterval config_types.Duration `json:"heartbeatInterval" envconfig:"kuma_inter_cp_catalog_heartbeat_interval"`
