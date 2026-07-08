@@ -33,6 +33,7 @@ func (s *server) Ping(_ context.Context, request *system_proto.PingRequest) (*sy
 		Address:     request.Address,
 		InterCpPort: uint16(request.InterCpPort),
 		Leader:      false,
+		Version:     request.Version,
 	}
 	if request.Ready {
 		s.heartbeats.Add(instance)

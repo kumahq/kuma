@@ -9,6 +9,7 @@ message PingRequest {
   string address = 2;
   uint32 inter_cp_port = 3;
   bool ready = 4;
+  string version = 5;
 }
 
 message PingResponse {

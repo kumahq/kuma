@@ -52,6 +52,7 @@ func NewHeartbeatComponent(
 			InstanceId:  instance.Id,
 			Address:     instance.Address,
 			InterCpPort: uint32(instance.InterCpPort),
+			Version:     instance.Version,
 		},
 		getClientFn: newClientFn,
 		interval:    interval,
