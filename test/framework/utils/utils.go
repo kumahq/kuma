@@ -10,7 +10,6 @@ import (
 	"strings"
 	"text/template"
 
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/onsi/gomega"
 )
 
@@ -59,28 +58,6 @@ var (
 // least one more repetition to avoid flagging normal config evolution.
 const xdsChurnThreshold = 3
 
-// emptyResourcesVersionHash is the constant version string emitted by
-// pkg/xds/server/v3.emptyResourcesVersion() whenever any of the xDS
-// resource type slots (Cluster, Endpoint, Listener, ...) transitions from
-// populated to empty. It is derived from a fixed nil payload, so it is
-// identical across proxies, resource types and reconciliations: a handful
-// of unrelated one-time clears (e.g. a route policy removed, then later
-// mTLS disabled) can coincidentally reach xdsChurnThreshold without being
-// the same config repeatedly regenerating. It is not excluded outright,
-// though — a single resource type genuinely oscillating in and out of
-// "empty" is itself real non-deterministic churn and must still be caught
-// — instead it is held to emptyResourcesVersionThreshold, a higher bar.
-const emptyResourcesVersionHash = "34c96acdcadb1bbb"
-
-// emptyResourcesVersionThreshold is the churn threshold applied specifically
-// to emptyResourcesVersionHash (see above). There are int(envoy_types.
-// UnknownType) distinct resource type slots, so that many independent,
-// legitimate one-time clears is the worst case that must NOT be flagged;
-// requiring one more repetition than that rules it out while still catching
-// genuine repeated oscillation, which reaches this magnitude easily (the
-// motivating #17144 regression oscillated dozens of times).
-var emptyResourcesVersionThreshold = int(envoy_types.UnknownType) + 1
-
 // DetectXdsChurn parses kuma-cp logs and flags proxies for which the CP
 // regenerated a byte-identical xDS config (proven by a repeated content
 // hash logged by pkg/xds/server/v3.reconciler.Reconcile in its "config has
@@ -114,11 +91,7 @@ func DetectXdsChurn(logs string) []string {
 	for _, proxyName := range slices.Sorted(maps.Keys(counts)) {
 		for _, hash := range slices.Sorted(maps.Keys(counts[proxyName])) {
 			count := counts[proxyName][hash]
-			threshold := xdsChurnThreshold
-			if hash == emptyResourcesVersionHash {
-				threshold = emptyResourcesVersionThreshold
-			}
-			if count >= threshold {
+			if count >= xdsChurnThreshold {
 				reports = append(reports, fmt.Sprintf(
 					"proxy %s regenerated identical config %d times (hash %s) — non-deterministic xDS",
 					proxyName, count, hash,

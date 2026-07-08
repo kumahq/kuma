@@ -146,34 +146,18 @@ var _ = Describe("DetectXdsChurn", func() {
 		Expect(utils.DetectXdsChurn("")).To(BeEmpty())
 	})
 
-	It("does not flag independent, unrelated resource clears that share the empty-resources hash", func() {
-		// pkg/xds/server/v3.emptyResourcesVersion() always returns the same
-		// constant hash whenever any resource type transitions from
-		// populated to empty. Three unrelated one-time clears over a suite's
-		// lifetime (e.g. a route policy removed, then mTLS disabled, then a
-		// permission removed) must not look like the same config
-		// regenerating.
+	It("flags the empty-resources hash like any other hash once it reaches the threshold", func() {
+		// pkg/xds/server/v3.emptyResourcesVersion() returns a constant hash
+		// whenever any resource type transitions from populated to empty, but
+		// it gets no special exemption: reappearing 3+ times for one proxy is
+		// treated the same as any other hash reaching xdsChurnThreshold.
 		logs := joinLines(
 			changedLine("backend", "34c96acdcadb1bbb"),
 			changedLine("backend", "34c96acdcadb1bbb"),
 			changedLine("backend", "34c96acdcadb1bbb"),
 		)
 
-		Expect(utils.DetectXdsChurn(logs)).To(BeEmpty())
-	})
-
-	It("still flags genuine repeated oscillation into and out of the empty-resources hash", func() {
-		// Unlike the independent-clears case above, a single resource type
-		// flapping empty<->non-empty many times over is real churn and must
-		// still be caught once it clears the higher, empty-hash-specific
-		// threshold — more repetitions than there are resource type slots
-		// rules out coincidental unrelated one-time clears.
-		var lines []string
-		for range 12 {
-			lines = append(lines, changedLine("backend", "34c96acdcadb1bbb"))
-		}
-
-		Expect(utils.DetectXdsChurn(joinLines(lines...))).To(ConsistOf(
+		Expect(utils.DetectXdsChurn(logs)).To(ConsistOf(
 			ContainSubstring("hash 34c96acdcadb1bbb"),
 		))
 	})
