@@ -153,6 +153,45 @@ var _ = Describe("PolicyMatchingCache", func() {
 			Expect(second).To(BeComparableTo(first))
 		})
 
+		It("cached result is identical to uncached result for a multi-inbound dataplane", func() {
+			mpTestDir := filepath.Join("testdata", "matchedpolicies", "dataplanepolicies")
+			dpp := readDPP(filepath.Join(mpTestDir, "01.dataplane.yaml"))
+			resources, _ := readPolicies(filepath.Join(mpTestDir, "01.policies.yaml"))
+			rType := meshtrafficpermission_api.MeshTrafficPermissionType
+
+			uncached, err := matchers.MatchedPolicies(rType, dpp, resources)
+			Expect(err).ToNot(HaveOccurred())
+
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
+			const hash = "mesh-hash-stable"
+			first, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(first).To(BeComparableTo(uncached))
+
+			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(second).To(BeComparableTo(first))
+		})
+
+		It("cached result is identical to uncached result with shadow policies enabled", func() {
+			dpp := readDPP(filepath.Join(testDir, "01.dataplane.yaml"))
+			resources, _ := readPolicies(filepath.Join(testDir, "01.policies.yaml"))
+			rType := meshtrafficpermission_api.MeshTrafficPermissionType
+
+			uncached, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.IncludeShadow())
+			Expect(err).ToNot(HaveOccurred())
+
+			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
+			const hash = "mesh-hash-stable"
+			first, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash), core_plugins.IncludeShadow())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(first).To(BeComparableTo(uncached))
+
+			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash), core_plugins.IncludeShadow())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(second).To(BeComparableTo(first))
+		})
+
 		It("different policyMatchingHash causes a cache miss", func() {
 			dpp := readDPP(filepath.Join(testDir, "01.dataplane.yaml"))
 			resources, _ := readPolicies(filepath.Join(testDir, "01.policies.yaml"))

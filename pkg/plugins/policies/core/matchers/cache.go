@@ -2,6 +2,7 @@ package matchers
 
 import (
 	"hash/fnv"
+	"time"
 
 	"github.com/goburrow/cache"
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,6 +27,7 @@ type PolicyMatchingCache struct {
 func NewPolicyMatchingCache(metric *prometheus.CounterVec, maxSize int) *PolicyMatchingCache {
 	c := cache.New(
 		cache.WithMaximumSize(maxSize),
+		cache.WithExpireAfterAccess(5*time.Minute),
 	)
 	return &PolicyMatchingCache{
 		c:           c,
