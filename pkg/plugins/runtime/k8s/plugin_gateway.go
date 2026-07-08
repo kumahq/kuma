@@ -141,6 +141,7 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) er
 	if gatewayAPICRDPresent(mgr, "GatewayClass") {
 		if err := cleanupLegacyGatewayClassFinalizers(
 			context.Background(),
+			mgr.GetAPIReader(),
 			mgr.GetClient(),
 		); err != nil {
 			return errors.Wrap(err, "could not clean up legacy GatewayClass finalizers")
@@ -168,9 +169,12 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) er
 	return nil
 }
 
-func cleanupLegacyGatewayClassFinalizers(ctx context.Context, client kube_client.Client) error {
+// cleanupLegacyGatewayClassFinalizers runs before mgr.Start(), so the manager's
+// cached client cannot serve reads yet; list via the direct API reader and
+// only use the cached client for the (uncached) write path.
+func cleanupLegacyGatewayClassFinalizers(ctx context.Context, reader kube_client.Reader, client kube_client.Client) error {
 	classes := &gatewayapi.GatewayClassList{}
-	if err := client.List(ctx, classes); err != nil {
+	if err := reader.List(ctx, classes); err != nil {
 		if kube_apierrs.IsForbidden(err) {
 			log.Info(
 				"[WARNING] unable to clean up legacy GatewayClass finalizers because RBAC is missing; remove gateway.networking.k8s.io/gatewayclasses finalizers manually if GatewayClass objects are stuck deleting",

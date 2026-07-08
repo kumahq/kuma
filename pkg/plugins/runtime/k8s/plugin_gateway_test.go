@@ -42,7 +42,7 @@ func TestCleanupLegacyGatewayClassFinalizers(t *testing.T) {
 		WithObjects(kumaClass, otherClass).
 		Build()
 
-	require.NoError(t, cleanupLegacyGatewayClassFinalizers(context.Background(), client))
+	require.NoError(t, cleanupLegacyGatewayClassFinalizers(context.Background(), client, client))
 
 	var updatedKumaClass gatewayapi.GatewayClass
 	require.NoError(t, client.Get(context.Background(), kube_client.ObjectKeyFromObject(kumaClass), &updatedKumaClass))
