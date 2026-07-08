@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"net"
 	"regexp"
 	"slices"
@@ -41,6 +42,95 @@ func FromTemplate(g gomega.Gomega, tmpl string, data any) string {
 
 func HasPanicInCpLogs(logs string) bool {
 	return strings.Contains(logs, "runtime.gopanic") || strings.Contains(logs, "panic:")
+}
+
+var (
+	xdsChurnProxyNameRe         = regexp.MustCompile(`"proxyName":\s*"([^"]+)"`)
+	xdsChurnProxyNameFallbackRe = regexp.MustCompile(`proxyName=(\S+)`)
+	xdsChurnVersionsRe          = regexp.MustCompile(`"versions":\s*\[([^\]]*)\]`)
+	xdsChurnHashRe              = regexp.MustCompile(`[0-9a-f]{16}`)
+)
+
+// xdsChurnThreshold is the number of times a proxy must regenerate the exact
+// same content hash before it is flagged as non-deterministic xDS
+// generation. A legitimate config change followed by a revert (A -> B -> A)
+// already produces 2 occurrences of hash A, so the threshold must be at
+// least one more repetition to avoid flagging normal config evolution.
+const xdsChurnThreshold = 3
+
+// emptyResourcesVersionHash is the constant version string emitted by
+// pkg/xds/server/v3.emptyResourcesVersion() whenever a resource type
+// transitions from populated to empty. It is derived from a fixed nil
+// payload, so it is identical across proxies, resource types and
+// reconciliations. Counting it towards churn would flag unrelated one-time
+// clears (e.g. a route policy removed, then later mTLS disabled) as if they
+// were the same config being repeatedly regenerated.
+const emptyResourcesVersionHash = "34c96acdcadb1bbb"
+
+// DetectXdsChurn parses kuma-cp logs and flags proxies for which the CP
+// regenerated a byte-identical xDS config (proven by a repeated content
+// hash logged by pkg/xds/server/v3.reconciler.Reconcile in its "config has
+// changed" log line) at least xdsChurnThreshold times without an
+// intervening different hash, which indicates non-deterministic xDS
+// generation (e.g. unordered map iteration when building a resource).
+func DetectXdsChurn(logs string) []string {
+	counts := map[string]map[string]int{}
+
+	for line := range strings.SplitSeq(logs, "\n") {
+		if !strings.Contains(line, "config has changed") {
+			continue
+		}
+		proxyName := xdsChurnProxyName(line)
+		if proxyName == "" {
+			continue
+		}
+		versions := xdsChurnVersionsRe.FindStringSubmatch(line)
+		if versions == nil {
+			continue
+		}
+		for _, hash := range xdsChurnHashRe.FindAllString(versions[1], -1) {
+			if hash == emptyResourcesVersionHash {
+				continue
+			}
+			if counts[proxyName] == nil {
+				counts[proxyName] = map[string]int{}
+			}
+			counts[proxyName][hash]++
+		}
+	}
+
+	var reports []string
+	for _, proxyName := range slices.Sorted(maps.Keys(counts)) {
+		var maxHash string
+		var maxCount int
+		for _, hash := range slices.Sorted(maps.Keys(counts[proxyName])) {
+			if count := counts[proxyName][hash]; count > maxCount {
+				maxCount = count
+				maxHash = hash
+			}
+		}
+		if maxCount >= xdsChurnThreshold {
+			reports = append(reports, fmt.Sprintf(
+				"proxy %s regenerated identical config %d times (hash %s) — non-deterministic xDS",
+				proxyName, maxCount, maxHash,
+			))
+		}
+	}
+	return reports
+}
+
+// xdsChurnProxyName extracts the proxyName field from a CP log line. The
+// console encoder renders extra fields as trailing compact JSON; the
+// logfmt-style fallback covers other encoders that may render fields as
+// key=value pairs.
+func xdsChurnProxyName(line string) string {
+	if m := xdsChurnProxyNameRe.FindStringSubmatch(line); m != nil {
+		return m[1]
+	}
+	if m := xdsChurnProxyNameFallbackRe.FindStringSubmatch(line); m != nil {
+		return m[1]
+	}
+	return ""
 }
 
 // CleanIptablesSaveOutput processes the provided iptables-save output by
