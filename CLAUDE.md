@@ -65,7 +65,7 @@ git push --no-verify <remote> branch-name    # ALWAYS use --no-verify
 - **Base branch**: `master`
 - **PR template**: `.github/PULL_REQUEST_TEMPLATE.md`
 - **Changelog**: from PR title or `> Changelog: {<desc>,skip}`
-- **CI labels**: MUST set with `gh pr create --label "ci/..."`. Most gate on `pull_request` `opened/synchronize` events, so labels added after creation only take effect on the next push — set them at creation time. See label table below
+- **CI labels**: MUST set with `gh pr create --label "ci/..."`. Most gate on `pull_request` `opened/reopened/synchronize` events, so labels added after creation only take effect on the next new run (usually the next push) — set them at creation time. See label table below
 - **MADR**: `docs/madr/decisions/000-template.md` for features/architecture decisions
 - **Downstream refs**: say "downstream project" or "enterprise fork". Never mention Kong Mesh in PRs/commits (private repo)
 
