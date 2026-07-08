@@ -56,7 +56,7 @@ func StrictInboundPorts() {
 		// then communication should works
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server"))
@@ -92,7 +92,7 @@ func StrictInboundPorts() {
 		notSecuredServiceAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "8080")
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server-not-secure.mesh",
+				universal.Cluster, "demo-client", "test-server-not-secure.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
@@ -141,7 +141,7 @@ func StrictInboundPorts() {
 		// then communication should works
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server"))
@@ -177,7 +177,7 @@ func StrictInboundPorts() {
 		notSecuredServiceAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "8080")
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server-not-secure.mesh",
+				universal.Cluster, "demo-client", "test-server-not-secure.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
@@ -226,7 +226,7 @@ func StrictInboundPorts() {
 		// communication should works only to DPP port
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server"))
@@ -269,7 +269,7 @@ func StrictInboundPorts() {
 		// communication should works
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server-not-secure.mesh",
+				universal.Cluster, "demo-client", "test-server-not-secure.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))

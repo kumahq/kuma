@@ -1,5 +1,7 @@
 #/meshes/default/meshtrafficpermissions/foo/_resources/dataplanes?name=the-dp 200
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default
 ---
 type: MeshTrafficPermission

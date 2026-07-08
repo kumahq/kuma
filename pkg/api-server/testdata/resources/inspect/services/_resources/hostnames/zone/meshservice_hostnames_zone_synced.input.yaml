@@ -1,5 +1,7 @@
 #/meshes/default/meshservices/test-server-syncedhash/_hostnames 200
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default
 ---
 type: MeshService

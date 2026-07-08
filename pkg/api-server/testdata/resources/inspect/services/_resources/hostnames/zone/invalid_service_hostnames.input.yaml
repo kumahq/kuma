@@ -1,3 +1,5 @@
 #/meshes/default/invalidservice/test-server/_hostnames 400
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default

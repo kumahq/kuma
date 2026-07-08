@@ -1,5 +1,7 @@
 #/meshes/default/meshgateways/gw-1/_rules 404
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default
 ---
 type: Dataplane

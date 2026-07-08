@@ -1,6 +1,7 @@
 package zonedisable
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 
@@ -27,6 +28,34 @@ func ZoneDisable() {
 			Install(Kuma(core.Global)).
 			Install(MTLSMeshUniversal(nonDefaultMesh)).
 			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
+			Install(YamlUniversal(fmt.Sprintf(`
+type: MeshMultiZoneService
+name: test-server
+mesh: %s
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: test-server
+  ports:
+  - port: 80
+    appProtocol: http
+`, nonDefaultMesh))).
+			Install(YamlUniversal(fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+name: disable-la-to-test-server
+mesh: %s
+spec:
+  to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: test-server
+      sectionName: '80'
+    default:
+      localityAwareness:
+        disabled: true
+`, nonDefaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -91,7 +120,7 @@ func ZoneDisable() {
 		// given zone 'kuma-disable3' enabled
 		// then we should receive responses from both test-server instances
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(zone1, "demo-client", "test-server.mzsvc.mesh.local")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -118,7 +147,7 @@ enabled: false
 
 		// and then responses only from the local service instance
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(zone1, "demo-client", "test-server.mzsvc.mesh.local")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
