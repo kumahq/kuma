@@ -318,6 +318,9 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
 	if conf.NoTrafficInterval != nil {
 		hc.NoTrafficInterval = util_proto.Duration(conf.NoTrafficInterval.Duration)
 	}
+	if conf.UnhealthyInterval != nil {
+		hc.UnhealthyInterval = util_proto.Duration(conf.UnhealthyInterval.Duration)
+	}
 	if conf.ReuseConnection != nil {
 		hc.ReuseConnection = util_proto.Bool(*conf.ReuseConnection)
 	}

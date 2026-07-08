@@ -18,6 +18,11 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.UnhealthyInterval != nil {
+		in, out := &in.UnhealthyInterval, &out.UnhealthyInterval
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.Timeout != nil {
 		in, out := &in.Timeout, &out.Timeout
 		*out = new(v1.Duration)

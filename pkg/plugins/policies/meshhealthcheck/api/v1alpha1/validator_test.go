@@ -34,6 +34,7 @@ to:
       name: web-backend
     default:
       interval: 10s
+      unhealthyInterval: 1s # optional
       timeout: 2s
       unhealthyThreshold: 3
       healthyThreshold: 1
@@ -185,6 +186,7 @@ to:
       name: web-backend
     default:
       interval: -10s
+      unhealthyInterval: -1s
       timeout: -2s
       initialJitter: -5s
       intervalJitter: -6s
@@ -196,6 +198,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.interval
+    message: must be greater than zero when defined
+  - field: spec.to[0].default.unhealthyInterval
     message: must be greater than zero when defined
   - field: spec.to[0].default.timeout
     message: must be greater than zero when defined

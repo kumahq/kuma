@@ -314,6 +314,13 @@ spec:
                             Maximum time to wait for a health check response.
                             If not specified then the default value is 15s
                           type: string
+                        unhealthyInterval:
+                          description: |-
+                            If specified, Envoy will use this interval between health checks when a
+                            host is marked unhealthy. This allows unhealthy hosts to be checked more
+                            frequently, so they can be marked healthy again sooner. If not specified,
+                            the standard interval is used.
+                          type: string
                         unhealthyThreshold:
                           description: |-
                             Number of consecutive unhealthy checks before considering a host
