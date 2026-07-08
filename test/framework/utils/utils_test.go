@@ -109,8 +109,11 @@ var _ = Describe("DetectXdsChurn", func() {
 			changedLine("backend", hashA, hashB),
 		)
 
+		// Both hashes reach the threshold, so both must be reported — not
+		// just whichever one happens to have the highest count.
 		Expect(utils.DetectXdsChurn(logs)).To(ConsistOf(
 			ContainSubstring("hash a1b2c3d4e5f60718"),
+			ContainSubstring("hash b1b2c3d4e5f60718"),
 		))
 	})
 
@@ -157,5 +160,21 @@ var _ = Describe("DetectXdsChurn", func() {
 		)
 
 		Expect(utils.DetectXdsChurn(logs)).To(BeEmpty())
+	})
+
+	It("still flags genuine repeated oscillation into and out of the empty-resources hash", func() {
+		// Unlike the independent-clears case above, a single resource type
+		// flapping empty<->non-empty many times over is real churn and must
+		// still be caught once it clears the higher, empty-hash-specific
+		// threshold — more repetitions than there are resource type slots
+		// rules out coincidental unrelated one-time clears.
+		var lines []string
+		for range 12 {
+			lines = append(lines, changedLine("backend", "34c96acdcadb1bbb"))
+		}
+
+		Expect(utils.DetectXdsChurn(joinLines(lines...))).To(ConsistOf(
+			ContainSubstring("hash 34c96acdcadb1bbb"),
+		))
 	})
 })
