@@ -20,14 +20,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
 	gatewayapi_controllers "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi"
 	k8s_webhooks "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 var requiredGatewayCRDs = map[string]string{
-	"GatewayClass":   gatewayCRDNameWithGroupKindAndVersion("GatewayClass"),
-	"Gateway":        gatewayCRDNameWithGroupKindAndVersion("Gateway"),
-	"HTTPRoute":      gatewayCRDNameWithGroupKindAndVersion("HTTPRoute"),
-	"ReferenceGrant": gatewayCRDNameWithGroupKindAndVersion("ReferenceGrant"),
+	"HTTPRoute": gatewayCRDNameWithGroupKindAndVersion("HTTPRoute"),
 }
 
 func gatewayCRDNameWithGroupKindAndVersion(name string) string {
@@ -124,52 +120,17 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
 	}
 
-	if err := addGatewayAPIReconcilers(mgr, rt, proxyFactory); err != nil {
+	if err := addGatewayAPIReconcilers(mgr, rt); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory) error {
+func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	if ok, missingGatewayCRDs := gatewayAPICRDsPresent(mgr); !ok {
-		if len(requiredGatewayCRDs) != len(missingGatewayCRDs) {
-			// Logging this as error as in such case there is possibility that user is expecting
-			// Gateway API support to work, but might be unaware that some (not all) CRDs are
-			// missing. Such scenario might occur when old version of CRDs is installed with
-			// missing ReferenceGrant.
-			log.Error(
-				errors.New("only subset of required GatewayAPI CRDs registered"),
-				"disabling support for GatewayAPI",
-				"required", util_maps.AllValues(requiredGatewayCRDs),
-				"missing", missingGatewayCRDs,
-			)
-		} else {
-			log.Info("[WARNING] GatewayAPI CRDs are not registered. Disabling support")
-		}
-
+		log.Info("[WARNING] GatewayAPI CRDs are not registered. Disabling support", "missing", missingGatewayCRDs)
 		return nil
-	}
-
-	gatewayAPIGatewayClassReconciler := &gatewayapi_controllers.GatewayClassReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("gatewayapi").WithName("GatewayClass"),
-	}
-	if err := gatewayAPIGatewayClassReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup Gateway API GatewayClass reconciler")
-	}
-
-	gatewayAPIGatewayReconciler := &gatewayapi_controllers.GatewayReconciler{
-		Client:          mgr.GetClient(),
-		Log:             core.Log.WithName("controllers").WithName("gatewayapi").WithName("Gateway"),
-		Scheme:          mgr.GetScheme(),
-		TypeRegistry:    k8s_registry.Global(),
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-		ProxyFactory:    proxyFactory,
-		ResourceManager: rt.ResourceManager(),
-	}
-	if err := gatewayAPIGatewayReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup Gateway API Gateway reconciler")
 	}
 
 	gatewayAPIHTTPRouteReconciler := &gatewayapi_controllers.HTTPRouteReconciler{
@@ -183,16 +144,6 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, pr
 	}
 	if err := gatewayAPIHTTPRouteReconciler.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")
-	}
-
-	secretController := &gatewayapi_controllers.SecretController{
-		Log:                                  core.Log.WithName("controllers").WithName("secret"),
-		Client:                               mgr.GetClient(),
-		SystemNamespace:                      rt.Config().Store.Kubernetes.SystemNamespace,
-		SupportGatewaySecretsInAllNamespaces: rt.Config().Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces,
-	}
-	if err := secretController.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup Secret reconciler")
 	}
 
 	return nil
