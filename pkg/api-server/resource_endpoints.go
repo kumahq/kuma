@@ -715,7 +715,6 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 	immutableLabels := []string{
 		mesh_proto.ResourceOriginLabel,
 		mesh_proto.ZoneTag,
-		mesh_proto.DisplayName,
 	}
 
 	for _, label := range immutableLabels {
