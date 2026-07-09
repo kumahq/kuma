@@ -114,7 +114,8 @@ func (i *KumaInjector) hasZoneProxyService(ctx context.Context, pod *kube_core.P
 	}
 	for idx := range services.Items {
 		svc := &services.Items[idx]
-		if k8s_util.MatchService(svc,
+		if k8s_util.MatchService(
+			svc,
 			k8s_util.AnySelector(),
 			k8s_util.Not(k8s_util.Ignored()),
 			k8s_util.MatchServiceThatSelectsPod(pod, nil),
@@ -191,10 +192,10 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 
 // these are all existing annotations that are supported by metadata.GetBooleanWithDefault
 var booleanAnnotations = map[string]bool{
-	metadata.KumaTrafficDropInvalidPackets: true,
-	metadata.KumaTrafficIptablesLogs:       true,
-	metadata.KumaWaitForDataplaneReady:     true,
-	metadata.KumaBuiltinDNS:                true,
+	metadata.KumaTrafficDropInvalidPackets:         true,
+	metadata.KumaTrafficIptablesLogs:               true,
+	metadata.KumaWaitForDataplaneReady:             true,
+	metadata.KumaBuiltinDNS:                        true,
 	metadata.KumaBuiltinDNSLogging:                 true,
 	metadata.KumaGatewayAnnotation:                 true,
 	metadata.KumaSidecarInjectionAnnotation:        true,

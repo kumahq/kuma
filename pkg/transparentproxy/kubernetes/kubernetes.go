@@ -31,20 +31,20 @@ type PodRedirect struct {
 	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
 	// keep in mind to update all other places listed in the issue
 
-	BuiltinDNSEnabled                        bool
-	BuiltinDNSPort                           uint32
-	ExcludeOutboundPorts                     string
-	RedirectPortOutbound                     uint32
-	RedirectInbound                          bool
-	ExcludeInboundPorts                      string
-	RedirectPortInbound                      uint32
-	IpFamilyMode                             string
+	BuiltinDNSEnabled           bool
+	BuiltinDNSPort              uint32
+	ExcludeOutboundPorts        string
+	RedirectPortOutbound        uint32
+	RedirectInbound             bool
+	ExcludeInboundPorts         string
+	RedirectPortInbound         uint32
+	IpFamilyMode                string
 	UID                         string
 	ExcludeOutboundPortsForUIDs []string
-	DropInvalidPackets                       bool
-	IptablesLogs                             bool
-	ExcludeInboundIPs                        string
-	ExcludeOutboundIPs                       string
+	DropInvalidPackets          bool
+	IptablesLogs                bool
+	ExcludeInboundIPs           string
+	ExcludeOutboundIPs          string
 }
 
 // Deprecated
@@ -174,34 +174,42 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	defaultConfig := tproxy_config.DefaultConfig()
 
 	return slices.Concat(
-		flagsIf(pr.UID != tproxy_consts.OwnerDefaultUID,
+		flagsIf(
+			pr.UID != tproxy_consts.OwnerDefaultUID,
 			flag("kuma-dp-user", pr.UID),
 		),
-		flagsIf(pr.IpFamilyMode != string(defaultConfig.IPFamilyMode),
+		flagsIf(
+			pr.IpFamilyMode != string(defaultConfig.IPFamilyMode),
 			flag("ip-family-mode", pr.IpFamilyMode),
 		),
 		// outbound
-		flagsIf(pr.RedirectPortOutbound != uint32(defaultConfig.Redirect.Outbound.Port),
+		flagsIf(
+			pr.RedirectPortOutbound != uint32(defaultConfig.Redirect.Outbound.Port),
 			flag("redirect-outbound-port", pr.RedirectPortOutbound),
 		),
 		flag("exclude-outbound-ports", pr.ExcludeOutboundPorts),
 		flag("exclude-outbound-ips", pr.ExcludeOutboundIPs),
 		flag("exclude-outbound-ports-for-uids", pr.ExcludeOutboundPortsForUIDs...),
 		// inbound
-		flagsIf(!pr.RedirectInbound,
+		flagsIf(
+			!pr.RedirectInbound,
 			flag("redirect-inbound", "false"),
 		),
-		flagsIf(pr.RedirectInbound,
-			flagsIf(pr.RedirectPortInbound != uint32(defaultConfig.Redirect.Inbound.Port),
+		flagsIf(
+			pr.RedirectInbound,
+			flagsIf(
+				pr.RedirectPortInbound != uint32(defaultConfig.Redirect.Inbound.Port),
 				flag("redirect-inbound-port", pr.RedirectPortInbound),
 			),
 			flag("exclude-inbound-ports", pr.ExcludeInboundPorts),
 			flag("exclude-inbound-ips", pr.ExcludeInboundIPs),
 		),
 		// dns
-		flagsIf(pr.BuiltinDNSEnabled,
+		flagsIf(
+			pr.BuiltinDNSEnabled,
 			flag("redirect-all-dns-traffic", pr.BuiltinDNSEnabled),
-			flagsIf(pr.BuiltinDNSPort != uint32(defaultConfig.Redirect.DNS.Port),
+			flagsIf(
+				pr.BuiltinDNSPort != uint32(defaultConfig.Redirect.DNS.Port),
 				flag("redirect-dns-port", pr.BuiltinDNSPort),
 			),
 		),

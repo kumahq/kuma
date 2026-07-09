@@ -113,9 +113,9 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ingress_mesh:                            "default",
 			Ingress_drainTime:                       "30s",
 			Ingress_service_type:                    "LoadBalancer",
-			Egress_enabled:      false,
-			Egress_drainTime:    "30s",
-			Egress_service_type: "ClusterIP",
+			Egress_enabled:                          false,
+			Egress_drainTime:                        "30s",
+			Egress_service_type:                     "ClusterIP",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			return data.ReadFiles(deployments.KumaChartFS())

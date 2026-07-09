@@ -205,7 +205,7 @@ const (
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
 	KumaReachableBackends                              = "kuma.io/reachable-backends"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
-	KumaCNI = "kuma-cni"
+	KumaCNI                                            = "kuma-cni"
 )
 
 // Annotations related to the gateway
