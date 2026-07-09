@@ -178,7 +178,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
-		xds_context.AnyToAnyReachableServicesGraphBuilder,
 		builder.CAProvider(),
 	)
 

@@ -95,7 +95,6 @@ type MeshContext struct {
 	VIPOutbounds                xds_types.Outbounds
 	ServicesInformation         map[string]*ServiceInformation
 	DataSourceLoader            datasource.Loader
-	ReachableServicesGraph      ReachableServicesGraph
 	CAsByTrustDomain            map[string][]PEMBytes
 	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
 	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
