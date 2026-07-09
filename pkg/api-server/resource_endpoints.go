@@ -482,6 +482,32 @@ func (r *resourceEndpoints) clearMeshTrustOrigin(resRest rest.Resource, meshName
 	}
 }
 
+<<<<<<< HEAD
+=======
+// computeLabels derives the full label set for a resource from its descriptor,
+// spec and meta, applying the control-plane mode, zone, k8s and namespace context
+// shared by create and update.
+func (r *resourceEndpoints) computeLabels(
+	descriptor core_model.ResourceTypeDescriptor,
+	spec core_model.ResourceSpec,
+	meta core_model.ResourceMeta,
+	meshName string,
+	name string,
+) (map[string]string, error) {
+	return resource_labels.Compute(
+		descriptor,
+		spec,
+		meta.GetLabels(),
+		meshName,
+		name,
+		resource_labels.WithNamespace(resource_labels.GetNamespace(meta, r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
+	)
+}
+
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 func (r *resourceEndpoints) createResource(
 	ctx context.Context,
 	name string,
@@ -524,6 +550,7 @@ func (r *resourceEndpoints) createResource(
 		}
 	}
 
+<<<<<<< HEAD
 	labels, err := core_model.ComputeLabels(
 		res.Descriptor(),
 		res.GetSpec(),
@@ -534,6 +561,9 @@ func (r *resourceEndpoints) createResource(
 		core_model.WithK8s(r.isK8s),
 		core_model.WithZone(r.zoneName),
 	)
+=======
+	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -572,6 +602,7 @@ func (r *resourceEndpoints) updateResource(
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
+<<<<<<< HEAD
 	currentLabels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
@@ -582,6 +613,9 @@ func (r *resourceEndpoints) updateResource(
 		core_model.WithK8s(r.isK8s),
 		core_model.WithZone(r.zoneName),
 	)
+=======
+	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
 		return
@@ -590,6 +624,7 @@ func (r *resourceEndpoints) updateResource(
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	// Compute labels for new request
+<<<<<<< HEAD
 	labels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
@@ -600,6 +635,9 @@ func (r *resourceEndpoints) updateResource(
 		core_model.WithK8s(r.isK8s),
 		core_model.WithZone(r.zoneName),
 	)
+=======
+	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -750,7 +788,6 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 	immutableLabels := []string{
 		mesh_proto.ResourceOriginLabel,
 		mesh_proto.ZoneTag,
-		mesh_proto.DisplayName,
 	}
 
 	for _, label := range immutableLabels {

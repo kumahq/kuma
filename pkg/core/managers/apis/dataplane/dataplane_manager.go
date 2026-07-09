@@ -61,10 +61,18 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		resource.GetSpec(),
 		opts.Labels,
 		opts.Mesh,
+<<<<<<< HEAD
 		core_model.WithNamespace(core_model.UnsetNamespace),
 		core_model.WithMode(m.mode),
 		core_model.WithK8s(m.isK8s),
 		core_model.WithZone(m.zone),
+=======
+		opts.Name,
+		resource_labels.WithNamespace(resource_labels.UnsetNamespace),
+		resource_labels.WithMode(m.mode),
+		resource_labels.WithK8s(m.isK8s),
+		resource_labels.WithZone(m.zone),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err
@@ -102,10 +110,18 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		resource.GetSpec(),
 		opts.Labels,
 		resource.GetMeta().GetMesh(),
+<<<<<<< HEAD
 		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), m.systemNamespace)),
 		core_model.WithMode(m.mode),
 		core_model.WithK8s(m.isK8s),
 		core_model.WithZone(m.zone),
+=======
+		resource.GetMeta().GetName(),
+		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), m.systemNamespace)),
+		resource_labels.WithMode(m.mode),
+		resource_labels.WithK8s(m.isK8s),
+		resource_labels.WithZone(m.zone),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err

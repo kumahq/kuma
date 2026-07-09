@@ -103,7 +103,39 @@ func EnsureDefaultMeshResources(
 	return nil
 }
 
+<<<<<<< HEAD
 func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (error, bool) {
+=======
+func ensureDefaultResource(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	res model.Resource,
+	resourceKey model.ResourceKey,
+	cpMode config_core.CpMode,
+	cpZone string,
+	k8sStore bool,
+	systemNamespace string,
+	reconcileExistingOnly bool,
+) (error, bool) {
+	computeLabels := func(existing map[string]string) (map[string]string, error) {
+		namespace := resource_labels.UnsetNamespace
+		if k8sStore {
+			namespace = resource_labels.NewNamespace(systemNamespace, true)
+		}
+		return resource_labels.Compute(
+			res.Descriptor(),
+			res.GetSpec(),
+			existing,
+			resourceKey.Mesh,
+			resourceKey.Name,
+			resource_labels.WithMode(cpMode),
+			resource_labels.WithZone(cpZone),
+			resource_labels.WithK8s(k8sStore),
+			resource_labels.WithNamespace(namespace),
+		)
+	}
+
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	err := resManager.Get(ctx, res, store.GetBy(resourceKey), store.GetConsistent())
 	if err == nil {
 		return nil, false
