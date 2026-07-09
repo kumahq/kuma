@@ -7,9 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-<<<<<<< HEAD
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -19,21 +20,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/secrets"
-=======
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/test/xds"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/secrets"
->>>>>>> 0821e9590e (fix(mtls): drop legacy identity secret when MeshIdentity is assigned (#16947))
 )
 
 var _ = Describe("SecretsGenerator", func() {
