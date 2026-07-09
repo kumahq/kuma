@@ -71,7 +71,8 @@ const xdsChurnThreshold = 3
 // reconciliation) still only contributes 1 to that hash's count, since it
 // did not require a separate regeneration to reappear.
 func DetectXdsChurn(logs string) []string {
-	counts := map[string]map[string]int{}
+	maxStreaks := map[string]map[string]int{}
+	currentStreaks := map[string]map[string]int{}
 
 	for line := range strings.SplitSeq(logs, "\n") {
 		if !strings.Contains(line, "config has changed") {
@@ -91,17 +92,29 @@ func DetectXdsChurn(logs string) []string {
 				continue
 			}
 			seenInLine[hash] = true
-			if counts[proxyName] == nil {
-				counts[proxyName] = map[string]int{}
-			}
-			counts[proxyName][hash]++
 		}
+
+		nextStreaks := map[string]int{}
+		for hash := range seenInLine {
+			streak := 1
+			if currentStreaks[proxyName] != nil {
+				streak = currentStreaks[proxyName][hash] + 1
+			}
+			nextStreaks[hash] = streak
+			if maxStreaks[proxyName] == nil {
+				maxStreaks[proxyName] = map[string]int{}
+			}
+			if streak > maxStreaks[proxyName][hash] {
+				maxStreaks[proxyName][hash] = streak
+			}
+		}
+		currentStreaks[proxyName] = nextStreaks
 	}
 
 	var reports []string
-	for _, proxyName := range slices.Sorted(maps.Keys(counts)) {
-		for _, hash := range slices.Sorted(maps.Keys(counts[proxyName])) {
-			count := counts[proxyName][hash]
+	for _, proxyName := range slices.Sorted(maps.Keys(maxStreaks)) {
+		for _, hash := range slices.Sorted(maps.Keys(maxStreaks[proxyName])) {
+			count := maxStreaks[proxyName][hash]
 			if count >= xdsChurnThreshold {
 				reports = append(reports, fmt.Sprintf(
 					"proxy %s regenerated identical config %d times (hash %s) — non-deterministic xDS",

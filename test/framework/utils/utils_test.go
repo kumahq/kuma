@@ -69,6 +69,18 @@ var _ = Describe("DetectXdsChurn", func() {
 		Expect(utils.DetectXdsChurn(logs)).To(BeEmpty())
 	})
 
+	It("does not flag non-consecutive reappearances of the same hash", func() {
+		logs := joinLines(
+			changedLine("backend", hashA),
+			changedLine("backend", hashA),
+			changedLine("backend", hashB),
+			changedLine("backend", hashA),
+			changedLine("backend", hashA),
+		)
+
+		Expect(utils.DetectXdsChurn(logs)).To(BeEmpty())
+	})
+
 	It("only flags the proxy that is actually churning", func() {
 		logs := joinLines(
 			changedLine("backend", hashA),
