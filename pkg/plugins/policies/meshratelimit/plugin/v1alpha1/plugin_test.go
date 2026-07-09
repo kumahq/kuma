@@ -1,8 +1,6 @@
 package v1alpha1_test
 
 import (
-	"context"
-	"fmt"
 	"path"
 	"path/filepath"
 	"time"
@@ -14,11 +12,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/durationpb"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -29,13 +25,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/plugin/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	meshtcproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -45,7 +37,6 @@ import (
 	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
@@ -1015,223 +1006,6 @@ var _ = Describe("MeshRateLimit", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bytes).To(test_matchers.MatchGoldenYAML(path.Join("testdata", "basic_egress.golden.yaml")))
 	})
-
-	type gatewayTestCase struct {
-		name           string
-		gatewayRoutes  []*core_mesh.MeshGatewayRouteResource
-		meshhttproutes core_rules.GatewayRules
-		meshtcproutes  core_rules.GatewayRules
-		rules          core_rules.GatewayRules
-	}
-	DescribeTable("should generate proper Envoy config for MeshGateways",
-		func(given gatewayTestCase) {
-			Expect(given.name).ToNot(BeEmpty())
-			resources := xds_context.NewResources()
-
-			gateway := &core_mesh.MeshGatewayResource{
-				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
-				Spec: &mesh_proto.MeshGateway{
-					Selectors: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								mesh_proto.ServiceTag: "sample-gateway",
-							},
-						},
-					},
-					Conf: &mesh_proto.MeshGateway_Conf{
-						Listeners: []*mesh_proto.MeshGateway_Listener{
-							{
-								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-								Port:     8080,
-								Tags: map[string]string{
-									"protocol": "http",
-								},
-							},
-							{
-								Protocol: mesh_proto.MeshGateway_Listener_TCP,
-								Port:     8081,
-								Tags: map[string]string{
-									"protocol": "tcp",
-								},
-							},
-						},
-					},
-				},
-			}
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{gateway},
-			}
-			if len(given.gatewayRoutes) > 0 {
-				resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-					Items: given.gatewayRoutes,
-				}
-			}
-
-			xdsCtx := *xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithResources(resources).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-				Build()
-			proxy := xds_builders.Proxy().
-				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshRateLimitType, given.rules).
-					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
-					WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes)).
-				Build()
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
-
-			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			tcpRoutePlugin := meshtcproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// when
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// then
-			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.RouteType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.routes.golden.yaml", given.name))))
-			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", given.name))))
-		},
-		Entry("basic", gatewayTestCase{
-			name:          "basic",
-			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{
-								{
-									Subset: subsetutils.Subset{},
-									Conf: api.Conf{
-										Local: &api.Local{
-											HTTP: &api.LocalHTTP{
-												RequestRate: &api.Rate{
-													Num:      100,
-													Interval: v1.Duration{Duration: 10 * time.Second},
-												},
-												OnRateLimit: &api.OnRateLimit{
-													Status: pointer.To(uint32(444)),
-													Headers: &api.HeaderModifier{
-														Add: &[]api.HeaderKeyValue{
-															{
-																Name:  "x-kuma-rate-limit-header",
-																Value: "test-value",
-															},
-															{
-																Name:  "x-kuma-rate-limit",
-																Value: "other-value",
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}),
-		Entry("with MeshHTTPRoute targeting", gatewayTestCase{
-			name:          "http-route",
-			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{
-										{
-											Matches: []meshhttproute_api.Match{{
-												Path: &meshhttproute_api.PathMatch{
-													Type:  meshhttproute_api.Exact,
-													Value: "/",
-												},
-											}},
-											Default: meshhttproute_api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-												}},
-											},
-										},
-										{
-											Matches: []meshhttproute_api.Match{{
-												Path: &meshhttproute_api.PathMatch{
-													Type:  meshhttproute_api.Exact,
-													Value: "/another-route",
-												},
-												Method: pointer.To[meshhttproute_api.Method]("GET"),
-											}},
-											Default: meshhttproute_api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-												}},
-											},
-										},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{
-									{
-										Key:   core_rules.RuleMatchesHashTag,
-										Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
-									},
-								},
-								Conf: api.Conf{
-									Local: &api.Local{
-										HTTP: &api.LocalHTTP{
-											RequestRate: &api.Rate{
-												Num:      100,
-												Interval: v1.Duration{Duration: 10 * time.Second},
-											},
-											OnRateLimit: &api.OnRateLimit{
-												Status: pointer.To(uint32(444)),
-												Headers: &api.HeaderModifier{
-													Add: &[]api.HeaderKeyValue{
-														{
-															Name:  "x-kuma-rate-limit-header",
-															Value: "test-value",
-														},
-														{
-															Name:  "x-kuma-rate-limit",
-															Value: "other-value",
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-	)
 })
 
 func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {

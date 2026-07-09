@@ -31,13 +31,11 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
-				common_api.MeshGateway,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 				common_api.MeshHTTPRoute,
 				common_api.Dataplane,
 			},
-			GatewayListenerTagsAllowed: true,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -58,13 +56,12 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 		path := validators.RootedAt("to").Index(idx)
 
 		var supportedKinds []common_api.TargetRefKind
-		switch topLevelKind.Kind {
-		case common_api.MeshGateway, common_api.MeshHTTPRoute:
+		if topLevelKind.Kind == common_api.MeshHTTPRoute {
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshExternalService,
 			}
-		default:
+		} else {
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,

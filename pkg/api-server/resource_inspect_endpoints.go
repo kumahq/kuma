@@ -703,19 +703,28 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			})
 
 			toResourceRules := []api_common.ResourceRule{}
-			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
-				toResourceRules = append(toResourceRules, api_common.ResourceRule{
-					Conf:                resourceRuleItem.Conf,
-					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
-					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
-					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
-				})
+			if r.descriptor.Name != core_mesh.MeshGatewayType {
+				for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
+					toResourceRules = append(toResourceRules, api_common.ResourceRule{
+						Conf:                resourceRuleItem.Conf,
+						Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
+						ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
+						ResourceSectionName: &resourceRuleItem.ResourceSectionName,
+					})
+				}
 			}
 			sort.Slice(toResourceRules, func(i, j int) bool {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
+			if r.descriptor.Name == core_mesh.MeshGatewayType {
+				proxyRule = nil
+				toRules = nil
+				fromRules = nil
+				inboundRules = nil
+				toResourceRules = nil
+			}
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}

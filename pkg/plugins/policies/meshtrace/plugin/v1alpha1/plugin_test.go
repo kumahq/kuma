@@ -2,9 +2,7 @@
 package v1alpha1_test
 
 import (
-	"context"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -29,7 +27,6 @@ import (
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -38,7 +35,6 @@ import (
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -683,103 +679,7 @@ var _ = Describe("MeshTrace", func() {
 		Expect(backends[0].Traces).ToNot(BeNil())
 		Expect(backends[0].Traces.Enabled).To(BeTrue())
 	})
-
-	type gatewayTestCase struct {
-		rules           core_rules.SingleItemRules
-		features        xds_types.Features
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
-	}
-	DescribeTable("should generate proper Envoy config for gateways",
-		func(given gatewayTestCase) {
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-			}
-			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-			}
-
-			xdsCtx := *xds_samples.SampleContextWith(resources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
-			xdsCtx.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
-
-			proxy := xds_builders.Proxy().
-				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithMetadata(&core_xds.DataplaneMetadata{
-					Features: given.features,
-				}).
-				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.rules)).
-				Build()
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
-
-			// when
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			nameSplit := strings.Split(GinkgoT().Name(), " ")
-			name := nameSplit[len(nameSplit)-1]
-			// then
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.listeners.golden.yaml", name))))
-		},
-		Entry("simple-gateway", gatewayTestCase{
-			rules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									TraceId128Bit:     true,
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("simple-gateway-with-unified-naming", gatewayTestCase{
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			features: xds_types.Features{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-			rules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Origin: []core_model.ResourceMeta{
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "mt-2",
-							},
-						},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									TraceId128Bit:     true,
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-	)
 })
-
-func getResourceYaml(list core_xds.ResourceList) []byte {
-	actualResource, err := util_proto.ToYAML(list[0].Resource)
-	Expect(err).ToNot(HaveOccurred())
-	return actualResource
-}
 
 func zoneEgressOnlyDataplane() *builders.DataplaneBuilder {
 	return builders.Dataplane().

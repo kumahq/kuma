@@ -27,7 +27,6 @@ func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.Ta
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
-			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
 			common_api.Dataplane,
@@ -41,33 +40,14 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		var supportedKinds []common_api.TargetRefKind
-		var supportedKindsError string
-		switch topTargetRef.Kind {
-		case common_api.MeshGateway:
-			if toItem.Default.LoadBalancer != nil {
-				supportedKindsError = fmt.Sprintf("value '%s' is not supported, only %s is allowed if loadBalancer is set", topTargetRef.Kind, common_api.Mesh)
-				supportedKinds = []common_api.TargetRefKind{
-					common_api.Mesh,
-				}
-			} else {
-				supportedKinds = []common_api.TargetRefKind{
-					common_api.Mesh,
-					common_api.MeshService,
-					common_api.MeshMultiZoneService,
-				}
-			}
-		default:
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.MeshService,
-				common_api.MeshMultiZoneService,
-				common_api.MeshHTTPRoute,
-			}
+		supportedKinds := []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.MeshService,
+			common_api.MeshMultiZoneService,
+			common_api.MeshHTTPRoute,
 		}
 		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
-			SupportedKinds:      supportedKinds,
-			SupportedKindsError: supportedKindsError,
+			SupportedKinds: supportedKinds,
 		})
 		verr.AddErrorAt(path.Field("targetRef"), errs)
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {

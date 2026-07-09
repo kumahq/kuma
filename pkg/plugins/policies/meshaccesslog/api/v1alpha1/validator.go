@@ -23,7 +23,7 @@ func (r *MeshAccessLogResource) validate() error {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	if r.Spec.To != nil {
-		verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, pointer.Deref(r.Spec.To)))
+		verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	}
 	if r.Spec.From != nil {
 		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
@@ -39,7 +39,6 @@ func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isIn
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
-			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
 			common_api.Dataplane,
@@ -85,25 +84,17 @@ func validateMatches(field string, matches []common_api.Match) validators.Valida
 	return verr
 }
 
-func validateTo(topLevelKind common_api.TargetRefKind, to []To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
 
-		var supportedKinds []common_api.TargetRefKind
-		switch topLevelKind {
-		case common_api.MeshGateway:
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-			}
-		default:
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.MeshService,
-				common_api.MeshExternalService,
-				common_api.MeshMultiZoneService,
-				common_api.MeshHTTPRoute,
-			}
+		supportedKinds := []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.MeshService,
+			common_api.MeshExternalService,
+			common_api.MeshMultiZoneService,
+			common_api.MeshHTTPRoute,
 		}
 		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: supportedKinds,
