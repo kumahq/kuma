@@ -99,15 +99,6 @@ ifeq ($(K3D_TWEAK_FS_EVICTION_RULES),true)
 		--k3s-arg "--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@server:0"
 endif
 
-# --- eBPF ---
-# Mount bpffs inside k3d containers for eBPF-based transparent proxy.
-# On macOS Docker Desktop the mount must happen post-create; on Linux
-# it's done via a volume at cluster creation time.
-
-ifeq ($(GOOS),linux)
-K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
-endif
-
 # --- k3d-specific context ---
 
 CLUSTER_KUBECONTEXT := k3d-$(CLUSTER_NAME)

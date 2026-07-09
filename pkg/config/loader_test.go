@@ -616,13 +616,6 @@ runtime:
         port: 1053
         logging: false
         experimentalProxy: false
-      ebpf:
-        enabled: true
-        instanceIPEnvVarName: FOO
-        bpffsPath: /run/kuma/bar
-        cgroupPath: /faz/daz/zaz
-        tcAttachIface: veth1
-        programsSourcePath: /kuma/baz
       ignoredServiceSelectorLabels: ["x", "y"]
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
