@@ -713,7 +713,6 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 	var err validators.ValidationError
 
 	immutableLabels := []string{
-		mesh_proto.ResourceOriginLabel,
 		mesh_proto.ZoneTag,
 	}
 
