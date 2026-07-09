@@ -8,7 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -174,6 +176,53 @@ var _ = Describe("SecretsGenerator", func() {
 				"default": {},
 			},
 			expected: "envoy-config-zipkin.golden.yaml",
+		}),
+		Entry("should not generate legacy identity secret when workload identity is assigned", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+						Spec: &mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "ca-1",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "ca-1",
+										Type: "builtin",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			proxy: &core_xds.Proxy{
+				Id: *core_xds.BuildProxyId("", "default.backend-01"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "default",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				SecretsTracker: envoy_common.NewSecretsTracker("default", []string{"default"}),
+				APIVersion:     envoy_common.APIV3,
+				WorkloadIdentity: &core_xds.WorkloadIdentity{
+					KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "identity"},
+					ManagementMode: core_xds.KumaManagementMode,
+				},
+			},
+			identity: true,
+			expected: "envoy-config-workload-identity.golden.yaml",
 		}),
 		Entry("should skip generation of other Mesh CAs without a cross-mesh MeshGateway", testCase{
 			ctx: xds_context.Context{
