@@ -11,7 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -28,15 +30,30 @@ func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef) validat
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
-		SupportedKinds: []common_api.TargetRefKind{
-			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
-			common_api.Dataplane,
-		},
-	})
+	switch core_model.PolicyRole(r.GetMeta()) {
+	case mesh_proto.SystemPolicyRole:
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshGateway,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+				common_api.Dataplane,
+			},
+			GatewayListenerTagsAllowed: false,
+		})
+	default:
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+				common_api.Dataplane,
+			},
+		})
+	}
 }
 
 func validateDefault(conf Conf) validators.ValidationError {

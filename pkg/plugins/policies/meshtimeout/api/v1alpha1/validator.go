@@ -40,11 +40,13 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, isInb
 				common_api.Mesh,
 				common_api.MeshSubset,
 				common_api.Dataplane,
+				common_api.MeshGateway,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 				common_api.MeshHTTPRoute,
 			},
-			IsInboundPolicy: isInboundPolicy,
+			GatewayListenerTagsAllowed: true,
+			IsInboundPolicy:            isInboundPolicy,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -64,7 +66,8 @@ func validateFrom(from []From, topLevelKind common_api.TargetRefKind) validators
 	var verr validators.ValidationError
 	fromPath := validators.RootedAt("from")
 
-	if topLevelKind == common_api.MeshHTTPRoute {
+	switch topLevelKind {
+	case common_api.MeshHTTPRoute, common_api.MeshGateway:
 		if len(from) != 0 {
 			verr.AddViolationAt(fromPath, validators.MustNotBeDefined)
 		}
@@ -91,12 +94,13 @@ func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.Valid
 		path := validators.RootedAt("to").Index(idx)
 
 		var supportedKinds []common_api.TargetRefKind
-		if topLevelKind == common_api.MeshHTTPRoute {
+		switch topLevelKind {
+		case common_api.MeshHTTPRoute, common_api.MeshGateway:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshExternalService,
 			}
-		} else {
+		default:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,

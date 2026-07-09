@@ -35,6 +35,7 @@ func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef
 			common_api.Mesh,
 			common_api.MeshSubset,
 			common_api.MeshService,
+			common_api.MeshGateway,
 			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
