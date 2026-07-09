@@ -60,6 +60,7 @@ func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Contex
 		dataplaneProto,
 		mergeLabels(dataplane.GetLabels(), pod.Labels),
 		dataplane.Mesh,
+		dataplane.Name,
 		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
 		model.WithMode(r.PodConverter.Mode),
 		model.WithK8s(true),
