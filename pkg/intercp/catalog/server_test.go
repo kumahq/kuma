@@ -27,6 +27,7 @@ var _ = Describe("Server", func() {
 		Address:     "192.168.0.1",
 		InterCpPort: 1234,
 		Ready:       true,
+		Version:     "v3",
 	}
 
 	It("should add instance to heartbeats", func() {
@@ -41,6 +42,7 @@ var _ = Describe("Server", func() {
 		Expect(instances[0].Address).To(Equal(request.Address))
 		Expect(instances[0].InterCpPort).To(Equal(uint16(request.InterCpPort)))
 		Expect(instances[0].Leader).To(BeFalse())
+		Expect(instances[0].Version).To(Equal(request.Version))
 	})
 
 	It("should remove instance when it's not ready", func() {
