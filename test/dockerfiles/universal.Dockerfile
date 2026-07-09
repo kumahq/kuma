@@ -28,7 +28,6 @@ COPY --from=spire_agent /opt/spire/bin/spire-agent /usr/bin
 COPY --from=spire_server /opt/spire/bin/spire-server /usr/bin
 ADD /test/dockerfiles/spire-server.conf /spire
 ADD /test/dockerfiles/spire-agent.conf /spire
-ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 ADD /build/artifacts-linux-$ARCH/test-server/test-server /usr/bin
 ADD /test/server/certs/server.crt /kuma

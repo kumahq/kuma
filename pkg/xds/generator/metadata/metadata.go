@@ -13,9 +13,6 @@ const (
 	// OriginDirectAccess is the origin for resources produced by the direct-access proxy generator
 	OriginDirectAccess Origin = "direct-access"
 
-	// OriginDNS is the origin for resources produced by the DNS generator
-	OriginDNS Origin = "dns"
-
 	// OriginEgress is the origin for resources associated with the egress dataplane/proxy
 	OriginEgress Origin = "egress"
 

@@ -224,7 +224,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
-			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.ExperimentalProxy).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
@@ -620,8 +619,6 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
-        logging: false
-        experimentalProxy: false
       ebpf:
         enabled: true
         instanceIPEnvVarName: FOO
@@ -880,7 +877,6 @@ meshService:
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES": "33554432",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":              "/access/log/test",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":                      "1.1.1.1",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH":             "/etc/resolv.conf",
 				"KUMA_ENVIRONMENT":                                                                         "kubernetes",
 				"KUMA_STORE_TYPE":                                                                          "postgres",
 				"KUMA_STORE_UNSAFE_DELETE":                                                                 "true",
@@ -1010,7 +1006,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING":                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",
@@ -1020,7 +1015,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY":                          "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED":                         "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",

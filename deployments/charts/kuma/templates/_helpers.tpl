@@ -287,10 +287,6 @@ env:
   value: {{ .Values.dataPlane.validationContainer.resources.limits.cpu | default "0" | quote }}
 - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
   value: {{ .Values.dataPlane.validationContainer.resources.limits.memory | default "50M" | quote }}
-{{- if .Values.dataPlane.dnsLogging }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
-  value: "true"
-{{- end }}
 {{- if .Values.transparentProxy.configMap.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
   value: {{ include "kuma.transparentProxyConfigMapName" . | quote }}

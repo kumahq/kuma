@@ -301,7 +301,7 @@
                         "type": "string"
                     },
                     "type": "object",
-                    "description": "Versions of other dependencies, i.e. CoreDNS"
+                    "description": "Versions of other dependencies"
                 }
             },
             "additionalProperties": true,

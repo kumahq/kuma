@@ -69,16 +69,10 @@ spec:
       value: "false"
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
-    - name: KUMA_DNS_CORE_DNS_BINARY_PATH
-      value: coredns
-    - name: KUMA_DNS_CORE_DNS_PORT
-      value: "25053"
     - name: KUMA_DNS_ENABLED
       value: "true"
-    - name: KUMA_DNS_ENABLE_LOGGING
-      value: "false"
-    - name: KUMA_DNS_ENVOY_DNS_PORT
-      value: "25055"
+    - name: KUMA_DNS_PROXY_PORT
+      value: "25053"
     - name: NEW_ENV_VAR
       value: "123"
     - name: POD_NAME
