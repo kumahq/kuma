@@ -72,9 +72,9 @@ on GitHub Actions, the closest templates for us.
   away instead of waiting ~90m.
 
 - Hard-enforce a green tagged SHA: a guard job on the tag fails the release unless the
-  tagged commit already has a trustworthy full-matrix `build-test-distribute` run on its
-  branch (mechanism in "Enforcing the green tagged SHA"). This reads an existing run, not
-  new test machinery.
+  tagged commit already has a trustworthy full-matrix `build-test-distribute` push run on
+  its branch that both tested green and published its preview (mechanism in "Enforcing the
+  green tagged SHA"). This reads an existing run, not new test machinery.
 
 After this, `build_publish` ~15m plus provenance/distributions lands at roughly 20–30m
 versus the current 100–220m.
@@ -140,9 +140,10 @@ skip to the tagged commit being green, so by itself it would happily ship an unt
 A guard job runs first on the tag and gates the rest of the pipeline on a verified-green
 SHA. There are two ways to react to a missing green run:
 
-- Fail-hard (chosen): if the tagged SHA has no trustworthy green run, the tag fails
-  immediately, before anything builds. The releaser greens the branch (or
-  `workflow_dispatch` a full run on that SHA) and re-tags.
+- Fail-hard (chosen): if the tagged SHA has no trustworthy green *and published* run, the
+  tag fails immediately, before anything builds. The releaser re-runs the branch's push CI
+  (a re-run keeps `event == push`, so it re-tests *and* re-publishes the preview) and
+  re-tags.
 
 - Re-run-on-tag (rejected): fall back to running unit and e2e on the tag when no green run
   is found. Rejected because it re-introduces the flaky ~90–150m e2e this MADR removes,
@@ -150,26 +151,33 @@ SHA. There are two ways to react to a missing green run:
   tag-run flake can fail the release, the secondary problem the MADR set out to fix. It is
   also the lone-outlier (Linkerd) model we are moving away from.
 
-We pick fail-hard: the premise is that the branch SHA is already fully tested, so the gate
-must *enforce* that invariant, not silently re-test when it is absent. The failure surfaces
-in seconds and is actionable, and because `workflow_dispatch` also runs the full matrix,
-recovery is "dispatch a run on the SHA, then tag."
+We pick fail-hard: the premise is that the branch SHA is already fully tested *and has
+already published a preview*, so the gate must *enforce* both invariants, not silently
+re-test when they are absent. The failure surfaces in seconds and is actionable, and
+because a branch push both runs the full matrix and publishes, recovery is "re-run the
+branch's push CI on the SHA, then tag."
 
-Picking the run is the fiddly part (a SHA can have several runs, and older `pull_request`
-runs may have skipped e2e), so the lookup is explicit:
+Picking the run is the fiddly part (a SHA can have several runs, and only some both tested
+*and* published), so the lookup is explicit:
 
 - List `build-test-distribute.yaml` runs for the tagged SHA (`head_sha`), completed, with
-  `event` in {`push`, `workflow_dispatch`}; both force `FULL_MATRIX=true` and carry no PR
-  labels, so e2e always ran. This excludes `pull_request` runs, the only ones that can set
-  `SKIP_E2E_TESTS` or reduce the matrix.
+  `event == push`. A push forces `FULL_MATRIX=true` (so e2e always ran) and is the only
+  event that sets `ALLOW_PUSH=true` (so it also released a `-preview.<hash>` artifact). This
+  excludes `pull_request` runs (which can set `SKIP_E2E_TESTS` or reduce the matrix) *and*
+  `workflow_dispatch` runs (which run the full matrix but leave `ALLOW_PUSH=false`, so they
+  build without publishing anything — passing the old test-only gate while shipping no
+  artifact).
 
 - Keep `conclusion == success` and take the most recent.
 
-- Guard against an emptied matrix: fetch that run's jobs and require `test_unit` and the
-  `test_e2e*` jobs to be present and successful. A skipped-e2e run still reports overall
-  success but has no e2e jobs, so presence is the real check.
+- Guard against an emptied matrix *and a build-only run*: fetch that run's jobs and require
+  the tested jobs (`test_unit`, `test_e2e*`) plus the publish jobs — `digest-images` (the
+  `ALLOW_PUSH` sentinel, absent on any non-publishing run), `build-binaries`, `build-images`,
+  and `publish-helm` — to be present and successful. A skipped-e2e run reports overall
+  success but has no e2e jobs, and a non-publishing run has no `digest-images` job, so
+  presence is the real check.
 
-- No match ⇒ fail the tag, with a message pointing at branch CI / `workflow_dispatch`.
+- No match ⇒ fail the tag, with a message pointing at the branch push CI.
 
 ### The publish path is already exercised continuously (no separate rehearsal)
 
@@ -180,6 +188,11 @@ and publishes a `-preview.<hash>` artifact through the same `_build_publish.yaml
 uses (`version.sh` auto-routes preview versions to `notary-internal` and the preview
 Cloudsmith repo). That continuous run is the rehearsal; a separate scheduled one would be
 redundant machinery.
+
+The green-SHA gate turns this from an assumption into an enforced precondition: it accepts
+only a `push` run for the tagged SHA — i.e. one that actually published that SHA's preview —
+so the tag never ships a tree whose build-and-publish path has not already run green. A
+SHA greened only by `workflow_dispatch` (full matrix, but `ALLOW_PUSH=false`) is rejected.
 
 The only steps not exercised between releases are the tag-gated ones: SLSA provenance
 upload, the helm chart release to `kumahq/charts`, and the GitHub Release. They are first
@@ -200,7 +213,9 @@ lacks. So Option 1 ships now, with Options 2 and 3 as follow-up.
 
 - e2e is not a security control; SBOM, provenance, signing, and scan live in
   `build_publish` and `provenance`, which Option 1 leaves unchanged.
-- New risk: tagging a never-green commit, mitigated by the hard green-SHA gate.
+- New risk: tagging a never-green or never-published commit, mitigated by the hard green-SHA
+  gate, which requires a green push run that already tested and signed/published a preview
+  for the SHA.
 - Container-structure tests stay, so artifact regressions are still caught on the tag.
 - Option 2 *strengthens* security, since the scanned and signed bits are the shipped bits.
 
@@ -210,6 +225,9 @@ lacks. So Option 1 ships now, with Options 2 and 3 as follow-up.
 - Dropping the redundant e2e removes the flakiest release gate.
 - Residual risk: the branch run goes stale against the tag. The hard (fail-hard) green-SHA
   gate mitigates this today; RC soak would add to it once Option 2 lands.
+- Requiring a *published* push run for the SHA also rejects a tree that tested green but
+  never published (e.g. greened only via `workflow_dispatch`), so the tag's build-and-publish
+  never runs cold at release time.
 
 - Container-structure on the freshly-built image plus a binary-version assert are the
   only tag-specific checks; they verify exactly what the tag build changes (the
@@ -240,8 +258,9 @@ workflow, no scheduled rehearsal:
   binary-version assert. Keep `check`'s metadata computation, skip its redundant
   validation.
 
-- Hard-enforce a green tagged SHA via a guard job that fails the tag unless the commit has
-  a green full-matrix run (fail-hard; see "Enforcing the green tagged SHA").
+- Hard-enforce a green, already-published tagged SHA via a guard job that fails the tag
+  unless the commit has a green full-matrix `push` run that also released its preview
+  (fail-hard; see "Enforcing the green tagged SHA").
 
 - No separate rehearsal: every push already builds and publishes a preview through the
   same `_build_publish.yaml`.
@@ -259,7 +278,9 @@ binary-version assert, the ldflags delta); implement by extending the two skip g
 (`_test.yaml:21` and `:82`) in the monolith, not a new workflow (the `ci/skip-test` label
 never fires on a tag, so this is a `ref_type=='tag'` clause, not the label); no separate
 rehearsal (per-push preview builds already exercise publish); the green-SHA gate is
-hard-enforced (fail-hard, not re-run-on-tag); RC tags deferred; version decoupling is out
+hard-enforced (fail-hard, not re-run-on-tag) and requires a green *push* run that also
+published a preview for the SHA, not merely a green test run; RC tags deferred; version
+decoupling is out
 of scope for Option 1 (rebuild-on-tag stamps the version) and belongs to Option 2.
 
 Open: none for Option 1. Option 2 (digest promotion) still needs version decoupling and an
