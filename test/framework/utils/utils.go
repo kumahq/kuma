@@ -64,6 +64,12 @@ const xdsChurnThreshold = 3
 // changed" log line) at least xdsChurnThreshold times without an
 // intervening different hash, which indicates non-deterministic xDS
 // generation (e.g. unordered map iteration when building a resource).
+//
+// Each "config has changed" log line is one regeneration event: a hash
+// that appears more than once within a single line's versions array (e.g.
+// several resource types clearing to the same empty-resources hash in one
+// reconciliation) still only contributes 1 to that hash's count, since it
+// did not require a separate regeneration to reappear.
 func DetectXdsChurn(logs string) []string {
 	counts := map[string]map[string]int{}
 
@@ -79,7 +85,12 @@ func DetectXdsChurn(logs string) []string {
 		if versions == nil {
 			continue
 		}
+		seenInLine := map[string]bool{}
 		for _, hash := range xdsChurnHashRe.FindAllString(versions[1], -1) {
+			if seenInLine[hash] {
+				continue
+			}
+			seenInLine[hash] = true
 			if counts[proxyName] == nil {
 				counts[proxyName] = map[string]int{}
 			}

@@ -146,6 +146,24 @@ var _ = Describe("DetectXdsChurn", func() {
 		Expect(utils.DetectXdsChurn("")).To(BeEmpty())
 	})
 
+	It("does not flag a single log line with a duplicate hash in its versions array", func() {
+		logs := changedLine("backend", hashA, hashA, hashA)
+
+		Expect(utils.DetectXdsChurn(logs)).To(BeEmpty())
+	})
+
+	It("counts a duplicate hash within one line as a single event toward the threshold", func() {
+		logs := joinLines(
+			changedLine("backend", hashA),
+			changedLine("backend", hashA),
+			changedLine("backend", hashA, hashA, hashA),
+		)
+
+		Expect(utils.DetectXdsChurn(logs)).To(ConsistOf(
+			"proxy backend regenerated identical config 3 times (hash a1b2c3d4e5f60718) — non-deterministic xDS",
+		))
+	})
+
 	It("flags the empty-resources hash like any other hash once it reaches the threshold", func() {
 		// pkg/xds/server/v3.emptyResourcesVersion() returns a constant hash
 		// whenever any resource type transitions from populated to empty, but
