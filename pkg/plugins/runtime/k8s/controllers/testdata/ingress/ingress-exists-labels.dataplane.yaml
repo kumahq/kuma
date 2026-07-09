@@ -2,6 +2,7 @@ metadata:
   labels:
     app: kuma-ingress
     k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: ""
     kuma.io/proxy-type: zoneingress
     test: new
 spec:
