@@ -54,7 +54,7 @@ A new explicit flag preserves the previous insecure behavior:
 
 Do not use this in production.
 
-### Inbound listeners now use SO_REUSEPORT by default
+### Rolling-upgrade note: inbound listeners use SO_REUSEPORT by default
 
 See [Inbound listeners now use SO_REUSEPORT by default](#inbound-listeners-now-use-so_reuseport-by-default).
 
