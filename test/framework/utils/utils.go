@@ -47,9 +47,20 @@ func HasPanicInCpLogs(logs string) bool {
 var (
 	xdsChurnProxyNameRe         = regexp.MustCompile(`"proxyName":\s*"([^"]+)"`)
 	xdsChurnProxyNameFallbackRe = regexp.MustCompile(`proxyName=(\S+)`)
+	xdsChurnMeshRe              = regexp.MustCompile(`"mesh":\s*"([^"]*)"`)
+	xdsChurnMeshFallbackRe      = regexp.MustCompile(`\bmesh=(\S+)`)
 	xdsChurnVersionsRe          = regexp.MustCompile(`"versions":\s*\[([^\]]*)\]`)
 	xdsChurnHashRe              = regexp.MustCompile(`[0-9a-f]{16}`)
 )
+
+// xdsChurnKey identifies a proxy by both mesh and name. In e2e, dataplane
+// names (e.g. demo-client, test-server) are reused across meshes, so keying
+// churn counts by name alone would merge unrelated proxies and could report
+// spurious churn.
+type xdsChurnKey struct {
+	mesh  string
+	proxy string
+}
 
 // xdsChurnThreshold is the number of times a proxy must regenerate the exact
 // same content hash before it is flagged as non-deterministic xDS
@@ -71,8 +82,8 @@ const xdsChurnThreshold = 3
 // reconciliation) still only contributes 1 to that hash's count, since it
 // did not require a separate regeneration to reappear.
 func DetectXdsChurn(logs string) []string {
-	maxStreaks := map[string]map[string]int{}
-	currentStreaks := map[string]map[string]int{}
+	maxStreaks := map[xdsChurnKey]map[string]int{}
+	currentStreaks := map[xdsChurnKey]map[string]int{}
 
 	for line := range strings.SplitSeq(logs, "\n") {
 		if !strings.Contains(line, "config has changed") {
@@ -82,6 +93,7 @@ func DetectXdsChurn(logs string) []string {
 		if proxyName == "" {
 			continue
 		}
+		key := xdsChurnKey{mesh: xdsChurnMesh(line), proxy: proxyName}
 		versions := xdsChurnVersionsRe.FindStringSubmatch(line)
 		if versions == nil {
 			continue
@@ -97,28 +109,34 @@ func DetectXdsChurn(logs string) []string {
 		nextStreaks := map[string]int{}
 		for hash := range seenInLine {
 			streak := 1
-			if currentStreaks[proxyName] != nil {
-				streak = currentStreaks[proxyName][hash] + 1
+			if currentStreaks[key] != nil {
+				streak = currentStreaks[key][hash] + 1
 			}
 			nextStreaks[hash] = streak
-			if maxStreaks[proxyName] == nil {
-				maxStreaks[proxyName] = map[string]int{}
+			if maxStreaks[key] == nil {
+				maxStreaks[key] = map[string]int{}
 			}
-			if streak > maxStreaks[proxyName][hash] {
-				maxStreaks[proxyName][hash] = streak
+			if streak > maxStreaks[key][hash] {
+				maxStreaks[key][hash] = streak
 			}
 		}
-		currentStreaks[proxyName] = nextStreaks
+		currentStreaks[key] = nextStreaks
 	}
 
 	var reports []string
-	for _, proxyName := range slices.Sorted(maps.Keys(maxStreaks)) {
-		for _, hash := range slices.Sorted(maps.Keys(maxStreaks[proxyName])) {
-			count := maxStreaks[proxyName][hash]
+	keys := slices.SortedFunc(maps.Keys(maxStreaks), func(a, b xdsChurnKey) int {
+		if a.mesh != b.mesh {
+			return strings.Compare(a.mesh, b.mesh)
+		}
+		return strings.Compare(a.proxy, b.proxy)
+	})
+	for _, key := range keys {
+		for _, hash := range slices.Sorted(maps.Keys(maxStreaks[key])) {
+			count := maxStreaks[key][hash]
 			if count >= xdsChurnThreshold {
 				reports = append(reports, fmt.Sprintf(
-					"proxy %s regenerated identical config %d times (hash %s) — non-deterministic xDS",
-					proxyName, count, hash,
+					"proxy %s in mesh %s regenerated identical config %d times (hash %s) — non-deterministic xDS",
+					key.proxy, key.mesh, count, hash,
 				))
 			}
 		}
@@ -135,6 +153,19 @@ func xdsChurnProxyName(line string) string {
 		return m[1]
 	}
 	if m := xdsChurnProxyNameFallbackRe.FindStringSubmatch(line); m != nil {
+		return m[1]
+	}
+	return ""
+}
+
+// xdsChurnMesh extracts the mesh field from a CP log line, matching the
+// encoders handled by xdsChurnProxyName. An empty result (e.g. mesh-less
+// zone ingress/egress proxies) is a valid key on its own.
+func xdsChurnMesh(line string) string {
+	if m := xdsChurnMeshRe.FindStringSubmatch(line); m != nil {
+		return m[1]
+	}
+	if m := xdsChurnMeshFallbackRe.FindStringSubmatch(line); m != nil {
 		return m[1]
 	}
 	return ""
