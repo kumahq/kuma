@@ -48,6 +48,14 @@ rules:
       - list
       - watch
   - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses
+    verbs:
+      - get
+      - list
+      - patch
+  - apiGroups:
       - kuma.io
     resources:
       - dataplanes
