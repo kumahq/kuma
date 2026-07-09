@@ -564,8 +564,9 @@ ingress:
       cpu: 1000m
       memory: 512Mi
 
-  # Liveness probe for the Ingress
+  # -- Liveness probe settings for the Ingress proxy
   livenessProbe:
+    # -- Whether to enable the liveness probe.
     enabled: true
     failureThreshold: 12
     initialDelaySeconds: 60
@@ -573,8 +574,9 @@ ingress:
     successThreshold: 1
     timeoutSeconds: 3
 
-  # Readiness probe for the Ingress
+  # -- Readiness probe settings for the Ingress proxy
   readinessProbe:
+    # -- Whether to enable the readiness probe.
     enabled: true
     failureThreshold: 12
     initialDelaySeconds: 1
@@ -582,8 +584,9 @@ ingress:
     successThreshold: 1
     timeoutSeconds: 3
 
-  # Startup probe for the Ingress
+  # -- Startup probe settings for the Ingress proxy
   startupProbe:
+    # -- Whether to enable the startup probe.
     enabled: false
     failureThreshold: 60
     initialDelaySeconds: 1
@@ -750,8 +753,9 @@ egress:
       cpu: 1000m
       memory: 512Mi
 
-  # Liveness probe for the Egress
+  # -- Liveness probe settings for the Ingress proxy
   livenessProbe:
+    # -- Whether to enable the liveness probe.
     enabled: true
     failureThreshold: 12
     initialDelaySeconds: 60
@@ -759,8 +763,9 @@ egress:
     successThreshold: 1
     timeoutSeconds: 3
 
-  # Readiness probe for the Egress
+  # -- Readiness probe settings for the Ingress proxy
   readinessProbe:
+    # -- Whether to enable the readiness probe.
     enabled: true
     failureThreshold: 12
     initialDelaySeconds: 1
@@ -768,8 +773,9 @@ egress:
     successThreshold: 1
     timeoutSeconds: 3
 
-  # Startup probe for the Egress
+  # -- Startup probe settings for the Ingress proxy
   startupProbe:
+    # -- Whether to enable the startup probe.
     enabled: false
     failureThreshold: 60
     initialDelaySeconds: 1
