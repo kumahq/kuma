@@ -54,7 +54,6 @@ var _ = Describe("AvailableServices Tracker", func() {
 				vips.NewPersistence(resManager, config_manager.NewConfigManager(resourceStore), false),
 				".mesh",
 				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			var err error
@@ -169,7 +168,6 @@ var _ = Describe("AvailableServices Tracker", func() {
 				vips.NewPersistence(resManager, config_manager.NewConfigManager(resourceStore), false),
 				".mesh",
 				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(

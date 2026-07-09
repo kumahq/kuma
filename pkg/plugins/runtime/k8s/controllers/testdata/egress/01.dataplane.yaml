@@ -2,6 +2,7 @@ metadata:
   labels:
     app: kuma-egress
     k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: ""
     kuma.io/proxy-type: zoneegress
 spec:
   networking:

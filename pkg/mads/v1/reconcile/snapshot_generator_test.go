@@ -116,7 +116,6 @@ var _ = Describe("snapshotGenerator", func() {
 					vips.NewPersistence(resourceManager, config_manager.NewConfigManager(store), false),
 					".mesh",
 					80,
-					xds_context.AnyToAnyReachableServicesGraphBuilder,
 					nil,
 				)
 				newMetrics, err := metrics.NewMetrics(zone)
