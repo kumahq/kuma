@@ -972,6 +972,11 @@ If you're using Kubernetes mode, and you did not specify `default.passthroughMod
 The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
 is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
 
+### Built-in MeshGateway policy targeting
+
+Policies no longer attach directly to built-in `MeshGateway` listeners through `spec.targetRef.kind: MeshGateway` for `MeshAccessLog`, `MeshCircuitBreaker`, `MeshFaultInjection`, `MeshHealthCheck`, `MeshRateLimit`, `MeshRetry`, `MeshTimeout`, `MeshTLS`, `MeshTrace`, or `MeshLoadBalancingStrategy`.
+Use `MeshHTTPRoute` or `MeshTCPRoute` resources for built-in gateway routing behavior, and move the affected policy configuration to supported target kinds before upgrading.
+
 ### MeshHealthCheck
 
 #### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`

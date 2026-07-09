@@ -35,7 +35,6 @@ import (
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -43,11 +42,9 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/model"
-	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -120,9 +117,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
-		return err
-	}
-	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
 		return err
 	}
 
@@ -345,84 +339,6 @@ func applyToDirectAccess(
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 		}
 		return configureListener(*conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
-	}
-
-	return nil
-}
-
-func applyToGateway(
-	rules core_rules.GatewayRules,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	resources xds_context.ResourceMap,
-	proxy *core_xds.Proxy,
-	backends *EndpointAccumulator,
-	path string,
-	zone string,
-	workloadKRI string,
-	inboundTagsDisabled bool,
-) error {
-	var gateways *core_mesh.MeshGatewayResourceList
-	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
-		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
-	} else {
-		return nil
-	}
-
-	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
-	if gateway == nil {
-		return nil
-	}
-
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-		port := listenerInfo.Listener.Port
-		listenerKey := core_rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		listener, ok := gatewayListeners[listenerKey]
-		if !ok {
-			continue
-		}
-		var protocol core_meta.Protocol
-		if _, p, _, err := names.ParseGatewayListenerName(listener.GetName()); err != nil {
-			return err
-		} else {
-			protocol = core_meta.ParseProtocol(p)
-		}
-
-		if toListenerRules, ok := rules.ToRules.ByListener[listenerKey]; ok {
-			if conf := core_rules.ComputeConf[api.Conf](toListenerRules.Rules, subsetutils.MeshElement()); conf != nil {
-				kumaValues := listeners_v3.KumaValues{
-					SourceService:      proxy.Dataplane.IdentifyingName(inboundTagsDisabled),
-					SourceIP:           proxy.Dataplane.GetIP(),
-					DestinationService: mesh_proto.MatchAllTag,
-					Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
-					Zone:               zone,
-					WorkloadKRI:        workloadKRI,
-					TrafficDirection:   envoy.TrafficDirectionOutbound,
-				}
-
-				if err := configureListener(*conf, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
-					return err
-				}
-			}
-		}
-
-		if fromListenerRules, ok := rules.InboundRules[listenerKey]; ok {
-			kumaValues := listeners_v3.KumaValues{
-				SourceService:      mesh_proto.ServiceUnknown,
-				SourceIP:           proxy.Dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
-				DestinationService: proxy.Dataplane.IdentifyingName(inboundTagsDisabled),
-				Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
-				Zone:               zone,
-				WorkloadKRI:        workloadKRI,
-				TrafficDirection:   envoy.TrafficDirectionInbound,
-			}
-			if err := configureListenerFromRules(fromListenerRules, listener, backends, DefaultFormat(protocol), kumaValues, path); err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil

@@ -15,7 +15,6 @@ import (
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
@@ -63,9 +62,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToGateways(policies.GatewayRules, listeners.Gateway, proxy); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -173,46 +169,6 @@ func applyToZoneProxyListener(
 		}
 	}
 
-	return nil
-}
-
-func applyToGateways(
-	rules core_rules.GatewayRules,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	proxy *core_xds.Proxy,
-) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
-		return nil
-	}
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-		port := listenerInfo.Listener.Port
-		listenerKey := core_rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		gatewayListener, ok := gatewayListeners[listenerKey]
-		if !ok {
-			continue
-		}
-		rules, ok := rules.ToRules.ByListener[listenerKey]
-		if !ok {
-			continue
-		}
-
-		var protocol core_meta.Protocol
-		switch listenerInfo.Listener.Protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			protocol = core_meta.ProtocolHTTP
-		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			protocol = core_meta.ProtocolTCP
-		}
-		for _, filterChain := range gatewayListener.FilterChains {
-			if err := configure(rules.Rules, filterChain, protocol); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 

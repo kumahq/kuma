@@ -343,47 +343,5 @@ from:
           limit: 1000
           percentage: "xyz"`,
 		),
-		ErrorCases("MeshGateway and targetRefs",
-			[]validators.Violation{
-				{
-					Field:   "spec.from",
-					Message: "must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to",
-				},
-				{
-					Field:   "spec.to[1].targetRef.kind",
-					Message: "value 'MeshService' is not supported",
-				},
-			}, `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50
-  - targetRef:
-      kind: MeshService
-      name: backend
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50`,
-		),
 	)
 })

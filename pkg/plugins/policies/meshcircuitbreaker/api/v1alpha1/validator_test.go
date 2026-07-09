@@ -259,16 +259,6 @@ to:
       name: external
     default:
       connectionLimits: { }`),
-			Entry("gateway example", `
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      connectionLimits: { }`),
 		)
 
 		type testCase struct {

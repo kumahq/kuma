@@ -85,12 +85,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	policies := proxy.Policies.Dynamic[api.MeshTLSType]
 	// Check if MeshTLS policy or workload identity applies to this Dataplane
 	// - proxy.WorkloadIdentity != nil means the Dataplane has an assigned workload identity
-	// - non empty FromRules or GatewayRules mean a MeshTLS policy applies
+	// - non empty FromRules mean a MeshTLS policy applies
 	// If neither condition is true, skip processing to avoid generating unused xDS config
 	switch {
 	case proxy.WorkloadIdentity != nil:
 	case len(policies.FromRules.InboundRules) > 0:
-	case len(policies.GatewayRules.InboundRules) > 0:
 	default:
 		return nil
 	}
@@ -102,9 +101,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 	if err := applyToOutbounds(policies.FromRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds, ctx); err != nil {
-		return err
-	}
-	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, ctx); err != nil {
 		return err
 	}
 	if err := applyToRealResources(policies.FromRules, rs); err != nil {
@@ -202,31 +198,6 @@ func applyToOutbounds(
 		}
 	}
 
-	return nil
-}
-
-func applyToGateways(
-	gatewayRules core_rules.GatewayRules,
-	gatewayClusters map[string]*envoy_cluster.Cluster,
-	ctx xds_context.Context,
-) error {
-	for serviceName, cluster := range gatewayClusters {
-		// we shouldn't modify ExternalService
-		// MeshExternalService has different origin
-		if ctx.Mesh.IsExternalService(serviceName) {
-			continue
-		}
-		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf api.Conf
-		for _, r := range gatewayRules.InboundRules {
-			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
-			break
-		}
-
-		if err := configureTLSParams(conf, cluster); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
