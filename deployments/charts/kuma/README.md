@@ -160,6 +160,24 @@ A Helm chart for the Kuma Control Plane
 | ingress.logLevel | string | `"info"` | Log level for ingress (available values: off|info|debug) |
 | ingress.restartPolicy | string | `"Always"` | Pod restart policy for the ingress pods |
 | ingress.resources | object | `{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Define the resources to allocate to mesh ingress |
+| ingress.livenessProbe.enabled | bool | `true` |  |
+| ingress.livenessProbe.failureThreshold | int | `12` |  |
+| ingress.livenessProbe.initialDelaySeconds | int | `60` |  |
+| ingress.livenessProbe.periodSeconds | int | `5` |  |
+| ingress.livenessProbe.successThreshold | int | `1` |  |
+| ingress.livenessProbe.timeoutSeconds | int | `3` |  |
+| ingress.readinessProbe.enabled | bool | `true` |  |
+| ingress.readinessProbe.failureThreshold | int | `12` |  |
+| ingress.readinessProbe.initialDelaySeconds | int | `1` |  |
+| ingress.readinessProbe.periodSeconds | int | `5` |  |
+| ingress.readinessProbe.successThreshold | int | `1` |  |
+| ingress.readinessProbe.timeoutSeconds | int | `3` |  |
+| ingress.startupProbe.enabled | bool | `false` |  |
+| ingress.startupProbe.failureThreshold | int | `60` |  |
+| ingress.startupProbe.initialDelaySeconds | int | `1` |  |
+| ingress.startupProbe.periodSeconds | int | `5` |  |
+| ingress.startupProbe.successThreshold | int | `1` |  |
+| ingress.startupProbe.timeoutSeconds | int | `3` |  |
 | ingress.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | ingress.terminationGracePeriodSeconds | int | `40` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | ingress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
@@ -206,6 +224,24 @@ A Helm chart for the Kuma Control Plane
 | egress.resources.requests.memory | string | `"64Mi"` |  |
 | egress.resources.limits.cpu | string | `"1000m"` |  |
 | egress.resources.limits.memory | string | `"512Mi"` |  |
+| egress.livenessProbe.enabled | bool | `true` |  |
+| egress.livenessProbe.failureThreshold | int | `12` |  |
+| egress.livenessProbe.initialDelaySeconds | int | `60` |  |
+| egress.livenessProbe.periodSeconds | int | `5` |  |
+| egress.livenessProbe.successThreshold | int | `1` |  |
+| egress.livenessProbe.timeoutSeconds | int | `3` |  |
+| egress.readinessProbe.enabled | bool | `true` |  |
+| egress.readinessProbe.failureThreshold | int | `12` |  |
+| egress.readinessProbe.initialDelaySeconds | int | `1` |  |
+| egress.readinessProbe.periodSeconds | int | `5` |  |
+| egress.readinessProbe.successThreshold | int | `1` |  |
+| egress.readinessProbe.timeoutSeconds | int | `3` |  |
+| egress.startupProbe.enabled | bool | `false` |  |
+| egress.startupProbe.failureThreshold | int | `60` |  |
+| egress.startupProbe.initialDelaySeconds | int | `1` |  |
+| egress.startupProbe.periodSeconds | int | `5` |  |
+| egress.startupProbe.successThreshold | int | `1` |  |
+| egress.startupProbe.timeoutSeconds | int | `3` |  |
 | egress.service.enabled | bool | `true` | Whether to create the service object |
 | egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
 | egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |

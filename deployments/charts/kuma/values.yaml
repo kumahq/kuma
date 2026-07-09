@@ -564,6 +564,33 @@ ingress:
       cpu: 1000m
       memory: 512Mi
 
+  # Liveness probe for the Ingress
+  livenessProbe:
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # Readiness probe for the Ingress
+  readinessProbe:
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # Startup probe for the Ingress
+  startupProbe:
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
   lifecycle: {}
@@ -722,6 +749,33 @@ egress:
     limits:
       cpu: 1000m
       memory: 512Mi
+
+  # Liveness probe for the Egress
+  livenessProbe:
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # Readiness probe for the Egress
+  readinessProbe:
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # Startup probe for the Egress
+  startupProbe:
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
 
   service:
     # -- Whether to create the service object
