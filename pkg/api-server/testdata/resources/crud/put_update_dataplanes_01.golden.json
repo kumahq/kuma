@@ -4,6 +4,18 @@
  "name": "dp-1",
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
+<<<<<<< HEAD
+=======
+ "labels": {
+  "kuma.io/display-name": "dp-1",
+  "kuma.io/env": "universal",
+  "kuma.io/mesh": "default",
+  "kuma.io/origin": "zone",
+  "kuma.io/proxy-type": "sidecar",
+  "kuma.io/zone": "default"
+ },
+ "kri": "kri_dp_default_default__dp-1_",
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
  "networking": {
   "address": "10.1.2.1",
   "inbound": [

@@ -1,4 +1,13 @@
+<<<<<<< HEAD
 metadata: {}
+=======
+metadata:
+  labels:
+    app: kuma-ingress
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: ""
+    kuma.io/proxy-type: zoneingress
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 spec:
   networking:
     address: 192.168.0.1
