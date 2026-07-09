@@ -16,26 +16,8 @@ spec:
       name: main-port
       port: 7070
       protocol: tcp
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "7000"
-        kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc_7000
-        kuma.io/zone: zone-1
-        version: "0.1"
     - health:
         ready: true
       name: metrics
       port: 6060
       protocol: tcp
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "6000"
-        kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc_6000
-        kuma.io/zone: zone-1
-        version: "0.1"

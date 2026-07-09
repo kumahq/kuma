@@ -47,3 +47,15 @@ spec:
         kuma.io/protocol: tcp
         kuma.io/service: example-ms-1_demo_svc_6061
         kuma.io/zone: zone-1
+    - health: {}
+      port: 8080
+      protocol: http
+      state: NotReady
+      tags:
+        app: sample-ms
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example-ms-2
+        k8s.kuma.io/service-port: "80"
+        kuma.io/protocol: http
+        kuma.io/service: example-ms-2_demo_svc_80
+        kuma.io/zone: zone-1
