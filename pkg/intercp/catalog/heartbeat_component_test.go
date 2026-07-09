@@ -34,6 +34,7 @@ var _ = Describe("Heartbeats", func() {
 		Address:     "10.10.10.1",
 		InterCpPort: 5679,
 		Leader:      false,
+		Version:     "v3",
 	}
 
 	BeforeEach(func() {
@@ -94,6 +95,7 @@ var _ = Describe("Heartbeats", func() {
 			g.Expect(received.InstanceId).To(Equal(currentInstance.Id))
 			g.Expect(received.Address).To(Equal(currentInstance.Address))
 			g.Expect(received.InterCpPort).To(Equal(uint32(currentInstance.InterCpPort)))
+			g.Expect(received.Version).To(Equal(currentInstance.Version))
 		}, "10s", "100ms").Should(Succeed())
 	})
 
