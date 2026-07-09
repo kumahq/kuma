@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/ratelimits"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshextenralservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -148,23 +147,13 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	for _, ob := range meshContext.VIPOutbounds {
 		generatedVips[ob.GetAddress()] = true
 	}
-	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var newOutbounds []*xds_types.Outbound
 	var legacyOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
 		if outbound.LegacyOutbound != nil {
 			service := outbound.LegacyOutbound.GetService()
-			if len(reachableServices) != 0 {
-				if !reachableServices[service] {
-					// ignore VIP outbound if reachableServices is defined and not specified
-					// Reachable services takes precedence over reachable services graph.
-					continue
-				}
-			} else {
-				// static reachable services takes precedence over the graph
-				if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.LegacyOutbound.Tags) {
-					continue
-				}
+			if len(reachableServices) != 0 && !reachableServices[service] {
+				continue
 			}
 		} else {
 			// we need to verify if the user has already reachableServices defined, and to don't send additional clusters and ruin the performance
@@ -191,11 +180,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 				}
 				// we don't support MeshTrafficPermission for MeshExternalService at the moment
 				// TODO: https://github.com/kumahq/kuma/issues/11077
-			} else if outbound.Resource.ResourceType != meshextenralservice_api.MeshExternalServiceType {
-				// static reachable services takes precedence over the graph
-				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Resource) {
-					continue
-				}
 			}
 		}
 		if dataplane.UsesInboundInterface(net.ParseIP(outbound.GetAddress()), outbound.GetPort()) {

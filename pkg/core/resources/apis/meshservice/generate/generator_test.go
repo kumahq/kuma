@@ -74,7 +74,6 @@ var _ = Describe("MeshService generator", func() {
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			".mesh",
 			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 		meshCache, err := cache_mesh.NewCache(
@@ -486,7 +485,6 @@ var _ = Describe("MeshService generator", func() {
 				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
 				".mesh",
 				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -625,7 +623,6 @@ var _ = Describe("MeshService generator", func() {
 				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
 				".mesh",
 				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -700,7 +697,6 @@ var _ = Describe("MeshService generator", func() {
 				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
 				".mesh",
 				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -1021,7 +1017,6 @@ var _ = Describe("MeshService generator", func() {
 					vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
 					".mesh",
 					80,
-					xds_context.AnyToAnyReachableServicesGraphBuilder,
 					nil,
 				)
 				meshCache, err := cache_mesh.NewCache(
