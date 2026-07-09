@@ -37,9 +37,11 @@ unaffected by this change.
   before upgrading.
 - Any Kuma `Secret` that was copied from a Gateway API TLS `Secret` (name
   prefixed `gapi-`) is now orphaned and must be deleted manually.
-- Cluster RBAC no longer grants access to `gateways` and `referencegrants`.
-  It still grants access to `httproutes` for the GAMMA path, plus narrow
-  `gatewayclasses` access for the finalizer cleanup described above.
+- The default Helm-installed cluster RBAC no longer grants access to
+  `gateways` and `referencegrants`. It still grants access to `httproutes`
+  for the GAMMA path, plus narrow `gatewayclasses` access for the finalizer
+  cleanup described above. If you manage RBAC manually, add the
+  `gatewayclasses` permissions called out above for the upgrade window.
 - The config field `runtime.kubernetes.supportGatewaySecretsInAllNamespaces`
   (env `KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES`)
   and the Helm value `controlPlane.supportGatewaySecretsInAllNamespaces` have
