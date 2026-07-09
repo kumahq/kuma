@@ -1,1 +1,2 @@
+Warning: kuma.io/display-name is computed by the control plane (expected 'mes-display-name'); the supplied value 'my-custom-name' was overridden
 meshexternalservice.kuma.io/mes-display-name created

@@ -1,3 +1,7 @@
 HTTP/1.1 201 Created
 
-{}
+{
+ "warnings": [
+  "kuma.io/display-name is computed by the control plane (expected 'mt-display-name'); the supplied value 'my-custom-name' was overridden"
+ ]
+}

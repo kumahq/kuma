@@ -3,10 +3,11 @@ kind: MeshTimeout
 metadata:
   name: mt-workload
   namespace: {{ .KumaNamespace }}
+  annotations:
+    kuma.io/workload: my-workload
   labels:
     kuma.io/mesh: multizone-label-validation
     kuma.io/origin: zone
-    kuma.io/workload: my-workload
 spec:
   targetRef:
     kind: Mesh

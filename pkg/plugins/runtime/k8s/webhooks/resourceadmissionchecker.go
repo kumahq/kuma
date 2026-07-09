@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -26,27 +25,29 @@ type ResourceAdmissionChecker struct {
 	ZoneName                     string
 }
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
+type AdmissionDecision struct {
+	Response   admission.Response
+	Warnings   []string
+	Privileged bool
+}
+
+func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string, op v1.Operation) AdmissionDecision {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
-		return admission.Allowed("")
+		return AdmissionDecision{Response: admission.Allowed(""), Privileged: true}
 	}
 
 	if ns != "" {
 		// check only namespace-scoped resources
 		if resp := c.isNamespaceAllowed(r, ns); !resp.Allowed {
-			return resp
+			return AdmissionDecision{Response: resp}
 		}
 	}
 
 	if r.Descriptor().IsReadOnly(c.Mode == core.Global, c.FederatedZone) {
-		return *forbiddenResponse(resourceTypeNotAllowedMsg(r.Descriptor().Name, c.Mode))
+		return AdmissionDecision{Response: *forbiddenResponse(resourceTypeNotAllowedMsg(r.Descriptor().Name, c.Mode))}
 	}
 
-	if errResponse := c.isResourceAllowed(r, ns); errResponse != nil {
-		return *errResponse
-	}
-
-	return admission.Allowed("")
+	return c.checkResource(r, ns, op)
 }
 
 func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns string) admission.Response {
@@ -63,12 +64,14 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 	return admission.Allowed("")
 }
 
-func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) *admission.Response {
-	// we don't need to validate non fedarated zone and legacy policies
-	if (c.Mode != core.Global && !c.FederatedZone) || !r.Descriptor().IsPluginOriginated {
-		return nil
+func (c *ResourceAdmissionChecker) checkResource(r core_model.Resource, ns string, op v1.Operation) AdmissionDecision {
+	if (c.Mode == core.Global || c.FederatedZone) && r.Descriptor().IsPluginOriginated {
+		return c.validateLabels(r, ns, op)
 	}
-	return c.validateLabels(r, ns)
+	if violations := resource_labels.ValidateOriginFormat(r.GetMeta().GetLabels()); len(violations) > 0 {
+		return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + violations[0].String())}
+	}
+	return AdmissionDecision{Response: admission.Allowed("")}
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
@@ -80,61 +83,49 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
 
-func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
-	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy && c.Mode == core.Zone {
-		if _, err := resource_labels.ComputePolicyRole(r.GetSpec().(core_model.Policy), resource_labels.NewNamespace(ns, ns == c.SystemNamespace)); err != nil {
-			return forbiddenResponse(err.Error())
-		}
+func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string, op v1.Operation) AdmissionDecision {
+	name := r.GetMeta().GetName()
+	if k8sName, ok := r.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && k8sName != "" {
+		name = k8sName
+	} else if ns != "" {
+		name = strings.TrimSuffix(name, "."+ns)
 	}
-	switch c.Mode {
-	case core.Global:
-		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if !c.DisableOriginLabelValidation && originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
-			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
-		}
-	//nolint:staticcheck
-	case core.Zone, core.Standalone:
-		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
-			if !originPresent || resourceOrigin != mesh_proto.ZoneResourceOrigin {
-				return c.resourceIsNotAllowedResponse()
-			}
-		}
-		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
-			zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != c.ZoneName {
-				return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ZoneTag, c.ZoneName, zoneTag))
-			}
-		}
+	ctx := resource_labels.ValidationContext{
+		Mode:                         c.Mode,
+		Env:                          core.KubernetesEnvironment,
+		FederatedZone:                c.FederatedZone,
+		ZoneName:                     c.ZoneName,
+		Namespace:                    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
+		DisableOriginLabelValidation: c.DisableOriginLabelValidation,
+		Descriptor:                   r.Descriptor(),
+		Spec:                         r.GetSpec(),
+		ResourceName:                 name,
+		ResourceMesh:                 r.GetMeta().GetMesh(),
 	}
-	return nil
-}
+	labels := r.GetMeta().GetLabels()
 
-func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
-	return &admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP on a system namespace requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
-				Reason:  "Forbidden",
-				Code:    403,
-				Details: &metav1.StatusDetails{
-					Causes: []metav1.StatusCause{
-						{
-							Type:    "FieldValueInvalid",
-							Message: "cannot be empty",
-							Field:   "metadata.labels[kuma.io/origin]",
-						},
-					},
-				},
-			},
-		},
+	if op == v1.Delete {
+		if violations := resource_labels.ValidateOrigin(labels, ctx); len(violations) > 0 {
+			return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + violations[0].String())}
+		}
+		return AdmissionDecision{Response: admission.Allowed("")}
 	}
-}
 
-func labelsNotAllowedMsg(label, correctValue, actual string) string {
-	return fmt.Sprintf("Operation not allowed. '%s' label should have '%s' value, got '%s'", label, correctValue, actual)
+	result := resource_labels.Validate(labels, ctx)
+	if len(result.Errors) > 0 {
+		if result.Errors[0].Format {
+			return AdmissionDecision{Response: admission.Allowed("")}
+		}
+		return AdmissionDecision{Response: *forbiddenResponse("Operation not allowed. " + result.Errors[0].String())}
+	}
+	warnings := make([]string, 0, len(result.Warnings))
+	for _, w := range result.Warnings {
+		warnings = append(warnings, w.String())
+	}
+	return AdmissionDecision{
+		Response: admission.Allowed("").WithWarnings(warnings...),
+		Warnings: warnings,
+	}
 }
 
 func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode) string {

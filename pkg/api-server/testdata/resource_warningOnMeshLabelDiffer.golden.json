@@ -1,0 +1,6 @@
+{
+ "warnings": [
+  "kuma.io/mesh is computed by the control plane (expected 'mesh-1'); the supplied value 'some-other-mesh' was overridden",
+  "'from' field is deprecated and will be removed in 3.0, use 'rules' with MeshIdentity (spiffeId) instead"
+ ]
+}

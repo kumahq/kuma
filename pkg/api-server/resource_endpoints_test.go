@@ -190,7 +190,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
 	})
 
-	It("should return 400 when mesh label is different from resource mesh", func() {
+	It("should return 201 with warnings when mesh label is different from resource mesh", func() {
 		// given
 		apiServer, store, stop := createServer(true, true)
 		defer stop()
@@ -216,10 +216,10 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// and then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-		bytes, err := io.ReadAll(resp.Body)
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onmeshlabeldiffer.golden.json")))
+		Expect(body).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_warningOnMeshLabelDiffer.golden.json")))
 	})
 
 	It("should not return 400 when mesh label is identical to resource mesh", func() {
@@ -287,6 +287,8 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				mesh_proto.ZoneTag:             zone,
 				mesh_proto.MeshTag:             mesh,
 				mesh_proto.EnvTag:              "universal",
+				mesh_proto.DisplayName:         "mtp-1",
+				mesh_proto.PolicyRoleLabel:     string(mesh_proto.SystemPolicyRole),
 			}))
 		},
 		Entry("non-federated zone", false),
@@ -326,6 +328,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         "dpp-1",
 			mesh_proto.ProxyTypeLabel:      string(mesh_proto.SidecarLabel),
 		}))
 	})
@@ -412,6 +415,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         name,
 		}))
 
 		// after update it should have computed labels
@@ -428,6 +432,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         name,
 		}))
 	})
 
@@ -464,7 +469,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
 
-	It("should return 400 when a policy carries a non-system policy-role label", func() {
+	It("should silently overwrite a user-supplied non-system policy-role label", func() {
 		// given
 		apiServer, store, stop := createServer(false, false)
 		defer stop()
@@ -487,8 +492,12 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}
 		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-role", res)
 
-		// then
+		// then: the resource is accepted and the CP-owned policy-role label is recomputed to system
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+		// and then
+		actual := v1alpha1.NewMeshTrafficPermissionResource()
+		Expect(store.Get(context.Background(), actual, core_store.GetByKey("mtp-role", mesh))).To(Succeed())
+		Expect(actual.Meta.GetLabels()).To(HaveKeyWithValue(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole)))
 	})
 })

@@ -5,9 +5,11 @@
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
  "labels": {
+  "kuma.io/display-name": "my-access-log",
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
+  "kuma.io/policy-role": "system",
   "kuma.io/zone": "default"
  },
  "kri": "kri_mal_default_default__my-access-log_",

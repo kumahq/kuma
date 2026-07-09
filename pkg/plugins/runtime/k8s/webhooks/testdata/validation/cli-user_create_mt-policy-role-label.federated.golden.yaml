@@ -4,3 +4,6 @@ status:
   code: 200
   metadata: {}
 uid: "12345"
+warnings:
+- kuma.io/policy-role is computed by the control plane (expected 'consumer'); the
+  supplied value 'invalid' was overridden

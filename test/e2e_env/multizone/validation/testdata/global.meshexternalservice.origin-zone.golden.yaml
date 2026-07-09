@@ -8,14 +8,14 @@ HTTP/1.1 400 Bad Request
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "reason": "the origin label must be set to 'global'"
+   "reason": "kuma.io/origin should be 'global', got 'zone'"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "message": "the origin label must be set to 'global'"
+   "message": "kuma.io/origin should be 'global', got 'zone'"
   }
  ]
 }

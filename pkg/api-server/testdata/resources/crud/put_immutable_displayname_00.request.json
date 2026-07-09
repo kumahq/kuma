@@ -4,7 +4,7 @@
   "name": "ext-svc",
   "labels": {
     "kuma.io/origin": "zone",
-    "kuma.io/display-name": "my-display-name"
+    "kuma.io/display-name": "ext-svc"
   },
   "spec": {
     "match": {

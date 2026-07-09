@@ -1,1 +1,2 @@
+Warning: kuma.io/policy-role is managed by the control plane and is not applicable in this context; the supplied value 'system' was removed
 meshexternalservice.kuma.io/mes-policy-role created

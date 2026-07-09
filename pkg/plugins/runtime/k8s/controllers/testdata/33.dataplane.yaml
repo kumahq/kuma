@@ -4,11 +4,17 @@ metadata:
     app: postgres
     k8s.kuma.io/namespace: demo
     k8s.kuma.io/service-account: postgres-account
+    kuma.io/display-name: postgres-example
+    kuma.io/env: kubernetes
     kuma.io/mesh: default
+    kuma.io/origin: zone
     kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
     kuma.io/workload: postgres-account
+    kuma.io/zone: zone-1
     tier: database
+  name: postgres-example
+  namespace: demo
 spec:
   networking:
     address: 192.168.0.30

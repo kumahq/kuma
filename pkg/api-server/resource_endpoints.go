@@ -9,7 +9,6 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
-	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
@@ -32,7 +31,6 @@ import (
 	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
@@ -414,15 +412,16 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
+	labelWarnings, err := r.validateResourceRequest(name, meshName, resourceRest)
+	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
 
 	if create {
-		r.createResource(request.Request.Context(), name, meshName, resourceRest, response)
+		r.createResource(request.Request.Context(), name, meshName, resourceRest, labelWarnings, response)
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest, response, meshName)
+		r.updateResource(request.Request.Context(), resource, resourceRest, labelWarnings, response, meshName)
 	}
 }
 
@@ -446,16 +445,20 @@ func (r *resourceEndpoints) computeLabels(
 	spec core_model.ResourceSpec,
 	meta core_model.ResourceMeta,
 	meshName string,
+	name string,
+	previousLabels map[string]string,
 ) (map[string]string, error) {
 	return resource_labels.Compute(
 		descriptor,
 		spec,
 		meta.GetLabels(),
 		meshName,
+		name,
 		resource_labels.WithNamespace(resource_labels.GetNamespace(meta, r.systemNamespace)),
 		resource_labels.WithMode(r.mode),
 		resource_labels.WithK8s(r.isK8s),
 		resource_labels.WithZone(r.zoneName),
+		resource_labels.WithPreviousLabels(previousLabels),
 	)
 }
 
@@ -464,6 +467,7 @@ func (r *resourceEndpoints) createResource(
 	name string,
 	meshName string,
 	resRest rest.Resource,
+	labelWarnings []string,
 	response *restful.Response,
 ) {
 	if err := r.resourceAccess.ValidateCreate(
@@ -501,7 +505,7 @@ func (r *resourceEndpoints) createResource(
 		}
 	}
 
-	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName)
+	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name, nil)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -512,7 +516,9 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}
+	warnings := append([]string{}, labelWarnings...)
+	warnings = append(warnings, core_model.Deprecations(res)...)
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}
 	if err := response.WriteHeaderAndJson(http.StatusCreated, resp, "application/json"); err != nil {
 		log.Error(err, "Could not write the create response")
 	}
@@ -522,6 +528,7 @@ func (r *resourceEndpoints) updateResource(
 	ctx context.Context,
 	currentRes core_model.Resource,
 	newResRest rest.Resource,
+	labelWarnings []string,
 	response *restful.Response,
 	meshName string,
 ) {
@@ -540,7 +547,8 @@ func (r *resourceEndpoints) updateResource(
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
-	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName)
+	storedLabels := currentRes.GetMeta().GetLabels()
+	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName(), storedLabels)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
 		return
@@ -549,7 +557,7 @@ func (r *resourceEndpoints) updateResource(
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	// Compute labels for new request
-	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName)
+	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName(), storedLabels)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -568,7 +576,9 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(currentRes)}
+	warnings := append([]string{}, labelWarnings...)
+	warnings = append(warnings, core_model.Deprecations(currentRes)...)
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}
 	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
 		log.Error(err, "Could not write the update response")
 	}
@@ -602,7 +612,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 		return
 	}
 
-	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
+	if verr := r.validateOriginForWrite(rest.From.Resource(resource)); verr.HasViolations() {
 		rest_errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Could not delete a resource")
 		return
 	}
@@ -629,7 +639,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource) error {
+func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource) ([]string, error) {
 	var err validators.ValidationError
 	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -644,65 +654,47 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 
-	err.AddError("labels", r.validateLabels(resource))
+	labelResult := resource_labels.Validate(resource.GetMeta().GetLabels(), r.labelValidationContext(resource))
+	if len(labelResult.Errors) > 0 {
+		var labelErr validators.ValidationError
+		for _, v := range labelResult.Errors {
+			labelErr.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
+		}
+		err.AddError("labels", labelErr)
+	}
 	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 
-	return err.OrNil()
+	warnings := make([]string, 0, len(labelResult.Warnings))
+	for _, w := range labelResult.Warnings {
+		warnings = append(warnings, w.String())
+	}
+	return warnings, err.OrNil()
 }
 
-func (r *resourceEndpoints) validateOriginForWrite(meta core_model.ResourceMeta) validators.ValidationError {
-	var err validators.ValidationError
-	origin, ok := core_model.ResourceOrigin(meta)
-
-	if !r.disableOriginLabelValidation && r.mode == config_core.Global {
-		if ok && origin != mesh_proto.GlobalResourceOrigin {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.GlobalResourceOrigin))
-		}
+func (r *resourceEndpoints) labelValidationContext(resource rest.Resource) resource_labels.ValidationContext {
+	env := config_core.UniversalEnvironment
+	if r.isK8s {
+		env = config_core.KubernetesEnvironment
 	}
-
-	if !r.disableOriginLabelValidation && r.federatedZone && r.descriptor.IsPluginOriginated {
-		if !ok || origin != mesh_proto.ZoneResourceOrigin {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
-		}
+	return resource_labels.ValidationContext{
+		Mode:                         r.mode,
+		Env:                          env,
+		FederatedZone:                r.federatedZone,
+		ZoneName:                     r.zoneName,
+		DisableOriginLabelValidation: r.disableOriginLabelValidation,
+		Descriptor:                   r.descriptor,
+		Privileged:                   false,
+		Spec:                         resource.GetSpec(),
+		ResourceName:                 resource.GetMeta().GetName(),
+		ResourceMesh:                 resource.GetMeta().GetMesh(),
+		Namespace:                    resource_labels.UnsetNamespace,
 	}
-	return err
 }
 
-func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
+func (r *resourceEndpoints) validateOriginForWrite(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
-
-	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
-	if ok {
-		if oerr := origin.IsValid(); oerr != nil {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
-		}
-	}
-
-	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
-
-	if r.mode != config_core.Global {
-		if origin != mesh_proto.GlobalResourceOrigin {
-			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != r.zoneName {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-			}
-			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-			}
-		}
-	}
-
-	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {
-		err.AddError("", r.validatePolicyRole(resource))
-	}
-
-	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
-		for _, msg := range validation.IsQualifiedName(k) {
-			err.AddViolationAt(validators.Root().Key(k), msg)
-		}
-		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
-			err.AddViolationAt(validators.Root().Key(k), msg)
-		}
+	for _, v := range resource_labels.ValidateOrigin(resource.GetMeta().GetLabels(), r.labelValidationContext(resource)) {
+		err.AddViolationAt(validators.Root().Key(v.Key), v.Reason)
 	}
 	return err
 }
@@ -733,16 +725,6 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 		}
 	}
 
-	return err
-}
-
-func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
-	var err validators.ValidationError
-	policyRole := core_model.PolicyRole(resource.GetMeta())
-	// at the moment on universal all policies have system policy role
-	if policyRole != mesh_proto.SystemPolicyRole {
-		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
-	}
 	return err
 }
 

@@ -9,7 +9,6 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -58,20 +57,17 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, req.Namespace); !resp.Allowed {
-		return resp
+	decision := h.IsOperationAllowed(req.UserInfo, coreRes, req.Namespace, req.Operation)
+	if !decision.Response.Allowed {
+		return decision.Response
 	}
 
 	switch req.Operation {
 	case v1.Delete:
 		return admission.Allowed("")
 	default:
-		var warnings []string
+		warnings := append([]string{}, decision.Warnings...)
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
-			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
-		}
-
-		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
@@ -113,17 +109,6 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 		return nil, nil, err
 	}
 	return coreRes, k8sObj, nil
-}
-
-func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
-	var verr validators.ValidationError
-	labelsPath := validators.Root().Field("labels")
-	if origin, ok := core_model.ResourceOrigin(rm); ok {
-		if err := origin.IsValid(); err != nil {
-			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
-		}
-	}
-	return verr
 }
 
 func (h *validatingHandler) Supports(admission.Request) bool {

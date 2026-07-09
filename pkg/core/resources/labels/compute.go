@@ -1,9 +1,7 @@
 package labels
 
 import (
-	"fmt"
 	"maps"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -11,7 +9,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -42,12 +39,14 @@ func GetNamespace(rm core_model.ResourceMeta, systemNamespace string) Namespace 
 }
 
 type Options struct {
-	Mode           config_core.CpMode
-	IsK8s          bool
-	ZoneName       string
-	Namespace      Namespace
-	ServiceAccount string
-	Workload       string
+	Mode      config_core.CpMode
+	IsK8s     bool
+	ZoneName  string
+	Namespace Namespace
+	// Privileged marks trusted CP-internal writes.
+	Privileged bool
+	// PreviousLabels preserves OwnerSystem labels on user writes.
+	PreviousLabels map[string]string
 }
 
 type Option func(*Options)
@@ -72,18 +71,6 @@ func WithNamespace(namespace Namespace) Option {
 	}
 }
 
-func WithServiceAccount(name string) Option {
-	return func(opts *Options) {
-		opts.ServiceAccount = name
-	}
-}
-
-func WithWorkload(name string) Option {
-	return func(opts *Options) {
-		opts.Workload = name
-	}
-}
-
 func WithZone(name string) Option {
 	return func(opts *Options) {
 		opts.ZoneName = name
@@ -96,109 +83,84 @@ func WithMode(mode config_core.CpMode) Option {
 	}
 }
 
-// Compute computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
-// Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
+func WithPrivileged(privileged bool) Option {
+	return func(opts *Options) {
+		opts.Privileged = privileged
+	}
+}
+
+func WithPreviousLabels(labels map[string]string) Option {
+	return func(opts *Options) {
+		opts.PreviousLabels = labels
+	}
+}
+
+// Compute returns the labels the CP should store for a resource.
 func Compute(
 	rd core_model.ResourceTypeDescriptor,
 	spec core_model.ResourceSpec,
 	existingLabels map[string]string,
 	mesh string,
+	displayName string,
 	opts ...Option,
 ) (map[string]string, error) {
-	labelsOpts := NewOptions(opts...)
+	o := NewOptions(opts...)
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
 	}
 
-	set := func(k, v string) {
-		if _, ok := AllComputedLabels[k]; !ok {
-			panic(fmt.Sprintf("label %q is not in the list of computed labels, update AllComputedLabels list as it is used in another project", k))
+	// Do not rewrite labels imported from another CP.
+	if o.Privileged && !core_model.IsLocallyOriginated(o.Mode, labels) {
+		return labels, nil
+	}
+
+	resourceMesh := mesh
+	if rd.Scope == core_model.ScopeMesh && resourceMesh == "" {
+		resourceMesh = core_model.DefaultMesh
+	}
+
+	env := config_core.UniversalEnvironment
+	if o.IsK8s {
+		env = config_core.KubernetesEnvironment
+	}
+	ctx := ValidationContext{
+		Mode:         o.Mode,
+		Env:          env,
+		ZoneName:     o.ZoneName,
+		Namespace:    o.Namespace,
+		Descriptor:   rd,
+		Spec:         spec,
+		ResourceMesh: resourceMesh,
+		ResourceName: displayName,
+	}
+
+	labels[mesh_proto.ResourceOriginLabel] = expectedOrigin(ctx)
+
+	for key, specs := range registry {
+		ls, ok := matchedSpec(specs, ctx)
+		if !ok {
+			delete(labels, key)
+			continue
 		}
-		labels[k] = v
-	}
-
-	setIfNotExist := func(k, v string) {
-		if _, ok := labels[k]; !ok {
-			set(k, v)
-		}
-	}
-
-	getMeshOrDefault := func() string {
-		if mesh != "" {
-			return mesh
-		}
-		return core_model.DefaultMesh
-	}
-
-	if rd.Scope == core_model.ScopeMesh {
-		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
-	}
-
-	if labelsOpts.Mode == config_core.Zone {
-		// If resource can't be created on Zone (like Mesh), there is no point in adding
-		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
-		if rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
-				setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
-				env := mesh_proto.UniversalEnvironment
-				if labelsOpts.IsK8s {
-					env = mesh_proto.KubernetesEnvironment
-				}
-				setIfNotExist(mesh_proto.EnvTag, env)
-			}
-		}
-	}
-
-	if labelsOpts.Namespace.value != "" && labelsOpts.IsK8s && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		setIfNotExist(mesh_proto.KubeNamespaceTag, labelsOpts.Namespace.value)
-	}
-
-	if labelsOpts.Namespace.value != "" && rd.IsPolicy && rd.IsPluginOriginated && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		role, err := ComputePolicyRole(spec.(core_model.Policy), labelsOpts.Namespace)
-		if err != nil {
-			return nil, err
-		}
-		set(mesh_proto.PolicyRoleLabel, string(role))
-	}
-
-	if rd.IsProxy {
-		proxy, ok := spec.(core_model.ProxyResource)
-		if ok {
-			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
-		}
-		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
-			hasIngress, hasEgress := false, false
-			for _, l := range dp.GetNetworking().GetListeners() {
-				switch l.Type {
-				case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
-					hasIngress = true
-				case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
-					hasEgress = true
+		switch ls.Owner {
+		case OwnerUser:
+			continue
+		case OwnerSystem:
+			if !o.Privileged {
+				if prev, ok := o.PreviousLabels[key]; ok {
+					labels[key] = prev
+				} else {
+					delete(labels, key)
 				}
 			}
-			if hasIngress {
-				set(mesh_proto.ListenerZoneIngressLabel, "enabled")
-			} else {
-				delete(labels, mesh_proto.ListenerZoneIngressLabel)
+		case OwnerControlPlane:
+			value, err := ls.Expected(ctx)
+			if err != nil {
+				return nil, err
 			}
-			if hasEgress {
-				set(mesh_proto.ListenerZoneEgressLabel, "enabled")
-			} else {
-				delete(labels, mesh_proto.ListenerZoneEgressLabel)
-			}
+			labels[key] = value
 		}
-	}
-
-	if labelsOpts.IsK8s {
-		if labelsOpts.ServiceAccount != "" {
-			set(metadata.KumaServiceAccount, labelsOpts.ServiceAccount)
-		}
-	}
-
-	if labelsOpts.Workload != "" {
-		set(metadata.KumaWorkload, labelsOpts.Workload)
 	}
 
 	return labels, nil

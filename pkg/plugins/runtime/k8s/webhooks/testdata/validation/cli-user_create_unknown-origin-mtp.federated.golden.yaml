@@ -2,13 +2,8 @@ Patches: null
 allowed: false
 status:
   code: 403
-  details:
-    causes:
-    - field: metadata.labels[kuma.io/origin]
-      message: cannot be empty
-      reason: FieldValueInvalid
-  message: Operation not allowed. Applying policies on Zone CP on a system namespace
-    requires 'kuma.io/origin' label to be set to 'zone'.
+  message: Operation not allowed. kuma.io/origin should be 'global' or 'zone', got
+    'unknownvalue'
   metadata: {}
   reason: Forbidden
   status: Failure

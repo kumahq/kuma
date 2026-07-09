@@ -1,1 +1,2 @@
+Warning: kuma.io/proxy-type is managed by the control plane and is not applicable in this context; the supplied value 'sidecar' was removed
 meshexternalservice.kuma.io/mes-proxy-type created
