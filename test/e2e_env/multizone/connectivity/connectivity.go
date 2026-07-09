@@ -5,11 +5,11 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Connectivity() {
@@ -81,11 +81,11 @@ func Connectivity() {
 			}, "30s", "1s").Should(Succeed())
 		},
 		Entry("should access service in another Kubernetes cluster", testCase{
-			address:          "http://test-server_connectivity_svc_80.mesh",
+			address:          "http://test-server.connectivity.svc.kuma-2.mesh.local",
 			expectedInstance: "kube-test-server",
 		}),
 		Entry("should access service in another Kubernetes cluster", testCase{
-			address:          "http://test-server.mesh",
+			address:          "http://test-server.svc.kuma-5.mesh.local",
 			expectedInstance: "uni-test-server",
 		}),
 	)
@@ -99,11 +99,11 @@ func Connectivity() {
 			}, "30s", "1s").Should(Succeed())
 		},
 		Entry("should access service in another Kubernetes cluster", testCase{
-			address:          "http://test-server_connectivity_svc_80.mesh",
+			address:          "http://test-server.connectivity.svc.kuma-2.mesh.local",
 			expectedInstance: "kube-test-server",
 		}),
 		Entry("should access service in another Kubernetes cluster", testCase{
-			address:          "http://test-server.mesh",
+			address:          "http://test-server.svc.kuma-5.mesh.local",
 			expectedInstance: "uni-test-server",
 		}),
 	)

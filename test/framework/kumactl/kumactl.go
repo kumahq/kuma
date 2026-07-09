@@ -14,8 +14,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 )
 
 type KumactlOptions struct {
@@ -160,14 +160,6 @@ func (k *KumactlOptions) KumactlInstallCP(args ...string) (string, error) {
 	return k.RunKumactlAndGetOutputV(
 		false, // silence the log output of Install
 		cmd...)
-}
-
-func (k *KumactlOptions) KumactlInstallObservability(namespace string, components []string) (string, error) {
-	args := []string{"install", "observability", "--namespace", namespace}
-	if len(components) != 0 {
-		args = append(args, "--components", strings.Join(components, ","))
-	}
-	return k.RunKumactlAndGetOutput(args...)
 }
 
 func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string, headers []string) error {

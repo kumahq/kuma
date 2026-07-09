@@ -9,11 +9,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	policy "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	policy "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 // HostnameGenerator automatically generates DNS hostnames for services in the mesh based on customizable templates. It provides a consistent naming scheme for service discovery by creating predictable hostnames from service labels and metadata, supporting both MeshService, MeshExternalService, and MeshMultiZoneService resources.
@@ -45,18 +44,12 @@ func (cb *HostnameGenerator) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *HostnameGenerator) GetMesh() string {
-	if mesh, ok := cb.Labels[metadata.KumaMeshLabel]; ok {
-		return mesh
-	} else {
-		return core_model.DefaultMesh
-	}
+	// HostnameGenerator is a Global-scoped resource and is not bound to a mesh.
+	return ""
 }
 
 func (cb *HostnameGenerator) SetMesh(mesh string) {
-	if cb.Labels == nil {
-		cb.Labels = map[string]string{}
-	}
-	cb.Labels[metadata.KumaMeshLabel] = mesh
+	// HostnameGenerator is a Global-scoped resource, the mesh label must not be set.
 }
 
 func (cb *HostnameGenerator) GetSpec() (core_model.ResourceSpec, error) {

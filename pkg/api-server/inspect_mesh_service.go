@@ -8,25 +8,25 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/api/openapi/types"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/hostname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	mes_hostname "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/hostname"
-	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	mzms_hostname "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/hostname"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	meshservice_hostname "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/hostname"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/hostname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	mes_hostname "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/hostname"
+	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	mzms_hostname "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/hostname"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshservice_hostname "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/hostname"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 func addInspectMeshServiceEndpoints(
@@ -88,7 +88,10 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restfu
 	}
 
 	generateAndRecord := func(svc model.Resource, svcType types.InspectHostnamesParamsServiceType, svcZone string, hg *hostnamegenerator_api.HostnameGeneratorResource, byHostname map[string]map[string]struct{}) error {
-		host, err := generatorsForType[svcType].GenerateHostname(svcZone, hg, svc)
+		// validateDNS=false: this is a read-only view that also runs on the global CP for
+		// services synced from zones. Older zones generated hostnames before the RFC 1123
+		// check existed; we still want to display those instead of failing the whole request.
+		host, err := generatorsForType[svcType].GenerateHostname(svcZone, hg, svc, false)
 		if err != nil {
 			return err
 		}

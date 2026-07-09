@@ -5,42 +5,38 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/api"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/appprobeproxy"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/connectivity"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/container_patch"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/defaults"
-	externalname_services "github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/externalname-services"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/externalservices"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/graceful"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/healthcheck"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/inspect"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/jobs"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/k8s_api_bypass"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/kic"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/membership"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshcircuitbreaker"
-	meshexternalservices "github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshexternalservice"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshfaultinjection"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshhealthcheck"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshhttproute"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshidentity"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshmetric"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshpassthrough"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshproxypatch"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshretry"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshtcproute"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshtimeout"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/meshtrafficpermission"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/observability"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/reachableservices"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/trafficlog"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/virtualoutbound"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/workload"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/api"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/appprobeproxy"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/connectivity"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/container_patch"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/defaults"
+	externalname_services "github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/externalname-services"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/graceful"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/healthcheck"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/inspect"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/jobs"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/k8s_api_bypass"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/kic"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshcircuitbreaker"
+	meshexternalservices "github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshexternalservice"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshfaultinjection"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshhealthcheck"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshhttproute"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshidentity"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshmetric"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshpassthrough"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshproxypatch"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshretry"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshtcproute"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshtimeout"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshtrafficpermission"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/observability"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/reachableservices"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/workload"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func TestE2E(t *testing.T) {
@@ -51,6 +47,11 @@ var (
 	_ = E2ESynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.RestoreState)
 	_ = SynchronizedAfterSuite(func() {}, kubernetes.SynchronizedAfterSuite)
 	_ = ReportAfterSuite("kubernetes after suite", kubernetes.AfterSuite)
+	// Opt-in (KUMA3_PREFLIGHT_BIN + KUMA3_PREFLIGHT_DIR): snapshot the CP after each spec
+	// so kuma3-preflight can classify which tests use Kuma-3.0-removed features. No-op otherwise.
+	_ = AfterEach(func() {
+		CapturePreflightCluster(CurrentSpecReport().FullText(), kubernetes.Cluster)
+	})
 )
 
 var (
@@ -64,22 +65,15 @@ var (
 	_ = Describe("Eviction", graceful.Eviction, Ordered)
 	_ = XDescribe("Change Service", graceful.ChangeService, Ordered)
 	_ = Describe("Jobs", jobs.Jobs)
-	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
-	_ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
-	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
 	_ = Describe("MeshTrace Zone Proxy", observability.ZoneProxyPluginTest, Ordered)
-	_ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
 	_ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
-	_ = Describe("External Services", externalservices.ExternalServices, Ordered)
-	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservices.MeshExternalServices, Ordered)
 	_ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
-	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Kong Ingress Controller", kic.KICKubernetes, Ordered)
 	_ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
 	_ = Describe("MeshTrafficPermission Rules", meshtrafficpermission.MeshTrafficPermissionRules, Ordered)

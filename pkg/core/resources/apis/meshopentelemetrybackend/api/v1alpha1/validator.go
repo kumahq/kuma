@@ -6,7 +6,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func (r *MeshOpenTelemetryBackendResource) validate() error {

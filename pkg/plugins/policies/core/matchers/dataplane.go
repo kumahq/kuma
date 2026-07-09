@@ -7,21 +7,21 @@ import (
 	"maps"
 	"slices"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResource, referencableResources xds_context.Resources) (bool, error) {
@@ -46,6 +46,14 @@ func MatchedPolicies(
 	opts ...plugins.MatchedPoliciesOption,
 ) (core_xds.TypedMatchingPolicies, error) {
 	mpOpts := plugins.NewMatchedPoliciesConfig(opts...)
+
+	var cacheKey string
+	if mpOpts.Cache != nil {
+		cacheKey = BuildCacheKey(string(rType), mpOpts, dpp)
+		if cached, ok := mpOpts.Cache.GetIfPresent(cacheKey); ok {
+			return cached, nil
+		}
+	}
 
 	policies := resources.ListOrEmpty(rType)
 	var warnings []string
@@ -136,7 +144,7 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
 	}
 
-	return core_xds.TypedMatchingPolicies{
+	result := core_xds.TypedMatchingPolicies{
 		Type:              rType,
 		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
@@ -144,7 +152,11 @@ func MatchedPolicies(
 		GatewayRules:      gr,
 		SingleItemRules:   sr,
 		Warnings:          warnings,
-	}, nil
+	}
+	if mpOpts.Cache != nil {
+		mpOpts.Cache.Put(cacheKey, result)
+	}
+	return result, nil
 }
 
 func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_mesh.DataplaneResource) []*core_mesh.MeshGatewayResource {

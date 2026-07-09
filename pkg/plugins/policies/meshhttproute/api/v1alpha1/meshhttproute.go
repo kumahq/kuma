@@ -6,8 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/sha256"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/sha256"
 )
 
 // NOTICE: This policy defines its own `GetDefault` method so that it can have the given

@@ -5007,7 +5007,7 @@ components:
           x-go-type: common_api.Match
           x-go-type-import:
             name: common_api
-            path: github.com/kumahq/kuma/v2/api/common/v1alpha1
+            path: github.com/kumahq/kuma/v3/api/common/v1alpha1
         origin:
           type: array
           description: >-
@@ -5472,6 +5472,15 @@ components:
       type: object
     DataplaneItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -5503,6 +5512,11 @@ components:
               description: Type of the backend (Kuma ships with 'prometheus')
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -6271,6 +6285,15 @@ components:
                   type: array
               type: object
           type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -6357,6 +6380,11 @@ components:
               description: Name of the enabled backend
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         mtls:
           description: |-
             mTLS settings.
@@ -10138,11 +10166,25 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
         mesh:
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
           type: string
         name:
           type: string
@@ -17369,10 +17411,24 @@ components:
           example: '0001-01-01T00:00:00Z'
     ZoneEgressItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -17429,10 +17485,24 @@ components:
                 type: object
             type: object
           type: array
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -18394,6 +18464,11 @@ components:
       type: object
     SecretItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
         data:
           description: Value of the secret
           format: byte
@@ -18403,6 +18478,11 @@ components:
             type: string
           type: object
         mesh:
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
           type: string
         name:
           type: string

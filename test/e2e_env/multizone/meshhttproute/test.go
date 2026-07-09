@@ -7,25 +7,25 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Test() {
 	_ = Describe("No Zone Egress", func() {
-		test("meshhttproute", samples.MeshMTLSBuilder())
+		test("meshhttproute", samples.MeshMTLSBuilder(), false)
 	}, Ordered)
 
 	_ = Describe("Zone Egress", func() {
-		test("meshhttproute-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled())
+		test("meshhttproute-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled(), true)
 	}, FlakeAttempts(3), Ordered)
 }
 
-func test(meshName string, meshBuilder *builders.MeshBuilder) {
+func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
@@ -93,12 +93,15 @@ name: route-alias-test-server
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: MeshSubset
+    tags:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: kuma-5
       rules:
         - matches:
           - path:
@@ -106,15 +109,16 @@ spec:
               type: PathPrefix
           default:
             backendRefs:
-              - kind: MeshServiceSubset
-                name: alias-test-server
-                weight: 100
-                tags:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: alias-test-server
                   kuma.io/zone: kuma-5
+                port: 80
+                weight: 100
 `, meshName))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.svc.kuma-5.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(
 				And(
@@ -123,22 +127,65 @@ spec:
 					HaveKeyWithValue(MatchRegexp(`^alias-zone2.*`), Not(BeNil())),
 				),
 			)
-		}, "30s", "5s").Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+
+		response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.svc.kuma-5.mesh.local", client.WithNumberOfRequests(100))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response).To(
+			And(
+				Not(HaveKey(MatchRegexp(`^zone1.*`))),
+				Not(HaveKey(MatchRegexp(`^zone2.*`))),
+				HaveKeyWithValue(MatchRegexp(`^alias-zone2.*`), Not(BeNil())),
+			),
+		)
 	})
 
-	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
-		Expect(YamlUniversal(fmt.Sprintf(`
+	if withEgress {
+		It("should use MeshHTTPRoute for cross-zone with a MeshMultiZoneService", func() {
+			Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshMultiZoneService
+name: test-server
+mesh: %s
+labels:
+  kuma.io/origin: global
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: test-server
+  ports:
+  - port: 80
+    appProtocol: http
+`, meshName))(multizone.Global)).To(Succeed())
+
+			Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+name: mzms-no-locality
+mesh: %s
+spec:
+  to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: test-server
+      sectionName: '80'
+    default:
+      localityAwareness:
+        disabled: true
+`, meshName))(multizone.Global)).To(Succeed())
+
+			Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
-name: route-test-server-subset
+name: route-test-server-mzms
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Mesh
   to:
     - targetRef:
-        kind: MeshService
-        name: test-server
+        kind: MeshMultiZoneService
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
           - path:
@@ -146,30 +193,23 @@ spec:
               type: PathPrefix
           default:
             backendRefs:
-              - kind: MeshServiceSubset
-                name: test-server
+              - kind: MeshMultiZoneService
+                labels:
+                  kuma.io/display-name: test-server
+                port: 80
                 weight: 1
-                tags:
-                  kuma.io/zone: kuma-5
-                  version: v1
-              - kind: MeshServiceSubset
-                name: test-server
-                weight: 1
-                tags:
-                  kuma.io/zone: kuma-5
-                  version: v2
 `, meshName))(multizone.Global)).To(Succeed())
 
-		Eventually(func(g Gomega) {
-			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response).To(
-				And(
-					HaveKey(MatchRegexp(`^.*-v1.*`)),
-					HaveKey(MatchRegexp(`^zone2-v2.*`)),
-					Not(HaveKey(MatchRegexp(`^zone2-v3.*`))),
-				),
-			)
-		}, "60s", "5s").Should(Succeed())
-	})
+			Eventually(func(g Gomega) {
+				response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mzsvc.mesh.local", client.WithNumberOfRequests(100))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response).To(
+					And(
+						HaveKey(MatchRegexp(`^zone1-v1.*`)),
+						HaveKey(MatchRegexp(`^zone2-.*`)),
+					),
+				)
+			}, "60s", "5s").Should(Succeed())
+		})
+	}
 }

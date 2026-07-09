@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func MeshProxyPatch() {
@@ -53,8 +53,6 @@ spec:
           match:
             name: envoy.filters.http.router
             origin: outbound
-            listenerTags:
-              kuma.io/service: test-server
           value: |
             name: envoy.filters.http.lua
             typedConfig:
@@ -71,7 +69,7 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh")
+			responses, err := client.CollectResponses(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())

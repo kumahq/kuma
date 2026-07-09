@@ -1,0 +1,29 @@
+name: Download kuma3-preflight
+description: |
+  Download and checksum-verify the kuma3-preflight release binary (linux/amd64) from the
+  public GoReleaser release in github.com/Kong/kong-mesh-v3-readiness.
+inputs:
+  version:
+    description: kuma3-preflight release tag to download (e.g. v0.1.0).
+    required: true
+outputs:
+  bin:
+    description: Path to the extracted kuma3-preflight binary.
+    value: ${{ steps.download.outputs.bin }}
+runs:
+  using: composite
+  steps:
+    - id: download
+      shell: bash
+      env:
+        TOOL_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        base="https://github.com/Kong/kong-mesh-v3-readiness/releases/download/${TOOL_VERSION}"
+        asset="kuma3-preflight_linux_amd64.tar.gz"
+        mkdir -p "${RUNNER_TEMP}/bin"
+        curl -fsSL "${base}/${asset}" -o "${RUNNER_TEMP}/${asset}"
+        curl -fsSL "${base}/checksums.txt" -o "${RUNNER_TEMP}/checksums.txt"
+        ( cd "${RUNNER_TEMP}" && grep " ${asset}\$" checksums.txt | sha256sum -c - )
+        tar -xzf "${RUNNER_TEMP}/${asset}" -C "${RUNNER_TEMP}/bin" kuma3-preflight
+        echo "bin=${RUNNER_TEMP}/bin/kuma3-preflight" >> "$GITHUB_OUTPUT"

@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 )
 
 var statsLogger = core.Log.WithName("stats-callbacks")
@@ -170,7 +170,11 @@ func (s *statsCallbacks) OnStreamRequest(_ int64, request DiscoveryRequest) erro
 		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
-	if configTime, exists := s.takeConfigTimeFromQueue(request.VersionInfo()); exists {
+	// SotW content hashes are not seeded per node, so two nodes serving
+	// identical resources for a type can share a version string. Key the
+	// queue by nodeID+version to avoid one node's ACK consuming another's
+	// in-flight entry.
+	if configTime, exists := s.takeConfigTimeFromQueue(request.NodeId() + request.VersionInfo()); exists {
 		s.deliveryMetric.Observe(float64(core.Now().Sub(configTime).Milliseconds()))
 	}
 	return nil

@@ -7,7 +7,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
 // DataplaneInsight defines the observed state of a Dataplane.
 message DataplaneInsight {
@@ -18,6 +18,7 @@ message DataplaneInsight {
   option (kuma.mesh.resource).ws.name = "dataplane-insight";
   option (kuma.mesh.resource).ws.read_only = true;
   option (kuma.mesh.resource).scope_namespace = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
 
   // List of ADS subscriptions created by a given Dataplane.
   repeated DiscoverySubscription subscriptions = 1;

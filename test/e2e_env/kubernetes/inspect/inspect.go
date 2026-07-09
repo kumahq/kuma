@@ -11,11 +11,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Inspect() {
@@ -25,7 +25,12 @@ func Inspect() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(nsName)).
-			Install(MeshKubernetes(meshName)).
+			// This suite asserts on the legacy dataplane `_rules` inspect
+			// shape (MeshTimeout ToRules keyed by kuma.io/service outbounds).
+			// Under the Exclusive meshServices default those legacy outbound
+			// rules are gone, so pin the mesh to Disabled to keep the shape the
+			// assertions expect, matching the unit inspect goldens.
+			Install(MeshWithMeshServicesKubernetes(meshName, "Disabled")).
 			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
 			Install(TimeoutKubernetes(meshName)).
 			Setup(kubernetes.Cluster)

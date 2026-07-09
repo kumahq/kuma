@@ -5,12 +5,12 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters/v3"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
+	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
@@ -296,6 +296,20 @@ func UpstreamTLSContext(config *envoy_tls.UpstreamTlsContext) ClusterBuilderOpt 
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
 			Config: config,
+		})
+	})
+}
+
+// UpstreamTLSContextWithZoneMatches configures a cluster-wide default
+// UpstreamTlsContext plus per-zone overrides added as transport_socket_match
+// entries keyed on the kuma.io/zone endpoint metadata. It is used for
+// MeshMultiZoneService clusters whose endpoints span zones with different SNI
+// expectations (new mesh-scoped zone proxy vs. legacy ZoneIngress).
+func UpstreamTLSContextWithZoneMatches(config *envoy_tls.UpstreamTlsContext, zoneMatches map[string]*envoy_tls.UpstreamTlsContext) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
+			Config:      config,
+			ZoneMatches: zoneMatches,
 		})
 	})
 }

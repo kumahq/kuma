@@ -1,5 +1,7 @@
 #/meshes/default/meshtimeouts/bar/_resources/dataplanes 404
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default
 ---
 type: MeshTimeout

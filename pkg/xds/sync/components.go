@@ -1,13 +1,14 @@
 package sync
 
 import (
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
-	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
 )
 
 var xdsServerLog = core.Log.WithName("xds").WithName("server")
@@ -62,6 +63,12 @@ func DefaultDataplaneWatchdogFactory(
 		config,
 		apiVersion,
 	)
+	if config.XdsServer.PolicyMatchingCacheSize > 0 {
+		dataplaneProxyBuilder = dataplaneProxyBuilder.WithPolicyMatchingCache(matchers.NewPolicyMatchingCache(
+			xdsMetrics.PolicyMatchingCache,
+			config.XdsServer.PolicyMatchingCacheSize,
+		))
+	}
 
 	ingressProxyBuilder := DefaultIngressProxyBuilder(
 		rt,

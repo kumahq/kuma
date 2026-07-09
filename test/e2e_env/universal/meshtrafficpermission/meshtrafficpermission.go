@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func MeshTrafficPermissionUniversal() {
@@ -71,7 +71,7 @@ func MeshTrafficPermissionUniversal() {
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(statusCode))
@@ -125,7 +125,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("test-server.mesh")
+		trafficAllowed("test-server.svc.mesh.local")
 	})
 
 	It("should allow the traffic with meshtrafficpermission based on MeshService (tcp)", func() {
@@ -152,7 +152,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("test-server-tcp.mesh")
+		trafficAllowed("test-server-tcp.svc.mesh.local")
 	})
 
 	It("should allow the traffic with traffic permission based on non standard tag", func() {
@@ -181,8 +181,8 @@ spec:
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		trafficAllowed("test-server.mesh")
-		trafficAllowed("test-server-tcp.mesh")
+		trafficAllowed("test-server.svc.mesh.local")
+		trafficAllowed("test-server-tcp.svc.mesh.local")
 	})
 
 	It("should be able to allow the traffic with permissive mTLS (http)", func() {

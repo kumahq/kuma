@@ -17,9 +17,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type Client struct {
@@ -28,9 +28,8 @@ type Client struct {
 }
 
 type Stream struct {
-	stream         envoy_discovery.AggregatedDiscoveryService_StreamAggregatedResourcesClient
-	latestACKed    map[string]*envoy_discovery.DiscoveryResponse
-	latestReceived map[string]*envoy_discovery.DiscoveryResponse
+	stream         envoy_discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesClient
+	latestReceived map[string]*envoy_discovery.DeltaDiscoveryResponse
 }
 
 func New(serverURL string) (*Client, error) {
@@ -62,14 +61,13 @@ func New(serverURL string) (*Client, error) {
 
 func (c *Client) StartStream() (*Stream, error) {
 	ctx := metadata.NewOutgoingContext(context.Background(), metadata.MD{})
-	stream, err := c.client.StreamAggregatedResources(ctx)
+	stream, err := c.client.DeltaAggregatedResources(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &Stream{
 		stream:         stream,
-		latestACKed:    make(map[string]*envoy_discovery.DiscoveryResponse),
-		latestReceived: make(map[string]*envoy_discovery.DiscoveryResponse),
+		latestReceived: make(map[string]*envoy_discovery.DeltaDiscoveryResponse),
 	}, nil
 }
 
@@ -104,15 +102,14 @@ func (s *Stream) Request(clientId string, typ string, dp rest.Resource) error {
 			},
 		},
 	}
-	return s.stream.Send(&envoy_discovery.DiscoveryRequest{
-		VersionInfo:   "",
-		ResponseNonce: "",
+	// Empty ResourceNamesSubscribe means a wildcard subscription for the type.
+	return s.stream.Send(&envoy_discovery.DeltaDiscoveryRequest{
 		Node: &envoy_core.Node{
 			Id:       clientId,
 			Metadata: md,
 		},
-		ResourceNames: []string{},
-		TypeUrl:       typ,
+		ResourceNamesSubscribe: []string{},
+		TypeUrl:                typ,
 	})
 }
 
@@ -121,16 +118,10 @@ func (s *Stream) ACK(typ string) error {
 	if latestReceived == nil {
 		return nil
 	}
-	err := s.stream.Send(&envoy_discovery.DiscoveryRequest{
-		VersionInfo:   latestReceived.VersionInfo,
+	return s.stream.Send(&envoy_discovery.DeltaDiscoveryRequest{
 		ResponseNonce: latestReceived.Nonce,
-		ResourceNames: []string{},
 		TypeUrl:       typ,
 	})
-	if err == nil {
-		s.latestACKed = s.latestReceived
-	}
-	return err
 }
 
 func (s *Stream) NACK(typ string, err error) error {
@@ -138,11 +129,8 @@ func (s *Stream) NACK(typ string, err error) error {
 	if latestReceived == nil {
 		return nil
 	}
-	latestACKed := s.latestACKed[typ]
-	return s.stream.Send(&envoy_discovery.DiscoveryRequest{
-		VersionInfo:   latestACKed.GetVersionInfo(),
+	return s.stream.Send(&envoy_discovery.DeltaDiscoveryRequest{
 		ResponseNonce: latestReceived.Nonce,
-		ResourceNames: []string{},
 		TypeUrl:       typ,
 		ErrorDetail: &status.Status{
 			Message: fmt.Sprintf("%s", err),
@@ -150,7 +138,7 @@ func (s *Stream) NACK(typ string, err error) error {
 	})
 }
 
-func (s *Stream) WaitForResources() (*envoy_discovery.DiscoveryResponse, error) {
+func (s *Stream) WaitForResources() (*envoy_discovery.DeltaDiscoveryResponse, error) {
 	resp, err := s.stream.Recv()
 	if err != nil {
 		return nil, err

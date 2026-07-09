@@ -12,18 +12,18 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	xds_config "github.com/kumahq/kuma/v2/pkg/config/xds"
-	bootstrap_config "github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	xds_config "github.com/kumahq/kuma/v3/pkg/config/xds"
+	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 type BootstrapGenerator interface {
@@ -39,7 +39,6 @@ func NewDefaultBootstrapGenerator(
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
-	deltaXdsEnabled bool,
 	inboundTagsDisabled bool,
 	envoyAdminUnixSocket bool,
 ) (BootstrapGenerator, error) {
@@ -62,7 +61,6 @@ func NewDefaultBootstrapGenerator(
 		dpServerCert:            dpServerCert,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
-		deltaXdsEnabled:         deltaXdsEnabled,
 		inboundTagsDisabled:     inboundTagsDisabled,
 		envoyAdminUnixSocket:    envoyAdminUnixSocket,
 	}, nil
@@ -78,7 +76,6 @@ type bootstrapGenerator struct {
 	dpServerCert            *x509.Certificate
 	hdsEnabled              bool
 	defaultAdminPort        uint32
-	deltaXdsEnabled         bool
 	inboundTagsDisabled     bool
 	envoyAdminUnixSocket    bool
 }

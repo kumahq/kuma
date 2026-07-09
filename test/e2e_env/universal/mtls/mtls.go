@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -75,7 +75,7 @@ mtls:
 		It("PERMISSIVE server without TLS", func() {
 			setupTest("PERMISSIVE")
 			By("Check inside-mesh communication")
-			trafficAllowed("test-server.mesh")
+			trafficAllowed("test-server.svc.mesh.local")
 
 			By("Check outside-mesh communication")
 			trafficAllowed(publicAddress())
@@ -83,7 +83,7 @@ mtls:
 		It("STRICT server without TLS", func() {
 			setupTest("STRICT")
 			By("Check inside-mesh communication")
-			trafficAllowed("test-server.mesh")
+			trafficAllowed("test-server.svc.mesh.local")
 
 			By("Check outside-mesh communication")
 			trafficBlocked(publicAddress())
@@ -91,7 +91,7 @@ mtls:
 		It("PERMISSIVE server with TLS", func() {
 			setupTest("PERMISSIVE")
 			By("Check inside-mesh communication")
-			trafficAllowed("test-server.mesh", client.WithCACert("/kuma/server.crt"))
+			trafficAllowed("test-server.svc.mesh.local", client.WithCACert("/kuma/server.crt"))
 
 			By("Check outside-mesh communication")
 			// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
@@ -103,7 +103,7 @@ mtls:
 		It("STRICT server with TLS", func() {
 			setupTest("STRICT")
 			By("Check inside-mesh communication")
-			trafficAllowed("test-server.mesh", client.WithCACert("/kuma/server.crt"))
+			trafficAllowed("test-server.svc.mesh.local", client.WithCACert("/kuma/server.crt"))
 
 			By("Check outside-mesh communication")
 			// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
@@ -129,7 +129,7 @@ mtls:
 		Expect(universal.Cluster.Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"})))).To(Succeed())
 
 		By("Check inside-mesh communication")
-		trafficAllowed("test-server.mesh")
+		trafficAllowed("test-server.svc.mesh.local")
 
 		By("Enable permissions mtls")
 		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(meshName))).To(Succeed())
@@ -147,7 +147,7 @@ mtls:
 
 		By("inside-mesh communication never fails")
 		Consistently(func(g Gomega) {
-			_, stderr, err := curlAddr("test-server.mesh")
+			_, stderr, err := curlAddr("test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
@@ -163,13 +163,13 @@ mtls:
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Can access test-server")
-			trafficAllowed("test-server.mesh")
+			trafficAllowed("test-server.svc.mesh.local")
 
 			By("When adding mTLS mesh")
 			Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 			By("Can't access test-server")
-			trafficBlocked("test-server.mesh")
+			trafficBlocked("test-server.svc.mesh.local")
 
 			By("When adding traffic-permission")
 			perm := fmt.Sprintf(`
@@ -186,7 +186,7 @@ destinations:
 			Expect(universal.Cluster.Install(YamlUniversal(perm))).To(Succeed())
 
 			By("Can access test-server again")
-			trafficAllowed("test-server.mesh")
+			trafficAllowed("test-server.svc.mesh.local")
 		},
 		Entry("builtin CA", fmt.Sprintf(`
 type: Mesh

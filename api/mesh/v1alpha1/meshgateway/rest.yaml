@@ -142,11 +142,25 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
         mesh:
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
           type: string
         name:
           type: string

@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func CrossMeshGatewayOnUniversal() {
@@ -55,8 +55,12 @@ func CrossMeshGatewayOnUniversal() {
 	BeforeAll(func() {
 		By("installing one cross-mesh gateway and one non-cross-mesh gateway")
 		setup := NewClusterSetup().
-			Install(MTLSMeshUniversal(gatewayMesh)).
-			Install(MTLSMeshUniversal(gatewayOtherMesh)).
+			// Cross-mesh gateways are addressed via the legacy VIP hostname
+			// (gateway.mesh). Under the Exclusive meshServices default that
+			// hostname is no longer served, so pin both meshes to Disabled to
+			// keep exercising the legacy cross-mesh addressing.
+			Install(MTLSMeshWithMeshServicesUniversal(gatewayMesh, "Disabled")).
+			Install(MTLSMeshWithMeshServicesUniversal(gatewayOtherMesh, "Disabled")).
 			Install(DemoClientUniversal(demoClientInMesh, gatewayMesh, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(demoClientOtherMesh, gatewayOtherMesh, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(demoClientOutsideMesh, "", WithoutDataplane())).

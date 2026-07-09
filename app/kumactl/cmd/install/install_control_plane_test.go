@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Context("kumactl install control-plane", func() {
@@ -180,7 +180,8 @@ var _ = Context("kumactl install control-plane", func() {
 				"--set",
 				"postgres.tls.caSecretName=postgres-ca",
 			},
-			goldenFile: "install-control-plane.global-universal-on-k8s.golden.yaml",
+			includeCRDs: true, // CRDs should be implicitly skipped for universal environment
+			goldenFile:  "install-control-plane.global-universal-on-k8s.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Zone Universal mode", testCase{
 			extraArgs: []string{
@@ -193,7 +194,8 @@ var _ = Context("kumactl install control-plane", func() {
 				"--zone",
 				"zone-1",
 			},
-			goldenFile: "install-control-plane.zone-universal-on-k8s.golden.yaml",
+			includeCRDs: true, // CRDs should be implicitly skipped for universal environment
+			goldenFile:  "install-control-plane.zone-universal-on-k8s.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Zone", testCase{
 			extraArgs: []string{
@@ -241,6 +243,13 @@ var _ = Context("kumactl install control-plane", func() {
 controlPlane:
   replicas: 2
 `,
+		}),
+		Entry("should skip CRDs with --skip-crds", testCase{
+			extraArgs: []string{
+				"--skip-crds",
+			},
+			includeCRDs: true, // don't add --skip-kinds, rely on --skip-crds flag
+			goldenFile:  "install-control-plane.skip-crds.golden.yaml",
 		}),
 		Entry("should add GatewayClass if CRDs are present and enabled", testCase{
 			extraArgs: []string{

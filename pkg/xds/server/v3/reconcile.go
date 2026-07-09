@@ -2,24 +2,28 @@ package v3
 
 import (
 	"context"
+	"encoding/binary"
+	"fmt"
+	"hash"
 
+	"github.com/cespare/xxhash/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/modifications"
-	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
-	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
-	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
-	xds_template "github.com/kumahq/kuma/v2/pkg/xds/template"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/modifications"
+	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	xds_sync "github.com/kumahq/kuma/v3/pkg/xds/sync"
+	xds_template "github.com/kumahq/kuma/v3/pkg/xds/template"
 )
 
 var reconcileLog = core.Log.WithName("xds").WithName("reconcile")
@@ -45,9 +49,12 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	if err != nil {
 		return // already cleared
 	}
-	for _, res := range snap.Resources {
+	for i, res := range snap.Resources {
 		if res.Version != "" {
-			r.statsCallbacks.DiscardConfig(res.Version)
+			r.statsCallbacks.DiscardConfig(nodeId.Id + res.Version)
+		}
+		if typeURL := resourceTypeURL(i); typeURL != "" {
+			r.statsCallbacks.DiscardConfig(nodeId.Id + typeURL)
 		}
 	}
 }
@@ -59,18 +66,16 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 		return false, errors.Wrapf(err, "failed to generate a snapshot")
 	}
 
-	// To avoid assigning a new version every time, compare with
-	// the previous snapshot and reuse its version whenever possible,
-	// fallback to UUID otherwise
+	// To avoid assigning a new version every time, compute stable content
+	// hashes per resource type and compare against the previous snapshot.
 	previous, err := r.cacher.Get(node)
 	if err != nil {
 		previous = &envoy_cache.Snapshot{}
 	}
 
-	snapshot, changed := autoVersion(previous, snapshot)
-	// We need to force new version of EDS, otherwise clusters will be stuck in warming state.
-	if previous.GetVersion(envoy_resource.ClusterType) != snapshot.GetVersion(envoy_resource.ClusterType) {
-		snapshot.Resources[envoy_types.Endpoint].Version = core.NewUUID()
+	snapshot, changed, err := autoVersion(previous, snapshot)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to compute snapshot versions")
 	}
 
 	resKey := proxy.Id.ToResourceKey()
@@ -96,7 +101,7 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	if err := snapshot.Consistent(); err != nil {
 		return false, errors.Wrap(err, "inconsistent snapshot")
 	}
-	log.Info("config has changed", "versions", changed)
+	log.Info("config has changed", "versions", versionStrings(changed))
 
 	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
 		return false, errors.Wrap(err, "failed to store snapshot")
@@ -125,7 +130,15 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 
 	for _, version := range changed {
-		r.statsCallbacks.ConfigReadyForDelivery(version)
+		if version.version != "" {
+			// Content hashes aren't node-seeded, so two nodes can share a
+			// version string for a resource type; prefix with nodeId so the
+			// delivery-metric queue doesn't cross-match between them.
+			r.statsCallbacks.ConfigReadyForDelivery(node.Id + version.version)
+		}
+		if version.typeURL != "" {
+			r.statsCallbacks.ConfigReadyForDelivery(node.Id + version.typeURL)
+		}
 	}
 	return true, nil
 }
@@ -143,39 +156,158 @@ func validateResource(r envoy_types.Resource) error {
 	}
 }
 
-func autoVersion(old *envoy_cache.Snapshot, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string) {
-	for resourceType, resources := range old.Resources {
-		n.Resources[resourceType] = reuseVersion(resources, n.Resources[resourceType])
+// autoVersion computes deterministic xxHash64 content hashes for each resource
+// type in n.
+// Empty slots keep version "" unless they are clearing a previously non-empty
+// slot, in which case they get a deterministic clear version so Envoy observes
+// the removal.
+// The cluster version is folded into the endpoint version when endpoints are
+// non-empty to force EDS re-push on cluster changes (prevents warming stalls).
+// Returns the versions that changed relative to old.
+func autoVersion(old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changedVersion, error) {
+	for i := range n.Resources {
+		ver, err := resourcesVersion(n.Resources[i].Items)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to hash resources for type %d", i)
+		}
+		if ver == "" && old.Resources[i].Version != "" {
+			ver = emptyResourcesVersion()
+		}
+		n.Resources[i].Version = ver
 	}
 
-	var changed []string
-	for resourceType, resource := range n.Resources {
-		if old.Resources[resourceType].Version != resource.Version {
-			changed = append(changed, resource.Version)
+	// Fold cluster version into endpoint version so that a cluster change
+	// forces an EDS re-push even when endpoint content is identical.
+	// Only when endpoints are non-empty; empty slots stay at "".
+	if ep := n.Resources[envoy_types.Endpoint].Version; ep != "" {
+		n.Resources[envoy_types.Endpoint].Version = mixVersions(ep, n.Resources[envoy_types.Cluster].Version)
+	}
+
+	if err := constructVersionMap(n); err != nil {
+		return nil, nil, err
+	}
+
+	var changed []changedVersion
+	for i, resource := range n.Resources {
+		if old.Resources[i].Version != resource.Version {
+			changed = append(changed, changedVersion{
+				version: resource.Version,
+				typeURL: resourceTypeURL(i),
+			})
 		}
 	}
 
-	return n, changed
+	return n, changed, nil
 }
 
-func reuseVersion(old, n envoy_cache.Resources) envoy_cache.Resources {
-	n.Version = old.Version
-	if !equalSnapshots(old.Items, n.Items) {
-		n.Version = core.NewUUID()
-	}
-	return n
+type changedVersion struct {
+	version string
+	typeURL string
 }
 
-func equalSnapshots(old, n map[string]envoy_types.ResourceWithTTL) bool {
-	if len(n) != len(old) {
-		return false
+func versionStrings(changed []changedVersion) []string {
+	versions := make([]string, 0, len(changed))
+	for _, version := range changed {
+		versions = append(versions, version.version)
 	}
-	for key, newValue := range n {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue.Resource, oldValue.Resource) {
-			return false
+	return versions
+}
+
+// resourcesVersion returns a hex xxHash64 hash over sorted resource names and
+// their deterministic proto serializations. Returns "" for
+// empty slots so that two empty slots compare equal without versioning.
+func resourcesVersion(items map[string]envoy_types.ResourceWithTTL) (string, error) {
+	if len(items) == 0 {
+		return "", nil
+	}
+	h := xxhash.New()
+	for _, key := range maps.SortedKeys(items) {
+		writeHashField(h, []byte(key))
+		b, err := envoy_cache.MarshalResource(items[key].Resource)
+		if err != nil {
+			return "", err
+		}
+		writeHashField(h, b)
+	}
+	return formatHash(h.Sum64()), nil
+}
+
+func constructVersionMap(s *envoy_cache.Snapshot) error {
+	s.VersionMap = make(map[string]map[string]string)
+
+	for i, resources := range s.Resources {
+		typeURL := resourceTypeURL(i)
+		if typeURL == "" {
+			continue
+		}
+
+		s.VersionMap[typeURL] = make(map[string]string, len(resources.Items))
+		for _, resource := range resources.Items {
+			marshaled, err := envoy_cache.MarshalResource(resource.Resource)
+			if err != nil {
+				return err
+			}
+			version := envoy_cache.HashResource(marshaled)
+			if i == int(envoy_types.Endpoint) && s.Resources[envoy_types.Cluster].Version != "" {
+				version = mixVersions(version, s.Resources[envoy_types.Cluster].Version)
+			}
+			s.VersionMap[typeURL][envoy_cache.GetResourceName(resource.Resource)] = version
 		}
 	}
-	return true
+
+	return nil
+}
+
+func resourceTypeURL(i int) string {
+	switch envoy_types.ResponseType(i) {
+	case envoy_types.Endpoint:
+		return envoy_resource.EndpointType
+	case envoy_types.Cluster:
+		return envoy_resource.ClusterType
+	case envoy_types.Route:
+		return envoy_resource.RouteType
+	case envoy_types.ScopedRoute:
+		return envoy_resource.ScopedRouteType
+	case envoy_types.VirtualHost:
+		return envoy_resource.VirtualHostType
+	case envoy_types.Listener:
+		return envoy_resource.ListenerType
+	case envoy_types.Secret:
+		return envoy_resource.SecretType
+	case envoy_types.Runtime:
+		return envoy_resource.RuntimeType
+	case envoy_types.ExtensionConfig:
+		return envoy_resource.ExtensionConfigType
+	case envoy_types.RateLimitConfig:
+		return envoy_resource.RateLimitConfigType
+	default:
+		return ""
+	}
+}
+
+// mixVersions combines two version strings into a single xxHash64 hash.
+func mixVersions(a, b string) string {
+	h := xxhash.New()
+	writeHashField(h, []byte(a))
+	writeHashField(h, []byte(b))
+	return formatHash(h.Sum64())
+}
+
+func emptyResourcesVersion() string {
+	h := xxhash.New()
+	writeHashField(h, nil)
+	return formatHash(h.Sum64())
+}
+
+func writeHashField(h hash.Hash, b []byte) {
+	var lenBuf [8]byte
+	binary.LittleEndian.PutUint64(lenBuf[:], uint64(len(b)))
+	h.Write(lenBuf[:])
+	h.Write(b)
+}
+
+func formatHash(sum uint64) string {
+	return fmt.Sprintf("%016x", sum)
 }
 
 type snapshotGenerator interface {

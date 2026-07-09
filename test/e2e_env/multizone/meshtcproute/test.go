@@ -7,11 +7,11 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Test() {
@@ -89,27 +89,31 @@ name: route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: MeshSubset
+    tags:
+      kuma.io/service: demo-client
   to:
   - targetRef:
       kind: MeshService
-      name: test-server
+      labels:
+        kuma.io/display-name: test-server
+        kuma.io/zone: kuma-5
     rules:
     - default:
         backendRefs:
-        - kind: MeshServiceSubset
-          name: alias-test-server
-          weight: 100
-          tags:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: alias-test-server
             kuma.io/zone: kuma-5
+          port: 80
+          weight: 100
 `, meshName))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectResponsesByInstance(
 				multizone.UniZone1,
 				"demo-client",
-				"test-server.mesh",
+				"test-server.svc.kuma-5.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(And(

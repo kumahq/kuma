@@ -10,12 +10,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 func FederateKubeZoneCPToUniversalGlobal() {
@@ -57,6 +57,8 @@ func FederateKubeZoneCPToUniversalGlobal() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zone)
 		Expect(zone.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone.DeleteKuma()).To(Succeed())
 		Expect(global.DeleteKuma()).To(Succeed())

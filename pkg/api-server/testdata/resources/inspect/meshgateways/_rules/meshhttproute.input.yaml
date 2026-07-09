@@ -2,6 +2,8 @@
 # This test is likely to evolve as meshgateway support for meshhttproute is not currently fully supported
 type: Mesh
 name: default
+meshServices:
+  mode: Disabled
 ---
 type: MeshTimeout
 name: on-route

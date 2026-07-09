@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/kumahq/kuma/v2/api/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/api/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 // ProtoMessageFunc ...
@@ -89,6 +89,7 @@ type ResourceInfo struct {
 	AdditionalPrinterColumns []string
 	HasInsights              bool
 	IsProxy                  bool
+	AffectsPolicyMatching    bool
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
@@ -112,6 +113,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
 		HasInsights:              r.HasInsights,
 		IsProxy:                  r.IsProxy,
+		AffectsPolicyMatching:    !r.PolicyMatchingExempt,
 		KdsDirection:             r.Kds,
 	}
 	if r.Ws != nil {

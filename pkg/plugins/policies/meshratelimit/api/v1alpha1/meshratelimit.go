@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshRateLimit protects services from being overwhelmed by limiting the rate of incoming requests or connections. It supports local rate limiting for both HTTP (requests per interval) and TCP (connections per interval) traffic with customizable response codes and headers for rate-limited requests.

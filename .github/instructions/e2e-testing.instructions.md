@@ -292,21 +292,21 @@ Expect(failure.ResponseCode).To(Equal(403))
 
 **Universal:**
 ```go
-import "github.com/kumahq/kuma/v2/test/framework/envs/universal"
+import "github.com/kumahq/kuma/v3/test/framework/envs/universal"
 
 universal.Cluster  // Shared universal cluster
 ```
 
 **Kubernetes:**
 ```go
-import "github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+import "github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 
 kubernetes.Cluster  // Shared kubernetes cluster
 ```
 
 **Multizone:**
 ```go
-import "github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+import "github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 
 multizone.Global      // Global CP (Universal)
 multizone.KubeZone1   // Kubernetes zone 1

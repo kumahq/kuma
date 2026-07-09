@@ -25,14 +25,14 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	builtin_config "github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin/config"
-	provided_config "github.com/kumahq/kuma/v2/pkg/plugins/ca/provided/config"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
-	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
-	"github.com/kumahq/kuma/v2/tools/common/types"
-	. "github.com/kumahq/kuma/v2/tools/resource-gen/genutils"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	builtin_config "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin/config"
+	provided_config "github.com/kumahq/kuma/v3/pkg/plugins/ca/provided/config"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
+	"github.com/kumahq/kuma/v3/tools/common/types"
+	. "github.com/kumahq/kuma/v3/tools/resource-gen/genutils"
 )
 
 // CustomResourceTemplate for creating a Kubernetes CRD to wrap a Kuma resource.
@@ -52,11 +52,11 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	{{ $pkg }} "github.com/kumahq/kuma/v2/api/{{ .Package }}/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	{{ $pkg }} "github.com/kumahq/kuma/v3/api/{{ .Package }}/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 {{range .Resources}}
@@ -221,9 +221,9 @@ import (
 	"errors"
 	"fmt"
 
-	{{$pkg}} "github.com/kumahq/kuma/v2/api/{{.Package}}/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	{{$pkg}} "github.com/kumahq/kuma/v3/api/{{.Package}}/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 )
 
 {{range .Resources}}
@@ -381,6 +381,7 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		ShortName: "{{.ShortName}}",{{- end}}
 		IsExperimental: {{.IsExperimental}},
         IsProxy: {{.IsProxy}},
+        AffectsPolicyMatching: {{.AffectsPolicyMatching}},
 {{- if .HasInsights}}
 		Insight: New{{.ResourceType}}InsightResource(),
 		Overview: New{{.ResourceType}}OverviewResource(),
@@ -483,6 +484,27 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
+		// kri is only emitted at runtime for resources that have a ShortName
+		// (see pkg/core/kri), so only advertise it in the schema for those.
+		if r.ShortName != "" {
+			schemaMap.Set("kri", &jsonschema.Schema{
+				Type:        "string",
+				ReadOnly:    true,
+				Description: "Kuma Resource Identifier (KRI) of the given resource",
+			})
+		}
+		schemaMap.Set("creationTime", &jsonschema.Schema{
+			Type:        "string",
+			Format:      "date-time",
+			ReadOnly:    true,
+			Description: "Time at which the resource was created",
+		})
+		schemaMap.Set("modificationTime", &jsonschema.Schema{
+			Type:        "string",
+			Format:      "date-time",
+			ReadOnly:    true,
+			Description: "Time at which the resource was updated",
+		})
 		s, err := reflector.reflectFromType(tpe, true)
 		if err != nil {
 			return err
@@ -685,7 +707,7 @@ func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jso
 	// Workaround: AddGoComments requires the correct module path to load Go source
 	// comments for OpenAPI schema descriptions. Without this, field descriptions
 	// are lost during schema generation.
-	modulePath := "github.com/kumahq/kuma/v2"
+	modulePath := "github.com/kumahq/kuma/v3"
 
 	// AddGoComments uses Go's package loading which requires the path to be relative
 	// to the current working directory. For downstream projects using symlinks,

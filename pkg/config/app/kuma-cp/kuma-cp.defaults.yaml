@@ -55,6 +55,11 @@ store:
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+    # TolerateNewerDBVersions makes `migrate up` a no-op when the DB is at a
+    # newer version than the binary, and relaxes the boot-time migration gate
+    # from strict equality (dbVer == fileVer) to dbVer >= fileVer. Intended
+    # for blue/green CP upgrades where a newer CP owns schema migrations.
+    tolerateNewerDBVersions: false # ENV: KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS
     # ReadReplica is a setting for a DB replica used only for read queries
     readReplica:
       # Host of the Postgres DB read replica. If not set, read replica is not used.
@@ -134,6 +139,8 @@ xdsServer:
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
   dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  # Maximum number of policy matching results kept in the shared Dataplane xDS reconciliation cache. Set to 0 to disable.
+  policyMatchingCacheSize: 10000 # ENV: KUMA_XDS_SERVER_POLICY_MATCHING_CACHE_SIZE
   # Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
   nackBackoff: 5s # ENV: KUMA_XDS_SERVER_NACK_BACKOFF
   # A delay between proxy terminating a connection and the CP trying to deregister the proxy.
@@ -862,8 +869,6 @@ experimental:
   # Enables sidecar containers in Kubernetes if supported by the Kubernetes
   # environment.
   sidecarContainers: true # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  # If true uses Delta xDS to deliver changes to sidecars.
-  deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming

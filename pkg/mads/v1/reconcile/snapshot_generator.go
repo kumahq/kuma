@@ -6,22 +6,20 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/mads/generator"
-	mads_v1 "github.com/kumahq/kuma/v2/pkg/mads/v1"
-	meshmetrics_generator "github.com/kumahq/kuma/v2/pkg/mads/v1/generator"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/mads/generator"
+	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1"
+	meshmetrics_generator "github.com/kumahq/kuma/v3/pkg/mads/v1/generator"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
-
-var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
 	return &SnapshotGenerator{
@@ -48,10 +46,6 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 	meshes, err := s.getMeshesWithPrometheusEnabled(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(meshes) > 0 && len(meshesWithMeshMetrics) > 0 {
-		log.Info("it is not supported to use both MeshMetrics policy and 'metrics' under Mesh resource. For now MeshMetrics will take precedence. If migrating please remove the 'metrics' section and apply an equivalent MeshMetrics resource")
 	}
 
 	var resources []*core_xds.Resource

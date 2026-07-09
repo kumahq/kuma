@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/test/e2e_env/universal/gateway"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	obs "github.com/kumahq/kuma/v2/test/framework/deployments/observability"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/test/e2e_env/universal/gateway"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	obs "github.com/kumahq/kuma/v3/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func traceAll(meshName string, url string) string {
@@ -77,7 +77,7 @@ func PluginTest() {
 		Eventually(func() ([]string, error) {
 			// when client sends requests to server
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			if err != nil {
 				return nil, err

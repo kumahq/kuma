@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	obs "github.com/kumahq/kuma/v2/test/framework/deployments/observability"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	obs "github.com/kumahq/kuma/v3/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func meshTraceZoneProxyMeshIdentity(meshName string) string {
@@ -153,7 +153,7 @@ func ZoneProxyPluginTest() {
 					zoneproxy.WithWorkload(workload),
 					zoneproxy.WithEgressPort(egressPort),
 				),
-				obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent)),
+				obs.Install(obsDeployment, obs.WithNamespace(obsNs)),
 			)).
 			Install(YamlK8s(meshTraceZoneProxyMeshIdentity(mesh))).
 			Install(YamlK8s(meshTraceZoneProxyMES(mesh, extNs))).

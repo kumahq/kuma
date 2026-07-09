@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/test/testenvconfig"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/test/testenvconfig"
 )
 
 var _ = Describe("Config loader", func() {
@@ -127,6 +127,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
 			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
 			Expect(cfg.Store.Postgres.ReadReplica.Ratio).To(Equal(uint(80)))
+			Expect(cfg.Store.Postgres.TolerateNewerDBVersions).To(BeTrue())
 
 			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
 			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
@@ -320,6 +321,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.XdsServer.DataplaneDeregistrationDelay.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.XdsServer.NACKBackoff.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.XdsServer.PolicyMatchingCacheSize).To(Equal(1234))
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
 			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
@@ -357,6 +359,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
 			Expect(cfg.InterCp.Catalog.InstanceAddress).To(Equal("192.168.0.1"))
+			Expect(cfg.InterCp.Catalog.InstanceVersion).To(Equal("v3"))
 			Expect(cfg.InterCp.Catalog.HeartbeatInterval.Duration).To(Equal(time.Second))
 			Expect(cfg.InterCp.Catalog.WriterInterval.Duration).To(Equal(2 * time.Second))
 			Expect(cfg.InterCp.Server.Port).To(Equal(uint16(15683)))
@@ -391,7 +394,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
-			Expect(cfg.Experimental.DeltaXds).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -449,6 +451,7 @@ store:
       host: ro.host
       port: 35432
       ratio: 80
+    tolerateNewerDBVersions: true
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -723,6 +726,7 @@ xdsServer:
   dataplaneStatusFlushInterval: 7s
   dataplaneDeregistrationDelay: 11s
   nackBackoff: 10s
+  policyMatchingCacheSize: 1234
 metrics:
   zone:
     subscriptionLimit: 23
@@ -776,6 +780,7 @@ dpServer:
 interCp:
   catalog:
     instanceAddress: "192.168.0.1"
+    instanceVersion: "v3"
     heartbeatInterval: 1s
     writerInterval: 2s
   server:
@@ -824,7 +829,6 @@ experimental:
   sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
-  deltaXds: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -905,6 +909,7 @@ meshService:
 				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
 				"KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME":                                             "99s",
+				"KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS":                                           "true",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
@@ -1102,6 +1107,7 @@ meshService:
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
 				"KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY":                                                  "11s",
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
+				"KUMA_XDS_SERVER_POLICY_MATCHING_CACHE_SIZE":                                               "1234",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
@@ -1139,6 +1145,7 @@ meshService:
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
 				"KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS":                                                   "192.168.0.1",
+				"KUMA_INTER_CP_CATALOG_INSTANCE_VERSION":                                                   "v3",
 				"KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL":                                                 "1s",
 				"KUMA_INTER_CP_CATALOG_WRITER_INTERVAL":                                                    "2s",
 				"KUMA_INTER_CP_SERVER_PORT":                                                                "15683",
@@ -1171,7 +1178,6 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
-				"KUMA_EXPERIMENTAL_DELTA_XDS":                                                              "true",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",

@@ -10,24 +10,33 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/insights"
-	test_insights "github.com/kumahq/kuma/v2/pkg/insights/test"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	samples2 "github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/insights"
+	test_insights "github.com/kumahq/kuma/v3/pkg/insights/test"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	samples2 "github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 )
+
+// legacyMesh returns a Mesh with meshServices.mode explicitly Disabled, so the
+// resyncer keeps computing kuma.io/service based ServiceInsights. Since the
+// default is Exclusive, tests exercising legacy service insights must opt out.
+func legacyMesh() *core_mesh.MeshResource {
+	mesh := core_mesh.NewMeshResource()
+	mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Disabled}
+	return mesh
+}
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
@@ -89,7 +98,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should sync more often than FullResyncInterval", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
@@ -107,7 +116,7 @@ var _ = Describe("Insight Persistence", func() {
 
 	It("should count dataplanes by version", func() {
 		// setup
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp1", "mesh-1"))
@@ -183,7 +192,7 @@ var _ = Describe("Insight Persistence", func() {
 
 	It("should count dataplanes by type", func() {
 		// setup
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp1", "mesh-1"))
@@ -270,7 +279,7 @@ var _ = Describe("Insight Persistence", func() {
 
 	It("should count dataplanes by mTLS backends", func() {
 		// given mesh
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and dp1 with ca-1 backend
@@ -327,7 +336,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should count dataplane secrets and mesh service as a resource but not as policy", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp-1", "mesh-1"))
@@ -353,7 +362,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should return correct statuses in service insights", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp1 := core_mesh.NewDataplaneResource()
@@ -514,7 +523,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should return correct service types in serviceInsights", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp1 := core_mesh.NewDataplaneResource()
@@ -648,7 +657,7 @@ var _ = Describe("Insight Persistence", func() {
 
 	It("should not create a service insight entry for inbounds without a kuma.io/service tag", func() {
 		// KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED strips the kuma.io/service tag from inbounds
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		tagged := core_mesh.NewDataplaneResource()
@@ -705,7 +714,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should return correct dataplanes statuses in mesh insights", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp1 := core_mesh.NewDataplaneResource()
@@ -875,7 +884,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should return correct amounts of internal/external services in mesh insights", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp1 := core_mesh.NewDataplaneResource()
@@ -1068,7 +1077,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should return gateway in services", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpOnline := core_mesh.NewDataplaneResource()
@@ -1156,7 +1165,7 @@ var _ = Describe("Insight Persistence", func() {
 
 	It("should return zones in service insights", func() {
 		// given
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("default", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = samples2.DataplaneBackendBuilder().
@@ -1192,7 +1201,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should sync on events", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		eventCh <- events.ResourceChangedEvent{
@@ -1212,7 +1221,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should sync on full resync", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		eventCh <- events.TriggerInsightsComputationEvent{}
@@ -1226,7 +1235,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should not update things twice", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		eventCh <- events.ResourceChangedEvent{
@@ -1254,7 +1263,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should update things twice but not update on the store", func() {
-		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		eventCh <- events.ResourceChangedEvent{

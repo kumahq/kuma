@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -77,7 +77,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -87,7 +87,7 @@ spec:
 		// can access test-server-2 from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -121,7 +121,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -129,7 +129,7 @@ spec:
 			// and
 			// can access test-server-2 from service in the mesh
 			responses, err = client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -177,7 +177,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -187,7 +187,7 @@ spec:
 		// can access test-server-2 from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -221,7 +221,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -229,7 +229,7 @@ spec:
 			// and
 			// can access test-server-2 from service in the mesh
 			responses, err = client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -280,7 +280,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -302,7 +302,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -345,7 +345,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -375,7 +375,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))

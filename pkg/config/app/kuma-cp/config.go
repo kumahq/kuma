@@ -8,26 +8,26 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/config/access"
-	api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/apis"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/config/diagnostics"
-	dns_server "github.com/kumahq/kuma/v2/pkg/config/dns-server"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/config/eventbus"
-	"github.com/kumahq/kuma/v2/pkg/config/intercp"
-	"github.com/kumahq/kuma/v2/pkg/config/mads"
-	"github.com/kumahq/kuma/v2/pkg/config/multizone"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/policies"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime"
-	"github.com/kumahq/kuma/v2/pkg/config/tracing"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/config/xds"
-	"github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/config/access"
+	api_server "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/apis"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/diagnostics"
+	dns_server "github.com/kumahq/kuma/v3/pkg/config/dns-server"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/config/eventbus"
+	"github.com/kumahq/kuma/v3/pkg/config/intercp"
+	"github.com/kumahq/kuma/v3/pkg/config/mads"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/policies"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/runtime"
+	"github.com/kumahq/kuma/v3/pkg/config/tracing"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/config/xds"
+	"github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 )
 
 var _ config.Config = &Config{}
@@ -296,7 +296,6 @@ var DefaultConfig = func() Config {
 				DelayFullResync:    false,
 			},
 			SidecarContainers: true,
-			DeltaXds:          false,
 		},
 		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
@@ -487,8 +486,6 @@ type ExperimentalConfig struct {
 	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
 	// environment.
 	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
-	// If true uses Delta xDS to deliver changes to sidecars.
-	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
 }
