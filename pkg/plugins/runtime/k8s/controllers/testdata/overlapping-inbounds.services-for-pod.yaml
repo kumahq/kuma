@@ -1,0 +1,26 @@
+---
+metadata:
+  namespace: demo
+  name: example-preview
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+  selector:
+    app: example
+    rollouts-pod-template-hash: preview-hash
+---
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+  selector:
+    app: example
+    rollouts-pod-template-hash: active-hash

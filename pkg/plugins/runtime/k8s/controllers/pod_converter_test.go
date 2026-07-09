@@ -340,10 +340,16 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherServices:     "update-dataplane.other-services.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
 		}),
-		Entry("Multiples services selecting single port", testCase{
-			pod:            "duplicated-inbounds.pod.yaml",
-			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
-			dataplane:      "duplicated-inbounds.dataplane.yaml",
+		Entry("Multiples services selecting single port deduplicated when inbound tags disabled", testCase{
+			pod:                 "duplicated-inbounds.pod.yaml",
+			servicesForPod:      "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:           "duplicated-inbounds.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
+		Entry("Multiples services selecting single port keep all inbounds when inbound tags enabled", testCase{
+			pod:            "overlapping-inbounds.pod.yaml",
+			servicesForPod: "overlapping-inbounds.services-for-pod.yaml",
+			dataplane:      "overlapping-inbounds.dataplane.yaml",
 		}),
 		Entry("31. Pod with workload labels configured matching pod label", testCase{
 			pod:            "31.pod.yaml",
