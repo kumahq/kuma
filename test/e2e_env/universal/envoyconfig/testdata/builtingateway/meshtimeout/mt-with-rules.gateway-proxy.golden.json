@@ -174,6 +174,17 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
+<<<<<<< HEAD
+=======
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/display-name": "echo-server",
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig-builtingateway",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
                     }
                   }
                 }
