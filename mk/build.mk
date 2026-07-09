@@ -108,7 +108,7 @@ build/artifacts-$(1)-$(2)/kuma-dp:
 	$(Build_Go_Application) ./app/kuma-dp
 
 .PHONY: build/artifacts-$(1)-$(2)/kumactl
-build/artifacts-$(1)-$(2)/kumactl: build/ebpf
+build/artifacts-$(1)-$(2)/kumactl:
 	$(Build_Go_Application) ./app/kumactl
 
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cni
@@ -139,5 +139,5 @@ endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
 
 .PHONY: clean/build
-clean/build: clean/ebpf ## Dev: Remove build/ dir
+clean/build: ## Dev: Remove build/ dir
 	rm -rf "$(BUILD_DIR)"

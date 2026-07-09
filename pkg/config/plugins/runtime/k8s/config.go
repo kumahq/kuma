@@ -108,13 +108,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				Logging:           false,
 				ExperimentalProxy: true,
 			},
-			EBPF: EBPF{
-				Enabled:              false,
-				InstanceIPEnvVarName: "INSTANCE_IP",
-				BPFFSPath:            "/sys/fs/bpf",
-				CgroupPath:           "/sys/fs/cgroup",
-				ProgramsSourcePath:   "/tmp/kuma-ebpf",
-			},
 			IgnoredServiceSelectorLabels: []string{},
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy:             []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
@@ -255,9 +248,6 @@ type Injector struct {
 	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
 	CaCertFile string     `json:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
 	BuiltinDNS BuiltinDNS `json:"builtinDNS"`
-	// EBPF is a configuration for ebpf if transparent proxy should be installed
-	// using ebpf instead of iptables
-	EBPF EBPF `json:"ebpf"`
 	// IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
 	// If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
 	// It is useful when you change Service selector and expect traffic to be sent immediately.
@@ -498,24 +488,6 @@ type BuiltinDNS struct {
 	Logging bool `json:"logging,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_logging"`
 	// Use the embedded DNS instead (This is an experimental feature)
 	ExperimentalProxy bool `json:"experimentalProxy,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_experimental_proxy"`
-}
-
-// EBPF defines configuration for the ebpf, when transparent proxy is marked to be
-// installed using ebpf instead of iptables
-type EBPF struct {
-	// Install transparent proxy using ebpf
-	Enabled bool `json:"enabled" envconfig:"kuma_runtime_kubernetes_injector_ebpf_enabled"`
-	// Name of the environmental variable which will include IP address of the pod
-	InstanceIPEnvVarName string `json:"instanceIPEnvVarName,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_instance_ip_env_var_name"`
-	// Path where BPF file system will be mounted for pinning ebpf programs and maps
-	BPFFSPath string `json:"bpffsPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_bpffs_path"`
-	// Path of mounted cgroup2
-	CgroupPath string `json:"cgroupPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_cgroup_path"`
-	// Name of the network interface which should be used to attach to it TC programs
-	// when not specified, we will try to automatically determine it
-	TCAttachIface string `json:"tcAttachIface,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_tc_attach_iface"`
-	// Path where compiled eBPF programs are placed
-	ProgramsSourcePath string `json:"programsSourcePath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_programs_source_path"`
 }
 
 type NodeTaintController struct {

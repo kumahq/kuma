@@ -653,22 +653,6 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.builtindns.config.yaml",
 		}),
-		Entry("30. with ebpf", testCase{
-			num: "30",
-			mesh: `
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`,
-			namespace: `
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.ebpf.config.yaml",
-		}),
 		Entry("31. with duplicate container/sidecar uid", testCase{
 			num: "31",
 			mesh: `

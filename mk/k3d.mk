@@ -184,15 +184,6 @@ k3d/cluster/cni/setup/calico:
 		--set whisker.enabled=false \
 		--set defaultFelixConfiguration.enabled=false
 
-# --- eBPF setup ---
-
-.PHONY: k3d/cluster/ebpf/setup
-k3d/cluster/ebpf/setup:
-ifeq ($(GOOS),darwin)
-	$(Q)docker exec k3d-$(CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
-	docker exec k3d-$(CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
-endif
-
 # --- Helm deploy options ---
 
 K3D_HELM_DEPLOY_OPTS = \
@@ -306,7 +297,6 @@ k3d/cluster/start:
 	$(Q)$(MAKE) k3d/cluster/create
 	$(Q)$(MAKE) k3d/cluster/wait/api
 	$(Q)$(MAKE) k3d/cluster/cni/setup
-	$(Q)$(MAKE) k3d/cluster/ebpf/setup
 	$(Q)$(MAKE) k3d/cluster/wait
 	$(Q)$(MAKE) k3d/cluster/metallb/setup
 

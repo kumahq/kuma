@@ -345,20 +345,6 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE
   value: {{ .Values.cni.namespace }}
 {{- end }}
-{{- if .Values.experimental.ebpf.enabled }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
-  value: "true"
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
-  value: {{ .Values.experimental.ebpf.instanceIPEnvVarName }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-  value: {{ .Values.experimental.ebpf.bpffsPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
-  value: {{ .Values.experimental.ebpf.cgroupPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
-  value: {{ .Values.experimental.ebpf.tcAttachIface }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
-  value: {{ .Values.experimental.ebpf.programsSourcePath }}
-{{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
   value: "true"

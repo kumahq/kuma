@@ -8,6 +8,34 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### eBPF transparent proxy removed
+
+The experimental eBPF transparent proxy feature has been removed. This feature
+used prebuilt merbridge binaries for traffic interception instead of iptables.
+
+The following configuration has been removed:
+
+- Control plane: `runtime.kubernetes.injector.ebpf.*` environment variables
+  (`KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_*`).
+- Helm values: `experimental.ebpf.*`, `hooks.ebpfCleanup`,
+  `cni.experimental.imageEbpf`, and `transparentProxy.configMap.config.ebpf`.
+- Pod annotations: `kuma.io/transparent-proxying-ebpf*`.
+- CLI flags: `kumactl install transparent-proxy --ebpf-*` and
+  `kumactl uninstall transparent-proxy --ebpf-*`.
+- CLI command: `kumactl uninstall ebpf`.
+
+**Action required**
+
+If you are using eBPF transparent proxy (`experimental.ebpf.enabled=true`), you
+must migrate to the iptables-based transparent proxy before upgrading. Remove
+the eBPF configuration from your Helm values and pod annotations. The
+iptables-based transparent proxy is the default and does not require additional
+configuration.
+
+If you have eBPF programs pinned on cluster nodes, clean them up before
+upgrading by running `kumactl uninstall ebpf` with the pre-upgrade Kuma version.
+After upgrading, this command is no longer available.
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control

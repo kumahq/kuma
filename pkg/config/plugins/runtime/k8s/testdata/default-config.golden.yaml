@@ -18,12 +18,6 @@ injector:
   caCertFile: ""
   cniEnabled: false
   containerPatches: []
-  ebpf:
-    bpffsPath: /sys/fs/bpf
-    cgroupPath: /sys/fs/cgroup
-    enabled: false
-    instanceIPEnvVarName: INSTANCE_IP
-    programsSourcePath: /tmp/kuma-ebpf
   exceptions:
     labels:
       openshift.io/build.name: '*'

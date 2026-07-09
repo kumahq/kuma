@@ -39,14 +39,8 @@ type PodRedirect struct {
 	ExcludeInboundPorts                      string
 	RedirectPortInbound                      uint32
 	IpFamilyMode                             string
-	UID                                      string
-	TransparentProxyEnableEbpf               bool
-	TransparentProxyEbpfBPFFSPath            string
-	TransparentProxyEbpfCgroupPath           string
-	TransparentProxyEbpfTCAttachIface        string
-	TransparentProxyEbpfInstanceIPEnvVarName string
-	TransparentProxyEbpfProgramsSourcePath   string
-	ExcludeOutboundPortsForUIDs              []string
+	UID                         string
+	ExcludeOutboundPortsForUIDs []string
 	DropInvalidPackets                       bool
 	IptablesLogs                             bool
 	ExcludeInboundIPs                        string
@@ -101,32 +95,6 @@ func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedire
 	pr.IptablesLogs, _, _ = annotations.GetBoolean(metadata.KumaTrafficIptablesLogs)
 
 	pr.UID, _ = annotations.GetString(metadata.KumaSidecarUID)
-
-	if value, exists, err := annotations.GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
-		return nil, err
-	} else if exists {
-		pr.TransparentProxyEnableEbpf = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfBPFFSPath); exists {
-		pr.TransparentProxyEbpfBPFFSPath = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfCgroupPath); exists {
-		pr.TransparentProxyEbpfCgroupPath = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfTCAttachIface); exists {
-		pr.TransparentProxyEbpfTCAttachIface = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
-		pr.TransparentProxyEbpfInstanceIPEnvVarName = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfProgramsSourcePath); exists {
-		pr.TransparentProxyEbpfProgramsSourcePath = value
-	}
 
 	if value, exists := annotations.GetString(
 		metadata.KumaTrafficExcludeInboundIPs,
@@ -235,17 +203,6 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 			flag("redirect-all-dns-traffic", pr.BuiltinDNSEnabled),
 			flagsIf(pr.BuiltinDNSPort != uint32(defaultConfig.Redirect.DNS.Port),
 				flag("redirect-dns-port", pr.BuiltinDNSPort),
-			),
-		),
-		// ebpf
-		flagsIf(pr.TransparentProxyEnableEbpf,
-			flag("ebpf-enabled", pr.TransparentProxyEnableEbpf),
-			flag("ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath),
-			flag("ebpf-cgroup-path", pr.TransparentProxyEbpfCgroupPath),
-			flag("ebpf-tc-attach-iface", pr.TransparentProxyEbpfTCAttachIface),
-			flag("ebpf-programs-source-path", pr.TransparentProxyEbpfProgramsSourcePath),
-			flagsIf(pr.TransparentProxyEbpfInstanceIPEnvVarName,
-				flag("ebpf-instance-ip", fmt.Sprintf("$(%s)", pr.TransparentProxyEbpfInstanceIPEnvVarName)),
 			),
 		),
 		// other

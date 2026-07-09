@@ -407,22 +407,6 @@ runtime:
         logging: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
         # Use the embedded DNS instead (This is an experimental feature)
         experimentalProxy: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY
-      # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
-      # installed using ebpf instead of iptables
-      ebpf:
-        # Install transparent proxy using ebpf
-        enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
-        # Name of the environmental variable which will include IP address of the pod
-        instanceIPEnvVarName: INSTANCE_IP # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
-        # Path where BPF file system will be mounted for pinning ebpf programs and maps
-        bpffsPath: /sys/fs/bpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-        # Path of mounted cgroup2
-        cgroupPath: /sys/fs/cgroup # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
-        # Name of the network interface which should be used to attach to it TC programs
-        # when not specified, we will try to automatically determine it
-        tcAttachIface: "" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
-        # Path where compiled eBPF programs are placed
-        programsSourcePath: /tmp/kuma-ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
       # IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
       # If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
       # It is useful when you change Service selector and expect traffic to be sent immediately.
