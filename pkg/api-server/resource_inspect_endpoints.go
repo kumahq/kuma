@@ -718,10 +718,10 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			})
 			if r.descriptor.Name == core_mesh.MeshGatewayType {
 				proxyRule = nil
-				toRules = nil
-				fromRules = nil
-				inboundRules = nil
-				toResourceRules = nil
+				toRules = []api_common.Rule{}
+				fromRules = []api_common.FromRule{}
+				inboundRules = []api_common.InboundRulesEntry{}
+				toResourceRules = []api_common.ResourceRule{}
 			}
 
 			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
