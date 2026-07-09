@@ -413,6 +413,32 @@ var _ = Describe("run", func() {
 		Expect(err.Error()).To(ContainSubstring("--name and --mesh cannot be specified"))
 	})
 
+	It("should create the dataplane token in a missing work dir", func() {
+		// given
+		rootCtx := DefaultRootContext()
+		cfg := rootCtx.Config
+		token, err := os.ReadFile(filepath.Join("testdata", "token"))
+		Expect(err).ToNot(HaveOccurred())
+		cfg.Dataplane.Name = "example"
+		cfg.DataplaneRuntime.Token = string(token)
+		cfg.DataplaneRuntime.WorkDir = filepath.Join(tmpDir, "missing-work-dir")
+
+		// when
+		_, err = defaultDataplaneTokenGenerator(cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.DataplaneRuntime.TokenPath).To(Equal(filepath.Join(cfg.DataplaneRuntime.WorkDir, "example")))
+		Expect(cfg.DataplaneRuntime.TokenPath).To(BeARegularFile())
+		data, err := os.ReadFile(cfg.DataplaneRuntime.TokenPath)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(data).To(Equal(token))
+
+		info, err := os.Stat(cfg.DataplaneRuntime.TokenPath)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(os.FileMode(0o600)))
+	})
+
 	It("should fail when the proxy type is unknown", func() {
 		// given
 		cmd := NewRootCmd(opts, DefaultRootContext())

@@ -589,7 +589,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 }
 
 func writeFile(filename string, data []byte, perm os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(filename), perm); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filename), 0o711); err != nil {
 		return err
 	}
 	return os.WriteFile(filename, data, perm)
