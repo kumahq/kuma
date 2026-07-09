@@ -121,6 +121,14 @@ rules:
       - get
       - list
       - watch
+  - apiGroups: # Gateway API legacy finalizer cleanup during upgrade
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses
+    verbs:
+      - get
+      - list
+      - patch
   - apiGroups:
       - kuma.io
     resources:
