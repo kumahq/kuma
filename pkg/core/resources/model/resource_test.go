@@ -348,9 +348,11 @@ var _ = Describe("ComputeLabels", func() {
 				given.r.GetMeta().GetLabels(),
 				core_model.GetNamespace(given.r.GetMeta(), "kuma-system"),
 				given.r.GetMeta().GetMesh(),
+				given.r.GetMeta().GetName(),
 				given.mode,
 				given.isK8s,
 				given.localZone,
+				false,
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(labels).To(Equal(given.expectedLabels))
@@ -367,10 +369,11 @@ var _ = Describe("ComputeLabels", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/env":    "kubernetes",
-				"kuma.io/mesh":   "mesh-1",
-				"kuma.io/origin": "zone",
-				"kuma.io/zone":   "zone-1",
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
 			},
 		}),
 		Entry("source/destination policy on zone-k8s", testCase{
@@ -382,7 +385,8 @@ var _ = Describe("ComputeLabels", func() {
 				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "sample-timeout"},
 			},
 			expectedLabels: map[string]string{
-				"kuma.io/mesh": "mesh-1",
+				"kuma.io/display-name": "sample-timeout",
+				"kuma.io/mesh":         "mesh-1",
 			},
 		}),
 		Entry("mesh resource on non-federated zone", testCase{
@@ -393,7 +397,9 @@ var _ = Describe("ComputeLabels", func() {
 				Spec: samples.Mesh1,
 				Meta: &test_model.ResourceMeta{Mesh: core_model.NoMesh, Name: "mesh-1"},
 			},
-			expectedLabels: map[string]string{},
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "mesh-1",
+			},
 		}),
 		Entry("plugin originated policy on zone-k8s on custom namespace", testCase{
 			mode:      core.Zone,
@@ -410,6 +416,7 @@ var _ = Describe("ComputeLabels", func() {
 				Build(),
 			expectedLabels: map[string]string{
 				"k8s.kuma.io/namespace": "custom-ns",
+				"kuma.io/display-name":  "idle-timeout",
 				"kuma.io/policy-role":   "consumer",
 				"kuma.io/mesh":          "mesh-1",
 				"kuma.io/origin":        "zone",
@@ -426,11 +433,12 @@ var _ = Describe("ComputeLabels", func() {
 				WithBuiltInGateway("test-gateway").
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "gateway",
+				"kuma.io/display-name": "dp-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/proxy-type":   "gateway",
 			},
 		}),
 		Entry("dataplane proxy", testCase{
@@ -443,11 +451,12 @@ var _ = Describe("ComputeLabels", func() {
 				WithMesh("mesh-1").
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "sidecar",
+				"kuma.io/display-name": "backend-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/proxy-type":   "sidecar",
 			},
 		}),
 		Entry("zone egress proxy", testCase{
@@ -458,11 +467,82 @@ var _ = Describe("ComputeLabels", func() {
 				WithPort(1001).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "zoneegress",
+				"kuma.io/display-name": "zoneegress-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/proxy-type":   "zoneegress",
 			},
 		}),
 	)
+
+	It("does not recompute labels for imported resources on privileged writes", func() {
+		// A resource synced from another CP: on this zone it is not locally
+		// originated (origin=global) and its display-name was set by the origin
+		// CP. A privileged (KDS sync) write must leave those labels untouched.
+		res := builders.MeshTimeout().
+			WithMesh("mesh-1").
+			WithName("idle-timeout").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+				IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+			}).
+			Build()
+		existing := map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			mesh_proto.MeshTag:             "mesh-1",
+			mesh_proto.DisplayName:         "name-from-origin-cp",
+		}
+
+		labels, err := core_model.ComputeLabels(
+			res.Descriptor(),
+			res.GetSpec(),
+			existing,
+			core_model.UnsetNamespace,
+			"mesh-1",
+			"recomputed-name",
+			core.Zone,
+			true,
+			"zone-1",
+			true,
+		)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(labels).To(Equal(existing))
+	})
+
+	It("recomputes labels on privileged writes to locally-originated resources", func() {
+		// A privileged write (origin=zone on this zone) is locally originated,
+		// so it must still recompute CP-owned labels: the stale display-name is
+		// overwritten, unlike the imported-resource case above.
+		res := builders.MeshTimeout().
+			WithMesh("mesh-1").
+			WithName("idle-timeout").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+				IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+			}).
+			Build()
+		existing := map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			mesh_proto.MeshTag:             "mesh-1",
+			mesh_proto.DisplayName:         "stale-name",
+		}
+
+		labels, err := core_model.ComputeLabels(
+			res.Descriptor(),
+			res.GetSpec(),
+			existing,
+			core_model.UnsetNamespace,
+			"mesh-1",
+			"recomputed-name",
+			core.Zone,
+			true,
+			"zone-1",
+			true,
+		)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(labels).To(HaveKeyWithValue(mesh_proto.DisplayName, "recomputed-name"))
+	})
 })

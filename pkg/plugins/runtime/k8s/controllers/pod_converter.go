@@ -66,9 +66,11 @@ func (p *PodConverter) PodToDataplane(
 		mergeLabels(dataplane.GetLabels(), pod.Labels),
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		dataplane.Mesh,
+		dataplane.Name,
 		p.Mode,
 		true,
 		p.Zone,
+		false,
 	)
 	if err != nil {
 		return err
@@ -106,9 +108,11 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
+		zoneIngress.Name,
 		p.Mode,
 		true,
 		p.Zone,
+		false,
 	)
 	if err != nil {
 		return err
@@ -146,9 +150,11 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
+		zoneEgress.Name,
 		p.Mode,
 		true,
 		p.Zone,
+		false,
 	)
 	if err != nil {
 		return err

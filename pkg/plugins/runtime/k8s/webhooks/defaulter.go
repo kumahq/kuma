@@ -66,15 +66,21 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 
+	displayName := resource.GetMeta().GetName()
+	if name, ok := resource.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && name != "" {
+		displayName = name
+	}
 	computed, err := core_model.ComputeLabels(
 		resource.Descriptor(),
 		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
 		core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace),
 		resource.GetMeta().GetMesh(),
+		displayName,
 		h.Mode,
 		true,
 		h.ZoneName,
+		h.isPrivilegedUser(h.AllowedUsers, req.UserInfo),
 	)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
