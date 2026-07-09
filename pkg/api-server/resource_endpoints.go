@@ -529,6 +529,7 @@ func (r *resourceEndpoints) createResource(
 		res.GetSpec(),
 		res.GetMeta().GetLabels(),
 		meshName,
+		name,
 		core_model.WithNamespace(core_model.GetNamespace(res.GetMeta(), r.systemNamespace)),
 		core_model.WithMode(r.mode),
 		core_model.WithK8s(r.isK8s),
@@ -577,6 +578,7 @@ func (r *resourceEndpoints) updateResource(
 		currentRes.GetSpec(),
 		currentRes.GetMeta().GetLabels(),
 		meshName,
+		currentRes.GetMeta().GetName(),
 		core_model.WithNamespace(core_model.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
 		core_model.WithMode(r.mode),
 		core_model.WithK8s(r.isK8s),
@@ -595,6 +597,7 @@ func (r *resourceEndpoints) updateResource(
 		currentRes.GetSpec(),
 		newResRest.GetMeta().GetLabels(),
 		meshName,
+		currentRes.GetMeta().GetName(),
 		core_model.WithNamespace(core_model.GetNamespace(newResRest.GetMeta(), r.systemNamespace)),
 		core_model.WithMode(r.mode),
 		core_model.WithK8s(r.isK8s),
@@ -750,7 +753,6 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 	immutableLabels := []string{
 		mesh_proto.ResourceOriginLabel,
 		mesh_proto.ZoneTag,
-		mesh_proto.DisplayName,
 	}
 
 	for _, label := range immutableLabels {
