@@ -5,6 +5,8 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -184,8 +186,16 @@ var _ = Describe("Readiness Reporter", func() {
 		)
 
 		BeforeEach(func() {
-			var err error
-			adminListener, err = net.Listen("tcp", "127.0.0.1:0")
+			// Fake Envoy admin on a real UDS. It serves /ready AND the
+			// sensitive admin endpoints, so that a 404 from the reporter
+			// proves the reporter refuses to proxy them - not merely that
+			// the backend lacks the route.
+			dir, err := os.MkdirTemp("", "rdy")
+			Expect(err).ToNot(HaveOccurred())
+			DeferCleanup(func() { _ = os.RemoveAll(dir) })
+			sockPath := filepath.Join(dir, "admin.sock")
+
+			adminListener, err = net.Listen("unix", sockPath)
 			Expect(err).ToNot(HaveOccurred())
 
 			adminMux := http.NewServeMux()
@@ -193,20 +203,19 @@ var _ = Describe("Readiness Reporter", func() {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("LIVE\n"))
 			})
+			for _, p := range []string{"/config_dump", "/stats", "/clusters", "/certs", "/logging", "/quitquitquit"} {
+				adminMux.HandleFunc(p, func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte("SENSITIVE"))
+				})
+			}
 			adminServer = &http.Server{
 				Handler:           adminMux,
 				ReadHeaderTimeout: time.Second,
 			}
 			go func() { _ = adminServer.Serve(adminListener) }()
 
-			// The admin socket path is used to create a UDS client,
-			// but for testing we use a TCP-based fake. We need a real
-			// UDS to pass to NewReporter, so we create a temp socket
-			// that the admin client will connect to.
-			//
-			// Instead, we test the non-admin-socket paths here and
-			// verify that non-ready paths are blocked.
-			startReporter("")
+			startReporter(sockPath)
 		})
 
 		AfterEach(func() {
@@ -215,11 +224,26 @@ var _ = Describe("Readiness Reporter", func() {
 			}
 		})
 
-		It("does not expose admin endpoints", func() {
-			resp, err := http.Get(baseURL + "/stats")
+		It("proxies /ready to Envoy admin over the UDS", func() {
+			resp, err := http.Get(baseURL + "/ready")
 			Expect(err).ToNot(HaveOccurred())
-			resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).To(Equal("LIVE\n"))
+		})
+
+		It("does not expose any admin endpoint on the readiness port", func() {
+			for _, path := range []string{"/config_dump", "/stats", "/clusters", "/certs", "/logging", "/quitquitquit"} {
+				resp, err := http.Get(baseURL + path)
+				Expect(err).ToNot(HaveOccurred())
+				body, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound), "path %s should return 404", path)
+				Expect(string(body)).ToNot(ContainSubstring("SENSITIVE"), "path %s must not be proxied", path)
+			}
 		})
 	})
 

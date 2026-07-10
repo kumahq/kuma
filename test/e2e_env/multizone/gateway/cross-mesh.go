@@ -166,27 +166,52 @@ func CrossMeshGatewayOnMultizone() {
 				crossMeshGatewayServiceName,
 			)
 
-			BeforeEach(func() {
-				Expect((*zone).GetZoneEgressEnvoyTunnel().ResetCounters()).To(Succeed())
-			})
+			// The counter is cumulative and shared across the specs in this
+			// Context, and ResetCounters is not available through the control
+			// plane inspect tunnel. So each spec captures a baseline and
+			// asserts the counter grows over its own request rather than just
+			// being non-zero (which the previous spec would already satisfy).
+			// SingleValue enforces the filter matches exactly one counter
+			// (an empty match reads as 0, before any request).
+			currentRequestTotal := func(g Gomega) float64 {
+				s, err := (*zone).GetZoneEgressEnvoyTunnel().GetStats(filter)
+				g.Expect(err).ToNot(HaveOccurred())
+				value, err := s.SingleValue()
+				g.Expect(err).ToNot(HaveOccurred())
+				return value
+			}
 
 			It("proxies HTTP requests from a different mesh", func() {
+				var before float64
+				Eventually(func(g Gomega) {
+					before = currentRequestTotal(g)
+				}, "30s", "5s").Should(Succeed())
+
 				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceOtherMesh,
 				), "30s", "5s").Should(Succeed())
 
-				Expect((*zone).GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeGreaterThanZero())
+				Eventually(func(g Gomega) {
+					g.Expect((*zone).GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeGreaterThan(before))
+				}, "30s", "5s").Should(Succeed())
 			})
 			It("proxies HTTP requests from the same mesh", func() {
+				var before float64
+				Eventually(func(g Gomega) {
+					before = currentRequestTotal(g)
+				}, "30s", "5s").Should(Succeed())
+
 				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceSameMesh,
 				), "30s", "5s").Should(Succeed())
 
-				Expect((*zone).GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeGreaterThanZero())
+				Eventually(func(g Gomega) {
+					g.Expect((*zone).GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeGreaterThan(before))
+				}, "30s", "5s").Should(Succeed())
 			})
 		})
 	})
