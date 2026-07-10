@@ -424,29 +424,6 @@ to:
 
 `),
 		ErrorCases(
-			"invalid MeshGateway and to MeshService",
-			[]validators.Violation{{
-				Field:   "spec.to[0].targetRef.kind",
-				Message: "value 'MeshGateway' is not supported, only Mesh is allowed if loadBalancer is set",
-			}},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge-gateway
-to:
-  - targetRef:
-      kind: MeshService
-      name: svc-1
-    default:
-      loadBalancer:
-        type: LeastRequest
-        leastRequest:
-          activeRequestBias: "1.3"
-`),
-		ErrorCases(
 			"invalid hashPolicies",
 			[]validators.Violation{
 				{
@@ -709,25 +686,6 @@ targetRef:
   labels:
     app: web
 to: []
-`),
-		Entry(
-			"top level MeshGateway",
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-  tags:
-    name: listener-1
-to:
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      localityAwareness:
-        disabled: true
 `),
 	)
 })

@@ -1,12 +1,8 @@
 #/meshes/default/meshgateways/the-gateway/_rules 200
-# Exclusive delta: the MeshTimeout's "to" targetRef points at a MeshService
-# resource (instead of Mesh, as in meshgateway.input.yaml). A "to" targeting
-# MeshService is only valid when the policy's top-level targetRef is Mesh
-# (not MeshGateway), so this fixture attaches Mesh-wide instead of directly
-# to the gateway. Under the shipping Exclusive default this populates
-# toResourceRules with the matched MeshService, whereas the Disabled sibling
-# only ever produces a Mesh-wide toRules entry with an empty
-# toResourceRules list.
+# Built-in gateway targeting was removed: a Mesh-scoped MeshTimeout no longer
+# produces rules for a MeshGateway resource's built-in listeners (it has no
+# inbounds), regardless of meshServices mode. This asserts that Exclusive
+# mode doesn't resurrect that matching via the "to" MeshService targetRef.
 type: Mesh
 name: default
 meshServices:
