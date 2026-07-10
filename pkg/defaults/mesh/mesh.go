@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -26,8 +25,8 @@ var log = core.Log.WithName("defaults").WithName("mesh")
 // ensureMux protects concurrent EnsureDefaultMeshResources invocation.
 // On Kubernetes, EnsureDefaultMeshResources is called both from MeshManager when creating default Mesh and from the MeshController
 // When they run concurrently:
-// 1 invocation can check that TrafficPermission is absent and then create it.
-// 2 invocation can check that TrafficPermission is absent, but it was just created, so it tries to created it which results in error
+// 1 invocation can check that a default resource is absent and then create it.
+// 2 invocation can check that the same resource is absent, but it was just created, so it tries to create it which results in error
 var ensureMux = sync.Mutex{}
 
 func EnsureDefaultMeshResources(
@@ -74,7 +73,7 @@ func EnsureDefaultMeshResources(
 	for prefix, resourceBuilder := range defaultResourceBuilders {
 		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)
 		// new policies are created in a kuma system namespace
-		if k8sStore && strings.HasPrefix(prefix, "mesh-") {
+		if k8sStore {
 			resourceName = fmt.Sprintf("%s.%s", resourceName, systemNamespace)
 		}
 		key := model.ResourceKey{

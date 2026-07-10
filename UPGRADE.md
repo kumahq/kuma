@@ -24,10 +24,15 @@ The following configuration has been removed:
 
 Remove `defaults.createMeshRoutingResources` from your control plane YAML
 config and `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` from your
-environment if set — both are rejected by strict config loading and no
-longer have any effect in Kuma 3.0.0. Existing `TrafficPermission` and
-`TrafficRoute` resources remain fully valid and supported; this change only
-affects automatic creation of new defaults.
+environment if set. Both settings no longer have any effect in Kuma 3.0.0.
+A stale YAML key is rejected only by strict config parsing; regular control
+plane startup and the environment variable loader silently ignore the removed
+setting.
+
+The compatibility mode for creating legacy defaults for pre-2.6.0 zones is no
+longer available in Kuma 3.0.0. Existing `TrafficPermission` and `TrafficRoute`
+resources remain fully valid and supported; this change only affects automatic
+creation of new defaults.
 
 ### Auto reachable services removed
 
