@@ -12,7 +12,7 @@ kind: ServiceAccount
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -22,7 +22,7 @@ kind: ServiceAccount
 metadata:
   name: kuma-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-egress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -32,7 +32,7 @@ kind: ServiceAccount
 metadata:
   name: kuma-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-ingress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -42,7 +42,7 @@ kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -56,7 +56,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kuma-control-plane
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -216,7 +216,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kuma-control-plane-workloads
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -301,7 +301,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma-control-plane
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -318,7 +318,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma-control-plane-workloads
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -336,7 +336,7 @@ kind: Role
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -410,7 +410,7 @@ kind: RoleBinding
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -428,7 +428,7 @@ kind: Service
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -467,7 +467,7 @@ kind: Service
 metadata:
   name: kuma-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-egress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -488,7 +488,7 @@ kind: Service
 metadata:
   name: kuma-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-ingress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -509,12 +509,12 @@ kind: Deployment
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-  annotations: 
-    
+  annotations:
+
 spec:
   replicas: 1
   minReadySeconds: 0
@@ -532,12 +532,12 @@ spec:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
         checksum/tls-secrets: 037b75e7a91465d94401c948c7fb17c9d74e43f2becf66ab2dbadae773b7f1ea
-      labels: 
+      labels:
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
-      affinity: 
+      affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - podAffinityTerm:
@@ -565,11 +565,11 @@ spec:
       automountServiceAccountToken: true
       restartPolicy: Always
       nodeSelector:
-        
+
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
-      
+
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
@@ -690,7 +690,7 @@ spec:
             requests:
               cpu: 500m
               memory: 256Mi
-          
+
           volumeMounts:
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
@@ -724,7 +724,7 @@ kind: Deployment
 metadata:
   name: kuma-egress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-egress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -748,7 +748,7 @@ spec:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
-      affinity: 
+      affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - podAffinityTerm:
@@ -776,9 +776,9 @@ spec:
       automountServiceAccountToken: true
       restartPolicy: Always
       nodeSelector:
-      
+
         kubernetes.io/os: linux
-      
+
       containers:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
@@ -828,7 +828,7 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources: 
+          resources:
             limits:
               cpu: 1000m
               memory: 512Mi
@@ -856,7 +856,7 @@ kind: Deployment
 metadata:
   name: kuma-ingress
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-ingress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -880,7 +880,7 @@ spec:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
-      affinity: 
+      affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - podAffinityTerm:
@@ -908,10 +908,10 @@ spec:
       automountServiceAccountToken: true
       restartPolicy: Always
       nodeSelector:
-      
+
         kubernetes.io/os: linux
       terminationGracePeriodSeconds: 40
-      
+
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
@@ -970,14 +970,14 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 3
-          resources: 
+          resources:
             limits:
               cpu: 1000m
               memory: 512Mi
             requests:
               cpu: 50m
               memory: 64Mi
-          
+
           volumeMounts:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
@@ -999,7 +999,7 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -1132,8 +1132,8 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
-  
-      
+
+
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
@@ -1238,7 +1238,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
-  labels: 
+  labels:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -1314,8 +1314,8 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
-    
-      
+
+
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]

@@ -125,10 +125,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		}
 
 		if refAttachment == attachment.Unknown {
-			// We don't care about this ref for route generation, but keeping
-			// it in the conditions map tells status merging to preserve any
-			// status we previously wrote for it.
-			conditions[ref] = nil
 			continue
 		}
 

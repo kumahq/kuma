@@ -55,6 +55,10 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 	// existing status yet.
 	var ownedStatuses []gatewayapi.RouteParentStatus
 	for ref, conditions := range parentConditions {
+		if len(conditions) == 0 {
+			continue
+		}
+
 		var previousStatus *gatewayapi.RouteParentStatus
 
 		// Look through previous statuses for one belonging to the same ref
@@ -63,10 +67,6 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 			if reflect.DeepEqual(candidatePreviousStatus.ParentRef, ref) {
 				previousStatus = &previousStatuses[i]
 			}
-		}
-
-		if len(conditions) == 0 && previousStatus == nil {
-			continue
 		}
 
 		status := gatewayapi.RouteParentStatus{
