@@ -112,23 +112,6 @@ from:
           disabled: true
         tcp:
           disabled: true`),
-			Entry("gateway example", `
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      local:
-        http:
-          requestRate:
-            num: 100
-            interval: 10s
-        tcp:
-          connectionRate:
-            num: 100
-            interval: 100ms`),
 			Entry("gateway example and targeting MeshHTTPRoute", `
 targetRef:
   kind: MeshHTTPRoute
@@ -370,29 +353,6 @@ from:
 violations:
   - field: spec.from[0].default.local.http
     message: 'must have at least one defined: disabled, requestRate, onRateLimit'`,
-			}),
-			Entry("invalid gateway example", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGateway
-  name: edge
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      local:
-        http:
-          requestRate:
-            num: 100
-            interval: 10s
-        tcp:
-          connectionRate:
-            num: 100
-            interval: 100ms`,
-				expected: `
-violations:
-  - field: spec.from
-    message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
 			}),
 			Entry("mixing from with rules", testCase{
 				inputYaml: `

@@ -1,7 +1,6 @@
 package v1alpha1_test
 
 import (
-	"context"
 	"path"
 	"path/filepath"
 
@@ -22,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -31,7 +29,6 @@ import (
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
@@ -614,80 +611,4 @@ var _ = Describe("MeshFaultInjection", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bytes).To(test_matchers.MatchGoldenYAML(path.Join("testdata", "egress_basic_listener.golden.yaml")))
 	})
-
-	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
-		// given
-		rules := core_rules.GatewayRules{
-			ToRules: core_rules.GatewayToRules{
-				ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-					{Address: "192.168.0.1", Port: 8080}: {
-						Rules: core_rules.Rules{{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								Http: &[]api.FaultInjectionConf{
-									{
-										Abort: &api.AbortConf{
-											HttpStatus: int32(444),
-											Percentage: intstr.FromInt(12),
-										},
-										Delay: &api.DelayConf{
-											Value:      *test.ParseDuration("55s"),
-											Percentage: intstr.FromString("55"),
-										},
-										ResponseBandwidth: &api.ResponseBandwidthConf{
-											Limit:      "111Mbps",
-											Percentage: intstr.FromString("62.9"),
-										},
-									},
-								},
-							},
-						}},
-					},
-				},
-			},
-		}
-
-		resources := xds_context.NewResources()
-		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-		}
-		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-		}
-
-		xdsCtx := *xds_samples.SampleContextWith(resources).Build()
-		proxy := xds_builders.Proxy().
-			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshFaultInjectionType, rules)).
-			Build()
-		for n, p := range core_plugins.Plugins().ProxyPlugins() {
-			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-		}
-		gatewayGenerator := gatewayGenerator()
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-		Expect(err).NotTo(HaveOccurred())
-
-		// when
-		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-
-		// then
-		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
-	})
 })
-
-func gatewayGenerator() gateway_plugin.Generator {
-	return gateway_plugin.Generator{
-		FilterChainGenerators: gateway_plugin.FilterChainGenerators{
-			FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]gateway_plugin.FilterChainGenerator{
-				mesh_proto.MeshGateway_Listener_HTTP:  &gateway_plugin.HTTPFilterChainGenerator{},
-				mesh_proto.MeshGateway_Listener_HTTPS: &gateway_plugin.HTTPSFilterChainGenerator{},
-				mesh_proto.MeshGateway_Listener_TCP:   &gateway_plugin.TCPFilterChainGenerator{},
-			},
-		},
-		ClusterGenerator: gateway_plugin.ClusterGenerator{
-			Zone: "test-zone",
-		},
-		Zone: "test-zone",
-	}
-}
