@@ -104,6 +104,13 @@ func (g Generator) Generate(
 	if proxy.Dataplane != nil {
 		log = log.WithValues("mesh", xdsCtx.Mesh.Resource.GetMeta().GetName())
 	}
+	// When a workload identity is assigned (MeshIdentity), the proxy's cert and
+	// trust bundle are delivered by the MeshIdentity and MeshTrust generators
+	// under KRI names.
+	if proxy.WorkloadIdentity != nil {
+		return resources, nil
+	}
+
 	getNameOrDefault := system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource))
 
 	usedIdentity := proxy.SecretsTracker.UsedIdentity()

@@ -526,7 +526,6 @@ func SetupServer(rt runtime.Runtime) error {
 			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			rt.CAProvider(),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

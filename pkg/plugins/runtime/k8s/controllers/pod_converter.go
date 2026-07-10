@@ -68,6 +68,7 @@ func (p *PodConverter) PodToDataplane(
 		currentSpec,
 		mergeLabels(dataplane.GetLabels(), pod.Labels),
 		dataplane.Mesh,
+		dataplane.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
 		resource_labels.WithK8s(true),
@@ -110,6 +111,7 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		currentSpec,
 		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
 		model.NoMesh,
+		zoneIngress.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
 		resource_labels.WithK8s(true),
@@ -151,6 +153,7 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		currentSpec,
 		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
 		model.NoMesh,
+		zoneEgress.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
 		resource_labels.WithK8s(true),
@@ -315,7 +318,15 @@ func (p *PodConverter) dataplaneFor(
 		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
 			var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 			var err error
-			if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
+			// Deduplicating inbounds by address:port is only safe when inbound
+			// tags are disabled: identity and MeshService matching then rely on
+			// the workload rather than per-service inbound tags, so collapsing
+			// several services that select the same port loses nothing. When
+			// inbound tags are enabled each service produces a distinctly tagged
+			// inbound with its own Ready/Ignored state; deduplication would drop
+			// one of them (e.g. keep an Ignored inbound over a Ready one), so we
+			// keep every inbound like the non-Exclusive path does.
+			if msMode == mesh_proto.Mesh_MeshServices_Exclusive && p.InboundConverter.InboundTagsDisabled {
 				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
 				if err != nil {
 					return nil, err

@@ -149,8 +149,8 @@ func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Po
 	}
 }
 
-// Deprecated: LegacyInboundInterfacesFor is currently only used for delegated gateway and Mesh without MeshService exclusive
-// to not change order of inbounds.
+// Deprecated: LegacyInboundInterfacesFor is used for delegated gateway, Mesh without MeshService exclusive,
+// and MeshService exclusive while inbound tags are still enabled, to not change order of inbounds.
 // For gateway we pick first inbound to take tags from. Delegated gateway identity relies on this.
 // For Dataplanes when MeshService is disabled we base identity and routing on inbound tags
 // TODO: We should revisit this when we rework identity. More in https://github.com/kumahq/kuma/issues/3339
@@ -158,8 +158,9 @@ func (ic *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone
 	return ic.inboundInterfacesFor(ctx, zone, pod, services)
 }
 
-// InboundInterfacesFor should be used when MeshService mode is Exclusive. This function deduplicates inbounds by address and port.
-// Since MeshService does not need tags we can safely deduplicate inbounds
+// InboundInterfacesFor should be used when MeshService mode is Exclusive and inbound tags are disabled.
+// This function deduplicates inbounds by address and port.
+// Since inbounds carry no tags in that model we can safely deduplicate them.
 func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	inbounds, err := ic.inboundInterfacesFor(ctx, zone, pod, services)
 	if err != nil {

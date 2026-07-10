@@ -40,7 +40,6 @@ type meshContextBuilder struct {
 	vipsPersistence        *vips.Persistence
 	topLevelDomain         string
 	vipPort                uint32
-	rsGraphBuilder         ReachableServicesGraphBuilder
 	caProvider             secrets.CaProvider
 	withPolicyMatchingHash bool
 }
@@ -83,7 +82,6 @@ func NewMeshContextBuilder(
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
 	vipPort uint32,
-	rsGraphBuilder ReachableServicesGraphBuilder,
 	caProvider secrets.CaProvider,
 	opts ...MeshContextBuilderOption,
 ) MeshContextBuilder {
@@ -100,7 +98,6 @@ func NewMeshContextBuilder(
 		vipsPersistence: vipsPersistence,
 		topLevelDomain:  topLevelDomain,
 		vipPort:         vipPort,
-		rsGraphBuilder:  rsGraphBuilder,
 		caProvider:      caProvider,
 	}
 	for _, opt := range opts {
@@ -300,7 +297,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		VIPOutbounds:                    outbounds,
 		ServicesInformation:             m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
 		DataSourceLoader:                loader,
-		ReachableServicesGraph:          m.rsGraphBuilder(meshName, resources),
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
 		DataplaneZoneIngressEndpointMap: dpZoneIngressEndpointMap,

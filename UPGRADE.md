@@ -49,6 +49,31 @@ unaffected by this change.
   own system namespace. Remove this key from your config file and Helm
   values — leaving it in place is harmless but has no effect.
 
+### Auto reachable services removed
+
+The experimental auto reachable services feature has been removed. The control
+plane no longer computes the set of services a data plane proxy can reach from
+`MeshTrafficPermission` to prune its Envoy configuration.
+
+The following configuration has been removed:
+
+- Control plane: `experimental.autoReachableServices`
+  (`KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES`).
+
+**Action required**
+
+Remove the setting above from your control plane config. Setting
+`KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES` no longer has any effect in Kuma
+3.0.0.
+
+To trim the outbound clusters a proxy receives, configure reachable services or
+reachable backends explicitly on the `Dataplane` (the
+`kuma.io/transparent-proxying-reachable-services` and `kuma.io/reachable-backends`
+annotations on Kubernetes). Traffic that is not permitted by a
+`MeshTrafficPermission` is still denied at the proxy; it is simply no longer
+pruned from the proxy configuration.
+
+
 ### `kumactl install observability` removed
 
 The deprecated `kumactl install observability` command has been removed for Kuma 3.0.
