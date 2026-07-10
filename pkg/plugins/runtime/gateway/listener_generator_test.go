@@ -67,7 +67,6 @@ var _ = Describe("Gateway Listener", func() {
 		Expect(StoreNamedFixture(rt, "mesh-logging.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "serviceinsight-logging.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "dataplane-logging.yaml")).To(Succeed())
-		Expect(StoreNamedFixture(rt, "trafficlog.yaml")).To(Succeed())
 
 		// This is an arbitrary certificate and key generated with kumactl.
 		Expect(StoreInlineFixture(rt, []byte(`

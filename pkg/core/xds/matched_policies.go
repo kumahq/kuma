@@ -32,7 +32,6 @@ type MatchedPolicies struct {
 	RateLimitsInbound  InboundRateLimitsMap
 
 	// Service(Cluster) -> Policy
-	TrafficLogs     TrafficLogMap
 	HealthChecks    HealthCheckMap
 	CircuitBreakers CircuitBreakerMap
 	Retries         RetryMap

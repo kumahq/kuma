@@ -201,9 +201,6 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.ServiceName][]core_model.Resource {
 	result := map[xds.ServiceName][]core_model.Resource{}
 
-	for service, tl := range matchedPolicies.TrafficLogs {
-		result[service] = append(result[service], tl)
-	}
 	for service, hc := range matchedPolicies.HealthChecks {
 		result[service] = append(result[service], hc)
 	}

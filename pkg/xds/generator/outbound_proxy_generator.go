@@ -90,7 +90,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
 		rateLimits = append(rateLimits, rateLimit)
 	}
-	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
@@ -116,8 +115,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					serviceName,
 					false,
 				)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, dpTags)).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
 				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
@@ -135,42 +132,18 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				)).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
 				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
-				Configure(envoy_listeners.HttpAccessLog(
-					meshName,
-					envoy_common.TrafficDirectionOutbound,
-					sourceService,
-					serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
-					proxy,
-				)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, proxy.Dataplane.Spec.TagSet())).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol))
 		case core_meta.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
 				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...)).
-				Configure(envoy_listeners.NetworkAccessLog(
-					meshName,
-					envoy_common.TrafficDirectionOutbound,
-					sourceService,
-					serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
-					proxy,
-				)).
 				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
 
 		default:
 			// configuration for non-HTTP cases
 			filterChainBuilder.
 				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...)).
-				Configure(envoy_listeners.NetworkAccessLog(
-					meshName,
-					envoy_common.TrafficDirectionOutbound,
-					sourceService,
-					serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
-					proxy,
-				)).
 				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
 		}
 

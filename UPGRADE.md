@@ -38,6 +38,19 @@ The deprecated `kumactl install observability` command has been removed for Kuma
 Use separately managed observability components or your platform's preferred observability stack instead.
 Kuma still ships first-party Grafana dashboards in the release tarball under `dashboards/grafana/`.
 
+### `TrafficLog` no longer affects generated Envoy config
+
+The legacy `TrafficLog` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `TrafficLog` resource no
+longer changes the access log configuration of any listener.
+
+The `TrafficLog` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate access logging to `MeshAccessLog`, which replaces `TrafficLog`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using

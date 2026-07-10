@@ -160,9 +160,6 @@ type EgressEndpointGroup struct {
 // Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
 type EgressEndpointMap map[ServiceName]EgressEndpointGroup
 
-// TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
-type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
-
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
 

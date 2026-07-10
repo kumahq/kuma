@@ -595,22 +595,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					ExternalServiceOutboundTargets: esOutboundTargets,
 				},
 				Policies: model.MatchedPolicies{
-					TrafficLogs: model.TrafficLogMap{
-						"api-http": &core_mesh.TrafficLogResource{
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{
-									Backend: "file",
-								},
-							},
-						},
-						"api-tcp": &core_mesh.TrafficLogResource{
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{
-									Backend: "elk",
-								},
-							},
-						},
-					},
 					CircuitBreakers: model.CircuitBreakerMap{
 						"api-http": &core_mesh.CircuitBreakerResource{
 							Spec: &mesh_proto.CircuitBreaker{

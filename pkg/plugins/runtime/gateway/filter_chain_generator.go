@@ -17,7 +17,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
@@ -245,21 +244,6 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 			"",
 			true,
 		),
-		// In mesh proxies, the access log is configured on the outbound
-		// listener, which is why we index the Logs slice by destination
-		// service name.  A Gateway listener by definition forwards traffic
-		// to multiple destinations, so rather than making up some arbitrary
-		// rules about which destination service we should accept here, we
-		// match the log policy for the generic pass through service. This
-		// will be the only policy available for a Dataplane with no outbounds.
-		envoy_listeners.HttpAccessLog(
-			ctx.Resource.Meta.GetName(),
-			envoy_common.TrafficDirectionInbound,
-			service,                // Source service is the gateway service.
-			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
-			info.Proxy,
-		),
 	)
 
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
@@ -339,14 +323,6 @@ func newTCPFilterChain(
 ) *envoy_listeners.FilterChainBuilder {
 	return envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 		envoy_listeners.TcpProxyDeprecated(service, clusters...),
-		envoy_listeners.NetworkAccessLog(
-			ctx.Mesh.Resource.Meta.GetName(),
-			envoy_common.TrafficDirectionInbound,
-			service,                // Source service is the gateway service.
-			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
-			proxy,
-		),
 		envoy_listeners.MaxConnectAttempts(retryPolicy),
 	)
 }
