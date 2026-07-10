@@ -59,7 +59,7 @@ var _ = Describe("Mesh Manager", func() {
 				Store: &config_store.StoreConfig{
 					Type: config_store.MemoryStore, UnsafeDelete: false,
 				},
-				Defaults:  &kuma_cp.Defaults{},
+				Defaults: &kuma_cp.Defaults{},
 				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 		unsafeDeleteResManager = mesh.NewMeshManager(
@@ -69,7 +69,7 @@ var _ = Describe("Mesh Manager", func() {
 				Store: &config_store.StoreConfig{
 					Type: config_store.MemoryStore, UnsafeDelete: true,
 				},
-				Defaults:  &kuma_cp.Defaults{},
+				Defaults: &kuma_cp.Defaults{},
 				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 	})
