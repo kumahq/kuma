@@ -65,14 +65,14 @@ func joinLines(lines ...string) string {
 	return strings.Join(lines, "\n")
 }
 
-func changedLineWithTypedVersions(proxyName string, versions ...string) string {
+func changedLineWithTypedVersions(versions ...string) string {
 	quoted := make([]string, len(versions))
 	for i, version := range versions {
 		quoted[i] = fmt.Sprintf("%q", version)
 	}
 	return fmt.Sprintf(
 		`2026-07-08T00:00:00Z	INFO	xds.reconcile	config has changed	{"proxyName": %q, "mesh": "default", "versions": [%s]}`,
-		proxyName, strings.Join(quoted, ", "),
+		"backend", strings.Join(quoted, ", "),
 	)
 }
 
@@ -146,9 +146,9 @@ var _ = Describe("DetectXdsChurn", func() {
 
 	It("counts multiple hashes in one versions array independently", func() {
 		logs := joinLines(
-			changedLineWithTypedVersions("backend", routeType+"="+hashA, clusterType+"="+hashB),
-			changedLineWithTypedVersions("backend", routeType+"="+hashA, clusterType+"="+hashB),
-			changedLineWithTypedVersions("backend", routeType+"="+hashA, clusterType+"="+hashB),
+			changedLineWithTypedVersions(routeType+"="+hashA, clusterType+"="+hashB),
+			changedLineWithTypedVersions(routeType+"="+hashA, clusterType+"="+hashB),
+			changedLineWithTypedVersions(routeType+"="+hashA, clusterType+"="+hashB),
 		)
 
 		// Both hashes reach the threshold, so both must be reported — not
@@ -190,11 +190,11 @@ var _ = Describe("DetectXdsChurn", func() {
 
 	It("tracks a resource type's streak across intervening lines for other types", func() {
 		logs := joinLines(
-			changedLineWithTypedVersions("backend", routeType+"="+hashA),
-			changedLineWithTypedVersions("backend", clusterType+"="+hashB),
-			changedLineWithTypedVersions("backend", routeType+"="+hashA),
-			changedLineWithTypedVersions("backend", endpointType+"="+hashC),
-			changedLineWithTypedVersions("backend", routeType+"="+hashA),
+			changedLineWithTypedVersions(routeType+"="+hashA),
+			changedLineWithTypedVersions(clusterType+"="+hashB),
+			changedLineWithTypedVersions(routeType+"="+hashA),
+			changedLineWithTypedVersions(endpointType+"="+hashC),
+			changedLineWithTypedVersions(routeType+"="+hashA),
 		)
 
 		Expect(utils.DetectXdsChurn(logs)).To(ConsistOf(
@@ -204,9 +204,9 @@ var _ = Describe("DetectXdsChurn", func() {
 
 	It("does not merge identical empty hashes from different resource types", func() {
 		logs := joinLines(
-			changedLineWithTypedVersions("backend", routeType+"=34c96acdcadb1bbb"),
-			changedLineWithTypedVersions("backend", secretType+"=34c96acdcadb1bbb"),
-			changedLineWithTypedVersions("backend", endpointType+"=34c96acdcadb1bbb"),
+			changedLineWithTypedVersions(routeType+"=34c96acdcadb1bbb"),
+			changedLineWithTypedVersions(secretType+"=34c96acdcadb1bbb"),
+			changedLineWithTypedVersions(endpointType+"=34c96acdcadb1bbb"),
 		)
 
 		Expect(utils.DetectXdsChurn(logs)).To(BeEmpty())
