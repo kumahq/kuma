@@ -82,24 +82,39 @@ spec:
           ports:
             - containerPort: 10001
             - containerPort: 9901
+          {{- if .Values.ingress.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               path: "/ready"
               port: 9901
-            failureThreshold: 12
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
+            failureThreshold: {{ .Values.ingress.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.ingress.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ingress.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.ingress.livenessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.ingress.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.ingress.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
               path: "/ready"
               port: 9901
-            failureThreshold: 12
-            initialDelaySeconds: 1
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
+            failureThreshold: {{ .Values.ingress.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.ingress.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ingress.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.ingress.readinessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.ingress.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.ingress.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: {{ .Values.ingress.startupProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.ingress.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ingress.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.ingress.startupProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.ingress.startupProbe.timeoutSeconds }}
+          {{- end }}
           resources: {{ toYaml .Values.ingress.resources | nindent 12 }}
           {{ with .Values.ingress.lifecycle}}
           lifecycle: {{ . | toYaml | nindent 12 }}

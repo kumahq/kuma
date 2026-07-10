@@ -153,6 +153,12 @@ A Helm chart for the Kuma Control Plane
 | ingress.logLevel | string | `"info"` | Log level for ingress (available values: off|info|debug) |
 | ingress.restartPolicy | string | `"Always"` | Pod restart policy for the ingress pods |
 | ingress.resources | object | `{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Define the resources to allocate to mesh ingress |
+| ingress.livenessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":60,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Liveness probe settings for the Ingress proxy |
+| ingress.livenessProbe.enabled | bool | `true` | Whether to enable the liveness probe. |
+| ingress.readinessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Readiness probe settings for the Ingress proxy |
+| ingress.readinessProbe.enabled | bool | `true` | Whether to enable the readiness probe. |
+| ingress.startupProbe | object | `{"enabled":false,"failureThreshold":60,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Startup probe settings for the Ingress proxy |
+| ingress.startupProbe.enabled | bool | `false` | Whether to enable the startup probe. |
 | ingress.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | ingress.terminationGracePeriodSeconds | int | `40` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | ingress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
@@ -200,6 +206,12 @@ A Helm chart for the Kuma Control Plane
 | egress.resources.requests.memory | string | `"64Mi"` |  |
 | egress.resources.limits.cpu | string | `"1000m"` |  |
 | egress.resources.limits.memory | string | `"512Mi"` |  |
+| egress.livenessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":60,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Liveness probe settings for the Egress proxy |
+| egress.livenessProbe.enabled | bool | `true` | Whether to enable the liveness probe. |
+| egress.readinessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Readiness probe settings for the Egress proxy |
+| egress.readinessProbe.enabled | bool | `true` | Whether to enable the readiness probe. |
+| egress.startupProbe | object | `{"enabled":false,"failureThreshold":60,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Startup probe settings for the Egress proxy |
+| egress.startupProbe.enabled | bool | `false` | Whether to enable the startup probe. |
 | egress.service.enabled | bool | `true` | Whether to create the service object |
 | egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
 | egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
