@@ -80,7 +80,6 @@ func EnsureDefaultMeshResourcesUpToDate(
 			mesh,
 			mesh.Spec.GetSkipCreatingInitialPolicies(),
 			extensions,
-			cfg.Defaults.CreateMeshRoutingResources,
 			cfg.Store.Type == config_store.KubernetesStore,
 			cfg.Store.Kubernetes.SystemNamespace,
 			cfg.Mode,
