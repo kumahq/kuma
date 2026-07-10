@@ -14,6 +14,11 @@ const (
 	hashA = "a1b2c3d4e5f60718"
 	hashB = "b1b2c3d4e5f60718"
 	hashC = "c1b2c3d4e5f60718"
+
+	clusterType  = "type.googleapis.com/envoy.config.cluster.v3.Cluster"
+	endpointType = "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment"
+	routeType    = "type.googleapis.com/envoy.config.route.v3.RouteConfiguration"
+	secretType   = "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret"
 )
 
 // changedLine renders a "config has changed" log line the way the console
@@ -58,6 +63,17 @@ func changedLineForDemoClient(mesh string, hashes ...string) string {
 
 func joinLines(lines ...string) string {
 	return strings.Join(lines, "\n")
+}
+
+func changedLineWithTypedVersions(proxyName string, versions ...string) string {
+	quoted := make([]string, len(versions))
+	for i, version := range versions {
+		quoted[i] = fmt.Sprintf("%q", version)
+	}
+	return fmt.Sprintf(
+		`2026-07-08T00:00:00Z	INFO	xds.reconcile	config has changed	{"proxyName": %q, "mesh": "default", "versions": [%s]}`,
+		proxyName, strings.Join(quoted, ", "),
+	)
 }
 
 var _ = Describe("DetectXdsChurn", func() {
@@ -130,9 +146,9 @@ var _ = Describe("DetectXdsChurn", func() {
 
 	It("counts multiple hashes in one versions array independently", func() {
 		logs := joinLines(
-			changedLine("backend", hashA, hashB),
-			changedLine("backend", hashA, hashB),
-			changedLine("backend", hashA, hashB),
+			changedLineWithTypedVersions("backend", routeType+"="+hashA, clusterType+"="+hashB),
+			changedLineWithTypedVersions("backend", routeType+"="+hashA, clusterType+"="+hashB),
+			changedLineWithTypedVersions("backend", routeType+"="+hashA, clusterType+"="+hashB),
 		)
 
 		// Both hashes reach the threshold, so both must be reported — not
@@ -170,6 +186,30 @@ var _ = Describe("DetectXdsChurn", func() {
 
 	It("returns an empty report for empty input", func() {
 		Expect(utils.DetectXdsChurn("")).To(BeEmpty())
+	})
+
+	It("tracks a resource type's streak across intervening lines for other types", func() {
+		logs := joinLines(
+			changedLineWithTypedVersions("backend", routeType+"="+hashA),
+			changedLineWithTypedVersions("backend", clusterType+"="+hashB),
+			changedLineWithTypedVersions("backend", routeType+"="+hashA),
+			changedLineWithTypedVersions("backend", endpointType+"="+hashC),
+			changedLineWithTypedVersions("backend", routeType+"="+hashA),
+		)
+
+		Expect(utils.DetectXdsChurn(logs)).To(ConsistOf(
+			"proxy backend in mesh default regenerated identical config 3 times (hash a1b2c3d4e5f60718) — non-deterministic xDS",
+		))
+	})
+
+	It("does not merge identical empty hashes from different resource types", func() {
+		logs := joinLines(
+			changedLineWithTypedVersions("backend", routeType+"=34c96acdcadb1bbb"),
+			changedLineWithTypedVersions("backend", secretType+"=34c96acdcadb1bbb"),
+			changedLineWithTypedVersions("backend", endpointType+"=34c96acdcadb1bbb"),
+		)
+
+		Expect(utils.DetectXdsChurn(logs)).To(BeEmpty())
 	})
 
 	It("does not flag a single log line with a duplicate hash in its versions array", func() {
