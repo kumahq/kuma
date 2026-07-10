@@ -114,8 +114,21 @@ func E2EDeferCleanup(args ...any) {
 
 func SupportedVersionEntries() []ginkgo.TableEntry {
 	ginkgo.GinkgoHelper()
+	return supportedVersionEntries("")
+}
+
+func SupportedVersionEntriesAtLeast(minVersion string) []ginkgo.TableEntry {
+	ginkgo.GinkgoHelper()
+	return supportedVersionEntries(minVersion)
+}
+
+func supportedVersionEntries(minVersion string) []ginkgo.TableEntry {
+	ginkgo.GinkgoHelper()
 	var res []ginkgo.TableEntry
 	for _, v := range versions.UpgradableVersionsFromBuild(Config.SupportedVersions()) {
+		if minVersion != "" && versions.IsVersionLessThan(v, minVersion) {
+			continue
+		}
 		res = append(res, ginkgo.Entry(nil, v))
 	}
 	return res
