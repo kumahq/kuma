@@ -36,7 +36,6 @@ func EnsureDefaultMeshResources(
 	mesh model.Resource,
 	skippedPolicies []string,
 	extensions context.Context,
-	createMeshDefaultRoutingResources bool,
 	k8sStore bool,
 	systemNamespace string,
 	cpMode config_core.CpMode,
@@ -71,10 +70,6 @@ func EnsureDefaultMeshResources(
 		"mesh-timeout-all":          defaultMeshTimeoutResource,
 		"mesh-circuit-breaker-all":  defaultMeshCircuitBreakerResource,
 		"mesh-retry-all":            defaultMeshRetryResource,
-	}
-	if createMeshDefaultRoutingResources {
-		defaultResourceBuilders["allow-all"] = defaultTrafficPermissionResource
-		defaultResourceBuilders["route-all"] = defaultTrafficRouteResource
 	}
 	for prefix, resourceBuilder := range defaultResourceBuilders {
 		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)
