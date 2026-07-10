@@ -564,6 +564,36 @@ ingress:
       cpu: 1000m
       memory: 512Mi
 
+  # -- Liveness probe settings for the Ingress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Ingress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Ingress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
   lifecycle: {}
@@ -722,6 +752,36 @@ egress:
     limits:
       cpu: 1000m
       memory: 512Mi
+
+  # -- Liveness probe settings for the Egress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Egress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Egress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
 
   service:
     # -- Whether to create the service object
