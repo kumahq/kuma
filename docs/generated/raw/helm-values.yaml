@@ -753,7 +753,7 @@ egress:
       cpu: 1000m
       memory: 512Mi
 
-  # -- Liveness probe settings for the Ingress proxy
+  # -- Liveness probe settings for the Egress proxy
   livenessProbe:
     # -- Whether to enable the liveness probe.
     enabled: true
@@ -763,7 +763,7 @@ egress:
     successThreshold: 1
     timeoutSeconds: 3
 
-  # -- Readiness probe settings for the Ingress proxy
+  # -- Readiness probe settings for the Egress proxy
   readinessProbe:
     # -- Whether to enable the readiness probe.
     enabled: true
@@ -773,7 +773,7 @@ egress:
     successThreshold: 1
     timeoutSeconds: 3
 
-  # -- Startup probe settings for the Ingress proxy
+  # -- Startup probe settings for the Egress proxy
   startupProbe:
     # -- Whether to enable the startup probe.
     enabled: false

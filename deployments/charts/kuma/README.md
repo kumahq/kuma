@@ -212,11 +212,11 @@ A Helm chart for the Kuma Control Plane
 | egress.resources.requests.memory | string | `"64Mi"` |  |
 | egress.resources.limits.cpu | string | `"1000m"` |  |
 | egress.resources.limits.memory | string | `"512Mi"` |  |
-| egress.livenessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":60,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Liveness probe settings for the Ingress proxy |
+| egress.livenessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":60,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Liveness probe settings for the Egress proxy |
 | egress.livenessProbe.enabled | bool | `true` | Whether to enable the liveness probe. |
-| egress.readinessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Readiness probe settings for the Ingress proxy |
+| egress.readinessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Readiness probe settings for the Egress proxy |
 | egress.readinessProbe.enabled | bool | `true` | Whether to enable the readiness probe. |
-| egress.startupProbe | object | `{"enabled":false,"failureThreshold":60,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Startup probe settings for the Ingress proxy |
+| egress.startupProbe | object | `{"enabled":false,"failureThreshold":60,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Startup probe settings for the Egress proxy |
 | egress.startupProbe.enabled | bool | `false` | Whether to enable the startup probe. |
 | egress.service.enabled | bool | `true` | Whether to create the service object |
 | egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
