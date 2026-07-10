@@ -315,7 +315,6 @@ func newSecretError(i int, msg string) error {
 }
 
 func newTCPFilterChain(
-	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 	service string,
 	clusters []envoy_common.Cluster,
@@ -379,7 +378,7 @@ func (g *TCPFilterChainGenerator) Generate(
 			clusters := clustersByHostname[filter.Hostname]
 			sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
-			builder := newTCPFilterChain(ctx, info.Proxy, service, clusters, retryPolicy)
+			builder := newTCPFilterChain(info.Proxy, service, clusters, retryPolicy)
 			tlsResources, err := configureTLS(
 				ctx,
 				info,
@@ -397,7 +396,7 @@ func (g *TCPFilterChainGenerator) Generate(
 		}
 		return resources, filterChains, nil
 	default:
-		builder := newTCPFilterChain(ctx, info.Proxy, service, allClusters, retryPolicy)
+		builder := newTCPFilterChain(info.Proxy, service, allClusters, retryPolicy)
 		return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
 	}
 }
