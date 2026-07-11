@@ -20,7 +20,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )

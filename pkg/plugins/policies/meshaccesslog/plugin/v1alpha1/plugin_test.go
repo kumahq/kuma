@@ -35,7 +35,7 @@ import (
 	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
 	meshtcproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"

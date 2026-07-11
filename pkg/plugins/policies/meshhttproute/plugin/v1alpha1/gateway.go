@@ -7,7 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"

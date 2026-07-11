@@ -46,7 +46,7 @@ import (
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_policies "github.com/kumahq/kuma/v3/pkg/test/policies"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"

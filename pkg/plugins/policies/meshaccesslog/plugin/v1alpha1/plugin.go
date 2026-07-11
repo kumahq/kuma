@@ -35,7 +35,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"

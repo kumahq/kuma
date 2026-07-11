@@ -24,8 +24,8 @@ import (
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/inspect"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -449,7 +449,7 @@ func newGatewayDataplaneInspectResponse(
 	gatewayPolicies := api_server_types.PolicyMap{}
 
 	// TrafficLog and TrafficeTrace are applied to the entire MeshGateway
-	// see pkg/plugins/runtime/gateway.newFilterChain
+	// see pkg/xds/generator/gateway.newFilterChain
 	if logging, ok := proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]; ok {
 		gatewayPolicies[core_mesh.TrafficLogType] = rest.From.Meta(logging)
 	}

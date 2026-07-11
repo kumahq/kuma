@@ -7,7 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
-	gateway_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )

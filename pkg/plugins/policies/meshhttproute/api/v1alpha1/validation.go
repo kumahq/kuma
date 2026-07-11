@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 

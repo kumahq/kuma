@@ -17,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	meshroute_gateway "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
