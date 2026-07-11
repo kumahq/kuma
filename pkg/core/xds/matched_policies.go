@@ -33,7 +33,6 @@ type MatchedPolicies struct {
 
 	// Service(Cluster) -> Policy
 	TrafficLogs     TrafficLogMap
-	HealthChecks    HealthCheckMap
 	CircuitBreakers CircuitBreakerMap
 	Retries         RetryMap
 

@@ -13,12 +13,6 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      healthChecks:
-      - healthyThreshold: 2
-        interval: 20s
-        tcpHealthCheck: {}
-        timeout: 20s
-        unhealthyThreshold: 2
       name: api-service-4508437668c35ed8
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -44,12 +38,6 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      healthChecks:
-      - healthyThreshold: 3
-        interval: 30s
-        tcpHealthCheck: {}
-        timeout: 30s
-        unhealthyThreshold: 3
       name: echo-mirror-3dd740a2de879d4c
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -75,12 +63,6 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      healthChecks:
-      - healthyThreshold: 1
-        interval: 10s
-        tcpHealthCheck: {}
-        timeout: 10s
-        unhealthyThreshold: 1
       name: echo-service-9f149ed9e14091ca
       perConnectionBufferLimitBytes: 32768
       type: EDS

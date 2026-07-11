@@ -292,7 +292,6 @@ func newClusterBuilder(
 		clusters.Timeout(timeout, protocol),
 		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
 		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),
-		clusters.HealthCheck(protocol, healthCheckPolicyFor(dest)),
 	)
 
 	// TODO(jpeach) OutboundProxyGenerator unconditionally
@@ -380,12 +379,4 @@ func circuitBreakerPolicyFor(dest *route.Destination) *core_mesh.CircuitBreakerR
 	}
 
 	return nil // TODO(jpeach) default circuit breaker policy
-}
-
-func healthCheckPolicyFor(dest *route.Destination) *core_mesh.HealthCheckResource {
-	if policy, ok := dest.Policies[core_mesh.HealthCheckType]; ok {
-		return policy.(*core_mesh.HealthCheckResource)
-	}
-
-	return nil // TODO(jpeach) default health check policy
 }
