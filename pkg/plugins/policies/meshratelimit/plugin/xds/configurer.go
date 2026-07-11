@@ -262,9 +262,7 @@ func ensureHTTPLocalRateLimitFilter(filterChain *envoy_listener.FilterChain) err
 		return nil
 	}
 
-	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-		return ensureHTTPLocalRateLimitFilterOnHCM(hcm)
-	}); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, ensureHTTPLocalRateLimitFilterOnHCM); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 		return err
 	}
 
