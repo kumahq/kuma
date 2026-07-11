@@ -160,7 +160,10 @@ func MakeGatewayListener(
 
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
-			hostInfos = append(hostInfos, GatewayHostInfo{Host: host})
+			hostInfos = append(hostInfos, GatewayHostInfo{
+				Host:                    host,
+				meshGatewayRouteEntries: GenerateEnvoyRouteEntries(host),
+			})
 		}
 
 		listenerHostnames = append(listenerHostnames, GatewayListenerHostname{
