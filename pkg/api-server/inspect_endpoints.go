@@ -448,7 +448,7 @@ func newGatewayDataplaneInspectResponse(
 	gatewayPolicies := api_server_types.PolicyMap{}
 
 	// TrafficTrace is applied to the entire MeshGateway
-	// see pkg/plugins/runtime/gateway.newFilterChain
+	// see pkg/plugins/runtime/gateway.newHTTPFilterChain
 	if trace := proxy.Policies.TrafficTrace; trace != nil {
 		gatewayPolicies[core_mesh.TrafficTraceType] = rest.From.Meta(trace)
 	}
