@@ -252,7 +252,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			expectedListeners:    []string{"tcp_disabled.golden.yaml"},
+			expectedListeners: []string{"tcp_disabled.golden.yaml"},
 		}),
 		Entry("http rate limiter is disabled", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -304,7 +304,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			expectedListeners:    []string{"http_disabled.golden.yaml"},
+			expectedListeners: []string{"http_disabled.golden.yaml"},
 		}),
 		Entry("tcp rate limiter is not configured", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -340,7 +340,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			expectedListeners:    []string{"tcp_disabled.golden.yaml"},
+			expectedListeners: []string{"tcp_disabled.golden.yaml"},
 		}),
 		Entry("http rate limiter is not configured", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -390,7 +390,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			expectedListeners:    []string{"http_disabled.golden.yaml"},
+			expectedListeners: []string{"http_disabled.golden.yaml"},
 		}),
 		Entry("inbound listener with catch-all and rules[].matches[].spiffeID", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -448,7 +448,7 @@ var _ = Describe("MeshRateLimit", func() {
 					},
 				},
 			},
-			expectedListeners:    []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
+			expectedListeners: []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
 		}),
 	)
 

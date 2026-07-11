@@ -234,4 +234,3 @@ func (c RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.Ro
 		}
 	}
 }
-
