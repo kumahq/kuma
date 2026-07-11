@@ -15,13 +15,13 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	"github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 

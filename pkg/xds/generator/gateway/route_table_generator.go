@@ -9,14 +9,14 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes/v3"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
 const emptyGatewayMsg = "This is a Kuma MeshGateway. No routes match this MeshGateway!\n"

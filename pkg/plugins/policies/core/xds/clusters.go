@@ -6,8 +6,8 @@ import (
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 

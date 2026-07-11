@@ -10,12 +10,12 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
 // ConnectionPolicyTypes specifies the resource types the gateway will

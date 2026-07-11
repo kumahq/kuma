@@ -15,10 +15,10 @@ import (
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	gateway_plugin "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 )
 
 var (

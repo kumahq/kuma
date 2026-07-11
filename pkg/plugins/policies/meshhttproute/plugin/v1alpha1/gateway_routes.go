@@ -18,14 +18,14 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	meshroute_gateway "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
 type ruleByHostname struct {

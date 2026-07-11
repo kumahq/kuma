@@ -5,9 +5,9 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/policy"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func PopulatePolicies(host GatewayHost, routes []route.Entry) []route.Entry {

@@ -5,8 +5,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 // ResourceBuilder is an interface commonly implemented by complex Envoy

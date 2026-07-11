@@ -24,12 +24,12 @@ import (
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/inspect"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 

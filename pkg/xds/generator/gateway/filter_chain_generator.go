@@ -23,8 +23,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	"github.com/kumahq/kuma/v3/pkg/tls"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -34,6 +32,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	envoy_secrets "github.com/kumahq/kuma/v3/pkg/xds/envoy/secrets/v3"
 	envoy_tls_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
 // TODO(jpeach) It's a lot to ask operators to tune these defaults,
