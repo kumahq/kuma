@@ -476,7 +476,7 @@ spec:
 	basicRouting("MeshGatewayRoute", meshGatewayRoutes("internal-service", "/", "echo-server_simple-gateway_svc_80"))
 	basicRouting("MeshHTTPRoute", httpRoute("internal-service", "/", "echo-server_simple-gateway_svc_80", "MeshService", ""))
 
-	Context("Rate Limit", func() {
+	Context("legacy RateLimit", func() {
 		rt := `apiVersion: kuma.io/v1alpha1
 kind: RateLimit
 metadata:
@@ -511,24 +511,23 @@ spec:
 
 		AfterAll(func() {
 			err := NewClusterSetup().
+				Install(DeleteYamlK8s(rt)).
 				Install(DeleteYamlK8s(routes...)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should rate limit", func() {
+		It("should continue proxying requests", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
+				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/rt",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
-					client.NoFail(),
-					client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
 				)
 
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(429))
+				g.Expect(response.Instance).To(Equal("rt-echo-server"))
 			}, "30s", "100ms").Should(Succeed())
 		})
 	})

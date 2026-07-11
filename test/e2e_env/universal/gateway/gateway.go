@@ -159,7 +159,7 @@ conf:
 		})
 	})
 
-	Context("when a rate limit is configured", func() {
+	Context("when a legacy RateLimit is configured", func() {
 		BeforeAll(func() {
 			Expect(
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
@@ -185,19 +185,13 @@ conf:
 			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 		})
 
-		It("should be rate limited", func() {
-			gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
-			Logf("expecting 429 response from %q", gatewayAddr)
-			Eventually(func(g Gomega) {
-				target := fmt.Sprintf("http://%s/%s",
-					gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
-				)
-
-				response, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(429))
-			}, "30s", "1s").Should(Succeed())
+		It("should continue proxying requests", func() {
+			Eventually(ProxySimpleRequests(
+				universal.Cluster,
+				"universal",
+				GatewayAddressPort("gateway-proxy", gatewayPort),
+				"example.kuma.io",
+			), "30s", "1s").Should(Succeed())
 		})
 	})
 

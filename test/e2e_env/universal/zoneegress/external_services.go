@@ -213,12 +213,12 @@ spec:
 		})
 	})
 
-	Context("Rate Limit", func() {
+	Context("legacy RateLimit", func() {
 		AfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
-		It("should rate limit requests to external service", func() {
+		It("should not change routing to external service", func() {
 			specificRateLimitPolicy := `
 type: RateLimit
 mesh: ze-external-services
@@ -239,11 +239,11 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
+				response, err := client.CollectEchoResponse(
 					universal.Cluster, "demo-client", "external-service.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(429))
+				g.Expect(response.Instance).To(Equal("external-service"))
 			}).Should(Succeed())
 		})
 	})
