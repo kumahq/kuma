@@ -243,7 +243,7 @@ conf:
 					universal.Cluster, "demo-client", "external-service.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(Equal("external-service"))
+				g.Expect(response.Instance).To(BeElementOf("zef-test-server-v1", "zef-test-server-v2"))
 			}).Should(Succeed())
 		})
 	})

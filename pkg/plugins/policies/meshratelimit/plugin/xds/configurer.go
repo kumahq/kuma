@@ -114,7 +114,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	return nil
 }
 
-func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration) error {
+func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration, filterChains ...*envoy_listener.FilterChain) error {
 	if route == nil {
 		return nil
 	}
@@ -127,6 +127,7 @@ func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration
 
 	var err error
 	var defaultRateLimit *anypb.Any
+	needsHTTPFilter := defaultConf != nil
 	if defaultConf != nil {
 		defaultRateLimit, err = envoy_routes_v3.NewRateLimitConfiguration(defaultConf)
 	}
@@ -143,6 +144,7 @@ func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration
 				routeConf = RateLimitConfigurationFromPolicy(conf.Local.HTTP)
 			}
 			if routeConf != nil {
+				needsHTTPFilter = true
 				rateLimit, err = envoy_routes_v3.NewRateLimitConfiguration(routeConf)
 			}
 			if err != nil {
@@ -155,6 +157,15 @@ func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration
 				rateLimit = defaultRateLimit
 			}
 			addRateLimitToRoute(r, rateLimit)
+		}
+	}
+
+	if !needsHTTPFilter {
+		return nil
+	}
+	for _, filterChain := range filterChains {
+		if err := ensureHTTPLocalRateLimitFilter(filterChain); err != nil {
+			return err
 		}
 	}
 
@@ -234,11 +245,7 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 
 	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		if hasMatchedRateLimit(effectiveRules) {
-			httpFilter, err := newHTTPLocalRateLimitFilter()
-			if err != nil {
-				return err
-			}
-			if err := upsertHTTPFilter(hcm, httpFilter); err != nil {
+			if err := ensureHTTPLocalRateLimitFilterOnHCM(hcm); err != nil {
 				return err
 			}
 		}
@@ -248,6 +255,28 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 	}
 
 	return nil
+}
+
+func ensureHTTPLocalRateLimitFilter(filterChain *envoy_listener.FilterChain) error {
+	if filterChain == nil {
+		return nil
+	}
+
+	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+		return ensureHTTPLocalRateLimitFilterOnHCM(hcm)
+	}); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+		return err
+	}
+
+	return nil
+}
+
+func ensureHTTPLocalRateLimitFilterOnHCM(hcm *envoy_hcm.HttpConnectionManager) error {
+	httpFilter, err := newHTTPLocalRateLimitFilter()
+	if err != nil {
+		return err
+	}
+	return upsertHTTPFilter(hcm, httpFilter)
 }
 
 func ConfigureMatchedRoutes(routeConfiguration *envoy_route.RouteConfiguration, effectiveRules []effectiveMatchedRouteRule) error {

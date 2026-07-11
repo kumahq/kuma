@@ -295,7 +295,7 @@ func configureGateway(
 			return err
 		}
 	}
-	if err := configurer.ConfigureGatewayRoute(route); err != nil {
+	if err := configurer.ConfigureGatewayRoute(route, listener.FilterChains...); err != nil {
 		return err
 	}
 

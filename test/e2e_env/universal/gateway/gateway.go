@@ -179,10 +179,12 @@ conf:
 `, mesh))),
 			).To(Succeed())
 			Expect(universal.Cluster.Install(TrafficRouteUniversal(mesh))).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficPermissionUniversal(mesh))).To(Succeed())
 		})
 		AfterAll(func() {
 			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
 			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should continue proxying requests", func() {
