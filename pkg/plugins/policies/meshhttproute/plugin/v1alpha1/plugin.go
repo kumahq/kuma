@@ -108,33 +108,42 @@ func ApplyToGateway(
 	rawRules rules.GatewayRules,
 ) error {
 	var limits []plugin_gateway.RuntimeResoureLimitListener
+	listeners := map[uint32]plugin_gateway.GatewayListenerInfo{}
 
 	if len(rawRules.ToRules.ByListenerAndHostname) == 0 {
-		return nil
-	}
-
-	var gateways *core_mesh.MeshGatewayResourceList
-	if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
-		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+		for port, listener := range plugin_gateway.ExtractGatewayListeners(proxy) {
+			switch listener.Listener.Protocol {
+			case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
+				listeners[port] = listener
+			}
+		}
 	} else {
+		var gateways *core_mesh.MeshGatewayResourceList
+		if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
+			gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+		} else {
+			return nil
+		}
+
+		gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
+		if gateway == nil {
+			return nil
+		}
+
+		listeners = meshroute_gateway.CollectListenerInfos(
+			ctx,
+			xdsCtx.Mesh,
+			gateway,
+			proxy,
+			rawRules,
+			[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS},
+			sortRulesToHosts,
+		)
+		plugin_gateway.SetGatewayListeners(proxy, listeners)
+	}
+	if len(listeners) == 0 {
 		return nil
 	}
-
-	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
-	if gateway == nil {
-		return nil
-	}
-
-	listeners := meshroute_gateway.CollectListenerInfos(
-		ctx,
-		xdsCtx.Mesh,
-		gateway,
-		proxy,
-		rawRules,
-		[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS},
-		sortRulesToHosts,
-	)
-	plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 	for _, listener := range listeners {
 		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, listener)
