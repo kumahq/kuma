@@ -35,7 +35,6 @@ import (
 	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
 	meshtcproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -1296,8 +1295,8 @@ var _ = Describe("MeshAccessLog", func() {
 	})
 
 	type gatewayTestCase struct {
-		routes []*core_mesh.MeshGatewayRouteResource
-		rules  core_rules.GatewayRules
+		routeRules core_rules.GatewayRules
+		logRules   core_rules.GatewayRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateway Dataplanes",
 		func(given gatewayTestCase) {
@@ -1325,9 +1324,6 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &gateways
-			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-				Items: given.routes,
-			}
 
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
@@ -1342,19 +1338,24 @@ var _ = Describe("MeshAccessLog", func() {
 						WithMesh("default").
 						WithBuiltInGateway("gateway"),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshAccessLogType, given.rules)).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.routeRules).
+						WithGatewayPolicy(api.MeshAccessLogType, given.logRules),
+				).
 				Build()
 
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 			}
 
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
+			generatedResources := core_xds.NewResourceSet()
 
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			routePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(routePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+
+			accessLogPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(accessLogPlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
@@ -1364,14 +1365,40 @@ var _ = Describe("MeshAccessLog", func() {
 			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
 		},
 		Entry("basic-gateway", gatewayTestCase{
-			routes: []*core_mesh.MeshGatewayRouteResource{
-				builders.GatewayRoute().
-					WithName("sample-gateway-route").
-					WithGateway("gateway").
-					WithExactMatchHttpRoute("/", "backend", "other-service").
-					Build(),
+			routeRules: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						core_rules.NewInboundListenerHostname("127.0.0.1", 8080, "*"): {
+							Rules: core_rules.Rules{{
+								Subset: subsetutils.MeshSubset(),
+								Conf: meshhttproute_api.PolicyDefault{
+									Rules: []meshhttproute_api.Rule{{
+										Matches: []meshhttproute_api.Match{{
+											Path: &meshhttproute_api.PathMatch{
+												Type:  meshhttproute_api.Exact,
+												Value: "/",
+											},
+										}},
+										Default: meshhttproute_api.RuleConf{
+											BackendRefs: &[]common_api.BackendRef{
+												{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    pointer.To(uint(1)),
+												},
+												{
+													TargetRef: builders.TargetRefService("other-service"),
+													Weight:    pointer.To(uint(1)),
+												},
+											},
+										},
+									}},
+								},
+							}},
+						},
+					},
+				},
 			},
-			rules: core_rules.GatewayRules{
+			logRules: core_rules.GatewayRules{
 				FromRules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 8080}: {
 						{

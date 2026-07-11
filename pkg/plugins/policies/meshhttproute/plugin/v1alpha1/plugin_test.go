@@ -46,7 +46,6 @@ import (
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_policies "github.com/kumahq/kuma/v3/pkg/test/policies"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -95,10 +94,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), given.xdsContext.Mesh, given.proxy)).To(Succeed(), n)
 			}
-			gatewayGenerator := plugin_gateway.NewGenerator("test-zone")
-			_, err = gatewayGenerator.Generate(context.Background(), nil, given.xdsContext, given.proxy)
-
-			Expect(err).NotTo(HaveOccurred())
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).To(Succeed())
