@@ -1160,7 +1160,7 @@ conf:
 `,
 		),
 
-		Entry("match ratelimit policy",
+		Entry("ignores legacy RateLimit policy",
 			"21-gateway-route.yaml", `
 type: MeshGatewayRoute
 mesh: default

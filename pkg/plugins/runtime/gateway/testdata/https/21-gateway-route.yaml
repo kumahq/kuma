@@ -151,10 +151,6 @@ Listeners:
               initialStreamWindowSize: 65536
               maxConcurrentStreams: 100
             httpFilters:
-            - name: envoy.filters.http.local_ratelimit
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                statPrefix: rate_limit
             - name: gzip-compress
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
@@ -249,22 +245,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-          typedPerFilterConfig:
-            envoy.filters.http.local_ratelimit:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              filterEnabled:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enabled
-              filterEnforced:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enforced
-              statPrefix: rate_limit
-              tokenBucket:
-                fillInterval: 20s
-                maxTokens: 1
-                tokensPerFill: 1
         - match:
             prefix: /api/
           route:
@@ -286,22 +266,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-          typedPerFilterConfig:
-            envoy.filters.http.local_ratelimit:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              filterEnabled:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enabled
-              filterEnforced:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enforced
-              statPrefix: rate_limit
-              tokenBucket:
-                fillInterval: 20s
-                maxTokens: 1
-                tokensPerFill: 1
         - match:
             prefix: /
           route:
@@ -328,22 +292,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-          typedPerFilterConfig:
-            envoy.filters.http.local_ratelimit:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              filterEnabled:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enabled
-              filterEnforced:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enforced
-              statPrefix: rate_limit
-              tokenBucket:
-                fillInterval: 10s
-                maxTokens: 1
-                tokensPerFill: 1
 Runtimes:
   Resources:
     gateway.listeners:
