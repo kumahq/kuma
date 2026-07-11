@@ -182,4 +182,57 @@ networking:
 		Expect(after).To(BeIdenticalTo(before), "resourceVersion-only write should not trigger mesh-wide xDS recomputation")
 		Expect(after.Hash).To(Equal(before.Hash))
 	})
+
+	It("should not recompute the mesh context when a MeshService write only bumps DataplaneProxies stats", func() {
+		// given a mesh with a single MeshService
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+status:
+  vips:
+  - ip: 10.0.1.1
+`)).To(Succeed())
+
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when the MeshService is written again with the same spec/status but updated proxy stats
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+status:
+  vips:
+  - ip: 10.0.1.1
+  dataplaneProxies:
+    connected: 3
+    healthy: 2
+    total: 3
+`)).To(Succeed())
+
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the cached context is reused and the mesh hash is unchanged
+		Expect(after).To(BeIdenticalTo(before), "DataplaneProxies-only write should not trigger mesh-wide xDS recomputation")
+		Expect(after.Hash).To(Equal(before.Hash))
+	})
 })
