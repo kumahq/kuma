@@ -45,16 +45,28 @@ func (m *MeshServiceResource) IsLocalMeshService() bool {
 	return origin == string(mesh_proto.ZoneResourceOrigin)
 }
 
-// Hash returns a content-based hash of the MeshService used to gate xDS
-// regeneration. Like DataplaneResource.Hash, it excludes meta.GetVersion()
-// so that status writes irrelevant to xDS - most notably the
-// DataplaneProxies counters refreshed by the status updater's 5s ticker -
-// don't force mesh-wide xDS recomputation. Addresses, VIPs, TLS and
-// HostnameGenerators are still hashed because outbound and cluster
-// generation read them directly from Status.
+// Hash returns a content-based hash of the MeshService for generic resource
+// consumers that need version-aware change detection.
 func (t *MeshServiceResource) Hash() []byte {
+	return t.hash(true)
+}
+
+// XDSHash returns the MeshService hash used to gate mesh-wide xDS
+// regeneration. It intentionally excludes meta.GetVersion() so that status
+// writes irrelevant to xDS - most notably the DataplaneProxies counters
+// refreshed by the status updater's 5s ticker - don't force mesh-wide xDS
+// recomputation. Addresses, VIPs, TLS and HostnameGenerators are still hashed
+// because outbound and cluster generation read them directly from Status.
+func (t *MeshServiceResource) XDSHash() []byte {
+	return t.hash(false)
+}
+
+func (t *MeshServiceResource) hash(includeVersion bool) []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(core_model.HashMetaIdentity(t))
+	if includeVersion {
+		_, _ = hasher.Write([]byte(t.GetMeta().GetVersion()))
+	}
 	core_model.WriteSortedLabels(hasher, t.GetMeta().GetLabels())
 	writeJSON(hasher, t.Spec)
 	writeJSON(hasher, struct {
