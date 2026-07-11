@@ -586,7 +586,7 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	_, _ = hasher.Write(globalContext.hash)
 	_, _ = hasher.Write(baseMeshContext.hash)
 	for _, resType := range managedTypes {
-		_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 	}
 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
