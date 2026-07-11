@@ -26,24 +26,25 @@ var _ = Describe("MeshServiceResource.Hash()", func() {
 			Build()
 	}
 
-	It("is stable when only the resourceVersion changes", func() {
+	It("changes when only the resourceVersion changes", func() {
 		original := newMeshService()
 		originalHash := original.Hash()
 
 		changed := newMeshService()
 		changed.Meta.(*test_model.ResourceMeta).Version = "2"
 
-		Expect(changed.Hash()).To(Equal(originalHash))
+		Expect(changed.Hash()).NotTo(Equal(originalHash))
 	})
 
-	It("is stable when only the DataplaneProxies stats change", func() {
+	It("changes when only the DataplaneProxies stats change", func() {
 		original := newMeshService()
 		originalHash := original.Hash()
 
 		changed := newMeshService()
 		changed.Status.DataplaneProxies = api.DataplaneProxies{Connected: 3, Healthy: 2, Total: 3}
+		changed.Meta.(*test_model.ResourceMeta).Version = "2"
 
-		Expect(changed.Hash()).To(Equal(originalHash))
+		Expect(changed.Hash()).NotTo(Equal(originalHash))
 	})
 
 	It("changes when a label is added", func() {
@@ -84,5 +85,42 @@ var _ = Describe("MeshServiceResource.Hash()", func() {
 		changed.Status.TLS.Status = api.TLSNotReady
 
 		Expect(changed.Hash()).NotTo(Equal(originalHash))
+	})
+})
+
+var _ = Describe("MeshServiceResource.XDSHash()", func() {
+	newMeshService := func() *api.MeshServiceResource {
+		return builders.MeshService().
+			WithName("backend").
+			WithMesh("default").
+			WithLabels(map[string]string{
+				mesh_proto.ZoneTag: "zone-1",
+				"team":             "infra",
+			}).
+			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
+			WithKumaVIP("10.0.0.1").
+			WithTLSStatus(api.TLSReady).
+			Build()
+	}
+
+	It("is stable when only the resourceVersion changes", func() {
+		original := newMeshService()
+		originalHash := original.XDSHash()
+
+		changed := newMeshService()
+		changed.Meta.(*test_model.ResourceMeta).Version = "2"
+
+		Expect(changed.XDSHash()).To(Equal(originalHash))
+	})
+
+	It("is stable when only the DataplaneProxies stats change", func() {
+		original := newMeshService()
+		originalHash := original.XDSHash()
+
+		changed := newMeshService()
+		changed.Status.DataplaneProxies = api.DataplaneProxies{Connected: 3, Healthy: 2, Total: 3}
+		changed.Meta.(*test_model.ResourceMeta).Version = "2"
+
+		Expect(changed.XDSHash()).To(Equal(originalHash))
 	})
 })
