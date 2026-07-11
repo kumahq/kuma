@@ -18,15 +18,10 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
-	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	modifications "github.com/kumahq/kuma/v3/pkg/xds/generator/modifications/v3"
 )
 
 var _ = Describe("ProxyTemplateGenerator", func() {
-	It("registers gateway-proxy profile for ProxyTemplate validation", func() {
-		Expect(core_mesh.AvailableProfiles).To(HaveKey(gateway_metadata.ProfileGatewayProxy))
-	})
-
 	Context("Error case", func() {
 		type testCase struct {
 			proxy    *model.Proxy

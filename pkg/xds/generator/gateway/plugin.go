@@ -9,9 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	xds_generator "github.com/kumahq/kuma/v3/pkg/xds/generator"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
-	"github.com/kumahq/kuma/v3/pkg/xds/template"
 )
 
 var (
@@ -34,10 +32,6 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 }
 
 func (p *plugin) AfterBootstrap(_ *core_runtime.Builder, _ core_plugins.PluginConfig) error {
-	xds_generator.DefaultTemplateResolver = template.SequentialResolver(
-		TemplateResolver{},
-		xds_generator.DefaultTemplateResolver,
-	)
 	log.Info("registered gateway plugin")
 	return nil
 }
