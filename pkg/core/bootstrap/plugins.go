@@ -18,4 +18,5 @@ import (
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/universal"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/secrets/universal"
+	_ "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 )

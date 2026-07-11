@@ -13,6 +13,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/egress"
+	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/v3/pkg/xds/generator/secrets"
 	"github.com/kumahq/kuma/v3/pkg/xds/template"
@@ -102,6 +103,19 @@ func NewEgressProxyProfile() core.ResourceGenerator {
 	}
 }
 
+func NewGatewayProxyProfile() core.ResourceGenerator {
+	return core.CompositeResourceGenerator{
+		AdminProxyGenerator{},
+		PrometheusEndpointGenerator{},
+		TracingProxyGenerator{},
+		TransparentProxyGenerator{},
+		DNSGenerator{},
+		policies_generator.NewGenerator(),
+		generator_secrets.Generator{},
+		core_generator.NewGenerator(),
+	}
+}
+
 // DefaultTemplateResolver is the default template resolver that xDS
 // generators fall back to if they are otherwise unable to determine which
 // ProxyTemplate resource to apply. Plugins may modify this variable.
@@ -119,6 +133,7 @@ func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
 	RegisterProfile(metadata.ProxyTemplateProfileIngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
 	RegisterProfile(metadata.ProxyTemplateProfileEgressProxy, NewEgressProxyProfile())
+	RegisterProfile(gateway_metadata.ProfileGatewayProxy, NewGatewayProxyProfile())
 }
 
 func RegisterProfile(profileName string, generator core.ResourceGenerator) {
