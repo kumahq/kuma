@@ -1,13 +1,18 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/vip"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -38,6 +43,47 @@ func (m *MeshServiceResource) IsLocalMeshService() bool {
 	// MeshServices synced from another zone will have `kuma.io/origin: global`,
 	// since origin always reflects the last place the resource was received from.
 	return origin == string(mesh_proto.ZoneResourceOrigin)
+}
+
+// Hash returns a content-based hash of the MeshService used to gate xDS
+// regeneration. Like DataplaneResource.Hash, it excludes meta.GetVersion()
+// so that status writes irrelevant to xDS - most notably the
+// DataplaneProxies counters refreshed by the status updater's 5s ticker -
+// don't force mesh-wide xDS recomputation. Addresses, VIPs, TLS and
+// HostnameGenerators are still hashed because outbound and cluster
+// generation read them directly from Status.
+func (t *MeshServiceResource) Hash() []byte {
+	hasher := fnv.New128a()
+	_, _ = hasher.Write(core_model.HashMetaIdentity(t))
+	core_model.WriteSortedLabels(hasher, t.GetMeta().GetLabels())
+	writeJSON(hasher, t.Spec)
+	writeJSON(hasher, struct {
+		Addresses          []hostnamegenerator_api.Address
+		VIPs               []VIP
+		TLS                TLS
+		HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus
+	}{
+		Addresses:          t.Status.Addresses,
+		VIPs:               t.Status.VIPs,
+		TLS:                t.Status.TLS,
+		HostnameGenerators: t.Status.HostnameGenerators,
+	})
+	return hasher.Sum(nil)
+}
+
+// writeJSON writes a deterministic JSON encoding of v into hasher.
+// encoding/json sorts map keys, so this is stable regardless of map
+// iteration order.
+func writeJSON(hasher hash.Hash, v any) {
+	b, err := json.Marshal(v)
+	if err == nil {
+		_, _ = hasher.Write(b)
+	} else {
+		// Marshaling should never fail for these plain data structs, but fall
+		// back to a value that still changes with content instead of
+		// silently treating every MeshService as identical.
+		_, _ = fmt.Fprintf(hasher, "%+v", v)
+	}
 }
 
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}
