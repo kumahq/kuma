@@ -73,11 +73,6 @@ var _ = Describe("GroupByAttachment", func() {
 						{Meta: meta2},
 					},
 				},
-				RateLimitsInbound: core_xds.InboundRateLimitsMap{
-					inbound("192.168.0.2", 90, 91): {
-						{Meta: meta3},
-					},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.CircuitBreakerType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
@@ -146,7 +141,6 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficPermissionResource{Meta: meta3},
 					},
 					core_mesh.RateLimitType: []core_model.Resource{
-						&core_mesh.RateLimitResource{Meta: meta3},
 						&core_mesh.RateLimitResource{Meta: meta5},
 					},
 					core_mesh.CircuitBreakerType: []core_model.Resource{
@@ -202,12 +196,6 @@ var _ = Describe("GroupByAttachment", func() {
 					outbound("192.168.0.2", 90): {Meta: meta3},
 					outbound("192.168.0.3", 90): {Meta: meta4},
 				},
-				RateLimitsOutbound: core_xds.OutboundRateLimitsMap{
-					outbound("192.168.0.1", 80): {Meta: meta1},
-					outbound("192.168.0.2", 80): {Meta: meta2},
-					outbound("192.168.0.2", 90): {Meta: meta3},
-					outbound("192.168.0.4", 90): {Meta: meta5},
-				},
 				TrafficRoutes: core_xds.RouteMap{
 					outbound("192.168.0.1", 80): {Meta: meta1},
 					outbound("192.168.0.2", 80): {Meta: meta2},
@@ -236,9 +224,6 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Meta: meta1},
 					},
-					core_mesh.RateLimitType: []core_model.Resource{
-						&core_mesh.RateLimitResource{Meta: meta1},
-					},
 					core_mesh.TrafficRouteType: []core_model.Resource{
 						&core_mesh.TrafficRouteResource{Meta: meta1},
 					},
@@ -247,9 +232,6 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Meta: meta2},
 					},
-					core_mesh.RateLimitType: []core_model.Resource{
-						&core_mesh.RateLimitResource{Meta: meta2},
-					},
 					core_mesh.TrafficRouteType: []core_model.Resource{
 						&core_mesh.TrafficRouteResource{Meta: meta2},
 					},
@@ -257,9 +239,6 @@ var _ = Describe("GroupByAttachment", func() {
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Meta: meta3},
-					},
-					core_mesh.RateLimitType: []core_model.Resource{
-						&core_mesh.RateLimitResource{Meta: meta3},
 					},
 					core_mesh.TrafficRouteType: []core_model.Resource{
 						&core_mesh.TrafficRouteResource{Meta: meta3},
@@ -272,7 +251,6 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
 					core_mesh.RateLimitType: []core_model.Resource{
-						&core_mesh.RateLimitResource{Meta: meta5},
 						&core_mesh.RateLimitResource{Meta: meta6},
 					},
 					core_mesh.CircuitBreakerType: []core_model.Resource{
@@ -455,13 +433,6 @@ var _ = Describe("GroupByPolicy", func() {
 						},
 					},
 				},
-				RateLimitsInbound: core_xds.InboundRateLimitsMap{
-					inbound("192.168.0.2", 90, 91): []*core_mesh.RateLimitResource{
-						{
-							Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "default"},
-						},
-					},
-				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
@@ -496,12 +467,6 @@ var _ = Describe("GroupByPolicy", func() {
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
-				inspect.PolicyKey{
-					Type: core_mesh.RateLimitType,
-					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "default"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
-				},
 			},
 		}),
 		Entry("group by outbound policies", testCase{
@@ -532,14 +497,6 @@ var _ = Describe("GroupByPolicy", func() {
 						Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
 					},
 				},
-				RateLimitsOutbound: core_xds.OutboundRateLimitsMap{
-					outbound("192.168.0.1", 80): &core_mesh.RateLimitResource{
-						Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
-					},
-					outbound("192.168.0.2", 90): &core_mesh.RateLimitResource{
-						Meta: &test_model.ResourceMeta{Name: "rl-2", Mesh: "mesh-1"},
-					},
-				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
@@ -547,18 +504,6 @@ var _ = Describe("GroupByPolicy", func() {
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},
-					{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.RateLimitType,
-					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.RateLimitType,
-					Key:  core_model.ResourceKey{Name: "rl-2", Mesh: "mesh-1"},
-				}: {
 					{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
 				},
 			},
@@ -687,26 +632,6 @@ var _ = Describe("GroupByPolicy", func() {
 				},
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				RateLimitsOutbound: core_xds.OutboundRateLimitsMap{
-					outbound("192.168.0.3", 80): &core_mesh.RateLimitResource{
-						Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
-					},
-					outbound("192.168.0.4", 80): &core_mesh.RateLimitResource{
-						Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
-					},
-				},
-				RateLimitsInbound: core_xds.InboundRateLimitsMap{
-					inbound("192.168.0.1", 80, 81): []*core_mesh.RateLimitResource{
-						{
-							Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
-						},
-					},
-					inbound("192.168.0.2", 80, 81): []*core_mesh.RateLimitResource{
-						{
-							Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
-						},
-					},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.RateLimitType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
@@ -727,15 +652,6 @@ var _ = Describe("GroupByPolicy", func() {
 				},
 			},
 			expected: inspect.AttachmentsByPolicy{
-				inspect.PolicyKey{
-					Type: core_mesh.RateLimitType,
-					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"},
-					{Type: inspect.Outbound, Name: "192.168.0.3:80", Service: "redis"},
-					{Type: inspect.Outbound, Name: "192.168.0.4:80", Service: "postgres"},
-				},
 				inspect.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-3", Mesh: "mesh-1"},

@@ -202,12 +202,6 @@ func FaultInjection(faultInjections ...*core_mesh.FaultInjectionResource) Filter
 	})
 }
 
-func RateLimit(rateLimits []*core_mesh.RateLimitResource) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.RateLimitConfigurer{
-		RateLimits: rateLimits,
-	})
-}
-
 func NetworkAccessLog(
 	mesh string,
 	trafficDirection envoy_common.TrafficDirection,

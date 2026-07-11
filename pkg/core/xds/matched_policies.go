@@ -29,7 +29,6 @@ type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
 	TrafficPermissions TrafficPermissionMap
 	FaultInjections    FaultInjectionMap
-	RateLimitsInbound  InboundRateLimitsMap
 
 	// Service(Cluster) -> Policy
 	TrafficLogs     TrafficLogMap
@@ -38,8 +37,7 @@ type MatchedPolicies struct {
 	Retries         RetryMap
 
 	// Outbound(Listener) -> Policy
-	Timeouts           TimeoutMap
-	RateLimitsOutbound OutboundRateLimitsMap
+	Timeouts TimeoutMap
 	// Actual Envoy Configuration is generated without taking this TrafficRoutes into account
 	TrafficRoutes RouteMap
 
