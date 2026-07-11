@@ -168,14 +168,28 @@ func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
 	return defaultAdminPort
 }
 
-// Hash returns a content-based hash of the Dataplane used to gate xDS
-// regeneration. It intentionally excludes meta.GetVersion() (the Kubernetes
-// resourceVersion) so that writes irrelevant to xDS generation - status,
-// annotations, managedFields - don't invalidate the mesh-wide xDS context.
-// Labels are included because they affect policy matching.
+// Hash returns a content-based hash of the Dataplane for consumers that need to
+// observe metadata-only writes via resourceVersion as well as spec and label
+// changes.
 func (d *DataplaneResource) Hash() []byte {
+	return d.hash(true)
+}
+
+// XDSHash returns the Dataplane hash used to gate mesh-wide xDS regeneration.
+// It intentionally excludes meta.GetVersion() (the Kubernetes resourceVersion)
+// so that writes irrelevant to xDS generation - status, annotations,
+// managedFields - don't invalidate the mesh-wide xDS context. Labels are
+// included because they affect policy matching.
+func (d *DataplaneResource) XDSHash() []byte {
+	return d.hash(false)
+}
+
+func (d *DataplaneResource) hash(includeVersion bool) []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(core_model.HashMetaIdentity(d))
+	if includeVersion {
+		_, _ = hasher.Write([]byte(d.GetMeta().GetVersion()))
+	}
 	core_model.WriteSortedLabels(hasher, d.GetMeta().GetLabels())
 	specBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(d.Spec)
 	if err == nil {

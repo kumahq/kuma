@@ -767,14 +767,14 @@ var _ = Describe("Dataplane", func() {
 				Build()
 		}
 
-		It("is stable when only the resourceVersion changes", func() {
+		It("changes when only the resourceVersion changes", func() {
 			original := newDataplane()
 			originalHash := original.Hash()
 
 			changed := newDataplane()
 			changed.Meta.(*test_model.ResourceMeta).Version = "2"
 
-			Expect(changed.Hash()).To(Equal(originalHash))
+			Expect(changed.Hash()).NotTo(Equal(originalHash))
 		})
 
 		It("changes when a label is added", func() {
@@ -861,6 +861,16 @@ var _ = Describe("Dataplane", func() {
 				Build()
 
 			Expect(first.Hash()).NotTo(Equal(second.Hash()))
+		})
+
+		It("keeps XDSHash stable when only the resourceVersion changes", func() {
+			original := newDataplane()
+			originalHash := original.XDSHash()
+
+			changed := newDataplane()
+			changed.Meta.(*test_model.ResourceMeta).Version = "2"
+
+			Expect(changed.XDSHash()).To(Equal(originalHash))
 		})
 	})
 })
