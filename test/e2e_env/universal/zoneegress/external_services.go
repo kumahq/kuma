@@ -214,7 +214,7 @@ spec:
 	})
 
 	Context("legacy RateLimit", func() {
-		AfterEach(func() {
+		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 

@@ -509,7 +509,7 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterAll(func() {
+		E2EAfterAll(func() {
 			err := NewClusterSetup().
 				Install(DeleteYamlK8s(rt)).
 				Install(DeleteYamlK8s(routes...)).

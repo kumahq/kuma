@@ -250,7 +250,7 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 			}
 		}
 		return ConfigureMatchedRoutes(hcm.GetRouteConfig(), effectiveRules)
-	}); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+	}); err != nil {
 		return err
 	}
 
@@ -262,7 +262,7 @@ func ensureHTTPLocalRateLimitFilter(filterChain *envoy_listener.FilterChain) err
 		return nil
 	}
 
-	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, ensureHTTPLocalRateLimitFilterOnHCM); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, ensureHTTPLocalRateLimitFilterOnHCM); err != nil {
 		return err
 	}
 
