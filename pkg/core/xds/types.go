@@ -166,9 +166,6 @@ type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
 
-// CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
-type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
-
 // RetryMap holds the most specific Retry for each reachable service.
 type RetryMap map[ServiceName]*core_mesh.RetryResource
 

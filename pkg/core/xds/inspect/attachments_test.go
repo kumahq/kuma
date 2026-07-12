@@ -295,11 +295,6 @@ var _ = Describe("GroupByAttachment", func() {
 					"backend": &core_mesh.HealthCheckResource{Meta: meta1},
 					"web":     &core_mesh.HealthCheckResource{Meta: meta3},
 				},
-				CircuitBreakers: core_xds.CircuitBreakerMap{
-					"backend":  &core_mesh.CircuitBreakerResource{Meta: meta1},
-					"postgres": &core_mesh.CircuitBreakerResource{Meta: meta2},
-					"redis":    &core_mesh.CircuitBreakerResource{Meta: meta4},
-				},
 				Retries: core_xds.RetryMap{
 					"backend": &core_mesh.RetryResource{Meta: meta1},
 				},
@@ -321,9 +316,6 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.HealthCheckType: []core_model.Resource{
 						&core_mesh.HealthCheckResource{Meta: meta1},
 					},
-					core_mesh.CircuitBreakerType: []core_model.Resource{
-						&core_mesh.CircuitBreakerResource{Meta: meta1},
-					},
 					core_mesh.RetryType: []core_model.Resource{
 						&core_mesh.RetryResource{Meta: meta1},
 					},
@@ -332,9 +324,6 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Meta: meta2},
 					},
-					core_mesh.CircuitBreakerType: []core_model.Resource{
-						&core_mesh.CircuitBreakerResource{Meta: meta2},
-					},
 				},
 				inspect.Attachment{Type: inspect.Service, Name: "web", Service: "web"}: {
 					core_mesh.HealthCheckType: []core_model.Resource{
@@ -342,9 +331,6 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 				inspect.Attachment{Type: inspect.Service, Name: "redis", Service: "redis"}: {
-					core_mesh.CircuitBreakerType: []core_model.Resource{
-						&core_mesh.CircuitBreakerResource{Meta: meta4},
-					},
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Meta: meta6},
 					},
@@ -585,11 +571,6 @@ var _ = Describe("GroupByPolicy", func() {
 						Meta: &test_model.ResourceMeta{Name: "hc-2", Mesh: "mesh-1"},
 					},
 				},
-				CircuitBreakers: core_xds.CircuitBreakerMap{
-					"kafka": &core_mesh.CircuitBreakerResource{
-						Meta: &test_model.ResourceMeta{Name: "cb-1", Mesh: "mesh-1"},
-					},
-				},
 				Retries: core_xds.RetryMap{
 					"payments": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{Name: "r-1", Mesh: "mesh-1"},
@@ -627,12 +608,6 @@ var _ = Describe("GroupByPolicy", func() {
 					Key:  core_model.ResourceKey{Name: "hc-2", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Service, Name: "redis", Service: "redis"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.CircuitBreakerType,
-					Key:  core_model.ResourceKey{Name: "cb-1", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "kafka", Service: "kafka"},
 				},
 				inspect.PolicyKey{
 					Type: core_mesh.RetryType,

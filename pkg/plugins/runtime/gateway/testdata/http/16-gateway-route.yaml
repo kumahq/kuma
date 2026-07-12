@@ -3,22 +3,13 @@ Clusters:
     api-service-4508437668c35ed8:
       circuitBreakers:
         thresholds:
-        - maxRetries: 20
-          trackRemaining: true
+        - trackRemaining: true
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: api-service-4508437668c35ed8
-      outlierDetection:
-        baseEjectionTime: 20s
-        consecutiveLocalOriginFailure: 20
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 100
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -33,22 +24,13 @@ Clusters:
     echo-mirror-3dd740a2de879d4c:
       circuitBreakers:
         thresholds:
-        - maxRetries: 20
-          trackRemaining: true
+        - trackRemaining: true
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-mirror-3dd740a2de879d4c
-      outlierDetection:
-        baseEjectionTime: 30s
-        consecutiveLocalOriginFailure: 30
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 100
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -63,22 +45,13 @@ Clusters:
     echo-service-9f149ed9e14091ca:
       circuitBreakers:
         thresholds:
-        - maxRetries: 10
-          trackRemaining: true
+        - trackRemaining: true
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-9f149ed9e14091ca
-      outlierDetection:
-        baseEjectionTime: 10s
-        consecutiveLocalOriginFailure: 10
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 100
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
