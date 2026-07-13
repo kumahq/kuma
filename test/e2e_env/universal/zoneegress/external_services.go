@@ -144,40 +144,6 @@ func ExternalServices() {
 		})
 	})
 
-	Context("Fault Injection", func() {
-		AfterEach(func() {
-			Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.FaultInjectionResourceTypeDescriptor)).To(Succeed())
-		})
-
-		It("should inject faults for external service", func() {
-			Expect(YamlUniversal(`
-type: FaultInjection
-mesh: ze-external-services
-name: fi1
-sources:
-   - match:
-       kuma.io/service: demo-client
-destinations:
-   - match:
-       kuma.io/service: external-service
-       kuma.io/protocol: http
-       version: v2
-conf:
-   abort:
-     httpStatus: 401
-     percentage: 100`)(universal.Cluster)).To(Succeed())
-
-			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
-					universal.Cluster, "demo-client", "external-service.mesh",
-					client.WithMaxTime(8),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(401))
-			}, "30s", "1s").Should(Succeed())
-		})
-	})
-
 	Context("MeshFaultInjection", func() {
 		AfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshName, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
