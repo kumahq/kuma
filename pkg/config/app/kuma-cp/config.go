@@ -173,8 +173,6 @@ type Config struct {
 	Access access.AccessConfig `json:"access"`
 	// Configuration of experimental features
 	Experimental ExperimentalConfig `json:"experimental"`
-	// Proxy holds configuration for proxies
-	Proxy xds.Proxy `json:"proxy"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
 	// Tracing
@@ -294,7 +292,6 @@ var DefaultConfig = func() Config {
 			},
 			SidecarContainers: true,
 		},
-		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),

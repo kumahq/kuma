@@ -17,12 +17,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
 func generateGatewayListeners(
