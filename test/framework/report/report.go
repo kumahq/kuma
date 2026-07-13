@@ -54,7 +54,37 @@ func AddFileToReportEntry(name string, content any) {
 		logf("[WARNING]: could not write to temporary report %v", err)
 		return
 	}
+
+	// The Gateway API conformance suite runs as a plain `testing` test, not a
+	// Ginkgo spec (see test/e2e_env/gatewayapi/conformance_test.go). Outside a
+	// running spec ginkgo.AddReportEntry panics, and there's no ReportAfterSuite
+	// to flush the entries anyway, so persist the file straight to the report
+	// directory instead.
+	if !inRunningSpec() {
+		persistFile(name, fName)
+		return
+	}
 	ginkgo.AddReportEntry(name, fName, ginkgo.ReportEntryVisibilityNever)
+}
+
+// inRunningSpec reports whether the caller runs inside a running Ginkgo spec.
+// ginkgo.CurrentSpecReport() returns a zero value (NodeTypeInvalid leaf) outside
+// the Run phase, which is exactly when ginkgo.AddReportEntry would panic.
+func inRunningSpec() bool {
+	return ginkgo.CurrentSpecReport().LeafNodeType != types.NodeTypeInvalid
+}
+
+// persistFile writes a report file directly to BaseDir. Used when there's no
+// Ginkgo suite to collect the entry via DumpReport.
+func persistFile(name, srcPath string) {
+	dst := filepath.Join(BaseDir, files.ToValidUnixFilename(name))
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		logf("[WARNING]: failed to create report directory %q: %v", filepath.Dir(dst), err)
+		return
+	}
+	if err := files.CopyFile(srcPath, dst); err != nil {
+		logf("[WARNING]: failed to write report file %q: %v", dst, err)
+	}
 }
 
 // DumpReport dumps the report to the disk.
