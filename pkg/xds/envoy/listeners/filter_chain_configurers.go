@@ -285,16 +285,6 @@ func HttpOutboundRoute(
 	})
 }
 
-func MaxConnectAttempts(retry *core_mesh.RetryResource) FilterChainBuilderOpt {
-	if retry == nil || retry.Spec.Conf.GetTcp() == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.MaxConnectAttemptsConfigurer{
-		Retry: retry,
-	})
-}
-
 func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TimeoutConfigurer{
 		Conf:     timeout,
