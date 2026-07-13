@@ -8,6 +8,32 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Default `TrafficPermission`/`TrafficRoute` creation removed
+
+The control plane no longer creates the default allow-all `TrafficPermission`
+and route-all `TrafficRoute` resources when a new `Mesh` is created. Traffic
+routing and permissions for a new `Mesh` are now expected to come from the
+default `MeshTrafficPermission` and implicit routing instead.
+
+The following configuration has been removed:
+
+- Control plane: `defaults.createMeshRoutingResources`
+  (`KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES`).
+
+**Action required**
+
+Remove `defaults.createMeshRoutingResources` from your control plane YAML
+config and `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` from your
+environment if set. Both settings no longer have any effect in Kuma 3.0.0.
+A stale YAML key is rejected only by strict config parsing; regular control
+plane startup and the environment variable loader silently ignore the removed
+setting.
+
+The compatibility mode for creating legacy defaults for pre-2.6.0 zones is no
+longer available in Kuma 3.0.0. Existing `TrafficPermission` and `TrafficRoute`
+resources remain fully valid and supported; this change only affects automatic
+creation of new defaults.
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
