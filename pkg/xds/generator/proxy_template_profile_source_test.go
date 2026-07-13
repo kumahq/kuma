@@ -3,7 +3,6 @@ package generator_test
 import (
 	"context"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -156,26 +155,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 					},
 					OutboundTargets: outboundTargets,
-				},
-				Policies: core_xds.MatchedPolicies{
-					HealthChecks: core_xds.HealthCheckMap{
-						"elastic": &core_mesh.HealthCheckResource{
-							Spec: &mesh_proto.HealthCheck{
-								Sources: []*mesh_proto.Selector{
-									{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
-								},
-								Conf: &mesh_proto.HealthCheck_Conf{
-									Interval:           util_proto.Duration(5 * time.Second),
-									Timeout:            util_proto.Duration(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
-							},
-						},
-					},
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort:     9902,
