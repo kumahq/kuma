@@ -54,7 +54,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 				{
 					Name:            k.Name(),
 					ImagePullPolicy: "IfNotPresent",
-					Image:           framework.Config.GetUniversalImage(),
+					Image:           framework.Config.GetTestAppImage(),
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 3000, Name: "main"},
 					},

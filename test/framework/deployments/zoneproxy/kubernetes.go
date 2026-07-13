@@ -60,7 +60,7 @@ func (d *k8sDeployment) ingressDeployment() *appsv1.Deployment {
 		Containers: []corev1.Container{
 			{
 				Name:            name,
-				Image:           framework.Config.GetUniversalImage(),
+				Image:           framework.Config.GetTestAppImage(),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Command:         []string{"/usr/bin/sleep"},
 				Args:            []string{"3600"},
@@ -154,7 +154,7 @@ func (d *k8sDeployment) egressDeployment() *appsv1.Deployment {
 		Containers: []corev1.Container{
 			{
 				Name:            name,
-				Image:           framework.Config.GetUniversalImage(),
+				Image:           framework.Config.GetTestAppImage(),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Command:         []string{"/usr/bin/sleep"},
 				Args:            []string{"3600"},

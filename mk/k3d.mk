@@ -146,12 +146,16 @@ K3D_CLUSTER_START_RETRIES ?= 3
 K3D_IMAGE_IMPORT_VERBOSE ?= true
 K3D_IMAGE_IMPORT_VERBOSE_FLAG := $(if $(filter true 1,$(K3D_IMAGE_IMPORT_VERBOSE)),--verbose,)
 
+# Import release images + the slim kuma-test-app; the fat kuma-universal is only
+# needed by host-docker universal clusters, so k3d skips it.
+K3D_IMPORT_IMAGES ?= $(call build_image,$(IMAGES_RELEASE) kuma-test-app)
+
 # The import command, factored out so the retry wrapper stays generic
 _k3d_import = $(K3D) image import \
   --mode $(K3D_IMAGE_IMPORT_MODE) \
   --cluster $(CLUSTER_NAME) \
   $(K3D_IMAGE_IMPORT_VERBOSE_FLAG) \
-  $(KUMA_IMAGES)
+  $(K3D_IMPORT_IMAGES)
 
 .PHONY: k3d/cluster/load/images
 k3d/cluster/load/images:

@@ -11,7 +11,7 @@ $(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REGISTRY
 endef
 
 IMAGES_RELEASE += kuma-cp kuma-dp kumactl kuma-init kuma-cni
-IMAGES_TEST += kuma-universal
+IMAGES_TEST += kuma-universal kuma-test-app
 KUMA_IMAGES = $(call build_image,$(IMAGES_RELEASE) $(IMAGES_TEST))
 
 # Always use Docker BuildKit, see
@@ -66,6 +66,10 @@ image/kuma-cni/$(1): image/base-root/$(1) build/artifacts-linux-$(1)/kuma-cni bu
 .PHONY: image/kuma-universal/$(1)
 image/kuma-universal/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-cp build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/test-server build/artifacts-linux-$(1)/coredns
 	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-universal,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/universal.Dockerfile .
+
+.PHONY: image/kuma-test-app/$(1)
+image/kuma-test-app/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/test-server build/artifacts-linux-$(1)/coredns
+	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-test-app,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/test-app.Dockerfile .
 endef
 $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goarch))))
 

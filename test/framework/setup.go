@@ -711,7 +711,7 @@ func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 					Containers: []corev1.Container{
 						{
 							Name:            name,
-							Image:           Config.GetUniversalImage(),
+							Image:           Config.GetTestAppImage(),
 							ImagePullPolicy: "IfNotPresent",
 							Command:         []string{"curl"},
 							Args:            []string{"-v", "-m", "3", "--fail", destination},

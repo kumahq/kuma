@@ -217,7 +217,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					ReadinessProbe:  readinessProbe,
 					LivenessProbe:   livenessProbe,
 					StartupProbe:    startupProbe,
-					Image:           framework.Config.GetUniversalImage(),
+					Image:           framework.Config.GetTestAppImage(),
 					Ports: []corev1.ContainerPort{
 						{
 							ContainerPort: int32(containerPort),

@@ -46,6 +46,7 @@ type E2eConfig struct {
 	KumaInitImageRepo                 string            `json:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
 	KumaCNIImageRepo                  string            `json:"cniImageRepo,omitempty" envconfig:"KUMA_CNI_IMAGE_REPOSITORY"`
 	KumaUniversalImageRepo            string            `json:"universalImageRepo,omitempty"`
+	KumaTestAppImageRepo              string            `json:"testAppImageRepo,omitempty"`
 	XDSApiVersion                     string            `json:"xdsVersion,omitempty" envconfig:"API_VERSION"`
 	K8sType                           K8sType           `json:"k8sType,omitempty" envconfig:"KUMA_K8S_TYPE"`
 	IPV6                              bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
@@ -181,6 +182,17 @@ func (c E2eConfig) GetUniversalImage() string {
 	}
 }
 
+// GetTestAppImage returns the slim in-cluster workload image (test-server,
+// demo-client, curl jobs, zone proxies) — the universal image without
+// kuma-cp/kumactl/spire, so k3d doesn't import those binaries every run.
+func (c E2eConfig) GetTestAppImage() string {
+	if c.KumaImageTag != "" {
+		return fmt.Sprintf("%s/%s:%s", c.KumaImageRegistry, c.KumaTestAppImageRepo, c.KumaImageTag)
+	} else {
+		return fmt.Sprintf("%s/%s", c.KumaImageRegistry, c.KumaTestAppImageRepo)
+	}
+}
+
 var defaultConf = E2eConfig{
 	HelmChartName:                 "kuma/kuma",
 	HelmChartPath:                 "../../../deployments/charts/kuma",
@@ -198,6 +210,7 @@ var defaultConf = E2eConfig{
 	KumaImageRegistry:      "kumahq",
 	KumaImageTag:           kuma_version.Build.Version,
 	KumaUniversalImageRepo: "kuma-universal",
+	KumaTestAppImageRepo:   "kuma-test-app",
 	KumaCPImageRepo:        "kuma-cp",
 	KumaDPImageRepo:        "kuma-dp",
 	KumaInitImageRepo:      "kuma-init",
