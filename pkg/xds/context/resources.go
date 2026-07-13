@@ -93,10 +93,6 @@ func (r Resources) TrafficLogs() *core_mesh.TrafficLogResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficLogType).(*core_mesh.TrafficLogResourceList)
 }
 
-func (r Resources) FaultInjections() *core_mesh.FaultInjectionResourceList {
-	return r.ListOrEmpty(core_mesh.FaultInjectionType).(*core_mesh.FaultInjectionResourceList)
-}
-
 func (r Resources) Timeouts() *core_mesh.TimeoutResourceList {
 	return r.ListOrEmpty(core_mesh.TimeoutType).(*core_mesh.TimeoutResourceList)
 }

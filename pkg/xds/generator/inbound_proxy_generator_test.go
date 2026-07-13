@@ -115,37 +115,6 @@ var _ = Describe("InboundProxyGenerator", func() {
 							},
 						},
 					},
-					FaultInjections: model.FaultInjectionMap{
-						mesh_proto.InboundInterface{
-							DataplaneAdvertisedIP: "192.168.0.1",
-							DataplaneIP:           "192.168.0.1",
-							DataplanePort:         80,
-							WorkloadIP:            "192.168.0.1",
-							WorkloadPort:          8080,
-							InboundName:           "80",
-						}: []*core_mesh.FaultInjectionResource{{Spec: &mesh_proto.FaultInjection{
-							Sources: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "frontend",
-									},
-								},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "backend1",
-									},
-								},
-							},
-							Conf: &mesh_proto.FaultInjection_Conf{
-								Delay: &mesh_proto.FaultInjection_Conf_Delay{
-									Percentage: util_proto.Double(50),
-									Value:      util_proto.Duration(time.Second * 5),
-								},
-							},
-						}}},
-					},
 					RateLimitsInbound: model.InboundRateLimitsMap{
 						mesh_proto.InboundInterface{
 							DataplaneAdvertisedIP: "192.168.0.1",

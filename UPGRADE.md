@@ -8,6 +8,32 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Default `TrafficPermission`/`TrafficRoute` creation removed
+
+The control plane no longer creates the default allow-all `TrafficPermission`
+and route-all `TrafficRoute` resources when a new `Mesh` is created. Traffic
+routing and permissions for a new `Mesh` are now expected to come from the
+default `MeshTrafficPermission` and implicit routing instead.
+
+The following configuration has been removed:
+
+- Control plane: `defaults.createMeshRoutingResources`
+  (`KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES`).
+
+**Action required**
+
+Remove `defaults.createMeshRoutingResources` from your control plane YAML
+config and `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` from your
+environment if set. Both settings no longer have any effect in Kuma 3.0.0.
+A stale YAML key is rejected only by strict config parsing; regular control
+plane startup and the environment variable loader silently ignore the removed
+setting.
+
+The compatibility mode for creating legacy defaults for pre-2.6.0 zones is no
+longer available in Kuma 3.0.0. Existing `TrafficPermission` and `TrafficRoute`
+resources remain fully valid and supported; this change only affects automatic
+creation of new defaults.
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
@@ -120,6 +146,10 @@ A new explicit flag preserves the previous insecure behavior:
 - `kumactl config control-planes add --skip-verify`
 
 Do not use this in production.
+
+### Rolling-upgrade note: inbound listeners use SO_REUSEPORT by default
+
+See [Inbound listeners now use SO_REUSEPORT by default](#inbound-listeners-now-use-so_reuseport-by-default).
 
 ## Upgrade to `2.12.11`
 
@@ -1000,6 +1030,14 @@ is not a correct value, we have decided to deprecate it. If you are using `Sourc
 
 Policies no longer attach directly to built-in `MeshGateway` listeners through `spec.targetRef.kind: MeshGateway` for `MeshAccessLog`, `MeshCircuitBreaker`, `MeshFaultInjection`, `MeshHealthCheck`, `MeshRateLimit`, `MeshRetry`, `MeshTimeout`, `MeshTLS`, `MeshTrace`, or `MeshLoadBalancingStrategy`.
 Use `MeshHTTPRoute` or `MeshTCPRoute` resources for built-in gateway routing behavior, and move the affected policy configuration to supported target kinds before upgrading.
+
+### Legacy `FaultInjection` policy no longer generates Envoy configuration
+
+The legacy `FaultInjection` policy (`kind: FaultInjection`, superseded by `MeshFaultInjection`) no longer produces any Envoy fault-injection filters. Existing `FaultInjection` resources remain creatable and readable through the API, but they have no effect on data plane proxies.
+
+**Action required**
+
+Migrate any remaining `FaultInjection` resources to `MeshFaultInjection` before upgrading. See the [MeshFaultInjection documentation](https://kuma.io/docs/latest/policies/meshfaultinjection/) for the equivalent configuration.
 
 ### MeshHealthCheck
 
