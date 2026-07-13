@@ -158,11 +158,6 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 	for inbound, tp := range matchedPolicies.TrafficPermissions {
 		result[inbound] = append(result[inbound], tp)
 	}
-	for inbound, fiList := range matchedPolicies.FaultInjections {
-		for _, fi := range fiList {
-			result[inbound] = append(result[inbound], fi)
-		}
-	}
 	for inbound, rlList := range matchedPolicies.RateLimitsInbound {
 		for _, rl := range rlList {
 			result[inbound] = append(result[inbound], rl)

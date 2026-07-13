@@ -28,7 +28,6 @@ type PluginOriginatedPolicies map[core_model.ResourceType]TypedMatchingPolicies
 type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
 	TrafficPermissions TrafficPermissionMap
-	FaultInjections    FaultInjectionMap
 	RateLimitsInbound  InboundRateLimitsMap
 
 	// Service(Cluster) -> Policy
