@@ -122,17 +122,6 @@ resources:
             idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
-          - name: envoy.filters.http.fault
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
-              delay:
-                fixedDelay: 5s
-                percentage:
-                  numerator: 50
-              headers:
-              - name: x-kuma-tags
-                safeRegexMatch:
-                  regex: .*&kuma.io/service=[^&]*frontend[,&].*
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

@@ -64,15 +64,6 @@ var _ = Describe("GroupByAttachment", func() {
 					inbound("192.168.0.2", 80, 81): {Meta: meta2},
 					inbound("192.168.0.2", 90, 91): {Meta: meta3},
 				},
-				FaultInjections: core_xds.FaultInjectionMap{
-					inbound("192.168.0.1", 80, 81): {
-						{Meta: meta1},
-						{Meta: meta4},
-					},
-					inbound("192.168.0.2", 80, 81): {
-						{Meta: meta2},
-					},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.CircuitBreakerType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
@@ -120,18 +111,11 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
-					core_mesh.FaultInjectionType: []core_model.Resource{
-						&core_mesh.FaultInjectionResource{Meta: meta1},
-						&core_mesh.FaultInjectionResource{Meta: meta4},
-					},
 					core_mesh.TrafficPermissionType: []core_model.Resource{
 						&core_mesh.TrafficPermissionResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
-					core_mesh.FaultInjectionType: []core_model.Resource{
-						&core_mesh.FaultInjectionResource{Meta: meta2},
-					},
 					core_mesh.TrafficPermissionType: []core_model.Resource{
 						&core_mesh.TrafficPermissionResource{Meta: meta2},
 					},
@@ -415,24 +399,6 @@ var _ = Describe("GroupByPolicy", func() {
 						Meta: &test_model.ResourceMeta{Name: "tp-2", Mesh: "default"},
 					},
 				},
-				FaultInjections: core_xds.FaultInjectionMap{
-					inbound("192.168.0.1", 80, 81): []*core_mesh.FaultInjectionResource{
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-1", Mesh: "default"},
-						},
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-2", Mesh: "default"},
-						},
-					},
-					inbound("192.168.0.3", 80, 81): []*core_mesh.FaultInjectionResource{
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-2", Mesh: "default"},
-						},
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-3", Mesh: "default"},
-						},
-					},
-				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
@@ -445,25 +411,6 @@ var _ = Describe("GroupByPolicy", func() {
 				inspect.PolicyKey{
 					Type: core_mesh.TrafficPermissionType,
 					Key:  core_model.ResourceKey{Name: "tp-2", Mesh: "default"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.FaultInjectionType,
-					Key:  core_model.ResourceKey{Name: "fi-1", Mesh: "default"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.FaultInjectionType,
-					Key:  core_model.ResourceKey{Name: "fi-2", Mesh: "default"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.FaultInjectionType,
-					Key:  core_model.ResourceKey{Name: "fi-3", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},

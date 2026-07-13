@@ -189,7 +189,7 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
-	return len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+	return len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.

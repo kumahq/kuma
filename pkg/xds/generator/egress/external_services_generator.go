@@ -185,6 +185,5 @@ func buildExternalServiceFilterChain(
 
 	return filterChain.
 		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-		Configure(envoy_listeners.FaultInjection(resources.ExternalServiceFaultInjections[esName]...)).
 		Configure(envoy_listeners.HttpOutboundRoute(routeConfigName, virtualHostName, routes, nil))
 }

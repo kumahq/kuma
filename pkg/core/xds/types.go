@@ -172,15 +172,10 @@ type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 // RetryMap holds the most specific Retry for each reachable service.
 type RetryMap map[ServiceName]*core_mesh.RetryResource
 
-// FaultInjectionMap holds all matched FaultInjectionResources for each InboundInterface
-type FaultInjectionMap map[mesh_proto.InboundInterface][]*core_mesh.FaultInjectionResource
-
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
 
 type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
-
-type ExternalServiceFaultInjectionMap map[ServiceName][]*core_mesh.FaultInjectionResource
 
 // SocketAddressProtocol is the L4 protocol the listener should bind to
 type SocketAddressProtocol int32
@@ -298,11 +293,10 @@ type SecretsTracker interface {
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
-	Mesh                           *core_mesh.MeshResource
-	ExternalServices               []*core_mesh.ExternalServiceResource
-	ExternalServicePermissionMap   ExternalServicePermissionMap
-	EndpointMap                    EndpointMap
-	ExternalServiceFaultInjections ExternalServiceFaultInjectionMap
+	Mesh                         *core_mesh.MeshResource
+	ExternalServices             []*core_mesh.ExternalServiceResource
+	ExternalServicePermissionMap ExternalServicePermissionMap
+	EndpointMap                  EndpointMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies

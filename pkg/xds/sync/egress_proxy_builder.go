@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -65,7 +64,6 @@ func (p *EgressProxyBuilder) Build(
 
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
-		faultInjections := meshCtx.Resources.FaultInjections().Items
 		mes := meshCtx.Resources.MeshExternalServices().Items
 
 		meshResources := &core_xds.MeshResources{
@@ -83,10 +81,6 @@ func (p *EgressProxyBuilder) Build(
 			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(
 				externalServices,
 				trafficPermissions,
-			),
-			ExternalServiceFaultInjections: faultinjections.BuildExternalServiceFaultInjectionMapForZoneEgress(
-				externalServices,
-				faultInjections,
 			),
 			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
 			Resources: meshCtx.Resources.MeshLocalResources,

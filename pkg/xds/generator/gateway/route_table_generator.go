@@ -53,8 +53,6 @@ func GenerateVirtualHost(
 		return vh, nil
 	}
 
-	// TODO(jpeach) match the FaultInjection policy for this virtual host.
-
 	// TODO(jpeach) apply additional virtual host configuration.
 
 	// Sort routing table entries so the most specific match comes first.
