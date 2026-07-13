@@ -17,7 +17,7 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
 jobs:
   test_unit:
-    timeout-minutes: 30
+    timeout-minutes: 90
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
@@ -31,8 +31,25 @@ jobs:
           version: 2026.5.7
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - run: |
-          make test
+      # A/B experiment: same runner, same cold cache, only the -race flag differs.
+      - name: "unit tests WITHOUT race"
+        run: |
+          rc=0
+          make test UNIT_RACE= || rc=$?
+          {
+            echo "## Unit test A/B timing";
+            echo "- no-race: ${SECONDS}s (exit=$rc)";
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "no_race_seconds=${SECONDS} exit=$rc"
+          exit $rc
+      - name: "unit tests WITH race"
+        if: ${{ always() }}
+        run: |
+          rc=0
+          make test || rc=$?
+          echo "- race: ${SECONDS}s (exit=$rc)" >> "$GITHUB_STEP_SUMMARY"
+          echo "race_seconds=${SECONDS} exit=$rc"
+          exit $rc
   gen_e2e_matrix:
     timeout-minutes: 2
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}

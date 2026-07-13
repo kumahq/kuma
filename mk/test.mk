@@ -1,6 +1,9 @@
 UPDATE_GOLDEN_FILES ?=
 TEST_PKG_LIST ?= ./...
 REPORTS_DIR ?= build/reports
+# UNIT_RACE toggles the Go race detector for unit tests (default on).
+# Override with `make test UNIT_RACE=` to measure/skip the race cost.
+UNIT_RACE ?= -race
 # Path to the kumactl binary for Linux. This binary will be uploaded to Docker
 # containers during transparent proxy tests.
 KUMACTL_LINUX_BIN ?= $(BUILD_DIR)/artifacts-linux-$(GOARCH)/kumactl/kumactl
@@ -32,7 +35,7 @@ ifndef TEST_REPORTS
 ifdef CI
 	$(GO) clean -testcache
 endif
-	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$($(GO) list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
+	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) $(UNIT_RACE) $$($(GO) list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
 endif
 
 $(REPORTS_DIR):
