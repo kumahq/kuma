@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/dns/vips"
@@ -207,7 +208,88 @@ status:
 		Expect(err).ToNot(HaveOccurred())
 
 		// when the MeshService is written again with the same spec/status but updated proxy stats
+		meshService := meshservice_api.NewMeshServiceResource()
+		Expect(resourceStore.Get(context.Background(), meshService, store.GetByKey("redis", "mesh-1"))).To(Succeed())
+		meshService.Status.DataplaneProxies = meshservice_api.DataplaneProxies{
+			Connected: 3,
+			Healthy:   2,
+			Total:     3,
+		}
+		Expect(resourceStore.Update(context.Background(), meshService, store.UpdateWithLabels(meshService.GetMeta().GetLabels()))).To(Succeed())
+
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the cached context is reused and the mesh hash is unchanged
+		Expect(after).To(BeIdenticalTo(before), "DataplaneProxies-only write should not trigger mesh-wide xDS recomputation")
+		Expect(after.Hash).To(Equal(before.Hash))
+	})
+
+	It("keeps PolicyMatchingHash stable across resourceVersion-only Dataplane writes", func() {
+		builderWithPolicyMatchingHash := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+			"mesh",
+			80,
+			nil,
+			xds_context.WithPolicyMatchingHash(),
+		)
+
 		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+`)).To(Succeed())
+
+		before, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+`)).To(Succeed())
+
+		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash))
+	})
+
+	It("keeps PolicyMatchingHash stable across MeshService DataplaneProxies updates", func() {
+		builderWithPolicyMatchingHash := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+			"mesh",
+			80,
+			nil,
+			xds_context.WithPolicyMatchingHash(),
+		)
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
 type: MeshService
 name: redis
 mesh: mesh-1
@@ -221,17 +303,22 @@ spec:
 status:
   vips:
   - ip: 10.0.1.1
-  dataplaneProxies:
-    connected: 3
-    healthy: 2
-    total: 3
 `)).To(Succeed())
 
-		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		before, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then the cached context is reused and the mesh hash is unchanged
-		Expect(after).To(BeIdenticalTo(before), "DataplaneProxies-only write should not trigger mesh-wide xDS recomputation")
-		Expect(after.Hash).To(Equal(before.Hash))
+		meshService := meshservice_api.NewMeshServiceResource()
+		Expect(resourceStore.Get(context.Background(), meshService, store.GetByKey("redis", "mesh-1"))).To(Succeed())
+		meshService.Status.DataplaneProxies = meshservice_api.DataplaneProxies{
+			Connected: 3,
+			Healthy:   2,
+			Total:     3,
+		}
+		Expect(resourceStore.Update(context.Background(), meshService, store.UpdateWithLabels(meshService.GetMeta().GetLabels()))).To(Succeed())
+
+		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash))
 	})
 })

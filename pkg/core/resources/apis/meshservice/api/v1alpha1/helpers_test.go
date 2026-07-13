@@ -36,7 +36,7 @@ var _ = Describe("MeshServiceResource.Hash()", func() {
 		Expect(changed.Hash()).NotTo(Equal(originalHash))
 	})
 
-	It("changes when only the DataplaneProxies stats change", func() {
+	It("changes when DataplaneProxies stats change together with resourceVersion", func() {
 		original := newMeshService()
 		originalHash := original.Hash()
 
@@ -45,6 +45,22 @@ var _ = Describe("MeshServiceResource.Hash()", func() {
 		changed.Meta.(*test_model.ResourceMeta).Version = "2"
 
 		Expect(changed.Hash()).NotTo(Equal(originalHash))
+	})
+
+	It("treats nil spec and status the same as empty values", func() {
+		meta := &test_model.ResourceMeta{
+			Name: "backend",
+			Mesh: "default",
+		}
+
+		withNilFields := &api.MeshServiceResource{Meta: meta}
+		withEmptyFields := api.NewMeshServiceResource()
+		withEmptyFields.SetMeta(meta)
+
+		Expect(func() { _ = withNilFields.Hash() }).ToNot(Panic())
+		Expect(func() { _ = withNilFields.XDSHash() }).ToNot(Panic())
+		Expect(withNilFields.Hash()).To(Equal(withEmptyFields.Hash()))
+		Expect(withNilFields.XDSHash()).To(Equal(withEmptyFields.XDSHash()))
 	})
 
 	It("changes when a label is added", func() {
