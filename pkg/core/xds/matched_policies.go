@@ -28,13 +28,11 @@ type PluginOriginatedPolicies map[core_model.ResourceType]TypedMatchingPolicies
 type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
 	TrafficPermissions TrafficPermissionMap
-	FaultInjections    FaultInjectionMap
 	RateLimitsInbound  InboundRateLimitsMap
 
 	// Service(Cluster) -> Policy
-	TrafficLogs  TrafficLogMap
-	HealthChecks HealthCheckMap
-	Retries      RetryMap
+	TrafficLogs TrafficLogMap
+	Retries     RetryMap
 
 	// Outbound(Listener) -> Policy
 	Timeouts           TimeoutMap

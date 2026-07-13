@@ -64,15 +64,6 @@ var _ = Describe("GroupByAttachment", func() {
 					inbound("192.168.0.2", 80, 81): {Meta: meta2},
 					inbound("192.168.0.2", 90, 91): {Meta: meta3},
 				},
-				FaultInjections: core_xds.FaultInjectionMap{
-					inbound("192.168.0.1", 80, 81): {
-						{Meta: meta1},
-						{Meta: meta4},
-					},
-					inbound("192.168.0.2", 80, 81): {
-						{Meta: meta2},
-					},
-				},
 				RateLimitsInbound: core_xds.InboundRateLimitsMap{
 					inbound("192.168.0.2", 90, 91): {
 						{Meta: meta3},
@@ -125,18 +116,11 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
-					core_mesh.FaultInjectionType: []core_model.Resource{
-						&core_mesh.FaultInjectionResource{Meta: meta1},
-						&core_mesh.FaultInjectionResource{Meta: meta4},
-					},
 					core_mesh.TrafficPermissionType: []core_model.Resource{
 						&core_mesh.TrafficPermissionResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
-					core_mesh.FaultInjectionType: []core_model.Resource{
-						&core_mesh.FaultInjectionResource{Meta: meta2},
-					},
 					core_mesh.TrafficPermissionType: []core_model.Resource{
 						&core_mesh.TrafficPermissionResource{Meta: meta2},
 					},
@@ -291,10 +275,6 @@ var _ = Describe("GroupByAttachment", func() {
 					"backend":  &core_mesh.TrafficLogResource{Meta: meta1},
 					"postgres": &core_mesh.TrafficLogResource{Meta: meta2},
 				},
-				HealthChecks: core_xds.HealthCheckMap{
-					"backend": &core_mesh.HealthCheckResource{Meta: meta1},
-					"web":     &core_mesh.HealthCheckResource{Meta: meta3},
-				},
 				Retries: core_xds.RetryMap{
 					"backend": &core_mesh.RetryResource{Meta: meta1},
 				},
@@ -313,9 +293,6 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Meta: meta1},
 					},
-					core_mesh.HealthCheckType: []core_model.Resource{
-						&core_mesh.HealthCheckResource{Meta: meta1},
-					},
 					core_mesh.RetryType: []core_model.Resource{
 						&core_mesh.RetryResource{Meta: meta1},
 					},
@@ -323,11 +300,6 @@ var _ = Describe("GroupByAttachment", func() {
 				inspect.Attachment{Type: inspect.Service, Name: "postgres", Service: "postgres"}: {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Meta: meta2},
-					},
-				},
-				inspect.Attachment{Type: inspect.Service, Name: "web", Service: "web"}: {
-					core_mesh.HealthCheckType: []core_model.Resource{
-						&core_mesh.HealthCheckResource{Meta: meta3},
 					},
 				},
 				inspect.Attachment{Type: inspect.Service, Name: "redis", Service: "redis"}: {
@@ -423,24 +395,6 @@ var _ = Describe("GroupByPolicy", func() {
 						Meta: &test_model.ResourceMeta{Name: "tp-2", Mesh: "default"},
 					},
 				},
-				FaultInjections: core_xds.FaultInjectionMap{
-					inbound("192.168.0.1", 80, 81): []*core_mesh.FaultInjectionResource{
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-1", Mesh: "default"},
-						},
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-2", Mesh: "default"},
-						},
-					},
-					inbound("192.168.0.3", 80, 81): []*core_mesh.FaultInjectionResource{
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-2", Mesh: "default"},
-						},
-						{
-							Meta: &test_model.ResourceMeta{Name: "fi-3", Mesh: "default"},
-						},
-					},
-				},
 				RateLimitsInbound: core_xds.InboundRateLimitsMap{
 					inbound("192.168.0.2", 90, 91): []*core_mesh.RateLimitResource{
 						{
@@ -460,25 +414,6 @@ var _ = Describe("GroupByPolicy", func() {
 				inspect.PolicyKey{
 					Type: core_mesh.TrafficPermissionType,
 					Key:  core_model.ResourceKey{Name: "tp-2", Mesh: "default"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.FaultInjectionType,
-					Key:  core_model.ResourceKey{Name: "fi-1", Mesh: "default"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.FaultInjectionType,
-					Key:  core_model.ResourceKey{Name: "fi-2", Mesh: "default"},
-				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.FaultInjectionType,
-					Key:  core_model.ResourceKey{Name: "fi-3", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
@@ -563,14 +498,6 @@ var _ = Describe("GroupByPolicy", func() {
 						Meta: &test_model.ResourceMeta{Name: "tl-2", Mesh: "mesh-1"},
 					},
 				},
-				HealthChecks: core_xds.HealthCheckMap{
-					"backend": &core_mesh.HealthCheckResource{
-						Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "mesh-1"},
-					},
-					"redis": &core_mesh.HealthCheckResource{
-						Meta: &test_model.ResourceMeta{Name: "hc-2", Mesh: "mesh-1"},
-					},
-				},
 				Retries: core_xds.RetryMap{
 					"payments": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{Name: "r-1", Mesh: "mesh-1"},
@@ -594,18 +521,6 @@ var _ = Describe("GroupByPolicy", func() {
 				inspect.PolicyKey{
 					Type: core_mesh.TrafficLogType,
 					Key:  core_model.ResourceKey{Name: "tl-2", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "redis", Service: "redis"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.HealthCheckType,
-					Key:  core_model.ResourceKey{Name: "hc-1", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "backend", Service: "backend"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.HealthCheckType,
-					Key:  core_model.ResourceKey{Name: "hc-2", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Service, Name: "redis", Service: "redis"},
 				},

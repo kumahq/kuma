@@ -180,15 +180,6 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 	})
 }
 
-func HealthCheck(protocol core_meta.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.HealthCheckConfigurer{
-			HealthCheck: healthCheck,
-			Protocol:    protocol,
-		})
-	})
-}
-
 // LbSubset is required for MetadataMatch in Weighted Cluster in TCP Proxy to work.
 // Subset loadbalancing is used in two use cases
 //  1. TrafficRoute for splitting traffic. Example: TrafficRoute that splits 10% of the traffic to version 1 of the service backend and 90% traffic to version 2 of the service backend

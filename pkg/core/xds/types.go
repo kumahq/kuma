@@ -163,14 +163,8 @@ type EgressEndpointMap map[ServiceName]EgressEndpointGroup
 // TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
 type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
 
-// HealthCheckMap holds the most specific HealthCheck for each reachable service.
-type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
-
 // RetryMap holds the most specific Retry for each reachable service.
 type RetryMap map[ServiceName]*core_mesh.RetryResource
-
-// FaultInjectionMap holds all matched FaultInjectionResources for each InboundInterface
-type FaultInjectionMap map[mesh_proto.InboundInterface][]*core_mesh.FaultInjectionResource
 
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
@@ -187,8 +181,6 @@ type RateLimitsMap struct {
 }
 
 type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
-
-type ExternalServiceFaultInjectionMap map[ServiceName][]*core_mesh.FaultInjectionResource
 
 type ExternalServiceRateLimitMap map[ServiceName][]*core_mesh.RateLimitResource
 
@@ -308,12 +300,11 @@ type SecretsTracker interface {
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
-	Mesh                           *core_mesh.MeshResource
-	ExternalServices               []*core_mesh.ExternalServiceResource
-	ExternalServicePermissionMap   ExternalServicePermissionMap
-	EndpointMap                    EndpointMap
-	ExternalServiceFaultInjections ExternalServiceFaultInjectionMap
-	ExternalServiceRateLimits      ExternalServiceRateLimitMap
+	Mesh                         *core_mesh.MeshResource
+	ExternalServices             []*core_mesh.ExternalServiceResource
+	ExternalServicePermissionMap ExternalServicePermissionMap
+	EndpointMap                  EndpointMap
+	ExternalServiceRateLimits    ExternalServiceRateLimitMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies

@@ -147,6 +147,10 @@ A new explicit flag preserves the previous insecure behavior:
 
 Do not use this in production.
 
+### Rolling-upgrade note: inbound listeners use SO_REUSEPORT by default
+
+See [Inbound listeners now use SO_REUSEPORT by default](#inbound-listeners-now-use-so_reuseport-by-default).
+
 ## Upgrade to `2.12.11`
 
 See [Insecure TLS fallback removed when no CA cert is provided](#insecure-tls-fallback-removed-when-no-ca-cert-is-provided).
@@ -1026,6 +1030,14 @@ is not a correct value, we have decided to deprecate it. If you are using `Sourc
 
 Policies no longer attach directly to built-in `MeshGateway` listeners through `spec.targetRef.kind: MeshGateway` for `MeshAccessLog`, `MeshCircuitBreaker`, `MeshFaultInjection`, `MeshHealthCheck`, `MeshRateLimit`, `MeshRetry`, `MeshTimeout`, `MeshTLS`, `MeshTrace`, or `MeshLoadBalancingStrategy`.
 Use `MeshHTTPRoute` or `MeshTCPRoute` resources for built-in gateway routing behavior, and move the affected policy configuration to supported target kinds before upgrading.
+
+### Legacy `FaultInjection` policy no longer generates Envoy configuration
+
+The legacy `FaultInjection` policy (`kind: FaultInjection`, superseded by `MeshFaultInjection`) no longer produces any Envoy fault-injection filters. Existing `FaultInjection` resources remain creatable and readable through the API, but they have no effect on data plane proxies.
+
+**Action required**
+
+Migrate any remaining `FaultInjection` resources to `MeshFaultInjection` before upgrading. See the [MeshFaultInjection documentation](https://kuma.io/docs/latest/policies/meshfaultinjection/) for the equivalent configuration.
 
 ### MeshHealthCheck
 

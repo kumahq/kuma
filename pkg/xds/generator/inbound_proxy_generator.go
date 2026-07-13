@@ -172,7 +172,6 @@ func FilterChainBuilder(
 	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
@@ -180,7 +179,6 @@ func FilterChainBuilder(
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.GrpcStats()).
-			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))

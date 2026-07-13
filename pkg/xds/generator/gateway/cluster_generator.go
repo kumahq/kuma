@@ -290,7 +290,6 @@ func newClusterBuilder(
 
 	builder := clusters.NewClusterBuilder(version, name).Configure(
 		clusters.Timeout(timeout, protocol),
-		clusters.HealthCheck(protocol, healthCheckPolicyFor(dest)),
 	)
 
 	// TODO(jpeach) OutboundProxyGenerator unconditionally
@@ -372,10 +371,3 @@ func timeoutPolicyFor(dest *route.Destination) *core_mesh.TimeoutResource {
 	return nil // TODO(jpeach) default timeout policy
 }
 
-func healthCheckPolicyFor(dest *route.Destination) *core_mesh.HealthCheckResource {
-	if policy, ok := dest.Policies[core_mesh.HealthCheckType]; ok {
-		return policy.(*core_mesh.HealthCheckResource)
-	}
-
-	return nil // TODO(jpeach) default health check policy
-}

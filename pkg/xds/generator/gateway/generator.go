@@ -22,7 +22,6 @@ import (
 // bind for connection policies.
 var ConnectionPolicyTypes = []model.ResourceType{
 	core_mesh.FaultInjectionType,
-	core_mesh.HealthCheckType,
 	core_mesh.RateLimitType,
 	core_mesh.RetryType,
 	core_mesh.TimeoutType,
