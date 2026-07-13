@@ -67,18 +67,26 @@ func (t *MeshServiceResource) hash(includeVersion bool) []byte {
 	if includeVersion {
 		_, _ = hasher.Write([]byte(t.GetMeta().GetVersion()))
 	}
+	spec := t.Spec
+	if spec == nil {
+		spec = &MeshService{}
+	}
+	status := t.Status
+	if status == nil {
+		status = &MeshServiceStatus{}
+	}
 	core_model.WriteSortedLabels(hasher, t.GetMeta().GetLabels())
-	writeJSON(hasher, t.Spec)
+	writeJSON(hasher, spec)
 	writeJSON(hasher, struct {
 		Addresses          []hostnamegenerator_api.Address
 		VIPs               []VIP
 		TLS                TLS
 		HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus
 	}{
-		Addresses:          t.Status.Addresses,
-		VIPs:               t.Status.VIPs,
-		TLS:                t.Status.TLS,
-		HostnameGenerators: t.Status.HostnameGenerators,
+		Addresses:          status.Addresses,
+		VIPs:               status.VIPs,
+		TLS:                status.TLS,
+		HostnameGenerators: status.HostnameGenerators,
 	})
 	return hasher.Sum(nil)
 }
