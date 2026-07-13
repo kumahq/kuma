@@ -1,7 +1,7 @@
 cel.dev/expr v0.25.1 h1:1KrZg61W6TWSxuNZ37Xy49ps13NUovb66QLprthtwi4=
 cel.dev/expr v0.25.1/go.mod h1:hrXvqGP6G6gyx8UAHSHJ5RGk//1Oj5nXQ2NI02Nrsg4=
-cirello.io/pglock v1.16.1 h1:NKVe133vhtJMnzdL0UlCtyEb9rm3vSnT2/R7MNu6mfA=
-cirello.io/pglock v1.16.1/go.mod h1:aCm2qCmp8jc2cNSFUW+n94Ie6ZGXmauBBSXVkWSKD/M=
+cirello.io/pglock v1.16.2 h1:BUBqB8z6yM5E74ojrxlU9SOQKuma9InUjlU/H12wBqg=
+cirello.io/pglock v1.16.2/go.mod h1:WqfW+PnFIsal+c8pv+dQeyEORgA+AVWL15RPZFxFVEs=
 dario.cat/mergo v1.0.2 h1:85+piFYR1tMbRrLcDwR18y4UKJ3aH1Tbzi24VRW1TK8=
 dario.cat/mergo v1.0.2/go.mod h1:E/hbnu0NxMFBjpMIE34DRGLWqDy0g5FuKDhCb31ngxA=
 filippo.io/edwards25519 v1.1.1 h1:YpjwWWlNmGIDyXOn8zLzqiD+9TyIlPhGFG96P39uBpw=
