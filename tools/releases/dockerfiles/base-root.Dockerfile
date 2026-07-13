@@ -1,5 +1,5 @@
 # use only when root is really needed
-FROM gcr.io/distroless/base-nossl-debian12:debug@sha256:35a3865dc6080a6a29c0fc4022c9c780ce619b923edb0bea580f2e7d7852343b
+FROM gcr.io/distroless/base-nossl-debian12:debug@sha256:2b89aea887933b8595f62c3d7e05a2718a0594e21e506952ce55b68b537f4fb6
 
 COPY /tools/releases/templates/LICENSE \
     /tools/releases/templates/README \
