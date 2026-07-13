@@ -160,9 +160,6 @@ type EgressEndpointGroup struct {
 // Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
 type EgressEndpointMap map[ServiceName]EgressEndpointGroup
 
-// HealthCheckMap holds the most specific HealthCheck for each reachable service.
-type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
-
 // CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
 type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 

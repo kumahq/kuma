@@ -271,10 +271,6 @@ var _ = Describe("GroupByAttachment", func() {
 		Entry("group by service", testCase{
 			dpNetworking: &mesh_proto.Dataplane_Networking{},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				HealthChecks: core_xds.HealthCheckMap{
-					"backend": &core_mesh.HealthCheckResource{Meta: meta1},
-					"web":     &core_mesh.HealthCheckResource{Meta: meta3},
-				},
 				CircuitBreakers: core_xds.CircuitBreakerMap{
 					"backend":  &core_mesh.CircuitBreakerResource{Meta: meta1},
 					"postgres": &core_mesh.CircuitBreakerResource{Meta: meta2},
@@ -295,9 +291,6 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Service, Name: "backend", Service: "backend"}: {
-					core_mesh.HealthCheckType: []core_model.Resource{
-						&core_mesh.HealthCheckResource{Meta: meta1},
-					},
 					core_mesh.CircuitBreakerType: []core_model.Resource{
 						&core_mesh.CircuitBreakerResource{Meta: meta1},
 					},
@@ -308,11 +301,6 @@ var _ = Describe("GroupByAttachment", func() {
 				inspect.Attachment{Type: inspect.Service, Name: "postgres", Service: "postgres"}: {
 					core_mesh.CircuitBreakerType: []core_model.Resource{
 						&core_mesh.CircuitBreakerResource{Meta: meta2},
-					},
-				},
-				inspect.Attachment{Type: inspect.Service, Name: "web", Service: "web"}: {
-					core_mesh.HealthCheckType: []core_model.Resource{
-						&core_mesh.HealthCheckResource{Meta: meta3},
 					},
 				},
 				inspect.Attachment{Type: inspect.Service, Name: "redis", Service: "redis"}: {
@@ -503,14 +491,6 @@ var _ = Describe("GroupByPolicy", func() {
 		Entry("group by service policies", testCase{
 			dpNetworking: &mesh_proto.Dataplane_Networking{},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				HealthChecks: core_xds.HealthCheckMap{
-					"backend": &core_mesh.HealthCheckResource{
-						Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "mesh-1"},
-					},
-					"redis": &core_mesh.HealthCheckResource{
-						Meta: &test_model.ResourceMeta{Name: "hc-2", Mesh: "mesh-1"},
-					},
-				},
 				CircuitBreakers: core_xds.CircuitBreakerMap{
 					"kafka": &core_mesh.CircuitBreakerResource{
 						Meta: &test_model.ResourceMeta{Name: "cb-1", Mesh: "mesh-1"},
@@ -529,18 +509,6 @@ var _ = Describe("GroupByPolicy", func() {
 				},
 			},
 			expected: inspect.AttachmentsByPolicy{
-				inspect.PolicyKey{
-					Type: core_mesh.HealthCheckType,
-					Key:  core_model.ResourceKey{Name: "hc-1", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "backend", Service: "backend"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.HealthCheckType,
-					Key:  core_model.ResourceKey{Name: "hc-2", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "redis", Service: "redis"},
-				},
 				inspect.PolicyKey{
 					Type: core_mesh.CircuitBreakerType,
 					Key:  core_model.ResourceKey{Name: "cb-1", Mesh: "mesh-1"},

@@ -196,9 +196,6 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.ServiceName][]core_model.Resource {
 	result := map[xds.ServiceName][]core_model.Resource{}
 
-	for service, hc := range matchedPolicies.HealthChecks {
-		result[service] = append(result[service], hc)
-	}
 	for service, cb := range matchedPolicies.CircuitBreakers {
 		result[service] = append(result[service], cb)
 	}
