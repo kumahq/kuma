@@ -147,6 +147,10 @@ A new explicit flag preserves the previous insecure behavior:
 
 Do not use this in production.
 
+### Rolling-upgrade note: inbound listeners use SO_REUSEPORT by default
+
+See [Inbound listeners now use SO_REUSEPORT by default](#inbound-listeners-now-use-so_reuseport-by-default).
+
 ## Upgrade to `2.12.11`
 
 See [Insecure TLS fallback removed when no CA cert is provided](#insecure-tls-fallback-removed-when-no-ca-cert-is-provided).
