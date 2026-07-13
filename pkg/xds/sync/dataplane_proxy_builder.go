@@ -210,7 +210,6 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
 		CircuitBreakers:    xds_topology.BuildCircuitBreakerMap(dataplane, outboundSelectors, resources.CircuitBreakers().Items),
 		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, resources.TrafficTraces().Items),
-		Retries:            xds_topology.BuildRetryMap(dataplane, resources.Retries().Items, outboundSelectors),
 		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
 		RateLimitsInbound:  ratelimits.Inbound,
 		RateLimitsOutbound: ratelimits.Outbound,

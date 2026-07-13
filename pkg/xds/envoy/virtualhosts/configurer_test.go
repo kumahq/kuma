@@ -4,9 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
@@ -75,42 +72,6 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
             - domains:
               - '*'
               name: backend
-`,
-			}),
-			Entry("virtual host with retry", testCase{
-				virtualHostName: "backend",
-				opts: []Opt{
-					DomainNames(),
-					Retry(
-						&core_mesh.RetryResource{
-							Spec: &mesh_proto.Retry{
-								Conf: &mesh_proto.Retry_Conf{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries:       util_proto.UInt32(7),
-										RetriableMethods: []mesh_proto.HttpMethod{mesh_proto.HttpMethod_GET, mesh_proto.HttpMethod_POST},
-									},
-								},
-							},
-						},
-						core_meta.ProtocolHTTP,
-					),
-				},
-				expected: `
-            name: route_configuration
-            virtualHosts:
-            - domains:
-              - '*'
-              name: backend
-              retryPolicy:
-                numRetries: 7
-                retriableRequestHeaders:
-                    - name: :method
-                      stringMatch:
-                        exact: GET
-                    - name: :method
-                      stringMatch:
-                        exact: POST
-                retryOn: gateway-error,connect-failure,refused-stream
 `,
 			}),
 		)

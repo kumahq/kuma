@@ -202,9 +202,6 @@ func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.Ser
 	for service, cb := range matchedPolicies.CircuitBreakers {
 		result[service] = append(result[service], cb)
 	}
-	for service, retry := range matchedPolicies.Retries {
-		result[service] = append(result[service], retry)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for serviceName, elts := range matchedPolicies.Dynamic[tpe].ServicePolicies {
 			result[serviceName] = append(result[serviceName], elts...)

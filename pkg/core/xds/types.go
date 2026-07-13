@@ -166,9 +166,6 @@ type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
 // CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
 type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 
-// RetryMap holds the most specific Retry for each reachable service.
-type RetryMap map[ServiceName]*core_mesh.RetryResource
-
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
 
