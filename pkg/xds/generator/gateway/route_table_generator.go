@@ -5,9 +5,7 @@ import (
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -77,14 +75,6 @@ func GenerateVirtualHost(
 				envoy_routes.RouteReplaceHostHeader(pointer.Deref(e.Rewrite.ReplaceHostname)),
 			)
 		}
-
-		// Generate a retry policy for this route, if there is one.
-		routeBuilder.Configure(
-			retryRouteConfigurers(
-				route.InferForwardingProtocol(e.Action.Forward),
-				match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.RetryType),
-			)...,
-		)
 
 		if t := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.TimeoutType); t != nil {
 			timeout := t.(*core_mesh.TimeoutResource)
@@ -165,17 +155,4 @@ func GenerateVirtualHost(
 	}
 
 	return vh, nil
-}
-
-// retryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
-func retryRouteConfigurers(protocol core_meta.Protocol, policy model.Resource) []envoy_routes.RouteConfigurer {
-	retry, _ := policy.(*core_mesh.RetryResource)
-	if retry == nil {
-		return nil
-	}
-
-	return []envoy_routes.RouteConfigurer{
-		envoy_routes.RouteActionRetryDefault(protocol),
-		envoy_routes.RouteActionRetry(retry, protocol),
-	}
 }

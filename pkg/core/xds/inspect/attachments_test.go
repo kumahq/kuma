@@ -258,9 +258,6 @@ var _ = Describe("GroupByAttachment", func() {
 					"postgres": &core_mesh.CircuitBreakerResource{Meta: meta2},
 					"redis":    &core_mesh.CircuitBreakerResource{Meta: meta4},
 				},
-				Retries: core_xds.RetryMap{
-					"backend": &core_mesh.RetryResource{Meta: meta1},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.TrafficLogType: {
 						ServicePolicies: map[core_xds.ServiceName][]core_model.Resource{
@@ -278,9 +275,6 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 					core_mesh.CircuitBreakerType: []core_model.Resource{
 						&core_mesh.CircuitBreakerResource{Meta: meta1},
-					},
-					core_mesh.RetryType: []core_model.Resource{
-						&core_mesh.RetryResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Service, Name: "postgres", Service: "postgres"}: {
@@ -462,17 +456,6 @@ var _ = Describe("GroupByPolicy", func() {
 						Meta: &test_model.ResourceMeta{Name: "cb-1", Mesh: "mesh-1"},
 					},
 				},
-				Retries: core_xds.RetryMap{
-					"payments": &core_mesh.RetryResource{
-						Meta: &test_model.ResourceMeta{Name: "r-1", Mesh: "mesh-1"},
-					},
-					"backend": &core_mesh.RetryResource{
-						Meta: &test_model.ResourceMeta{Name: "r-2", Mesh: "mesh-1"},
-					},
-					"web": &core_mesh.RetryResource{
-						Meta: &test_model.ResourceMeta{Name: "r-2", Mesh: "mesh-1"},
-					},
-				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
@@ -493,19 +476,6 @@ var _ = Describe("GroupByPolicy", func() {
 					Key:  core_model.ResourceKey{Name: "cb-1", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Service, Name: "kafka", Service: "kafka"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.RetryType,
-					Key:  core_model.ResourceKey{Name: "r-1", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "payments", Service: "payments"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.RetryType,
-					Key:  core_model.ResourceKey{Name: "r-2", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "backend", Service: "backend"},
-					{Type: inspect.Service, Name: "web", Service: "web"},
 				},
 			},
 		}),

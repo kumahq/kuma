@@ -89,7 +89,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
-	retryPolicy := proxy.Policies.Retries[serviceName]
 	var timeoutPolicyConf *mesh_proto.Timeout_Conf
 	if timeoutPolicy := proxy.Policies.Timeouts[oface]; timeoutPolicy != nil {
 		timeoutPolicyConf = timeoutPolicy.Spec.GetConf()
@@ -114,7 +113,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, dpTags)).
-				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 			filterChainBuilder.
@@ -134,8 +132,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
 					proxy,
 				)).
-				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, proxy.Dataplane.Spec.TagSet())).
-				Configure(envoy_listeners.Retry(retryPolicy, protocol))
+				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, proxy.Dataplane.Spec.TagSet()))
 		case core_meta.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
@@ -147,8 +144,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					serviceName,
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
 					proxy,
-				)).
-				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
+				))
 
 		default:
 			// configuration for non-HTTP cases
@@ -161,8 +157,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					serviceName,
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
 					proxy,
-				)).
-				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
+				))
 		}
 
 		filterChainBuilder.
