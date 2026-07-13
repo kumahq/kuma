@@ -52,12 +52,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    healthChecks:
-    - healthyThreshold: 2
-      interval: 5s
-      tcpHealthCheck: {}
-      timeout: 4s
-      unhealthyThreshold: 3
     name: elastic
     transportSocket:
       name: envoy.transport_sockets.tls

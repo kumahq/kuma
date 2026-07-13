@@ -223,6 +223,10 @@ type ResourceTypeDescriptor struct {
 	HasStatus bool
 	// IsProxy indicates if this resource is a proxy
 	IsProxy bool
+	// AffectsPolicyMatching indicates whether changes to resources of this type can change which
+	// policies match a dataplane. False for pure observability data (Insight/Overview types) and
+	// for other proxies' roster entries, which don't affect matching for a given dpp.
+	AffectsPolicyMatching bool
 	// IsDestination indicates if this resource is a destination
 	IsDestination bool
 	// Validator contains an OpenAPI validator for this resource

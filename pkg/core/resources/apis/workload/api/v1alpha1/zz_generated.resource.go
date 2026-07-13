@@ -203,6 +203,7 @@ var WorkloadResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Workload",
 	PluralDisplayName:            "Workloads",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,

@@ -9,6 +9,7 @@ import (
 // https://github.com/Kong/shared-speakeasy/blob/b3ddd3ef1f31e42bfe71b96ea473493072f9742c/customtypes/kumalabels/kumalabels.go#L15
 var AllComputedLabels = map[string]struct{}{
 	metadata.KumaMeshLabel:              {},
+	mesh_proto.DisplayName:              {},
 	mesh_proto.ResourceOriginLabel:      {},
 	mesh_proto.ZoneTag:                  {},
 	mesh_proto.EnvTag:                   {},

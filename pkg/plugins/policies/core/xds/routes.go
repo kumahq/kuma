@@ -5,7 +5,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 type Routes struct {

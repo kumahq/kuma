@@ -38,7 +38,6 @@ var _ = Describe("hash", func() {
 			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
 			"mesh",
 			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 	})

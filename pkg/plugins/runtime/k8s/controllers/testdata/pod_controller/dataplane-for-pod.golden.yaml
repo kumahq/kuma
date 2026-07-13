@@ -3,6 +3,7 @@ metadata:
   labels:
     app: sample
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: pod-with-kuma-sidecar-and-ip
     kuma.io/env: kubernetes
     kuma.io/mesh: poc
     kuma.io/origin: zone

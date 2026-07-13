@@ -196,7 +196,6 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
 		protocol := ctx.Mesh.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
@@ -207,8 +206,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
 				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
-				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
+				Configure(envoy_clusters.OutlierDetection(circuitBreaker))
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 

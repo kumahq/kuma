@@ -121,7 +121,6 @@ var _ = Describe("MeshSnapshot Cache", func() {
 			vips.NewPersistence(core_manager.NewResourceManager(s), manager.NewConfigManager(s), false),
 			"mesh",
 			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 		meshCache, err = mesh.NewCache(

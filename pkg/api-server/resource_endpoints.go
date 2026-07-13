@@ -446,12 +446,14 @@ func (r *resourceEndpoints) computeLabels(
 	spec core_model.ResourceSpec,
 	meta core_model.ResourceMeta,
 	meshName string,
+	name string,
 ) (map[string]string, error) {
 	return resource_labels.Compute(
 		descriptor,
 		spec,
 		meta.GetLabels(),
 		meshName,
+		name,
 		resource_labels.WithNamespace(resource_labels.GetNamespace(meta, r.systemNamespace)),
 		resource_labels.WithMode(r.mode),
 		resource_labels.WithK8s(r.isK8s),
@@ -501,7 +503,7 @@ func (r *resourceEndpoints) createResource(
 		}
 	}
 
-	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName)
+	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -540,7 +542,7 @@ func (r *resourceEndpoints) updateResource(
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	// Compute labels for current state BEFORE modifying spec
-	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName)
+	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
 		return
@@ -549,7 +551,7 @@ func (r *resourceEndpoints) updateResource(
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	// Compute labels for new request
-	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName)
+	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -713,7 +715,6 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 	immutableLabels := []string{
 		mesh_proto.ResourceOriginLabel,
 		mesh_proto.ZoneTag,
-		mesh_proto.DisplayName,
 	}
 
 	for _, label := range immutableLabels {

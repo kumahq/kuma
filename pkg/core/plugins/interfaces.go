@@ -94,8 +94,17 @@ type IdentityProviderPlugin interface {
 	NewIdentityProvider(PluginContext, PluginConfig) (providers.IdentityProvider, error)
 }
 
+// PolicyMatchingCacheAccessor is a thread-safe LRU cache for MatchedPolicies results.
+type PolicyMatchingCacheAccessor interface {
+	GetIfPresent(key string) (core_xds.TypedMatchingPolicies, bool)
+	Put(key string, value core_xds.TypedMatchingPolicies)
+}
+
 type MatchedPoliciesConfig struct {
 	IncludeShadow bool
+	// nil disables caching
+	Cache              PolicyMatchingCacheAccessor
+	PolicyMatchingHash string
 }
 
 func NewMatchedPoliciesConfig(opts ...MatchedPoliciesOption) *MatchedPoliciesConfig {
@@ -111,6 +120,13 @@ type MatchedPoliciesOption func(*MatchedPoliciesConfig)
 func IncludeShadow() MatchedPoliciesOption {
 	return func(cfg *MatchedPoliciesConfig) {
 		cfg.IncludeShadow = true
+	}
+}
+
+func WithCache(c PolicyMatchingCacheAccessor, policyMatchingHash string) MatchedPoliciesOption {
+	return func(cfg *MatchedPoliciesConfig) {
+		cfg.Cache = c
+		cfg.PolicyMatchingHash = policyMatchingHash
 	}
 }
 

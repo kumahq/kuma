@@ -79,11 +79,11 @@ var File_api_system_v1alpha1_zone_overview_proto protoreflect.FileDescriptor
 
 const file_api_system_v1alpha1_zone_overview_proto_rawDesc = "" +
 	"\n" +
-	"'api/system/v1alpha1/zone_overview.proto\x12\x14kuma.system.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1eapi/system/v1alpha1/zone.proto\x1a&api/system/v1alpha1/zone_insight.proto\"\xbe\x01\n" +
+	"'api/system/v1alpha1/zone_overview.proto\x12\x14kuma.system.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1eapi/system/v1alpha1/zone.proto\x1a&api/system/v1alpha1/zone_insight.proto\"\xc1\x01\n" +
 	"\fZoneOverview\x12.\n" +
 	"\x04zone\x18\x01 \x01(\v2\x1a.kuma.system.v1alpha1.ZoneR\x04zone\x12D\n" +
-	"\fzone_insight\x18\x02 \x01(\v2!.kuma.system.v1alpha1.ZoneInsightR\vzoneInsight:8\xaa\x8c\x89\xa6\x012\n" +
-	"\x14ZoneOverviewResource\x12\fZoneOverview\x18\x01\"\x06system0\x01`\x01B/Z-github.com/kumahq/kuma/v3/api/system/v1alpha1b\x06proto3"
+	"\fzone_insight\x18\x02 \x01(\v2!.kuma.system.v1alpha1.ZoneInsightR\vzoneInsight:;\xaa\x8c\x89\xa6\x015\n" +
+	"\x14ZoneOverviewResource\x12\fZoneOverview\x18\x01\"\x06system0\x01`\x01\xa8\x01\x01B/Z-github.com/kumahq/kuma/v3/api/system/v1alpha1b\x06proto3"
 
 var (
 	file_api_system_v1alpha1_zone_overview_proto_rawDescOnce sync.Once

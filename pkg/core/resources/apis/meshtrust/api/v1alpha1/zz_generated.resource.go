@@ -203,6 +203,7 @@ var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh Trust",
 	PluralDisplayName:            "Mesh Trusts",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
