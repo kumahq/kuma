@@ -24,7 +24,6 @@ var ConnectionPolicyTypes = []model.ResourceType{
 	core_mesh.CircuitBreakerType,
 	core_mesh.FaultInjectionType,
 	core_mesh.RateLimitType,
-	core_mesh.RetryType,
 	core_mesh.TimeoutType,
 }
 
