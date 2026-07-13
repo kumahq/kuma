@@ -385,9 +385,6 @@ controlPlane:
   containerSecurityContext:
     readOnlyRootFilesystem: true
 
-  # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
-  # The downside is that control plane requires permission to read Secrets in all namespaces.
-  supportGatewaySecretsInAllNamespaces: false
   # -- DNS configuration for the control-plane pod.
   # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
