@@ -150,17 +150,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		return nil, errors.Wrap(err, "failed to retrieve cross mesh resources")
 	}
 
-	// This base64 encoding seems superfluous but keeping it for backward compatibility
-	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
-	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
-		return latestMeshCtx, nil
-	}
-
-	var policyMatchingHash string
-	if m.withPolicyMatchingHash {
-		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
-	}
-
 	dataplanes := resources.Dataplanes().Items
 	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
 	for _, dp := range dataplanes {
@@ -169,15 +158,28 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	var domains []xds_types.VIPDomains
 	var outbounds []*xds_types.Outbound
+	var virtualOutboundHash []byte
 	if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
 		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not fetch vips")
 		}
+		virtualOutboundHash = virtualOutboundViewHash(virtualOutboundView)
 		// resolve all the domains
 		vipDomains, vipOutbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
 		outbounds = append(outbounds, vipOutbounds...)
 		domains = append(domains, vipDomains...)
+	}
+
+	// This base64 encoding seems superfluous but keeping it for backward compatibility
+	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources, virtualOutboundHash))
+	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
+		return latestMeshCtx, nil
+	}
+
+	var policyMatchingHash string
+	if m.withPolicyMatchingHash {
+		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
 	}
 
 	meshServices := resources.MeshServices().Items
@@ -599,7 +601,7 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 	return nil
 }
 
-func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
+func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources, virtualOutboundHash []byte) []byte {
 	slices.Sort(managedTypes)
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(globalContext.hash)
@@ -607,6 +609,7 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	for _, resType := range managedTypes {
 		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 	}
+	_, _ = hasher.Write(virtualOutboundHash)
 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
 		_, _ = hasher.Write([]byte(m))

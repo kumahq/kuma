@@ -28,15 +28,17 @@ var _ = Describe("hash", func() {
 	}
 	var resourceStore store.ResourceStore
 	var meshContextBuilder xds_context.MeshContextBuilder
+	var vipsPersistence *vips.Persistence
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
+		vipsPersistence = vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false)
 		meshContextBuilder = xds_context.NewMeshContextBuilder(
 			resourceStore,
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+			vipsPersistence,
 			"mesh",
 			80,
 			nil,
@@ -223,6 +225,40 @@ status:
 		// then the cached context is reused and the mesh hash is unchanged
 		Expect(after).To(BeIdenticalTo(before), "DataplaneProxies-only write should not trigger mesh-wide xDS recomputation")
 		Expect(after.Hash).To(Equal(before.Hash))
+	})
+
+	It("should recompute the mesh context when VIP outbounds change", func() {
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+meshServices:
+  mode: Everywhere
+`)).To(Succeed())
+
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(before.VIPOutbounds).To(BeEmpty())
+
+		view, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+			vips.NewServiceEntry("backend"): {
+				Address: "240.0.0.1",
+				Outbounds: []vips.OutboundEntry{{
+					Port: 8080,
+					TagSet: map[string]string{
+						"kuma.io/service": "backend",
+					},
+					Origin: "test",
+				}},
+			},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(vipsPersistence.Set(context.Background(), "mesh-1", view)).To(Succeed())
+
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after).ToNot(BeIdenticalTo(before), "VIP outbound changes should invalidate the mesh xDS context")
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(after.VIPOutbounds).ToNot(BeEmpty())
 	})
 
 	It("keeps PolicyMatchingHash stable across resourceVersion-only Dataplane writes", func() {
