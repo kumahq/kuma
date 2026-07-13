@@ -1,4 +1,0 @@
-type: ServiceInsight
-mesh: tracing
-name: all-services-tracing
-services: {}

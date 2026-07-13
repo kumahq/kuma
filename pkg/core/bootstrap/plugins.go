@@ -13,10 +13,10 @@ import (
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres"
-	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/opentelemetry"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/universal"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/secrets/universal"
+	_ "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 )

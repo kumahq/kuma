@@ -1073,6 +1073,62 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 		}()),
 	)
+
+	It("falls back to legacy MeshGatewayRoute resources for built-in TCP gateways", func() {
+		metrics, err := metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		claCache, err := cla.NewCache(1*time.Second, metrics)
+		Expect(err).ToNot(HaveOccurred())
+
+		secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+		dataSourceLoader := datasource.NewDataSourceLoader(secretManager)
+
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+			Items: []*core_mesh.MeshGatewayResource{samples.GatewayTCPResource()},
+		}
+		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayTCPRoute()},
+		}
+
+		outboundTargets := xds_builders.EndpointMap().
+			AddEndpoint("backend", xds_builders.Endpoint().
+				WithTarget("192.168.0.4").
+				WithPort(8084).
+				WithWeight(1).
+				WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP)),
+			)
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(resources).
+			WithEndpointMap(outboundTargets).
+			Build()
+		xdsCtx.ControlPlane.CLACache = claCache
+		xdsCtx.Mesh.DataSourceLoader = dataSourceLoader
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(samples.GatewayDataplaneBuilder()).
+			WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+			Build()
+
+		for n, p := range core_plugins.Plugins().ProxyPlugins() {
+			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
+		}
+
+		resourceSet := core_xds.NewResourceSet()
+		policyPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(policyPlugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		listeners, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(ContainSubstring("sample-gateway:TCP:8080"))
+
+		clusters, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusters).To(ContainSubstring("backend"))
+	})
 })
 
 const secret = `

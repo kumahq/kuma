@@ -187,15 +187,14 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		return nil
 	}
 	defaultsReconciller := &k8s_controllers.MeshReconciler{
-		ResourceManager:            rt.ResourceManager(),
-		Log:                        core.Log.WithName("controllers").WithName("mesh-defaults"),
-		Extensions:                 rt.Extensions(),
-		CreateMeshRoutingResources: rt.Config().Defaults.CreateMeshRoutingResources,
-		K8sStore:                   rt.Config().Store.Type == store.KubernetesStore,
-		SystemNamespace:            rt.Config().Store.Kubernetes.SystemNamespace,
-		CaManagers:                 rt.CaManagers(),
-		CpMode:                     rt.Config().Mode,
-		CpZone:                     rt.Config().Multizone.Zone.Name,
+		ResourceManager: rt.ResourceManager(),
+		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
+		Extensions:      rt.Extensions(),
+		K8sStore:        rt.Config().Store.Type == store.KubernetesStore,
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		CaManagers:      rt.CaManagers(),
+		CpMode:          rt.Config().Mode,
+		CpZone:          rt.Config().Multizone.Zone.Name,
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")

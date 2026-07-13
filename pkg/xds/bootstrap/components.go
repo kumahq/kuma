@@ -10,7 +10,6 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 	generator, err := NewDefaultBootstrapGenerator(
 		rt.ResourceManager(),
 		rt.Config().BootstrapServer,
-		rt.Config().Proxy,
 		rt.Config().DpServer.TlsCertFile,
 		map[string]bool{
 			string(mesh_proto.DataplaneProxyType): rt.Config().DpServer.Authn.DpProxy.Type != dp_server.DpServerAuthNone,
