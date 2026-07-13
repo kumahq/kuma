@@ -1,6 +1,9 @@
 UPDATE_GOLDEN_FILES ?=
 TEST_PKG_LIST ?= ./...
 REPORTS_DIR ?= build/reports
+# Race detector flag for unit tests. On by default for local runs and master;
+# CI clears it on PRs (opt back in with the ci/run-race label) to keep PRs fast.
+UNIT_RACE ?= -race
 # Path to the kumactl binary for Linux. This binary will be uploaded to Docker
 # containers during transparent proxy tests.
 KUMACTL_LINUX_BIN ?= $(BUILD_DIR)/artifacts-linux-$(GOARCH)/kumactl/kumactl
@@ -32,7 +35,7 @@ ifndef TEST_REPORTS
 ifdef CI
 	$(GO) clean -testcache
 endif
-	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$($(GO) list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
+	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) $(UNIT_RACE) $$($(GO) list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
 endif
 
 $(REPORTS_DIR):
