@@ -4,6 +4,9 @@ on:
       FULL_MATRIX:
         required: true
         type: string
+      IS_PULL_REQUEST:
+        required: true
+        type: boolean
       RUNNERS_BY_ARCH:
         required: true
         type: string
@@ -22,7 +25,7 @@ jobs:
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     env:
       # Race detector adds ~30% (~7min) to the unit job, so PRs skip it unless opted in.
-      UNIT_RACE: ${{ (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci/run-race')) && '-race' || '' }}
+      UNIT_RACE: ${{ (!inputs.IS_PULL_REQUEST || contains(github.event.pull_request.labels.*.name, 'ci/run-race')) && '-race' || '' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
