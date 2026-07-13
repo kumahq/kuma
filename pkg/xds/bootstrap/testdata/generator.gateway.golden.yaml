@@ -111,7 +111,7 @@ overloadManager:
   - name: envoy.resource_monitors.global_downstream_max_connections
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
-      maxActiveDownstreamConnections: "35678"
+      maxActiveDownstreamConnections: "50000"
 staticResources:
   clusters:
   - connectTimeout: 1s

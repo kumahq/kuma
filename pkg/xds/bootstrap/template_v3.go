@@ -26,7 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/config/xds"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -59,7 +58,7 @@ var (
 	systemAccessLogSinkClusterName = RegisterBootstrapCluster(system_names.MustBeSystemName("access_log_sink"))
 )
 
-func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
+func genConfig(parameters configParameters, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
 	getNameOrDefault := system_names.GetNameOrDefault(meshResource != nil &&
 		parameters.Features != nil &&
 		parameters.Features.HasFeature(xds_types.FeatureUnifiedResourceNaming) &&
@@ -256,14 +255,9 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 
 	if parameters.IsGatewayDataplane {
-		connections := proxyConfig.Gateway.GlobalDownstreamMaxConnections
-		if connections == 0 {
-			connections = defaultMaxConnections
-		}
-
 		// Create Downstream Connections Monitor
 		downstreamConf := &resource_monitors_downstream_connections.DownstreamConnectionsConfig{
-			MaxActiveDownstreamConnections: int64(connections),
+			MaxActiveDownstreamConnections: int64(defaultMaxConnections),
 		}
 		downstreamResMonitor, err := createResourceMonitor(downstreamMaxConnMonitor, downstreamConf)
 		if err != nil {

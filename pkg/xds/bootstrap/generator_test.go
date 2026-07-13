@@ -12,7 +12,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
-	xds_config "github.com/kumahq/kuma/v3/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -99,7 +98,6 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	type testCase struct {
 		serverConfig        *bootstrap_config.BootstrapServerConfig
-		proxyConfig         *xds_config.Proxy
 		dataplane           func() *core_mesh.DataplaneResource
 		dpAuthForProxyType  map[string]bool
 		useTokenPath        bool
@@ -114,12 +112,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey("name.namespace", "mesh"))
 			Expect(err).ToNot(HaveOccurred())
 
-			proxyConfig := xds_config.DefaultProxyConfig()
-			if given.proxyConfig != nil {
-				proxyConfig = *given.proxyConfig
-			}
-
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -462,11 +455,6 @@ var _ = Describe("bootstrapGenerator", func() {
 				cfg.Params.XdsPort = 5678
 				return cfg
 			}(),
-			proxyConfig: func() *xds_config.Proxy {
-				cfg := xds_config.DefaultProxyConfig()
-				cfg.Gateway.GlobalDownstreamMaxConnections = 35678
-				return &cfg
-			}(),
 			dataplane: func() *core_mesh.DataplaneResource {
 				return &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
@@ -566,9 +554,8 @@ var _ = Describe("bootstrapGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
-			proxyCfg := xds_config.DefaultProxyConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -701,12 +688,11 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 			cfg.Params.XdsPort = 5678
 			return cfg
 		}
-		proxyCfg := xds_config.DefaultProxyConfig()
 
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false, false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -795,12 +781,11 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 			cfg.Params.XdsPort = 5678
 			return cfg
 		}
-		proxyCfg := xds_config.DefaultProxyConfig()
 
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false, false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

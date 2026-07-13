@@ -135,7 +135,7 @@ spec:
 	})
 
 	Context("applying ProxyTemplate", func() {
-		It("shouldn't error with gateway-proxy import", func() {
+		It("shouldn't error with default-proxy import", func() {
 			Expect(
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: ProxyTemplate
@@ -146,7 +146,7 @@ selectors:
       kuma.io/service: gateway-proxy
 conf:
   imports:
-    - gateway-proxy
+    - default-proxy
   modifications:
     - cluster:
         operation: add
