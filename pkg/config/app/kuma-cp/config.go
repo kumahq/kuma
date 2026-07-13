@@ -41,9 +41,6 @@ type Defaults struct {
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, it skips creating the default tenant resources
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
-	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
-	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
-	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 	// If true, it skips creating default hostname generators
 	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
 }
@@ -176,8 +173,6 @@ type Config struct {
 	Access access.AccessConfig `json:"access"`
 	// Configuration of experimental features
 	Experimental ExperimentalConfig `json:"experimental"`
-	// Proxy holds configuration for proxies
-	Proxy xds.Proxy `json:"proxy"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
 	// Tracing
@@ -297,7 +292,6 @@ var DefaultConfig = func() Config {
 			},
 			SidecarContainers: true,
 		},
-		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
@@ -454,10 +448,9 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 func DefaultDefaultsConfig() *Defaults {
 	return &Defaults{
-		SkipMeshCreation:           false,
-		SkipTenantResources:        false,
-		CreateMeshRoutingResources: false,
-		SkipHostnameGenerators:     false,
+		SkipMeshCreation:       false,
+		SkipTenantResources:    false,
+		SkipHostnameGenerators: false,
 	}
 }
 

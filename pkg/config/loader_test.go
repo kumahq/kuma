@@ -299,7 +299,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
-			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeTrue())
 			Expect(cfg.Defaults.SkipHostnameGenerators).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
@@ -393,7 +392,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
 
-			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 
 			Expect(cfg.IPAM.MeshService.CIDR).To(Equal("251.0.0.0/8"))
@@ -708,7 +706,6 @@ defaults:
   skipMeshCreation: true
   skipHostnameGenerators: true
   skipTenantResources: true
-  createMeshRoutingResources: true
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -825,9 +822,6 @@ experimental:
   sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
-proxy:
-  gateway:
-    globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
 coreResources:
@@ -1089,7 +1083,6 @@ meshService:
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",
 				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
-				"KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES":                                              "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",
@@ -1174,7 +1167,6 @@ meshService:
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
-				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",

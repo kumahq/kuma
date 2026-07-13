@@ -208,7 +208,7 @@ type changedVersion struct {
 func versionStrings(changed []changedVersion) []string {
 	versions := make([]string, 0, len(changed))
 	for _, version := range changed {
-		versions = append(versions, version.version)
+		versions = append(versions, fmt.Sprintf("%s=%s", version.typeURL, version.version))
 	}
 	return versions
 }
