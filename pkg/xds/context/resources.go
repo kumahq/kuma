@@ -85,10 +85,6 @@ func (r Resources) TrafficRoutes() *core_mesh.TrafficRouteResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
 }
 
-func (r Resources) Retries() *core_mesh.RetryResourceList {
-	return r.ListOrEmpty(core_mesh.RetryType).(*core_mesh.RetryResourceList)
-}
-
 func (r Resources) TrafficPermissions() *core_mesh.TrafficPermissionResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
 }

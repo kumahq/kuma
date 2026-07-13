@@ -1,5 +1,5 @@
 {
- "total": 3,
+ "total": 1,
  "items": [
   {
    "kind": "MeshGatewayDataplane",
@@ -30,39 +30,6 @@
        ]
       }
      ]
-    }
-   ]
-  },
-  {
-   "kind": "SidecarDataplane",
-   "dataplane": {
-    "mesh": "mesh-1",
-    "name": "backend-1"
-   },
-   "attachments": [
-    {
-     "type": "service",
-     "name": "elastic",
-     "service": "elastic"
-    },
-    {
-     "type": "service",
-     "name": "redis",
-     "service": "redis"
-    }
-   ]
-  },
-  {
-   "kind": "SidecarDataplane",
-   "dataplane": {
-    "mesh": "mesh-1",
-    "name": "redis-1"
-   },
-   "attachments": [
-    {
-     "type": "service",
-     "name": "elastic",
-     "service": "elastic"
     }
    ]
   }

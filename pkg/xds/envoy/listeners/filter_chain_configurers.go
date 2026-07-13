@@ -16,7 +16,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
-	envoy_routes_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
@@ -300,22 +299,6 @@ func MaxConnectAttempts(retry *core_mesh.RetryResource) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.MaxConnectAttemptsConfigurer{
 		Retry: retry,
 	})
-}
-
-func Retry(
-	retry *core_mesh.RetryResource,
-	protocol core_meta.Protocol,
-) FilterChainBuilderOpt {
-	if retry == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(
-		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-			for _, virtualHost := range hcm.GetRouteConfig().VirtualHosts {
-				virtualHost.RetryPolicy = envoy_routes_v3.RetryConfig(retry, protocol)
-			}
-		}))
 }
 
 func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) FilterChainBuilderOpt {

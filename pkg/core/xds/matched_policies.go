@@ -35,7 +35,6 @@ type MatchedPolicies struct {
 	TrafficLogs     TrafficLogMap
 	HealthChecks    HealthCheckMap
 	CircuitBreakers CircuitBreakerMap
-	Retries         RetryMap
 
 	// Outbound(Listener) -> Policy
 	Timeouts           TimeoutMap
