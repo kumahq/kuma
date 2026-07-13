@@ -17,15 +17,16 @@ import (
 // exact code path that panicked.
 func TestAddFileToReportEntryOutsideGinkgo(t *testing.T) {
 	dir := t.TempDir()
+	baseDir := filepath.Join(dir, "results")
 	oldBase := BaseDir
-	BaseDir = dir
+	BaseDir = baseDir
 	t.Cleanup(func() { BaseDir = oldBase })
 
 	// Would panic before the fix.
 	AddFileToReportEntry("kuma-1/debug info.txt", "boom")
 
 	// name is sanitized to a flat filename via files.ToValidUnixFilename.
-	got, err := os.ReadFile(filepath.Join(dir, "kuma-1-debug_info.txt"))
+	got, err := os.ReadFile(filepath.Join(baseDir, "kuma-1-debug_info.txt"))
 	if err != nil {
 		t.Fatalf("expected report file written to BaseDir: %v", err)
 	}
