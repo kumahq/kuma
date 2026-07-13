@@ -22,15 +22,14 @@ import (
 
 // MeshReconciler creates default resources for created Mesh and ensures that CA was created
 type MeshReconciler struct {
-	ResourceManager            manager.ResourceManager
-	Log                        logr.Logger
-	Extensions                 context.Context
-	CreateMeshRoutingResources bool
-	K8sStore                   bool
-	CaManagers                 core_ca.Managers
-	SystemNamespace            string
-	CpMode                     config_core.CpMode
-	CpZone                     string
+	ResourceManager manager.ResourceManager
+	Log             logr.Logger
+	Extensions      context.Context
+	K8sStore        bool
+	CaManagers      core_ca.Managers
+	SystemNamespace string
+	CpMode          config_core.CpMode
+	CpZone          string
 }
 
 func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -68,7 +67,6 @@ func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_
 		mesh,
 		mesh.Spec.GetSkipCreatingInitialPolicies(),
 		r.Extensions,
-		r.CreateMeshRoutingResources,
 		r.K8sStore,
 		r.SystemNamespace,
 		r.CpMode,
