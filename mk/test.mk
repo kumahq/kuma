@@ -1,6 +1,9 @@
 UPDATE_GOLDEN_FILES ?=
 TEST_PKG_LIST ?= ./...
 REPORTS_DIR ?= build/reports
+# Wipe the Go test cache before running. Kept on master/release pushes so CI
+# always runs everything fresh; PRs set it false to reuse cached results.
+UNIT_CLEAN_TESTCACHE ?= true
 # Path to the kumactl binary for Linux. This binary will be uploaded to Docker
 # containers during transparent proxy tests.
 KUMACTL_LINUX_BIN ?= $(BUILD_DIR)/artifacts-linux-$(GOARCH)/kumactl/kumactl
@@ -30,7 +33,9 @@ ifdef TEST_REPORTS
 endif
 ifndef TEST_REPORTS
 ifdef CI
+ifeq ($(UNIT_CLEAN_TESTCACHE),true)
 	$(GO) clean -testcache
+endif
 endif
 	$(UNIT_TEST_ENV) $(GO) test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$($(GO) list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
 endif
