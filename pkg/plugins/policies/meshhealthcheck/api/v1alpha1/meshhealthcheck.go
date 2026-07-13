@@ -82,8 +82,15 @@ type Conf struct {
 	// to using the standard health check interval that is defined. Note that
 	// this interval takes precedence over any other. The default value for "no
 	// traffic interval" is 60 seconds.
-	NoTrafficInterval *k8s.Duration    `json:"noTrafficInterval,omitempty"`
-	Tcp               *TcpHealthCheck  `json:"tcp,omitempty"`
+	NoTrafficInterval *k8s.Duration `json:"noTrafficInterval,omitempty"`
+	// The interval used between health checks while an endpoint is considered
+	// unhealthy. When an endpoint becomes unhealthy, Envoy will probe it using
+	// this more frequent interval instead of the normal health check interval.
+	// This allows faster detection of recovery or continued failure. If not
+	// specified, Envoy will use the same interval for both healthy and unhealthy
+	// endpoints.
+	UnhealthyInterval *k8s.Duration  `json:"unhealthyInterval,omitempty"`
+	Tcp               *TcpHealthCheck `json:"tcp,omitempty"`
 	Http              *HttpHealthCheck `json:"http,omitempty"`
 	Grpc              *GrpcHealthCheck `json:"grpc,omitempty"`
 	// Reuse health check connection between health checks. Default is true.

@@ -62,6 +62,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 	verr.Add(validators.ValidateIntPercentageOrNil(path.Field("intervalJitterPercent"), conf.IntervalJitterPercent))
 	verr.Add(validators.ValidatePercentageOrNil(path.Field("healthyPanicThreshold"), conf.HealthyPanicThreshold))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("noTrafficInterval"), conf.NoTrafficInterval))
+	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("unhealthyInterval"), conf.UnhealthyInterval))
 	verr.Add(validators.ValidatePathOrNil(path.Field("eventLogPath"), conf.EventLogPath))
 	if conf.Http != nil {
 		verr.Add(validateConfHttp(path.Field("http"), conf.Http))
