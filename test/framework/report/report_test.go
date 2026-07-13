@@ -6,15 +6,10 @@ import (
 	"testing"
 )
 
-// TestAddFileToReportEntryOutsideGinkgo reproduces the crash that took down the
-// Gateway API conformance suite: it runs as a plain `testing` test and, on
-// failure, t.Cleanup -> DebugKube -> DumpState calls AddFileToReportEntry. There
-// is no running Ginkgo spec, so ginkgo.AddReportEntry used to panic
-// ("...not during the Run phase..."), masking the real failure and losing the
-// debug artifacts. The file should now be persisted directly to BaseDir instead.
-//
-// This test itself runs outside a Ginkgo spec (no RunSpecs), so it exercises the
-// exact code path that panicked.
+// TestAddFileToReportEntryOutsideGinkgo runs outside a Ginkgo spec (no
+// RunSpecs), the same path the gateway API conformance suite hits on failure.
+// ginkgo.AddReportEntry used to panic there; the file should now be persisted
+// directly to BaseDir instead.
 func TestAddFileToReportEntryOutsideGinkgo(t *testing.T) {
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, "results")

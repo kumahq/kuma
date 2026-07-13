@@ -65,11 +65,9 @@ func AddFileToReportEntry(name string, content any) {
 		}
 	}
 
-	// The Gateway API conformance suite runs as a plain `testing` test, not a
-	// Ginkgo spec (see test/e2e_env/gatewayapi/conformance_test.go). Outside a
-	// running spec ginkgo.AddReportEntry panics, and there's no ReportAfterSuite
-	// to flush the entries anyway, so persist the file straight to the report
-	// directory instead.
+	// Outside a running Ginkgo spec (e.g. the gateway API conformance suite, a
+	// plain `testing` test) ginkgo.AddReportEntry panics, so persist the file
+	// directly.
 	if !inRunningSpec() {
 		persistFile(name, fName)
 		return
@@ -78,13 +76,12 @@ func AddFileToReportEntry(name string, content any) {
 }
 
 // inRunningSpec reports whether the caller runs inside a running Ginkgo spec.
-// ginkgo.CurrentSpecReport() returns a zero value (NodeTypeInvalid leaf) outside
-// the Run phase, which is exactly when ginkgo.AddReportEntry would panic.
+// Outside the Run phase the leaf node type is NodeTypeInvalid.
 func inRunningSpec() bool {
 	return ginkgo.CurrentSpecReport().LeafNodeType != types.NodeTypeInvalid
 }
 
-// persistFile writes a report file directly to BaseDir. Used when there's no
+// persistFile writes a report file directly to BaseDir, for when there's no
 // Ginkgo suite to collect the entry via DumpReport.
 func persistFile(name, srcPath string) {
 	dst := filepath.Join(BaseDir, files.ToValidUnixFilename(name))
