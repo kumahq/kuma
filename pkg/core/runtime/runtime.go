@@ -23,6 +23,7 @@ import (
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/store"
@@ -95,6 +96,7 @@ type RuntimeContext interface {
 	PgxConfigCustomizationFn() config.PgxConfigCustomization
 	Tenants() multitenant.Tenants
 	APIWebServiceCustomize() func(ws *restful.WebService) error
+	RouteMetadataProvider() RouteMetadataProvider
 	IdentityProviders() providers.IdentityProviders
 }
 
@@ -112,6 +114,16 @@ type ResourceValidators struct {
 }
 
 type ExtraReportsFn func(Runtime) (map[string]string, error)
+
+// RouteMetadataProvider supplies metadata to attach to the auto-generated CRUD
+// routes (find, list, create-or-update, delete) of each resource type, keyed by
+// resource descriptor and HTTP verb; sub-routes (_overview, _config, _policies,
+// _rules, inspect, legacy overview) are not passed to it. It runs synchronously
+// while the API server is built at startup, so a panic fails the boot by design.
+// Kuma does not interpret the values, but the metadata namespace is shared with
+// route gates such as authn's reserved "auth":"skip" (pkg/api-server/authn), so
+// providers must not emit reserved keys. A nil provider attaches nothing.
+type RouteMetadataProvider func(desc core_model.ResourceTypeDescriptor, method string) map[string]string
 
 var _ Runtime = &runtime{}
 
@@ -204,6 +216,7 @@ type runtimeContext struct {
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
 	apiWebServiceCustomize   []func(*restful.WebService) error
+	routeMetadataProvider    RouteMetadataProvider
 	identityProviders        providers.IdentityProviders
 }
 
@@ -349,4 +362,8 @@ func (rc *runtimeContext) APIWebServiceCustomize() func(*restful.WebService) err
 
 		return err
 	}
+}
+
+func (rc *runtimeContext) RouteMetadataProvider() RouteMetadataProvider {
+	return rc.routeMetadataProvider
 }
