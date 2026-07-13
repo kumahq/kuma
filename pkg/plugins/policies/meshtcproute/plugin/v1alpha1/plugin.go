@@ -16,10 +16,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	meshroute_gateway "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/match"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -106,35 +106,44 @@ func ApplyToGateway(
 	xdsCtx xds_context.Context,
 	policies core_xds.TypedMatchingPolicies,
 ) error {
-	if len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
-		return nil
-	}
-
 	var limits []plugin_gateway.RuntimeResoureLimitListener
+	listeners := map[uint32]plugin_gateway.GatewayListenerInfo{}
 
-	var gateways *core_mesh.MeshGatewayResourceList
-	if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
-		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+	if len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
+		for port, listener := range plugin_gateway.ExtractGatewayListeners(proxy) {
+			switch listener.Listener.Protocol {
+			case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
+				listeners[port] = listener
+			}
+		}
 	} else {
+		var gateways *core_mesh.MeshGatewayResourceList
+		if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
+			gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+		} else {
+			return nil
+		}
+
+		gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
+		if gateway == nil {
+			return nil
+		}
+
+		listeners = meshroute_gateway.CollectListenerInfos(
+			ctx,
+			xdsCtx.Mesh,
+			gateway,
+			proxy,
+			policies.GatewayRules,
+			[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS},
+			sortRulesToHosts,
+		)
+
+		plugin_gateway.SetGatewayListeners(proxy, listeners)
+	}
+	if len(listeners) == 0 {
 		return nil
 	}
-
-	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
-	if gateway == nil {
-		return nil
-	}
-
-	listeners := meshroute_gateway.CollectListenerInfos(
-		ctx,
-		xdsCtx.Mesh,
-		gateway,
-		proxy,
-		policies.GatewayRules,
-		[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS},
-		sortRulesToHosts,
-	)
-
-	plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 	for _, info := range listeners {
 		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info)
