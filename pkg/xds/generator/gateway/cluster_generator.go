@@ -370,4 +370,3 @@ func timeoutPolicyFor(dest *route.Destination) *core_mesh.TimeoutResource {
 
 	return nil // TODO(jpeach) default timeout policy
 }
-
