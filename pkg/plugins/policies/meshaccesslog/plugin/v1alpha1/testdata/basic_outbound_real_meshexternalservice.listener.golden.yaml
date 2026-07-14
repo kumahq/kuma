@@ -53,6 +53,7 @@ filterChains:
       statPrefix: default_other-meshexternalservice-http___extsvc_47777
 metadata:
   filterMetadata:
-    io.kuma.tags: {}
+    io.kuma.tags:
+      kuma.io/kri: kri_extsvc_default___other-meshexternalservice-http_
 name: outbound:127.0.0.1:47777
 trafficDirection: OUTBOUND
