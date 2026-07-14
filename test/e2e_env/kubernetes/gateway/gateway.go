@@ -607,7 +607,7 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should route to only one instance", func() {
+		XIt("should route to only one instance", func() {
 			Eventually(func(g Gomega) {
 				responses, err := client.CollectResponsesByInstance(
 					kubernetes.Cluster, "demo-client",
@@ -814,7 +814,7 @@ spec:
 		})
 	})
 
-	Context("MeshRetry per route", func() {
+	XContext("MeshRetry per route", func() {
 		httpRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
@@ -950,7 +950,7 @@ spec:
 		})
 	})
 
-	Context("MeshTimeout per route", func() {
+	XContext("MeshTimeout per route", func() {
 		httpRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute

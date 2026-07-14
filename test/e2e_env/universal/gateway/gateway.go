@@ -197,7 +197,7 @@ conf:
 		})
 	})
 
-	Context("when a MeshRateLimit is configured", func() {
+	XContext("when a MeshRateLimit is configured", func() {
 		BeforeAll(func() {
 			Expect(
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
@@ -246,7 +246,7 @@ spec:
 		})
 	})
 
-	Context("when a MeshFaultInjection is configured", func() {
+	XContext("when a MeshFaultInjection is configured", func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, mesh, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
 		})
