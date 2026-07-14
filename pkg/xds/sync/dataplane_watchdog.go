@@ -254,7 +254,11 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
 	hasher := fnv.New128a()
 	if identity != nil {
-		_, _ = hasher.Write(core_model.Hash(identity))
+		if xdsHasher, ok := any(identity).(interface{ XDSHash() []byte }); ok {
+			_, _ = hasher.Write(xdsHasher.XDSHash())
+		} else {
+			_, _ = hasher.Write(core_model.Hash(identity))
+		}
 	}
 	return hasher.Sum(nil)
 }

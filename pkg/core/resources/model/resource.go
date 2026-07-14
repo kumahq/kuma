@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -147,6 +148,19 @@ func WriteSortedLabels(hasher hash.Hash, labels map[string]string) {
 	for _, k := range keys {
 		writeLenPrefixed(k)
 		writeLenPrefixed(labels[k])
+	}
+}
+
+// WriteDeterministicJSON writes a stable JSON encoding of v into hasher.
+// encoding/json sorts map keys, so the resulting bytes are deterministic.
+func WriteDeterministicJSON(hasher hash.Hash, v any) {
+	b, err := json.Marshal(v)
+	if err == nil {
+		_, _ = hasher.Write(b)
+	} else {
+		// Marshaling should not fail for the plain data structs used in resource
+		// hashing, but fall back to a value that still changes with content.
+		_, _ = fmt.Fprintf(hasher, "%+v", v)
 	}
 }
 
