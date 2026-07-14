@@ -54,7 +54,52 @@ func AddFileToReportEntry(name string, content any) {
 		logf("[WARNING]: could not write to temporary report %v", err)
 		return
 	}
+	tmpName := tmp.Name()
+	if err := tmp.Close(); err != nil {
+		logf("[WARNING]: could not close temporary report %v", err)
+		return
+	}
+	if fName != tmpName {
+		if err := os.Remove(tmpName); err != nil {
+			logf("[WARNING]: could not remove unused temporary report %v", err)
+		}
+	}
+
+	// Outside a running Ginkgo spec (e.g. the gateway API conformance suite, a
+	// plain `testing` test) ginkgo.AddReportEntry panics, so persist the file
+	// directly.
+	if !inRunningSpec() {
+		persistFile(name, fName)
+		return
+	}
 	ginkgo.AddReportEntry(name, fName, ginkgo.ReportEntryVisibilityNever)
+}
+
+// inRunningSpec reports whether the caller runs inside a running Ginkgo spec.
+// Outside the Run phase the leaf node type is NodeTypeInvalid.
+func inRunningSpec() bool {
+	return ginkgo.CurrentSpecReport().LeafNodeType != types.NodeTypeInvalid
+}
+
+// persistFile writes a report file directly to BaseDir, for when there's no
+// Ginkgo suite to collect the entry via DumpReport.
+func persistFile(name, srcPath string) {
+	dst := filepath.Join(BaseDir, files.ToValidUnixFilename(name))
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		logf("[WARNING]: failed to create report directory %q: %v", filepath.Dir(dst), err)
+		return
+	}
+
+	// If the source was created in the staging dir, prefer moving it into place.
+	if filepath.Clean(filepath.Dir(srcPath)) == filepath.Clean(stagingDir()) {
+		if err := os.Rename(srcPath, dst); err == nil {
+			return
+		}
+	}
+
+	if err := files.CopyFile(srcPath, dst); err != nil {
+		logf("[WARNING]: failed to write report file %q: %v", dst, err)
+	}
 }
 
 // DumpReport dumps the report to the disk.
