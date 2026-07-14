@@ -200,17 +200,40 @@ func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone strin
 	return ifaces, nil
 }
 
+// inboundServingRank orders inbound states from the most to the least serving.
+func inboundServingRank(state mesh_proto.Dataplane_Networking_Inbound_State) int {
+	switch state {
+	case mesh_proto.Dataplane_Networking_Inbound_Ready:
+		return 0
+	case mesh_proto.Dataplane_Networking_Inbound_NotReady:
+		return 1
+	default:
+		return 2
+	}
+}
+
+// deduplicateInboundsByAddressAndPort collapses inbounds sharing an address:port
+// into the most serving one. With IgnoredServiceSelectorLabels set, a Service that
+// doesn't select the Pod still yields an Ignored inbound on the same port as the
+// one that does; keeping the Ignored one would take the MeshService down (#17142).
 func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
 	inboundKey := func(iface *mesh_proto.Dataplane_Networking_Inbound) string {
 		return fmt.Sprintf("%s:%d", iface.Address, iface.Port)
 	}
 
 	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
-	inboundsPerAddressPort := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
+	indexPerAddressPort := map[string]int{}
 	for _, iface := range ifaces {
-		if inboundsPerAddressPort[inboundKey(iface)] == nil {
-			inboundsPerAddressPort[inboundKey(iface)] = iface
+		key := inboundKey(iface)
+		idx, exists := indexPerAddressPort[key]
+		if !exists {
+			indexPerAddressPort[key] = len(deduplicatedInbounds)
 			deduplicatedInbounds = append(deduplicatedInbounds, iface)
+			continue
+		}
+		// Replace in place to keep port order independent of Service state.
+		if inboundServingRank(iface.State) < inboundServingRank(deduplicatedInbounds[idx].State) {
+			deduplicatedInbounds[idx] = iface
 		}
 	}
 

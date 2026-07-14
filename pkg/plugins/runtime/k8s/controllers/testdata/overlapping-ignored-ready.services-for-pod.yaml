@@ -1,0 +1,28 @@
+---
+# Same overlap as dedup-keeps-ready-inbound, but with inbound tags enabled the
+# Ignored (active) and Ready (preview) inbounds are both kept, not deduplicated.
+metadata:
+  namespace: demo
+  name: example-active
+spec:
+  clusterIP: 192.168.0.1
+  selector:
+    app: example
+    rollouts-pod-template-hash: old-revision
+  ports:
+    - protocol: TCP
+      port: 7000
+      targetPort: 7070
+---
+metadata:
+  namespace: demo
+  name: example-preview
+spec:
+  clusterIP: 192.168.0.2
+  selector:
+    app: example
+    rollouts-pod-template-hash: new-revision
+  ports:
+    - protocol: TCP
+      port: 7001
+      targetPort: 7070

@@ -1,0 +1,17 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    rollouts-pod-template-hash: new-revision
+    kuma.io/sidecar-injection: enabled
+spec:
+  containers:
+    - ports:
+        - containerPort: 7070
+          name: main-port
+status:
+  podIP: 192.168.0.1
+  containerStatuses:
+    - ready: true
+      started: true

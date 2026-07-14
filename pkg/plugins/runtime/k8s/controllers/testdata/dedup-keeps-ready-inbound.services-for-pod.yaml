@@ -1,0 +1,29 @@
+---
+# Argo blue-green mid-rollout with IgnoredServiceSelectorLabels=rollouts-pod-template-hash.
+# active still targets the old revision (Ignored) and sorts first; preview targets
+# this Pod's revision (Ready). Both share the container port.
+metadata:
+  namespace: demo
+  name: example-active
+spec:
+  clusterIP: 192.168.0.1
+  selector:
+    app: example
+    rollouts-pod-template-hash: old-revision
+  ports:
+    - protocol: TCP
+      port: 7000
+      targetPort: 7070
+---
+metadata:
+  namespace: demo
+  name: example-preview
+spec:
+  clusterIP: 192.168.0.2
+  selector:
+    app: example
+    rollouts-pod-template-hash: new-revision
+  ports:
+    - protocol: TCP
+      port: 7001
+      targetPort: 7070

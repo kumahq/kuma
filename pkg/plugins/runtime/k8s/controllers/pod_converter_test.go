@@ -351,6 +351,17 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "overlapping-inbounds.services-for-pod.yaml",
 			dataplane:      "overlapping-inbounds.dataplane.yaml",
 		}),
+		Entry("Deduplication keeps the Ready inbound when an Ignored one comes first", testCase{
+			pod:                 "dedup-keeps-ready-inbound.pod.yaml",
+			servicesForPod:      "dedup-keeps-ready-inbound.services-for-pod.yaml",
+			dataplane:           "dedup-keeps-ready-inbound.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
+		Entry("Ignored and Ready inbounds are both kept when inbound tags enabled", testCase{
+			pod:            "overlapping-ignored-ready.pod.yaml",
+			servicesForPod: "overlapping-ignored-ready.services-for-pod.yaml",
+			dataplane:      "overlapping-ignored-ready.dataplane.yaml",
+		}),
 		Entry("31. Pod with workload labels configured matching pod label", testCase{
 			pod:            "31.pod.yaml",
 			servicesForPod: "31.services-for-pod.yaml",
