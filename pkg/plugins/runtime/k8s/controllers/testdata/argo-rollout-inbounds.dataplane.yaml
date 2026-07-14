@@ -1,0 +1,19 @@
+mesh: default
+metadata:
+  labels:
+    app: example
+    k8s.kuma.io/namespace: demo
+    kuma.io/display-name: ""
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+    kuma.io/sidecar-injection: enabled
+    rollouts-pod-template-hash: new-revision
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health:
+        ready: true
+      name: main-port
+      port: 7070
+      protocol: tcp

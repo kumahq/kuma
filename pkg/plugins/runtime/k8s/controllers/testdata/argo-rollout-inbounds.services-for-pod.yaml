@@ -1,0 +1,36 @@
+---
+# Argo Rollouts blue-green in the middle of a rollout. Both Services select this
+# Pod because the control plane is configured with
+# IgnoredServiceSelectorLabels=rollouts-pod-template-hash, so that label is
+# dropped when matching Services to the Pod. They are ordered by name, the way
+# findMatchingServices returns them.
+#
+# The active Service still points at the old revision, so it does not select this
+# Pod and its inbound ends up Ignored. It sorts first.
+metadata:
+  namespace: demo
+  name: example-active
+spec:
+  clusterIP: 192.168.0.1
+  selector:
+    app: example
+    rollouts-pod-template-hash: old-revision
+  ports:
+    - protocol: TCP
+      port: 7000
+      targetPort: 7070
+---
+# The preview Service points at the new revision, so it selects this Pod and its
+# inbound is Ready. Both Services target the same container port.
+metadata:
+  namespace: demo
+  name: example-preview
+spec:
+  clusterIP: 192.168.0.2
+  selector:
+    app: example
+    rollouts-pod-template-hash: new-revision
+  ports:
+    - protocol: TCP
+      port: 7001
+      targetPort: 7070

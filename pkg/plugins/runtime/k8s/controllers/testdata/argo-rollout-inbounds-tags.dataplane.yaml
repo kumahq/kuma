@@ -1,0 +1,42 @@
+mesh: default
+metadata:
+  labels:
+    app: example
+    k8s.kuma.io/namespace: demo
+    kuma.io/display-name: ""
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+    kuma.io/sidecar-injection: enabled
+    rollouts-pod-template-hash: new-revision
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health: {}
+      name: main-port
+      port: 7070
+      protocol: tcp
+      state: Ignored
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example-active
+        k8s.kuma.io/service-port: "7000"
+        kuma.io/protocol: tcp
+        kuma.io/service: example-active_demo_svc_7000
+        kuma.io/zone: zone-1
+        rollouts-pod-template-hash: new-revision
+    - health:
+        ready: true
+      name: main-port
+      port: 7070
+      protocol: tcp
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example-preview
+        k8s.kuma.io/service-port: "7001"
+        kuma.io/protocol: tcp
+        kuma.io/service: example-preview_demo_svc_7001
+        kuma.io/zone: zone-1
+        rollouts-pod-template-hash: new-revision
