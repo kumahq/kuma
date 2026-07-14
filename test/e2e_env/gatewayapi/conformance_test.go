@@ -82,10 +82,20 @@ func TestConformance(t *testing.T) {
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
 		return NewClusterSetup().Install(
-			Kuma(config_core.Zone,
-				WithCtlOpts(map[string]string{"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true"}),
-			)).Setup(cluster)
+			Kuma(config_core.Zone)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
+
+	g.Eventually(func() error {
+		return YamlK8s(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  meshServices:
+    mode: Disabled
+`)(cluster)
+	}, "30s", "3s").Should(Succeed())
 
 	configPath, err := opts.GetConfigPath(t)
 	g.Expect(err).ToNot(HaveOccurred())
@@ -119,17 +129,9 @@ func TestConformance(t *testing.T) {
 				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 			},
 			SkipTests: []string{
-				"GatewayInvalidParametersRef",
-				"GatewayListenerUnsupportedProtocol",
-				"GatewayObservedGenerationBump",
-				"GatewayHTTPListenerIsolation",
 				"HTTPRouteNoBackendRefs",
 			},
 			SupportedFeatures: []features.FeatureName{
-				features.SupportGateway,
-				features.SupportGatewayHTTPListenerIsolation,
-				features.SupportGatewayPort8080,
-				features.SupportReferenceGrant,
 				features.SupportHTTPRouteResponseHeaderModification,
 				features.SupportHTTPRoute,
 				features.SupportHTTPRouteHostRewrite,
@@ -145,7 +147,7 @@ func TestConformance(t *testing.T) {
 				features.SupportMeshConsumerRoute,
 			},
 			Implementation:      implementation,
-			ConformanceProfiles: []suite.ConformanceProfileName{suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName},
+			ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
 		},
 	}
 

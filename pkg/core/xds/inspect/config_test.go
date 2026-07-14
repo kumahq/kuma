@@ -47,7 +47,6 @@ var _ = Describe("ProxyConfigInspector", func() {
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			".mesh",
 			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 

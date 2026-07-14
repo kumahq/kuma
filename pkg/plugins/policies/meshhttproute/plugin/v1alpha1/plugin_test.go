@@ -46,7 +46,6 @@ import (
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_policies "github.com/kumahq/kuma/v3/pkg/test/policies"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -95,10 +94,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), given.xdsContext.Mesh, given.proxy)).To(Succeed(), n)
 			}
-			gatewayGenerator := plugin_gateway.NewGenerator("test-zone")
-			_, err = gatewayGenerator.Generate(context.Background(), nil, given.xdsContext, given.proxy)
-
-			Expect(err).NotTo(HaveOccurred())
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).To(Succeed())
@@ -3522,6 +3517,60 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 		}()),
 	)
+
+	It("falls back to legacy MeshGatewayRoute resources for built-in gateways", func() {
+		metrics, err := metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		claCache, err := cla.NewCache(1*time.Second, metrics)
+		Expect(err).ToNot(HaveOccurred())
+
+		secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+		dataSourceLoader := datasource.NewDataSourceLoader(secretManager)
+
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+		}
+		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+		}
+
+		outboundTargets := xds_builders.EndpointMap().
+			AddEndpoint("backend", xds_builders.Endpoint().
+				WithTarget("192.168.0.4").
+				WithPort(8084).
+				WithWeight(1).
+				WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)),
+			)
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(resources).
+			WithEndpointMap(outboundTargets).
+			Build()
+		xdsCtx.ControlPlane.CLACache = claCache
+		xdsCtx.Mesh.DataSourceLoader = dataSourceLoader
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(samples.GatewayDataplaneBuilder()).
+			WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+			Build()
+
+		for n, p := range core_plugins.Plugins().ProxyPlugins() {
+			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
+		}
+
+		resourceSet := core_xds.NewResourceSet()
+		policyPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(policyPlugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		listeners, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listeners).To(ContainSubstring("sample-gateway:HTTP:8080"))
+
+		Expect(resourceSet.ListOf(envoy_resource.RouteType)).ToNot(BeEmpty())
+	})
 })
 
 const secureSecret = `
@@ -3657,7 +3706,6 @@ func meshContextWithResources(
 		vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
 		"mesh",
 		80,
-		xds_context.AnyToAnyReachableServicesGraphBuilder,
 		nil,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")

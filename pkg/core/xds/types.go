@@ -163,37 +163,10 @@ type EgressEndpointMap map[ServiceName]EgressEndpointGroup
 // TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
 type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
 
-// HealthCheckMap holds the most specific HealthCheck for each reachable service.
-type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
-
-// CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
-type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
-
-// RetryMap holds the most specific Retry for each reachable service.
-type RetryMap map[ServiceName]*core_mesh.RetryResource
-
-// FaultInjectionMap holds all matched FaultInjectionResources for each InboundInterface
-type FaultInjectionMap map[mesh_proto.InboundInterface][]*core_mesh.FaultInjectionResource
-
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
 
-// InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
-type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*core_mesh.RateLimitResource
-
-// OutboundRateLimitsMap holds the RateLimitResource for each OutboundInterface
-type OutboundRateLimitsMap map[mesh_proto.OutboundInterface]*core_mesh.RateLimitResource
-
-type RateLimitsMap struct {
-	Inbound  InboundRateLimitsMap
-	Outbound OutboundRateLimitsMap
-}
-
 type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
-
-type ExternalServiceFaultInjectionMap map[ServiceName][]*core_mesh.FaultInjectionResource
-
-type ExternalServiceRateLimitMap map[ServiceName][]*core_mesh.RateLimitResource
 
 // SocketAddressProtocol is the L4 protocol the listener should bind to
 type SocketAddressProtocol int32
@@ -311,12 +284,10 @@ type SecretsTracker interface {
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
-	Mesh                           *core_mesh.MeshResource
-	ExternalServices               []*core_mesh.ExternalServiceResource
-	ExternalServicePermissionMap   ExternalServicePermissionMap
-	EndpointMap                    EndpointMap
-	ExternalServiceFaultInjections ExternalServiceFaultInjectionMap
-	ExternalServiceRateLimits      ExternalServiceRateLimitMap
+	Mesh                         *core_mesh.MeshResource
+	ExternalServices             []*core_mesh.ExternalServiceResource
+	ExternalServicePermissionMap ExternalServicePermissionMap
+	EndpointMap                  EndpointMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies

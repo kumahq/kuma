@@ -16,6 +16,7 @@ message ZoneEgressOverview {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
 
   ZoneEgress zoneEgress = 1;
 

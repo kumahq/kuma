@@ -10,7 +10,7 @@ func (m *Mesh) IsPassthrough() bool {
 
 func (m *Mesh) MeshServicesMode() Mesh_MeshServices_Mode {
 	if m.MeshServices == nil {
-		return Mesh_MeshServices_Disabled
+		return Mesh_MeshServices_Exclusive
 	}
 	return m.MeshServices.Mode
 }

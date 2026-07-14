@@ -37,7 +37,7 @@ func Jobs() {
 
 		It("should terminate jobs", func() {
 			// when
-			err := kubernetes.Cluster.Install(DemoClientJobK8s(namespace, mesh, "test-server_jobs_svc_80.mesh"))
+			err := kubernetes.Cluster.Install(DemoClientJobK8s(namespace, mesh, "test-server.jobs.svc.cluster.local"))
 
 			// then CP terminates the job by sending /quitquitquit to Envoy Admin and verifies connection using self-signed certs
 			Expect(err).ToNot(HaveOccurred())
@@ -79,7 +79,7 @@ func Jobs() {
 
 		It("should terminate jobs", func() {
 			// when
-			err := kubernetes.Cluster.Install(DemoClientJobK8s(namespace, mesh, "test-server_jobs-mtls_svc_80.mesh"))
+			err := kubernetes.Cluster.Install(DemoClientJobK8s(namespace, mesh, "test-server.jobs-mtls.svc.cluster.local"))
 
 			// then CP terminates the job by sending /quitquitquit to Envoy Admin and verifies connection using mTLS certs
 			Expect(err).ToNot(HaveOccurred())

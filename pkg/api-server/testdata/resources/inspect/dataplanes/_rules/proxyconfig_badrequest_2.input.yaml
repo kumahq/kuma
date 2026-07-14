@@ -1,5 +1,7 @@
 #/meshes/default/dataplanes/dp-1/_config?shadow=true&include=something 400
 type: Mesh
+meshServices:
+  mode: Disabled
 name: default
 ---
 type: Dataplane

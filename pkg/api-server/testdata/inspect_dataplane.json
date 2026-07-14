@@ -1,6 +1,6 @@
 {
  "kind": "SidecarDataplane",
- "total": 7,
+ "total": 3,
  "items": [
   {
    "type": "dataplane",
@@ -22,22 +22,6 @@
    "name": "127.0.0.1:80:8080",
    "service": "backend",
    "matchedPolicies": {
-    "FaultInjection": [
-     {
-      "type": "FaultInjection",
-      "mesh": "default",
-      "name": "fi-1",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-     },
-     {
-      "type": "FaultInjection",
-      "mesh": "default",
-      "name": "fi-2",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-     }
-    ],
     "TrafficPermission": [
      {
       "type": "TrafficPermission",
@@ -59,70 +43,6 @@
       "type": "Timeout",
       "mesh": "default",
       "name": "t-1",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-     }
-    ]
-   }
-  },
-  {
-   "type": "service",
-   "name": "elastic",
-   "service": "elastic",
-   "matchedPolicies": {
-    "HealthCheck": [
-     {
-      "type": "HealthCheck",
-      "mesh": "default",
-      "name": "hc-1",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-     }
-    ]
-   }
-  },
-  {
-   "type": "service",
-   "name": "postgres",
-   "service": "postgres",
-   "matchedPolicies": {
-    "HealthCheck": [
-     {
-      "type": "HealthCheck",
-      "mesh": "default",
-      "name": "hc-1",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-     }
-    ]
-   }
-  },
-  {
-   "type": "service",
-   "name": "redis",
-   "service": "redis",
-   "matchedPolicies": {
-    "HealthCheck": [
-     {
-      "type": "HealthCheck",
-      "mesh": "default",
-      "name": "hc-1",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
-     }
-    ]
-   }
-  },
-  {
-   "type": "service",
-   "name": "web",
-   "service": "web",
-   "matchedPolicies": {
-    "HealthCheck": [
-     {
-      "type": "HealthCheck",
-      "mesh": "default",
-      "name": "hc-1",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
      }

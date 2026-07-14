@@ -42,6 +42,7 @@ func Setup(rt runtime.Runtime) error {
 		Id:          rt.GetInstanceId(),
 		Address:     cfg.Catalog.InstanceAddress,
 		InterCpPort: cfg.Server.Port,
+		Version:     cfg.Catalog.InstanceVersion,
 	}
 
 	pool := rt.InterCPClientPool()

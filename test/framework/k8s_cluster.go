@@ -1103,17 +1103,19 @@ func (c *K8sCluster) GetKumaCPLogs() map[string]string {
 
 	out := make(map[string]string)
 	for _, p := range pods {
+		stdoutKey := fmt.Sprintf("%s/stdout", p.Name)
 		log, err := c.GetPodLogs(p, v1.PodLogOptions{})
 		if err != nil {
-			out["failed"] = fmt.Sprintf("failed to retrieve logs %v", err)
+			out[stdoutKey] = fmt.Sprintf("failed to retrieve logs %v", err)
+			continue
 		}
-		out["stdout"] = log
+		out[stdoutKey] = log
 
 		log, err = c.GetPodLogs(p, v1.PodLogOptions{
 			Previous: true,
 		})
 		if err == nil {
-			out["stdout_previous"] = log
+			out[fmt.Sprintf("%s/stdout_previous", p.Name)] = log
 		}
 	}
 

@@ -5,7 +5,6 @@ import (
 
 	. "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
-	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/register"
 	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 

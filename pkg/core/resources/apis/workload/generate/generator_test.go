@@ -47,7 +47,6 @@ var _ = Describe("Workload generator", func() {
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			".mesh",
 			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 		meshCache, err := cache_mesh.NewCache(

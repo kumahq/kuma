@@ -33,16 +33,15 @@ func NewMeshManager(
 		cpZone = config.Multizone.Zone.Name
 	}
 	meshManager := &meshManager{
-		store:                      store,
-		otherManagers:              otherManagers,
-		caManagers:                 caManagers,
-		registry:                   registry,
-		meshValidator:              validator,
-		unsafeDelete:               config.Store.UnsafeDelete,
-		extensions:                 extensions,
-		createMeshRoutingResources: config.Defaults.CreateMeshRoutingResources,
-		cpMode:                     config.Mode,
-		cpZone:                     cpZone,
+		store:         store,
+		otherManagers: otherManagers,
+		caManagers:    caManagers,
+		registry:      registry,
+		meshValidator: validator,
+		unsafeDelete:  config.Store.UnsafeDelete,
+		extensions:    extensions,
+		cpMode:        config.Mode,
+		cpZone:        cpZone,
 	}
 	if config.Store.Type == config_store.KubernetesStore {
 		meshManager.k8sStore = true
@@ -52,18 +51,17 @@ func NewMeshManager(
 }
 
 type meshManager struct {
-	store                      core_store.ResourceStore
-	otherManagers              core_manager.ResourceManager
-	caManagers                 core_ca.Managers
-	registry                   core_registry.TypeRegistry
-	meshValidator              MeshValidator
-	unsafeDelete               bool
-	extensions                 context.Context
-	createMeshRoutingResources bool
-	k8sStore                   bool
-	systemNamespace            string
-	cpMode                     config_core.CpMode
-	cpZone                     string
+	store           core_store.ResourceStore
+	otherManagers   core_manager.ResourceManager
+	caManagers      core_ca.Managers
+	registry        core_registry.TypeRegistry
+	meshValidator   MeshValidator
+	unsafeDelete    bool
+	extensions      context.Context
+	k8sStore        bool
+	systemNamespace string
+	cpMode          config_core.CpMode
+	cpZone          string
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -111,7 +109,6 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 		mesh,
 		mesh.Spec.GetSkipCreatingInitialPolicies(),
 		m.extensions,
-		m.createMeshRoutingResources,
 		m.k8sStore,
 		m.systemNamespace,
 		m.cpMode,

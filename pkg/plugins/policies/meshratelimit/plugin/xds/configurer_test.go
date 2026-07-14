@@ -1,15 +1,20 @@
 package xds
 
 import (
+	"time"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_router "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -50,9 +55,50 @@ var _ = Describe("MeshRateLimit configurer", func() {
 		Expect(routes[0].GetMatch().GetFilterState()).To(BeEmpty())
 		Expect(routes[0].GetTypedPerFilterConfig()).To(BeNil())
 	})
+
+	It("should add the HTTP local rate limit filter for gateway route-specific rate limits", func() {
+		filterChain := httpFilterChainWithSingleRouteNamed("route-1")
+		hcm := httpConnectionManagerFromFilterChain(filterChain)
+		routeConfig := hcm.GetRouteConfig()
+
+		configurer := &Configurer{
+			Element: subsetutils.MeshElement(),
+			Rules: core_rules.Rules{{
+				Subset: subsetutils.Subset{{
+					Key:   core_rules.RuleMatchesHashTag,
+					Value: "route-1",
+				}},
+				Conf: api.Conf{
+					Local: &api.Local{
+						HTTP: &api.LocalHTTP{
+							RequestRate: &api.Rate{Num: 1, Interval: k8s.Duration{Duration: 10 * time.Second}},
+							OnRateLimit: &api.OnRateLimit{
+								Status: pointer.To(uint32(428)),
+							},
+						},
+					},
+				},
+			}},
+		}
+
+		Expect(configurer.ConfigureGatewayRoute(routeConfig, filterChain)).To(Succeed())
+
+		hcm = httpConnectionManagerFromFilterChain(filterChain)
+		Expect(hcm.GetHttpFilters()).To(HaveLen(2))
+		Expect(hcm.GetHttpFilters()[0].GetName()).To(Equal(httpLocalRateLimitFilterName))
+		Expect(hcm.GetHttpFilters()[1].GetName()).To(Equal("envoy.filters.http.router"))
+
+		routes := routeConfig.GetVirtualHosts()[0].GetRoutes()
+		Expect(routes).To(HaveLen(1))
+		Expect(routes[0].GetTypedPerFilterConfig()).To(HaveKey(httpLocalRateLimitFilterName))
+	})
 })
 
 func httpFilterChainWithSingleRoute() *envoy_listener.FilterChain {
+	return httpFilterChainWithSingleRouteNamed("")
+}
+
+func httpFilterChainWithSingleRouteNamed(name string) *envoy_listener.FilterChain {
 	routerConfig, err := util_proto.MarshalAnyDeterministic(&envoy_router.Router{})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -67,6 +113,7 @@ func httpFilterChainWithSingleRoute() *envoy_listener.FilterChain {
 			RouteConfig: &envoy_route.RouteConfiguration{
 				VirtualHosts: []*envoy_route.VirtualHost{{
 					Routes: []*envoy_route.Route{{
+						Name: name,
 						Match: &envoy_route.RouteMatch{
 							PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/"},
 						},
