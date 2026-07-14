@@ -30,8 +30,7 @@ type MatchedPolicies struct {
 	TrafficPermissions TrafficPermissionMap
 
 	// Service(Cluster) -> Policy
-	TrafficLogs     TrafficLogMap
-	CircuitBreakers CircuitBreakerMap
+	TrafficLogs TrafficLogMap
 
 	// Outbound(Listener) -> Policy
 	Timeouts TimeoutMap
