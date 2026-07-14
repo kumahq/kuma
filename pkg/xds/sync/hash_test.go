@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
