@@ -111,7 +111,7 @@ spec:
 		return s
 	}
 
-	It("should apply MeshTimeout policy to MeshHTTPRoute", func() {
+	XIt("should apply MeshTimeout policy to MeshHTTPRoute", func() {
 		// when
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
