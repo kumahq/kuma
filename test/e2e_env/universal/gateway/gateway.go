@@ -294,8 +294,9 @@ mesh: "%s"
 name: mesh-fault-injection-all-sources-all-gateways
 spec:
   targetRef:
-    kind: Mesh
-    proxyTypes: ["Gateway"]
+    kind: Dataplane
+    labels:
+      kuma.io/proxy-type: gateway
   to:
     - targetRef:
         kind: Mesh

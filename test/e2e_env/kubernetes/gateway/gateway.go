@@ -545,9 +545,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: Mesh
-    proxyTypes:
-    - Gateway
+    kind: Dataplane
+    labels:
+      kuma.io/proxy-type: gateway
   to:
   - targetRef:
       kind: Mesh

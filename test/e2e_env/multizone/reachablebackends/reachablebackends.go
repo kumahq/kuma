@@ -50,8 +50,8 @@ metadata:
 spec:
   targetRef:
     kind: Dataplane
-    proxyTypes: ["Sidecar"]
     labels:
+      kuma.io/proxy-type: sidecar
       kuma.io/service: client-server_reachable-backends_svc_80
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
