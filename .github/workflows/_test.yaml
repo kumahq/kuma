@@ -78,8 +78,8 @@ jobs:
           OVERRIDE_JQ_CMD: |-
             .test_e2e = false
             | .test_e2e_env.include = []
-            | .test_e2e_env.parallelism = [2]
-            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}, {"target": "universal", "parallelRunnerId": 1}]
+            | .test_e2e_env.parallelism = [4]
+            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
           FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
           SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |-
@@ -111,7 +111,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 5
+      max-parallel: ${{ github.event_name == 'pull_request' && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
     env:
@@ -139,7 +139,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 5
+      max-parallel: ${{ github.event_name == 'pull_request' && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
     env:
