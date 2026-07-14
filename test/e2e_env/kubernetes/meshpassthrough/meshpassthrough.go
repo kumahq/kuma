@@ -95,9 +95,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
+    kind: Dataplane
     proxyTypes: ["Sidecar"]
-    tags:
+    labels:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
     passthroughMode: None
@@ -130,9 +130,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
+    kind: Dataplane
     proxyTypes: ["Sidecar"]
-    tags:
+    labels:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
     passthroughMode: None
@@ -162,9 +162,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
+    kind: Dataplane
     proxyTypes: ["Sidecar"]
-    tags:
+    labels:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
     passthroughMode: Matched

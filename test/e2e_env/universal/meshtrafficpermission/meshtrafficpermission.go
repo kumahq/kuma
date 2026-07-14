@@ -167,13 +167,13 @@ name: mtp-3
 mesh: meshtrafficpermission
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       team: server-owners
   from:
     - targetRef:
         kind: MeshSubset
-        tags: 
+        tags:
           team: client-owners
       default:
         action: Allow

@@ -91,8 +91,8 @@ name: meshhttproutems-route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       app: demo-client
   to:
     - targetRef:

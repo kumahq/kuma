@@ -163,8 +163,8 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: %[2]s-gateway-admin_%[2]s_svc_8444
   to:
     - targetRef:
