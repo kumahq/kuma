@@ -570,13 +570,12 @@ spec:
     - targetRef:
         kind: Mesh
       default:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-header
         loadBalancer:
           type: RingHash
-          ringHash:
-            hashPolicies:
-              - type: Header
-                header:
-                  name: x-header
 `, Config.KumaNamespace, meshName)
 		routes := httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80", "MeshService", "")
 
