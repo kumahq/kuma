@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
 	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
@@ -86,6 +87,14 @@ func typeToLegacyOverviewPath(resourceType core_model.ResourceType) string {
 	}
 }
 
+// reservedRouteMetadataKeys are route metadata keys Kuma interprets itself, so a
+// RouteMetadataProvider must not set them. If it does, route drops the value to
+// stop an embedder from changing Kuma's own routing behavior (e.g. disabling
+// authn via authn.MetadataAuthKey).
+var reservedRouteMetadataKeys = map[string]struct{}{
+	authn.MetadataAuthKey: {},
+}
+
 // route builds the RouteBuilder for a CRUD method/path and applies any provider
 // metadata, naming the verb once so ws.<VERB> and the metadata can't desync.
 func (r *resourceEndpoints) route(ws *restful.WebService, method, path string) *restful.RouteBuilder {
@@ -102,6 +111,10 @@ func (r *resourceEndpoints) route(ws *restful.WebService, method, path string) *
 	}
 	if r.routeMetadataProvider != nil {
 		for k, v := range r.routeMetadataProvider(r.descriptor, method) {
+			if _, reserved := reservedRouteMetadataKeys[k]; reserved {
+				log.Info("ignoring reserved route metadata key from provider", "key", k, "type", r.descriptor.Name, "method", method)
+				continue
+			}
 			rb = rb.Metadata(k, v)
 		}
 	}

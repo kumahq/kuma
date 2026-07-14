@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 )
@@ -59,6 +60,26 @@ var _ = Describe("route metadata provider", func() {
 		put := putRoute(ws)
 		Expect(put).ToNot(BeNil())
 		Expect(put.Metadata).ToNot(HaveKey("x-test"))
+	})
+
+	It("drops reserved keys but keeps the rest", func() {
+		provider := func(core_model.ResourceTypeDescriptor, string) map[string]string {
+			return map[string]string{authn.MetadataAuthKey: authn.MetadataAuthSkip, "x-ok": "v"}
+		}
+		endpoints := resourceEndpoints{
+			resourceEndpointsContext: resourceEndpointsContext{
+				descriptor:            descriptor,
+				routeMetadataProvider: provider,
+			},
+		}
+		ws := new(restful.WebService)
+
+		endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+descriptor.WsPath)
+
+		put := putRoute(ws)
+		Expect(put).ToNot(BeNil())
+		Expect(put.Metadata).To(HaveKeyWithValue("x-ok", "v"))
+		Expect(put.Metadata).ToNot(HaveKey(authn.MetadataAuthKey))
 	})
 
 	It("is satisfied by the runtime RouteMetadataProvider type", func() {

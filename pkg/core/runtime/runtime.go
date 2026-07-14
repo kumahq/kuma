@@ -121,8 +121,9 @@ type ExtraReportsFn func(Runtime) (map[string]string, error)
 // _rules, inspect, legacy overview) are not passed to it. It runs synchronously
 // while the API server is built at startup, so a panic fails the boot by design.
 // Kuma does not interpret the values, but the metadata namespace is shared with
-// route gates such as authn's reserved "auth":"skip" (pkg/api-server/authn), so
-// providers must not emit reserved keys. A nil provider attaches nothing.
+// route gates such as authn's reserved "auth":"skip" (pkg/api-server/authn);
+// keys Kuma reserves are dropped rather than attached. A nil provider attaches
+// nothing.
 type RouteMetadataProvider func(desc core_model.ResourceTypeDescriptor, method string) map[string]string
 
 var _ Runtime = &runtime{}
