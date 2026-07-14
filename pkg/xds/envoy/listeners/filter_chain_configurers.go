@@ -29,22 +29,6 @@ func Kafka(statsName string) FilterChainBuilderOpt {
 	})
 }
 
-func Tracing(
-	backend *mesh_proto.TracingBackend,
-	service string,
-	direction envoy_common.TrafficDirection,
-	destination string,
-	spawnUpstreamSpan bool,
-) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.TracingConfigurer{
-		Backend:           backend,
-		Service:           service,
-		TrafficDirection:  direction,
-		Destination:       destination,
-		SpawnUpstreamSpan: spawnUpstreamSpan,
-	})
-}
-
 func StaticEndpoints(ipv6Enabled bool, virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.StaticEndpointsConfigurer{
 		VirtualHostName: virtualHostName,

@@ -73,10 +73,6 @@ func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
 	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
 }
 
-func (r Resources) TrafficTraces() *core_mesh.TrafficTraceResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficTraceType).(*core_mesh.TrafficTraceResourceList)
-}
-
 func (r Resources) TrafficRoutes() *core_mesh.TrafficRouteResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
 }

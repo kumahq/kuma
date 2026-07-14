@@ -85,7 +85,6 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 
 func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_meta.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	var timeoutPolicyConf *mesh_proto.Timeout_Conf
@@ -102,25 +101,11 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		case core_meta.ProtocolGRPC:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-				Configure(envoy_listeners.Tracing(
-					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
-					sourceService,
-					envoy_common.TrafficDirectionOutbound,
-					serviceName,
-					false,
-				)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, dpTags)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-				Configure(envoy_listeners.Tracing(
-					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
-					sourceService,
-					envoy_common.TrafficDirectionOutbound,
-					serviceName,
-					false,
-				)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, proxy.Dataplane.Spec.TagSet()))
 		case core_meta.ProtocolKafka:
 			filterChainBuilder.
