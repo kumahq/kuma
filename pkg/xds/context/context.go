@@ -147,21 +147,6 @@ func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *me
 	}
 }
 
-func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
-	if tl == nil {
-		return nil
-	}
-	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
-		logger.Info("Logging backend is not found. Ignoring.",
-			"backendName", tl.Spec.GetConf().GetBackend(),
-			"trafficLogName", tl.GetMeta().GetName(),
-			"trafficLogMesh", tl.GetMeta().GetMesh())
-		return nil
-	} else {
-		return lb
-	}
-}
-
 func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
 	if info, found := mc.ServicesInformation[serviceName]; found {
 		return info.Protocol
@@ -189,7 +174,7 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
-	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+	return len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.

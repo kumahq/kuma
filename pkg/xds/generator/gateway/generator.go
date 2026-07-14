@@ -21,9 +21,8 @@ import (
 // ConnectionPolicyTypes specifies the resource types the gateway will
 // bind for connection policies.
 var ConnectionPolicyTypes = []model.ResourceType{
-	core_mesh.CircuitBreakerType,
 	core_mesh.FaultInjectionType,
-	core_mesh.RateLimitType,
+	core_mesh.HealthCheckType,
 	core_mesh.TimeoutType,
 }
 

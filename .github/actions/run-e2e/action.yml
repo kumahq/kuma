@@ -9,14 +9,14 @@ inputs:
     required: true
   arch:
     required: true
-  sidecar_containers:
-    required: false
-    default: ""
   target:
     required: false
     default: ""
   parallel_runner_id:
     required: true
+  shards:
+    required: false
+    default: "1"
 runs:
   using: composite
   steps:
@@ -64,9 +64,9 @@ runs:
         E2E_K8S_VERSION: ${{ inputs.k8s_version }}
         E2E_CNI_NETWORK_PLUGIN: ${{ inputs.cni_network_plugin }}
         E2E_ARCH: ${{ inputs.arch }}
-        E2E_SIDECAR_CONTAINERS: ${{ inputs.sidecar_containers }}
         E2E_TARGET: ${{ inputs.target }}
         E2E_PARALLEL_RUNNER_ID: ${{ inputs.parallel_runner_id }}
+        E2E_SHARDS: ${{ inputs.shards }}
       run: |
         if [[ "$E2E_K8S_VERSION" == "kindIpv6" ]]; then
           export IPV6=true
@@ -84,11 +84,10 @@ runs:
           export MAKE_PARAMETERS="-j2"
         fi
 
-        if [[ "$E2E_SIDECAR_CONTAINERS" == "false" ]]; then
-          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
-        fi
-
         if [[ "$E2E_TARGET" == "" ]]; then
+          export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
+        elif [[ "$E2E_TARGET" != "" && "${E2E_SHARDS:-1}" != "1" ]]; then
+          ./.github/workflows/scripts/validate-e2e-shards.sh "$E2E_TARGET" "$E2E_SHARDS"
           export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
         fi
         env
@@ -120,7 +119,7 @@ runs:
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
-        name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}
         if-no-files-found: ignore
         path: |
           build/reports/e2e-debug*
@@ -128,7 +127,7 @@ runs:
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
-        name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}
         if-no-files-found: ignore
         path: |
           build/reports
