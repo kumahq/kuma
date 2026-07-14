@@ -40,8 +40,8 @@ metadata:
 spec:
   targetRef:
     kind: Dataplane
-    proxyTypes: ["Gateway"]
     labels:
+      kuma.io/proxy-type: gateway
       kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
   default:
     appendModifications:
@@ -70,8 +70,8 @@ metadata:
 spec:
   targetRef:
     kind: Dataplane
-    proxyTypes: ["Gateway"]
     labels:
+      kuma.io/proxy-type: gateway
       kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
   default:
     passthroughMode: None
@@ -103,8 +103,8 @@ metadata:
 spec:
   targetRef:
     kind: Dataplane
-    proxyTypes: ["Gateway"]
     labels:
+      kuma.io/proxy-type: gateway
       kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
   default:
     passthroughMode: Matched
