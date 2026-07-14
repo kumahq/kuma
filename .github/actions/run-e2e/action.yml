@@ -95,6 +95,7 @@ runs:
         if [[ "$E2E_TARGET" == "" ]]; then
           export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
         elif [[ "$E2E_TARGET" != "" && "${E2E_SHARDS:-1}" != "1" ]]; then
+          ./.github/workflows/scripts/validate-e2e-shards.sh "$E2E_TARGET" "$E2E_SHARDS"
           export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
         fi
         env
