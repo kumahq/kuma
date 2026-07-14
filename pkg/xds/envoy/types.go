@@ -126,12 +126,6 @@ func WithTags(tags tags.Tags) NewClusterOpt {
 	})
 }
 
-func WithTimeout(timeout *mesh_proto.Timeout_Conf) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.timeout = timeout
-	})
-}
-
 func WithLB(lb *mesh_proto.TrafficRoute_LoadBalancer) NewClusterOpt {
 	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.lb = lb

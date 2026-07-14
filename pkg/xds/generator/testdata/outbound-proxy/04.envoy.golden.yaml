@@ -43,7 +43,7 @@ resources:
 - name: api-tcp
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 100s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -412,7 +412,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: api-tcp
-          idleTimeout: 101s
+          idleTimeout: 0s
           statPrefix: api-tcp
     metadata:
       filterMetadata:

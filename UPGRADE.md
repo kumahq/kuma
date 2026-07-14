@@ -132,6 +132,20 @@ release; existing resources are still accepted and stored.
 
 Migrate tracing to `MeshTrace`, which replaces `TrafficTrace`.
 
+### `Timeout` no longer affects generated Envoy config
+
+The legacy `Timeout` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `Timeout` resource no
+longer changes the connection, request, or idle timeout configuration of
+any listener, route, or cluster.
+
+The `Timeout` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate timeouts to `MeshTimeout`, which replaces `Timeout`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using
