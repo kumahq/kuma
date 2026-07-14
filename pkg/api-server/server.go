@@ -152,6 +152,7 @@ func NewApiServer(
 		rt.GlobalInsightService(),
 		meshContextBuilder,
 		xdsHooks,
+		rt.RouteMetadataProvider(),
 	)
 	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager())
@@ -257,6 +258,7 @@ func addResourcesEndpoints(
 	globalInsightService globalinsight.GlobalInsightService,
 	meshContextBuilder xds_context.MeshContextBuilder,
 	xdsHooks []hooks.ResourceSetHook,
+	routeMetadataProvider runtime.RouteMetadataProvider,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
@@ -298,6 +300,7 @@ func addResourcesEndpoints(
 			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
 			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
 			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
+			routeMetadataProvider:        routeMetadataProvider,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name

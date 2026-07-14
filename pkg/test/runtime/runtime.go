@@ -323,6 +323,10 @@ func (r *TestRuntime) APIWebServiceCustomize() func(ws *restful.WebService) erro
 	return func(*restful.WebService) error { return nil }
 }
 
+func (r *TestRuntime) RouteMetadataProvider() core_runtime.RouteMetadataProvider {
+	return nil
+}
+
 func (r *TestRuntime) Extensions() context.Context {
 	return context.Background()
 }
