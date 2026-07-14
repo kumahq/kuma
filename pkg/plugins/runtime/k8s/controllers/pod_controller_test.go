@@ -620,7 +620,6 @@ var _ = Describe("PodReconciler", func() {
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
 				ResourceConverter: k8s.NewSimpleConverter(),
-				ServiceGetter:     kubeClient,
 				Mode:              config_core.Zone,
 				Zone:              "zone-1",
 				SystemNamespace:   "kuma-system",
