@@ -84,8 +84,9 @@ The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
   no longer includes `meshgatewayinstances`. If you manage RBAC manually,
   remove these permissions and webhook rules; if you keep them, they are
   harmless but unused.
-- Rolling back a control plane upgraded past this version does not restore
-  automatically: the objects generated for any `MeshGatewayInstance` created
+- Rolling back a control plane upgraded past this version does not restore the
+  removed gateway controller behavior automatically: the objects generated for
+  any `MeshGatewayInstance` created
   or changed while running the new control plane are not retroactively
   reconciled by an older control plane's cache until it re-lists them, and a
   Helm rollback alone does not restore RBAC/webhook rules removed by a
