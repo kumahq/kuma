@@ -85,20 +85,12 @@ func (r Resources) TrafficPermissions() *core_mesh.TrafficPermissionResourceList
 	return r.ListOrEmpty(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
 }
 
-func (r Resources) TrafficLogs() *core_mesh.TrafficLogResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficLogType).(*core_mesh.TrafficLogResourceList)
-}
-
 func (r Resources) Timeouts() *core_mesh.TimeoutResourceList {
 	return r.ListOrEmpty(core_mesh.TimeoutType).(*core_mesh.TimeoutResourceList)
 }
 
 func (r Resources) RateLimits() *core_mesh.RateLimitResourceList {
 	return r.ListOrEmpty(core_mesh.RateLimitType).(*core_mesh.RateLimitResourceList)
-}
-
-func (r Resources) CircuitBreakers() *core_mesh.CircuitBreakerResourceList {
-	return r.ListOrEmpty(core_mesh.CircuitBreakerType).(*core_mesh.CircuitBreakerResourceList)
 }
 
 func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {

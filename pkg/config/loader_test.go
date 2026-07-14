@@ -384,7 +384,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
-			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
 
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 
@@ -806,7 +805,6 @@ experimental:
     flushInterval: 10s
     fullResyncInterval: 15s
     delayFullResync: true
-  sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
 eventBus:
@@ -1145,7 +1143,6 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
-				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",

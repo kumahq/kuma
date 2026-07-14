@@ -195,54 +195,6 @@ func TCPProxy(statsName string, splits ...envoy_common.Split) FilterChainBuilder
 	})
 }
 
-func NetworkAccessLog(
-	mesh string,
-	trafficDirection envoy_common.TrafficDirection,
-	sourceService string,
-	destinationService string,
-	backend *mesh_proto.LoggingBackend,
-	proxy *core_xds.Proxy,
-) FilterChainBuilderOpt {
-	if backend == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.NetworkAccessLogConfigurer{
-		AccessLogConfigurer: v3.AccessLogConfigurer{
-			Mesh:               mesh,
-			TrafficDirection:   trafficDirection,
-			SourceService:      sourceService,
-			DestinationService: destinationService,
-			Backend:            backend,
-			Proxy:              proxy,
-		},
-	})
-}
-
-func HttpAccessLog(
-	mesh string,
-	trafficDirection envoy_common.TrafficDirection,
-	sourceService string,
-	destinationService string,
-	backend *mesh_proto.LoggingBackend,
-	proxy *core_xds.Proxy,
-) FilterChainBuilderOpt {
-	if backend == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.HttpAccessLogConfigurer{
-		AccessLogConfigurer: v3.AccessLogConfigurer{
-			Mesh:               mesh,
-			TrafficDirection:   trafficDirection,
-			SourceService:      sourceService,
-			DestinationService: destinationService,
-			Backend:            backend,
-			Proxy:              proxy,
-		},
-	})
-}
-
 func HttpStaticRoute(builder *envoy_routes.RouteConfigurationBuilder) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpStaticRouteConfigurer{
 		Builder: builder,

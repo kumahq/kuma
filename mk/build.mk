@@ -28,6 +28,7 @@ export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
 # An optional extension to the coredns packages
 COREDNS_EXT ?=
+# renovate: datasource=github-tags depName=coredns packageName=kumahq/coredns-builds versioning=semver
 COREDNS_VERSION = v1.14.2
 
 # List of binaries that we have build/release build rules for.

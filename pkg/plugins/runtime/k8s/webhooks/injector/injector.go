@@ -346,7 +346,6 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 	}
 
 	if i.sidecarContainersEnabled {
-		// inject sidecar after init
 		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
 		patchedContainer.Lifecycle = &kube_core.Lifecycle{
 			PreStop: &kube_core.LifecycleHandler{
@@ -357,7 +356,6 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		}
 		prependInitContainers = append(prependInitContainers, patchedContainer)
 	} else {
-		// inject sidecar as first container
 		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 	}
 
