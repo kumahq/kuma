@@ -13,13 +13,16 @@ does not have any particular instructions.
 The experimental eBPF transparent proxy feature has been removed. This feature
 used prebuilt merbridge binaries for traffic interception instead of iptables.
 
-The following configuration has been removed:
+The following configuration no longer has any effect and is silently ignored:
 
 - Control plane: `runtime.kubernetes.injector.ebpf.*` environment variables
   (`KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_*`).
 - Helm values: `experimental.ebpf.*`, `hooks.ebpfCleanup`,
   `cni.experimental.imageEbpf`, and `transparentProxy.configMap.config.ebpf`.
 - Pod annotations: `kuma.io/transparent-proxying-ebpf*`.
+
+The following CLI surface has been removed:
+
 - CLI flags: `kumactl install transparent-proxy --ebpf-*` and
   `kumactl uninstall transparent-proxy --ebpf-*`.
 - CLI command: `kumactl uninstall ebpf`.
@@ -32,9 +35,13 @@ the eBPF configuration from your Helm values and pod annotations. The
 iptables-based transparent proxy is the default and does not require additional
 configuration.
 
-If you have eBPF programs pinned on cluster nodes, clean them up before
+If you have eBPF programs pinned on cluster nodes, clean them up **before**
 upgrading by running `kumactl uninstall ebpf` with the pre-upgrade Kuma version.
-After upgrading, this command is no longer available.
+After upgrading, this command is no longer available. If you skip this step,
+residual BPF state remains on affected nodes: pinned programs under bpffs
+(`/sys/fs/bpf`), cgroup connect hooks, and TC filter attachments. This state
+continues intercepting traffic until manually removed. Consult the merbridge
+documentation for manual cleanup procedures if needed.
 
 ### North-south Gateway API (built-in gateway) support removed
 
