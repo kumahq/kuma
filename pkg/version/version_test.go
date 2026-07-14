@@ -27,9 +27,9 @@ var _ = Describe("Verify build flags are set", func() {
 		Expect(version.Build.GitTag).To(MatchRegexp("[a-f0-9]+"))
 	})
 	It("Should have a valid git commit", func() {
-		Expect(version.Build.GitCommit).ToNot(And(BeEmpty(), Equal("unknown")))
+		Expect(version.Build.GitCommit).ToNot(Or(BeEmpty(), Equal("unknown")))
 	})
 	It("Should set envoy version", func() {
-		Expect(version.Envoy).ToNot(And(BeEmpty(), Equal("unknown")))
+		Expect(version.Envoy).ToNot(Or(BeEmpty(), Equal("unknown")))
 	})
 }, test.LabelBuildCheck)

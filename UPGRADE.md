@@ -139,6 +139,19 @@ Remove the settings above from your control plane config and environment if
 set. KDS snapshot generation is event-driven, with periodic full resync
 controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
 
+### `TrafficTrace` no longer affects generated Envoy config
+
+The legacy `TrafficTrace` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `TrafficTrace` resource no
+longer changes the tracing configuration of any listener.
+
+The `TrafficTrace` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate tracing to `MeshTrace`, which replaces `TrafficTrace`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using

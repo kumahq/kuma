@@ -31,15 +31,13 @@ var (
 )
 
 type PodConverter struct {
-	ServiceGetter       kube_client.Reader
-	NodeGetter          kube_client.Reader
-	ResourceConverter   k8s_common.Converter
-	InboundConverter    InboundConverter
-	Zone                string
-	SystemNamespace     string
-	Mode                config_core.CpMode
-	KubeOutboundsAsVIPs bool
-	WorkloadLabels      []string
+	NodeGetter        kube_client.Reader
+	ResourceConverter k8s_common.Converter
+	InboundConverter  InboundConverter
+	Zone              string
+	SystemNamespace   string
+	Mode              config_core.CpMode
+	WorkloadLabels    []string
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -47,13 +45,12 @@ func (p *PodConverter) PodToDataplane(
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
 	mesh *core_mesh.MeshResource,
 ) error {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = mesh.Meta.GetName()
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, mesh.Spec.MeshServicesMode())
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, mesh.Spec.MeshServicesMode())
 	if err != nil {
 		return err
 	}
@@ -198,7 +195,6 @@ func (p *PodConverter) dataplaneFor(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
 	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
@@ -381,14 +377,6 @@ func (p *PodConverter) dataplaneFor(
 				dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
 			}
 		}
-	}
-
-	if !p.KubeOutboundsAsVIPs {
-		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, tp.ReachableServices)
-		if err != nil {
-			return nil, err
-		}
-		dataplane.Networking.Outbound = ofaces
 	}
 
 	metrics, err := MetricsFor(pod)

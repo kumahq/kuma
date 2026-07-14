@@ -35,7 +35,6 @@ type MatchedPolicies struct {
 	TrafficRoutes RouteMap
 
 	// Dataplane -> Policy
-	TrafficTrace *core_mesh.TrafficTraceResource
 	// Actual Envoy Configuration is generated without taking this ProxyTemplate into account
 	ProxyTemplate *core_mesh.ProxyTemplateResource
 
