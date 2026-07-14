@@ -49,6 +49,24 @@ func (o *Outbound) TagsOrNil() map[string]string {
 	return nil
 }
 
+const KRITag = "kuma.io/kri"
+
+// ListenerTags returns tags for listener metadata. For legacy outbounds, it
+// returns the tags from the LegacyOutbound. For real resource outbounds
+// (MeshService, MeshExternalService, MeshMultiZoneService), it returns a tag
+// containing the KRI, enabling MeshProxyPatch to match on it.
+func (o *Outbound) ListenerTags() map[string]string {
+	if o.LegacyOutbound != nil {
+		return o.LegacyOutbound.Tags
+	}
+	if !o.Resource.IsEmpty() {
+		return map[string]string{
+			KRITag: o.Resource.String(),
+		}
+	}
+	return nil
+}
+
 func (o *Outbound) GetPort() uint32 {
 	if o.LegacyOutbound != nil {
 		return o.LegacyOutbound.Port

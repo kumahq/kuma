@@ -75,7 +75,7 @@ func GenerateOutboundListener(
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
 		Configure(envoy_listeners.OutboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TransparentProxying(transparentProxyEnabled)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.ListenerTags()).WithoutTags(mesh_proto.MeshTag))).
 		Configure(envoy_listeners.FilterChain(filterChain))
 
 	resource, err := listener.Build()

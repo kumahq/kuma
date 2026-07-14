@@ -37,6 +37,7 @@ resources:
           statPrefix: default_backend___msvc_80
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/kri: kri_msvc_default___backend_80
     name: outbound:10.0.0.1:80
     trafficDirection: OUTBOUND

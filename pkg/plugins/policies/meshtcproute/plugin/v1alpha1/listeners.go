@@ -39,7 +39,7 @@ func GenerateOutboundListener(
 		tcpProxyStatPrefix = listenerName
 	}
 
-	tags := envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)
+	tags := envoy_tags.Tags(svc.Outbound.ListenerTags()).WithoutTags(mesh_proto.MeshTag)
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
