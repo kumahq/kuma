@@ -285,7 +285,6 @@ var DefaultConfig = func() Config {
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
-				Enabled:            false,
 				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
 				DelayFullResync:    false,
@@ -477,8 +476,6 @@ type ExperimentalConfig struct {
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
-	// If true, then experimental event based watchdog to generate KDS snapshot is used.
-	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
 	// How often we flush changes when experimental event based watchdog is used.
 	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
 	// How often we schedule full KDS resync when experimental event based watchdog is used.
