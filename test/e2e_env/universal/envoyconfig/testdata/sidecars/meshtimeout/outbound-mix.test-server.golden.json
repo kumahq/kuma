@@ -841,7 +841,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/kri": "kri_msvc_envoyconfig_kuma-3__demo-client_3000"
+            }
           }
         },
         "name": "outbound:IP_REDACTED:3000",
@@ -966,7 +968,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/kri": "kri_msvc_envoyconfig_kuma-3__test-server_80"
+            }
           }
         },
         "name": "outbound:IP_REDACTED:80",
