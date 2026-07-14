@@ -22,7 +22,16 @@ func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
 func Routes(routes envoy_common.Routes) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		&RoutesConfigurer{
-			Routes: routes,
+			Routes:                routes,
+			ConfigureRouteTimeout: true,
+		})
+}
+
+func OutboundRoutes(routes envoy_common.Routes) VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(
+		&RoutesConfigurer{
+			Routes:                routes,
+			ConfigureRouteTimeout: false,
 		})
 }
 

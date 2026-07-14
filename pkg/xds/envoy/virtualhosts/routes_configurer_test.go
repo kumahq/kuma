@@ -12,15 +12,19 @@ import (
 
 var _ = Describe("RoutesConfigurer", func() {
 	type testCase struct {
-		routes   envoy_common.Routes
-		expected string
+		routes                 envoy_common.Routes
+		configureRouteTimeout bool
+		expected               string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			virtualHost := &envoy_config_route_v3.VirtualHost{}
-			err := envoy_virtual_hosts.RoutesConfigurer{Routes: given.routes}.
+			err := envoy_virtual_hosts.RoutesConfigurer{
+				Routes:                given.routes,
+				ConfigureRouteTimeout: given.configureRouteTimeout,
+			}.
 				Configure(virtualHost)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -32,6 +36,7 @@ var _ = Describe("RoutesConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("routes without timeouts", testCase{
+			configureRouteTimeout: true,
 			routes: []envoy_common.Route{
 				envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithName("backend"))),
 			},
@@ -41,6 +46,18 @@ routes:
       prefix: "/"
     route:
       timeout: "0s"
+      cluster: backend`,
+		}),
+		Entry("routes without configured request timeout", testCase{
+			configureRouteTimeout: false,
+			routes: []envoy_common.Route{
+				envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithName("backend"))),
+			},
+			expected: `
+routes:
+  - match:
+      prefix: "/"
+    route:
       cluster: backend`,
 		}),
 	)

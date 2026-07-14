@@ -90,7 +90,6 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: es2-b5516780eaf1ed13
@@ -143,7 +142,6 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: es2-b5516780eaf1ed13
@@ -196,7 +194,6 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: es2-b5516780eaf1ed13

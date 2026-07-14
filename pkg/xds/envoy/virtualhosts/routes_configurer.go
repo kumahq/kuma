@@ -13,7 +13,8 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Routes envoy_common.Routes
+	Routes                 envoy_common.Routes
+	ConfigureRouteTimeout bool
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
@@ -159,7 +160,7 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_config_route_v3.RouteAction {
 	routeAction := &envoy_config_route_v3.RouteAction{}
-	if len(clusters) != 0 {
+	if c.ConfigureRouteTimeout && len(clusters) != 0 {
 		routeAction.Timeout = util_proto.Duration(0)
 	}
 	if len(clusters) == 1 {

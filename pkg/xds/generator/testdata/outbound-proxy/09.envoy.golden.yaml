@@ -95,7 +95,6 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http-5637c619d2781fec_mesh2
-                  timeout: 0s
           statPrefix: api-http
     metadata:
       filterMetadata:
