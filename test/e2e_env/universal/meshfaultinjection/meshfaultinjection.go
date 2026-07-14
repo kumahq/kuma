@@ -62,10 +62,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-service-block-all-sources
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 421
