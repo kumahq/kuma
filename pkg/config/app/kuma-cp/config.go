@@ -285,8 +285,8 @@ var DefaultConfig = func() Config {
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
-				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
 				DelayFullResync:    false,
 			},
 		},
