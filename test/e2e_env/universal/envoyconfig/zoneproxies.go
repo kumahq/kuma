@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshopentelemetrybackend "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -72,6 +73,7 @@ func ZoneProxies() {
 		meshmetric.MeshMetricResourceTypeDescriptor,
 		meshproxypatch.MeshProxyPatchResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
+		meshopentelemetrybackend.MeshOpenTelemetryBackendResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config for zone proxies",
