@@ -205,6 +205,10 @@ func (t *testRuntimeContext) APIWebServiceCustomize() func(*restful.WebService) 
 	return func(*restful.WebService) error { return nil }
 }
 
+func (t *testRuntimeContext) RouteMetadataProvider() runtime.RouteMetadataProvider {
+	return nil
+}
+
 func (t *testRuntimeContext) Ready() bool {
 	for _, c := range t.components {
 		if rc, ok := c.(component.ReadyComponent); ok && !rc.Ready() {
