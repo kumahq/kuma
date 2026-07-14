@@ -212,8 +212,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		Scheme:        mgr.GetScheme(),
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: k8s_controllers.PodConverter{
-			ServiceGetter: mgr.GetClient(),
-			NodeGetter:    mgr.GetClient(),
+			NodeGetter: mgr.GetClient(),
 			InboundConverter: k8s_controllers.InboundConverter{
 				NameExtractor: k8s_controllers.NameExtractor{
 					ReplicaSetGetter: mgr.GetClient(),
@@ -223,12 +222,11 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 				NodeLabelsToCopy:    rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 				InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 			},
-			Zone:                rt.Config().Multizone.Zone.Name,
-			SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
-			Mode:                rt.Config().Mode,
-			ResourceConverter:   converter,
-			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
-			WorkloadLabels:      rt.Config().Runtime.Kubernetes.WorkloadLabels,
+			Zone:              rt.Config().Multizone.Zone.Name,
+			SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+			Mode:              rt.Config().Mode,
+			ResourceConverter: converter,
+			WorkloadLabels:    rt.Config().Runtime.Kubernetes.WorkloadLabels,
 		},
 		ResourceConverter:            converter,
 		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
@@ -284,15 +282,14 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 		return err
 	}
 	reconciler := &k8s_controllers.ConfigMapReconciler{
-		Client:              mgr.GetClient(),
-		EventRecorder:       mgr.GetEventRecorder("k8s.kuma.io/vips-generator"),
-		Scheme:              mgr.GetScheme(),
-		Log:                 core.Log.WithName("controllers").WithName("ConfigMap"),
-		ResourceManager:     rt.ResourceManager(),
-		VIPsAllocator:       vipsAllocator,
-		SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
-		ResourceConverter:   converter,
-		KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorder("k8s.kuma.io/vips-generator"),
+		Scheme:            mgr.GetScheme(),
+		Log:               core.Log.WithName("controllers").WithName("ConfigMap"),
+		ResourceManager:   rt.ResourceManager(),
+		VIPsAllocator:     vipsAllocator,
+		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceConverter: converter,
 	}
 	if err := reconciler.SetupWithManager(mgr); err != nil {
 		return err
