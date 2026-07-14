@@ -135,7 +135,9 @@ spec:
     kind: Mesh
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
+        namespace: %s
       default:
         connectionLimits:
           maxConnectionPools: 1
@@ -143,7 +145,7 @@ spec:
           maxPendingRequests: 1
           maxRequests: 1
           maxRetries: 1
-`, Config.KumaNamespace, mesh)),
+`, Config.KumaNamespace, mesh, namespace)),
 		Entry("inbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
