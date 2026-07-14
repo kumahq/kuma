@@ -117,6 +117,7 @@ func NewApiServer(
 	wsCustomize func(*restful.WebService) error,
 	globalInsightService globalinsight.GlobalInsightService,
 	xdsHooks []hooks.ResourceSetHook,
+	routeMetadataProvider runtime.RouteMetadataProvider,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -155,7 +156,7 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder, xdsHooks)
+	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder, xdsHooks, routeMetadataProvider)
 	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
@@ -247,6 +248,7 @@ func addResourcesEndpoints(
 	globalInsightService globalinsight.GlobalInsightService,
 	meshContextBuilder xds_context.MeshContextBuilder,
 	xdsHooks []hooks.ResourceSetHook,
+	routeMetadataProvider runtime.RouteMetadataProvider,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
@@ -286,6 +288,7 @@ func addResourcesEndpoints(
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
 			xdsHooks:                     xdsHooks,
 			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
+			routeMetadataProvider:        routeMetadataProvider,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
@@ -487,6 +490,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.APIWebServiceCustomize(),
 		rt.GlobalInsightService(),
 		rt.XDS().Hooks.ResourceSetHooks(),
+		rt.RouteMetadataProvider(),
 	)
 	if err != nil {
 		return err
