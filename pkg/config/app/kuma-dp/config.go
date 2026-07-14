@@ -420,8 +420,8 @@ func (d *DNS) Validate() error {
 	if !d.Enabled {
 		return nil
 	}
-	if d.ProxyPort > 65353 {
-		return errors.New(".ProxyPort has to be in [0, 65353] range")
+	if d.ProxyPort == 0 || d.ProxyPort > 65535 {
+		return errors.New(".ProxyPort has to be in (0, 65535] range")
 	}
 	return nil
 }
@@ -436,8 +436,8 @@ func (p *ApplicationProbeProxyServer) Validate() error {
 	if p.Port == 0 {
 		return nil
 	}
-	if p.Port > 65353 {
-		return errors.New(".Port has to be in [0, 65353] range")
+	if p.Port > 65535 {
+		return errors.New(".Port has to be in [0, 65535] range")
 	}
 	return nil
 }
