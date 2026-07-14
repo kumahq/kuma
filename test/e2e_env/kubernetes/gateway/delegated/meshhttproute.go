@@ -165,7 +165,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: %[2]s-gateway-admin_%[2]s_svc_8444
+      app: %[2]s-gateway
   to:
     - targetRef:
         kind: MeshService

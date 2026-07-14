@@ -41,8 +41,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/proxy-type: gateway
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+      app: %[2]s-gateway
   default:
     appendModifications:
       - networkFilter:
@@ -71,8 +70,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/proxy-type: gateway
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+      app: %[2]s-gateway
   default:
     passthroughMode: None
 `, config.CpNamespace, config.Mesh)
@@ -104,8 +102,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/proxy-type: gateway
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+      app: %[2]s-gateway
   default:
     passthroughMode: Matched
     appendMatch:

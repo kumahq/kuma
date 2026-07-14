@@ -98,7 +98,7 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/proxy-type: sidecar
-      kuma.io/service: demo-client_mesh-passthrough_svc
+      app: demo-client
   default:
     passthroughMode: None
 `, Config.KumaNamespace, meshName)
@@ -133,7 +133,7 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/proxy-type: sidecar
-      kuma.io/service: demo-client_mesh-passthrough_svc
+      app: demo-client
   default:
     passthroughMode: None
 `, Config.KumaNamespace, meshName)
@@ -165,7 +165,7 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/proxy-type: sidecar
-      kuma.io/service: demo-client_mesh-passthrough_svc
+      app: demo-client
   default:
     passthroughMode: Matched
     appendMatch:

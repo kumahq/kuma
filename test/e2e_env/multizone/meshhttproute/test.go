@@ -95,7 +95,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: demo-client
+      kuma.io/display-name: demo-client
   to:
     - targetRef:
         kind: MeshService

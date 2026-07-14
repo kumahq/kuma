@@ -31,6 +31,7 @@ func Policy() {
 				WithArgs([]string{"echo", "--instance", "test-server"}),
 				WithServiceName("mesh-tls-test-server"),
 				WithDockerContainerName(testServerContainerName),
+				WithLabels(map[string]string{"kuma.io/service": testServerName}),
 			)).
 			Install(TestServerUniversal(
 				testServer2Name, meshName,

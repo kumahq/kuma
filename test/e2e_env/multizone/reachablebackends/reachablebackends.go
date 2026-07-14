@@ -52,7 +52,7 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/proxy-type: sidecar
-      kuma.io/service: client-server_reachable-backends_svc_80
+      app: client-server
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
 

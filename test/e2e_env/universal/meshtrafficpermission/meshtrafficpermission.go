@@ -22,6 +22,7 @@ func MeshTrafficPermissionUniversal() {
 				"test-server",
 				meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithLabels(map[string]string{"team": "server-owners"}),
 			)).
 			Install(TestServerUniversal(
 				"test-server-tcp",
@@ -29,6 +30,7 @@ func MeshTrafficPermissionUniversal() {
 				WithArgs([]string{"echo", "--instance", "test-server-tcp"}),
 				WithServiceName("test-server-tcp"),
 				WithProtocol("tcp"),
+				WithLabels(map[string]string{"team": "server-owners"}),
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
@@ -118,13 +120,11 @@ spec:
    - default:
        allow:
          - spiffeID:
-             type: Exact
+             type: Prefix
              value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// then
 		trafficAllowed("test-server.svc.mesh.local")
 	})
 
@@ -145,7 +145,7 @@ spec:
    - default:
        allow:
          - spiffeID:
-             type: Exact
+             type: Prefix
              value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
@@ -209,7 +209,7 @@ spec:
    - default:
        deny:
          - spiffeID:
-             type: Exact
+             type: Prefix
              value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
@@ -245,7 +245,7 @@ spec:
    - default:
        deny:
          - spiffeID:
-             type: Exact
+             type: Prefix
              value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
