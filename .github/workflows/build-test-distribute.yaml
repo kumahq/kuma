@@ -48,9 +48,9 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: go-build-check-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            go-build-check-${{ runner.os }}-
+            go-build-${{ runner.os }}-
       - run: go build ./...
   check:
     permissions:
