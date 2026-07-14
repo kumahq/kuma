@@ -59,8 +59,8 @@ mesh: %s
 name: mesh-tls-policy
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: %s
   from:
     - targetRef:
@@ -159,8 +159,8 @@ mesh: %s
 name: mesh-tls-policy
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: %s
   from:
     - targetRef:

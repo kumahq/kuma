@@ -93,8 +93,8 @@ name: route-alias-test-server
 mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: demo-client
   to:
     - targetRef:
