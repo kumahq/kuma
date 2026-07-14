@@ -245,6 +245,22 @@ var _ = Describe("Readiness Reporter", func() {
 				Expect(string(body)).ToNot(ContainSubstring("SENSITIVE"), "path %s must not be proxied", path)
 			}
 		})
+
+		It("serves only the exact /ready path, not subpaths", func() {
+			// /ready is registered without a trailing slash, so net/http.ServeMux
+			// matches it exactly. Subpaths must 404 instead of falling through to
+			// the readiness handler (a trailing-slash pattern would match the
+			// whole subtree).
+			for _, path := range []string{"/ready/", "/ready/config_dump", "/readyz"} {
+				resp, err := http.Get(baseURL + path)
+				Expect(err).ToNot(HaveOccurred())
+				body, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound), "path %s should return 404", path)
+				Expect(string(body)).ToNot(Equal("LIVE\n"), "path %s must not hit the readiness handler", path)
+			}
+		})
 	})
 
 	Context("with IPv6 wildcard listener", func() {
