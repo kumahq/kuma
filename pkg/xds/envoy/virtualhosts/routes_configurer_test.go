@@ -12,9 +12,9 @@ import (
 
 var _ = Describe("RoutesConfigurer", func() {
 	type testCase struct {
-		routes                 envoy_common.Routes
+		routes                envoy_common.Routes
 		configureRouteTimeout bool
-		expected               string
+		expected              string
 	}
 
 	DescribeTable("should generate proper Envoy config",

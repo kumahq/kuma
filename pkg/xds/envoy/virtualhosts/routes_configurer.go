@@ -13,7 +13,7 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Routes                 envoy_common.Routes
+	Routes                envoy_common.Routes
 	ConfigureRouteTimeout bool
 }
 
