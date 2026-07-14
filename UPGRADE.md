@@ -8,6 +8,41 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### eBPF transparent proxy removed
+
+The experimental eBPF transparent proxy feature has been removed. This feature
+used prebuilt merbridge binaries for traffic interception instead of iptables.
+
+The following configuration no longer has any effect and is silently ignored:
+
+- Control plane: `runtime.kubernetes.injector.ebpf.*` environment variables
+  (`KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_*`).
+- Helm values: `experimental.ebpf.*`, `hooks.ebpfCleanup`,
+  `cni.experimental.imageEbpf`, and `transparentProxy.configMap.config.ebpf`.
+- Pod annotations: `kuma.io/transparent-proxying-ebpf*`.
+
+The following CLI surface has been removed:
+
+- CLI flags: `kumactl install transparent-proxy --ebpf-*` and
+  `kumactl uninstall transparent-proxy --ebpf-*`.
+- CLI command: `kumactl uninstall ebpf`.
+
+**Action required**
+
+If you are using eBPF transparent proxy (`experimental.ebpf.enabled=true`), you
+must migrate to the iptables-based transparent proxy before upgrading. Remove
+the eBPF configuration from your Helm values and pod annotations. The
+iptables-based transparent proxy is the default and does not require additional
+configuration.
+
+If you have eBPF programs pinned on cluster nodes, clean them up **before**
+upgrading by running `kumactl uninstall ebpf` with the pre-upgrade Kuma version.
+After upgrading, this command is no longer available. If you skip this step,
+residual BPF state remains on affected nodes: pinned programs under bpffs
+(`/sys/fs/bpf`), cgroup connect hooks, and TC filter attachments. This state
+continues intercepting traffic until manually removed. Consult the merbridge
+documentation for manual cleanup procedures if needed.
+
 ### North-south Gateway API (built-in gateway) support removed
 
 The control plane no longer reconciles the north-south Gateway API resources
@@ -162,6 +197,26 @@ release; existing resources are still accepted and stored.
 **Action required**
 
 Migrate access logging to `MeshAccessLog`, which replaces `TrafficLog`.
+
+### KDS snapshot watchdog config removed
+
+KDS now always uses the event-based snapshot watchdog. The previous polling
+fallback and the configuration that controlled it have been removed.
+
+The following configuration has been removed:
+
+- Control plane: `experimental.kdsEventBasedWatchdog.enabled`
+  (`KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED`).
+- Global control plane: `multizone.global.kds.refreshInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL`).
+- Zone control plane: `multizone.zone.kds.refreshInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL`).
+
+**Action required**
+
+Remove the settings above from your control plane config and environment if
+set. KDS snapshot generation is event-driven, with periodic full resync
+controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
 
 ### `TrafficTrace` no longer affects generated Envoy config
 
