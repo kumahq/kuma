@@ -281,7 +281,6 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			KubeOutboundsAsVIPs:             true,
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
@@ -456,9 +455,6 @@ func DefaultDefaultsConfig() *Defaults {
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
-	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
-	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
 	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
 	// It is recommended to use tag first model for deployments with more than 2k services
 	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled

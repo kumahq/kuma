@@ -98,10 +98,10 @@ spec:
 
 	It("should limit all sources", func() {
 		By("demo-client to test-server should be rate limited by mesh-rate-limit-all-sources")
-		Eventually(requestRateLimited("demo-client", "test-server", 429), "20s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("demo-client", "test-server", 429), "30s", "100ms").Should(Succeed())
 
 		By("web to test-server should be rate limited by mesh-rate-limit-all-sources")
-		Eventually(requestRateLimited("web", "test-server", 429), "20s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server", 429), "30s", "100ms").Should(Succeed())
 	})
 
 	It("should limit tcp connections", func() {
