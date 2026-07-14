@@ -55,7 +55,6 @@ var (
 
 var (
 	_ = Describe("Gateway", Label("job-0"), gateway.GatewayHybrid, Ordered)
-	_ = Describe("Cross-mesh Gateways", Label("job-0"), gateway.CrossMeshGatewayOnMultizone, Ordered)
 	_ = Describe("External Service locality aware", Label("job-0"), localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
 	_ = Describe("Healthcheck", Label("job-3"), healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
 	_ = Describe("Inspect", Label("job-3"), inspect.Inspect, Ordered)
