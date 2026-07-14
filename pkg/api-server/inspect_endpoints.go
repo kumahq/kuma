@@ -445,18 +445,6 @@ func newGatewayDataplaneInspectResponse(
 		result.Listeners = append(result.Listeners, listener)
 	}
 
-	gatewayPolicies := api_server_types.PolicyMap{}
-
-	// TrafficTrace is applied to the entire MeshGateway
-	// see pkg/xds/generator/gateway.newHTTPFilterChain
-	if trace := proxy.Policies.TrafficTrace; trace != nil {
-		gatewayPolicies[core_mesh.TrafficTraceType] = rest.From.Meta(trace)
-	}
-
-	if len(gatewayPolicies) > 0 {
-		result.Policies = gatewayPolicies
-	}
-
 	return result
 }
 
@@ -553,18 +541,6 @@ func gatewayEntriesByPolicy(
 		policyMap[policy] = append(
 			policyMap[policy],
 			api_server_types.NewPolicyInspectEntry(&result),
-		)
-	}
-
-	if trace := proxy.Policies.TrafficTrace; trace != nil {
-		wholeGateway := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
-		policyKey := inspect.PolicyKey{
-			Type: core_mesh.TrafficTraceType,
-			Key:  core_model.MetaToResourceKey(trace.GetMeta()),
-		}
-		policyMap[policyKey] = append(
-			policyMap[policyKey],
-			api_server_types.NewPolicyInspectEntry(&wholeGateway),
 		)
 	}
 

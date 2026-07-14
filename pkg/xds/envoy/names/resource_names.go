@@ -108,14 +108,6 @@ func GetAdminListenerName() string {
 	return Join("kuma", "envoy", "admin")
 }
 
-func GetTracingClusterPrefix() string {
-	return Join("tracing")
-}
-
-func GetTracingClusterName(backendName string) string {
-	return Join(GetTracingClusterPrefix(), backendName)
-}
-
 func GetDNSListenerName() string {
 	return Join("kuma", "dns")
 }
