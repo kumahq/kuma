@@ -114,12 +114,12 @@ spec:
  targetRef:
    kind: MeshService
    name: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Exact
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -141,12 +141,12 @@ spec:
  targetRef:
    kind: MeshService
    name: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Exact
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -205,12 +205,12 @@ spec:
  targetRef:
    kind: MeshService
    name: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Exact
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then
@@ -241,12 +241,12 @@ spec:
  targetRef:
    kind: MeshService
    name: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Exact
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then

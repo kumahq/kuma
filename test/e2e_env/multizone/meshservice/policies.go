@@ -286,10 +286,8 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/proxy-type: sidecar
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
           http:
             - abort:
                 httpStatus: 503

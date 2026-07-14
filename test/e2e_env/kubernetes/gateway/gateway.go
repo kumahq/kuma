@@ -875,10 +875,8 @@ spec:
   targetRef:
     kind: MeshService
     name: echo-server_simple-gateway_svc_80
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 500
@@ -1105,10 +1103,8 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         tlsVersion:
           min: TLS13
           max: TLS13`, Config.KumaNamespace, meshName)

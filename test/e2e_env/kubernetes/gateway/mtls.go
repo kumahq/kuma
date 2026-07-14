@@ -314,13 +314,12 @@ spec:
   targetRef:
     kind: MeshService
     name: non-accessible-echo-server_gateway-mtls_svc_80
-  from:
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          kuma.io/service: not-mtls-edge-gateway_gateway-mtls_svc
-      default:
-        action: Allow`
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://gateway-mtls/not-mtls-edge-gateway_gateway-mtls_svc`
 			Expect(kubernetes.Cluster.Install(YamlK8s(tp))).To(Succeed())
 
 			Eventually(func(g Gomega) {

@@ -136,11 +136,12 @@ mesh: mtp-test
 spec:
  targetRef:
    kind: Mesh
- from:
-   - targetRef:
-       kind: Mesh
-     default:
-       action: Allow
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://mtp-test/
 `
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
