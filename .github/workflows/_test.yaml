@@ -7,6 +7,9 @@ on:
       RUNNERS_BY_ARCH:
         required: true
         type: string
+      IS_PULL_REQUEST:
+        required: true
+        type: boolean
 permissions:
   contents: read
 env:
@@ -21,7 +24,7 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     env:
-      UNIT_CLEAN_TESTCACHE: ${{ github.event_name == 'pull_request' && 'false' || 'true' }}
+      UNIT_CLEAN_TESTCACHE: ${{ inputs.IS_PULL_REQUEST && 'false' || 'true' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:

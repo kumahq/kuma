@@ -1,7 +1,7 @@
 UPDATE_GOLDEN_FILES ?=
 TEST_PKG_LIST ?= ./...
 REPORTS_DIR ?= build/reports
-UNIT_LD_FLAGS ?= -ldflags="-X github.com/kumahq/kuma/v3/pkg/version.version=0.0.0 -X github.com/kumahq/kuma/v3/pkg/version.gitTag=0000000 -X github.com/kumahq/kuma/v3/pkg/version.buildDate=local-build"
+UNIT_LD_FLAGS ?= -ldflags="-X github.com/kumahq/kuma/v3/pkg/version.version=0.0.0 -X github.com/kumahq/kuma/v3/pkg/version.gitTag=0000000 -X github.com/kumahq/kuma/v3/pkg/version.buildDate=local-build -X github.com/kumahq/kuma/v3/pkg/version.Envoy=$(ENVOY_VERSION)"
 UNIT_CLEAN_TESTCACHE ?= true
 # Path to the kumactl binary for Linux. This binary will be uploaded to Docker
 # containers during transparent proxy tests.
