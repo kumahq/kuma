@@ -258,6 +258,15 @@ func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
 			_, _ = hasher.Write(xdsHasher.XDSHash())
 		} else {
 			_, _ = hasher.Write(core_model.Hash(identity))
+			return hasher.Sum(nil)
+		}
+		// Workload identity delivery is additionally gated by MeshIdentity
+		// initialization, so dataplanes must resync when that readiness flips
+		// even though mesh-wide xDS can stay stable.
+		if identity.Status != nil && identity.Status.IsInitialized() {
+			_, _ = hasher.Write([]byte{1})
+		} else {
+			_, _ = hasher.Write([]byte{0})
 		}
 	}
 	return hasher.Sum(nil)
