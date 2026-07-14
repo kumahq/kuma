@@ -329,8 +329,6 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-- name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  value: {{ .Values.experimental.sidecarContainers | quote }}
 {{- if .Values.experimental.inboundTagsDisabled }}
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
   value: "true"

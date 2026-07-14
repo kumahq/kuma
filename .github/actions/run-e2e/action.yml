@@ -9,9 +9,6 @@ inputs:
     required: true
   arch:
     required: true
-  sidecar_containers:
-    required: false
-    default: ""
   target:
     required: false
     default: ""
@@ -64,7 +61,6 @@ runs:
         E2E_K8S_VERSION: ${{ inputs.k8s_version }}
         E2E_CNI_NETWORK_PLUGIN: ${{ inputs.cni_network_plugin }}
         E2E_ARCH: ${{ inputs.arch }}
-        E2E_SIDECAR_CONTAINERS: ${{ inputs.sidecar_containers }}
         E2E_TARGET: ${{ inputs.target }}
         E2E_PARALLEL_RUNNER_ID: ${{ inputs.parallel_runner_id }}
       run: |
@@ -82,10 +78,6 @@ runs:
           export MAKE_PARAMETERS="-j1"
         else
           export MAKE_PARAMETERS="-j2"
-        fi
-
-        if [[ "$E2E_SIDECAR_CONTAINERS" == "false" ]]; then
-          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
         fi
 
         if [[ "$E2E_TARGET" == "" ]]; then
@@ -120,7 +112,7 @@ runs:
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
-        name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}
         if-no-files-found: ignore
         path: |
           build/reports/e2e-debug*
@@ -128,7 +120,7 @@ runs:
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
-        name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}
         if-no-files-found: ignore
         path: |
           build/reports

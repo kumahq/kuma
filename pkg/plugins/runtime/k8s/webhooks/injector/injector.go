@@ -100,7 +100,6 @@ func New(
 	cfg runtime_k8s.Injector,
 	controlPlaneURL string,
 	client kube_client.Client,
-	sidecarContainersEnabled bool,
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	readinessPort uint32,
@@ -125,18 +124,17 @@ func New(
 		}
 	}
 	return &KumaInjector{
-		cfg:                      cfg,
-		client:                   client,
-		sidecarContainersEnabled: sidecarContainersEnabled,
-		converter:                converter,
-		defaultAdminPort:         envoyAdminPort,
-		defaultReadinessPort:     readinessPort,
-		envoyAdminUnixSocket:     envoyAdminUnixSocket,
+		cfg:                  cfg,
+		client:               client,
+		converter:            converter,
+		defaultAdminPort:     envoyAdminPort,
+		defaultReadinessPort: readinessPort,
+		envoyAdminUnixSocket: envoyAdminUnixSocket,
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, readinessPort,
 			cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
-			sidecarContainersEnabled,
+			true,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
@@ -146,16 +144,15 @@ func New(
 }
 
 type KumaInjector struct {
-	cfg                      runtime_k8s.Injector
-	client                   kube_client.Client
-	sidecarContainersEnabled bool
-	converter                k8s_common.Converter
-	proxyFactory             *containers.DataplaneProxyFactory
-	defaultAdminPort         uint32
-	defaultReadinessPort     uint32
-	envoyAdminUnixSocket     bool
-	systemNamespace          string
-	metrics                  *injectionMetrics
+	cfg                  runtime_k8s.Injector
+	client               kube_client.Client
+	converter            k8s_common.Converter
+	proxyFactory         *containers.DataplaneProxyFactory
+	defaultAdminPort     uint32
+	defaultReadinessPort uint32
+	envoyAdminUnixSocket bool
+	systemNamespace      string
+	metrics              *injectionMetrics
 }
 
 func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error {
@@ -347,39 +344,27 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		})
 	}
 
-	initFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
-	if err != nil {
+	if _, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst); err != nil {
 		return err
 	}
 
 	var prependInitContainers []kube_core.Container
-	var appendInitContainers []kube_core.Container
 
 	if injectedInitContainer != nil {
-		if initFirst || i.sidecarContainersEnabled {
-			prependInitContainers = append(prependInitContainers, *injectedInitContainer)
-		} else {
-			appendInitContainers = append(appendInitContainers, *injectedInitContainer)
-		}
+		prependInitContainers = append(prependInitContainers, *injectedInitContainer)
 	}
 
-	if i.sidecarContainersEnabled {
-		// inject sidecar after init
-		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
-		patchedContainer.Lifecycle = &kube_core.Lifecycle{
-			PreStop: &kube_core.LifecycleHandler{
-				Exec: &kube_core.ExecAction{
-					Command: []string{"killall", "-USR2", "kuma-dp"},
-				},
+	patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
+	patchedContainer.Lifecycle = &kube_core.Lifecycle{
+		PreStop: &kube_core.LifecycleHandler{
+			Exec: &kube_core.ExecAction{
+				Command: []string{"killall", "-USR2", "kuma-dp"},
 			},
-		}
-		prependInitContainers = append(prependInitContainers, patchedContainer)
-	} else {
-		// inject sidecar as first container
-		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
+		},
 	}
+	prependInitContainers = append(prependInitContainers, patchedContainer)
 
-	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
+	pod.Spec.InitContainers = append(prependInitContainers, pod.Spec.InitContainers...)
 
 	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
 	if err != nil {
