@@ -1,3 +1,13 @@
+type: MeshOpenTelemetryBackend
+name: mt-otel-backend
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/display-name: mt-otel-backend
+spec:
+  endpoint:
+    address: otel-collector.observability
+    port: 4317
+---
 type: MeshTrace
 name: mt-otel
 mesh: envoyconfig-zoneproxies
@@ -8,6 +18,9 @@ spec:
     backends:
       - type: OpenTelemetry
         openTelemetry:
-          endpoint: otel-collector.observability:4317
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            labels:
+              kuma.io/display-name: mt-otel-backend
     sampling:
       overall: 100
