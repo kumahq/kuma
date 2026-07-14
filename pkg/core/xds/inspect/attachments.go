@@ -199,9 +199,6 @@ func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.Ser
 
 func getDataplaneMatchedPolicies(matchedPolicies *xds.MatchedPolicies) []core_model.Resource {
 	var resources []core_model.Resource
-	if matchedPolicies.TrafficTrace != nil {
-		resources = append(resources, matchedPolicies.TrafficTrace)
-	}
 	if matchedPolicies.ProxyTemplate != nil {
 		resources = append(resources, matchedPolicies.ProxyTemplate)
 	}
