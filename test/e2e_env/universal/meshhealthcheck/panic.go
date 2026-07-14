@@ -32,10 +32,22 @@ spec:
         timeout: 2s
         unhealthyThreshold: 3
         healthyThreshold: 1
-        healthyPanicThreshold: 61
         failTrafficOnPanic: true
         http:
           path: "/"`, meshName)
+
+	circuitBreaker := fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: mcb-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 61`, meshName)
 
 	dp := func(idx int) string {
 		return fmt.Sprintf(`
@@ -61,6 +73,7 @@ networking:
 		err := NewClusterSetup().
 			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
 			Install(YamlUniversal(healthCheck)).
+			Install(YamlUniversal(circuitBreaker)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
