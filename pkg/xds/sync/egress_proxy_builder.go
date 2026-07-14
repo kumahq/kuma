@@ -9,7 +9,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -65,7 +64,6 @@ func (p *EgressProxyBuilder) Build(
 
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
-		rateLimits := meshCtx.Resources.RateLimits().Items
 		mes := meshCtx.Resources.MeshExternalServices().Items
 
 		meshResources := &core_xds.MeshResources{
@@ -83,10 +81,6 @@ func (p *EgressProxyBuilder) Build(
 			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(
 				externalServices,
 				trafficPermissions,
-			),
-			ExternalServiceRateLimits: ratelimits.BuildExternalServiceRateLimitMapForZoneEgress(
-				externalServices,
-				rateLimits,
 			),
 			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
 			Resources: meshCtx.Resources.MeshLocalResources,

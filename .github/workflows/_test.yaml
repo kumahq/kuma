@@ -12,7 +12,7 @@ permissions:
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.32.13-k3s1
+  K8S_MIN_VERSION: v1.34.9-k3s1
   K8S_MAX_VERSION: v1.35.3-k3s1
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
 jobs:
@@ -49,8 +49,7 @@ jobs:
                 "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
                 "parallelism": [4],
-                "cniNetworkPlugin": ["flannel"],
-                "sidecarContainers": [""]
+                "cniNetworkPlugin": ["flannel"]
               },
               "test_e2e_env": {
                 "target": ["kubernetes", "universal", "multizone"],
@@ -58,14 +57,12 @@ jobs:
                 "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
-                "sidecarContainers": [""],
                 "exclude":[
                   {"target": "kubernetes", "k8sVersion":"kind"},
                   {"target": "multizone", "k8sVersion":"kind"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
                 "include":[
-                  {"sidecarContainers": "false", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
                   {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "amd64"},
                   {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "amd64"},
                   {"k8sVersion": "kind", "target": "universal", "arch": "arm64"},
@@ -127,12 +124,11 @@ jobs:
           k8s_version: ${{ matrix.k8sVersion }}
           cni_network_plugin: ${{ matrix.cniNetworkPlugin }}
           arch: ${{ matrix.arch }}
-          sidecar_containers: ${{ matrix.sidecarContainers }}
           target: ${{ matrix.target }}
           parallel_runner_id: ${{ matrix.parallelRunnerId }}
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
-    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', noSidecarContainers' || '' }})"
+    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
@@ -154,6 +150,5 @@ jobs:
           k8s_version: ${{ matrix.k8sVersion }}
           cni_network_plugin: ${{ matrix.cniNetworkPlugin }}
           arch: ${{ matrix.arch }}
-          sidecar_containers: ${{ matrix.sidecarContainers }}
           target: ${{ matrix.target }}
           parallel_runner_id: ${{ matrix.parallelRunnerId }}

@@ -195,12 +195,6 @@ func TCPProxy(statsName string, splits ...envoy_common.Split) FilterChainBuilder
 	})
 }
 
-func RateLimit(rateLimits []*core_mesh.RateLimitResource) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.RateLimitConfigurer{
-		RateLimits: rateLimits,
-	})
-}
-
 func NetworkAccessLog(
 	mesh string,
 	trafficDirection envoy_common.TrafficDirection,

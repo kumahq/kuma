@@ -19,7 +19,15 @@
          "tags": {
           "kuma.io/service": "backend"
          },
-         "policies": {}
+         "policies": {
+          "HealthCheck": {
+           "type": "HealthCheck",
+           "mesh": "default",
+           "name": "hc-1",
+           "creationTime": "0001-01-01T00:00:00Z",
+           "modificationTime": "0001-01-01T00:00:00Z"
+          }
+         }
         },
         {
          "tags": {

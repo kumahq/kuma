@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -48,7 +47,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound), clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
+		routes := g.determineRoutes(proxy, proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound), clusterCache)
 		clusters := routes.Clusters()
 
 		protocol := inferProtocol(xdsCtx.Mesh, clusters)
@@ -86,10 +85,6 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 
 func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_meta.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	var rateLimits []*core_mesh.RateLimitResource
-	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
-		rateLimits = append(rateLimits, rateLimit)
-	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
@@ -118,8 +113,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, dpTags)).
-				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
-				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 			filterChainBuilder.
@@ -131,8 +124,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					serviceName,
 					false,
 				)).
-				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
-				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
@@ -191,7 +182,6 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
 		protocol := ctx.Mesh.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
 
@@ -199,9 +189,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 			cluster := c.(*envoy_common.ClusterImpl)
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
-				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
-				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
-				Configure(envoy_clusters.OutlierDetection(circuitBreaker))
+				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol))
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
@@ -322,7 +310,6 @@ func (OutboundProxyGenerator) determineRoutes(
 	proxy *model.Proxy,
 	oface mesh_proto.OutboundInterface,
 	clusterCache map[string]string,
-	hasEgress bool,
 ) envoy_common.Routes {
 	var routes envoy_common.Routes
 
@@ -338,8 +325,6 @@ func (OutboundProxyGenerator) determineRoutes(
 	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
 		timeoutConf = timeout.Spec.GetConf()
 	}
-
-	rateLimit := proxy.Policies.RateLimitsOutbound[oface]
 
 	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) []envoy_common.Cluster {
 		var clusters []envoy_common.Cluster
@@ -403,24 +388,10 @@ func (OutboundProxyGenerator) determineRoutes(
 			return routes
 		}
 
-		hasExternal := false
-		for _, cluster := range clusters {
-			if cluster.IsExternalService() {
-				hasExternal = true
-				break
-			}
-		}
-
-		var rlSpec *mesh_proto.RateLimit
-		if hasExternal && !hasEgress && rateLimit != nil {
-			rlSpec = rateLimit.Spec
-		} // otherwise rate limit is applied on the inbound side
-
 		return append(routes, envoy_common.Route{
-			Match:     match,
-			Modify:    modify,
-			RateLimit: rlSpec,
-			Clusters:  clusters,
+			Match:    match,
+			Modify:   modify,
+			Clusters: clusters,
 		})
 	}
 

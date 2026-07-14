@@ -611,17 +611,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							},
 						},
 					},
-					CircuitBreakers: model.CircuitBreakerMap{
-						"api-http": &core_mesh.CircuitBreakerResource{
-							Spec: &mesh_proto.CircuitBreaker{
-								Conf: &mesh_proto.CircuitBreaker_Conf{
-									Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-										TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
-									},
-								},
-							},
-						},
-					},
 					Timeouts: map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource{
 						{DataplaneIP: "127.0.0.1", DataplanePort: 40002}: {Spec: timeout},
 						{DataplaneIP: "127.0.0.1", DataplanePort: 40003}: {Spec: timeout},

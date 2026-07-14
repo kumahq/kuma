@@ -290,8 +290,6 @@ func newClusterBuilder(
 
 	builder := clusters.NewClusterBuilder(version, name).Configure(
 		clusters.Timeout(timeout, protocol),
-		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
-		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),
 	)
 
 	// TODO(jpeach) OutboundProxyGenerator unconditionally
@@ -371,12 +369,4 @@ func timeoutPolicyFor(dest *route.Destination) *core_mesh.TimeoutResource {
 	}
 
 	return nil // TODO(jpeach) default timeout policy
-}
-
-func circuitBreakerPolicyFor(dest *route.Destination) *core_mesh.CircuitBreakerResource {
-	if policy, ok := dest.Policies[core_mesh.CircuitBreakerType]; ok {
-		return policy.(*core_mesh.CircuitBreakerResource)
-	}
-
-	return nil // TODO(jpeach) default circuit breaker policy
 }
