@@ -6,12 +6,10 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	envoy_routes_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes/v3"
 )
 
 type RoutesConfigurer struct {
@@ -28,12 +26,6 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHo
 				Route: c.routeAction(route.Clusters, route.Modify),
 			},
 		}
-
-		typedPerFilterConfig, err := c.typedPerFilterConfig(&route)
-		if err != nil {
-			return err
-		}
-		envoyRoute.TypedPerFilterConfig = typedPerFilterConfig
 
 		c.setHeadersModifications(envoyRoute, route.Modify)
 
@@ -241,18 +233,4 @@ func (c RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.Ro
 			}
 		}
 	}
-}
-
-func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*anypb.Any, error) {
-	typedPerFilterConfig := map[string]*anypb.Any{}
-
-	if route.RateLimit != nil {
-		rateLimit, err := envoy_routes_v3.NewRateLimitConfiguration(envoy_routes_v3.RateLimitConfigurationFromProto(route.RateLimit))
-		if err != nil {
-			return nil, err
-		}
-		typedPerFilterConfig["envoy.filters.http.local_ratelimit"] = rateLimit
-	}
-
-	return typedPerFilterConfig, nil
 }

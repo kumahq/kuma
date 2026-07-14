@@ -8,12 +8,6 @@ resources:
         ads: {}
         resourceApiVersion: V3
     name: api-http-5637c619d2781fec_mesh2
-    outlierDetection:
-      enforcingConsecutive5xx: 100
-      enforcingConsecutiveGatewayFailure: 0
-      enforcingConsecutiveLocalOriginFailure: 0
-      enforcingFailurePercentage: 0
-      enforcingSuccessRate: 0
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:

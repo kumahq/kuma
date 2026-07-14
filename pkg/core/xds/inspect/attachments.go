@@ -158,11 +158,6 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 	for inbound, tp := range matchedPolicies.TrafficPermissions {
 		result[inbound] = append(result[inbound], tp)
 	}
-	for inbound, rlList := range matchedPolicies.RateLimitsInbound {
-		for _, rl := range rlList {
-			result[inbound] = append(result[inbound], rl)
-		}
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for inbound, elts := range matchedPolicies.Dynamic[tpe].InboundPolicies {
 			result[inbound] = append(result[inbound], elts...)
@@ -177,9 +172,6 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 
 	for outbound, timeout := range matchedPolicies.Timeouts {
 		result[outbound] = append(result[outbound], timeout)
-	}
-	for outbound, rl := range matchedPolicies.RateLimitsOutbound {
-		result[outbound] = append(result[outbound], rl)
 	}
 	for outbound, tr := range matchedPolicies.TrafficRoutes {
 		result[outbound] = append(result[outbound], tr)
@@ -196,12 +188,6 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.ServiceName][]core_model.Resource {
 	result := map[xds.ServiceName][]core_model.Resource{}
 
-	for service, cb := range matchedPolicies.CircuitBreakers {
-		result[service] = append(result[service], cb)
-	}
-	for service, retry := range matchedPolicies.Retries {
-		result[service] = append(result[service], retry)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for serviceName, elts := range matchedPolicies.Dynamic[tpe].ServicePolicies {
 			result[serviceName] = append(result[serviceName], elts...)

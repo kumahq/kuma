@@ -17,7 +17,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -31,8 +30,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	envoy_secrets "github.com/kumahq/kuma/v3/pkg/xds/envoy/secrets/v3"
 	envoy_tls_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls/v3"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
 // TODO(jpeach) It's a lot to ask operators to tune these defaults,
@@ -233,9 +230,6 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 
 	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
-		// Force the ratelimit filter to always be present. This
-		// is a no-op unless we later add a per-route configuration.
-		envoy_listeners.RateLimit([]*core_mesh.RateLimitResource{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
 		envoy_listeners.Tracing(
 			ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace),
@@ -318,11 +312,9 @@ func newTCPFilterChain(
 	proxy *core_xds.Proxy,
 	service string,
 	clusters []envoy_common.Cluster,
-	retryPolicy *core_mesh.RetryResource,
 ) *envoy_listeners.FilterChainBuilder {
 	return envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 		envoy_listeners.TcpProxyDeprecated(service, clusters...),
-		envoy_listeners.MaxConnectAttempts(retryPolicy),
 	)
 }
 
@@ -339,12 +331,10 @@ func (g *TCPFilterChainGenerator) Generate(
 	resources := core_xds.NewResourceSet()
 
 	clustersByHostname := map[string][]envoy_common.Cluster{}
-	var allDests []route.Destination
 
 	for _, listenerHostnames := range info.ListenerHostnames {
 		for _, host := range listenerHostnames.HostInfos {
 			dests := routeDestinations(host.Entries())
-			allDests = append(allDests, dests...)
 
 			for _, dest := range dests {
 				cluster := envoy_common.NewCluster(
@@ -365,12 +355,6 @@ func (g *TCPFilterChainGenerator) Generate(
 
 	service := info.Proxy.Dataplane.IdentifyingName(false)
 
-	// We can only specify retries for the entire filter chain, not per cluster
-	var retryPolicy *core_mesh.RetryResource
-	if policy := match.BestConnectionPolicyForDestination(allDests, core_mesh.RetryType); policy != nil {
-		retryPolicy = policy.(*core_mesh.RetryResource)
-	}
-
 	switch info.Listener.Protocol {
 	case mesh_proto.MeshGateway_Listener_TLS:
 		var filterChains []*envoy_listeners.FilterChainBuilder
@@ -378,7 +362,7 @@ func (g *TCPFilterChainGenerator) Generate(
 			clusters := clustersByHostname[filter.Hostname]
 			sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
-			builder := newTCPFilterChain(info.Proxy, service, clusters, retryPolicy)
+			builder := newTCPFilterChain(info.Proxy, service, clusters)
 			tlsResources, err := configureTLS(
 				ctx,
 				info,
@@ -396,7 +380,7 @@ func (g *TCPFilterChainGenerator) Generate(
 		}
 		return resources, filterChains, nil
 	default:
-		builder := newTCPFilterChain(info.Proxy, service, allClusters, retryPolicy)
+		builder := newTCPFilterChain(info.Proxy, service, allClusters)
 		return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
 	}
 }
