@@ -103,6 +103,7 @@ type Builder struct {
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
 	apiWebServiceCustomize   []func(*restful.WebService) error
+	routeMetadataProvider    RouteMetadataProvider
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -290,6 +291,14 @@ func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService)
 	return b
 }
 
+// WithRouteMetadataProvider sets the route-metadata provider. Unlike
+// WithAPIWebServiceCustomize it does not compose: a second call replaces the
+// first, as there is intentionally a single metadata authority.
+func (b *Builder) WithRouteMetadataProvider(provider RouteMetadataProvider) *Builder {
+	b.routeMetadataProvider = provider
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -401,6 +410,7 @@ func (b *Builder) Build() (Runtime, error) {
 			pgxConfigCustomizationFn: b.pgxConfigCustomizationFn,
 			tenants:                  b.tenants,
 			apiWebServiceCustomize:   b.apiWebServiceCustomize,
+			routeMetadataProvider:    b.routeMetadataProvider,
 		},
 		Manager: b.cm,
 	}, nil
@@ -540,4 +550,8 @@ func (b *Builder) Tenants() multitenant.Tenants {
 
 func (b *Builder) APIWebServiceCustomize() []func(*restful.WebService) error {
 	return b.apiWebServiceCustomize
+}
+
+func (b *Builder) RouteMetadataProvider() RouteMetadataProvider {
+	return b.routeMetadataProvider
 }
