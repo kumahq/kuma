@@ -90,7 +90,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
 	}
-	if err := addGatewayReconcilers(mgr, rt, converter); err != nil {
+	if err := addGatewayAPIReconcilers(mgr, rt); err != nil {
 		return err
 	}
 	if err := addPodReconciler(mgr, rt, converter); err != nil {
@@ -341,10 +341,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
 	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator, rt.Config().Store.UnsafeDelete)
 	composite.AddValidator(k8sZoneValidator)
-
-	for _, validator := range gatewayValidators(rt, converter) {
-		composite.AddValidator(validator)
-	}
 
 	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
