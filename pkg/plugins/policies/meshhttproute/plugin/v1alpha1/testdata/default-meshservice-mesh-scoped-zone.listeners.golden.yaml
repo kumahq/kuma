@@ -37,6 +37,7 @@ resources:
           statPrefix: default_backend__remote-zone_msvc_80
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/kri: kri_msvc_default_remote-zone__backend_80
     name: outbound:10.0.0.1:80
     trafficDirection: OUTBOUND

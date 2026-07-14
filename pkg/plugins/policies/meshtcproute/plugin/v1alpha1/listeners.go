@@ -4,7 +4,7 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -39,7 +39,7 @@ func GenerateOutboundListener(
 		tcpProxyStatPrefix = listenerName
 	}
 
-	tags := envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)
+	tags := envoy_tags.Tags(svc.Outbound.ListenerTags()).WithoutTags(mesh_proto.MeshTag)
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
