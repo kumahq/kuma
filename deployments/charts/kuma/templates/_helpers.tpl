@@ -365,10 +365,6 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
-- name: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
-  value: true
-{{- end }}
 {{- if .Values.dataPlane.features.unifiedResourceNaming }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
   value: "true"

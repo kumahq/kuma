@@ -192,6 +192,7 @@ var MeshZoneAddressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh Zone Address",
 	PluralDisplayName:            "Mesh Zone Addresses",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,

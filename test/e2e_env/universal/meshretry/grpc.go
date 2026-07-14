@@ -24,7 +24,7 @@ func GrpcRetry() {
 			)).
 			Install(TestServerUniversal("test-client", meshName,
 				WithServiceName("test-client"),
-				WithArgs([]string{"grpc", "client", "--address", "test-server.mesh:80", "--unary", "true"}),
+				WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80", "--unary", "true"}),
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
 			)).
@@ -85,13 +85,13 @@ spec:
 
 		lastFailureStats := stats.StatItem{Name: "", Value: float64(0)}
 		grpcFailureStats := func(g Gomega) *stats.Stats {
-			s, err := admin.GetStats("cluster.test-server.grpc.failure")
+			s, err := admin.GetStats("cluster.meshretry-grpc_test-server__kuma-3_msvc_80.grpc.failure")
 			g.Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("current failure stats %v\n", s)
 			return s
 		}
 		grpcSuccessStats := func(g Gomega) *stats.Stats {
-			s, err := admin.GetStats("cluster.test-server.grpc.success")
+			s, err := admin.GetStats("cluster.meshretry-grpc_test-server__kuma-3_msvc_80.grpc.success")
 			g.Expect(err).ToNot(HaveOccurred())
 			return s
 		}

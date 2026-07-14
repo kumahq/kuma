@@ -8,6 +8,98 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### North-south Gateway API (built-in gateway) support removed
+
+The control plane no longer reconciles the north-south Gateway API resources
+`Gateway`, `GatewayClass`, and `ReferenceGrant` used to configure the
+built-in gateway via the Kubernetes Gateway API. `HTTPRoute` is still
+reconciled, but only for its east-west (GAMMA) use — `HTTPRoute`s whose
+`parentRefs` target a `Service` and get translated to `MeshHTTPRoute`.
+`HTTPRoute`s that target a `Gateway` are now ignored by the control plane.
+Any status that Kuma already wrote for those `Gateway` parent references is
+left unchanged, but it is no longer updated.
+
+The built-in gateway itself (`MeshGateway`, `MeshGatewayInstance`) is
+unaffected by this change.
+
+**Action required**
+
+- Before upgrading, delete any `Gateway` and `ReferenceGrant` resources you
+  created for the built-in gateway; the control plane no longer manages them
+  and leaves them untouched on disk.
+- The `kuma` `GatewayClass` that the Helm chart used to install is no longer
+  installed. On startup, the control plane removes the legacy
+  `gateway-exists-finalizer.gateway.networking.k8s.io` finalizer from
+  Kuma-managed `GatewayClass` objects so Helm-pruned objects can finish
+  deleting. If you manage RBAC manually, grant the control plane `get`, `list`,
+  `patch`, and `update` on `gatewayclasses` and `get`, `patch`, and `update`
+  on `gatewayclasses/finalizers` during the upgrade, or remove that finalizer
+  before upgrading.
+- Any Kuma `Secret` that was copied from a Gateway API TLS `Secret` (name
+  prefixed `gapi-`) is now orphaned and must be deleted manually.
+- The default Helm-installed cluster RBAC no longer grants access to
+  `gateways` and `referencegrants`. It still grants access to `httproutes`
+  for the GAMMA path, plus narrow `gatewayclasses` access for the finalizer
+  cleanup described above. If you manage RBAC manually, add the
+  `gatewayclasses` permissions called out above for the upgrade window.
+- The config field `runtime.kubernetes.supportGatewaySecretsInAllNamespaces`
+  (env `KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES`)
+  and the Helm value `controlPlane.supportGatewaySecretsInAllNamespaces` have
+  been removed. The control plane now always scopes its `Secret` watch to its
+  own system namespace. Remove this key from your config file and Helm
+  values — leaving it in place is harmless but has no effect.
+
+### Default `TrafficPermission`/`TrafficRoute` creation removed
+
+The control plane no longer creates the default allow-all `TrafficPermission`
+and route-all `TrafficRoute` resources when a new `Mesh` is created. Traffic
+routing and permissions for a new `Mesh` are now expected to come from the
+default `MeshTrafficPermission` and implicit routing instead.
+
+The following configuration has been removed:
+
+- Control plane: `defaults.createMeshRoutingResources`
+  (`KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES`).
+
+**Action required**
+
+Remove `defaults.createMeshRoutingResources` from your control plane YAML
+config and `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` from your
+environment if set. Both settings no longer have any effect in Kuma 3.0.0.
+A stale YAML key is rejected only by strict config parsing; regular control
+plane startup and the environment variable loader silently ignore the removed
+setting.
+
+The compatibility mode for creating legacy defaults for pre-2.6.0 zones is no
+longer available in Kuma 3.0.0. Existing `TrafficPermission` and `TrafficRoute`
+resources remain fully valid and supported; this change only affects automatic
+creation of new defaults.
+
+### Auto reachable services removed
+
+The experimental auto reachable services feature has been removed. The control
+plane no longer computes the set of services a data plane proxy can reach from
+`MeshTrafficPermission` to prune its Envoy configuration.
+
+The following configuration has been removed:
+
+- Control plane: `experimental.autoReachableServices`
+  (`KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES`).
+
+**Action required**
+
+Remove the setting above from your control plane config. Setting
+`KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES` no longer has any effect in Kuma
+3.0.0.
+
+To trim the outbound clusters a proxy receives, configure reachable services or
+reachable backends explicitly on the `Dataplane` (the
+`kuma.io/transparent-proxying-reachable-services` and `kuma.io/reachable-backends`
+annotations on Kubernetes). Traffic that is not permitted by a
+`MeshTrafficPermission` is still denied at the proxy; it is simply no longer
+pruned from the proxy configuration.
+
+
 ### `kumactl install observability` removed
 
 The deprecated `kumactl install observability` command has been removed for Kuma 3.0.
@@ -96,6 +188,10 @@ A new explicit flag preserves the previous insecure behavior:
 - `kumactl config control-planes add --skip-verify`
 
 Do not use this in production.
+
+### Rolling-upgrade note: inbound listeners use SO_REUSEPORT by default
+
+See [Inbound listeners now use SO_REUSEPORT by default](#inbound-listeners-now-use-so_reuseport-by-default).
 
 ## Upgrade to `2.12.11`
 
@@ -971,6 +1067,19 @@ If you're using Kubernetes mode, and you did not specify `default.passthroughMod
 
 The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
 is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+
+### Built-in MeshGateway policy targeting
+
+Policies no longer attach directly to built-in `MeshGateway` listeners through `spec.targetRef.kind: MeshGateway` for `MeshAccessLog`, `MeshCircuitBreaker`, `MeshFaultInjection`, `MeshHealthCheck`, `MeshRateLimit`, `MeshRetry`, `MeshTimeout`, `MeshTLS`, `MeshTrace`, or `MeshLoadBalancingStrategy`.
+Use `MeshHTTPRoute` or `MeshTCPRoute` resources for built-in gateway routing behavior, and move the affected policy configuration to supported target kinds before upgrading.
+
+### Legacy `FaultInjection` policy no longer generates Envoy configuration
+
+The legacy `FaultInjection` policy (`kind: FaultInjection`, superseded by `MeshFaultInjection`) no longer produces any Envoy fault-injection filters. Existing `FaultInjection` resources remain creatable and readable through the API, but they have no effect on data plane proxies.
+
+**Action required**
+
+Migrate any remaining `FaultInjection` resources to `MeshFaultInjection` before upgrading. See the [MeshFaultInjection documentation](https://kuma.io/docs/latest/policies/meshfaultinjection/) for the equivalent configuration.
 
 ### MeshHealthCheck
 

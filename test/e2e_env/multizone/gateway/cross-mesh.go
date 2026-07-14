@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	k8s_gateway "github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway"
 	universal_gateway "github.com/kumahq/kuma/v3/test/e2e_env/universal/gateway"
@@ -82,8 +83,8 @@ func CrossMeshGatewayOnMultizone() {
 
 	BeforeAll(func() {
 		globalSetup := NewClusterSetup().
-			Install(Yaml(samples.MeshMTLSBuilder().WithName(gatewayMesh).WithEgressRoutingEnabled())).
-			Install(Yaml(samples.MeshMTLSBuilder().WithName(gatewayOtherMesh).WithEgressRoutingEnabled())).
+			Install(Yaml(samples.MeshMTLSBuilder().WithName(gatewayMesh).WithEgressRoutingEnabled().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled))).
+			Install(Yaml(samples.MeshMTLSBuilder().WithName(gatewayOtherMesh).WithEgressRoutingEnabled().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled))).
 			Install(MeshTrafficPermissionAllowAllUniversal(gatewayMesh)).
 			Install(MeshTrafficPermissionAllowAllUniversal(gatewayOtherMesh)).
 			Install(YamlUniversal(crossMeshGatewayYaml)).

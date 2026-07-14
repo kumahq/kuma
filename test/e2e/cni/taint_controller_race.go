@@ -22,6 +22,9 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: default
+spec:
+  meshServices:
+    mode: Disabled
 `
 
 	var cluster Cluster

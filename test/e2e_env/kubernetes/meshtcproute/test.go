@@ -80,7 +80,7 @@ func Test() {
 			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
 				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
+				"test-http-server.meshtcproute.svc.cluster.local",
 				client.FromKubernetesPod(namespace, "test-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -108,7 +108,7 @@ spec:
 `, meshName, namespace)))).To(Succeed())
 
 		// when
-		meshRoutes := func(meshName string, namespace string) string {
+		meshRoutes := func(meshName string) string {
 			meshHTTPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
@@ -119,12 +119,12 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client_%s_svc_80
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
-      name: test-http-server_meshtcproute_svc_80
+      name: test-http-server
+      namespace: %s
     rules:
     - matches:
       - path:
@@ -133,8 +133,10 @@ spec:
       default:
         backendRefs:
         - kind: MeshService
-          name: test-http-server-2_meshtcproute_svc_80
-`, Config.KumaNamespace, meshName, namespace)
+          name: test-http-server-2
+          namespace: %s
+          port: 80
+`, namespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -145,22 +147,22 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client_%s_svc_80
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
-      name: test-http-server_meshtcproute_svc_80
+      name: test-http-server
+      namespace: %s
     rules:
     - default:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, Config.KumaNamespace, meshName, namespace)
+`, namespace, meshName, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
-		Expect(YamlK8s(meshRoutes(meshName, namespace))(kubernetes.Cluster)).
+		Expect(YamlK8s(meshRoutes(meshName))(kubernetes.Cluster)).
 			To(Succeed())
 
 		// then
@@ -168,7 +170,7 @@ spec:
 			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
 				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
+				"test-http-server.meshtcproute.svc.cluster.local",
 				client.FromKubernetesPod(namespace, "test-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -196,7 +198,7 @@ spec:
 `, meshName, namespace)))).To(Succeed())
 
 		// when
-		meshRoutes := func(meshName string, namespace string) string {
+		meshRoutes := func(meshName string) string {
 			meshHTTPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
@@ -207,12 +209,12 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client_%s_svc_80
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
-      name: test-tcp-server_meshtcproute_svc_80
+      name: test-tcp-server
+      namespace: %s
     rules:
     - matches:
       - path:
@@ -221,8 +223,10 @@ spec:
       default:
         backendRefs:
         - kind: MeshService
-          name: test-http-server-2_meshtcproute_svc_80
-`, Config.KumaNamespace, meshName, namespace)
+          name: test-http-server-2
+          namespace: %s
+          port: 80
+`, namespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
@@ -233,22 +237,22 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client_%s_svc_80
+    kind: Mesh
   to:
   - targetRef:
       kind: MeshService
-      name: test-tcp-server_meshtcproute_svc_80
+      name: test-tcp-server
+      namespace: %s
     rules:
     - default:
         backendRefs:
         - kind: MeshService
           name: external-tcp-service
-`, Config.KumaNamespace, meshName, namespace)
+`, namespace, meshName, namespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
-		Expect(YamlK8s(meshRoutes(meshName, namespace))(kubernetes.Cluster)).
+		Expect(YamlK8s(meshRoutes(meshName))(kubernetes.Cluster)).
 			To(Succeed())
 
 		// then
@@ -256,7 +260,7 @@ spec:
 			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
 				"test-client",
-				"test-tcp-server_meshtcproute_svc_80.mesh",
+				"test-tcp-server.meshtcproute.svc.cluster.local",
 				client.FromKubernetesPod(namespace, "test-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

@@ -48,10 +48,31 @@ func CrossMeshGatewayOnKubernetes() {
 		)
 	}
 
+	// Cross-mesh gateways are addressed via the legacy VIP hostname
+	// (gateway.mesh / gateway2.mesh). Under the Exclusive meshServices default
+	// those hostnames are no longer served, so pin the meshes to Disabled to
+	// keep exercising the legacy cross-mesh addressing.
+	mtlsMeshDisabledMeshServices := func(name string) InstallFunc {
+		return YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: Disabled
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, name))
+	}
+
 	BeforeAll(func() {
 		setup := NewClusterSetup().
-			Install(MTLSMeshKubernetes(gatewayMesh)).
-			Install(MTLSMeshKubernetes(gatewayOtherMesh)).
+			Install(mtlsMeshDisabledMeshServices(gatewayMesh)).
+			Install(mtlsMeshDisabledMeshServices(gatewayOtherMesh)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
@@ -158,7 +179,7 @@ func CrossMeshGatewayOnKubernetes() {
 			crossMeshGatewayInstanceYaml2 := MkGatewayInstance(crossMeshGatewayName, gatewayTestNamespace2, gatewayMesh2)
 
 			setup := NewClusterSetup().
-				Install(MTLSMeshKubernetes(gatewayMesh2)).
+				Install(mtlsMeshDisabledMeshServices(gatewayMesh2)).
 				Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh2)).
 				Install(YamlK8s(crossMeshGatewayYaml2)).
 				Install(YamlK8s(crossMeshGatewayInstanceYaml2))
@@ -185,87 +206,6 @@ func CrossMeshGatewayOnKubernetes() {
 				Install(DeleteYamlK8s(crossMeshGatewayInstanceYaml2))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 			Expect(kubernetes.Cluster.DeleteMesh(gatewayMesh2)).To(Succeed())
-		})
-	})
-
-	Context("with Gateway API", func() {
-		const gatewayClass = `
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
-metadata:
-  name: kuma-cross-mesh
-spec:
-  controllerName: "gateways.kuma.io/controller"
-  parametersRef:
-    group: kuma.io
-    kind: MeshGatewayConfig
-    name: default-cross-mesh
-`
-		const meshGatewayConfig = `
-apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayConfig
-metadata:
-  name: default-cross-mesh
-spec:
-  crossMesh: true
-`
-		gateway := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: Gateway
-metadata:
-  name: %s
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  gatewayClassName: kuma-cross-mesh
-  listeners:
-  - name: proxy
-    port: %d
-    hostname: %s
-    protocol: HTTP
-`, crossMeshGatewayName, gatewayTestNamespace, gatewayMesh, crossMeshGatewayPort, crossMeshHostname)
-		route := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: %s
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  parentRefs:
-  - name: %s
-  rules:
-  - backendRefs:
-    - name: %s
-      port: 80
-    matches:
-    - path:
-        type: PathPrefix
-        value: /
-`, crossMeshGatewayName, gatewayTestNamespace, gatewayMesh, crossMeshGatewayName, echoServerName(gatewayMesh))
-		BeforeAll(func() {
-			setup := NewClusterSetup().
-				Install(YamlK8s(meshGatewayConfig)).
-				Install(YamlK8s(gatewayClass)).
-				Install(YamlK8s(gateway)).
-				Install(YamlK8s(route))
-			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
-		})
-		E2EAfterAll(func() {
-			setup := NewClusterSetup().
-				Install(DeleteYamlK8s(gateway)).
-				Install(DeleteYamlK8s(route))
-			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
-		})
-		It("should proxy HTTP requests from a different mesh", func() {
-			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			Eventually(SuccessfullyProxyRequestToGateway(
-				kubernetes.Cluster, gatewayMesh,
-				gatewayAddr,
-				gatewayClientNamespaceOtherMesh,
-			), "1m", "1s").Should(Succeed())
 		})
 	})
 }

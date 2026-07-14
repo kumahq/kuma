@@ -246,7 +246,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.SkipMeshOwnerReference).To(BeTrue())
-			Expect(cfg.Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.WorkloadLabels).To(Equal([]string{"app.kubernetes.io/name", "app"}))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
@@ -300,7 +299,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
-			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeTrue())
 			Expect(cfg.Defaults.SkipHostnameGenerators).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
@@ -321,6 +319,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.XdsServer.DataplaneDeregistrationDelay.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.XdsServer.NACKBackoff.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.XdsServer.PolicyMatchingCacheSize).To(Equal(1234))
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
 			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
@@ -358,6 +357,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
 			Expect(cfg.InterCp.Catalog.InstanceAddress).To(Equal("192.168.0.1"))
+			Expect(cfg.InterCp.Catalog.InstanceVersion).To(Equal("v3"))
 			Expect(cfg.InterCp.Catalog.HeartbeatInterval.Duration).To(Equal(time.Second))
 			Expect(cfg.InterCp.Catalog.WriterInterval.Duration).To(Equal(2 * time.Second))
 			Expect(cfg.InterCp.Server.Port).To(Equal(uint16(15683)))
@@ -390,10 +390,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
-			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeFalse())
 
-			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 
 			Expect(cfg.IPAM.MeshService.CIDR).To(Equal("251.0.0.0/8"))
@@ -646,7 +644,6 @@ runtime:
       leaseDuration: 199s
       renewDeadline: 99s
     skipMeshOwnerReference: true
-    supportGatewaySecretsInAllNamespaces: true
     workloadLabels: ["app.kubernetes.io/name", "app"]
 reports:
   enabled: false
@@ -709,7 +706,6 @@ defaults:
   skipMeshCreation: true
   skipHostnameGenerators: true
   skipTenantResources: true
-  createMeshRoutingResources: true
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -724,6 +720,7 @@ xdsServer:
   dataplaneStatusFlushInterval: 7s
   dataplaneDeregistrationDelay: 11s
   nackBackoff: 10s
+  policyMatchingCacheSize: 1234
 metrics:
   zone:
     subscriptionLimit: 23
@@ -777,6 +774,7 @@ dpServer:
 interCp:
   catalog:
     instanceAddress: "192.168.0.1"
+    instanceVersion: "v3"
     heartbeatInterval: 1s
     writerInterval: 2s
   server:
@@ -821,13 +819,9 @@ experimental:
     flushInterval: 10s
     fullResyncInterval: 15s
     delayFullResync: true
-  autoReachableServices: true
   sidecarContainers: false
   generateMeshServices: true
   skipPersistedVIPs: true
-proxy:
-  gateway:
-    globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
 coreResources:
@@ -1034,7 +1028,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION":                                   "199s",
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE":                                   "99s",
 				"KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE":                                        "true",
-				"KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES":                        "true",
 				"KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS":                                                  "app.kubernetes.io/name,app",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
@@ -1090,7 +1083,6 @@ meshService:
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",
 				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
-				"KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES":                                              "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",
@@ -1103,6 +1095,7 @@ meshService:
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
 				"KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY":                                                  "11s",
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
+				"KUMA_XDS_SERVER_POLICY_MATCHING_CACHE_SIZE":                                               "1234",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
@@ -1140,6 +1133,7 @@ meshService:
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
 				"KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS":                                                   "192.168.0.1",
+				"KUMA_INTER_CP_CATALOG_INSTANCE_VERSION":                                                   "v3",
 				"KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL":                                                 "1s",
 				"KUMA_INTER_CP_CATALOG_WRITER_INTERVAL":                                                    "2s",
 				"KUMA_INTER_CP_SERVER_PORT":                                                                "15683",
@@ -1170,11 +1164,9 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
-				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "false",
 				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
-				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",

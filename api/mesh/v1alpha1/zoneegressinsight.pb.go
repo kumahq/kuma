@@ -85,12 +85,12 @@ var File_api_mesh_v1alpha1_zoneegressinsight_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_zoneegressinsight_proto_rawDesc = "" +
 	"\n" +
-	")api/mesh/v1alpha1/zoneegressinsight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a)api/mesh/v1alpha1/dataplane_insight.proto\x1a\x1cgoogle/protobuf/struct.proto\"\x88\x02\n" +
+	")api/mesh/v1alpha1/zoneegressinsight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a)api/mesh/v1alpha1/dataplane_insight.proto\x1a\x1cgoogle/protobuf/struct.proto\"\x8b\x02\n" +
 	"\x11ZoneEgressInsight\x12O\n" +
 	"\rsubscriptions\x18\x01 \x03(\v2).kuma.mesh.v1alpha1.DiscoverySubscriptionR\rsubscriptions\x123\n" +
-	"\bmetadata\x18\x02 \x01(\v2\x17.google.protobuf.StructR\bmetadata:m\xaa\x8c\x89\xa6\x01g\n" +
+	"\bmetadata\x18\x02 \x01(\v2\x17.google.protobuf.StructR\bmetadata:p\xaa\x8c\x89\xa6\x01j\n" +
 	"\x19ZoneEgressInsightResource\x12\x11ZoneEgressInsight\x18\x01\"\x04mesh:\x15\n" +
-	"\x11zoneegressinsight\x18\x01R\x16model.ZoneToGlobalFlagX\x01B-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"\x11zoneegressinsight\x18\x01R\x16model.ZoneToGlobalFlagX\x01\xa8\x01\x01B-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_zoneegressinsight_proto_rawDescOnce sync.Once

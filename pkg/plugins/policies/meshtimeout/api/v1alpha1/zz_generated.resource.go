@@ -192,6 +192,7 @@ var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh Timeout",
 	PluralDisplayName:            "Mesh Timeouts",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasFromTargetRef:             true,

@@ -771,6 +771,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 					RedirectPortInbound:  redirectPortInbound,
 					RedirectPortOutbound: redirectPortOutbound,
 					ReachableServices:    opts.reachableServices,
+					ReachableBackends:    opts.reachableBackends,
 				}
 			case opts.bindOutbounds:
 				dpp.InboundPort = "13000"

@@ -79,7 +79,10 @@ type PEMBytes []byte
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash                        string
+	Hash string
+	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
+	// Excludes Dataplane roster; stays stable across DP-registration waves.
+	PolicyMatchingHash          string
 	Resource                    *core_mesh.MeshResource
 	BaseMeshContext             *BaseMeshContext
 	Resources                   Resources
@@ -92,7 +95,6 @@ type MeshContext struct {
 	VIPOutbounds                xds_types.Outbounds
 	ServicesInformation         map[string]*ServiceInformation
 	DataSourceLoader            datasource.Loader
-	ReachableServicesGraph      ReachableServicesGraph
 	CAsByTrustDomain            map[string][]PEMBytes
 	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
 	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
@@ -187,7 +189,7 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
-	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+	return len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.

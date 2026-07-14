@@ -73,10 +73,6 @@ func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
 	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
 }
 
-func (r Resources) HealthChecks() *core_mesh.HealthCheckResourceList {
-	return r.ListOrEmpty(core_mesh.HealthCheckType).(*core_mesh.HealthCheckResourceList)
-}
-
 func (r Resources) TrafficTraces() *core_mesh.TrafficTraceResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficTraceType).(*core_mesh.TrafficTraceResourceList)
 }
@@ -85,20 +81,12 @@ func (r Resources) TrafficRoutes() *core_mesh.TrafficRouteResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
 }
 
-func (r Resources) Retries() *core_mesh.RetryResourceList {
-	return r.ListOrEmpty(core_mesh.RetryType).(*core_mesh.RetryResourceList)
-}
-
 func (r Resources) TrafficPermissions() *core_mesh.TrafficPermissionResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
 }
 
 func (r Resources) TrafficLogs() *core_mesh.TrafficLogResourceList {
 	return r.ListOrEmpty(core_mesh.TrafficLogType).(*core_mesh.TrafficLogResourceList)
-}
-
-func (r Resources) FaultInjections() *core_mesh.FaultInjectionResourceList {
-	return r.ListOrEmpty(core_mesh.FaultInjectionType).(*core_mesh.FaultInjectionResourceList)
 }
 
 func (r Resources) Timeouts() *core_mesh.TimeoutResourceList {

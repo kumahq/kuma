@@ -21,10 +21,6 @@ resources:
             initialStreamWindowSize: 65536
             maxConcurrentStreams: 100
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: gzip-compress
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
@@ -83,10 +79,6 @@ resources:
             initialStreamWindowSize: 65536
             maxConcurrentStreams: 100
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: gzip-compress
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
@@ -145,10 +137,6 @@ resources:
             initialStreamWindowSize: 65536
             maxConcurrentStreams: 100
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: gzip-compress
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
@@ -211,10 +199,6 @@ resources:
             initialStreamWindowSize: 65536
             maxConcurrentStreams: 100
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: gzip-compress
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
@@ -277,10 +261,6 @@ resources:
             initialStreamWindowSize: 65536
             maxConcurrentStreams: 100
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: gzip-compress
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor

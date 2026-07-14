@@ -27,6 +27,7 @@ type PingRequest struct {
 	Address       string                 `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	InterCpPort   uint32                 `protobuf:"varint,3,opt,name=inter_cp_port,json=interCpPort,proto3" json:"inter_cp_port,omitempty"`
 	Ready         bool                   `protobuf:"varint,4,opt,name=ready,proto3" json:"ready,omitempty"`
+	Version       string                 `protobuf:"bytes,5,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -89,6 +90,13 @@ func (x *PingRequest) GetReady() bool {
 	return false
 }
 
+func (x *PingRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
 type PingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Leader        bool                   `protobuf:"varint,1,opt,name=leader,proto3" json:"leader,omitempty"`
@@ -137,13 +145,14 @@ var File_api_system_v1alpha1_inter_cp_ping_proto protoreflect.FileDescriptor
 
 const file_api_system_v1alpha1_inter_cp_ping_proto_rawDesc = "" +
 	"\n" +
-	"'api/system/v1alpha1/inter_cp_ping.proto\x12\x14kuma.system.v1alpha1\"\x82\x01\n" +
+	"'api/system/v1alpha1/inter_cp_ping.proto\x12\x14kuma.system.v1alpha1\"\x9c\x01\n" +
 	"\vPingRequest\x12\x1f\n" +
 	"\vinstance_id\x18\x01 \x01(\tR\n" +
 	"instanceId\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\"\n" +
 	"\rinter_cp_port\x18\x03 \x01(\rR\vinterCpPort\x12\x14\n" +
-	"\x05ready\x18\x04 \x01(\bR\x05ready\"&\n" +
+	"\x05ready\x18\x04 \x01(\bR\x05ready\x12\x18\n" +
+	"\aversion\x18\x05 \x01(\tR\aversion\"&\n" +
 	"\fPingResponse\x12\x16\n" +
 	"\x06leader\x18\x01 \x01(\bR\x06leader2c\n" +
 	"\x12InterCpPingService\x12M\n" +

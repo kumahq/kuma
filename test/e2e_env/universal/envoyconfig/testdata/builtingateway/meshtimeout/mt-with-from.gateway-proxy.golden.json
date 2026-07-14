@@ -198,6 +198,7 @@
                       "version": "v1"
                     },
                     "io.kuma.labels": {
+                      "kuma.io/display-name": "echo-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-builtingateway",
                       "kuma.io/origin": "zone",
@@ -242,13 +243,6 @@
                     "maxConcurrentStreams": 100
                   },
                   "httpFilters": [
-                    {
-                      "name": "envoy.filters.http.local_ratelimit",
-                      "typedConfig": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit",
-                        "statPrefix": "STAT_PREFIX_REDACTED"
-                      }
-                    },
                     {
                       "name": "gzip-compress",
                       "typedConfig": {
@@ -519,7 +513,7 @@
                           {
                             "header": {
                               "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
+                              "value": "&kuma.io/service=gateway-proxy&&kuma.io/zone=kuma-3&"
                             }
                           }
                         ],

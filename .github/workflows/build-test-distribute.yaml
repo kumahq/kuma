@@ -21,6 +21,37 @@ concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
 jobs:
+  meta:
+    timeout-minutes: 5
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    env:
+      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+    outputs:
+      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+    steps:
+      - run: echo "FULL_MATRIX=${{ env.FULL_MATRIX }}"
+  build_check:
+    timeout-minutes: 20
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          version: 2026.5.7
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Cache Go build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-
+      - run: go build ./...
   check:
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
@@ -150,10 +181,10 @@ jobs:
           config: .syft.yaml
           upload-sbom-release-assets: true
   test:
-    needs: ["check"]
+    needs: ["meta", "build_check"]
     uses: ./.github/workflows/_test.yaml
     with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
       IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
       # Per-arch lookup (each side independent):
       #   1. fork PR                    -> free GitHub-hosted runners (security)

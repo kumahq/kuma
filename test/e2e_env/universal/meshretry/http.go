@@ -117,7 +117,7 @@ spec:
 		By("Checking requests succeed")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
@@ -133,7 +133,7 @@ spec:
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 				client.NoFail(),
 				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
 			)
@@ -148,7 +148,7 @@ spec:
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
@@ -286,7 +286,7 @@ spec:
 		By("Checking requests succeed")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
@@ -297,7 +297,7 @@ spec:
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 				client.NoFail(),
 				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
 			)
@@ -312,7 +312,7 @@ spec:
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())

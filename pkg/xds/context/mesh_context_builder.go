@@ -33,15 +33,26 @@ import (
 )
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
-	vipPort         uint32
-	rsGraphBuilder  ReachableServicesGraphBuilder
-	caProvider      secrets.CaProvider
+	rm                     manager.ReadOnlyResourceManager
+	typeSet                map[core_model.ResourceType]struct{}
+	ipFunc                 lookup.LookupIPFunc
+	zone                   string
+	vipsPersistence        *vips.Persistence
+	topLevelDomain         string
+	vipPort                uint32
+	caProvider             secrets.CaProvider
+	withPolicyMatchingHash bool
+}
+
+// MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
+type MeshContextBuilderOption func(*meshContextBuilder)
+
+// WithPolicyMatchingHash enables computing MeshContext.PolicyMatchingHash (the MatchedPolicies
+// cache key). It is skipped by default to avoid hashing work when the cache is disabled.
+func WithPolicyMatchingHash() MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.withPolicyMatchingHash = true
+	}
 }
 
 // MeshContextBuilder
@@ -71,15 +82,15 @@ func NewMeshContextBuilder(
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
 	vipPort uint32,
-	rsGraphBuilder ReachableServicesGraphBuilder,
 	caProvider secrets.CaProvider,
+	opts ...MeshContextBuilderOption,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
 		typeSet[typ] = struct{}{}
 	}
 
-	return &meshContextBuilder{
+	builder := &meshContextBuilder{
 		rm:              rm,
 		typeSet:         typeSet,
 		ipFunc:          ipFunc,
@@ -87,9 +98,12 @@ func NewMeshContextBuilder(
 		vipsPersistence: vipsPersistence,
 		topLevelDomain:  topLevelDomain,
 		vipPort:         vipPort,
-		rsGraphBuilder:  rsGraphBuilder,
 		caProvider:      caProvider,
 	}
+	for _, opt := range opts {
+		opt(builder)
+	}
+	return builder
 }
 
 func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshContext, error) {
@@ -140,6 +154,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
 	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
 		return latestMeshCtx, nil
+	}
+
+	var policyMatchingHash string
+	if m.withPolicyMatchingHash {
+		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
 	}
 
 	dataplanes := resources.Dataplanes().Items
@@ -265,6 +284,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	return &MeshContext{
 		Hash:                            newHash,
+		PolicyMatchingHash:              policyMatchingHash,
 		Resource:                        mesh,
 		Resources:                       resources,
 		BaseMeshContext:                 baseMeshContext,
@@ -277,7 +297,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		VIPOutbounds:                    outbounds,
 		ServicesInformation:             m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
 		DataSourceLoader:                loader,
-		ReachableServicesGraph:          m.rsGraphBuilder(meshName, resources),
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
 		DataplaneZoneIngressEndpointMap: dpZoneIngressEndpointMap,
@@ -592,6 +611,46 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
 		_, _ = hasher.Write([]byte(m))
 		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
+	}
+	return hasher.Sum(nil)
+}
+
+// affectsPolicyMatching reports whether resources of resType can change which policies match a
+// dataplane, per the type's ResourceTypeDescriptor.AffectsPolicyMatching. Unknown types are
+// treated as relevant (safe default: spurious cache misses, never stale xDS).
+func affectsPolicyMatching(resType core_model.ResourceType) bool {
+	descriptor, err := registry.Global().DescriptorFor(resType)
+	if err != nil {
+		return true
+	}
+	return descriptor.AffectsPolicyMatching
+}
+
+func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
+	hasher := fnv.New128a()
+	for _, resType := range maps.SortedKeys(globalContext.ResourceMap) {
+		if affectsPolicyMatching(resType) {
+			_, _ = hasher.Write(core_model.ResourceListHash(globalContext.ResourceMap[resType]))
+		}
+	}
+	for _, resType := range maps.SortedKeys(baseMeshContext.ResourceMap) {
+		if affectsPolicyMatching(resType) {
+			_, _ = hasher.Write(core_model.ResourceListHash(baseMeshContext.ResourceMap[resType]))
+		}
+	}
+	for _, resType := range managedTypes {
+		if affectsPolicyMatching(resType) {
+			_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+		}
+	}
+	for _, meshName := range maps.SortedKeys(resources.CrossMeshResources) {
+		_, _ = hasher.Write([]byte(meshName))
+		crossMesh := resources.CrossMeshResources[meshName]
+		for _, resType := range maps.SortedKeys(crossMesh) {
+			if affectsPolicyMatching(resType) {
+				_, _ = hasher.Write(core_model.ResourceListHash(crossMesh[resType]))
+			}
+		}
 	}
 	return hasher.Sum(nil)
 }
