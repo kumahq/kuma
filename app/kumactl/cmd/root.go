@@ -27,8 +27,6 @@ import (
 	core_apis "github.com/kumahq/kuma/v3/pkg/core/resources/apis"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies"
-	// Register gateway resources.
-	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/register"
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
 	_ "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
