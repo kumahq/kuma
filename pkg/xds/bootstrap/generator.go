@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	xds_config "github.com/kumahq/kuma/v3/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -33,7 +32,6 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	serverConfig *bootstrap_config.BootstrapServerConfig,
-	proxyConfig xds_config.Proxy,
 	dpServerCertFile string,
 	authEnabledForProxyType map[string]bool,
 	enableReloadableTokens bool,
@@ -54,7 +52,6 @@ func NewDefaultBootstrapGenerator(
 	return &bootstrapGenerator{
 		resManager:              resManager,
 		config:                  serverConfig,
-		proxyConfig:             proxyConfig,
 		xdsCertFile:             dpServerCertFile,
 		authEnabledForProxyType: authEnabledForProxyType,
 		enableReloadableTokens:  enableReloadableTokens,
@@ -69,7 +66,6 @@ func NewDefaultBootstrapGenerator(
 type bootstrapGenerator struct {
 	resManager              core_manager.ResourceManager
 	config                  *bootstrap_config.BootstrapServerConfig
-	proxyConfig             xds_config.Proxy
 	authEnabledForProxyType map[string]bool
 	enableReloadableTokens  bool
 	xdsCertFile             string
@@ -199,7 +195,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params, b.proxyConfig, b.enableReloadableTokens, meshResource)
+	config, err := genConfig(params, b.enableReloadableTokens, meshResource)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}

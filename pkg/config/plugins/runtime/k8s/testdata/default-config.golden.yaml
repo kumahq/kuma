@@ -105,5 +105,4 @@ nodeTaintController:
   cniNamespace: kube-system
   enabled: false
 skipMeshOwnerReference: false
-supportGatewaySecretsInAllNamespaces: false
 workloadLabels: []

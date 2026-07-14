@@ -157,6 +157,7 @@ func NewApiServer(
 		rt.GlobalInsightService(),
 		meshContextBuilder,
 		xdsHooks,
+		rt.RouteMetadataProvider(),
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
@@ -262,6 +263,7 @@ func addResourcesEndpoints(
 	globalInsightService globalinsight.GlobalInsightService,
 	meshContextBuilder xds_context.MeshContextBuilder,
 	xdsHooks []hooks.ResourceSetHook,
+	routeMetadataProvider runtime.RouteMetadataProvider,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
@@ -296,10 +298,11 @@ func addResourcesEndpoints(
 			definition.ReadOnly = definition.IsReadOnly(cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP())
 		}
 		endpointsCtx := resourceEndpointsContext{
-			mode:           cfg.Mode,
-			resManager:     resManager,
-			descriptor:     definition,
-			resourceAccess: resourceAccess,
+			mode:                  cfg.Mode,
+			resManager:            resManager,
+			descriptor:            definition,
+			resourceAccess:        resourceAccess,
+			routeMetadataProvider: routeMetadataProvider,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpointsCtx.zoneName = cfg.Multizone.Zone.Name

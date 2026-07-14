@@ -174,9 +174,6 @@ type KubernetesRuntimeConfig struct {
 	// If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
 	// This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
 	SkipMeshOwnerReference bool `json:"skipMeshOwnerReference" envconfig:"kuma_runtime_kubernetes_skip_mesh_owner_reference"`
-	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
-	// The downside is that control plane requires permission to read Secrets in all namespaces.
-	SupportGatewaySecretsInAllNamespaces bool `json:"supportGatewaySecretsInAllNamespaces" envconfig:"kuma_runtime_kubernetes_support_gateway_secrets_in_all_namespaces"`
 	// WorkloadLabels is a prioritized list of pod labels to use for generating the kuma.io/workload label on DataplaneProxy.
 	// The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
 	// Default is empty list (uses ServiceAccount as workload identifier).

@@ -2,6 +2,7 @@ package api_server_test
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -1006,6 +1008,32 @@ var _ = Describe("Inspect WS", func() {
 			contentType: restful.MIME_JSON,
 		}),
 	)
+
+	It("marshals empty meshgateway inspect rule slices as arrays", func() {
+		toRules := []api_common.Rule{}
+		fromRules := []api_common.FromRule{}
+		inboundRules := []api_common.InboundRulesEntry{}
+		toResourceRules := []api_common.ResourceRule{}
+		warnings := []string{"warning"}
+
+		bytes, err := json.Marshal(api_common.InspectRule{
+			Type:            "MeshRetry",
+			ToRules:         &toRules,
+			FromRules:       &fromRules,
+			InboundRules:    &inboundRules,
+			ToResourceRules: &toResourceRules,
+			Warnings:        &warnings,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(MatchJSON(`{
+			"type": "MeshRetry",
+			"toRules": [],
+			"fromRules": [],
+			"inboundRules": [],
+			"toResourceRules": [],
+			"warnings": ["warning"]
+		}`))
+	})
 
 	It("should change response if state changed", func() {
 		// setup

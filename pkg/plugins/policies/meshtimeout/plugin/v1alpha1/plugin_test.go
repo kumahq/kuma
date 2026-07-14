@@ -2,10 +2,8 @@
 package v1alpha1_test
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -27,10 +25,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -626,232 +622,6 @@ var _ = Describe("MeshTimeout", func() {
 		}),
 	)
 
-	type gatewayTestCase struct {
-		rules          core_rules.GatewayRules
-		meshhttproutes core_rules.GatewayRules
-		routes         []*core_mesh.MeshGatewayRouteResource
-	}
-	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
-		resources := xds_context.NewResources()
-		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-		}
-		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
-		}
-
-		xdsCtx := *xds_builders.Context().
-			WithMeshBuilder(samples.MeshDefaultBuilder()).
-			WithResources(resources).
-			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
-			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-			Build()
-		proxy := xds_builders.Proxy().
-			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithRouting(xds_builders.Routing().
-				WithOutboundTargets(
-					xds_builders.EndpointMap().
-						AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).
-						AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()),
-				),
-			).
-			WithPolicies(xds_builders.MatchedPolicies().
-				WithGatewayPolicy(api.MeshTimeoutType, given.rules).
-				WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes)).
-			Build()
-
-		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())
-		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-		Expect(err).NotTo(HaveOccurred())
-
-		httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-		// when
-		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-		nameSplit := strings.Split(GinkgoT().Name(), " ")
-		name := nameSplit[len(nameSplit)-1]
-
-		// then
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", name))))
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
-	},
-		Entry("basic", gatewayTestCase{
-			rules: core_rules.GatewayRules{
-				FromRules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "192.168.0.1", Port: 8080}: {
-						{
-							Subset: subsetutils.MeshSubset(),
-							Conf: api.Conf{
-								IdleTimeout: test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("311s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-									RequestHeadersTimeout: test.ParseDuration("99s"),
-								},
-							},
-						},
-					},
-				},
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "192.168.0.1", Port: 8080}: {
-						{
-							Conf: api.Conf{
-								IdleTimeout: test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("311s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-									RequestHeadersTimeout: test.ParseDuration("99s"),
-								},
-							},
-						},
-					},
-				},
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: api.Conf{
-									ConnectionTimeout: test.ParseDuration("10s"),
-									IdleTimeout:       test.ParseDuration("1h"),
-									Http: &api.Http{
-										RequestTimeout:        test.ParseDuration("5s"),
-										StreamIdleTimeout:     test.ParseDuration("1s"),
-										MaxStreamDuration:     test.ParseDuration("10m"),
-										MaxConnectionDuration: test.ParseDuration("10m"),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("no-default-idle-timeout", gatewayTestCase{
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: api.Conf{
-									ConnectionTimeout: test.ParseDuration("10s"),
-									IdleTimeout:       test.ParseDuration("1h"),
-									Http: &api.Http{
-										RequestTimeout:        test.ParseDuration("5s"),
-										MaxStreamDuration:     test.ParseDuration("10m"),
-										MaxConnectionDuration: test.ParseDuration("10m"),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("no-route-level-timeouts", gatewayTestCase{
-			routes: []*core_mesh.MeshGatewayRouteResource{
-				builders.GatewayRoute().
-					WithName("sample-gateway-route").
-					WithGateway("sample-gateway").
-					WithExactMatchHttpRoute("/", "backend", "other-service").
-					Build(),
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshService("backend"),
-								Conf: api.Conf{
-									Http: &api.Http{
-										RequestTimeout: test.ParseDuration("24s"),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("route-level-timeouts", gatewayTestCase{
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{
-										{
-											Matches: []meshhttproute_api.Match{{
-												Path: &meshhttproute_api.PathMatch{
-													Type:  meshhttproute_api.Exact,
-													Value: "/",
-												},
-											}},
-											Default: meshhttproute_api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-												}},
-											},
-										},
-										{
-											Matches: []meshhttproute_api.Match{{
-												Path: &meshhttproute_api.PathMatch{
-													Type:  meshhttproute_api.Exact,
-													Value: "/another-route",
-												},
-												Method: pointer.To[meshhttproute_api.Method]("GET"),
-											}},
-											Default: meshhttproute_api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-												}},
-											},
-										},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{
-									{
-										Key:   core_rules.RuleMatchesHashTag,
-										Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
-									},
-								},
-								Conf: api.Conf{
-									Http: &api.Http{
-										RequestTimeout:    test.ParseDuration("24s"),
-										StreamIdleTimeout: test.ParseDuration("99s"),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}))
-
 	It("should duplicate inbound routes for spiffeID matches", func() {
 		resourceSet := core_xds.NewResourceSet()
 		for _, res := range []core_xds.Resource{
@@ -1263,12 +1033,6 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni_precedence.cluster.golden.yaml")))
 	})
 })
-
-func getResourceYaml(list core_xds.ResourceList) []byte {
-	actualResource, err := util_proto.ToYAML(list[0].Resource)
-	Expect(err).ToNot(HaveOccurred())
-	return actualResource
-}
 
 func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(

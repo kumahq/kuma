@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	xds_config "github.com/kumahq/kuma/v3/pkg/config/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -110,7 +109,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, xds_config.Proxy{}, true, nil)
+		result, err := genConfig(params, true, nil)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -165,7 +164,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, xds_config.Proxy{}, false, nil)
+		result, err := genConfig(params, false, nil)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -202,7 +201,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, xds_config.Proxy{}, true, nil)
+		result, err := genConfig(params, true, nil)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

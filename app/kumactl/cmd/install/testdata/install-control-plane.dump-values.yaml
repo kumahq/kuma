@@ -385,9 +385,6 @@ controlPlane:
   containerSecurityContext:
     readOnlyRootFilesystem: true
 
-  # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
-  # The downside is that control plane requires permission to read Secrets in all namespaces.
-  supportGatewaySecretsInAllNamespaces: false
   # -- DNS configuration for the control-plane pod.
   # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
@@ -562,6 +559,36 @@ ingress:
       cpu: 1000m
       memory: 512Mi
 
+  # -- Liveness probe settings for the Ingress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Ingress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Ingress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
   lifecycle: {}
@@ -720,6 +747,36 @@ egress:
     limits:
       cpu: 1000m
       memory: 512Mi
+
+  # -- Liveness probe settings for the Egress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Egress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Egress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
 
   service:
     # -- Whether to create the service object
@@ -1117,9 +1174,6 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /tmp/kuma-ebpf
-  # -- If true, enable native Kubernetes sidecars. This requires at least
-  # Kubernetes v1.29
-  sidecarContainers: true
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.

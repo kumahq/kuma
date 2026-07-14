@@ -3,8 +3,8 @@ package k8s
 import (
 	"fmt"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
+	k8s_version "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -32,7 +32,7 @@ import (
 
 var (
 	log                                                = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
-	sidecarContainerVersion                            = semver.New(1, 29, 0, "", "")
+	sidecarContainerVersion                            = k8s_version.MustParseGeneric("1.29.0")
 	_                       core_plugins.RuntimePlugin = &plugin{}
 )
 
@@ -187,15 +187,14 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		return nil
 	}
 	defaultsReconciller := &k8s_controllers.MeshReconciler{
-		ResourceManager:            rt.ResourceManager(),
-		Log:                        core.Log.WithName("controllers").WithName("mesh-defaults"),
-		Extensions:                 rt.Extensions(),
-		CreateMeshRoutingResources: rt.Config().Defaults.CreateMeshRoutingResources,
-		K8sStore:                   rt.Config().Store.Type == store.KubernetesStore,
-		SystemNamespace:            rt.Config().Store.Kubernetes.SystemNamespace,
-		CaManagers:                 rt.CaManagers(),
-		CpMode:                     rt.Config().Mode,
-		CpZone:                     rt.Config().Multizone.Zone.Name,
+		ResourceManager: rt.ResourceManager(),
+		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
+		Extensions:      rt.Extensions(),
+		K8sStore:        rt.Config().Store.Type == store.KubernetesStore,
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		CaManagers:      rt.CaManagers(),
+		CpMode:          rt.Config().Mode,
+		CpZone:          rt.Config().Multizone.Zone.Name,
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")
@@ -379,8 +378,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
 		address := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
-		kubeConfig := mgr.GetConfig()
-		discClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+		discClient, err := discovery.NewDiscoveryClientForConfig(mgr.GetConfig())
 		if err != nil {
 			return err
 		}
@@ -388,13 +386,14 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		if err != nil {
 			return err
 		}
-		var sidecarContainersEnabled bool
-		if v, err := semver.NewVersion(
-			fmt.Sprintf("%s.%s.0", k8sVersion.Major, k8sVersion.Minor),
-		); err == nil && !v.LessThan(sidecarContainerVersion) {
-			sidecarContainersEnabled = rt.Config().Experimental.SidecarContainers
-		} else if rt.Config().Experimental.SidecarContainers {
-			log.Info("WARNING: sidecarContainers feature is enabled but Kubernetes server does not support it")
+		sidecarContainersEnabled := false
+		if version, err := k8s_version.ParseGeneric(k8sVersion.GitVersion); err == nil && !version.LessThan(sidecarContainerVersion) {
+			sidecarContainersEnabled = true
+		} else {
+			log.Info(
+				"Kubernetes server does not support native sidecar containers; falling back to legacy injection",
+				"version", k8sVersion.GitVersion,
+			)
 		}
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,

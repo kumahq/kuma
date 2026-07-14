@@ -28,18 +28,9 @@ type PluginOriginatedPolicies map[core_model.ResourceType]TypedMatchingPolicies
 type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
 	TrafficPermissions TrafficPermissionMap
-	FaultInjections    FaultInjectionMap
-	RateLimitsInbound  InboundRateLimitsMap
-
-	// Service(Cluster) -> Policy
-	TrafficLogs     TrafficLogMap
-	HealthChecks    HealthCheckMap
-	CircuitBreakers CircuitBreakerMap
-	Retries         RetryMap
 
 	// Outbound(Listener) -> Policy
-	Timeouts           TimeoutMap
-	RateLimitsOutbound OutboundRateLimitsMap
+	Timeouts TimeoutMap
 	// Actual Envoy Configuration is generated without taking this TrafficRoutes into account
 	TrafficRoutes RouteMap
 
