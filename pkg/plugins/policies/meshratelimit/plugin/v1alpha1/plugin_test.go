@@ -11,7 +11,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -45,10 +44,9 @@ import (
 
 var _ = Describe("MeshRateLimit", func() {
 	type sidecarTestCase struct {
-		resources            []*core_xds.Resource
-		fromRules            core_rules.FromRules
-		inboundRateLimitsMap core_xds.InboundRateLimitsMap
-		expectedListeners    []string
+		resources         []*core_xds.Resource
+		fromRules         core_rules.FromRules
+		expectedListeners []string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -78,7 +76,6 @@ var _ = Describe("MeshRateLimit", func() {
 				).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithRateLimitsInbound(given.inboundRateLimitsMap).
 						WithFromPolicy(api.MeshRateLimitType, given.fromRules),
 				).
 				Build()
@@ -217,155 +214,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
-			expectedListeners:    []string{"basic_listener_1.golden.yaml", "basic_listener_2.golden.yaml"},
-		}),
-		Entry("old policy defined and no changes from MeshRateLimit", sidecarTestCase{
-			resources: []*core_xds.Resource{
-				{
-					Name:   "inbound:127.0.0.1:17777",
-					Origin: metadata.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-							Configure(
-								HttpInboundRoutes(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-												envoy_common.WithService("backend"),
-												envoy_common.WithWeight(100),
-											)},
-											RateLimit: &mesh_proto.RateLimit{
-												Sources: []*mesh_proto.Selector{
-													{
-														Match: map[string]string{
-															mesh_proto.ServiceTag: "frontend",
-														},
-													},
-												},
-												Conf: &mesh_proto.RateLimit_Conf{
-													Http: &mesh_proto.RateLimit_Conf_Http{
-														Requests: 100,
-														Interval: &durationpb.Duration{Seconds: 14},
-													},
-												},
-											},
-										},
-									},
-								),
-							),
-						)).MustBuild(),
-				},
-			},
-			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									RequestRate: &api.Rate{
-										Num:      100,
-										Interval: *test.ParseDuration("10s"),
-									},
-									OnRateLimit: &api.OnRateLimit{
-										Status: pointer.To(uint32(444)),
-										Headers: &api.HeaderModifier{
-											Add: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-kuma-rate-limit-header",
-													Value: "test-value",
-												},
-											},
-											Set: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-kuma-rate-limit",
-													Value: "other-value",
-												},
-											},
-										},
-									},
-								},
-								TCP: &api.LocalTCP{
-									ConnectionRate: &api.Rate{
-										Num:      100,
-										Interval: *test.ParseDuration("99s"),
-									},
-								},
-							},
-						},
-					}},
-				},
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									RequestRate: &api.Rate{
-										Num:      100,
-										Interval: *test.ParseDuration("10s"),
-									},
-									OnRateLimit: &api.OnRateLimit{
-										Status: pointer.To(uint32(444)),
-										Headers: &api.HeaderModifier{
-											Add: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-kuma-rate-limit-header",
-													Value: "test-value",
-												},
-											},
-											Set: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-kuma-rate-limit",
-													Value: "other-value",
-												},
-											},
-										},
-									},
-								},
-								TCP: &api.LocalTCP{
-									ConnectionRate: &api.Rate{
-										Num:      100,
-										Interval: *test.ParseDuration("99s"),
-									},
-								},
-							},
-						},
-					}},
-				},
-			},
-			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{
-				mesh_proto.InboundInterface{
-					DataplaneAdvertisedIP: "127.0.0.1",
-					DataplaneIP:           "127.0.0.1",
-					DataplanePort:         17777,
-					WorkloadIP:            "127.0.0.1",
-					WorkloadPort:          17777,
-					InboundName:           "17777",
-				}: []*core_mesh.RateLimitResource{
-					{
-						Spec: &mesh_proto.RateLimit{
-							Sources: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "frontend",
-									},
-								},
-							},
-							Conf: &mesh_proto.RateLimit_Conf{
-								Http: &mesh_proto.RateLimit_Conf_Http{
-									Requests: 100,
-									Interval: &durationpb.Duration{Seconds: 14},
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedListeners: []string{"old_policy.golden.yaml"},
+			expectedListeners: []string{"basic_listener_1.golden.yaml", "basic_listener_2.golden.yaml"},
 		}),
 		Entry("tcp rate limiter is disabled", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -403,8 +252,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
-			expectedListeners:    []string{"tcp_disabled.golden.yaml"},
+			expectedListeners: []string{"tcp_disabled.golden.yaml"},
 		}),
 		Entry("http rate limiter is disabled", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -456,8 +304,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
-			expectedListeners:    []string{"http_disabled.golden.yaml"},
+			expectedListeners: []string{"http_disabled.golden.yaml"},
 		}),
 		Entry("tcp rate limiter is not configured", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -493,8 +340,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
-			expectedListeners:    []string{"tcp_disabled.golden.yaml"},
+			expectedListeners: []string{"tcp_disabled.golden.yaml"},
 		}),
 		Entry("http rate limiter is not configured", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -544,8 +390,7 @@ var _ = Describe("MeshRateLimit", func() {
 					}},
 				},
 			},
-			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
-			expectedListeners:    []string{"http_disabled.golden.yaml"},
+			expectedListeners: []string{"http_disabled.golden.yaml"},
 		}),
 		Entry("inbound listener with catch-all and rules[].matches[].spiffeID", sidecarTestCase{
 			resources: []*core_xds.Resource{{
@@ -603,8 +448,7 @@ var _ = Describe("MeshRateLimit", func() {
 					},
 				},
 			},
-			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
-			expectedListeners:    []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
+			expectedListeners: []string{"inbound_matches_spiffeid_and_catchall.listener.golden.yaml"},
 		}),
 	)
 

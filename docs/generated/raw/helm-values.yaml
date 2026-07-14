@@ -385,9 +385,6 @@ controlPlane:
   containerSecurityContext:
     readOnlyRootFilesystem: true
 
-  # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
-  # The downside is that control plane requires permission to read Secrets in all namespaces.
-  supportGatewaySecretsInAllNamespaces: false
   # -- DNS configuration for the control-plane pod.
   # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
@@ -1179,9 +1176,6 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /tmp/kuma-ebpf
-  # -- If true, enable native Kubernetes sidecars. This requires at least
-  # Kubernetes v1.29
-  sidecarContainers: true
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.

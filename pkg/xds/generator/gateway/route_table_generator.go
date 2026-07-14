@@ -5,15 +5,12 @@ import (
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
-	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes/v3"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
@@ -54,8 +51,6 @@ func GenerateVirtualHost(
 		return vh, nil
 	}
 
-	// TODO(jpeach) match the FaultInjection policy for this virtual host.
-
 	// TODO(jpeach) apply additional virtual host configuration.
 
 	// Sort routing table entries so the most specific match comes first.
@@ -81,30 +76,10 @@ func GenerateVirtualHost(
 			)
 		}
 
-		// Generate a retry policy for this route, if there is one.
-		routeBuilder.Configure(
-			retryRouteConfigurers(
-				route.InferForwardingProtocol(e.Action.Forward),
-				match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.RetryType),
-			)...,
-		)
-
 		if t := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.TimeoutType); t != nil {
 			timeout := t.(*core_mesh.TimeoutResource)
 			routeBuilder.Configure(
 				envoy_routes.RouteActionRequestTimeout(timeout.Spec.GetConf().GetHttp().GetRequestTimeout().AsDuration()),
-			)
-		}
-
-		if r := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.RateLimitType); r != nil {
-			ratelimit := r.(*core_mesh.RateLimitResource)
-			conf, err := v3.NewRateLimitConfiguration(v3.RateLimitConfigurationFromProto(ratelimit.Spec))
-			if err != nil {
-				return nil, err
-			}
-
-			routeBuilder.Configure(
-				envoy_routes.RoutePerFilterConfig("envoy.filters.http.local_ratelimit", conf),
 			)
 		}
 
@@ -180,17 +155,4 @@ func GenerateVirtualHost(
 	}
 
 	return vh, nil
-}
-
-// retryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
-func retryRouteConfigurers(protocol core_meta.Protocol, policy model.Resource) []envoy_routes.RouteConfigurer {
-	retry, _ := policy.(*core_mesh.RetryResource)
-	if retry == nil {
-		return nil
-	}
-
-	return []envoy_routes.RouteConfigurer{
-		envoy_routes.RouteActionRetryDefault(protocol),
-		envoy_routes.RouteActionRetry(retry, protocol),
-	}
 }

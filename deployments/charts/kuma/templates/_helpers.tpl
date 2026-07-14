@@ -329,8 +329,6 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-- name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  value: {{ .Values.experimental.sidecarContainers | quote }}
 {{- if .Values.experimental.inboundTagsDisabled }}
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
   value: "true"
@@ -365,10 +363,6 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
-- name: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
-  value: true
-{{- end }}
 {{- if .Values.dataPlane.features.unifiedResourceNaming }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
   value: "true"

@@ -52,12 +52,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					},
 				},
 			},
-			APIVersion: envoy_common.APIV3,
-			Policies: model.MatchedPolicies{
-				TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{
-					"some-service": {Spec: &mesh_proto.TrafficLog{Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"}}},
-				},
-			},
+			APIVersion:        envoy_common.APIV3,
 			InternalAddresses: DummyInternalAddresses,
 		}
 	}
@@ -149,16 +144,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
+				APIVersion:        envoy_common.APIV3,
 				InternalAddresses: DummyInternalAddresses,
 			},
 			expected: "02.envoy.golden.yaml",
@@ -181,15 +167,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					},
 				},
 				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is is not picked
-						"pass_through": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
 			},
 			expected: "03.envoy.golden.yaml",
 		}),
@@ -211,15 +188,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					},
 				},
 				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
 			},
 			expected: "04.envoy.golden.yaml",
 		}),
@@ -241,16 +209,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
+				APIVersion:        envoy_common.APIV3,
 				InternalAddresses: DummyInternalAddresses,
 			},
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
