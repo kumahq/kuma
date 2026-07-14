@@ -169,20 +169,7 @@ type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
 
-// InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
-type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*core_mesh.RateLimitResource
-
-// OutboundRateLimitsMap holds the RateLimitResource for each OutboundInterface
-type OutboundRateLimitsMap map[mesh_proto.OutboundInterface]*core_mesh.RateLimitResource
-
-type RateLimitsMap struct {
-	Inbound  InboundRateLimitsMap
-	Outbound OutboundRateLimitsMap
-}
-
 type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
-
-type ExternalServiceRateLimitMap map[ServiceName][]*core_mesh.RateLimitResource
 
 // SocketAddressProtocol is the L4 protocol the listener should bind to
 type SocketAddressProtocol int32
@@ -304,7 +291,6 @@ type MeshResources struct {
 	ExternalServices             []*core_mesh.ExternalServiceResource
 	ExternalServicePermissionMap ExternalServicePermissionMap
 	EndpointMap                  EndpointMap
-	ExternalServiceRateLimits    ExternalServiceRateLimitMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies

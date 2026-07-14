@@ -13,7 +13,6 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
@@ -182,23 +181,9 @@ func buildExternalServiceFilterChain(
 		return filterChain.Configure(envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster))
 	}
 
-	var routes envoy_common.Routes
-	for _, rl := range resources.ExternalServiceRateLimits[esName] {
-		if rl.Spec.GetConf().GetHttp() == nil {
-			continue
-		}
-
-		routes = append(routes, envoy_common.NewRoute(
-			envoy_common.WithCluster(cluster),
-			envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
-			envoy_common.WithRateLimit(rl.Spec),
-		))
-	}
-	// Add the default fall-back route
-	routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
+	routes := envoy_common.Routes{envoy_common.NewRoute(envoy_common.WithCluster(cluster))}
 
 	return filterChain.
 		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-		Configure(envoy_listeners.RateLimit(resources.ExternalServiceRateLimits[esName])).
 		Configure(envoy_listeners.HttpOutboundRoute(routeConfigName, virtualHostName, routes, nil))
 }

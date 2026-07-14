@@ -158,11 +158,6 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 	for inbound, tp := range matchedPolicies.TrafficPermissions {
 		result[inbound] = append(result[inbound], tp)
 	}
-	for inbound, rlList := range matchedPolicies.RateLimitsInbound {
-		for _, rl := range rlList {
-			result[inbound] = append(result[inbound], rl)
-		}
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for inbound, elts := range matchedPolicies.Dynamic[tpe].InboundPolicies {
 			result[inbound] = append(result[inbound], elts...)
@@ -177,9 +172,6 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 
 	for outbound, timeout := range matchedPolicies.Timeouts {
 		result[outbound] = append(result[outbound], timeout)
-	}
-	for outbound, rl := range matchedPolicies.RateLimitsOutbound {
-		result[outbound] = append(result[outbound], rl)
 	}
 	for outbound, tr := range matchedPolicies.TrafficRoutes {
 		result[outbound] = append(result[outbound], tr)

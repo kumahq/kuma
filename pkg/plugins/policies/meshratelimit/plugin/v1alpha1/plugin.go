@@ -122,9 +122,6 @@ func applyToInbounds(
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-		if _, exists := proxy.Policies.RateLimitsInbound[iface]; exists {
-			continue
-		}
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
@@ -298,7 +295,7 @@ func configureGateway(
 			return err
 		}
 	}
-	if err := configurer.ConfigureGatewayRoute(route); err != nil {
+	if err := configurer.ConfigureGatewayRoute(route, listener.FilterChains...); err != nil {
 		return err
 	}
 
