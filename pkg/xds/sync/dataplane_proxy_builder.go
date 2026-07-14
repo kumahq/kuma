@@ -13,7 +13,6 @@ import (
 	manager_dataplane "github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/ratelimits"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -204,15 +203,11 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 
 	resources := meshContext.Resources
-	ratelimits := ratelimits.BuildRateLimitMap(dataplane, inbounds, resources.RateLimits().Items)
 	matchedPolicies := &core_xds.MatchedPolicies{
 		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
 		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
 		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, resources.TrafficTraces().Items),
-		Retries:            xds_topology.BuildRetryMap(dataplane, resources.Retries().Items, outboundSelectors),
 		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
-		RateLimitsInbound:  ratelimits.Inbound,
-		RateLimitsOutbound: ratelimits.Outbound,
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
