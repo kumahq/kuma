@@ -377,31 +377,17 @@ This will become a hard validation error in 3.0.
 
 Rename any `MeshMultiZoneService` whose name exceeds 63 characters.
 
-### Kubernetes native sidecar containers enabled by default
+### Kubernetes native sidecar containers are now the only injection mode
 
-The `experimental.sidecarContainers` feature (K8s native sidecar containers via init containers with `restartPolicy: Always`) is now **enabled by default**.
+The `experimental.sidecarContainers` opt-out (Helm value and `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` env var) has been removed. Kubernetes native sidecar containers (init containers with `restartPolicy: Always`, GA since Kubernetes 1.29) are now unconditionally used.
 
 **What changed:**
-- `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` defaults to `true`
-- Helm value: `experimental.sidecarContainers` (default `true`)
-- Requires Kubernetes 1.29+ (native sidecar container support is GA)
+- The Helm value `experimental.sidecarContainers` and the `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` env var no longer exist; setting either has no effect.
+- The control plane still detects the Kubernetes server version and automatically falls back to legacy (non-native) injection on clusters older than 1.29, but this is no longer configurable.
 
 **Action required:**
 
-None for Kubernetes 1.29+. Native sidecars start before app containers and outlive them, improving graceful shutdown and startup ordering.
-
-To revert to the old behavior (init-based injection without `restartPolicy: Always`):
-
-**Kubernetes (Helm)**
-```yaml
-experimental:
-  sidecarContainers: false
-```
-
-**Control plane environment variable**
-```sh
-KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
-```
+None for Kubernetes 1.29+, which is already below Kuma's own minimum tested/supported Kubernetes version. If you were relying on `sidecarContainers: false` to opt out, that is no longer possible; remove the setting from your Helm values or environment.
 
 ### DNS server domain must not start with a dot
 

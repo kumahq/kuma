@@ -25,6 +25,49 @@ metadata:
   name: busybox
 spec:
   containers:
+  - image: busybox
+    name: busybox
+    resources: {}
+  initContainers:
+  - args:
+    - --ebpf-enabled
+    - --ebpf-bpffs-path=/sys/fs/bpf
+    - --ebpf-cgroup-path=/sys/fs/cgroup
+    - --ebpf-tc-attach-iface=eth0
+    - --ebpf-programs-source-path=/tmp/kuma-ebpf
+    - --verbose
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    env:
+    - name: INSTANCE_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
+    name: kuma-init
+    resources:
+      limits:
+        memory: 80M
+      requests:
+        cpu: 20m
+        memory: 20M
+    securityContext:
+      capabilities: {}
+      privileged: true
+      readOnlyRootFilesystem: true
+      runAsGroup: 0
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
+    - mountPath: /sys/fs/cgroup
+      name: sys-fs-cgroup
+    - mountPath: /sys/fs/bpf
+      mountPropagation: Bidirectional
+      name: bpf-fs
   - args:
     - run
     - --log-level=info
@@ -83,6 +126,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:
@@ -111,6 +161,7 @@ spec:
         cpu: 150m
         ephemeral-storage: 50M
         memory: 164Mi
+    restartPolicy: Always
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -119,52 +170,14 @@ spec:
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
+    startupProbe:
+      httpGet:
+        path: /ready
+        port: 9901
+      successThreshold: 1
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
-  - image: busybox
-    name: busybox
-    resources: {}
-  initContainers:
-  - args:
-    - --ebpf-enabled
-    - --ebpf-bpffs-path=/sys/fs/bpf
-    - --ebpf-cgroup-path=/sys/fs/cgroup
-    - --ebpf-tc-attach-iface=eth0
-    - --ebpf-programs-source-path=/tmp/kuma-ebpf
-    - --verbose
-    command:
-    - /usr/bin/kumactl
-    - install
-    - transparent-proxy
-    env:
-    - name: INSTANCE_IP
-      valueFrom:
-        fieldRef:
-          fieldPath: status.podIP
-    image: kuma/kuma-init:latest
-    imagePullPolicy: IfNotPresent
-    name: kuma-init
-    resources:
-      limits:
-        memory: 80M
-      requests:
-        cpu: 20m
-        memory: 20M
-    securityContext:
-      capabilities: {}
-      privileged: true
-      readOnlyRootFilesystem: true
-      runAsGroup: 0
-      runAsUser: 0
-    volumeMounts:
-    - mountPath: /tmp
-      name: kuma-init-tmp
-    - mountPath: /sys/fs/cgroup
-      name: sys-fs-cgroup
-    - mountPath: /sys/fs/bpf
-      mountPropagation: Bidirectional
-      name: bpf-fs
   volumes:
   - emptyDir:
       sizeLimit: 10M

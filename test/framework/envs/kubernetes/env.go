@@ -37,9 +37,6 @@ func SetupAndGetState() []byte {
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
-	if !framework.Config.KumaExperimentalSidecarContainers {
-		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "false"))
-	}
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
