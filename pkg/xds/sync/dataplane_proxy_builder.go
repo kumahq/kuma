@@ -49,9 +49,9 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	}
 
 	tpEnabled := tproxy_dp.GetDataplaneConfig(dp, meta).Enabled()
-	routing, destinations, outbounds := p.resolveRouting(ctx, meshContext, dp, tpEnabled, meta.HasFeature(xds_types.FeatureBindOutbounds))
+	routing, outbounds := p.resolveRouting(ctx, meshContext, dp, tpEnabled, meta.HasFeature(xds_types.FeatureBindOutbounds))
 
-	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(meshContext, dp)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not match policies")
 	}
@@ -95,16 +95,13 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	dataplane *core_mesh.DataplaneResource,
 	tpEnabled bool,
 	bindOutbounds bool,
-) (*core_xds.Routing, core_xds.DestinationMap, []*xds_types.Outbound) {
+) (*core_xds.Routing, []*xds_types.Outbound) {
 	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 
 	outbounds := p.resolveVIPOutbounds(meshContext, dataplane, tpEnabled, bindOutbounds)
 
 	// pick a single the most specific route for each outbound interface
 	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
-
-	// create a map of selectors to match other dataplanes reachable via given routes
-	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 	endpointMap := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
@@ -118,7 +115,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
 	}
-	return routing, destinations, outbounds
+	return routing, outbounds
 }
 
 func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
@@ -195,7 +192,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	return newOutbounds
 }
 
-func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors core_xds.DestinationMap) (*core_xds.MatchedPolicies, error) {
+func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*core_xds.MatchedPolicies, error) {
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, meshContext.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
