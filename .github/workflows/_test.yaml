@@ -42,8 +42,9 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
           restore-keys: |
+            go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
             go-test-race-${{ runner.os }}-
       - run: |
           make test
