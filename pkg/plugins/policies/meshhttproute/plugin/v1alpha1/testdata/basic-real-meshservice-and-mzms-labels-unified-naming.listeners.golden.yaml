@@ -61,7 +61,8 @@ resources:
           statPrefix: kri_msvc_default___backend_test-port
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/kri: kri_msvc_default___backend_test-port
     name: kri_msvc_default___backend_test-port
     statPrefix: kri_msvc_default___backend_test-port
     trafficDirection: OUTBOUND
