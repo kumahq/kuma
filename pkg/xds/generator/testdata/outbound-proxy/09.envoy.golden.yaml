@@ -2,7 +2,6 @@ resources:
 - name: api-http-5637c619d2781fec_mesh2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -36,8 +35,6 @@ resources:
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        commonHttpProtocolOptions:
-          idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
 - name: api-http-5637c619d2781fec_mesh2
@@ -72,8 +69,6 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -102,7 +97,6 @@ resources:
                   cluster: api-http-5637c619d2781fec_mesh2
                   timeout: 0s
           statPrefix: api-http
-          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:

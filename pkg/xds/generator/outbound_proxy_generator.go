@@ -112,9 +112,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 			filterChainBuilder.
 				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...))
 		}
-
-		filterChainBuilder.
-			Configure(envoy_listeners.Timeout(nil, protocol))
 		return filterChainBuilder
 	}()
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP).
@@ -141,8 +138,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		for _, c := range service.Clusters() {
 			cluster := c.(*envoy_common.ClusterImpl)
 			clusterName := cluster.Name()
-			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
-				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol))
+			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 

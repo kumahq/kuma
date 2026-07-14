@@ -42,7 +42,6 @@ type ClusterImpl struct {
 	mesh              string
 	isExternalService bool
 	lb                *mesh_proto.TrafficRoute_LoadBalancer
-	timeout           *mesh_proto.Timeout_Conf
 }
 
 func (c *ClusterImpl) Service() string { return c.service }
@@ -56,7 +55,6 @@ func (c *ClusterImpl) SNI() string     { return "" }
 func (c *ClusterImpl) Mesh() string                              { return c.mesh }
 func (c *ClusterImpl) IsExternalService() bool                   { return c.isExternalService }
 func (c *ClusterImpl) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
-func (c *ClusterImpl) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
 func (c *ClusterImpl) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
 func (c *ClusterImpl) SetName(name string) {

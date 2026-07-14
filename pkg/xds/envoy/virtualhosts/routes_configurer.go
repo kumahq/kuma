@@ -160,13 +160,7 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_config_route_v3.RouteAction {
 	routeAction := &envoy_config_route_v3.RouteAction{}
 	if len(clusters) != 0 {
-		// Timeout can be configured only per outbound listener. So all clusters in the split
-		// must have the same timeout. That's why we can take the timeout from the first cluster.
-		if cluster, ok := clusters[0].(*envoy_common.ClusterImpl); ok {
-			routeAction.Timeout = util_proto.Duration(cluster.Timeout().GetHttp().GetRequestTimeout().AsDuration())
-		} else {
-			routeAction.Timeout = util_proto.Duration(0)
-		}
+		routeAction.Timeout = util_proto.Duration(0)
 	}
 	if len(clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
