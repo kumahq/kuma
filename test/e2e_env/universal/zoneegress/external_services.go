@@ -158,10 +158,11 @@ spec:
   targetRef:
     kind: MeshService
     name: external-service
-  from:
-    - targetRef:
-        kind: MeshService
-        name: demo-client
+  rules:
+    - matches:
+        - spiffeID:
+            type: Exact
+            value: spiffe://ze-external-services/demo-client
       default:
         http:
           - abort:
@@ -228,10 +229,8 @@ spec:
   targetRef:
     kind: MeshService
     name: external-service
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         local:
           http:
             requestRate:

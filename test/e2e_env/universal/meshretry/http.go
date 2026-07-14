@@ -86,10 +86,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 500
@@ -163,10 +161,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 500
@@ -232,10 +228,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 500
