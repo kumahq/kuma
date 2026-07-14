@@ -224,12 +224,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(BeTrue())
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.CgroupPath).To(Equal("/faz/daz/zaz"))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
 			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
@@ -266,7 +260,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
-			Expect(cfg.Multizone.Global.KDS.RefreshInterval.Duration).To(Equal(time.Second * 2))
 			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval.Duration).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
@@ -287,7 +280,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
-			Expect(cfg.Multizone.Zone.KDS.RefreshInterval.Duration).To(Equal(9 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
@@ -384,7 +376,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
 			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.Enabled).To(BeTrue())
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
@@ -614,13 +605,6 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
-      ebpf:
-        enabled: true
-        instanceIPEnvVarName: FOO
-        bpffsPath: /run/kuma/bar
-        cgroupPath: /faz/daz/zaz
-        tcAttachIface: veth1
-        programsSourcePath: /kuma/baz
       ignoredServiceSelectorLabels: ["x", "y"]
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
@@ -655,7 +639,6 @@ multizone:
   global:
     kds:
       grpcPort: 1234
-      refreshInterval: 2s
       zoneInsightFlushInterval: 5s
       tlsEnabled: false
       tlsCertFile: /cert
@@ -680,7 +663,6 @@ multizone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
     kds:
-      refreshInterval: 9s
       rootCaFile: /rootCa
       maxMsgSize: 2
       msgSendTimeout: 20s
@@ -809,7 +791,6 @@ experimental:
   useTagFirstVirtualOutboundModel: false
   ingressTagFilters: ["kuma.io/service"]
   kdsEventBasedWatchdog:
-    enabled: true
     flushInterval: 10s
     fullResyncInterval: 15s
     delayFullResync: true
@@ -994,12 +975,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH":                                        "/faz/daz/zaz",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE":                                    "veth1",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH":                               "/kuma/baz",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
@@ -1039,7 +1014,6 @@ meshService:
 				"KUMA_DNS_SERVER_SERVICE_VIP_PORT":                                                         "9090",
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
-				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED":                                                    "false",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
@@ -1059,7 +1033,6 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
-				"KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL":                                                 "9s",
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
@@ -1149,7 +1122,6 @@ meshService:
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
 				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED":                                       "true",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",

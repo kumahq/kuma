@@ -443,16 +443,6 @@ cni:
   # -- it's only useful in tests to trigger a possible race condition
   delayStartupSeconds: 0
 
-  # -- use new CNI (experimental)
-  experimental:
-    imageEbpf:
-      # -- CNI experimental eBPF image registry
-      registry: "docker.io/kumahq"
-      # -- CNI experimental eBPF image repository
-      repository: "merbridge"
-      # -- CNI experimental eBPF image tag
-      tag: "0.8.5"
-
   resources:
     requests:
       cpu: 100m
@@ -1033,17 +1023,6 @@ hooks:
   containerSecurityContext:
     readOnlyRootFilesystem: true
 
-  # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
-  # Changing below values will potentially break ebpf cleanup completely,
-  # so be cautious when doing so.
-  ebpfCleanup:
-    # -- Security context at the pod level for crd/webhook/cleanup-ebpf
-    podSecurityContext:
-      runAsNonRoot: false
-    # -- Security context at the container level for crd/webhook/cleanup-ebpf
-    containerSecurityContext:
-      readOnlyRootFilesystem: false
-
 transparentProxy:
   configMap:
     # -- If true, enables the use of a ConfigMap to manage transparent proxy configuration
@@ -1108,21 +1087,6 @@ transparentProxy:
           # - "br+:172.18.0.0/16" (matches any interface starting with "br")
           # - "iface:::1/64" (for IPv6)
           networks: []
-      ebpf:
-        # -- Enables eBPF support for handling traffic redirection in the transparent proxy
-        enabled: false
-        # -- The path of the BPF filesystem
-        bpffsPath: /run/kuma/bpf
-        # -- The path of cgroup2
-        cgroupPath: /sys/fs/cgroup
-        # -- The name of the environment variable containing the IP address of the instance (pod/vm)
-        # where transparent proxy will be installed
-        instanceIPEnvVarName: ""
-        # -- Path where compiled eBPF programs and other necessary files for eBPF mode can be found
-        programsSourcePath: /tmp/kuma-ebpf
-        # -- The network interface for TC eBPF programs to bind to. If not provided, it will be
-        # automatically determined
-        tcAttachIface: ""
       retry:
         # -- The maximum number of retry attempts for operations
         maxRetries: 4
@@ -1160,20 +1124,9 @@ transparentProxy:
       verbose: false
 
 experimental:
-  # Configuration for the experimental ebpf mode for transparent proxy
-  ebpf:
-    # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
-    enabled: false
-    # -- Name of the environmental variable which will contain the IP address of a pod
-    instanceIPEnvVarName: INSTANCE_IP
-    # -- Path where BPF file system should be mounted
-    bpffsPath: /sys/fs/bpf
-    # -- Host's cgroup2 path
-    cgroupPath: /sys/fs/cgroup
-    # -- Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty
-    tcAttachIface: ""
-    # -- Path where compiled eBPF programs which will be installed can be found
-    programsSourcePath: /tmp/kuma-ebpf
+  # -- If true, enable native Kubernetes sidecars. This requires at least
+  # Kubernetes v1.29
+  sidecarContainers: true
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.

@@ -114,7 +114,8 @@ func (i *KumaInjector) hasZoneProxyService(ctx context.Context, pod *kube_core.P
 	}
 	for idx := range services.Items {
 		svc := &services.Items[idx]
-		if k8s_util.MatchService(svc,
+		if k8s_util.MatchService(
+			svc,
 			k8s_util.AnySelector(),
 			k8s_util.Not(k8s_util.Ignored()),
 			k8s_util.MatchServiceThatSelectsPod(pod, nil),
@@ -194,7 +195,6 @@ var booleanAnnotations = map[string]bool{
 	metadata.KumaTrafficDropInvalidPackets:         true,
 	metadata.KumaTrafficIptablesLogs:               true,
 	metadata.KumaWaitForDataplaneReady:             true,
-	metadata.KumaTransparentProxyingEbpf:           true,
 	metadata.KumaBuiltinDNS:                        true,
 	metadata.KumaGatewayAnnotation:                 true,
 	metadata.KumaSidecarInjectionAnnotation:        true,

@@ -157,12 +157,6 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources using ebpf (experimental)", testCase{
-			extraArgs: []string{
-				"--set", "experimental.ebpf.enabled=true",
-			},
-			goldenFile: "install-control-plane.tproxy-ebpf-experimental-enabled.golden.yaml",
-		}),
 		Entry("should generate Kubernetes resources for Global", testCase{
 			extraArgs: []string{
 				"--mode", "global",
