@@ -29,9 +29,6 @@ type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
 	TrafficPermissions TrafficPermissionMap
 
-	// Service(Cluster) -> Policy
-	TrafficLogs TrafficLogMap
-
 	// Outbound(Listener) -> Policy
 	Timeouts TimeoutMap
 	// Actual Envoy Configuration is generated without taking this TrafficRoutes into account

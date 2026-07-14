@@ -9,7 +9,6 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	"github.com/kumahq/kuma/v3/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
@@ -202,7 +201,6 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	resources := meshContext.Resources
 	matchedPolicies := &core_xds.MatchedPolicies{
 		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
-		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
 		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, resources.TrafficTraces().Items),
 		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),

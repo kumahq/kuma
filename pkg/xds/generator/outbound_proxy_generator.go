@@ -85,7 +85,6 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 
 func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_meta.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
@@ -110,8 +109,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					serviceName,
 					false,
 				)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, dpTags)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
@@ -124,40 +121,15 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					serviceName,
 					false,
 				)).
-				Configure(envoy_listeners.HttpAccessLog(
-					meshName,
-					envoy_common.TrafficDirectionOutbound,
-					sourceService,
-					serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
-					proxy,
-				)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, proxy.Dataplane.Spec.TagSet()))
 		case core_meta.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
-				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...)).
-				Configure(envoy_listeners.NetworkAccessLog(
-					meshName,
-					envoy_common.TrafficDirectionOutbound,
-					sourceService,
-					serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
-					proxy,
-				))
-
+				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...))
 		default:
 			// configuration for non-HTTP cases
 			filterChainBuilder.
-				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...)).
-				Configure(envoy_listeners.NetworkAccessLog(
-					meshName,
-					envoy_common.TrafficDirectionOutbound,
-					sourceService,
-					serviceName,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
-					proxy,
-				))
+				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...))
 		}
 
 		filterChainBuilder.

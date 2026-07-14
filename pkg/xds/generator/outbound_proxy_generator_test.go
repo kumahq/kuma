@@ -595,22 +595,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					ExternalServiceOutboundTargets: esOutboundTargets,
 				},
 				Policies: model.MatchedPolicies{
-					TrafficLogs: model.TrafficLogMap{
-						"api-http": &core_mesh.TrafficLogResource{
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{
-									Backend: "file",
-								},
-							},
-						},
-						"api-tcp": &core_mesh.TrafficLogResource{
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{
-									Backend: "elk",
-								},
-							},
-						},
-					},
 					Timeouts: map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource{
 						{DataplaneIP: "127.0.0.1", DataplanePort: 40002}: {Spec: timeout},
 						{DataplaneIP: "127.0.0.1", DataplanePort: 40003}: {Spec: timeout},
