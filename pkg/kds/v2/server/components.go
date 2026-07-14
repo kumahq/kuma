@@ -98,26 +98,51 @@ func newSyncTracker(
 			NewFlushTicker: func() *time.Ticker {
 				return time.NewTicker(experimentalWatchdogCfg.FlushInterval.Duration)
 			},
-			NewFullResyncTicker: func() *time.Ticker {
-				if experimentalWatchdogCfg.DelayFullResync {
-					// To ensure an even distribution of connections over time, we introduce a random delay within
-					// the full resync interval. This prevents clustering connections within a short timeframe
-					// and spreads them evenly across the entire interval. After the initial trigger, we reset
-					// the ticker, returning it to its full resync interval.
-					// #nosec G404 - math rand is enough
-					delay := time.Duration(experimentalWatchdogCfg.FullResyncInterval.Seconds()*rand.Float64()) * time.Second
-					ticker := time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration + delay)
-					go func() {
-						<-time.After(delay)
-						ticker.Reset(experimentalWatchdogCfg.FullResyncInterval.Duration)
-					}()
-					return ticker
-				} else {
-					return time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration)
-				}
+			NewFullResyncTicker: func() (*time.Ticker, context.CancelFunc) {
+				return newFullResyncTicker(experimentalWatchdogCfg)
 			},
 		}, nil
 	}), kdsMetrics, nil
+}
+
+func newFullResyncTicker(cfg kuma_cp.ExperimentalKDSEventBasedWatchdog) (*time.Ticker, context.CancelFunc) {
+	if !cfg.DelayFullResync {
+		return time.NewTicker(cfg.FullResyncInterval.Duration), func() {}
+	}
+
+	// To ensure an even distribution of connections over time, we introduce a random delay within
+	// the full resync interval. This prevents clustering connections within a short timeframe
+	// and spreads them evenly across the entire interval. After the initial trigger, we reset
+	// the ticker, returning it to its full resync interval.
+	// #nosec G404 - math rand is enough
+	delay := time.Duration(cfg.FullResyncInterval.Seconds()*rand.Float64()) * time.Second
+
+	return newDelayedFullResyncTicker(cfg.FullResyncInterval.Duration, delay)
+}
+
+func newDelayedFullResyncTicker(interval, delay time.Duration) (*time.Ticker, context.CancelFunc) {
+	ticker := time.NewTicker(interval + delay)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-timer.C:
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			ticker.Reset(interval)
+		}
+	}()
+
+	return ticker, cancel
 }
 
 func kdsVersionExtractor(metadata *structpb.Struct) string {

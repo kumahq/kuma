@@ -84,8 +84,8 @@ var _ = Describe("Event Based Watchdog", func() {
 			NewFlushTicker: func() *time.Ticker {
 				return &time.Ticker{C: flushCh}
 			},
-			NewFullResyncTicker: func() *time.Ticker {
-				return &time.Ticker{C: fullResyncCh}
+			NewFullResyncTicker: func() (*time.Ticker, context.CancelFunc) {
+				return &time.Ticker{C: fullResyncCh}, func() {}
 			},
 		}
 		go func() {
@@ -149,5 +149,15 @@ var _ = Describe("Event Based Watchdog", func() {
 			g.Expect(metric).ToNot(BeNil())
 			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(2))
 		}, "10s", "50ms").Should(Succeed())
+	})
+
+	It("should not re-arm a delayed full resync ticker after shutdown", func() {
+		ticker, cleanup := newDelayedFullResyncTicker(20*time.Millisecond, 40*time.Millisecond)
+		defer cleanup()
+
+		ticker.Stop()
+		cleanup()
+
+		Consistently(ticker.C, 150*time.Millisecond, 10*time.Millisecond).ShouldNot(Receive())
 	})
 }, Ordered)
