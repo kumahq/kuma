@@ -67,7 +67,7 @@ func (g *HTTPFilterChainGenerator) Generate(
 
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
-	chain := newHTTPFilterChain(ctx.Mesh, info)
+	chain := newHTTPFilterChain(info)
 
 	chain.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.EnvoyListenerName + ":*"))
 	return nil, []*envoy_listeners.FilterChainBuilder{chain}, nil
@@ -82,7 +82,7 @@ func newTLSFilterChain(
 	log.V(1).Info("generating filter chain", "hostname", listenerHostname.Hostname)
 
 	routeName := listenerHostname.EnvoyRouteName(info.Listener.EnvoyListenerName)
-	builder := newHTTPFilterChain(ctx.Mesh, info).Configure(
+	builder := newHTTPFilterChain(info).Configure(
 		envoy_listeners.HttpDynamicRoute(routeName),
 	)
 
@@ -189,7 +189,7 @@ func newDownstreamTypedConfig(alpnProtocols []string) *envoy_extensions_transpor
 	return conf
 }
 
-func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
+func newHTTPFilterChain(info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
 	service := info.Proxy.Dataplane.IdentifyingName(false)
 
@@ -228,16 +228,9 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		),
 	)
 
-	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
+	// Logging has to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(
-			ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace),
-			service,
-			envoy_common.TrafficDirectionUnspecified,
-			"",
-			true,
-		),
 	)
 
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.

@@ -116,6 +116,10 @@ func GetTracingClusterName(backendName string) string {
 	return Join(GetTracingClusterPrefix(), backendName)
 }
 
+func GetDNSListenerName() string {
+	return Join("kuma", "dns")
+}
+
 func GetGatewayListenerName(gatewayName string, protoName string, port uint32) string {
 	return Join(gatewayName, protoName, formatPort(port))
 }
