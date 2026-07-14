@@ -140,7 +140,7 @@ func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone 
 	return i.inboundInterfacesFor(ctx, zone, pod, services)
 }
 
-// InboundInterfacesFor should be used when MeshService mode is Exclusive. This function deduplicates inbounds by address and port.
+// InboundInterfacesFor should be used when MeshService mode is Exclusive. This function deduplicates inbounds by address, port and state.
 // Since MeshService does not need tags we can safely deduplicate inbounds
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	inbounds, err := i.inboundInterfacesFor(ctx, zone, pod, services)
@@ -181,16 +181,22 @@ func (i *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string
 	return ifaces, nil
 }
 
+// deduplicateInboundsByAddressAndPort collapses inbounds that share an address,
+// a port and a state into the first one. Inbounds differing only by state are
+// kept, because state is not interchangeable: when a Service does not select the
+// Pod its inbound is Ignored, and a Service that does select it yields a Ready
+// inbound on the very same port. Collapsing those two would hide the serving one
+// and take the MeshService down (#17142).
 func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
 	inboundKey := func(iface *mesh_proto.Dataplane_Networking_Inbound) string {
-		return fmt.Sprintf("%s:%d", iface.Address, iface.Port)
+		return fmt.Sprintf("%s:%d:%d", iface.Address, iface.Port, iface.State)
 	}
 
 	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
-	inboundsPerAddressPort := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
+	inboundsPerKey := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, iface := range ifaces {
-		if inboundsPerAddressPort[inboundKey(iface)] == nil {
-			inboundsPerAddressPort[inboundKey(iface)] = iface
+		if inboundsPerKey[inboundKey(iface)] == nil {
+			inboundsPerKey[inboundKey(iface)] = iface
 			deduplicatedInbounds = append(deduplicatedInbounds, iface)
 		}
 	}
