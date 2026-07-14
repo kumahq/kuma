@@ -119,6 +119,26 @@ release; existing resources are still accepted and stored.
 
 Migrate access logging to `MeshAccessLog`, which replaces `TrafficLog`.
 
+### KDS snapshot watchdog config removed
+
+KDS now always uses the event-based snapshot watchdog. The previous polling
+fallback and the configuration that controlled it have been removed.
+
+The following configuration has been removed:
+
+- Control plane: `experimental.kdsEventBasedWatchdog.enabled`
+  (`KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED`).
+- Global control plane: `multizone.global.kds.refreshInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL`).
+- Zone control plane: `multizone.zone.kds.refreshInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL`).
+
+**Action required**
+
+Remove the settings above from your control plane config and environment if
+set. KDS snapshot generation is event-driven, with periodic full resync
+controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using

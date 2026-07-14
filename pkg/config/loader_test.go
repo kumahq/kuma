@@ -267,7 +267,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
-			Expect(cfg.Multizone.Global.KDS.RefreshInterval.Duration).To(Equal(time.Second * 2))
 			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval.Duration).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
@@ -288,7 +287,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
-			Expect(cfg.Multizone.Zone.KDS.RefreshInterval.Duration).To(Equal(9 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
@@ -658,7 +656,6 @@ multizone:
   global:
     kds:
       grpcPort: 1234
-      refreshInterval: 2s
       zoneInsightFlushInterval: 5s
       tlsEnabled: false
       tlsCertFile: /cert
@@ -683,7 +680,6 @@ multizone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
     kds:
-      refreshInterval: 9s
       rootCaFile: /rootCa
       maxMsgSize: 2
       msgSendTimeout: 20s
@@ -1045,7 +1041,6 @@ meshService:
 				"KUMA_DNS_SERVER_SERVICE_VIP_PORT":                                                         "9090",
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
-				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED":                                                    "false",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
@@ -1065,7 +1060,6 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
-				"KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL":                                                 "9s",
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
