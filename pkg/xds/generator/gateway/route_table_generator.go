@@ -11,7 +11,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
-	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes/v3"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
@@ -81,18 +80,6 @@ func GenerateVirtualHost(
 			timeout := t.(*core_mesh.TimeoutResource)
 			routeBuilder.Configure(
 				envoy_routes.RouteActionRequestTimeout(timeout.Spec.GetConf().GetHttp().GetRequestTimeout().AsDuration()),
-			)
-		}
-
-		if r := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.RateLimitType); r != nil {
-			ratelimit := r.(*core_mesh.RateLimitResource)
-			conf, err := v3.NewRateLimitConfiguration(v3.RateLimitConfigurationFromProto(ratelimit.Spec))
-			if err != nil {
-				return nil, err
-			}
-
-			routeBuilder.Configure(
-				envoy_routes.RoutePerFilterConfig("envoy.filters.http.local_ratelimit", conf),
 			)
 		}
 

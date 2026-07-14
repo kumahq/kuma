@@ -244,13 +244,6 @@
                   },
                   "httpFilters": [
                     {
-                      "name": "envoy.filters.http.local_ratelimit",
-                      "typedConfig": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit",
-                        "statPrefix": "STAT_PREFIX_REDACTED"
-                      }
-                    },
-                    {
                       "name": "gzip-compress",
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor",
@@ -520,7 +513,7 @@
                           {
                             "header": {
                               "key": "x-kuma-tags",
-                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
+                              "value": "&kuma.io/service=gateway-proxy&&kuma.io/zone=kuma-3&"
                             }
                           }
                         ],

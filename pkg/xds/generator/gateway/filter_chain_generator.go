@@ -18,7 +18,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -232,9 +231,6 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 
 	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
-		// Force the ratelimit filter to always be present. This
-		// is a no-op unless we later add a per-route configuration.
-		envoy_listeners.RateLimit([]*core_mesh.RateLimitResource{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
 		envoy_listeners.Tracing(
 			ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace),
