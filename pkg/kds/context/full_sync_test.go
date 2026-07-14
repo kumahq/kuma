@@ -61,6 +61,8 @@ var _ = Describe("Full sync tests", func() {
 		cfg.Multizone.Global.KDS.GrpcPort = uint32(globalPort)
 		cfg.Multizone.Global.KDS.TlsEnabled = false
 		cfg.Multizone.Global.KDS.ZoneInsightFlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+		cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+		cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 		cfg.Mode = config_core.Global
 		rt := setup.NewTestRuntime(ctx, cfg, globalStore)
 		Expect(global.Setup(rt)).To(Succeed())
@@ -92,6 +94,8 @@ var _ = Describe("Full sync tests", func() {
 			cfg.Multizone.Zone.Name = zoneName
 			cfg.Multizone.Zone.GlobalAddress = fmt.Sprintf("grpc://localhost:%d", globalPort)
 			cfg.Multizone.Global.KDS.ZoneInsightFlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+			cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+			cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 			rt := setup.NewTestRuntime(ctx, cfg, zoneStore)
 			Expect(zone.Setup(rt)).To(Succeed())
 			wg.Go(func() {
