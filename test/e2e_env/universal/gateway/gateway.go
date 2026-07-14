@@ -210,7 +210,8 @@ spec:
     name: gateway-proxy
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: echo-service
       default:
         local:
           http:
@@ -263,7 +264,8 @@ spec:
     name: gateway-proxy
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: echo-service
       default:
         http:
           - abort:
@@ -299,7 +301,8 @@ spec:
       kuma.io/proxy-type: gateway
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: echo-service
       default:
         http:
           - abort:

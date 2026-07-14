@@ -550,10 +550,12 @@ spec:
       kuma.io/proxy-type: gateway
   to:
   - targetRef:
-      kind: Mesh
+      kind: MeshService
+      name: test-server-mlbs
+      namespace: %s
     default:
       http:
-        maxConnectionDuration: 10s`, Config.KumaNamespace, meshName)
+        maxConnectionDuration: 10s`, Config.KumaNamespace, meshName, namespace)
 		mlbs := fmt.Sprintf(`
 kind: MeshLoadBalancingStrategy
 apiVersion: kuma.io/v1alpha1
@@ -568,7 +570,9 @@ spec:
     name: simple-gateway
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server-mlbs
+        namespace: %s
       default:
         hashPolicies:
           - type: Header
@@ -576,7 +580,7 @@ spec:
               name: x-header
         loadBalancer:
           type: RingHash
-`, Config.KumaNamespace, meshName)
+`, Config.KumaNamespace, meshName, namespace)
 		routes := httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80", "MeshService", "")
 
 		BeforeAll(func() {
@@ -697,7 +701,8 @@ spec:
     name: http-route-1
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: "echo-server_simple-gateway_svc_80"
       default:
         local:
           http:
@@ -893,7 +898,8 @@ spec:
     name: http-route-1
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: "echo-server_simple-gateway_svc_80"
       default:
         http:
           numRetries: 5
@@ -1009,7 +1015,8 @@ spec:
     name: http-route-1
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: "echo-server_simple-gateway_svc_80"
       default:
         http:
           requestTimeout: 2s
