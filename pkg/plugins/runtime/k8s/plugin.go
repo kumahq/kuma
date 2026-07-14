@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	k8s_version "k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -29,8 +31,9 @@ import (
 )
 
 var (
-	log                            = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
-	_   core_plugins.RuntimePlugin = &plugin{}
+	log                                                = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
+	sidecarContainerVersion                            = k8s_version.MustParseGeneric("1.29.0")
+	_                       core_plugins.RuntimePlugin = &plugin{}
 )
 
 type plugin struct{}
@@ -375,10 +378,28 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
 		address := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
+		discClient, err := discovery.NewDiscoveryClientForConfig(mgr.GetConfig())
+		if err != nil {
+			return err
+		}
+		k8sVersion, err := discClient.ServerVersion()
+		if err != nil {
+			return err
+		}
+		sidecarContainersEnabled := false
+		if version, err := k8s_version.ParseGeneric(k8sVersion.GitVersion); err == nil && !version.LessThan(sidecarContainerVersion) {
+			sidecarContainersEnabled = true
+		} else {
+			log.Info(
+				"Kubernetes server does not support native sidecar containers; falling back to legacy injection",
+				"version", k8sVersion.GitVersion,
+			)
+		}
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			address,
 			mgr.GetClient(),
+			sidecarContainersEnabled,
 			converter,
 			rt.Config().GetEnvoyAdminPort(),
 			rt.Config().GetEnvoyReadinessPort(),
