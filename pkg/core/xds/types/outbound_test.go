@@ -1,8 +1,6 @@
 package types_test
 
 import (
-	"testing"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -10,12 +8,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/test"
 )
-
-func TestOutbound(t *testing.T) {
-	test.RunSpecs(t, "Outbound Types Suite")
-}
 
 var _ = Describe("Outbound", func() {
 	Describe("ListenerTags", func() {
