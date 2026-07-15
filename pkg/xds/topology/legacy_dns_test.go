@@ -134,4 +134,37 @@ var _ = Describe("LegacyDomains", func() {
 			},
 		}))
 	})
+
+	It("should ignore host and FQDN entries from persisted virtual outbounds", func() {
+		config := system_api.NewConfigResource()
+		config.Spec = &system_proto.Config{
+			Config: `{"0:local-test-server_mesh-service-reachable-backends_svc_80":{"address":"240.0.0.10","outbounds":[{"TagSet":{"kuma.io/service":"local-test-server_mesh-service-reachable-backends_svc_80"}}]},"1:api.example.com":{"address":"240.0.0.20","outbounds":[{"Port":443,"TagSet":{"kuma.io/service":"external"}}]},"2:echo.internal":{"address":"240.0.0.21","outbounds":[{"Port":8080,"TagSet":{"kuma.io/service":"echo"}}]}}`,
+		}
+
+		domains, outbounds, err := xds_topology.LegacyVIPCompatibility(
+			[]*system_api.ConfigResource{config},
+			"mesh",
+			80,
+			nil,
+			nil,
+			nil,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(domains).To(ConsistOf(xds_types.VIPDomains{
+			Address: "240.0.0.10",
+			Domains: []string{
+				"local-test-server_mesh-service-reachable-backends_svc_80.mesh",
+				"local-test-server.mesh-service-reachable-backends.svc.80.mesh",
+			},
+		}))
+		Expect(outbounds).To(ConsistOf(&xds_types.Outbound{
+			LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+				Address: "240.0.0.10",
+				Port:    80,
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "local-test-server_mesh-service-reachable-backends_svc_80",
+				},
+			},
+		}))
+	})
 })

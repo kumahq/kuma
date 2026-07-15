@@ -186,22 +186,24 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	domains = append(domains, xds_topology.Domains(meshMultiZoneServices)...)
 	domains = append(domains, xds_topology.LegacyDomains(meshServices, meshExternalServices, meshMultiZoneServices)...)
 
-	legacyDomains, legacyOutbounds, err := xds_topology.LegacyVIPCompatibility(
-		resources.ListOrEmpty(system.ConfigType).(*system.ConfigResourceList).Items,
-		m.legacyDNSDomain,
-		m.legacyServiceVIPPort,
-		meshServices,
-		meshExternalServices,
-		meshMultiZoneServices,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not build legacy VIP compatibility")
-	}
-	domains = append(domains, legacyDomains...)
-	outbounds = append(outbounds, legacyOutbounds...)
-
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh
+	if mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Disabled {
+		legacyDomains, legacyOutbounds, err := xds_topology.LegacyVIPCompatibility(
+			resources.ListOrEmpty(system.ConfigType).(*system.ConfigResourceList).Items,
+			m.legacyDNSDomain,
+			m.legacyServiceVIPPort,
+			meshServices,
+			meshExternalServices,
+			meshMultiZoneServices,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not build legacy VIP compatibility")
+		}
+		domains = append(domains, legacyDomains...)
+		outbounds = append(outbounds, legacyOutbounds...)
+	}
+
 	casByTrustDomain := getCAsByTrustDomain(resources.MeshTrusts().Items)
 	// add a mesh mTLS CA
 	if len(casByTrustDomain) > 0 && mesh.MTLSEnabled() {
