@@ -6,7 +6,8 @@
  "modificationTime": "0001-01-01T00:00:00Z",
  "labels": {
   "kuma.io/display-name": "redis",
-  "kuma.io/mesh": "default"
+  "kuma.io/mesh": "default",
+  "kuma.io/origin": "zone"
  },
  "kri": "kri_mzsvc_default___redis_",
  "snis": [
