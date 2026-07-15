@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	clientgo_kube "k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -83,10 +82,20 @@ func TestConformance(t *testing.T) {
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
 		return NewClusterSetup().Install(
-			Kuma(config_core.Zone,
-				WithCtlOpts(map[string]string{"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true"}),
-			)).Setup(cluster)
+			Kuma(config_core.Zone)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
+
+	g.Eventually(func() error {
+		return YamlK8s(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  meshServices:
+    mode: Disabled
+`)(cluster)
+	}, "30s", "3s").Should(Succeed())
 
 	configPath, err := opts.GetConfigPath(t)
 	g.Expect(err).ToNot(HaveOccurred())
@@ -107,37 +116,39 @@ func TestConformance(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	options := suite.ConformanceOptions{
-		Client:               client,
-		RestConfig:           clientConfig,
-		Clientset:            clientset,
-		GatewayClassName:     "kuma",
-		CleanupBaseResources: false,        // we want to collect details when test fails, so don't clean up here, we'll clean up resources by ourselves.
-		Debug:                Config.Debug, // controls if request details should be printed to stdout
-		NamespaceLabels: map[string]string{
-			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
-		},
+		Client:     client,
+		RestConfig: clientConfig,
+		Clientset:  clientset,
 		ManifestFS: []fs.FS{&conformance.Manifests},
-		SupportedFeatures: sets.New(
-			features.SupportGateway,
-			features.SupportGatewayHTTPListenerIsolation,
-			features.SupportGatewayPort8080,
-			features.SupportReferenceGrant,
-			features.SupportHTTPRouteResponseHeaderModification,
-			features.SupportHTTPRoute,
-			features.SupportHTTPRouteHostRewrite,
-			features.SupportHTTPRouteMethodMatching,
-			features.SupportHTTPRouteParentRefPort,
-			features.SupportHTTPRoutePathRedirect,
-			features.SupportHTTPRoutePathRewrite,
-			features.SupportHTTPRoutePortRedirect,
-			features.SupportHTTPRouteQueryParamMatching,
-			features.SupportHTTPRouteRequestMirror,
-			features.SupportHTTPRouteSchemeRedirect,
-			features.SupportMesh,
-			features.SupportMeshConsumerRoute,
-		),
-		Implementation:      implementation,
-		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
+		ConfigurableOptions: suite.ConfigurableOptions{
+			GatewayClassName:     "kuma",
+			CleanupBaseResources: false,
+			CleanupTestResources: true,
+			Debug:                Config.Debug,
+			NamespaceLabels: map[string]string{
+				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
+			},
+			SkipTests: []string{
+				"HTTPRouteNoBackendRefs",
+			},
+			SupportedFeatures: []features.FeatureName{
+				features.SupportHTTPRouteResponseHeaderModification,
+				features.SupportHTTPRoute,
+				features.SupportHTTPRouteHostRewrite,
+				features.SupportHTTPRouteMethodMatching,
+				features.SupportHTTPRouteParentRefPort,
+				features.SupportHTTPRoutePathRedirect,
+				features.SupportHTTPRoutePathRewrite,
+				features.SupportHTTPRoutePortRedirect,
+				features.SupportHTTPRouteQueryParamMatching,
+				features.SupportHTTPRouteRequestMirror,
+				features.SupportHTTPRouteSchemeRedirect,
+				features.SupportMesh,
+				features.SupportMeshConsumerRoute,
+			},
+			Implementation:      implementation,
+			ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
+		},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)

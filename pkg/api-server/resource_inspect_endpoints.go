@@ -298,7 +298,7 @@ func (r *resourceInspectHandler) getPoliciesConf(plugins []core_plugins.Register
 			return
 		}
 
-		if baseMeshContext.Mesh.Spec.GetMeshServices().GetMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+		if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
 			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _policies endpoint without meshService enabled"), "Bad Request")
 			return
 		}
@@ -702,20 +702,29 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
 			})
 
+			isMeshGateway := r.descriptor.Name == core_mesh.MeshGatewayType
 			toResourceRules := []api_common.ResourceRule{}
-			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
-				toResourceRules = append(toResourceRules, api_common.ResourceRule{
-					Conf:                resourceRuleItem.Conf,
-					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
-					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
-					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
-				})
+			if !isMeshGateway {
+				for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
+					toResourceRules = append(toResourceRules, api_common.ResourceRule{
+						Conf:                resourceRuleItem.Conf,
+						Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
+						ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
+						ResourceSectionName: &resourceRuleItem.ResourceSectionName,
+					})
+				}
 			}
 			sort.Slice(toResourceRules, func(i, j int) bool {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
+			if isMeshGateway {
+				proxyRule = nil
+				toRules = []api_common.Rule{}
+				fromRules = []api_common.FromRule{}
+				inboundRules = []api_common.InboundRulesEntry{}
+			}
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}

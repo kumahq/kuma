@@ -599,6 +599,9 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name: "poc",
 				},
+				Spec: &apiextensionsv1.JSON{
+					Raw: []byte(`{"meshServices":{"mode":"Disabled"}}`),
+				},
 			},
 			&mesh_k8s.Mesh{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -617,7 +620,6 @@ var _ = Describe("PodReconciler", func() {
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
 				ResourceConverter: k8s.NewSimpleConverter(),
-				ServiceGetter:     kubeClient,
 				Mode:              config_core.Zone,
 				Zone:              "zone-1",
 				SystemNamespace:   "kuma-system",

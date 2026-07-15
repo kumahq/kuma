@@ -287,6 +287,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				mesh_proto.ZoneTag:             zone,
 				mesh_proto.MeshTag:             mesh,
 				mesh_proto.EnvTag:              "universal",
+				mesh_proto.DisplayName:         "mtp-1",
 			}))
 		},
 		Entry("non-federated zone", false),
@@ -327,6 +328,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
 			mesh_proto.ProxyTypeLabel:      string(mesh_proto.SidecarLabel),
+			mesh_proto.DisplayName:         "dpp-1",
 		}))
 	})
 
@@ -412,6 +414,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         "ext-svc",
 		}))
 
 		// after update it should have computed labels
@@ -428,6 +431,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         "ext-svc",
 		}))
 	})
 

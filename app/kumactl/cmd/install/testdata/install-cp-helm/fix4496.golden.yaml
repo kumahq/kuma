@@ -95,33 +95,19 @@ rules:
   - apiGroups: # Gateway API
       - gateway.networking.k8s.io
     resources:
-      - gateways
-      - referencegrants
       - httproutes
     verbs:
       - get
       - list
       - watch
-  - apiGroups:
+  - apiGroups: # Gateway API legacy finalizer cleanup during upgrade
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses # ClusterScope
+      - gatewayclasses
     verbs:
-      - create
-      - delete
       - get
       - list
       - patch
-      - update
-      - watch
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - gatewayclasses/status # ClusterScope
-    verbs:
-      - get
-      - patch
-      - update
   - apiGroups:
       - kuma.io
     resources:
@@ -152,7 +138,6 @@ rules:
       - traffictraces
       - meshgateways
       - meshgatewayroutes
-      - meshgatewayinstances
       - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
@@ -190,8 +175,6 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - meshgatewayinstances/status
-      - meshgatewayinstances/finalizers
       - meshes/finalizers
       - dataplanes/finalizers
     verbs:
@@ -271,8 +254,6 @@ rules:
     # Gateway API
       - gateway.networking.k8s.io
     resources:
-      - gateways
-      - referencegrants
       - httproutes
     verbs:
       - create
@@ -285,7 +266,6 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gateways/status
       - httproutes/status
     verbs:
       - get
@@ -382,8 +362,6 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gateways
-      - referencegrants
       - httproutes
     verbs:
       - create
@@ -396,7 +374,6 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gateways/status
       - httproutes/status
     verbs:
       - get
@@ -512,7 +489,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: d84e3b01b758326b244821d9ebc9c3fd094263dfd3c369dbb97779763da83e3d
+        checksum/tls-secrets: 43e1aca9e2d02a3c7f9d9e2bdb459d9b26df8b81aa39365d68bf922a18783861
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -571,8 +548,6 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
-            - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -1147,7 +1122,6 @@ webhooks:
           - dataplanes
           - externalservices
           - faultinjections
-          - meshgatewayinstances
           - healthchecks
           - meshes
           - meshgateways

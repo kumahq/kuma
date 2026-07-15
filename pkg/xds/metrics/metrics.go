@@ -8,11 +8,13 @@ import (
 )
 
 type Metrics struct {
-	XdsGenerations          *prometheus.HistogramVec
-	XdsGenerationsErrors    prometheus.Counter
-	KubeAuthCache           *prometheus.CounterVec
-	CertExpirationTimestamp *prometheus.GaugeVec
-	SnapshotResources       *prometheus.HistogramVec
+	XdsGenerations             *prometheus.HistogramVec
+	XdsGenerationsErrors       prometheus.Counter
+	KubeAuthCache              *prometheus.CounterVec
+	CertExpirationTimestamp    *prometheus.GaugeVec
+	SnapshotResources          *prometheus.HistogramVec
+	DataplaneConfigRegenerated *prometheus.CounterVec
+	PolicyMatchingCache        *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -37,15 +39,33 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Help:    "Distribution of resource counts per xDS snapshot by resource type.",
 		Buckets: prometheus.ExponentialBuckets(1, 2, 12),
 	}, []string{"resource_type"})
-	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources); err != nil {
+	dataplaneConfigRegenerated := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "xds_dataplane_config_regenerated_total",
+		Help: "Counter of successful Dataplane xDS reconcile attempts triggered by mesh-context hash changes.",
+	}, []string{"mesh"})
+	policyMatchingCache := util_cache.NewMetric(
+		"policy_matching_cache",
+		"Cache hit/miss counts for MatchedPolicies memoisation on the dataplane watchdog path.",
+	)
+	if err := metrics.BulkRegister(
+		xdsGenerations,
+		xdsGenerationsErrors,
+		kubeAuthCache,
+		certExpirationTimestamp,
+		snapshotResources,
+		dataplaneConfigRegenerated,
+		policyMatchingCache,
+	); err != nil {
 		return nil, err
 	}
 
 	return &Metrics{
-		XdsGenerations:          xdsGenerations,
-		XdsGenerationsErrors:    xdsGenerationsErrors,
-		KubeAuthCache:           kubeAuthCache,
-		CertExpirationTimestamp: certExpirationTimestamp,
-		SnapshotResources:       snapshotResources,
+		XdsGenerations:             xdsGenerations,
+		XdsGenerationsErrors:       xdsGenerationsErrors,
+		KubeAuthCache:              kubeAuthCache,
+		CertExpirationTimestamp:    certExpirationTimestamp,
+		SnapshotResources:          snapshotResources,
+		DataplaneConfigRegenerated: dataplaneConfigRegenerated,
+		PolicyMatchingCache:        policyMatchingCache,
 	}, nil
 }

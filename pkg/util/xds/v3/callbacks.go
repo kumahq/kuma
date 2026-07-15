@@ -13,38 +13,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
-// stream callbacks
-
-type adapterCallbacks struct {
-	NoopCallbacks
-	callbacks xds.Callbacks
-}
-
-// AdaptCallbacks translate Kuma callbacks to real go-control-plane Callbacks
-func AdaptCallbacks(callbacks xds.Callbacks) envoy_xds.Callbacks {
-	return &adapterCallbacks{
-		callbacks: callbacks,
-	}
-}
-
-var _ envoy_xds.Callbacks = &adapterCallbacks{}
-
-func (a *adapterCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
-	return a.callbacks.OnStreamOpen(ctx, streamID, typeURL)
-}
-
-func (a *adapterCallbacks) OnStreamClosed(streamID int64, _ *envoy_core.Node) {
-	a.callbacks.OnStreamClosed(streamID)
-}
-
-func (a *adapterCallbacks) OnStreamRequest(streamID int64, request *envoy_sd.DiscoveryRequest) error {
-	return a.callbacks.OnStreamRequest(streamID, &discoveryRequest{request})
-}
-
-func (a *adapterCallbacks) OnStreamResponse(ctx context.Context, streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
-	a.callbacks.OnStreamResponse(streamID, &discoveryRequest{request}, &discoveryResponse{response})
-}
-
 // delta callbacks
 
 type adapterDeltaCallbacks struct {

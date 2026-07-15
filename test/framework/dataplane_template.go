@@ -56,6 +56,9 @@ type TransparentProxyConfig struct {
 	RedirectPortInbound  string
 	RedirectPortOutbound string
 	ReachableServices    []string
+	// ReachableBackends is the raw YAML body rendered under
+	// networking.transparentProxying.reachableBackends (e.g. a `refs:` list).
+	ReachableBackends string
 }
 
 // ListenerConfig represents a zone proxy listener (ZoneIngress or ZoneEgress).
@@ -146,6 +149,10 @@ networking:
     redirectPortOutbound: {{ .TransparentProxy.RedirectPortOutbound }}
 {{- if .TransparentProxy.ReachableServices }}
     reachableServices: [{{ joinStrings .TransparentProxy.ReachableServices "," }}]
+{{- end }}
+{{- if .TransparentProxy.ReachableBackends }}
+    reachableBackends:
+{{ .TransparentProxy.ReachableBackends }}
 {{- end }}
 {{- end }}
 {{- end }}

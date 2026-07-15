@@ -31,13 +31,12 @@ import (
 type ConfigMapReconciler struct {
 	kube_client.Client
 	kube_events.EventRecorder
-	Scheme              *kube_runtime.Scheme
-	Log                 logr.Logger
-	ResourceManager     manager.ResourceManager
-	ResourceConverter   k8s_common.Converter
-	VIPsAllocator       *dns.VIPsAllocator
-	SystemNamespace     string
-	KubeOutboundsAsVIPs bool
+	Scheme            *kube_runtime.Scheme
+	Log               logr.Logger
+	ResourceManager   manager.ResourceManager
+	ResourceConverter k8s_common.Converter
+	VIPsAllocator     *dns.VIPsAllocator
+	SystemNamespace   string
 }
 
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -49,26 +48,21 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	l := r.Log.WithValues("mesh", mesh)
 	l.V(1).Info("reconcile VIPs")
 
-	viewModificator := func(view *vips.VirtualOutboundMeshView) error {
-		return nil
+	kubeHostsView, err := KubeHosts(ctx, r.Client, r.ResourceManager, mesh)
+	if err != nil {
+		return kube_ctrl.Result{}, err
 	}
-	if r.KubeOutboundsAsVIPs {
-		kubeHostsView, err := KubeHosts(ctx, r.Client, r.ResourceManager, mesh)
-		if err != nil {
-			return kube_ctrl.Result{}, err
-		}
 
-		viewModificator = func(view *vips.VirtualOutboundMeshView) error {
-			view.DeleteByOrigin(string(metadata.OriginKube))
-			for _, entry := range kubeHostsView.HostnameEntries() {
-				for _, outbound := range kubeHostsView.Get(entry).Outbounds {
-					if err := view.Add(entry, outbound); err != nil {
-						return err
-					}
+	viewModificator := func(view *vips.VirtualOutboundMeshView) error {
+		view.DeleteByOrigin(string(metadata.OriginKube))
+		for _, entry := range kubeHostsView.HostnameEntries() {
+			for _, outbound := range kubeHostsView.Get(entry).Outbounds {
+				if err := view.Add(entry, outbound); err != nil {
+					return err
 				}
 			}
-			return nil
 		}
+		return nil
 	}
 
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(ctx, mesh, viewModificator); err != nil {

@@ -243,8 +243,6 @@ type DataplaneRuntime struct {
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
 	// BindOutbounds configure dataplane to bind to real loopback addresses
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
-	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
-	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
 	// UnifiedResourceNamingEnabled enables the new naming format for Envoy resource and stat names.
 	// When set to true, the data plane proxy uses:
 	// - KRI-based format for resources tied to distinct Kuma resources
@@ -392,15 +390,6 @@ func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
-	}
-	if d.EnvoyXdsTransportProtocolVariant != "" {
-		switch d.EnvoyXdsTransportProtocolVariant {
-		case "DELTA_GRPC":
-		case "GRPC":
-		default:
-			errs = multierr.Append(
-				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be one of: DELTA_GRPC or GRPC when defined", d.EnvoyXdsTransportProtocolVariant))
-		}
 	}
 	return errs
 }

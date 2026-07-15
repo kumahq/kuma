@@ -107,7 +107,6 @@ func New(
 	envoyAdminUnixSocket bool,
 	systemNamespace string,
 	metrics core_metrics.Metrics,
-	deltaXdsEnabled bool,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -139,7 +138,7 @@ func New(
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
 			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
-			cfg.OtelPipeEnabled, cfg.Spire.Enabled, deltaXdsEnabled,
+			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
 		metrics:         im,
@@ -330,24 +329,6 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		}
 	}
 
-	if i.cfg.EBPF.Enabled {
-		pod.Spec.Volumes = append(pod.Spec.Volumes, kube_core.Volume{
-			Name: "sys-fs-cgroup",
-			VolumeSource: kube_core.VolumeSource{
-				HostPath: &kube_core.HostPathVolumeSource{
-					Path: i.cfg.EBPF.CgroupPath,
-				},
-			},
-		}, kube_core.Volume{
-			Name: "bpf-fs",
-			VolumeSource: kube_core.VolumeSource{
-				HostPath: &kube_core.HostPathVolumeSource{
-					Path: i.cfg.EBPF.BPFFSPath,
-				},
-			},
-		})
-	}
-
 	initFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
 	if err != nil {
 		return err
@@ -365,7 +346,6 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 	}
 
 	if i.sidecarContainersEnabled {
-		// inject sidecar after init
 		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
 		patchedContainer.Lifecycle = &kube_core.Lifecycle{
 			PreStop: &kube_core.LifecycleHandler{
@@ -376,7 +356,6 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		}
 		prependInitContainers = append(prependInitContainers, patchedContainer)
 	} else {
-		// inject sidecar as first container
 		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 	}
 
@@ -720,38 +699,6 @@ func (i *KumaInjector) NewInitContainer(args []string, annotations map[string]st
 		VolumeMounts: mounts,
 	}
 
-	if i.cfg.EBPF.Enabled {
-		bidirectional := kube_core.MountPropagationBidirectional
-
-		container.SecurityContext.Capabilities = &kube_core.Capabilities{}
-		container.SecurityContext.Privileged = pointer.To(true)
-
-		container.Env = []kube_core.EnvVar{
-			{
-				Name: i.cfg.EBPF.InstanceIPEnvVarName,
-				ValueFrom: &kube_core.EnvVarSource{
-					FieldRef: &kube_core.ObjectFieldSelector{
-						FieldPath: "status.podIP",
-					},
-				},
-			},
-		}
-
-		// EBPF mode needs more memory; keep CPU limit from config
-		ebpfLimits := kube_core.ResourceList{
-			kube_core.ResourceMemory: *kube_api.NewScaledQuantity(80, kube_api.Mega),
-		}
-		if cpuLimit := kube_api.MustParse(i.cfg.InitContainer.Resources.Limits.CPU); !cpuLimit.IsZero() {
-			ebpfLimits[kube_core.ResourceCPU] = cpuLimit
-		}
-		container.Resources.Limits = ebpfLimits
-
-		container.VolumeMounts = append(container.VolumeMounts,
-			kube_core.VolumeMount{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
-			kube_core.VolumeMount{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
-		)
-	}
-
 	return container
 }
 
@@ -854,50 +801,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 			"[WARNING]: cannot change the value of annotation %s on a per pod basis. The global setting will be used",
 			metadata.KumaTransparentProxyingOutboundPortAnnotation,
 		))
-	}
-
-	if ebpfEnabled, _, err := annotations.GetEnabledWithDefault(
-		i.cfg.EBPF.Enabled,
-		metadata.KumaTransparentProxyingEbpf,
-	); err != nil {
-		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEbpf)
-	} else if ebpfEnabled {
-		result[metadata.KumaTransparentProxyingEbpf] = metadata.AnnotationEnabled
-
-		if v, _ := annotations.GetStringWithDefault(
-			i.cfg.EBPF.BPFFSPath,
-			metadata.KumaTransparentProxyingEbpfBPFFSPath,
-		); v != "" {
-			result[metadata.KumaTransparentProxyingEbpfBPFFSPath] = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			i.cfg.EBPF.CgroupPath,
-			metadata.KumaTransparentProxyingEbpfCgroupPath,
-		); v != "" {
-			result[metadata.KumaTransparentProxyingEbpfCgroupPath] = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			i.cfg.EBPF.TCAttachIface,
-			metadata.KumaTransparentProxyingEbpfTCAttachIface,
-		); v != "" {
-			result[metadata.KumaTransparentProxyingEbpfTCAttachIface] = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			i.cfg.EBPF.ProgramsSourcePath,
-			metadata.KumaTransparentProxyingEbpfProgramsSourcePath,
-		); v != "" {
-			result[metadata.KumaTransparentProxyingEbpfProgramsSourcePath] = v
-		}
-
-		if v, _ := annotations.GetString(
-			i.cfg.EBPF.InstanceIPEnvVarName,
-			metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName,
-		); v != "" {
-			result[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = v
-		}
 	}
 
 	if dnsEnabled, _, err := annotations.GetEnabledWithDefault(

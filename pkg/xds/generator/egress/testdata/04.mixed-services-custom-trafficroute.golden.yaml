@@ -1,4 +1,38 @@
 resources:
+- name: mesh-1:externalservice-1
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_externalservice-1
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
+    connectTimeout: 5s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: mesh-1:externalservice-1
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: kuma.io
+                portValue: 80
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                mesh: mesh-1
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                mesh: mesh-1
+    name: mesh-1:externalservice-1
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: mesh-1:externalservice-2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -57,6 +91,74 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
+- name: mesh-1:service-1-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_service-1-zone-2
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: mesh-1:service-1-zone-2
+    type: EDS
+- name: mesh-1:service-2-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_service-2-zone-2
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: mesh-1:service-2-zone-2
+    type: EDS
+- name: mesh-1:service-1-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh-1:service-1-zone-2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.254
+              portValue: 10001
+        loadBalancingWeight: 3
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              mesh: mesh-1
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              mesh: mesh-1
+- name: mesh-1:service-2-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh-1:service-2-zone-2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.254
+              portValue: 10001
+        loadBalancingWeight: 30
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http2
+              mesh: mesh-1
+            envoy.transport_socket_match:
+              kuma.io/protocol: http2
+              mesh: mesh-1
 - name: inbound:192.168.0.1:10002
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -66,6 +168,90 @@ resources:
         portValue: 10002
     enableReusePort: false
     filterChains:
+    - filterChainMatch:
+        serverNames:
+        - service-1-zone-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh-1:service-1-zone-2
+          statPrefix: mesh-1_service-1-zone-2
+    - filterChainMatch:
+        serverNames:
+        - service-2-zone-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh-1:service-2-zone-2
+          statPrefix: mesh-1_service-2-zone-2
+    - filterChainMatch:
+        serverNames:
+        - externalservice-1{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              allow-all-traffic:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: externalservice-1.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+          routeConfig:
+            name: outbound:externalservice-1
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: externalservice-1
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  autoHostRewrite: true
+                  cluster: mesh-1:externalservice-1
+          statPrefix: externalservice-1
+      name: externalservice-1_mesh-1
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://mesh-1/
+                  sanType: URI
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:mesh-1
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:mesh-1
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
     - filterChainMatch:
         serverNames:
         - externalservice-2{mesh=mesh-1}
@@ -106,7 +292,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-1:externalservice-2
-                  timeout: 0s
           statPrefix: externalservice-2
       name: externalservice-2_mesh-1
       transportSocket:

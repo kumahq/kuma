@@ -10,7 +10,6 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 	generator, err := NewDefaultBootstrapGenerator(
 		rt.ResourceManager(),
 		rt.Config().BootstrapServer,
-		rt.Config().Proxy,
 		rt.Config().DpServer.TlsCertFile,
 		map[string]bool{
 			string(mesh_proto.DataplaneProxyType): rt.Config().DpServer.Authn.DpProxy.Type != dp_server.DpServerAuthNone,
@@ -20,7 +19,6 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
-		rt.Config().Experimental.DeltaXds,
 		rt.Config().Experimental.InboundTagsDisabled,
 		rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,
 	)

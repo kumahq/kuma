@@ -31,12 +31,8 @@ message MeshGatewayRoute {
     // which the gateway will forward.
     map<string, string> destination = 2 [(validate.rules).map = {
       min_pairs: 1
-      keys: {
-        string: {min_len: 1}
-      }
-      values: {
-        string: {min_len: 1}
-      }
+      keys: {string: {min_len: 1}}
+      values: {string: {min_len: 1}}
     }];
   }
 

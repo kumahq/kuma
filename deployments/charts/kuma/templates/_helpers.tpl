@@ -329,14 +329,8 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-- name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  value: {{ .Values.experimental.sidecarContainers | quote }}
 {{- if .Values.experimental.inboundTagsDisabled }}
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
-  value: "true"
-{{- end }}
-{{- if .Values.experimental.deltaXds }}
-- name: KUMA_EXPERIMENTAL_DELTA_XDS
   value: "true"
 {{- end }}
 - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
@@ -349,30 +343,12 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE
   value: {{ .Values.cni.namespace }}
 {{- end }}
-{{- if .Values.experimental.ebpf.enabled }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
-  value: "true"
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
-  value: {{ .Values.experimental.ebpf.instanceIPEnvVarName }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-  value: {{ .Values.experimental.ebpf.bpffsPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
-  value: {{ .Values.experimental.ebpf.cgroupPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
-  value: {{ .Values.experimental.ebpf.tcAttachIface }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
-  value: {{ .Values.experimental.ebpf.programsSourcePath }}
-{{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
   value: "true"
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
-- name: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
-  value: true
-{{- end }}
 {{- if .Values.dataPlane.features.unifiedResourceNaming }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
   value: "true"

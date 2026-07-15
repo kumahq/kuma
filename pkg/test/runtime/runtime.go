@@ -178,7 +178,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
-		xds_context.AnyToAnyReachableServicesGraphBuilder,
 		builder.CAProvider(),
 	)
 
@@ -322,6 +321,10 @@ func (r *TestRuntime) TokenIssuers() tokens_builtin.TokenIssuers {
 
 func (r *TestRuntime) APIWebServiceCustomize() func(ws *restful.WebService) error {
 	return func(*restful.WebService) error { return nil }
+}
+
+func (r *TestRuntime) RouteMetadataProvider() core_runtime.RouteMetadataProvider {
+	return nil
 }
 
 func (r *TestRuntime) Extensions() context.Context {

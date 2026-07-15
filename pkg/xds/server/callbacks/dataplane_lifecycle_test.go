@@ -54,7 +54,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		dpLifecycle := NewDataplaneLifecycle(ctx, resManager, authenticator, 0*time.Second, cpInstanceID, 0*time.Second)
-		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(dpLifecycle))
+		callbacks = util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(dpLifecycle))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -95,17 +95,17 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				},
 			},
 		}
-		req := envoy_sd.DiscoveryRequest{
+		req := envoy_sd.DeltaDiscoveryRequest{
 			Node: node,
 		}
 		const streamId = 123
 		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
 			"authorization": {"token"},
 		})
-		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
+		Expect(callbacks.OnDeltaStreamOpen(ctx, streamId, "")).To(Succeed())
 
 		// when
-		err := callbacks.OnStreamRequest(streamId, &req)
+		err := callbacks.OnStreamDeltaRequest(streamId, &req)
 
 		// then dp is created
 		Expect(err).ToNot(HaveOccurred())
@@ -115,7 +115,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(dp.GetMeta().GetLabels()).To(HaveKeyWithValue("app", "backend"))
 
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnDeltaStreamClosed(streamId, node)
 
 		// then dataplane should be deleted
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -149,7 +149,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 		// when
 		authenticator.err = errors.New("token rejected")
-		req := envoy_sd.DiscoveryRequest{
+		req := envoy_sd.DeltaDiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.dp-01",
 				Metadata: &structpb.Struct{
@@ -185,8 +185,8 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
 			"authorization": {"token"},
 		})
-		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
-		err = callbacks.OnStreamRequest(streamId, &req)
+		Expect(callbacks.OnDeltaStreamOpen(ctx, streamId, "")).To(Succeed())
+		err = callbacks.OnStreamDeltaRequest(streamId, &req)
 
 		// then
 		Expect(err).To(HaveOccurred())
@@ -221,19 +221,19 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		node := &envoy_core.Node{
 			Id: "default.backend-01",
 		}
-		req := envoy_sd.DiscoveryRequest{
+		req := envoy_sd.DeltaDiscoveryRequest{
 			Node: node,
 		}
 		const streamId = 123
 
 		// when
-		err = callbacks.OnStreamRequest(streamId, &req)
+		err = callbacks.OnStreamDeltaRequest(streamId, &req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnDeltaStreamClosed(streamId, node)
 
 		// then DP is not deleted because it was not carried in metadata
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -272,7 +272,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				},
 			},
 		}
-		req := envoy_sd.DiscoveryRequest{
+		req := envoy_sd.DeltaDiscoveryRequest{
 			Node: node,
 		}
 
@@ -305,14 +305,14 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
 			"authorization": {"token"},
 		})
-		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
+		Expect(callbacks.OnDeltaStreamOpen(ctx, streamId, "")).To(Succeed())
 
-		err = callbacks.OnStreamRequest(streamId, &req)
+		err = callbacks.OnStreamDeltaRequest(streamId, &req)
 		Expect(err).ToNot(HaveOccurred())
 
 		cancel()
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnDeltaStreamClosed(streamId, node)
 
 		// then DP is not deleted because Kuma CP was shutting down
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -365,16 +365,16 @@ var _ = Describe("Dataplane Lifecycle", func() {
 						},
 					},
 				}
-				req := envoy_sd.DiscoveryRequest{
+				req := envoy_sd.DeltaDiscoveryRequest{
 					Node: node,
 				}
 				ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
 					"authorization": {"token"},
 				})
-				Expect(callbacks.OnStreamOpen(ctx, streamID, "")).To(Succeed())
+				Expect(callbacks.OnDeltaStreamOpen(ctx, streamID, "")).To(Succeed())
 
 				// when
-				err := callbacks.OnStreamRequest(streamID, &req)
+				err := callbacks.OnStreamDeltaRequest(streamID, &req)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then dp is created
@@ -382,7 +382,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				callbacks.OnStreamClosed(streamID, node)
+				callbacks.OnDeltaStreamClosed(streamID, node)
 
 				// then dataplane should be deleted
 				err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -428,7 +428,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				},
 			},
 		}
-		req := envoy_sd.DiscoveryRequest{
+		req := envoy_sd.DeltaDiscoveryRequest{
 			Node: node,
 		}
 
@@ -441,8 +441,8 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
 			"authorization": {"token"},
 		})
-		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
-		err := callbacks.OnStreamRequest(streamId, &req)
+		Expect(callbacks.OnDeltaStreamOpen(ctx, streamId, "")).To(Succeed())
+		err := callbacks.OnStreamDeltaRequest(streamId, &req)
 		Expect(err).ToNot(HaveOccurred())
 
 		// and insight that indicates that DP has connected to another instance of CP. For example
@@ -458,7 +458,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(resManager.Create(context.Background(), insight, core_store.CreateBy(key))).To(Succeed())
 
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnDeltaStreamClosed(streamId, node)
 
 		// then DP is not deleted because Kuma DP is connected to another instance
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetBy(key))

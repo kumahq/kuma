@@ -495,12 +495,9 @@ resources:
               prefixLen: 12
             - addressPrefix: 127.0.0.1
               prefixLen: 32
+          normalizePath: true
           routeConfig:
             name: outbound:es-with-tls
-            requestHeadersToAdd:
-            - header:
-                key: x-kuma-tags
-                value: '&kuma.io/service=backend-1,backend-2,backend-3,backend-4&'
             validateClusters: false
             virtualHosts:
             - domains:
@@ -509,12 +506,12 @@ resources:
               routes:
               - match:
                   prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   autoHostRewrite: true
                   cluster: es-with-tls
                   timeout: 0s
           statPrefix: es-with-tls
-          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:

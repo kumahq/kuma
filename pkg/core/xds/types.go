@@ -62,36 +62,24 @@ type ServiceName = string
 
 type MeshName = string
 
-// RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
-type RouteMap map[mesh_proto.OutboundInterface]*core_mesh.TrafficRouteResource
-
-// TimeoutMap holds the most specific TimeoutResource for each OutboundInterface
-type TimeoutMap map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource
-
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
-// DestinationMap holds a set of selectors for all reachable Dataplanes grouped by service name.
-// DestinationMap is based on ServiceName and not on the OutboundInterface because TrafficRoute can introduce new service destinations that were not included in a outbound section.
-// Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
-type (
-	DestinationMap  map[ServiceName]TagSelectorSet
-	ExternalService struct {
-		Protocol                 core_meta.Protocol
-		TLSEnabled               bool
-		FallbackToSystemCa       bool
-		CaCert                   []byte
-		ClientCert               []byte
-		ClientKey                []byte // #nosec G117 -- TLS config field, not hardcoded key
-		AllowRenegotiation       bool
-		SkipHostnameVerification bool
-		ServerName               string
-		SANs                     []SAN
-		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		OwnerResource            kri.Identifier
-	}
-)
+type ExternalService struct {
+	Protocol                 core_meta.Protocol
+	TLSEnabled               bool
+	FallbackToSystemCa       bool
+	CaCert                   []byte
+	ClientCert               []byte
+	ClientKey                []byte // #nosec G117 -- TLS config field, not hardcoded key
+	AllowRenegotiation       bool
+	SkipHostnameVerification bool
+	ServerName               string
+	SANs                     []SAN
+	MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+	MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+	OwnerResource            kri.Identifier
+}
 
 type MatchType string
 
@@ -160,40 +148,10 @@ type EgressEndpointGroup struct {
 // Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
 type EgressEndpointMap map[ServiceName]EgressEndpointGroup
 
-// TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
-type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
-
-// HealthCheckMap holds the most specific HealthCheck for each reachable service.
-type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
-
-// CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
-type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
-
-// RetryMap holds the most specific Retry for each reachable service.
-type RetryMap map[ServiceName]*core_mesh.RetryResource
-
-// FaultInjectionMap holds all matched FaultInjectionResources for each InboundInterface
-type FaultInjectionMap map[mesh_proto.InboundInterface][]*core_mesh.FaultInjectionResource
-
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
 
-// InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
-type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*core_mesh.RateLimitResource
-
-// OutboundRateLimitsMap holds the RateLimitResource for each OutboundInterface
-type OutboundRateLimitsMap map[mesh_proto.OutboundInterface]*core_mesh.RateLimitResource
-
-type RateLimitsMap struct {
-	Inbound  InboundRateLimitsMap
-	Outbound OutboundRateLimitsMap
-}
-
 type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
-
-type ExternalServiceFaultInjectionMap map[ServiceName][]*core_mesh.FaultInjectionResource
-
-type ExternalServiceRateLimitMap map[ServiceName][]*core_mesh.RateLimitResource
 
 // SocketAddressProtocol is the L4 protocol the listener should bind to
 type SocketAddressProtocol int32
@@ -311,12 +269,10 @@ type SecretsTracker interface {
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
-	Mesh                           *core_mesh.MeshResource
-	ExternalServices               []*core_mesh.ExternalServiceResource
-	ExternalServicePermissionMap   ExternalServicePermissionMap
-	EndpointMap                    EndpointMap
-	ExternalServiceFaultInjections ExternalServiceFaultInjectionMap
-	ExternalServiceRateLimits      ExternalServiceRateLimitMap
+	Mesh                         *core_mesh.MeshResource
+	ExternalServices             []*core_mesh.ExternalServiceResource
+	ExternalServicePermissionMap ExternalServicePermissionMap
+	EndpointMap                  EndpointMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies
@@ -362,7 +318,6 @@ type ZoneIngressProxy struct {
 }
 
 type Routing struct {
-	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
 	// ExternalServiceOutboundTargets contains endpoint map for direct access of external services (without egress)
 	// Since we take into account TrafficPermission to exclude external services from the map,

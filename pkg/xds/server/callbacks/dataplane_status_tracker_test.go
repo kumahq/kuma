@@ -33,7 +33,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		tracker = NewDataplaneStatusTracker(runtimeInfo, func(_ *structpb.Struct, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
-		callbacks = v3.AdaptCallbacks(tracker)
+		callbacks = v3.AdaptDeltaCallbacks(tracker)
 		ctx = context.Background()
 	})
 
@@ -44,7 +44,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating start of ADS subscription")
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -63,7 +63,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating end of ADS subscription")
 		// when
-		callbacks.OnStreamClosed(streamID, n)
+		callbacks.OnDeltaStreamClosed(streamID, n)
 
 		By("ensuring ADS subscription final state")
 		// when
@@ -79,7 +79,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating start of ADS subscription")
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -90,10 +90,10 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating initial LDS request")
 		// when
-		discoveryRequest := &envoy_sd.DiscoveryRequest{
+		discoveryRequest := &envoy_sd.DeltaDiscoveryRequest{
 			TypeUrl: "type.googleapis.com/envoy.config.listener.v3.Listener",
 		}
-		err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+		err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -136,7 +136,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating start of subscription")
 			// when
-			err := callbacks.OnStreamOpen(ctx, streamID, "")
+			err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -147,7 +147,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating initial xDS request")
 			// when
-			discoveryRequest := &envoy_sd.DiscoveryRequest{
+			discoveryRequest := &envoy_sd.DeltaDiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
 					Metadata: &structpb.Struct{
@@ -167,7 +167,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				},
 				TypeUrl: given.TypeUrl,
 			}
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -206,11 +206,11 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating initial xDS response")
 			// when
-			discoveryResponse := &envoy_sd.DiscoveryResponse{
+			discoveryResponse := &envoy_sd.DeltaDiscoveryResponse{
 				TypeUrl: given.TypeUrl,
 				Nonce:   "1",
 			}
-			callbacks.OnStreamResponse(context.TODO(), streamID, discoveryRequest, discoveryResponse)
+			callbacks.OnStreamDeltaResponse(streamID, discoveryRequest, discoveryResponse)
 			// and
 			key, subscription = accessor.GetStatus()
 			// then
@@ -234,11 +234,11 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating xDS ACK request")
 			// when
-			discoveryRequest = &envoy_sd.DiscoveryRequest{
+			discoveryRequest = &envoy_sd.DeltaDiscoveryRequest{
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
 			}
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -267,14 +267,14 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating xDS NACK request")
 			// when
-			discoveryRequest = &envoy_sd.DiscoveryRequest{
+			discoveryRequest = &envoy_sd.DeltaDiscoveryRequest{
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
 				ErrorDetail: &status.Status{
 					Message: "failed to apply LDS response",
 				},
 			}
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -328,7 +328,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		func(given versionTestCase) {
 			// given
 			streamID := int64(1)
-			discoveryRequest := &envoy_sd.DiscoveryRequest{
+			discoveryRequest := &envoy_sd.DeltaDiscoveryRequest{
 				TypeUrl: "type.googleapis.com/envoy.config.listener.v3.Listener",
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
@@ -341,9 +341,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			}
 
 			// when
-			err := callbacks.OnStreamOpen(context.Background(), streamID, "")
+			err := callbacks.OnDeltaStreamOpen(context.Background(), streamID, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

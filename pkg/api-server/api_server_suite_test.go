@@ -199,7 +199,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store), false),
 			cfg.DNSServer.Domain,
 			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

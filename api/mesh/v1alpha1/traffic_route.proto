@@ -44,12 +44,8 @@ message TrafficRoute {
     // in the latter case an endpoint is an External Service.
     map<string, string> destination = 2 [(validate.rules).map = {
       min_pairs: 1
-      keys: {
-        string: {min_len: 1}
-      }
-      values: {
-        string: {min_len: 1}
-      }
+      keys: {string: {min_len: 1}}
+      values: {string: {min_len: 1}}
     }];
   }
 

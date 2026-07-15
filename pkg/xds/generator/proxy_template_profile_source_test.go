@@ -3,7 +3,6 @@ package generator_test
 import (
 	"context"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -133,49 +132,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Routing: core_xds.Routing{
-					TrafficRoutes: core_xds.RouteMap{
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 54321,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("db"),
-								},
-							},
-						},
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 59200,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("elastic"),
-								},
-							},
-						},
-					},
 					OutboundTargets: outboundTargets,
-				},
-				Policies: core_xds.MatchedPolicies{
-					HealthChecks: core_xds.HealthCheckMap{
-						"elastic": &core_mesh.HealthCheckResource{
-							Spec: &mesh_proto.HealthCheck{
-								Sources: []*mesh_proto.Selector{
-									{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
-								},
-								Conf: &mesh_proto.HealthCheck_Conf{
-									Interval:           util_proto.Duration(5 * time.Second),
-									Timeout:            util_proto.Duration(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
-							},
-						},
-					},
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort:     9902,

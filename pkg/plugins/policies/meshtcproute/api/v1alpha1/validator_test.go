@@ -42,22 +42,6 @@ to:
 - targetRef:
     kind: Mesh
 `),
-		ErrorCase("spec.to.targetRef error",
-			validators.Violation{
-				Field:   "spec.to[0].targetRef.kind",
-				Message: "value 'MeshService' is not supported",
-			}, `
-type: MeshTCPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: MeshService
-    name: backend
-`),
 		ErrorCase("invalid backendRefs",
 			validators.Violation{
 				Field:   "spec.to[0].rules[0].default.backendRefs[0].name",
@@ -132,24 +116,6 @@ to:
 - targetRef:
     kind: MeshService
     name: backend
-`),
-		Entry("accepts MeshGateway with listener tags targeted route", `
-type: MeshTCPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-  tags:
-    port: 6000
-to:
-- targetRef:
-    kind: Mesh
-  rules:
-  - default:
-      backendRefs:
-      - kind: MeshService
-        name: other
 `),
 		Entry("MeshService and MeshMultiZoneService", `
 type: MeshTCPRoute

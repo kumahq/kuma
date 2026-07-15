@@ -31,13 +31,13 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			err := tracker.OnStreamOpen(ctx, streamID, typ)
+			err := tracker.OnDeltaStreamOpen(ctx, streamID, typ)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating Envoy disconnecting from the Control Plane prior to any DiscoveryRequest")
 			// and
-			tracker.OnStreamClosed(streamID)
+			tracker.OnDeltaStreamClosed(streamID)
 
 			// then
 			// expect no panic
@@ -46,29 +46,29 @@ var _ = Describe("Sync", func() {
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
 			tracker := NewDataplaneSyncTracker(context.Background(), nil)
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
 			ctx := context.Background()
 			streamID := int64(1)
 			typ := ""
-			req := &envoy_sd.DiscoveryRequest{Node: nil}
+			req := &envoy_sd.DeltaDiscoveryRequest{Node: nil}
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			err := callbacks.OnStreamOpen(ctx, streamID, typ)
+			err := callbacks.OnDeltaStreamOpen(ctx, streamID, typ)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating DiscoveryRequest")
 			// when
-			err = callbacks.OnStreamRequest(streamID, req)
+			err = callbacks.OnStreamDeltaRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			// and
-			callbacks.OnStreamClosed(streamID, nil)
+			callbacks.OnDeltaStreamClosed(streamID, nil)
 
 			// then
 			// expect no panic
@@ -85,24 +85,24 @@ var _ = Describe("Sync", func() {
 					close(watchdogCh)
 				})
 			}))
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
 			ctx := context.Background()
 			streamID := int64(1)
 			typ := ""
 			n := &envoy_core.Node{Id: "demo.example"}
-			req := &envoy_sd.DiscoveryRequest{Node: n}
+			req := &envoy_sd.DeltaDiscoveryRequest{Node: n}
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			err := callbacks.OnStreamOpen(ctx, streamID, typ)
+			err := callbacks.OnDeltaStreamOpen(ctx, streamID, typ)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating DiscoveryRequest")
 			// when
-			err = callbacks.OnStreamRequest(streamID, req)
+			err = callbacks.OnStreamDeltaRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -114,13 +114,13 @@ var _ = Describe("Sync", func() {
 
 			By("simulating another DiscoveryRequest")
 			// when
-			err = callbacks.OnStreamRequest(streamID, req)
+			err = callbacks.OnStreamDeltaRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			// and
-			callbacks.OnStreamClosed(streamID, n)
+			callbacks.OnDeltaStreamClosed(streamID, n)
 
 			By("waiting for Watchdog to get stopped")
 			// when
@@ -141,52 +141,52 @@ var _ = Describe("Sync", func() {
 					cleanupDone.Store(true)
 				})
 			}))
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
 			streamID1 := int64(1)
 			streamID2 := int64(2)
 			streamID3 := int64(3)
-			err := callbacks.OnStreamOpen(context.Background(), streamID1, "")
+			err := callbacks.OnDeltaStreamOpen(context.Background(), streamID1, "")
 			Expect(err).ToNot(HaveOccurred())
 			node := &envoy_core.Node{Id: "default.backend-01"}
-			err = callbacks.OnStreamRequest(streamID1, &envoy_sd.DiscoveryRequest{Node: node})
+			err = callbacks.OnStreamDeltaRequest(streamID1, &envoy_sd.DeltaDiscoveryRequest{Node: node})
 			Expect(err).ToNot(HaveOccurred())
 
 			// then a watchdog is active
 			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
 
 			// and when new stream from backend-01 is connected  and request is sent
-			err = callbacks.OnStreamOpen(context.Background(), streamID2, "")
+			err = callbacks.OnDeltaStreamOpen(context.Background(), streamID2, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = callbacks.OnStreamRequest(streamID2, &envoy_sd.DiscoveryRequest{Node: node})
+			err = callbacks.OnStreamDeltaRequest(streamID2, &envoy_sd.DeltaDiscoveryRequest{Node: node})
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("already an active stream"))
 
 			// then only one watchdog is active
 			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
 
-			callbacks.OnStreamClosed(streamID2, node)
+			callbacks.OnDeltaStreamClosed(streamID2, node)
 			Expect(cleanupDone.Load()).To(BeFalse())
 
 			// when first stream is closed
-			callbacks.OnStreamClosed(streamID1, node)
+			callbacks.OnDeltaStreamClosed(streamID1, node)
 			Expect(cleanupDone.Load()).To(BeTrue())
 
 			// then there is no active watchdog
 			Expect(activeWatchdogs.Load()).To(Equal(int32(0)))
 
 			// and when the third stream from backend-01 is connected after the first active stream closed and request is sent
-			err = callbacks.OnStreamOpen(context.Background(), streamID3, "")
+			err = callbacks.OnDeltaStreamOpen(context.Background(), streamID3, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = callbacks.OnStreamRequest(streamID3, &envoy_sd.DiscoveryRequest{Node: node})
+			err = callbacks.OnStreamDeltaRequest(streamID3, &envoy_sd.DeltaDiscoveryRequest{Node: node})
 			Expect(err).ToNot(HaveOccurred())
 
 			// then a watchdog is active
 			Eventually(activeWatchdogs.Load, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when the third stream is closed
-			callbacks.OnStreamClosed(streamID3, node)
+			callbacks.OnDeltaStreamClosed(streamID3, node)
 
 			// then no watchdog is active
 			Expect(activeWatchdogs.Load()).To(Equal(int32(0)))
@@ -204,10 +204,10 @@ var _ = Describe("Sync", func() {
 					close(watchdogReturned)
 				})
 			}))
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
-			Expect(callbacks.OnStreamOpen(context.Background(), 1, "")).ToNot(HaveOccurred())
-			Expect(callbacks.OnStreamRequest(1, &envoy_sd.DiscoveryRequest{Node: &envoy_core.Node{Id: "demo.example"}})).ToNot(HaveOccurred())
+			Expect(callbacks.OnDeltaStreamOpen(context.Background(), 1, "")).ToNot(HaveOccurred())
+			Expect(callbacks.OnStreamDeltaRequest(1, &envoy_sd.DeltaDiscoveryRequest{Node: &envoy_core.Node{Id: "demo.example"}})).ToNot(HaveOccurred())
 			Eventually(watchdogStarted).Should(BeClosed())
 
 			cancelParent()
@@ -224,20 +224,20 @@ var _ = Describe("Sync", func() {
 				watchdogDone: watchdogDone,
 			}
 			tracker := NewDataplaneSyncTracker(context.Background(), factory)
-			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
 			ctx := context.Background()
 			streamID := int64(1)
 			node := &envoy_core.Node{Id: "demo.example"}
-			req := &envoy_sd.DiscoveryRequest{Node: node}
+			req := &envoy_sd.DeltaDiscoveryRequest{Node: node}
 
 			By("simulating Envoy connecting to the Control Plane")
-			err := callbacks.OnStreamOpen(ctx, streamID, "")
+			err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating DiscoveryRequest")
-			err = callbacks.OnStreamRequest(streamID, req)
+			err = callbacks.OnStreamDeltaRequest(streamID, req)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("verifying stream context was passed to factory")
@@ -246,7 +246,7 @@ var _ = Describe("Sync", func() {
 			Expect(capturedStreamCtx).ToNot(BeNil())
 
 			By("simulating Envoy disconnecting from the Control Plane")
-			callbacks.OnStreamClosed(streamID, node)
+			callbacks.OnDeltaStreamClosed(streamID, node)
 
 			By("waiting for Watchdog to stop")
 			Eventually(watchdogDone).Should(BeClosed())

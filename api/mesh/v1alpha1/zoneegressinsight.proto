@@ -18,6 +18,7 @@ message ZoneEgressInsight {
   option (kuma.mesh.resource).ws.name = "zoneegressinsight";
   option (kuma.mesh.resource).ws.read_only = true;
   option (kuma.mesh.resource).scope_namespace = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
 
   // List of ADS subscriptions created by a given Zone Kuma CP.
   repeated DiscoverySubscription subscriptions = 1;

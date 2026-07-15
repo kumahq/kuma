@@ -3,7 +3,6 @@ package context
 import (
 	"encoding/base64"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -79,7 +78,10 @@ type PEMBytes []byte
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash                        string
+	Hash string
+	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
+	// Excludes Dataplane roster; stays stable across DP-registration waves.
+	PolicyMatchingHash          string
 	Resource                    *core_mesh.MeshResource
 	BaseMeshContext             *BaseMeshContext
 	Resources                   Resources
@@ -92,7 +94,6 @@ type MeshContext struct {
 	VIPOutbounds                xds_types.Outbounds
 	ServicesInformation         map[string]*ServiceInformation
 	DataSourceLoader            datasource.Loader
-	ReachableServicesGraph      ReachableServicesGraph
 	CAsByTrustDomain            map[string][]PEMBytes
 	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
 	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
@@ -130,36 +131,6 @@ func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destina
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
-func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
-	if tt == nil {
-		return nil
-	}
-	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
-		logger.Info("Tracing backend is not found. Ignoring.",
-			"backendName", tt.Spec.GetConf().GetBackend(),
-			"trafficTraceName", tt.GetMeta().GetName(),
-			"trafficTraceMesh", tt.GetMeta().GetMesh())
-		return nil
-	} else {
-		return tb
-	}
-}
-
-func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
-	if tl == nil {
-		return nil
-	}
-	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
-		logger.Info("Logging backend is not found. Ignoring.",
-			"backendName", tl.Spec.GetConf().GetBackend(),
-			"trafficLogName", tl.GetMeta().GetName(),
-			"trafficLogMesh", tl.GetMeta().GetMesh())
-		return nil
-	} else {
-		return lb
-	}
-}
-
 func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
 	if info, found := mc.ServicesInformation[serviceName]; found {
 		return info.Protocol
@@ -187,7 +158,7 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
-	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+	return len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.

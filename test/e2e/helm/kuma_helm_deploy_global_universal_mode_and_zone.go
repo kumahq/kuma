@@ -126,7 +126,7 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 
 	It("communication in between apps in zone works", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(zoneCluster, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
+			_, err := client.CollectEchoResponse(zoneCluster, "demo-client", "http://test-server.kuma-test.svc.cluster.local",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

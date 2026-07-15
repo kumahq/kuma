@@ -20,7 +20,7 @@ var _ FilterChainConfigurer = &HttpOutboundRouteConfigurer{}
 
 func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	virtualHost := envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3, c.VirtualHostName).
-		Configure(envoy_virtual_hosts.Routes(c.Routes))
+		Configure(envoy_virtual_hosts.OutboundRoutes(c.Routes))
 
 	routeConfig := envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, c.RouteConfigName).
 		Configure(envoy_routes.CommonRouteConfiguration()).

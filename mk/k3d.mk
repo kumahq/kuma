@@ -23,7 +23,7 @@ METALLB_NAMESPACE ?= metallb-system
 # --- Calico ---
 
 # renovate: datasource=github-releases depName=projectcalico/tigera-operator packageName=projectcalico/calico versioning=semver
-CALICO_VERSION ?= v3.32.0
+CALICO_VERSION ?= v3.32.1
 CALICO_NAMESPACE ?= tigera-operator
 CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
 CALICO_HELM_REPO_NAME ?= projectcalico
@@ -97,15 +97,6 @@ ifeq ($(K3D_TWEAK_FS_EVICTION_RULES),true)
 		--k3s-arg "--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*" \
 		--k3s-arg "--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@server:0" \
 		--k3s-arg "--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@server:0"
-endif
-
-# --- eBPF ---
-# Mount bpffs inside k3d containers for eBPF-based transparent proxy.
-# On macOS Docker Desktop the mount must happen post-create; on Linux
-# it's done via a volume at cluster creation time.
-
-ifeq ($(GOOS),linux)
-K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 endif
 
 # --- k3d-specific context ---
@@ -183,15 +174,6 @@ k3d/cluster/cni/setup/calico:
 		--set goldmane.enabled=false \
 		--set whisker.enabled=false \
 		--set defaultFelixConfiguration.enabled=false
-
-# --- eBPF setup ---
-
-.PHONY: k3d/cluster/ebpf/setup
-k3d/cluster/ebpf/setup:
-ifeq ($(GOOS),darwin)
-	$(Q)docker exec k3d-$(CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
-	docker exec k3d-$(CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
-endif
 
 # --- Helm deploy options ---
 
@@ -306,7 +288,6 @@ k3d/cluster/start:
 	$(Q)$(MAKE) k3d/cluster/create
 	$(Q)$(MAKE) k3d/cluster/wait/api
 	$(Q)$(MAKE) k3d/cluster/cni/setup
-	$(Q)$(MAKE) k3d/cluster/ebpf/setup
 	$(Q)$(MAKE) k3d/cluster/wait
 	$(Q)$(MAKE) k3d/cluster/metallb/setup
 

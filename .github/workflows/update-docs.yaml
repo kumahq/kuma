@@ -25,8 +25,9 @@ jobs:
     timeout-minutes: 10
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          persist-credentials: false
           fetch-depth: 0
           ref: master
           path: repo
@@ -67,8 +68,9 @@ jobs:
               [[ -f versions.yml ]] && cp versions.yml ../docs-build/raw/
             fi
           done
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          persist-credentials: false
           repository: ${{ github.repository_owner }}/${{ env.DOCS_REPO }}
           path: docs
       - name: "update versions"

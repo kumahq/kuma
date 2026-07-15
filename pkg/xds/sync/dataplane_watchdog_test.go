@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"k8s.io/client-go/util/cert"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -26,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	"github.com/kumahq/kuma/v3/pkg/xds/server"
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
@@ -73,6 +75,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 	var resManager manager.ResourceManager
 	var snapshotReconciler *staticSnapshotReconciler
 	var deps sync.DataplaneWatchdogDependencies
+	var xdsMetrics *xds_metrics.Metrics
 
 	BeforeEach(func() {
 		snapshotReconciler = &staticSnapshotReconciler{}
@@ -87,10 +90,11 @@ var _ = Describe("Dataplane Watchdog", func() {
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			".mesh",
 			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 		newMetrics, err := metrics.NewMetrics(zone)
+		Expect(err).ToNot(HaveOccurred())
+		xdsMetrics, err = xds_metrics.NewMetrics(newMetrics)
 		Expect(err).ToNot(HaveOccurred())
 		cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
@@ -117,6 +121,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			},
 			MeshCache:  cache,
 			ResManager: resManager,
+			XdsMetrics: xdsMetrics,
 		}
 
 		pair, err := envoy_admin_tls.GenerateCA()
@@ -191,6 +196,23 @@ var _ = Describe("Dataplane Watchdog", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshotReconciler.proxy).To(BeNil())
+		})
+
+		It("should count successful config-hash-triggered reconciles only", func() {
+			// when
+			_, err := watchdog.Sync(ctx)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(testutil.ToFloat64(xdsMetrics.DataplaneConfigRegenerated.WithLabelValues(resKey.Mesh))).To(Equal(1.0))
+
+			// when
+			time.Sleep(cacheExpirationTime)
+			_, err = watchdog.Sync(ctx)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(testutil.ToFloat64(xdsMetrics.DataplaneConfigRegenerated.WithLabelValues(resKey.Mesh))).To(Equal(1.0))
 		})
 	})
 })

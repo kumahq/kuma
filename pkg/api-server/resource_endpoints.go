@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
-
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
@@ -34,11 +35,12 @@ const (
 
 // resourceEndpointsContext holds the dependencies shared by the resource handlers.
 type resourceEndpointsContext struct {
-	mode           config_core.CpMode
-	zoneName       string
-	resManager     manager.ResourceManager
-	descriptor     core_model.ResourceTypeDescriptor
-	resourceAccess access.ResourceAccess
+	mode                  config_core.CpMode
+	zoneName              string
+	resManager            manager.ResourceManager
+	descriptor            core_model.ResourceTypeDescriptor
+	resourceAccess        access.ResourceAccess
+	routeMetadataProvider runtime.RouteMetadataProvider
 }
 
 // resourceEndpoints registers the resource routes and delegates them to the CRUD
@@ -64,8 +66,42 @@ func typeToLegacyOverviewPath(resourceType core_model.ResourceType) string {
 	}
 }
 
+// reservedRouteMetadataKeys are route metadata keys Kuma interprets itself, so a
+// RouteMetadataProvider must not set them. If it does, route drops the value to
+// stop an embedder from changing Kuma's own routing behavior (e.g. disabling
+// authn via authn.MetadataAuthKey).
+var reservedRouteMetadataKeys = map[string]struct{}{
+	authn.MetadataAuthKey: {},
+}
+
+// route builds the RouteBuilder for a CRUD method/path and applies any provider
+// metadata, naming the verb once so ws.<VERB> and the metadata can't desync.
+func (r *resourceEndpoints) route(ws *restful.WebService, method, path string) *restful.RouteBuilder {
+	var rb *restful.RouteBuilder
+	switch method {
+	case http.MethodGet:
+		rb = ws.GET(path)
+	case http.MethodPut:
+		rb = ws.PUT(path)
+	case http.MethodDelete:
+		rb = ws.DELETE(path)
+	default:
+		panic(fmt.Sprintf("resource endpoints: unsupported method %q", method))
+	}
+	if r.routeMetadataProvider != nil {
+		for k, v := range r.routeMetadataProvider(r.descriptor, method) {
+			if _, reserved := reservedRouteMetadataKeys[k]; reserved {
+				log.Info("ignoring reserved route metadata key from provider", "key", k, "type", r.descriptor.Name, "method", method)
+				continue
+			}
+			rb = rb.Metadata(k, v)
+		}
+	}
+	return rb
+}
+
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource(false)).
+	ws.Route(r.route(ws, http.MethodGet, pathPrefix+"/{name}").To(r.findResource(false)).
 		Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 		Returns(200, "OK", nil).
@@ -169,7 +205,7 @@ func (r *resourceEndpoints) methodNotAllowed(detail string) func(request *restfu
 }
 
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.GET(pathPrefix).To(r.listResources(false)).
+	ws.Route(r.route(ws, http.MethodGet, pathPrefix).To(r.listResources(false)).
 		Doc(fmt.Sprintf("List of %s", r.descriptor.Name)).
 		Param(ws.QueryParameter("size", "size of page").DataType("int")).
 		Param(ws.QueryParameter("offset", "offset of page to list").DataType("string")).
@@ -197,11 +233,11 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
+		ws.Route(r.route(ws, http.MethodPut, pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
-		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
+		ws.Route(r.route(ws, http.MethodPut, pathPrefix+"/{name}").To(r.createOrUpdateResource).
 			Doc(fmt.Sprintf("Updates a %s", r.descriptor.WsPath)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.descriptor.WsPath)).DataType("string")).
 			Returns(200, "OK", nil).
@@ -211,11 +247,11 @@ func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pa
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
+		ws.Route(r.route(ws, http.MethodDelete, pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
-		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
+		ws.Route(r.route(ws, http.MethodDelete, pathPrefix+"/{name}").To(r.deleteResource).
 			Doc(fmt.Sprintf("Deletes a %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil))

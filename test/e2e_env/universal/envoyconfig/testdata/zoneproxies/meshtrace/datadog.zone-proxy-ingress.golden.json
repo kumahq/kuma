@@ -217,6 +217,7 @@
                       "team": "client-owners"
                     },
                     "io.kuma.labels": {
+                      "kuma.io/display-name": "zone-proxy-demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -266,6 +267,7 @@
                       "version": "v1"
                     },
                     "io.kuma.labels": {
+                      "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -315,6 +317,7 @@
                       "version": "v1"
                     },
                     "io.kuma.labels": {
+                      "kuma.io/display-name": "zone-proxy-test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",

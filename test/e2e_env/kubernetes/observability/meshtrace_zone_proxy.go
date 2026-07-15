@@ -153,7 +153,7 @@ func ZoneProxyPluginTest() {
 					zoneproxy.WithWorkload(workload),
 					zoneproxy.WithEgressPort(egressPort),
 				),
-				obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent)),
+				obs.Install(obsDeployment, obs.WithNamespace(obsNs)),
 			)).
 			Install(YamlK8s(meshTraceZoneProxyMeshIdentity(mesh))).
 			Install(YamlK8s(meshTraceZoneProxyMES(mesh, extNs))).

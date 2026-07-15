@@ -9,14 +9,14 @@ inputs:
     required: true
   arch:
     required: true
-  sidecar_containers:
-    required: false
-    default: ""
   target:
     required: false
     default: ""
   parallel_runner_id:
     required: true
+  shards:
+    required: false
+    default: "1"
 runs:
   using: composite
   steps:
@@ -57,16 +57,33 @@ runs:
         }
         EOF
         sudo service docker restart
+    # Cache third-party images the e2e framework preloads (spire, cnpg, coredns, ...)
+    # so runs don't depend on external registries (cgr.dev/ghcr.io) being reachable.
+    - name: "Restore cached e2e images"
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/e2e-image-cache
+        key: e2e-images-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.shards }}-${{ inputs.parallel_runner_id }}-${{ hashFiles('test/e2e/**/*.go', 'test/e2e_env/**/*.go', 'test/framework/deployments/**') }}
+    - name: "Load cached e2e images into docker"
+      shell: bash
+      run: |
+        tar="${{ runner.temp }}/e2e-image-cache/images.tar"
+        echo "KUMA_E2E_TRUST_CACHED_IMAGE_TAGS=false" >> "$GITHUB_ENV"
+        if [[ -f "$tar" ]]; then
+          docker load -i "$tar"
+          echo "KUMA_E2E_TRUST_CACHED_IMAGE_TAGS=true" >> "$GITHUB_ENV"
+        fi
     - name: "Run E2E tests"
       shell: bash
       env:
         KUMA_DEBUG: ${{ runner.debug == '1' }}
+        KUMA_E2E_PRELOAD_MANIFEST: ${{ runner.temp }}/e2e-preloaded-images.txt
         E2E_K8S_VERSION: ${{ inputs.k8s_version }}
         E2E_CNI_NETWORK_PLUGIN: ${{ inputs.cni_network_plugin }}
         E2E_ARCH: ${{ inputs.arch }}
-        E2E_SIDECAR_CONTAINERS: ${{ inputs.sidecar_containers }}
         E2E_TARGET: ${{ inputs.target }}
         E2E_PARALLEL_RUNNER_ID: ${{ inputs.parallel_runner_id }}
+        E2E_SHARDS: ${{ inputs.shards }}
       run: |
         if [[ "$E2E_K8S_VERSION" == "kindIpv6" ]]; then
           export IPV6=true
@@ -84,11 +101,10 @@ runs:
           export MAKE_PARAMETERS="-j2"
         fi
 
-        if [[ "$E2E_SIDECAR_CONTAINERS" == "false" ]]; then
-          export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
-        fi
-
         if [[ "$E2E_TARGET" == "" ]]; then
+          export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
+        elif [[ "$E2E_TARGET" != "" && "${E2E_SHARDS:-1}" != "1" ]]; then
+          ./.github/workflows/scripts/validate-e2e-shards.sh "$E2E_TARGET" "$E2E_SHARDS"
           export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
         fi
         env
@@ -117,10 +133,29 @@ runs:
           target="test/e2e"
         fi
         make ${MAKE_PARAMETERS} CI=true "${target}"
+    - name: "Save preloaded e2e images for caching"
+      if: always()
+      shell: bash
+      run: |
+        manifest="${{ runner.temp }}/e2e-preloaded-images.txt"
+        dir="${{ runner.temp }}/e2e-image-cache"
+        mkdir -p "$dir"
+        if [[ ! -s "$manifest" ]]; then
+          exit 0
+        fi
+        present=()
+        while IFS= read -r img; do
+          if docker image inspect "$img" >/dev/null 2>&1; then
+            present+=("$img")
+          fi
+        done < <(sort -u "$manifest")
+        if [[ ${#present[@]} -gt 0 ]]; then
+          docker save "${present[@]}" -o "$dir/images.tar"
+        fi
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
-        name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}
         if-no-files-found: ignore
         path: |
           build/reports/e2e-debug*
@@ -128,7 +163,7 @@ runs:
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
-        name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.sidecar_containers }}-${{ inputs.parallel_runner_id }}
+        name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}
         if-no-files-found: ignore
         path: |
           build/reports

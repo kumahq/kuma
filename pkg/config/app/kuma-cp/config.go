@@ -41,9 +41,6 @@ type Defaults struct {
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, it skips creating the default tenant resources
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
-	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
-	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
-	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 	// If true, it skips creating default hostname generators
 	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
 }
@@ -176,8 +173,6 @@ type Config struct {
 	Access access.AccessConfig `json:"access"`
 	// Configuration of experimental features
 	Experimental ExperimentalConfig `json:"experimental"`
-	// Proxy holds configuration for proxies
-	Proxy xds.Proxy `json:"proxy"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
 	// Tracing
@@ -286,19 +281,14 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			KubeOutboundsAsVIPs:             true,
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
-				Enabled:            false,
-				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
 				DelayFullResync:    false,
 			},
-			SidecarContainers: true,
-			DeltaXds:          false,
 		},
-		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
@@ -455,19 +445,15 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 func DefaultDefaultsConfig() *Defaults {
 	return &Defaults{
-		SkipMeshCreation:           false,
-		SkipTenantResources:        false,
-		CreateMeshRoutingResources: false,
-		SkipHostnameGenerators:     false,
+		SkipMeshCreation:       false,
+		SkipTenantResources:    false,
+		SkipHostnameGenerators: false,
 	}
 }
 
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
-	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
-	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
 	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
 	// It is recommended to use tag first model for deployments with more than 2k services
 	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
@@ -481,21 +467,11 @@ type ExperimentalConfig struct {
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
 	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
-	// If true then control plane computes reachable services automatically based on MeshTrafficPermission.
-	// Lack of MeshTrafficPermission is treated as Deny the traffic.
-	AutoReachableServices bool `json:"autoReachableServices" envconfig:"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES"`
-	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
-	// environment.
-	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
-	// If true uses Delta xDS to deliver changes to sidecars.
-	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
-	// If true, then experimental event based watchdog to generate KDS snapshot is used.
-	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
 	// How often we flush changes when experimental event based watchdog is used.
 	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
 	// How often we schedule full KDS resync when experimental event based watchdog is used.

@@ -48,6 +48,9 @@ type Options struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
+	// Privileged marks trusted CP-internal writes (KDS sync, GC,
+	// storage-version migrator) whose labels must not be recomputed.
+	Privileged bool
 }
 
 type Option func(*Options)
@@ -96,6 +99,12 @@ func WithMode(mode config_core.CpMode) Option {
 	}
 }
 
+func WithPrivileged(privileged bool) Option {
+	return func(opts *Options) {
+		opts.Privileged = privileged
+	}
+}
+
 // Compute computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
 // Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
 func Compute(
@@ -103,12 +112,19 @@ func Compute(
 	spec core_model.ResourceSpec,
 	existingLabels map[string]string,
 	mesh string,
+	displayName string,
 	opts ...Option,
 ) (map[string]string, error) {
 	labelsOpts := NewOptions(opts...)
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
+	}
+
+	// Only skip recomputation for resources imported from another CP (e.g. via
+	// KDS sync); locally-originated resources are always recomputed.
+	if labelsOpts.Privileged && !core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
+		return labels, nil
 	}
 
 	set := func(k, v string) {
@@ -131,23 +147,26 @@ func Compute(
 		return core_model.DefaultMesh
 	}
 
+	set(mesh_proto.DisplayName, displayName)
+
 	if rd.Scope == core_model.ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
-	if labelsOpts.Mode == config_core.Zone {
+	switch labelsOpts.Mode {
+	case config_core.Global:
+		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))
+	case config_core.Zone:
+		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
-		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
+		// 'kuma.io/zone' and 'kuma.io/env' labels even if the zone is non-federated
 		if rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
-				setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
-				env := mesh_proto.UniversalEnvironment
-				if labelsOpts.IsK8s {
-					env = mesh_proto.KubernetesEnvironment
-				}
-				setIfNotExist(mesh_proto.EnvTag, env)
+			setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
+			env := mesh_proto.UniversalEnvironment
+			if labelsOpts.IsK8s {
+				env = mesh_proto.KubernetesEnvironment
 			}
+			setIfNotExist(mesh_proto.EnvTag, env)
 		}
 	}
 

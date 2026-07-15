@@ -13,18 +13,6 @@ import (
 	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
-func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.OutlierDetectionConfigurer{CircuitBreaker: circuitBreaker})
-	})
-}
-
-func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
-	})
-}
-
 func ClientSideMTLS(
 	tracker core_xds.SecretsTracker,
 	unifiedResourceNaming bool,
@@ -189,15 +177,6 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 			AllowMixingIpAndNonIpEndpoints: allowsMixingEndpoints,
 		})
 		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
-	})
-}
-
-func HealthCheck(protocol core_meta.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.HealthCheckConfigurer{
-			HealthCheck: healthCheck,
-			Protocol:    protocol,
-		})
 	})
 }
 

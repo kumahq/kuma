@@ -105,12 +105,10 @@ func buildKumaIoServiceDestinations(
 	res xds_context.Resources,
 ) map[string][]envoy_tags.Tags {
 	destForMesh := map[string][]envoy_tags.Tags{}
-	trafficRoutes := res.TrafficRoutes().Items
-	addTrafficRouteDestinations(trafficRoutes, destForMesh)
 	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
 	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
-	addMeshHTTPRouteDestinations(trafficRoutes, meshHTTPRoutes, destForMesh)
-	addMeshTCPRouteDestinations(trafficRoutes, meshTCPRoutes, destForMesh)
+	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
+	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
 	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
 	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
@@ -176,31 +174,11 @@ func addGatewayRouteDestinations(
 	}
 }
 
-func addTrafficRouteDestinations(
-	policies []*core_mesh.TrafficRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, policy := range policies {
-		for _, split := range policy.Spec.Conf.GetSplitWithDestination() {
-			addDestination(split.Destination, destinations)
-		}
-
-		for _, http := range policy.Spec.Conf.Http {
-			for _, split := range http.GetSplitWithDestination() {
-				addDestination(split.Destination, destinations)
-			}
-		}
-	}
-}
-
 func addMeshHTTPRouteDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
 	policies []*meshhttproute_api.MeshHTTPRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	if len(trafficRoutes) == 0 {
-		addTrafficFlowByDefaultDestination(destinations)
-	}
+	addTrafficFlowByDefaultDestination(destinations)
 
 	// Note that we're not merging these resources, but that's OK because the
 	// set of destinations after merging is a subset of the set we get here by
@@ -215,13 +193,10 @@ func addMeshHTTPRouteDestinations(
 }
 
 func addMeshTCPRouteDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
 	policies []*meshtcproute_api.MeshTCPRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	if len(trafficRoutes) == 0 {
-		addTrafficFlowByDefaultDestination(destinations)
-	}
+	addTrafficFlowByDefaultDestination(destinations)
 
 	// Note that we're not merging these resources, but that's OK because the
 	// set of destinations after merging is a subset of the set we get here by
@@ -278,17 +253,10 @@ func addDestination(tags map[string]string, destinations map[string][]envoy_tags
 	destinations[service] = append(destinations[service], tags)
 }
 
-// addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist makes sure that when
-// at least one MeshHTTPRoute policy exists there will be a "match all"
-// destination pointing to all services (kuma.io/service:* -> kuma.io/service:*)
-// This logic is necessary because of conflicting behaviors of TrafficRoute and
-// MeshHTTPRoute policies. TrafficRoute expects that by default traffic doesn't
-// flow, and there is necessary TrafficRoute with appropriate configuration
-// to make communication between services possible. MeshHTTPRoute on the other
-// hand expects the traffic to flow by default. As a result, when there is
-// at least one MeshHTTPRoute policy present, traffic between services will flow
-// by default, when there is none, it will flow, when appropriate TrafficRoute
-// policy will exist.
+// addTrafficFlowByDefaultDestination makes sure there is a "match all"
+// destination pointing to all services (kuma.io/service:* -> kuma.io/service:*).
+// MeshHTTPRoute/MeshTCPRoute expect traffic to flow between services by
+// default, so this destination is always added.
 func addTrafficFlowByDefaultDestination(
 	destinations map[string][]envoy_tags.Tags,
 ) {

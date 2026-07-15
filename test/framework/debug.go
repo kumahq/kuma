@@ -44,6 +44,20 @@ func ControlPlaneAssertions(cluster Cluster) {
 		ginkgo.Fail("unknown cluster")
 	}
 	assertNoXdsNacks(cluster)
+	assertNoXdsChurn(cluster, logs)
+}
+
+// assertNoXdsChurn parses the CP logs and fails if any proxy's xDS config
+// was regenerated with a repeated, byte-identical content hash. That
+// signals non-deterministic xDS generation (e.g. unordered map iteration),
+// which forces Envoy to rebuild and warm the affected resources repeatedly
+// even though nothing about the proxy's configuration actually changed.
+func assertNoXdsChurn(cluster Cluster, logs map[string]string) {
+	ginkgo.GinkgoHelper()
+	for k, log := range logs {
+		reports := utils.DetectXdsChurn(log)
+		Expect(reports).To(BeEmpty(), "CP %s has xDS churn in logs %s: %v", cluster.Name(), k, reports)
+	}
 }
 
 // assertNoXdsNacks scrapes the CP /metrics endpoint and fails if any xDS
@@ -223,6 +237,13 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 		Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 	}
 	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
+
+	events, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "events", "--sort-by=.lastTimestamp", "-owide")
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to get events for namespace %s, %w", namespace, err))
+	} else {
+		report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, "events.txt"), events)
+	}
 
 	deployments, err := k8s.ListDeploymentsContextE(cluster.GetTesting(), context.Background(), &kubeOptions, kube_meta.ListOptions{})
 	if err != nil {

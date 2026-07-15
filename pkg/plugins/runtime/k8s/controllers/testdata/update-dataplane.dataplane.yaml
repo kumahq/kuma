@@ -5,11 +5,12 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: example
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     kuma.io/zone: default
     version: "0.1"
-  name: test-app-8646b8bbc8-5qbl2
+  name: example
   namespace: playground
 spec:
   networking:

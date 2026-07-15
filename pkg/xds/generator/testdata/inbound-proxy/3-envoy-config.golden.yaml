@@ -122,21 +122,6 @@ resources:
             idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
-          - name: envoy.filters.http.fault
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
-              delay:
-                fixedDelay: 5s
-                percentage:
-                  numerator: 50
-              headers:
-              - name: x-kuma-tags
-                safeRegexMatch:
-                  regex: .*&kuma.io/service=[^&]*frontend[,&].*
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -158,63 +143,6 @@ resources:
               - '*'
               name: backend1
               routes:
-              - match:
-                  headers:
-                  - name: x-kuma-tags
-                    safeRegexMatch:
-                      regex: .*&kuma.io/service=[^&]*frontend[,&].*
-                  prefix: /
-                route:
-                  cluster: localhost:8080
-                  timeout: 0s
-                typedPerFilterConfig:
-                  envoy.filters.http.local_ratelimit:
-                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                    filterEnabled:
-                      defaultValue:
-                        numerator: 100
-                      runtimeKey: local_rate_limit_enabled
-                    filterEnforced:
-                      defaultValue:
-                        numerator: 100
-                      runtimeKey: local_rate_limit_enforced
-                    statPrefix: rate_limit
-                    tokenBucket:
-                      fillInterval: 10s
-                      maxTokens: 200
-                      tokensPerFill: 200
-              - match:
-                  headers:
-                  - name: x-kuma-tags
-                    safeRegexMatch:
-                      regex: .*&kuma.io/service=.*
-                  prefix: /
-                route:
-                  cluster: localhost:8080
-                  timeout: 0s
-                typedPerFilterConfig:
-                  envoy.filters.http.local_ratelimit:
-                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                    filterEnabled:
-                      defaultValue:
-                        numerator: 100
-                      runtimeKey: local_rate_limit_enabled
-                    filterEnforced:
-                      defaultValue:
-                        numerator: 100
-                      runtimeKey: local_rate_limit_enforced
-                    responseHeadersToAdd:
-                    - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-                      header:
-                        key: x-rate-limited
-                        value: "true"
-                    statPrefix: rate_limit
-                    status:
-                      code: NotFound
-                    tokenBucket:
-                      fillInterval: 2s
-                      maxTokens: 100
-                      tokensPerFill: 100
               - match:
                   prefix: /
                 route:
