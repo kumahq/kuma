@@ -51,10 +51,6 @@ func (p plugin) Apply(
 	}
 
 	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
-	// Only fallback if we have TrafficRoutes & No MeshTCPRoutes
-	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
-		return nil
-	}
 
 	if err := ApplyToOutbounds(proxy, rs, ctx, policies); err != nil {
 		return err
