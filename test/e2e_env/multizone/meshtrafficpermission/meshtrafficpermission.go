@@ -141,7 +141,7 @@ spec:
        allow:
          - spiffeID:
              type: Prefix
-             value: spiffe://mtp-test/
+             value: spiffe://mtp-test
 `
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
