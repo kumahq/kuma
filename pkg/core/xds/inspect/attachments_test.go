@@ -174,13 +174,23 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficRoutes: core_xds.RouteMap{
-					outbound("192.168.0.1", 80): {Meta: meta1},
-					outbound("192.168.0.2", 80): {Meta: meta2},
-					outbound("192.168.0.2", 90): {Meta: meta3},
-					outbound("192.168.0.4", 90): {Meta: meta5},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
+							outbound("192.168.0.1", 80): {
+								&core_mesh.HealthCheckResource{Meta: meta1},
+							},
+							outbound("192.168.0.2", 80): {
+								&core_mesh.HealthCheckResource{Meta: meta2},
+							},
+							outbound("192.168.0.2", 90): {
+								&core_mesh.HealthCheckResource{Meta: meta3},
+							},
+							outbound("192.168.0.4", 90): {
+								&core_mesh.HealthCheckResource{Meta: meta5},
+							},
+						},
+					},
 					core_mesh.CircuitBreakerType: {
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.4", 90): {
@@ -199,18 +209,18 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"}: {
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta1},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:80", Service: "postgres"}: {
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta2},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta2},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta3},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta3},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
@@ -220,8 +230,8 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.CircuitBreakerType: []core_model.Resource{
 						&core_mesh.CircuitBreakerResource{Meta: meta6},
 					},
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta5},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta5},
 					},
 				},
 			},
@@ -368,18 +378,26 @@ var _ = Describe("GroupByPolicy", func() {
 				},
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficRoutes: core_xds.RouteMap{
-					outbound("192.168.0.1", 80): &core_mesh.TrafficRouteResource{
-						Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
-					},
-					outbound("192.168.0.2", 90): &core_mesh.TrafficRouteResource{
-						Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
+				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
+							outbound("192.168.0.1", 80): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
+								},
+							},
+							outbound("192.168.0.2", 90): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
+								},
+							},
+						},
 					},
 				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.TrafficRouteType,
+					Type: core_mesh.HealthCheckType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},

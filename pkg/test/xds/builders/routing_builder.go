@@ -9,7 +9,6 @@ type RoutingBuilder struct {
 func Routing() *RoutingBuilder {
 	return &RoutingBuilder{
 		res: &xds.Routing{
-			TrafficRoutes:                  xds.RouteMap{},
 			OutboundTargets:                xds.EndpointMap{},
 			ExternalServiceOutboundTargets: xds.EndpointMap{},
 		},

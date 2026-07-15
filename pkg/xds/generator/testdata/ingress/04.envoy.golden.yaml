@@ -8,15 +8,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - region
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - version
     name: mesh1:backend
     type: EDS
 - name: mesh2:backend
@@ -39,16 +30,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - cloud
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - cloud
-        - region
     name: mesh2:frontend
     type: EDS
 - name: mesh1:backend
@@ -172,34 +153,6 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - backend{mesh=mesh1,version=v2}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                version: v2
-          statPrefix: mesh1_backend
-    - filterChainMatch:
-        serverNames:
-        - backend{mesh=mesh1,region=eu}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                region: eu
-          statPrefix: mesh1_backend
-    - filterChainMatch:
-        serverNames:
         - backend{mesh=mesh1}
         transportProtocol: tls
       filters:
@@ -218,35 +171,6 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh2:backend
           statPrefix: mesh2_backend
-    - filterChainMatch:
-        serverNames:
-        - frontend{cloud=gke,mesh=mesh2,region=eu}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh2:frontend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                cloud: gke
-                region: eu
-          statPrefix: mesh2_frontend
-    - filterChainMatch:
-        serverNames:
-        - frontend{cloud=aks,mesh=mesh2}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh2:frontend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                cloud: aks
-          statPrefix: mesh2_frontend
     - filterChainMatch:
         serverNames:
         - frontend{mesh=mesh2}
