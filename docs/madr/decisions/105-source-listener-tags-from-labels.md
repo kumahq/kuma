@@ -28,22 +28,7 @@ Cases 2 and 3 are independent switches, but they are the same migration and are 
 
 **Case 3 — `InboundTagsDisabled`.** Inbound tags are emptied at the source, so inbound listeners hit the identical wall from the other direction. The important detail is that the underlying data was never lost: on Kubernetes, Pod labels are copied onto the `Dataplane`'s **metadata labels** unconditionally, flag or no flag. The flag does not remove information — it removes the *duplicate copy* held in tags, forcing everything onto labels.
 
-### The tags-to-labels move is already the established direction
-
-Case 3 is not a regression Kuma stumbled into; it is a deliberate migration that most of the codebase has already made. Identity now reads from labels:
-
-* The service name comes from the `kuma.io/workload` **label** via `IdentifyingName`, used by the monitoring assignment service, `MeshTrace`, `MeshAccessLog`, and `MeshMetric`.
-* An inbound's identity comes from the `Dataplane`'s **KRI**, which is itself derived from labels.
-* The Kubernetes `MeshService` selector switches from `DataplaneTags` to `DataplaneLabels`.
-* Endpoint metadata carries `Dataplane` labels under `io.kuma.labels`.
-
-The substitution is real but **partial and opportunistic** — only four call sites were taught to read labels. Elsewhere the data is simply dropped: `ServiceInsight`s vanish for tagless dataplanes, and endpoint locality still reads tags only. Listener metadata is one of the places that was missed, and it is the one that breaks a user-facing policy API.
-
-So the problem is not "MeshService broke `MeshProxyPatch`". It is that **listener tags are the last identity channel still sourced from tags, in a system whose identity now lives in labels.**
-
-### Why `match.name` is not a workaround
-
-With tags gone, `match.name` is the only selector left. Without unified resource naming a listener is named `outbound:<address>:<port>`, where the address is a dynamically-allocated VIP — not knowable ahead of time, not stable across restarts, so the policy cannot be written. Only with unified naming (`meshServices: Exclusive` plus a DP feature flag) does the name become a stable KRI. That is a mesh-wide migration, which is a heavy price for "I want to patch one listener". And a name selects exactly one listener, so it cannot express "every destination owned by team X".
+Cases 2 and 3 are not regressions Kuma stumbled into. They are a deliberate migration that most of the codebase has already made — identity now reads from labels, and listener tags are the last channel still sourced from tags. The substitution elsewhere is real but partial, and listener metadata is one of the places that was missed. It is the one that breaks a user-facing policy API.
 
 ### Use cases
 
@@ -61,7 +46,8 @@ Whatever we choose has to answer one question: when a listener's tags are gone, 
 
 * Good, because it needs no code change, and a KRI-based name is exact and distinguishes individual ports.
 * Bad, because it does not address UC1 — the regression stays silent and users find it in production.
-* Bad, because it couples a small patching need to a mesh-wide migration.
+* Bad, because without unified naming a listener is named `outbound:<address>:<port>`, where the address is a dynamically-allocated VIP: not knowable ahead of time, not stable across restarts, so the policy cannot be authored at all.
+* Bad, because making the name stable means enabling unified naming mesh-wide (`meshServices: Exclusive` plus a DP feature flag) — a heavy price for "I want to patch one listener".
 * Bad, because a name matches one listener, so UC3 needs one policy per destination, regenerated whenever the set changes.
 * Bad, because it does nothing for UC4 — `InboundTagsDisabled` has no naming escape hatch.
 * Bad, because it leaves an empty `io.kuma.tags` on every affected listener, which reads as "no tags here" rather than "tags do not apply here".
@@ -81,6 +67,7 @@ Write labels under a new listener key and add `listenerLabels`/`labels` to the `
 
 * Good, because it is semantically tidy — labels and tags stay distinct.
 * Bad, because it is a public API change across three match types, plus regenerated CRDs and OpenAPI.
+* Bad, because this fix has to be backported, and shipping new API fields and CRD schemas in a patch release is not something we want to do.
 * Bad, because users must then know which selector applies to which listener, and the answer depends on whether the destination is legacy or a real resource — leaking an internal distinction into the API.
 * Bad, because the matcher, the semantics, and the outcome are identical to Option 4; only the key name differs. It buys tidiness and charges an API migration for it.
 
@@ -109,7 +96,7 @@ match:
     team: payments
 ```
 
-* Good, because there is no API change — the selector users already know simply starts working again.
+* Good, because there is no API change — the selector users already know simply starts working again, which also makes it safe to backport as a patch.
 * Good, because it works without unified resource naming, which is the point of the issue.
 * Good, because it is provably additive: the affected listeners have empty tags today, so no currently-matching policy can stop matching. It can only turn non-matches into matches.
 * Good, because labels are a richer selector than the single `kuma.io/service` string ever was — zone, origin, env, and user labels become matchable, which is what makes UC3 possible.
@@ -145,6 +132,20 @@ Low. The propagated data is metadata the proxy's owner can already read — the 
 * **Config churn.** Listener metadata now changes when labels change, triggering an xDS update for every proxy with an outbound to that destination. Labels change rarely and the listener is already regenerated on any `MeshService` change, so the delta is bounded.
 * **Golden files.** Every affected listener golden file gains an `io.kuma.tags` block — a large mechanical diff worth reviewing for unintended label leakage rather than rubber-stamping.
 
+## Backport
+
+This is a silent regression in shipped releases, so the fix is backported to **release-2.13** and **release-2.14**. That is a constraint on the design, not an afterthought: it is the main reason Option 4 wins over Option 3. Option 4 changes only how generated metadata is filled, so there is no API surface, no CRD schema, and no stored-resource change to ship in a patch — and because it is additive by construction, it cannot break a policy that matches today.
+
+The two halves of the decision do not backport equally, because the features they react to landed at different times:
+
+* **Outbound half — backports to 2.13 and 2.14.** Everything it needs (`Outbound.TagsOrNil`, `DestinationService`, `GetServiceByKRI`) exists on both.
+* **Inbound half — 2.14 and master only.** `InboundTagsDisabled` does not exist on 2.13, so inbound tags are always populated there and there is nothing to fix.
+* **Group targeting by user label (UC3) — 2.14 and master only.** `MeshServiceLabelPropagation` does not exist on 2.13, so a `MeshService` there carries only control-plane-computed labels. Targeting by `kuma.io/display-name`, `kuma.io/zone`, or any other computed label works on 2.13; targeting by `team: payments` does not.
+
+One mechanical note for whoever cherry-picks: label computation moved packages between 2.13 and 2.14 (`core_model.ComputeLabels` in `pkg/core/resources/model/resource.go`, versus `pkg/core/resources/labels`), so the 2.13 pick will conflict. The computed label *set* is equivalent, so the conflict is import paths and call shape, not behaviour.
+
+Because the tag bag a listener carries depends on the version's label set, a policy written against 2.14 labels is not guaranteed to match on 2.13. That is inherent to backporting a fix whose payload is "whatever labels this version computes", and is worth stating in the release notes rather than discovering per-cluster.
+
 ## Implications for Kong Mesh
 
 The downstream project ships policies that patch listeners by tag and inherits both the fix and the mandatory `kuma.io/service` rewrite. Its `MeshProxyPatch`-equivalent policies and bundled defaults need an audit before this ships — they are already silently broken wherever `MeshService` or `InboundTagsDisabled` is enabled. No API or CRD change is required there, since none is required here, and this decision adds no computed label, so the mirrored label registry stays in sync untouched.
@@ -155,6 +156,8 @@ Listener `io.kuma.tags` is sourced from labels wherever tags no longer exist.
 
 1. **Outbound listeners backed by a real resource** (`MeshService`, `MeshMultiZoneService`, `MeshExternalService`) take the **destination resource's labels**.
 2. **Inbound listeners whose tags have been emptied** by `InboundTagsDisabled` take the **proxy's own `Dataplane` labels**.
+
+Point 2 is worth stating positively, because the flag's name invites the opposite reading: disabling *inbound tags* must not mean disabling *listener tags*. The flag governs what goes on the `Dataplane`'s inbounds, not what the listener advertises about itself. An inbound listener keeps carrying a populated `io.kuma.tags` either way — sourced from tags when they exist, from the `Dataplane`'s labels when they do not. It is never left empty.
 
 In both cases `kuma.io/mesh` is stripped, matching what the outbound path already does. Reserved `kuma.io/`-prefixed tags are computed by the control plane and take precedence over user labels. Legacy paths — a `Dataplane` with real outbound tags, or inbounds with tags enabled — keep their current behaviour untouched.
 
