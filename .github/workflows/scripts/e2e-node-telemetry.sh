@@ -11,7 +11,6 @@
 OUT="${1:?usage: e2e-node-telemetry.sh <output-dir>}"
 INTERVAL="${E2E_TELEMETRY_INTERVAL:-3}"
 SLOW_EVERY="${E2E_TELEMETRY_SLOW_EVERY:-4}"
-WATCH_CONTAINERS_RE='kuma-init|kuma-validation|kuma-sidecar'
 
 ts() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
@@ -53,20 +52,25 @@ sample_docker_stats() {
 
 sample_watched_procs() {
   local node="$1"
-  local ids id pid
-  ids=$(crictl_exec "$node" ps -a | grep -E "${WATCH_CONTAINERS_RE}" | awk '{print $1}')
-  for id in ${ids}; do
-    pid=$(crictl_exec "$node" inspect "$id" | grep -m1 '"pid"' | grep -oE '[0-9]+' | head -1)
-    [ -n "${pid}" ] && [ "${pid}" != "0" ] || continue
-    {
-      echo "=== $(ts) node=${node} ctr=${id} pid=${pid} ==="
-      docker exec "$node" sh -c "grep -E '^(Name|State|Threads|VmRSS|voluntary_ctxt_switches|nonvoluntary_ctxt_switches):' /proc/${pid}/status 2>/dev/null"
-      echo "# wchan"
-      docker exec "$node" sh -c "cat /proc/${pid}/wchan 2>/dev/null; echo"
-      echo "# stack"
-      docker exec "$node" sh -c "cat /proc/${pid}/stack 2>/dev/null"
-    } >> "${OUT}/node-${node}-watched-procs.log"
-  done
+  local out
+  out=$(docker exec "$node" sh -c '
+    for p in /proc/[0-9]*; do
+      [ -r "$p/cmdline" ] || continue
+      cmd=$(tr "\0" " " < "$p/cmdline" 2>/dev/null)
+      case "$cmd" in
+        *kumactl*|*"kuma-dp run"*|*"/usr/bin/envoy"*) : ;;
+        *) continue ;;
+      esac
+      pid=${p#/proc/}
+      echo "--- pid=$pid cmd=$cmd"
+      grep -E "^(State|VmRSS|Threads|voluntary_ctxt_switches|nonvoluntary_ctxt_switches):" "$p/status" 2>/dev/null
+      printf "wchan="; cat "$p/wchan" 2>/dev/null; echo
+      echo "stack:"; cat "$p/stack" 2>/dev/null
+    done
+  ' 2>/dev/null)
+  if [ -n "$out" ]; then
+    { echo "=== $(ts) node=${node} ==="; echo "$out"; } >> "${OUT}/node-${node}-watched-procs.log"
+  fi
 }
 
 sample_nodes() {
