@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -2019,27 +2020,34 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		return tnl, nil
 	}
 
-	fwd, err := c.PortForwardApp(args)
+	// Envoy admin is no longer reachable over the pod network (it lives on a
+	// Unix socket in the sidecar). Read it through the control plane's inspect
+	// API instead, which fetches from the proxy over its own mTLS admin
+	// channel. Resolve the app's Envoy proxy resource, then build the inspect
+	// path prefix for it.
+	pod, err := PodOfApp(c, args.AppName, args.Namespace)
 	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to start port-forward to %s in namespace %q (port %d)",
-			args.AppName,
-			args.Namespace,
-			args.RemotePort,
-		)
+		return nil, errors.Wrapf(err, "failed to resolve pod for app %q in namespace %q", args.AppName, args.Namespace)
+	}
+	proxyName := fmt.Sprintf("%s.%s", pod.Name, args.Namespace)
+
+	var prefix string
+	switch args.AppName {
+	case Config.ZoneEgressApp:
+		prefix = fmt.Sprintf("/zoneegresses/%s", proxyName)
+	case Config.ZoneIngressApp:
+		prefix = fmt.Sprintf("/zoneingresses/%s", proxyName)
+	default:
+		mesh := pod.Labels["kuma.io/mesh"]
+		if mesh == "" {
+			mesh = "default"
+		}
+		prefix = fmt.Sprintf("/meshes/%s/dataplanes/%s", mesh, proxyName)
 	}
 
-	tnl, err = tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
-	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to create admin tunnel to %s in namespace %q (port %d)",
-			args.AppName,
-			args.Namespace,
-			args.RemotePort,
-		)
-	}
+	tnl = tunnel.NewCPTunnel(func(inspectionPath string, query url.Values) ([]byte, error) {
+		return c.controlplane.InspectEnvoyProxy(fmt.Sprintf("%s/%s", prefix, inspectionPath), query)
+	})
 
 	c.mutex.Lock()
 	if existing := c.adminTunnels[args]; existing != nil {
