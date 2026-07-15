@@ -98,6 +98,7 @@ spec:
 	AfterEachFailure(func() {
 		DebugUniversal(multizone.Global, meshName)
 		DebugKube(multizone.KubeZone1, meshName)
+		DebugKube(multizone.KubeZone2, meshName)
 	})
 
 	E2EAfterEach(func() {

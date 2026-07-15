@@ -259,10 +259,12 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 	}
 	for i := range pods {
 		deployDetails.Pods = append(deployDetails.Pods, &ObjectDetails{
-			Name:       pods[i].Name,
-			Conditions: fromPodCondition(pods[i].Status.Conditions),
-			Events:     getObjectEvents(testingT, kubectlOptions, "Pod", pods[i].Name),
-			Logs:       getPodLogs(testingT, kubectlOptions, &pods[i]),
+			Name:            pods[i].Name,
+			Phase:           string(pods[i].Status.Phase),
+			Conditions:      fromPodCondition(pods[i].Status.Conditions),
+			Events:          getObjectEvents(testingT, kubectlOptions, "Pod", pods[i].Name),
+			ContainerStates: fromPodContainerStatuses(&pods[i]),
+			Logs:            getPodLogs(testingT, kubectlOptions, &pods[i]),
 		})
 	}
 	return &deployDetails
@@ -277,27 +279,75 @@ func ExtractPodDetails(testingT testing.TestingT,
 		return &ObjectDetails{RetrievalError: err}
 	}
 	return &ObjectDetails{
-		Name:       podObject.Name,
-		Namespace:  kubectlOptions.Namespace,
-		Kind:       "Pod",
-		Conditions: fromPodCondition(podObject.Status.Conditions),
-		Events:     getObjectEvents(testingT, kubectlOptions, "Pod", podObject.Name),
-		Phase:      string(podObject.Status.Phase),
-		Logs:       getPodLogs(testingT, kubectlOptions, podObject),
+		Name:            podObject.Name,
+		Namespace:       kubectlOptions.Namespace,
+		Kind:            "Pod",
+		Conditions:      fromPodCondition(podObject.Status.Conditions),
+		Events:          getObjectEvents(testingT, kubectlOptions, "Pod", podObject.Name),
+		Phase:           string(podObject.Status.Phase),
+		ContainerStates: fromPodContainerStatuses(podObject),
+		Logs:            getPodLogs(testingT, kubectlOptions, podObject),
 	}
 }
 
 type ObjectDetails struct {
-	RetrievalError error              `json:"retrievalError,omitempty"`
-	Kind           string             `json:"kind,omitempty"`
-	Namespace      string             `json:"namespace,omitempty"`
-	Name           string             `json:"name,omitempty"`
-	Phase          string             `json:"phase,omitempty"`
-	Logs           map[string]string  `json:"logs,omitempty"`
-	Conditions     []*objectCondition `json:"conditions,omitempty"`
-	Events         []*simplifiedEvent `json:"events,omitempty"`
-	ReplicaSets    []*ObjectDetails   `json:"replicaSets,omitempty"`
-	Pods           []*ObjectDetails   `json:"pods,omitempty"`
+	RetrievalError  error              `json:"retrievalError,omitempty"`
+	Kind            string             `json:"kind,omitempty"`
+	Namespace       string             `json:"namespace,omitempty"`
+	Name            string             `json:"name,omitempty"`
+	Phase           string             `json:"phase,omitempty"`
+	Logs            map[string]string  `json:"logs,omitempty"`
+	Conditions      []*objectCondition `json:"conditions,omitempty"`
+	ContainerStates []*containerState  `json:"containerStates,omitempty"`
+	Events          []*simplifiedEvent `json:"events,omitempty"`
+	ReplicaSets     []*ObjectDetails   `json:"replicaSets,omitempty"`
+	Pods            []*ObjectDetails   `json:"pods,omitempty"`
+}
+
+type containerState struct {
+	Name         string `json:"name"`
+	Init         bool   `json:"init,omitempty"`
+	State        string `json:"state,omitempty"`
+	Reason       string `json:"reason,omitempty"`
+	Message      string `json:"message,omitempty"`
+	ExitCode     *int32 `json:"exitCode,omitempty"`
+	Started      *bool  `json:"started,omitempty"`
+	Ready        bool   `json:"ready"`
+	RestartCount int32  `json:"restartCount,omitempty"`
+}
+
+func fromPodContainerStatuses(pod *v1.Pod) []*containerState {
+	var out []*containerState
+	collect := func(statuses []v1.ContainerStatus, init bool) {
+		for i := range statuses {
+			s := statuses[i]
+			cs := &containerState{
+				Name:         s.Name,
+				Init:         init,
+				Ready:        s.Ready,
+				RestartCount: s.RestartCount,
+				Started:      s.Started,
+			}
+			switch {
+			case s.State.Waiting != nil:
+				cs.State = "waiting"
+				cs.Reason = s.State.Waiting.Reason
+				cs.Message = s.State.Waiting.Message
+			case s.State.Running != nil:
+				cs.State = "running"
+			case s.State.Terminated != nil:
+				cs.State = "terminated"
+				cs.Reason = s.State.Terminated.Reason
+				cs.Message = s.State.Terminated.Message
+				exitCode := s.State.Terminated.ExitCode
+				cs.ExitCode = &exitCode
+			}
+			out = append(out, cs)
+		}
+	}
+	collect(pod.Status.InitContainerStatuses, true)
+	collect(pod.Status.ContainerStatuses, false)
+	return out
 }
 
 type objectCondition struct {

@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
 	"go.uber.org/multierr"
+	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v3/test/framework/kumactl"
@@ -215,8 +216,83 @@ func debugKube(cluster Cluster, mesh string, namespaces ...string) error {
 		if err := debugKubeNamespace(cluster, namespace); err != nil {
 			errs = multierr.Combine(errs, fmt.Errorf("failed to debug namespace %s, %w", namespace, err))
 		}
+		if err := debugStuckPods(cluster, namespace); err != nil {
+			errs = multierr.Combine(errs, fmt.Errorf("failed to debug stuck pods in namespace %s, %w", namespace, err))
+		}
+	}
+	debugKubeCNILogs(cluster)
+	return errs
+}
+
+func podFullyReady(pod *kube_core.Pod) bool {
+	if pod.Status.Phase == kube_core.PodSucceeded {
+		return true
+	}
+	if pod.Status.Phase != kube_core.PodRunning {
+		return false
+	}
+	for _, cs := range pod.Status.ContainerStatuses {
+		if !cs.Ready {
+			return false
+		}
+	}
+	return true
+}
+
+func debugStuckPods(cluster Cluster, namespace string) error {
+	kubeOptions := *cluster.GetKubectlOptions(namespace)
+	kubeOptions.Logger = logger.Discard
+	pods, err := k8s.ListPodsContextE(cluster.GetTesting(), context.Background(), &kubeOptions, kube_meta.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list pods, %w", err)
+	}
+	var errs error
+	for i := range pods {
+		pod := &pods[i]
+		if podFullyReady(pod) {
+			continue
+		}
+		out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "describe", "pod", pod.Name)
+		if err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to describe pod %s, %w", pod.Name, err))
+		} else {
+			report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, fmt.Sprintf("stuck-pod-%s-describe.txt", pod.Name)), out)
+		}
+
+		var containers []string
+		for _, c := range pod.Spec.InitContainers {
+			containers = append(containers, c.Name)
+		}
+		for _, c := range pod.Spec.Containers {
+			containers = append(containers, c.Name)
+		}
+		for _, container := range containers {
+			for _, previous := range []bool{false, true} {
+				args := []string{"logs", pod.Name, "-c", container}
+				suffix := ""
+				if previous {
+					args = append(args, "--previous")
+					suffix = "-previous"
+				}
+				logs, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, args...)
+				if err != nil || strings.TrimSpace(logs) == "" {
+					continue
+				}
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, fmt.Sprintf("stuck-pod-%s-%s%s.log", pod.Name, container, suffix)), logs)
+			}
+		}
 	}
 	return errs
+}
+
+func debugKubeCNILogs(cluster Cluster) {
+	kubeOptions := *cluster.GetKubectlOptions(Config.KumaNamespace)
+	kubeOptions.Logger = logger.Discard
+	out, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "logs", "daemonset/kuma-cni-node", "--all-containers", "--prefix", "--tail=2000")
+	if err != nil {
+		return
+	}
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "kuma-cni-node.log"), out)
 }
 
 func debugKubeNamespace(cluster Cluster, namespace string) error {

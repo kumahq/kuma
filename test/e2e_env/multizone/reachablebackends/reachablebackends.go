@@ -205,6 +205,7 @@ spec:
 	AfterEachFailure(func() {
 		DebugUniversal(multizone.Global, meshName)
 		DebugKube(multizone.KubeZone1, meshName, namespace)
+		DebugKube(multizone.KubeZone2, meshName, namespace)
 	})
 
 	E2EAfterAll(func() {

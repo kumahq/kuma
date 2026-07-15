@@ -96,10 +96,18 @@ runs:
           export KUMA_DEFAULT_TIMEOUT="6s"
         fi
 
+        NODE_TELEMETRY_DIR="${GITHUB_WORKSPACE}/build/reports/e2e-debug-node-telemetry"
+        mkdir -p "${NODE_TELEMETRY_DIR}"
+        ./.github/workflows/scripts/e2e-node-telemetry.sh "${NODE_TELEMETRY_DIR}" &
+        TELEMETRY_PID=$!
+
         function on_exit()
         {
-          docker logout docker.io
+          kill "${TELEMETRY_PID}" 2>/dev/null || true
+          wait "${TELEMETRY_PID}" 2>/dev/null || true
+          docker logout docker.io 2>/dev/null || true
         }
+        trap "on_exit" EXIT
 
         # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
         # to prevent this, we support specifying a pull credential here
@@ -107,7 +115,6 @@ runs:
           DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
           DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
           echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
-          trap "on_exit" EXIT
         fi
 
         if [[ "$E2E_TARGET" != "" ]]; then
