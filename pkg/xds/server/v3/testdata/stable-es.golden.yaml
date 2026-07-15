@@ -238,13 +238,7 @@ resources:
       - name: envoy.filters.network.rbac
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              tp:
-                permissions:
-                - any: true
-                principals:
-                - any: true
+          rules: {}
           statPrefix: inbound_192_168_0_1_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
@@ -294,13 +288,7 @@ resources:
       - name: envoy.filters.network.rbac
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              tp:
-                permissions:
-                - any: true
-                principals:
-                - any: true
+          rules: {}
           statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
@@ -350,13 +338,7 @@ resources:
       - name: envoy.filters.network.rbac
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              tp:
-                permissions:
-                - any: true
-                principals:
-                - any: true
+          rules: {}
           statPrefix: inbound_192_168_0_2_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
@@ -406,13 +388,7 @@ resources:
       - name: envoy.filters.network.rbac
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              tp:
-                permissions:
-                - any: true
-                principals:
-                - any: true
+          rules: {}
           statPrefix: inbound_192_168_0_2_80.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
