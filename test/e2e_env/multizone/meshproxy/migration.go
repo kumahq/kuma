@@ -27,7 +27,8 @@ import (
 )
 
 func Migration() {
-	namespace := "meshproxy-migration"
+	namespaceRed := "meshproxy-migration-red"
+	namespaceBlue := "meshproxy-migration-blue"
 
 	const (
 		redMeshName  = "meshproxymig-red"
@@ -45,6 +46,7 @@ func Migration() {
 		clientName        string
 		destinationServer string
 		expectedInstance  string
+		namespace         string
 	}
 
 	redTraffic := trafficCheck{
@@ -52,12 +54,14 @@ func Migration() {
 		clientName:        redClientZone1,
 		destinationServer: redServerZone2,
 		expectedInstance:  redServerZone2,
+		namespace:         namespaceRed,
 	}
 	blueTraffic := trafficCheck{
 		meshName:          blueMeshName,
 		clientName:        blueClientZone1,
 		destinationServer: blueServerZone2,
 		expectedInstance:  blueServerZone2,
+		namespace:         namespaceBlue,
 	}
 
 	var (
@@ -65,7 +69,7 @@ func Migration() {
 		collectInstances            func(check trafficCheck, requests int) (map[string]int, error)
 		assertCrossZoneTraffic      func(g Gomega, check trafficCheck)
 		assertTrafficForBothMeshes  func()
-		deployMeshScopedZoneProxies func(meshName string)
+		deployMeshScopedZoneProxies func(meshName, namespace string)
 		assertMeshScopedProxyUsed   func(check trafficCheck)
 		runDuringMigration          func(ctx context.Context, checks []trafficCheck, do func())
 		setupMeshIdentity           func(meshName string)
@@ -91,31 +95,33 @@ func Migration() {
 
 		group := errgroup.Group{}
 		NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(NamespaceWithSidecarInjection(namespaceRed)).
+			Install(NamespaceWithSidecarInjection(namespaceBlue)).
 			Install(Parallel(
 				democlient.Install(
-					democlient.WithNamespace(namespace),
+					democlient.WithNamespace(namespaceRed),
 					democlient.WithMesh(redMeshName),
 					democlient.WithName(redClientZone1),
 				),
 				democlient.Install(
-					democlient.WithNamespace(namespace),
+					democlient.WithNamespace(namespaceBlue),
 					democlient.WithMesh(blueMeshName),
 					democlient.WithName(blueClientZone1),
 				),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 		NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(NamespaceWithSidecarInjection(namespaceRed)).
+			Install(NamespaceWithSidecarInjection(namespaceBlue)).
 			Install(Parallel(
 				testserver.Install(
-					testserver.WithNamespace(namespace),
+					testserver.WithNamespace(namespaceRed),
 					testserver.WithMesh(redMeshName),
 					testserver.WithName(redServerZone2),
 					testserver.WithEchoArgs("echo", "--instance", redServerZone2),
 				),
 				testserver.Install(
-					testserver.WithNamespace(namespace),
+					testserver.WithNamespace(namespaceBlue),
 					testserver.WithMesh(blueMeshName),
 					testserver.WithName(blueServerZone2),
 					testserver.WithEchoArgs("echo", "--instance", blueServerZone2),
@@ -134,15 +140,17 @@ func Migration() {
 	AfterEachFailure(func() {
 		DebugUniversal(multizone.Global, redMeshName)
 		DebugUniversal(multizone.Global, blueMeshName)
-		DebugKube(multizone.KubeZone1, redMeshName, namespace)
-		DebugKube(multizone.KubeZone1, blueMeshName, namespace)
-		DebugKube(multizone.KubeZone2, redMeshName, namespace)
-		DebugKube(multizone.KubeZone2, blueMeshName, namespace)
+		DebugKube(multizone.KubeZone1, redMeshName, namespaceRed)
+		DebugKube(multizone.KubeZone1, blueMeshName, namespaceBlue)
+		DebugKube(multizone.KubeZone2, redMeshName, namespaceRed)
+		DebugKube(multizone.KubeZone2, blueMeshName, namespaceBlue)
 	})
 
 	E2EAfterAll(func() {
-		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespaceRed)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespaceBlue)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespaceRed)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespaceBlue)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(redMeshName)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(blueMeshName)).To(Succeed())
 	})
@@ -151,7 +159,7 @@ func Migration() {
 		assertTrafficForBothMeshes()
 
 		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
-			deployMeshScopedZoneProxies(redMeshName)
+			deployMeshScopedZoneProxies(redMeshName, namespaceRed)
 			assertTrafficForBothMeshes()
 			assertMeshScopedProxyUsed(redTraffic)
 		})
@@ -161,7 +169,7 @@ func Migration() {
 		assertTrafficForBothMeshes()
 
 		runDuringMigration(ctx, []trafficCheck{redTraffic, blueTraffic}, func() {
-			deployMeshScopedZoneProxies(blueMeshName)
+			deployMeshScopedZoneProxies(blueMeshName, namespaceBlue)
 			assertTrafficForBothMeshes()
 			assertMeshScopedProxyUsed(blueTraffic)
 		})
@@ -173,7 +181,7 @@ func Migration() {
 		return fmt.Sprintf(
 			"http://%s.%s.svc.%s.mesh.local:80",
 			check.destinationServer,
-			namespace,
+			check.namespace,
 			multizone.KubeZone2.ZoneName(),
 		)
 	}
@@ -185,7 +193,7 @@ func Migration() {
 			multizone.KubeZone1,
 			check.clientName,
 			crossZoneAddress(check),
-			client.FromKubernetesPod(namespace, check.clientName),
+			client.FromKubernetesPod(check.namespace, check.clientName),
 			client.WithNumberOfRequests(uint(requests)),
 		)
 	}
@@ -214,7 +222,7 @@ func Migration() {
 		}, "60s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	}
 
-	deployMeshScopedZoneProxies = func(meshName string) {
+	deployMeshScopedZoneProxies = func(meshName string, namespace string) {
 		GinkgoHelper()
 
 		const ingressPort = uint32(11001)
@@ -253,13 +261,13 @@ func Migration() {
 			"cluster.kri_msvc_%s_%s_%s_%s_main.upstream_rq_total",
 			check.meshName,
 			multizone.KubeZone2.ZoneName(),
-			namespace,
+			check.namespace,
 			check.destinationServer,
 		)
 
 		Eventually(func(g Gomega) {
 			assertCrossZoneTraffic(g, check)
-			stat, err := multizone.KubeZone2.GetEnvoyAdminTunnel(ingressApp, namespace).GetStats(ingressFilter)
+			stat, err := multizone.KubeZone2.GetEnvoyAdminTunnel(ingressApp, check.namespace).GetStats(ingressFilter)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stat).To(stats.BeGreaterThanZero())
 		}, "60s", "1s").Should(Succeed())
