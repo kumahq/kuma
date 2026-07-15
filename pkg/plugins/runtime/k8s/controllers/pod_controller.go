@@ -94,12 +94,6 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		return kube_ctrl.Result{}, r.reconcileZoneEgress(ctx, pod, log)
 	}
 
-	// If we are using a builtin gateway, we want to generate a builtin gateway
-	// dataplane.
-	if name, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaGatewayAnnotation); name == metadata.AnnotationBuiltin {
-		return kube_ctrl.Result{}, r.reconcileBuiltinGatewayDataplane(ctx, pod, log)
-	}
-
 	// only Pods with injected Kuma need a Dataplane descriptor
 	injected, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectedAnnotation)
 	if err != nil {
@@ -164,21 +158,6 @@ func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_mode
 	}
 	log.Info("Object deleted")
 	return nil
-}
-
-func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
-	if pod.Status.PodIP == "" {
-		dp := &mesh_k8s.Dataplane{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
-		}
-		return r.deleteObjectIfExist(ctx, dp, "pod IP is empty", log)
-	}
-
-	ns := kube_core.Namespace{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
-		return errors.Wrap(err, "unable to get Namespace for Pod")
-	}
-	return r.createOrUpdateBuiltinGatewayDataplane(ctx, pod, &ns)
 }
 
 func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {

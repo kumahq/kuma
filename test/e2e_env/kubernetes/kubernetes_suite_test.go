@@ -56,9 +56,6 @@ var (
 
 var (
 	_ = Describe("Virtual Probes", Label("job-2"), healthcheck.VirtualProbes, Ordered)
-	_ = Describe("Gateway", Label("job-0"), gateway.Gateway, Ordered)
-	_ = Describe("Gateway - Cross-mesh", Label("job-0"), gateway.CrossMeshGatewayOnKubernetes, Ordered)
-	_ = Describe("Gateway - mTLS", Label("job-0"), gateway.Mtls, Ordered)
 	_ = Describe("Delegated Gateway", Label("job-2"), Label("kind-not-supported", "ipv6-not-supported"), gateway.Delegated, Ordered)
 	_ = Describe("Graceful", Label("job-1"), graceful.Graceful, Ordered)
 	_ = Describe("Eviction", Label("job-1"), graceful.Eviction, Ordered)

@@ -55,7 +55,8 @@ Any status that Kuma already wrote for those `Gateway` parent references is
 left unchanged, but it is no longer updated.
 
 The built-in gateway itself (`MeshGateway`, `MeshGatewayInstance`) is
-unaffected by this change.
+unaffected by this change. See "Built-in gateway Kubernetes controllers
+removed" below for the separate removal of `MeshGatewayInstance` management.
 
 **Action required**
 
@@ -83,6 +84,49 @@ unaffected by this change.
   been removed. The control plane now always scopes its `Secret` watch to its
   own system namespace. Remove this key from your config file and Helm
   values — leaving it in place is harmless but has no effect.
+
+### Built-in gateway Kubernetes controllers removed
+
+The control plane no longer reconciles `MeshGatewayInstance` resources on
+Kubernetes. It no longer creates or manages the `Service` and `Deployment`
+generated for a `MeshGatewayInstance`, no longer converts `Pod`s annotated
+`kuma.io/gateway: builtin` into a built-in gateway `Dataplane`, and no longer
+runs the `MeshGatewayInstance` admission validator. `kumactl inspect
+meshgateway` has been removed along with its client. Delegated gateway modes
+(`kuma.io/gateway: enabled` / `provided`) and the Gateway API `HTTPRoute`
+GAMMA path are unaffected.
+
+The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
+`MeshGatewayRoute` resources themselves are not removed by this change.
+
+**Action required**
+
+- Existing `MeshGatewayInstance` resources become inert: the control plane
+  stops reconciling them, so any `Service`, `Deployment`, and `BUILTIN`
+  `Dataplane` it previously generated for them is not updated, recreated, or
+  cleaned up automatically. If you still rely on a built-in gateway, migrate
+  it to a delegated gateway (bring your own `Deployment`/`Service` fronting a
+  Kuma-injected pod annotated `kuma.io/gateway: enabled` or `provided`) before
+  upgrading.
+- Before upgrading, or as part of your migration, manually delete the
+  `MeshGatewayInstance` resources you no longer need, along with the
+  `Service`, `Deployment`, and `Dataplane` objects they previously generated
+  (they are owned by the `MeshGatewayInstance`, so deleting it will cascade
+  via owner references, but only for objects created before this upgrade).
+- The default Helm-installed cluster RBAC no longer grants access to
+  `meshgatewayinstances`, `meshgatewayinstances/status`, or
+  `meshgatewayinstances/finalizers`, and the validating webhook configuration
+  no longer includes `meshgatewayinstances`. If you manage RBAC manually,
+  remove these permissions and webhook rules; if you keep them, they are
+  harmless but unused.
+- Rolling back a control plane upgraded past this version does not restore the
+  removed gateway controller behavior automatically: the objects generated for
+  any `MeshGatewayInstance` created
+  or changed while running the new control plane are not retroactively
+  reconciled by an older control plane's cache until it re-lists them, and a
+  Helm rollback alone does not restore RBAC/webhook rules removed by a
+  `helm upgrade` that already ran with the new chart — reapply the previous
+  chart version to restore them.
 
 ### Default `TrafficPermission`/`TrafficRoute` creation removed
 
