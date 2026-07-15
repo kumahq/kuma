@@ -37,12 +37,13 @@ type BackendRefDestination struct {
 
 // BuildMeshDestinations builds destinations for legacy zone proxies using the hash-based SNI format.
 func BuildMeshDestinations(
+	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	systemNamespace string,
 	resources xds_context.Resources,
 	realResourceLists ...core_resources.DestinationList,
 ) MeshDestinations {
 	return MeshDestinations{
-		KumaIoServices: buildKumaIoServiceDestinations(resources),
+		KumaIoServices: buildKumaIoServiceDestinations(availableServices, resources),
 		BackendRefs: BuildRealResourceDestinations(
 			util_slices.FlatMap(realResourceLists, core_resources.DestinationList.GetDestinations),
 			systemNamespace,
@@ -99,6 +100,7 @@ func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh,
 }
 
 func buildKumaIoServiceDestinations(
+	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	res xds_context.Resources,
 ) map[string][]envoy_tags.Tags {
 	destForMesh := map[string][]envoy_tags.Tags{}
@@ -110,6 +112,7 @@ func buildKumaIoServiceDestinations(
 	addMeshTCPRouteDestinations(trafficRoutes, meshTCPRoutes, destForMesh)
 	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
+	addAvailableServiceDestinations(availableServices, destForMesh)
 	return destForMesh
 }
 
@@ -272,6 +275,21 @@ func addMeshTCPRouteToDestinations(
 func addDestination(tags map[string]string, destinations map[string][]envoy_tags.Tags) {
 	service := tags[mesh_proto.ServiceTag]
 	destinations[service] = append(destinations[service], tags)
+}
+
+func addAvailableServiceDestinations(
+	availableServices []*mesh_proto.ZoneIngress_AvailableService,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, availableService := range availableServices {
+		service := availableService.Tags[mesh_proto.ServiceTag]
+		if service == "" {
+			continue
+		}
+		addDestination(envoy_tags.Tags{
+			mesh_proto.ServiceTag: service,
+		}, destinations)
+	}
 }
 
 // addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist makes sure that when

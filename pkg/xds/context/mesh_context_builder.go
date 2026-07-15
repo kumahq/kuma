@@ -172,6 +172,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	domains = append(domains, xds_topology.Domains(meshServices)...)
 	domains = append(domains, xds_topology.Domains(meshExternalServices)...)
 	domains = append(domains, xds_topology.Domains(meshMultiZoneServices)...)
+	domains = append(domains, xds_topology.LegacyDomains(meshServices, meshExternalServices, meshMultiZoneServices)...)
 
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh
