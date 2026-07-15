@@ -3,11 +3,12 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
-    kuma.io/display-name: ""
+    kuma.io/display-name: example
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
     rollouts-pod-template-hash: active-hash
+  name: example
 spec:
   networking:
     address: 192.168.0.1
