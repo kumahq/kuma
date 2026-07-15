@@ -53,7 +53,8 @@ jobs:
             go-build-${{ runner.os }}-
       - run: go build ./...
   check:
-    if: false # investigation-only: disabled on test/e2e-init-hang-diagnostics
+    # investigation-only: disabled on the init-hang data-gathering branch
+    if: ${{ github.head_ref != 'test/e2e-init-hang-diagnostics' }}
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs

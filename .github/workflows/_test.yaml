@@ -21,7 +21,8 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 30
-    if: false # investigation-only: disabled on test/e2e-init-hang-diagnostics
+    # investigation-only: disabled on the init-hang data-gathering branch
+    if: ${{ github.head_ref != 'test/e2e-init-hang-diagnostics' }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     env:
       UNIT_CLEAN_TESTCACHE: ${{ inputs.IS_PULL_REQUEST && 'false' || 'true' }}
