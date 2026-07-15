@@ -147,8 +147,7 @@ spec:
     name: route-1
   to:
     - targetRef:
-        kind: MeshService
-        name: test-server_multizone-meshtimeout-ns_svc_80
+        kind: Mesh
       default:
         http:
           requestTimeout: 2s

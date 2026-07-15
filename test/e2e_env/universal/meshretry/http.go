@@ -251,8 +251,7 @@ spec:
     name: http-route-1
   to:
     - targetRef:
-        kind: MeshService
-        name: test-server
+        kind: Mesh
       default:
         http:
           numRetries: 5
