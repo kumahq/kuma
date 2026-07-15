@@ -59,12 +59,20 @@ var _ = Describe("GroupByAttachment", func() {
 		},
 		Entry("group by inbounds", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficPermissions: core_xds.TrafficPermissionMap{
-					inbound("192.168.0.1", 80, 81): {Meta: meta1},
-					inbound("192.168.0.2", 80, 81): {Meta: meta2},
-					inbound("192.168.0.2", 90, 91): {Meta: meta3},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
+							inbound("192.168.0.1", 80, 81): {
+								&core_mesh.HealthCheckResource{Meta: meta1},
+							},
+							inbound("192.168.0.2", 80, 81): {
+								&core_mesh.HealthCheckResource{Meta: meta2},
+							},
+							inbound("192.168.0.2", 90, 91): {
+								&core_mesh.HealthCheckResource{Meta: meta3},
+							},
+						},
+					},
 					core_mesh.CircuitBreakerType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.2", 90, 91): {
@@ -111,18 +119,18 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
-					core_mesh.TrafficPermissionType: []core_model.Resource{
-						&core_mesh.TrafficPermissionResource{Meta: meta1},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
-					core_mesh.TrafficPermissionType: []core_model.Resource{
-						&core_mesh.TrafficPermissionResource{Meta: meta2},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta2},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
-					core_mesh.TrafficPermissionType: []core_model.Resource{
-						&core_mesh.TrafficPermissionResource{Meta: meta3},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta3},
 					},
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Meta: meta5},
@@ -330,29 +338,39 @@ var _ = Describe("GroupByPolicy", func() {
 				},
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficPermissions: core_xds.TrafficPermissionMap{
-					inbound("192.168.0.1", 80, 81): &core_mesh.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
-					},
-					inbound("192.168.0.2", 90, 91): &core_mesh.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
-					},
-					inbound("192.168.0.3", 80, 81): &core_mesh.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{Name: "tp-2", Mesh: "default"},
+				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
+							inbound("192.168.0.1", 80, 81): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
+								},
+							},
+							inbound("192.168.0.2", 90, 91): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
+								},
+							},
+							inbound("192.168.0.3", 80, 81): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-2", Mesh: "default"},
+								},
+							},
+						},
 					},
 				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.TrafficPermissionType,
-					Key:  core_model.ResourceKey{Name: "tp-1", Mesh: "default"},
+					Type: core_mesh.HealthCheckType,
+					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
 					{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
 				},
 				inspect.PolicyKey{
-					Type: core_mesh.TrafficPermissionType,
-					Key:  core_model.ResourceKey{Name: "tp-2", Mesh: "default"},
+					Type: core_mesh.HealthCheckType,
+					Key:  core_model.ResourceKey{Name: "t-2", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
