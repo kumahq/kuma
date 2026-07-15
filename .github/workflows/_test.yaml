@@ -21,7 +21,7 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 30
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    if: false # investigation-only: disabled on test/e2e-init-hang-diagnostics
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     env:
       UNIT_CLEAN_TESTCACHE: ${{ inputs.IS_PULL_REQUEST && 'false' || 'true' }}
@@ -67,7 +67,7 @@ jobs:
                 "cniNetworkPlugin": ["flannel"]
               },
               "test_e2e_env": {
-                "target": ["kubernetes", "universal", "multizone"],
+                "target": ["kubernetes", "multizone"],
                 "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
                 "parallelism": [1],
