@@ -6,7 +6,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/17381
 
 ## Context and Problem Statement
 
-`MeshProxyPatch` (and the legacy `ProxyTemplate`) let users select a generated Envoy listener and patch it. A listener can be selected by `origin`, by `name`, or by `tags`/`listenerTags` — the last of which matches against a key/value bag Kuma stamps onto every listener as Envoy filter metadata under `io.kuma.tags`.
+`MeshProxyPatch` lets users select a generated Envoy listener and patch it. A listener can be selected by `origin`, by `name`, or by `tags`/`listenerTags` — the last of which matches against a key/value bag Kuma stamps onto every listener as Envoy filter metadata under `io.kuma.tags`.
 
 That bag has always been filled from `Dataplane` **tags**. Kuma is moving identity out of tags and into **labels**, and the listener metadata never followed. The result is that tag-based listener matching silently stops working — the policy still applies, still validates, and matches nothing.
 
@@ -80,7 +80,7 @@ Rebuild a `kuma.io/service` value from the destination resource and keep writing
 Write labels under a new listener key and add `listenerLabels`/`labels` to the `MeshProxyPatch` API.
 
 * Good, because it is semantically tidy — labels and tags stay distinct.
-* Bad, because it is a public API change across three match types, plus CRDs, OpenAPI, and a decision about the legacy `ProxyTemplate`.
+* Bad, because it is a public API change across three match types, plus regenerated CRDs and OpenAPI.
 * Bad, because users must then know which selector applies to which listener, and the answer depends on whether the destination is legacy or a real resource — leaking an internal distinction into the API.
 * Bad, because the matcher, the semantics, and the outcome are identical to Option 4; only the key name differs. It buys tidiness and charges an API migration for it.
 
@@ -109,12 +109,12 @@ match:
     team: payments
 ```
 
-* Good, because there is no API change — the selector users already know starts working again, and the legacy `ProxyTemplate` is fixed by the same change since it reads the same key.
+* Good, because there is no API change — the selector users already know simply starts working again.
 * Good, because it works without unified resource naming, which is the point of the issue.
 * Good, because it is provably additive: the affected listeners have empty tags today, so no currently-matching policy can stop matching. It can only turn non-matches into matches.
 * Good, because labels are a richer selector than the single `kuma.io/service` string ever was — zone, origin, env, and user labels become matchable, which is what makes UC3 possible.
 * Good, because one rule covers both directions, closing UC4 with the same reasoning rather than a second mechanism.
-* Bad, because the key is named `tags` but carries labels. A real wart — mitigated by the fact that `io.kuma.tags` is not a user-facing "Dataplane tags" surface but Kuma's private listener selector bag, with one writer and six readers, all of them ours.
+* Bad, because the key is named `tags` but carries labels. A real wart — mitigated by the fact that `io.kuma.tags` is not a user-facing "Dataplane tags" surface but Kuma's private listener selector bag, written in one place and read only by our own policy matching.
 * Bad, because **labels are per-resource while listeners are per-port**, so the two listeners of a two-port `MeshService` get identical tags and cannot be told apart by `listenerTags` alone. Narrowing to one port still needs `match.name` under unified naming. This MADR does not close that gap.
 
 #### Why not gate this behind a flag
@@ -158,7 +158,7 @@ Listener `io.kuma.tags` is sourced from labels wherever tags no longer exist.
 
 In both cases `kuma.io/mesh` is stripped, matching what the outbound path already does. Reserved `kuma.io/`-prefixed tags are computed by the control plane and take precedence over user labels. Legacy paths — a `Dataplane` with real outbound tags, or inbounds with tags enabled — keep their current behaviour untouched.
 
-No `MeshProxyPatch` or `ProxyTemplate` API change is made; both read `io.kuma.tags` through the same helper and are fixed by the same change. The change is unconditional and not gated by a new flag.
+No `MeshProxyPatch` API change is made — the fix is entirely in how the listener metadata is filled. The change is unconditional and not gated by a new flag.
 
 Policies matching `kuma.io/service: <name>` must be rewritten against labels, typically `kuma.io/display-name: <name>` plus `k8s.kuma.io/namespace: <ns>`. This is unavoidable rather than a choice we are making: `kuma.io/service` does not exist once `MeshService` is in use. We do not synthesize a replacement, because every candidate value is a guess that fails at runtime instead of at review time.
 
@@ -185,7 +185,7 @@ l.Metadata.FilterMetadata[envoy_metadata.TagsKey] = &structpb.Struct{
 }
 ```
 
-It has **six readers**, all Kuma's own matching code: `MeshProxyPatch` (`listener_mod.go:86`, `network_filter_mod.go:136`, `http_filter_mod.go:159`) and the legacy `ProxyTemplate` stack (`pkg/xds/generator/modifications/v3/{listener,network_filter,http_filter}.go`). All six do:
+It is read only by `MeshProxyPatch`'s matching code — `listener_mod.go:86`, `network_filter_mod.go:136`, and `http_filter_mod.go:159` — each doing:
 
 ```go
 listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
