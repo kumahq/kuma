@@ -1812,6 +1812,13 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		wg.Add(1)
 		go func(i int, img string) {
 			defer wg.Done()
+			localRef := img
+			if tagged, _, ok := splitDigestRef(img); ok {
+				localRef = tagged
+			}
+			if exec.CommandContext(pullCtx, "docker", "image", "inspect", localRef).Run() == nil {
+				return
+			}
 			_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "pull image "+img, 5, 5*time.Second, func() (string, error) {
 				pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
 				out, err := pullCmd.CombinedOutput()
@@ -1849,6 +1856,10 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		} else {
 			importImages[i] = img
 		}
+	}
+
+	if manifest := os.Getenv("KUMA_E2E_PRELOAD_MANIFEST"); manifest != "" {
+		recordPreloadedImages(manifest, importImages)
 	}
 
 	// Match `LoadImages` retry strategy: a single transient docker / k3d
@@ -1906,6 +1917,21 @@ func splitDigestRef(image string) (string, string, bool) {
 	colonIdx += slashIdx + 1
 	repo := base[:colonIdx]
 	return base, repo + digestPart, true
+}
+
+var preloadManifestMu sync.Mutex
+
+func recordPreloadedImages(path string, images []string) {
+	preloadManifestMu.Lock()
+	defer preloadManifestMu.Unlock()
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	for _, img := range images {
+		fmt.Fprintln(f, img)
+	}
 }
 
 func (c *K8sCluster) DeleteNode(name string) error {
