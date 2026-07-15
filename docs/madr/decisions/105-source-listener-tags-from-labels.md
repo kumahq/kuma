@@ -8,7 +8,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/17381
 
 `MeshProxyPatch` lets users pick a generated Envoy listener and patch it. You can pick a listener by `origin`, by `name`, or by `tags`/`listenerTags`. The last one matches against a set of key/value pairs that Kuma puts on every listener as Envoy filter metadata, under the key `io.kuma.tags`.
 
-Those pairs have always come from `Dataplane` tags. Kuma is now moving identity out of tags and into labels, but the listener metadata still reads tags. So tag matching quietly stops working. The policy is accepted, it validates, and it matches nothing.
+Those pairs for inbounds come from Dataplane inbound tags while for outbounds are hardcoded to `kuma.io/service` of destination service . Kuma is now moving identity out of tags and into labels, but the listener metadata still reads tags. So tag matching quietly stops working. The policy is accepted, it validates, and it matches nothing.
 
 ### Three cases
 
@@ -20,13 +20,13 @@ The same mechanism behaves differently in three setups. Only the first one works
 | **2. `MeshService` enabled**      | still work                               | empty, because outbounds are now resource references |
 | **3. `InboundTagsDisabled`**      | empty, because inbound tags are stripped | not affected by this flag                            |
 
-Cases 2 and 3 are separate switches, but they belong to the same migration and people usually turn them on together. With both on, a proxy has no working tag selector in either direction.
+Cases 2 and 3 are separate switches,but with both on, a proxy has no working tag selector in either direction.
 
 **Case 1, `kuma.io/service`.** The destination is identified by a string that gets passed along from proxy to proxy. It starts as the `kuma.io/service` tag on the destination's inbound, goes into the VIP view, then into the consuming `Dataplane`'s outbound tags, and ends up on the outbound listener. Two things are worth knowing. The tags describe the destination but live on the consumer. And in the generated path, which covers all of Kubernetes and every transparent-proxy setup, there is only one key in there: `kuma.io/service`, because the control plane hard-codes it. Outbounds with several tags (`version`, `region`) only ever existed in hand-written Universal `Dataplane`s.
 
-**Case 2, `MeshService`.** The destination becomes a real resource, referenced by KRI, so there is no tag set to copy and the listener ends up with an empty one. `kuma.io/service` is gone from the model entirely at this point. The consumer's outbound tags are gone, the VIP path no longer feeds outbounds, and the destination's inbounds don't carry the tag either. There is no value left to read anywhere, so we cannot keep `listenerTags: {kuma.io/service: backend}` working no matter what we do. Those policies have to be rewritten. The only open question is what we give people to rewrite them to.
+**Case 2, `MeshService`.** The destination becomes a real resource, referenced by KRI, so there is no tag set to copy and the outbound listener ends up with an empty one. `kuma.io/service` is gone from the model entirely at this point. The consumer's outbound tags are gone, the VIP path no longer feeds outbounds. There is no value left to read anywhere, so we cannot keep `listenerTags: {kuma.io/service: backend}` working no matter what we do. Those policies have to be rewritten. The only open question is what we give people to rewrite them to.
 
-**Case 3, `InboundTagsDisabled`.** The flag strips inbound tags to cut memory overhead, so inbound listeners hit the same wall from the other side. The data itself is still around: on Kubernetes, Pod labels are copied onto the `Dataplane`'s metadata labels whether the flag is set or not. The flag only drops the second copy that lived in tags, so everything has to read labels instead.
+**Case 3, `InboundTagsDisabled`.** The flag strips inbound tags, so inbound listeners hit the same wall from the other side. The data itself is still around: on Kubernetes, Pod labels are copied onto the `Dataplane`'s metadata labels whether the flag is set or not. The flag only drops the second copy that lived in tags, so everything has to read labels instead.
 
 Cases 2 and 3 are both part of a deliberate migration that most of the codebase has already gone through. Identity is read from labels now, and listener tags are the last place still reading tags. The rest of the migration was done case by case, and listener metadata was one of the spots that got skipped. It also happens to be the one that breaks a user-facing policy API.
 
@@ -44,7 +44,7 @@ We have already fixed this exact bug once, for a different policy. `MeshLoadBala
 
 Every option has to answer the same question: when a listener has no tags, what identifies the thing it stands for? An outbound listener stands for the destination service, which is the `Mesh*Service` resource it was generated from. An inbound listener stands for the proxy itself. For both of those, identity lives in labels now.
 
-An outbound listener does not stand for the individual workloads behind the destination. Those are its endpoints. They are picked by the service, and their own labels already go to Envoy separately, on the endpoints, under `io.kuma.labels`. So for the listener we want the service's labels, even though the `Dataplane` labels are the right choice on the endpoint path.
+An outbound listener does not stand for the individual workloads behind the destination. Those are its endpoints. They are picked by the service, and their own labels already go to Envoy separately, on the endpoints, under `io.kuma.labels`. So for the outbound listener we want the service's labels, while the `Dataplane` labels are the right choice on the inbound listener and clusters.
 
 ### Option 1: Do nothing, require unified resource naming and `match.name`
 
@@ -63,7 +63,6 @@ Rebuild a `kuma.io/service` value from the destination resource and keep writing
 * Good, because it is a small change and nobody has to rewrite a policy, at least at first glance.
 * Bad, because `kuma.io/service` has been deliberately removed, and bringing it back on the listener works against the whole point of `MeshService`.
 * Bad, because the value would not match anyway. The legacy resolver gives us `<mesh>_<name>_<namespace>_<zone>_<shortName>_<port>`, and the policy says `backend`.
-* Bad, because that leaves us worse off than doing nothing. The key is back, so `kuma.io/service: '*'` starts matching while `kuma.io/service: backend` still doesn't. Users find out at runtime instead of at review time.
 
 ### Option 3: A separate `io.kuma.labels` key on listeners, with new match fields
 
@@ -111,27 +110,11 @@ match:
 * Bad, because the key is called `tags` and now holds labels. That is confusing, though `io.kuma.tags` was never a user-facing "Dataplane tags" surface. It is our own listener selector bag, written in one place and read only by our policy matching.
 * Bad, because labels belong to a resource while listeners belong to a port. The two listeners of a two-port `MeshService` get identical tags and `listenerTags` cannot tell them apart. You still need `match.name` with unified naming for that, and this MADR does not fix it.
 
-#### Why we don't gate this behind a flag
-
-`MeshServiceLabelPropagation` is gated because it writes to a stored resource that users can see and that KDS syncs around. Listener metadata is generated, short-lived, and only our own matcher reads it. Since the change can only add matches, a flag set to `false` would have no real use.
-
-That is an argument against an on/off flag, not against bounding which labels we copy. There is no gate further up to lean on: `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` only applies to the Universal generator, while on Kubernetes a `MeshService` copies its `Service`'s labels wholesale with nothing filtering them. Whether we copy every label or only keys we choose is the open question in the implementation notes, and it is a separate decision from gating the fix itself.
-
-#### How this design evolved
-
-The first draft tried to keep `listenerTags: {kuma.io/service: backend}` working by rebuilding the tag. Following where the tag actually came from ruled that out, because `kuma.io/service` has been deleted along with everything that fed it. Once we accepted that no design keeps those policies untouched, the question changed from "how do we save the selector" to "what do we give people instead".
-
-The second draft added a `kuma.io/kri` tag with the full KRI, to solve per-port targeting. We dropped it. It repeated the listener name under unified naming, and a KRI points at one resource, so it did nothing for group targeting.
-
-The third draft only covered outbound and treated the `InboundTagsDisabled` gap as a separate problem. Looking into case 3 showed it is the same bug reached through a different switch, with the same fix, so covering one direction would have meant answering the same question twice.
 
 ## Security implications and review
 
 Low. The data we propagate is metadata the proxy's owner can already see. The outbound exists because the destination is reachable, and its VIP and port are already in the config dump.
 
-* Listener metadata shows up in `/config_dump`, so any user label on a `MeshService` is visible to anyone who can reach the Envoy admin API. That is already true for endpoint labels, which carry the proxy's whole `Dataplane` label set today.
-* On Kubernetes nothing bounds that set. A `MeshService` generated from a `Service` copies the `Service`'s labels wholesale (`meshservice_controller.go:483`), and `MeshServiceLabelPropagation` only gates the Universal generator, so it does not apply. Whatever a Helm chart, an Argo sync or a cost-allocation webhook stamps on a `Service` would reach the listener metadata of every proxy that talks to it. Limiting this to a list of label keys we choose ourselves would bound it, and that is the open question in the implementation notes.
-* Someone could set a label like `kuma.io/display-name` and shadow a tag the control plane computes, so reserved `kuma.io/` tags have to be written last and win over user labels. We already reject reserved keys in the label-propagation config, so this matches what we do elsewhere.
 
 ## Reliability implications
 
