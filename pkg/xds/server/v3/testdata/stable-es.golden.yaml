@@ -512,9 +512,7 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: es-with-tls
-                  timeout: 0s
           statPrefix: es-with-tls
-          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:
