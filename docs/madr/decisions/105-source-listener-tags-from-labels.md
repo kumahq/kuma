@@ -26,9 +26,11 @@ Cases 2 and 3 are separate switches, but they belong to the same migration and p
 
 **Case 2, `MeshService`.** The destination becomes a real resource, referenced by KRI, so there is no tag set to copy and the listener ends up with an empty one. `kuma.io/service` is gone from the model entirely at this point. The consumer's outbound tags are gone, the VIP path no longer feeds outbounds, and the destination's inbounds don't carry the tag either. There is no value left to read anywhere, so we cannot keep `listenerTags: {kuma.io/service: backend}` working no matter what we do. Those policies have to be rewritten. The only open question is what we give people to rewrite them to.
 
-**Case 3, `InboundTagsDisabled`.** Inbound tags are emptied at the source, so inbound listeners hit the same wall from the other side. The data itself is still around: on Kubernetes, Pod labels are copied onto the `Dataplane`'s metadata labels whether the flag is set or not. The flag only drops the second copy that lived in tags, so everything has to read labels instead.
+**Case 3, `InboundTagsDisabled`.** The flag strips inbound tags to cut memory overhead, so inbound listeners hit the same wall from the other side. The data itself is still around: on Kubernetes, Pod labels are copied onto the `Dataplane`'s metadata labels whether the flag is set or not. The flag only drops the second copy that lived in tags, so everything has to read labels instead.
 
 Cases 2 and 3 are both part of a deliberate migration that most of the codebase has already gone through. Identity is read from labels now, and listener tags are the last place still reading tags. The rest of the migration was done case by case, and listener metadata was one of the spots that got skipped. It also happens to be the one that breaks a user-facing policy API.
+
+We have already fixed this exact bug once, for a different policy. `MeshLoadBalancingStrategy` affinity tags broke under case 3 in the same silent way, and the fix was to read Pod labels instead, shipping them to Envoy on endpoints under a key called `io.kuma.labels`. That work covered the endpoint path and stopped there. The deep dive has the details, including why that fix needed a second metadata key and why this one doesn't.
 
 ### Use cases
 
@@ -65,9 +67,12 @@ Rebuild a `kuma.io/service` value from the destination resource and keep writing
 
 ### Option 3: A separate `io.kuma.labels` key on listeners, with new match fields
 
-Write labels under a new listener key and add `listenerLabels`/`labels` to the `MeshProxyPatch` API.
+Write labels under a new listener key and add `listenerLabels`/`labels` to the `MeshProxyPatch` API. We already have an `io.kuma.labels` key on endpoints, added for this exact problem, so the obvious move is to copy it onto listeners.
 
 * Good, because it keeps labels and tags cleanly apart.
+* Good, because it looks consistent with what endpoints already do, and consistency is worth something.
+* Bad, because the endpoint split exists for a reason that doesn't apply here. On endpoints, tags live under `envoy.lb` and `envoy.transport_socket_match`, and Envoy reads both of those: they drive LB subset matching for traffic splitting and TLS selection. Putting arbitrary Pod labels in there would change routing and TLS behaviour, so a second key was the only option. `io.kuma.tags` is read by nothing except our own matcher, so we have no such constraint and copying the split would be copying a workaround without the problem it worked around.
+* Bad, because `io.kuma.labels` is an internal hand-off, not a selector surface. It exists so `MeshLoadBalancingStrategy` can read labels back out of endpoints another generator already built, it is filtered down to the affinity keys that policy names, and no user ever writes it in a policy. Reusing the name on listeners would give it a second, unrelated meaning.
 * Bad, because it changes a public API across three match types, and means regenerating CRDs and OpenAPI.
 * Bad, because users then have to know which of the two selectors applies to a given listener, and the answer depends on whether the destination is legacy or a real resource. That is an internal detail they should not have to care about.
 * Bad, because the matcher and the behaviour come out the same as Option 4, and only the key name differs. We would be paying for an API migration to get tidier naming.
@@ -325,7 +330,68 @@ Everywhere else the data is dropped or the rule is relaxed:
 * `pkg/core/xds/types.go:138`, `:422`, `:435`: `Protocol()`, `ContainsTags` and selector matching are tags only.
 * `pkg/xds/generator/inbound_proxy_generator.go:96`, the inbound listener's tags, which is the gap this MADR closes.
 
-One caveat on `io.kuma.labels` (`metadata.go:104`): the name sounds general, but it is a closed loop of three sites. It is written at `endpoints/v3/endpoints.go:41`, encoded and decoded in `metadata.go:50` and `:71`, and read by a single consumer, `meshloadbalancingstrategy/locality_aware.go:64`. Don't treat it as a general identity channel.
+### `io.kuma.labels`, and why we don't extend it
+
+We already ship labels to Envoy under a key called `io.kuma.labels`, and it was added for the same problem this MADR is about, one layer down.
+
+It arrived in `1c62231766`, "fix(mlbs): migrate AffinityTags to use pod labels when inbound tags are disabled" (https://github.com/kumahq/kuma/pull/16030, May 2026). That PR's motivation is worth quoting, because it is our problem with different nouns:
+
+> When `KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED=true` is set, Kuma strips inbound tags from Dataplane resources to reduce memory overhead. However, `MeshLoadBalancingStrategy.LocalityAwareness.LocalZone.AffinityTags` relies on inbound tags [...] This results in locality-aware load balancing via `AffinityTags` silently failing when `KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED` is enabled. Pod labels, however, are always available from Kubernetes pod metadata regardless of this flag.
+
+Same flag, same silent failure, same answer: read labels, which are there either way. `MeshLoadBalancingStrategy` got that fix; `MeshProxyPatch` did not. It also tells us why the flag exists at all, which is to cut memory overhead, so the tags are not coming back.
+
+The doc comment on the writer records the design (`pkg/xds/envoy/metadata/v3/metadata.go:44-49`):
+
+```go
+// EndpointMetadataWithLabels builds Envoy endpoint filter metadata that includes
+// inbound tags (under the "envoy.lb" key) and pod/workload labels (under the
+// "io.kuma.labels" key). Labels are encoded under a separate key so they remain
+// available even when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED strips inbound
+// tags. The "prefer tags, fall back to labels" semantics are applied by
+// consumers (see resolveAffinityValues / resolveEndpointAffinityValue).
+```
+
+So the endpoint path hit case 3 first and solved it by shipping labels alongside tags under a second key, leaving consumers to prefer tags and fall back to labels. Given that, the obvious question is why the listener path doesn't just do the same thing. Three reasons.
+
+First, the endpoint path had no choice about the second key. Endpoint tags go under `envoy.lb` and `envoy.transport_socket_match` (`metadata.go:11-28`), and **Envoy reads both**. `envoy.lb` drives LB subset matching, which is what makes `TrafficRoute` traffic splitting work (`pkg/xds/envoy/clusters/configurers.go:183`: "LbSubset is required for MetadataMatch in Weighted Cluster in TCP Proxy to work"), and `envoy.transport_socket_match` selects the TLS context. Writing Pod labels into either would change routing or TLS. A separate key was the only safe move. `io.kuma.tags` has no such job: nothing in Envoy reads it, and `grep` finds no reference to it in any cluster or listener config we generate. It is ours to fill.
+
+Second, `io.kuma.labels` is inert to Envoy too, and that is the point of it. It exists so one Kuma component can hand data to another through an xDS resource. `MeshLoadBalancingStrategy` receives endpoints another generator already built, so the labels are no longer in scope as Go values, and it parses them back out of the proto (`locality_aware.go:33-36, 60-64`):
+
+```go
+for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
+	ed := createEndpoint(lbEndpoint, localZone)
+	// ...
+}
+
+func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) core_xds.Endpoint {
+	endpoint := core_xds.Endpoint{}
+	endpoint.Tags = envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
+	endpoint.Labels = envoy_metadata.ExtractLbLabels(lbEndpoint.Metadata)
+```
+
+That is a stage-to-stage channel between our own components. `io.kuma.tags` on a listener is the opposite: a surface users write policies against. The two keys look alike and do different jobs.
+
+Third, its scope is narrow and deliberately kept that way. It is written on every endpoint (`endpoints/v3/endpoints.go:41`), encoded and decoded in `metadata.go:50` and `:71`, and read by exactly one consumer, `meshloadbalancingstrategy/locality_aware.go:64`. `MeshLoadBalancingStrategy` then trims the labels down to the affinity keys its own policy names, so unrelated Pod labels don't stay in the config (`priority.go:109-121`):
+
+```go
+func affinityTagPodLabels(labels map[string]string, conf api.Conf) map[string]string {
+	la := conf.LocalityAwareness
+	if la == nil || la.LocalZone == nil || la.LocalZone.AffinityTags == nil {
+		return nil
+	}
+	filtered := make(map[string]string)
+	for _, tag := range *la.LocalZone.AffinityTags {
+		if v, ok := labels[tag.Key]; ok {
+			filtered[tag.Key] = v
+		}
+	}
+	return filtered
+}
+```
+
+The name sounds like a general identity channel and it isn't one. Worth knowing before assuming it carries labels broadly, or that a listener can just read from it.
+
+Note also what `io.kuma.labels` confirms about the shape of our fix. The endpoint path did not invent a new idea; it shipped labels next to tags and let consumers fall back. We are doing the same thing for listeners, and merging rather than adding a key only because the constraint that forced the split on endpoints doesn't exist on listeners.
 
 ### Where the labels come from
 
