@@ -163,11 +163,17 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 	if c.ConfigureRouteTimeout && len(clusters) != 0 {
 		routeAction.Timeout = util_proto.Duration(0)
 	}
-	if len(clusters) == 1 {
+
+	switch len(clusters) {
+	case 0:
+		// Leave the cluster unset when no upstreams survive route generation.
+		// Callers currently filter those routes out, but avoiding an empty
+		// WeightedClusters config keeps this helper safe on its own.
+	case 1:
 		routeAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 			Cluster: clusters[0].Name(),
 		}
-	} else {
+	default:
 		var weightedClusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 		for _, cluster := range clusters {
 			cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{

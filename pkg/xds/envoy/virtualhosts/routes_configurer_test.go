@@ -60,5 +60,69 @@ routes:
     route:
       cluster: backend`,
 		}),
+		Entry("weighted routes with timeouts", testCase{
+			configureRouteTimeout: true,
+			routes: []envoy_common.Route{
+				envoy_common.NewRoute(
+					envoy_common.WithCluster(envoy_common.NewCluster(
+						envoy_common.WithName("backend-1"),
+						envoy_common.WithWeight(20),
+					)),
+					envoy_common.WithCluster(envoy_common.NewCluster(
+						envoy_common.WithName("backend-2"),
+						envoy_common.WithWeight(80),
+					)),
+				),
+			},
+			expected: `
+routes:
+  - match:
+      prefix: "/"
+    route:
+      timeout: "0s"
+      weightedClusters:
+        clusters:
+          - name: backend-1
+            weight: 20
+          - name: backend-2
+            weight: 80`,
+		}),
+		Entry("weighted routes without configured request timeout", testCase{
+			configureRouteTimeout: false,
+			routes: []envoy_common.Route{
+				envoy_common.NewRoute(
+					envoy_common.WithCluster(envoy_common.NewCluster(
+						envoy_common.WithName("backend-1"),
+						envoy_common.WithWeight(20),
+					)),
+					envoy_common.WithCluster(envoy_common.NewCluster(
+						envoy_common.WithName("backend-2"),
+						envoy_common.WithWeight(80),
+					)),
+				),
+			},
+			expected: `
+routes:
+  - match:
+      prefix: "/"
+    route:
+      weightedClusters:
+        clusters:
+          - name: backend-1
+            weight: 20
+          - name: backend-2
+            weight: 80`,
+		}),
+		Entry("routes without any clusters", testCase{
+			configureRouteTimeout: true,
+			routes: []envoy_common.Route{
+				envoy_common.NewRoute(),
+			},
+			expected: `
+routes:
+  - match:
+      prefix: "/"
+    route: {}`,
+		}),
 	)
 })
