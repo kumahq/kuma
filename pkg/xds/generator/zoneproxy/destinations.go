@@ -12,7 +12,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
-	"github.com/kumahq/kuma/v3/pkg/dns"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -44,7 +43,7 @@ func BuildMeshDestinations(
 	realResourceLists ...core_resources.DestinationList,
 ) MeshDestinations {
 	return MeshDestinations{
-		KumaIoServices: buildKumaIoServiceDestinations(availableServices, resources),
+		KumaIoServices: buildKumaIoServiceDestinations(resources),
 		BackendRefs: BuildRealResourceDestinations(
 			util_slices.FlatMap(realResourceLists, core_resources.DestinationList.GetDestinations),
 			systemNamespace,
@@ -101,7 +100,6 @@ func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh,
 }
 
 func buildKumaIoServiceDestinations(
-	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	res xds_context.Resources,
 ) map[string][]envoy_tags.Tags {
 	destForMesh := map[string][]envoy_tags.Tags{}
@@ -113,7 +111,6 @@ func buildKumaIoServiceDestinations(
 	addMeshTCPRouteDestinations(trafficRoutes, meshTCPRoutes, destForMesh)
 	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
-	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
 	return destForMesh
 }
 
@@ -308,26 +305,4 @@ func addTrafficFlowByDefaultDestination(
 	}
 
 	destinations[mesh_proto.MatchAllTag] = matchAllDestinations
-}
-
-func addVirtualOutboundDestinations(
-	virtualOutbounds []*core_mesh.VirtualOutboundResource,
-	availableServices []*mesh_proto.ZoneIngress_AvailableService,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	// If there are no VirtualOutbounds, we are not modifying destinations
-	if len(virtualOutbounds) == 0 {
-		return
-	}
-
-	for _, availableService := range availableServices {
-		for _, matched := range dns.Match(virtualOutbounds, availableService.Tags) {
-			service := availableService.Tags[mesh_proto.ServiceTag]
-			tags := envoy_tags.Tags{}
-			for _, param := range matched.Spec.GetConf().GetParameters() {
-				tags[param.TagKey] = availableService.Tags[param.TagKey]
-			}
-			destinations[service] = append(destinations[service], tags)
-		}
-	}
 }

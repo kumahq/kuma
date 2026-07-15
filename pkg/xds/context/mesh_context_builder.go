@@ -169,16 +169,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	var domains []xds_types.VIPDomains
 	var outbounds []*xds_types.Outbound
-	if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not fetch vips")
-		}
-		// resolve all the domains
-		vipDomains, vipOutbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
-		outbounds = append(outbounds, vipOutbounds...)
-		domains = append(domains, vipDomains...)
-	}
 
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
