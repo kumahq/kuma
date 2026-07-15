@@ -2,7 +2,6 @@ resources:
 - name: es-be7aaa8dde77c2c8
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     loadAssignment:
       clusterName: es-be7aaa8dde77c2c8
       endpoints:
@@ -24,8 +23,6 @@ resources:
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        commonHttpProtocolOptions:
-          idleTimeout: 0s
         explicitHttpConfig:
           httpProtocolOptions: {}
 - name: outbound:127.0.0.1:18081
@@ -41,8 +38,6 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -70,9 +65,7 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: es-be7aaa8dde77c2c8
-                  timeout: 0s
           statPrefix: es
-          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:

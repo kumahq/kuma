@@ -19,10 +19,23 @@ func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
 	)
 }
 
+// Routes configures routes for inbound virtual hosts and keeps the legacy route
+// timeout override of 0s so Envoy request timeouts stay disabled by default.
 func Routes(routes envoy_common.Routes) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		&RoutesConfigurer{
-			Routes: routes,
+			Routes:                routes,
+			ConfigureRouteTimeout: true,
+		})
+}
+
+// OutboundRoutes configures routes for outbound and egress virtual hosts
+// without setting a route timeout so MeshTimeout or Envoy defaults can apply.
+func OutboundRoutes(routes envoy_common.Routes) VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(
+		&RoutesConfigurer{
+			Routes:                routes,
+			ConfigureRouteTimeout: false,
 		})
 }
 

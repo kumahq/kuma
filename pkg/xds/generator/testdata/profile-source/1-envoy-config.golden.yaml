@@ -5,7 +5,6 @@ resources:
     circuitBreakers:
       thresholds:
       - trackRemaining: true
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -47,7 +46,6 @@ resources:
     circuitBreakers:
       thresholds:
       - trackRemaining: true
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -326,7 +324,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db
-          idleTimeout: 0s
           statPrefix: db
     metadata:
       filterMetadata:
@@ -347,7 +344,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: elastic
-          idleTimeout: 0s
           statPrefix: elastic
     metadata:
       filterMetadata:

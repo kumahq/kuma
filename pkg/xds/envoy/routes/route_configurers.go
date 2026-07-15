@@ -317,21 +317,6 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 	})
 }
 
-// RouteActionRequestTimeout sets the total timeout for an upstream request.
-func RouteActionRequestTimeout(timeout time.Duration) RouteConfigurer {
-	if timeout == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route_v3.Route) error {
-		if p := r.GetRoute(); p != nil {
-			p.Timeout = util_proto.Duration(timeout)
-		}
-
-		return nil
-	})
-}
-
 func RouteActionIdleTimeout(timeout time.Duration) RouteConfigurer {
 	return RouteConfigureFunc(func(r *envoy_config_route_v3.Route) error {
 		if p := r.GetRoute(); p != nil {

@@ -65,9 +65,6 @@ type MeshName = string
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
 type RouteMap map[mesh_proto.OutboundInterface]*core_mesh.TrafficRouteResource
 
-// TimeoutMap holds the most specific TimeoutResource for each OutboundInterface
-type TimeoutMap map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource
-
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 

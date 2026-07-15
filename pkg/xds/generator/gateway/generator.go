@@ -23,7 +23,6 @@ import (
 var ConnectionPolicyTypes = []model.ResourceType{
 	core_mesh.FaultInjectionType,
 	core_mesh.HealthCheckType,
-	core_mesh.TimeoutType,
 }
 
 type GatewayHostInfo struct {
