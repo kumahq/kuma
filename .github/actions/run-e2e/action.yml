@@ -96,6 +96,11 @@ runs:
           export KUMA_DEFAULT_TIMEOUT="6s"
         fi
 
+        # investigation-only: test whether serial specs (--procs 1) avoid the init-hang I/O wave
+        if [[ "$GITHUB_HEAD_REF" == "test/e2e-init-hang-diagnostics" ]]; then
+          export GINKGO_OPTS="--procs 1 --github-output --output-interceptor-mode=none"
+        fi
+
         NODE_TELEMETRY_DIR="${GITHUB_WORKSPACE}/build/reports/e2e-debug-node-telemetry"
         mkdir -p "${NODE_TELEMETRY_DIR}"
         ./.github/workflows/scripts/e2e-node-telemetry.sh "${NODE_TELEMETRY_DIR}" &
