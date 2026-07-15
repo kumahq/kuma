@@ -46,7 +46,7 @@ jobs:
 
           runs_ndjson="$(mktemp)"
           if ! gh api --method GET "/repos/${REPO}/actions/workflows/${WORKFLOW}/runs" \
-              -f head_sha="${SHA}" -f status=completed -f event=push \
+              -f head_sha="${SHA}" -f status=completed -f event=push -f per_page=100 --paginate \
               --jq '.workflow_runs[] | {id, conclusion, created_at, html_url}' \
               > "${runs_ndjson}" 2>gate_runs_err.log; then
             echo "::error title=release_sha_gate::gate could not query GitHub Actions for prior runs of ${WORKFLOW} on SHA ${SHA}: $(cat gate_runs_err.log)"
