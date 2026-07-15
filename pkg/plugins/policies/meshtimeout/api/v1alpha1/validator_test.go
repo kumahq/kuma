@@ -75,18 +75,6 @@ to:
     default:
       http:
         requestTimeout: 1s`),
-			Entry("top-level TargetRefKind is MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-        requestTimeout: 1s
-        streamIdleTimeout: 2s
-`),
 			Entry("example MeshExternalService", `
 targetRef:
   kind: Mesh
@@ -322,6 +310,8 @@ from:
       connectionTimeout: 11s`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.from
     message: must not be defined
   - field: spec.to[0].targetRef.kind

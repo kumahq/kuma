@@ -41,7 +41,6 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshGateway,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: false,

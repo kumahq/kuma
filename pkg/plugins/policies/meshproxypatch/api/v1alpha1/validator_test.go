@@ -250,10 +250,9 @@ default:
   - httpFilter:
       operation: Remove
     `),
-			Entry("modifications for MeshGateway", `
+			Entry("modifications for gateway-style patches", `
 targetRef:
-  kind: MeshGateway
-  name: gateway
+  kind: Mesh
 default:
   appendModifications:
   - cluster:
@@ -602,8 +601,7 @@ default:
 			Entry("multiple types in one modification", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGateway
-  name: gateway
+  kind: Mesh
 default:
   appendModifications:
   - cluster:

@@ -1,0 +1,16 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: spec.targetRef.kind
+      message: value 'MeshHTTPRoute' is not supported
+      reason: FieldValueInvalid
+    kind: MeshTimeout
+    name: backend-v3
+  message: 'spec.targetRef.kind: value ''MeshHTTPRoute'' is not supported'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"

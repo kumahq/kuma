@@ -107,23 +107,6 @@ from:
           disabled: true
         tcp:
           disabled: true`),
-			Entry("gateway example and targeting MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: http-route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      local:
-        http:
-          requestRate:
-            num: 100
-            interval: 10s
-        tcp:
-          connectionRate:
-            num: 100
-            interval: 100ms`),
 			Entry("rules example with sni match", `
 targetRef:
   kind: Dataplane
@@ -389,8 +372,33 @@ from:
             interval: 100ms`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.from
     message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
+			}),
+			Entry("top-level MeshHTTPRoute is rejected", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: http-route-1
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported`,
 			}),
 			Entry("spiffeID match with tcp rule", testCase{
 				inputYaml: `

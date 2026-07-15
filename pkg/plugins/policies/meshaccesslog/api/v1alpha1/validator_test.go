@@ -622,7 +622,7 @@ violations:
   - field: spec.from[0].default.backends[0].openTelemetry.attributes[1].key
     message: "%s"`, validators.MustMatchOtelAttributeNameFormat, validators.MustBeStaticOtelAttributeName),
 			}),
-			Entry("MeshGateway and invalid to kind", testCase{
+			Entry("top-level MeshGateway is rejected", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshGateway
@@ -642,6 +642,8 @@ to:
 `,
 				expected: `
 violations:
+- field: spec.targetRef.kind
+  message: value 'MeshGateway' is not supported
 - field: spec.to[0].targetRef.kind
   message: value 'MeshService' is not supported`,
 			}),
