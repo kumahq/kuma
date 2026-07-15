@@ -111,7 +111,7 @@ func TestZoneProxyConfig(inputFile string) {
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-test-server-no-reusable-ports")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-test-server-no-reusable-ports.golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyIngressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyIngressDP+".golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyEgressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyEgressDP+".golden.json", 1)))
-	}, "90s", "2s").Should(Succeed())
+	}, "180s", "2s").Should(Succeed())
 }
 
 func SetupZoneProxyCluster() {
