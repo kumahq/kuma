@@ -3,7 +3,6 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: backend_kuma-system
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -18,7 +17,6 @@ resources:
 - name: db-104dbb63d60dfdfa
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -59,7 +57,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend.kuma-system
-          idleTimeout: 0s
           statPrefix: backend_kuma-system
     metadata:
       filterMetadata:
@@ -80,7 +77,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db-104dbb63d60dfdfa
-          idleTimeout: 0s
           statPrefix: db_kuma-system
     metadata:
       filterMetadata:

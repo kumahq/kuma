@@ -36,7 +36,6 @@ resources:
               - match:
                   prefix: /
                 route:
-                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: backend-bb38a94289f18fb9
@@ -90,7 +89,6 @@ resources:
                     terminal: true
                   - connectionProperties:
                       sourceIp: true
-                  timeout: 0s
           statPrefix: "127_0_0_1_27778"
     name: outbound:127.0.0.1:27778
     trafficDirection: OUTBOUND

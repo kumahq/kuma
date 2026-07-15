@@ -201,7 +201,6 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	resources := meshContext.Resources
 	matchedPolicies := &core_xds.MatchedPolicies{
 		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
-		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
