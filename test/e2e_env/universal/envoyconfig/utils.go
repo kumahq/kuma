@@ -338,12 +338,12 @@ func normalizeClusterAddress(cluster map[string]any) {
 	}
 }
 
-func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
+func cleanupAfterTest(mesh string, dpps []string, reinstallMTP InstallFunc, policies ...core_model.ResourceTypeDescriptor) func() {
 	GinkgoHelper()
 	return func() {
 		GinkgoHelper()
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
-		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
+		Expect(universal.Cluster.Install(reinstallMTP)).To(Succeed())
 		// Wait for the dataplane xDS configs to settle before letting the next
 		// spec start. Without this the next test races envoy convergence: a
 		// resource (e.g. an OpenTelemetry cluster from the previous meshmetric
