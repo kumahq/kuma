@@ -45,7 +45,7 @@ jobs:
           WORKFLOW="build-test-distribute.yaml"
 
           runs_ndjson="$(mktemp)"
-          if ! gh api "/repos/${REPO}/actions/workflows/${WORKFLOW}/runs" \
+          if ! gh api --method GET "/repos/${REPO}/actions/workflows/${WORKFLOW}/runs" \
               -f head_sha="${SHA}" -f status=completed -f event=push \
               --jq '.workflow_runs[] | {id, conclusion, created_at, html_url}' \
               > "${runs_ndjson}" 2>gate_runs_err.log; then
@@ -72,7 +72,7 @@ jobs:
           run_url="$(jq -r '.html_url' <<<"${selected_run}")"
 
           jobs_ndjson="$(mktemp)"
-          if ! gh api "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
+          if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
               --jq '.jobs[] | {name, conclusion}' \
               > "${jobs_ndjson}" 2>gate_jobs_err.log; then
             echo "::error title=release_sha_gate::gate could not query GitHub Actions for jobs of run ${run_url}: $(cat gate_jobs_err.log)"
