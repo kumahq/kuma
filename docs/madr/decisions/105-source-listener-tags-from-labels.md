@@ -6,80 +6,80 @@ Technical Story: https://github.com/kumahq/kuma/issues/17381
 
 ## Context and Problem Statement
 
-`MeshProxyPatch` lets users select a generated Envoy listener and patch it. A listener can be selected by `origin`, by `name`, or by `tags`/`listenerTags` — the last of which matches against a key/value bag Kuma stamps onto every listener as Envoy filter metadata under `io.kuma.tags`.
+`MeshProxyPatch` lets users pick a generated Envoy listener and patch it. You can pick a listener by `origin`, by `name`, or by `tags`/`listenerTags`. The last one matches against a set of key/value pairs that Kuma puts on every listener as Envoy filter metadata, under the key `io.kuma.tags`.
 
-That bag has always been filled from `Dataplane` **tags**. Kuma is moving identity out of tags and into **labels**, and the listener metadata never followed. The result is that tag-based listener matching silently stops working — the policy still applies, still validates, and matches nothing.
+Those pairs have always come from `Dataplane` tags. Kuma is now moving identity out of tags and into labels, but the listener metadata still reads tags. So tag matching quietly stops working. The policy is accepted, it validates, and it matches nothing.
 
 ### Three cases
 
-The same listener-tag mechanism behaves differently in three configurations. Only the first works today.
+The same mechanism behaves differently in three setups. Only the first one works today.
 
-| Case                              | Inbound listener tags                               | Outbound listener tags                                             |
-|:----------------------------------|:----------------------------------------------------|:-------------------------------------------------------------------|
-| **1. `kuma.io/service`** (legacy) | from the proxy's own `Dataplane` inbounds — works   | from the consuming `Dataplane`'s outbounds — works                 |
-| **2. `MeshService` enabled**      | unchanged — still works                             | **empty** — outbounds became resource references and carry no tags |
-| **3. `InboundTagsDisabled`**      | **empty** — inbound tags are stripped at the source | unchanged by this flag                                             |
+| Case                              | Inbound listener tags                    | Outbound listener tags                               |
+|:----------------------------------|:-----------------------------------------|:-----------------------------------------------------|
+| **1. `kuma.io/service`** (legacy) | come from the proxy's own `Dataplane`    | come from the consuming `Dataplane`. Works           |
+| **2. `MeshService` enabled**      | still work                               | empty, because outbounds are now resource references |
+| **3. `InboundTagsDisabled`**      | empty, because inbound tags are stripped | not affected by this flag                            |
 
-Cases 2 and 3 are independent switches, but they are the same migration and are commonly enabled together. Enabling both leaves a proxy with no usable tag-based listener selector in either direction.
+Cases 2 and 3 are separate switches, but they belong to the same migration and people usually turn them on together. With both on, a proxy has no working tag selector in either direction.
 
-**Case 1 — `kuma.io/service`.** The destination's identity is a string, relayed from proxy to proxy. Its journey is: the destination `Dataplane`'s inbound `kuma.io/service` tag, into the VIP view, into the *consuming* `Dataplane`'s outbound tags, and finally onto the outbound listener. Two things about it matter. The tags describe the destination but live on the consumer. And in the generated path — all of Kubernetes, every transparent-proxy deployment — the bag holds exactly **one** key, `kuma.io/service`, because the control plane hard-codes it. Multi-tag outbounds (`version`, `region`) only ever existed in hand-written Universal `Dataplane`s.
+**Case 1, `kuma.io/service`.** The destination is identified by a string that gets passed along from proxy to proxy. It starts as the `kuma.io/service` tag on the destination's inbound, goes into the VIP view, then into the consuming `Dataplane`'s outbound tags, and ends up on the outbound listener. Two things are worth knowing. The tags describe the destination but live on the consumer. And in the generated path, which covers all of Kubernetes and every transparent-proxy setup, there is only one key in there: `kuma.io/service`, because the control plane hard-codes it. Outbounds with several tags (`version`, `region`) only ever existed in hand-written Universal `Dataplane`s.
 
-**Case 2 — `MeshService`.** The destination stops being a relayed string and becomes a real resource, referenced by KRI. The outbound tag bag has nowhere to come from, so it is empty. Critically, `kuma.io/service` is not merely absent from the listener — it is **removed from the model**. The consumer's outbound tags are gone, the VIP relay no longer feeds outbounds, and the destination's inbounds do not carry the tag either. There is no value anywhere to fetch, so no design can keep `listenerTags: {kuma.io/service: backend}` working. Those policies must be rewritten; the only question is what they are rewritten *to*.
+**Case 2, `MeshService`.** The destination becomes a real resource, referenced by KRI, so there is no tag set to copy and the listener ends up with an empty one. `kuma.io/service` is gone from the model entirely at this point. The consumer's outbound tags are gone, the VIP path no longer feeds outbounds, and the destination's inbounds don't carry the tag either. There is no value left to read anywhere, so we cannot keep `listenerTags: {kuma.io/service: backend}` working no matter what we do. Those policies have to be rewritten. The only open question is what we give people to rewrite them to.
 
-**Case 3 — `InboundTagsDisabled`.** Inbound tags are emptied at the source, so inbound listeners hit the identical wall from the other direction. The important detail is that the underlying data was never lost: on Kubernetes, Pod labels are copied onto the `Dataplane`'s **metadata labels** unconditionally, flag or no flag. The flag does not remove information — it removes the *duplicate copy* held in tags, forcing everything onto labels.
+**Case 3, `InboundTagsDisabled`.** Inbound tags are emptied at the source, so inbound listeners hit the same wall from the other side. The data itself is still around: on Kubernetes, Pod labels are copied onto the `Dataplane`'s metadata labels whether the flag is set or not. The flag only drops the second copy that lived in tags, so everything has to read labels instead.
 
-Cases 2 and 3 are not regressions Kuma stumbled into. They are a deliberate migration that most of the codebase has already made — identity now reads from labels, and listener tags are the last channel still sourced from tags. The substitution elsewhere is real but partial, and listener metadata is one of the places that was missed. It is the one that breaks a user-facing policy API.
+Cases 2 and 3 are both part of a deliberate migration that most of the codebase has already gone through. Identity is read from labels now, and listener tags are the last place still reading tags. The rest of the migration was done case by case, and listener metadata was one of the spots that got skipped. It also happens to be the one that breaks a user-facing policy API.
 
 ### Use cases
 
-* **UC1 — Migration.** A `MeshProxyPatch` matching `listenerTags: {kuma.io/service: backend}` silently stops applying once `MeshService` is on, and the user needs an authorable selector to move to.
-* **UC2 — Target one destination.** Patch the outbound listener to `MeshService` `backend` in namespace `kuma-demo`, without knowing its VIP and without enabling unified resource naming.
-* **UC3 — Target a group.** Patch every outbound listener to any destination labelled `team: payments`, or every destination in zone `east`.
-* **UC4 — Target an inbound.** Patch a proxy's own inbound listener when `InboundTagsDisabled` has emptied its tags.
-* **UC5 — Parity.** The same mechanism should work for `MeshService`, `MeshMultiZoneService`, and `MeshExternalService`, which share one outbound code path.
+* UC1, migration: a `MeshProxyPatch` that matches `listenerTags: {kuma.io/service: backend}` stops applying once `MeshService` is on, and the user needs something else to match on.
+* UC2, one destination: patch the outbound listener to `MeshService` `backend` in namespace `kuma-demo`, without knowing its VIP and without turning on unified resource naming.
+* UC3, a group: patch every outbound listener to any destination labelled `team: payments`, or every destination in zone `east`.
+* UC4, an inbound: patch a proxy's own inbound listener when `InboundTagsDisabled` has emptied its tags.
+* UC5, parity: the same thing should work for `MeshService`, `MeshMultiZoneService` and `MeshExternalService`, which share one outbound code path.
 
 ## Design
 
-Whatever we choose has to answer one question: when a listener's tags are gone, what identifies the thing that listener represents? An outbound listener represents **the destination service** — the `Mesh*Service` resource it was generated from — and an inbound listener represents **the proxy itself**. In both cases the identity of that thing now lives in labels.
+Every option has to answer the same question: when a listener has no tags, what identifies the thing it stands for? An outbound listener stands for the destination service, which is the `Mesh*Service` resource it was generated from. An inbound listener stands for the proxy itself. For both of those, identity lives in labels now.
 
-Note what an outbound listener does *not* represent: the individual workloads behind the destination. Those are its endpoints, they are selected by the service rather than named by the listener, and their per-instance labels already travel separately under `io.kuma.labels` on the endpoints themselves. So the labels of the destination's `Dataplane`s are the wrong source here, even though they are the right source on the endpoint path.
+An outbound listener does not stand for the individual workloads behind the destination. Those are its endpoints. They are picked by the service, and their own labels already go to Envoy separately, on the endpoints, under `io.kuma.labels`. So for the listener we want the service's labels, even though the `Dataplane` labels are the right choice on the endpoint path.
 
-### Option 1: Do nothing — require unified resource naming and `match.name`
+### Option 1: Do nothing, require unified resource naming and `match.name`
 
-* Good, because it needs no code change, and a KRI-based name is exact and distinguishes individual ports.
-* Bad, because it does not address UC1 — the regression stays silent and users find it in production.
-* Bad, because without unified naming a listener is named `outbound:<address>:<port>`, where the address is a dynamically-allocated VIP: not knowable ahead of time, not stable across restarts, so the policy cannot be authored at all.
-* Bad, because making the name stable means enabling unified naming mesh-wide (`meshServices: Exclusive` plus a DP feature flag) — a heavy price for "I want to patch one listener".
-* Bad, because a name matches one listener, so UC3 needs one policy per destination, regenerated whenever the set changes.
-* Bad, because it does nothing for UC4 — `InboundTagsDisabled` has no naming escape hatch.
-* Bad, because it leaves an empty `io.kuma.tags` on every affected listener, which reads as "no tags here" rather than "tags do not apply here".
+* Good, because it needs no code change, and a KRI-based name is exact and can tell individual ports apart.
+* Bad, because UC1 stays broken and silent, so users find out in production.
+* Bad, because without unified naming the listener is called `outbound:<address>:<port>`, and that address is a VIP we allocate at runtime. You cannot know it up front and it changes across restarts, so there is no way to write the policy.
+* Bad, because getting a stable name means turning on unified naming across the whole mesh (`meshServices: Exclusive` plus a DP feature flag). That is a lot to ask of someone who wants to patch one listener.
+* Bad, because a name matches a single listener, so UC3 needs one policy per destination and has to be regenerated whenever the set changes.
+* Bad, because it does nothing for UC4. `InboundTagsDisabled` has no naming escape hatch.
+* Bad, because every affected listener keeps an empty `io.kuma.tags`, which looks like a listener with no tags.
 
-### Option 2: Synthesize a `kuma.io/service` tag
+### Option 2: Build a `kuma.io/service` tag
 
-Rebuild a `kuma.io/service` value from the destination resource and keep writing it, so existing policies appear to work.
+Rebuild a `kuma.io/service` value from the destination resource and keep writing it, so old policies look like they still work.
 
-* Good, because it is a small change and needs no policy rewrites — at first glance.
-* Bad, because `kuma.io/service` is a removed concept, not a missing value; reviving it on the listener contradicts the direction `MeshService` exists to take.
-* Bad, because the synthesized value would not match anyway — the legacy resolver produces `<mesh>_<name>_<namespace>_<zone>_<shortName>_<port>`, while the user's policy says `backend`.
-* Bad, because that makes it *worse* than doing nothing: the key exists again, so `kuma.io/service: '*'` starts matching while `kuma.io/service: backend` still does not. The compatibility is an illusion that fails at runtime instead of at review time.
+* Good, because it is a small change and nobody has to rewrite a policy, at least at first glance.
+* Bad, because `kuma.io/service` has been deliberately removed, and bringing it back on the listener works against the whole point of `MeshService`.
+* Bad, because the value would not match anyway. The legacy resolver gives us `<mesh>_<name>_<namespace>_<zone>_<shortName>_<port>`, and the policy says `backend`.
+* Bad, because that leaves us worse off than doing nothing. The key is back, so `kuma.io/service: '*'` starts matching while `kuma.io/service: backend` still doesn't. Users find out at runtime instead of at review time.
 
 ### Option 3: A separate `io.kuma.labels` key on listeners, with new match fields
 
 Write labels under a new listener key and add `listenerLabels`/`labels` to the `MeshProxyPatch` API.
 
-* Good, because it is semantically tidy — labels and tags stay distinct.
-* Bad, because it is a public API change across three match types, plus regenerated CRDs and OpenAPI.
-* Bad, because this fix has to be backported, and shipping new API fields and CRD schemas in a patch release is not something we want to do.
-* Bad, because users must then know which selector applies to which listener, and the answer depends on whether the destination is legacy or a real resource — leaking an internal distinction into the API.
-* Bad, because the matcher, the semantics, and the outcome are identical to Option 4; only the key name differs. It buys tidiness and charges an API migration for it.
+* Good, because it keeps labels and tags cleanly apart.
+* Bad, because it changes a public API across three match types, and means regenerating CRDs and OpenAPI.
+* Bad, because users then have to know which of the two selectors applies to a given listener, and the answer depends on whether the destination is legacy or a real resource. That is an internal detail they should not have to care about.
+* Bad, because the matcher and the behaviour come out the same as Option 4, and only the key name differs. We would be paying for an API migration to get tidier naming.
+* Bad, because we have to backport this fix, and we don't want to ship new API fields and CRD schemas in a patch release.
 
 ### Option 4 (chosen): Fill `io.kuma.tags` from labels when tags are gone
 
-Keep one key and one selector. When a listener's tags are unavailable, source them from the labels of whatever the listener represents — the destination resource for an outbound, the proxy's own `Dataplane` for an inbound. `kuma.io/mesh` is stripped, as the outbound path already does today.
+Keep one key and one selector. When a listener has no tags, take them from the labels of whatever the listener stands for: the destination resource for an outbound, the proxy's own `Dataplane` for an inbound. Strip `kuma.io/mesh`, which the outbound path already does today.
 
-This is not a new mechanism; it applies the substitution Kuma has already made everywhere else to the last component that missed it.
+This reuses the substitution Kuma has already applied elsewhere and brings the last component in line with it.
 
-A policy that used to say `kuma.io/service: backend` is rewritten as:
+A policy that used to say `kuma.io/service: backend` becomes:
 
 ```yaml
 match:
@@ -89,7 +89,7 @@ match:
     k8s.kuma.io/namespace: kuma-demo
 ```
 
-and UC3, which no name-based selector can express at all, becomes:
+And UC3, which no name-based selector can do at all, becomes:
 
 ```yaml
 match:
@@ -98,91 +98,91 @@ match:
     team: payments
 ```
 
-* Good, because there is no API change — the selector users already know simply starts working again, which also makes it safe to backport as a patch.
-* Good, because it works without unified resource naming, which is the point of the issue.
-* Good, because it is provably additive: the affected listeners have empty tags today, so no currently-matching policy can stop matching. It can only turn non-matches into matches.
-* Good, because labels are a richer selector than the single `kuma.io/service` string ever was — zone, origin, env, and user labels become matchable, which is what makes UC3 possible.
-* Good, because one rule covers both directions, closing UC4 with the same reasoning rather than a second mechanism.
-* Bad, because the key is named `tags` but carries labels. A real wart — mitigated by the fact that `io.kuma.tags` is not a user-facing "Dataplane tags" surface but Kuma's private listener selector bag, written in one place and read only by our own policy matching.
-* Bad, because **labels are per-resource while listeners are per-port**, so the two listeners of a two-port `MeshService` get identical tags and cannot be told apart by `listenerTags` alone. Narrowing to one port still needs `match.name` under unified naming. This MADR does not close that gap.
+* Good, because there is no API change. The selector people already use starts working again, and it is safe to ship as a patch.
+* Good, because it works without unified resource naming, which is what the issue asks for.
+* Good, because it can only add matches. The affected listeners have empty tags today, so nothing that matches now can stop matching.
+* Good, because labels give you more to match on than the single `kuma.io/service` string ever did. Zone, origin, env and user labels all become usable, which is what makes UC3 possible.
+* Good, because one rule handles both directions, so UC4 falls out of the same change.
+* Bad, because the key is called `tags` and now holds labels. That is confusing, though `io.kuma.tags` was never a user-facing "Dataplane tags" surface. It is our own listener selector bag, written in one place and read only by our policy matching.
+* Bad, because labels belong to a resource while listeners belong to a port. The two listeners of a two-port `MeshService` get identical tags and `listenerTags` cannot tell them apart. You still need `match.name` with unified naming for that, and this MADR does not fix it.
 
-#### Why not gate this behind a flag
+#### Why we don't gate this behind a flag
 
-`MeshServiceLabelPropagation` is gated because it writes to a stored, user-visible, KDS-synced resource. Listener metadata is generated, ephemeral, and read only by Kuma's own matcher. Combined with the additive-by-construction argument above, a flag would have no legitimate `false` value. User labels remain gated *upstream* by `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED`, which decides whether a `MeshService` carries user labels at all; we do not add a second gate.
+`MeshServiceLabelPropagation` is gated because it writes to a stored resource that users can see and that KDS syncs around. Listener metadata is generated, short-lived, and only our own matcher reads it. Since the change can only add matches, a flag set to `false` would have no real use. User labels are already gated further up by `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED`, which decides whether a `MeshService` carries user labels at all, and we don't need a second switch for that.
 
 #### How this design evolved
 
-The first draft tried to preserve `listenerTags: {kuma.io/service: backend}` verbatim by synthesizing the tag. Tracing the provenance killed it: `kuma.io/service` is not mislaid but deleted, along with every link that fed it. Once it was clear no design could keep those policies untouched, the goal changed from "preserve the selector" to "provide the best selector to migrate to".
+The first draft tried to keep `listenerTags: {kuma.io/service: backend}` working by rebuilding the tag. Following where the tag actually came from ruled that out, because `kuma.io/service` has been deleted along with everything that fed it. Once we accepted that no design keeps those policies untouched, the question changed from "how do we save the selector" to "what do we give people instead".
 
-The second draft proposed a `kuma.io/kri` tag carrying the full KRI, to solve per-port targeting. Dropped: it duplicated the listener name under unified naming, and a KRI names one resource, so it did nothing for group targeting.
+The second draft added a `kuma.io/kri` tag with the full KRI, to solve per-port targeting. We dropped it. It repeated the listener name under unified naming, and a KRI points at one resource, so it did nothing for group targeting.
 
-The third draft scoped the decision to outbound only, treating the `InboundTagsDisabled` gap as unrelated. Investigating case 3 showed it is the same defect reached by a different switch, with the same fix. Scoping to one direction would have meant deciding the same question twice.
+The third draft only covered outbound and treated the `InboundTagsDisabled` gap as a separate problem. Looking into case 3 showed it is the same bug reached through a different switch, with the same fix, so covering one direction would have meant answering the same question twice.
 
 ## Security implications and review
 
-Low. The propagated data is metadata the proxy's owner can already read — the outbound exists precisely because the destination is reachable, and its VIP and port are already in the config dump.
+Low. The data we propagate is metadata the proxy's owner can already see. The outbound exists because the destination is reachable, and its VIP and port are already in the config dump.
 
-* Listener metadata is visible in `/config_dump`, so any user label propagated onto a `MeshService` is visible to anyone who can reach the Envoy admin API. This is already true of endpoint labels, and the existing `AllowedLabelKeys` allowlist is the control point for operators who care.
-* A user could set a label such as `kuma.io/display-name` and shadow a control-plane-computed tag, so reserved `kuma.io/`-prefixed tags must be written last and win over user labels. Reserved-key rejection already exists in the label-propagation config, so this is consistent with what we do elsewhere.
+* Listener metadata shows up in `/config_dump`, so any user label on a `MeshService` is visible to anyone who can reach the Envoy admin API. That is already true for endpoint labels, and operators who care can use the existing `AllowedLabelKeys` allowlist.
+* Someone could set a label like `kuma.io/display-name` and shadow a tag the control plane computes, so reserved `kuma.io/` tags have to be written last and win over user labels. We already reject reserved keys in the label-propagation config, so this matches what we do elsewhere.
 
 ## Reliability implications
 
-* **No existing match can break.** The affected listeners have empty `io.kuma.tags` today, so every non-empty selector already fails against them. Adding tags is strictly monotonic.
-* **New matches are possible, and that is intended** — but it is a behaviour change and needs a changelog entry. A policy matching `listenerTags: {kuma.io/zone: east}` with no `origin` constraint will start matching listeners it previously missed. The blast radius is policies that match `kuma.io/`-prefixed keys, do not constrain `origin`, and run on an affected proxy.
-* **No effect on traffic.** `io.kuma.tags` is listener-only and read by nothing but Kuma's matcher. Clusters and endpoints use separate keys, untouched here, so there is no path to load-balancing, mTLS, or endpoint selection.
-* **KDS-synced resources.** Labels are not recomputed for non-locally-originated resources, so a `MeshService` synced global-to-zone keeps the labels it arrived with. Tags derived at generation time must tolerate labels computed by another control plane — notably a `MeshMultiZoneService` has no `kuma.io/zone` label, so that key is absent rather than empty.
-* **Config churn.** Listener metadata now changes when labels change, triggering an xDS update for every proxy with an outbound to that destination. Labels change rarely and the listener is already regenerated on any `MeshService` change, so the delta is bounded.
-* **Golden files.** Every affected listener golden file gains an `io.kuma.tags` block — a large mechanical diff worth reviewing for unintended label leakage rather than rubber-stamping.
+* Nothing that matches today can break, because the affected listeners have empty `io.kuma.tags` and every non-empty selector already fails against them.
+* New matches will happen, which is the point, but it is still a behaviour change and needs a changelog entry. A policy matching `listenerTags: {kuma.io/zone: east}` with no `origin` set will start matching listeners it used to miss. This only affects policies that match `kuma.io/` keys, leave `origin` unset, and run on an affected proxy.
+* Traffic is unaffected. `io.kuma.tags` only exists on listeners and only our matcher reads it. Clusters and endpoints use other keys that we don't touch, so there is no path from here to load balancing, mTLS or endpoint selection.
+* Labels are not recomputed for resources that came from elsewhere, so a `MeshService` synced from global keeps the labels it arrived with. Tags built at generation time have to cope with labels computed by another control plane. A `MeshMultiZoneService`, for instance, has no `kuma.io/zone` label at all, so that key just won't be there.
+* Listener metadata now changes when labels change, so editing a label triggers an xDS update for every proxy with an outbound to that destination. Labels rarely change and we already regenerate the listener on any `MeshService` change, so this is small.
+* Every affected golden file gains an `io.kuma.tags` block. It is a big mechanical diff, and it is worth actually reading it to catch labels we didn't mean to expose.
 
 ## Backport
 
-This is a silent regression in shipped releases, so the fix is backported to **release-2.13** and **release-2.14**. That is a constraint on the design, not an afterthought: it is the main reason Option 4 wins over Option 3. Option 4 changes only how generated metadata is filled, so there is no API surface, no CRD schema, and no stored-resource change to ship in a patch — and because it is additive by construction, it cannot break a policy that matches today.
+This is a silent regression in released versions, so we backport the fix to release-2.13 and release-2.14. That shapes the design, and it is the main reason we pick Option 4 over Option 3. Option 4 only changes how we fill generated metadata, so there is no API, no CRD schema and no stored resource to change in a patch. And since it can only add matches, it can't break a policy that works today.
 
-The two halves of the decision do not backport equally, because the features they react to landed at different times:
+The two halves don't backport the same way, because the features they react to landed at different times:
 
-* **Outbound half — backports to 2.13 and 2.14.** Everything it needs (`Outbound.TagsOrNil`, `DestinationService`, `GetServiceByKRI`) exists on both.
-* **Inbound half — 2.14 and master only.** `InboundTagsDisabled` does not exist on 2.13, so inbound tags are always populated there and there is nothing to fix.
-* **Group targeting by user label (UC3) — 2.14 and master only.** `MeshServiceLabelPropagation` does not exist on 2.13, so a `MeshService` there carries only control-plane-computed labels. Targeting by `kuma.io/display-name`, `kuma.io/zone`, or any other computed label works on 2.13; targeting by `team: payments` does not.
+* The outbound half goes to 2.13 and 2.14. Everything it needs (`Outbound.TagsOrNil`, `DestinationService`, `GetServiceByKRI`) is on both.
+* The inbound half only goes to 2.14 and master. `InboundTagsDisabled` doesn't exist on 2.13, so inbound tags are always populated there and there is nothing to fix.
+* Group targeting by user label (UC3) also only works from 2.14. `MeshServiceLabelPropagation` doesn't exist on 2.13, so a `MeshService` there only has labels the control plane computed. `kuma.io/display-name` and `kuma.io/zone` work on 2.13; `team: payments` does not.
 
-One mechanical note for whoever cherry-picks: label computation moved packages between 2.13 and 2.14 (`core_model.ComputeLabels` in `pkg/core/resources/model/resource.go`, versus `pkg/core/resources/labels`), so the 2.13 pick will conflict. The computed label *set* is equivalent, so the conflict is import paths and call shape, not behaviour.
+One practical note for whoever does the cherry-pick: label computation moved packages between 2.13 and 2.14, from `core_model.ComputeLabels` in `pkg/core/resources/model/resource.go` to `pkg/core/resources/labels`. The 2.13 pick will conflict there. The computed labels themselves are the same, so it is import paths and call shape to fix up, and the behaviour stays put.
 
-Because the tag bag a listener carries depends on the version's label set, a policy written against 2.14 labels is not guaranteed to match on 2.13. That is inherent to backporting a fix whose payload is "whatever labels this version computes", and is worth stating in the release notes rather than discovering per-cluster.
+Because the tags a listener carries depend on which labels that version computes, a policy written for 2.14 may not match on 2.13. That comes with backporting a fix whose payload is "whatever labels this version has", and it belongs in the release notes so people don't hit it cluster by cluster.
 
 ## Implications for Kong Mesh
 
-The downstream project ships policies that patch listeners by tag and inherits both the fix and the mandatory `kuma.io/service` rewrite. Its `MeshProxyPatch`-equivalent policies and bundled defaults need an audit before this ships — they are already silently broken wherever `MeshService` or `InboundTagsDisabled` is enabled. No API or CRD change is required there, since none is required here, and this decision adds no computed label, so the mirrored label registry stays in sync untouched.
+The downstream project ships policies that patch listeners by tag, so it gets both the fix and the forced `kuma.io/service` rewrite. Its `MeshProxyPatch`-equivalent policies and any bundled defaults need a look before this ships, since they are already quietly broken anywhere `MeshService` or `InboundTagsDisabled` is on. Nothing there needs an API or CRD change, because nothing here does, and we add no computed label, so the mirrored label registry stays as it is.
 
 ## Decision
 
-Listener `io.kuma.tags` is sourced from labels wherever tags no longer exist.
+Listener `io.kuma.tags` is filled from labels wherever tags no longer exist.
 
-1. **Outbound listeners backed by a real resource** take the labels of the **destination `Mesh*Service` resource itself** — the `MeshService`, `MeshMultiZoneService`, or `MeshExternalService` the listener was generated from. Not the labels of the `Dataplane`s backing it: the listener represents the service, not its instances, and per-instance labels already reach Envoy separately on the endpoints under `io.kuma.labels`.
-2. **Inbound listeners whose tags have been emptied** by `InboundTagsDisabled` take the **proxy's own `Dataplane` labels**.
+1. Outbound listeners backed by a real resource take the labels of the destination `Mesh*Service` resource itself, meaning the `MeshService`, `MeshMultiZoneService` or `MeshExternalService` the listener was generated from. We do not use the labels of the `Dataplane`s behind it, because the listener stands for the service. Per-workload labels already reach Envoy on the endpoints, under `io.kuma.labels`.
+2. Inbound listeners whose tags have been emptied by `InboundTagsDisabled` take the labels of the proxy's own `Dataplane`.
 
-Point 2 is worth stating positively, because the flag's name invites the opposite reading: disabling *inbound tags* must not mean disabling *listener tags*. The flag governs what goes on the `Dataplane`'s inbounds, not what the listener advertises about itself. An inbound listener keeps carrying a populated `io.kuma.tags` either way — sourced from tags when they exist, from the `Dataplane`'s labels when they do not. It is never left empty.
+Point 2 needs saying out loud, because the flag's name suggests the opposite. Turning off inbound tags should not turn off listener tags. The flag decides what goes on the `Dataplane`'s inbounds, and the listener still has to say what it is. An inbound listener always carries a filled `io.kuma.tags`: from tags when they exist, from the `Dataplane`'s labels when they don't. We never leave it empty.
 
-In both cases `kuma.io/mesh` is stripped, matching what the outbound path already does. Reserved `kuma.io/`-prefixed tags are computed by the control plane and take precedence over user labels. Legacy paths — a `Dataplane` with real outbound tags, or inbounds with tags enabled — keep their current behaviour untouched.
+Both cases strip `kuma.io/mesh`, which is what the outbound path already does. Reserved `kuma.io/` tags come from the control plane and win over user labels. Legacy paths keep working as they do today, meaning a `Dataplane` with real outbound tags, or inbounds with tags enabled.
 
-No `MeshProxyPatch` API change is made — the fix is entirely in how the listener metadata is filled. The change is unconditional and not gated by a new flag.
+There is no `MeshProxyPatch` API change. The fix is entirely in how we fill the listener metadata. It is unconditional and has no new flag.
 
-Policies matching `kuma.io/service: <name>` must be rewritten against labels, typically `kuma.io/display-name: <name>` plus `k8s.kuma.io/namespace: <ns>`. This is unavoidable rather than a choice we are making: `kuma.io/service` does not exist once `MeshService` is in use. We do not synthesize a replacement, because every candidate value is a guess that fails at runtime instead of at review time.
+Policies matching `kuma.io/service: <name>` have to be rewritten against labels, usually `kuma.io/display-name: <name>` plus `k8s.kuma.io/namespace: <ns>`. We are not choosing to break them: `kuma.io/service` simply doesn't exist once `MeshService` is in use. We don't invent a replacement value, because any value we make up is a guess, and users would find out at runtime.
 
 ## Notes
 
-* Open topic: per-port targeting. Labels are per-resource and listeners are per-port, so the listeners of a multi-port destination are indistinguishable by `listenerTags`; only `match.name` under unified naming separates them today. Left open rather than guessed at.
-* Open topic: whether the empty `io.kuma.tags: {}` written for tagless listeners should become an omitted key. A latent readability wart, but changing it churns golden files repo-wide and is not needed here.
-* Follow-up: `MeshProxyPatch` cannot warn when a selector matches nothing, which is why this shipped as a silent regression in the first place. A validation or inspect-time "this policy matched zero resources" signal would have caught it at apply time. `origin` is likewise an unvalidated free-form string, so a typo also silently matches nothing.
-* Follow-up: endpoint `Locality` still reads tags only, with no label fallback, so zone-based locality is silently lost under `InboundTagsDisabled`. Same disease, different component, out of scope here.
-* Follow-up: `ServiceInsight`s are dropped entirely for tagless dataplanes rather than falling back to labels.
-* `MeshGateway` listeners carry no `io.kuma.tags` at all, so `listenerTags` can never match one. Unchanged by this decision, but worth documenting.
+* Open topic: per-port targeting. Labels belong to a resource and listeners belong to a port, so the listeners of a multi-port destination look identical to `listenerTags`. Only `match.name` with unified naming separates them today. We are leaving this open instead of guessing at an API for it.
+* Open topic: whether the empty `io.kuma.tags: {}` we write for listeners with no tags should just be left out. It reads badly, but changing it churns golden files across the repo and this fix doesn't need it.
+* Follow-up: `MeshProxyPatch` can't warn when a selector matches nothing, which is why this shipped quietly in the first place. A validation or inspect-time signal for "this policy matched zero resources" would have caught it at apply time. `origin` has the same problem: it is a free-form string with no enum, so a typo also matches nothing.
+* Follow-up: endpoint `Locality` still reads tags only, with no label fallback, so zone-based locality is silently lost under `InboundTagsDisabled`. Same bug, different component, out of scope here.
+* Follow-up: `ServiceInsight`s are dropped for dataplanes with no tags instead of falling back to labels.
+* `MeshGateway` listeners have no `io.kuma.tags` at all, so `listenerTags` can never match one. This decision doesn't change that, but it is worth writing down.
 
 ## Deep dive
 
-Everything below is supporting detail for the narrative above. It is the evidence, not the decision.
+Everything below is the supporting detail for the sections above.
 
 ### The `io.kuma.tags` channel
 
-`TagsKey = "io.kuma.tags"` is defined at `pkg/xds/envoy/metadata/v3/metadata.go:99`. It has exactly **one writer** — `TagsMetadataConfigurer` (`pkg/xds/envoy/listeners/v3/tags_metadata.go:15-27`):
+`TagsKey = "io.kuma.tags"` is defined at `pkg/xds/envoy/metadata/v3/metadata.go:99`. One thing writes it, `TagsMetadataConfigurer` (`pkg/xds/envoy/listeners/v3/tags_metadata.go:15-27`):
 
 ```go
 l.Metadata.FilterMetadata[envoy_metadata.TagsKey] = &structpb.Struct{
@@ -190,7 +190,7 @@ l.Metadata.FilterMetadata[envoy_metadata.TagsKey] = &structpb.Struct{
 }
 ```
 
-It is read only by `MeshProxyPatch`'s matching code — `listener_mod.go:86`, `network_filter_mod.go:136`, and `http_filter_mod.go:159` — each doing:
+Only `MeshProxyPatch` reads it, at `listener_mod.go:86`, `network_filter_mod.go:136` and `http_filter_mod.go:159`. Each one does:
 
 ```go
 listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
@@ -199,19 +199,19 @@ if !mesh_proto.TagSelector(pointer.Deref(l.Match.Tags)).Matches(listenerTags) {
 }
 ```
 
-`TagSelector.Matches` (`api/mesh/v1alpha1/dataplane_helpers.go:465-479`) is an AND of exact key/value pairs with `*` as a match-any-value wildcard; an **absent** key fails the match.
+`TagSelector.Matches` (`api/mesh/v1alpha1/dataplane_helpers.go:465-479`) ANDs exact key/value pairs, with `*` matching any value. If a key is missing, the match fails.
 
-The configurer has **no empty guard** — unlike `EndpointMetadata`, which returns `nil` for empty tags, it writes the key unconditionally. Empty tags therefore produce `io.kuma.tags: {}` (an empty struct), not an absent key. That is why the failure is silent: the bag exists and is empty, so every non-empty selector fails on its first lookup.
+The configurer has no empty guard. `EndpointMetadata` returns `nil` for empty tags, but this one always writes the key. Empty tags therefore give you `io.kuma.tags: {}`, an empty struct rather than a missing key. That is why the failure is quiet: the bag is there and it is empty, so every non-empty selector fails on its first lookup.
 
-Blast radius is bounded: clusters never carry `io.kuma.tags` (`ClusterMatch` has only `origin` and `name`), and endpoint/LB selection uses `envoy.lb`, `io.kuma.labels`, and transport-socket matches — all written by `EndpointMetadata`, untouched by this decision.
+The scope of any change here is small. Clusters never carry `io.kuma.tags` (`ClusterMatch` only has `origin` and `name`), and endpoint and LB selection use `envoy.lb`, `io.kuma.labels` and transport-socket matches, all written by `EndpointMetadata`, which this decision leaves alone.
 
-Only five call sites stamp listener tags: `inbound_proxy_generator.go:96`, `meshtls/plugin.go:376` (inbound), `outbound_proxy_generator.go:120` (legacy outbound), and `meshtcproute/listeners.go:52` / `meshhttproute/listeners.go:78` (route-plugin outbound). There is no `TagsMetadata` call under `pkg/xds/generator/gateway/`.
+Five call sites stamp listener tags: `inbound_proxy_generator.go:96` and `meshtls/plugin.go:376` for inbound, `outbound_proxy_generator.go:120` for legacy outbound, and `meshtcproute/listeners.go:52` and `meshhttproute/listeners.go:78` for route-plugin outbound. There is no `TagsMetadata` call under `pkg/xds/generator/gateway/`.
 
-### Case 1 — provenance of `kuma.io/service` outbound tags
+### Case 1, where `kuma.io/service` outbound tags come from
 
-The chain, end to end:
+The path, end to end:
 
-**destination `Dataplane` inbound `kuma.io/service` tag → VIP outbound entry `TagSet` → consumer `Dataplane`'s `networking.outbound[].tags` → listener `io.kuma.tags`**
+destination `Dataplane` inbound `kuma.io/service` tag, then VIP outbound entry `TagSet`, then consumer `Dataplane`'s `networking.outbound[].tags`, then listener `io.kuma.tags`.
 
 The VIPs allocator walks every other `Dataplane`'s inbounds (`pkg/dns/vips_allocator.go:360-361`) and hard-codes a single-key tag set (`:497-501`):
 
@@ -225,7 +225,7 @@ func addDefault(outboundSet *vips.VirtualOutboundMeshView, service string, port 
 }
 ```
 
-The control plane then synthesizes the consumer's outbounds from that view (`pkg/xds/topology/dns.go:36-41`), and the generators copy the bag onto the listener, stripping `kuma.io/mesh`:
+The control plane then builds the consumer's outbounds from that view (`pkg/xds/topology/dns.go:36-41`), and the generators copy the set onto the listener, stripping `kuma.io/mesh`:
 
 ```go
 // pkg/xds/generator/outbound_proxy_generator.go:120
@@ -235,11 +235,11 @@ Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).Witho
 tags := envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)
 ```
 
-Richer multi-tag outbounds exist only in hand-written Universal `Dataplane`s and in `VirtualOutbound`/cross-mesh `MeshGateway` entries (`vips_allocator.go:262`, `:489`).
+Outbounds with more tags only exist in hand-written Universal `Dataplane`s and in `VirtualOutbound` and cross-mesh `MeshGateway` entries (`vips_allocator.go:262`, `:489`).
 
-Inbound listeners are fed directly from the proxy's own `Dataplane` (`inbound_proxy_generator.go:96`, `TagsMetadata(iface.GetTags())`), where on Kubernetes `InboundTagsForService` (`inbound_converter.go:241-271`) builds them from Pod labels (excluding `kuma.io/` keys) plus namespace, service, port, zone, and node labels. `kuma.io/mesh` is not stripped on this path.
+Inbound listeners are fed straight from the proxy's own `Dataplane` (`inbound_proxy_generator.go:96`, `TagsMetadata(iface.GetTags())`). On Kubernetes, `InboundTagsForService` (`inbound_converter.go:241-271`) builds those from Pod labels, skipping `kuma.io/` keys, plus namespace, service, port, zone and node labels. This path does not strip `kuma.io/mesh`.
 
-### Case 2 — what `MeshService` changes
+### Case 2, what `MeshService` changes
 
 An outbound becomes a reference (`pkg/core/xds/types/outbound.go:8-15`):
 
@@ -254,7 +254,7 @@ type Outbound struct {
 }
 ```
 
-`LegacyOutbound != nil` discriminates the old world; a non-empty `Resource` the new one. Tags exist only in the old one (`:43-49`):
+`LegacyOutbound != nil` means the old world, a non-empty `Resource` means the new one. Only the old one has tags (`:43-49`):
 
 ```go
 func (o *Outbound) TagsOrNil() map[string]string {
@@ -265,11 +265,11 @@ func (o *Outbound) TagsOrNil() map[string]string {
 }
 ```
 
-`WithoutTags(nil)` returns nil, `TagsMetadata(nil)` is still called, and the unguarded configurer writes `io.kuma.tags: {}`.
+`WithoutTags(nil)` returns nil, `TagsMetadata(nil)` still runs, and the unguarded configurer writes `io.kuma.tags: {}`.
 
-The claim that `kuma.io/service` is *removed*, link by link: the consumer's outbound tags are gone (`outbound.go:8-15`); the VIP relay no longer feeds outbounds, since destinations are addressed by KRI; and the destination's inbounds carry no tag either under `meshServices: Exclusive` with `InboundTagsDisabled` (`inbound_converter.go:52-57`, path selected at `pod_converter.go:325`).
+Why `kuma.io/service` is gone, link by link: the consumer's outbound tags no longer exist (`outbound.go:8-15`); the VIP path no longer feeds outbounds, since destinations are addressed by KRI; and the destination's inbounds carry no tag under `meshServices: Exclusive` with `InboundTagsDisabled` (`inbound_converter.go:52-57`, path chosen at `pod_converter.go:325`).
 
-`match.name` fallback (`meshtcproute/plugin/v1alpha1/listeners.go:30-40`):
+The `match.name` fallback (`meshtcproute/plugin/v1alpha1/listeners.go:30-40`):
 
 ```go
 listenerName := envoy_names.GetOutboundListenerName(address, port)  // "outbound:<address>:<port>"
@@ -278,9 +278,9 @@ if id, ok := svc.Outbound.AssociatedServiceResource(); ok && unifiedNaming {
 }
 ```
 
-### Case 3 — what `InboundTagsDisabled` changes
+### Case 3, what `InboundTagsDisabled` changes
 
-One choke point (`pkg/plugins/runtime/k8s/controllers/inbound_converter.go:52-57`):
+There is one choke point (`pkg/plugins/runtime/k8s/controllers/inbound_converter.go:52-57`):
 
 ```go
 func (ic *InboundConverter) tagsOrEmpty(tagsFn func() map[string]string) map[string]string {
@@ -291,9 +291,9 @@ func (ic *InboundConverter) tagsOrEmpty(tagsFn func() map[string]string) map[str
 }
 ```
 
-Two call sites (`:74` for services, `:116` for serviceless) wrap the tag builders in a closure that is never evaluated when disabled. Inbounds lose `kuma.io/service`, `kuma.io/zone`, `k8s.kuma.io/namespace`, and all copied Pod/node labels at once.
+Two call sites use it, `:74` for services and `:116` for serviceless, both wrapping the tag builders in a closure that never runs when the flag is set. Inbounds lose `kuma.io/service`, `kuma.io/zone`, `k8s.kuma.io/namespace` and all the copied Pod and node labels in one go.
 
-The data is not lost, because Pod labels are copied onto the `Dataplane`'s metadata labels **unconditionally** (`pod_converter.go:62-84`):
+The data survives, because Pod labels are copied onto the `Dataplane`'s metadata labels either way (`pod_converter.go:62-84`):
 
 ```go
 labels, err := resource_labels.Compute(
@@ -306,30 +306,30 @@ labels, err := resource_labels.Compute(
 dataplane.SetLabels(labels)
 ```
 
-`mergeLabels` (`:455-464`) is a plain clone-and-copy. The flag adds no label mechanism; it removes the duplicate copy held in tags.
+`mergeLabels` (`:455-464`) is a plain clone and copy. The flag adds no label mechanism, it only drops the copy that lived in tags.
 
 ### The tags-to-labels substitution inventory
 
-**Real fallback to labels — four sites:**
+Four places actually fall back to labels:
 
-* `pkg/core/resources/apis/mesh/dataplane_helpers.go:193-204` — `IdentifyingName` returns the `kuma.io/workload` label when tags are disabled, else the `kuma.io/service` tag. Consumers: `mads/v1/generator/assignments.go:50`, `meshtrace/plugin.go:266`, `meshaccesslog/plugin.go:108`, `meshmetric/plugin.go:146`.
-* `pkg/core/resources/apis/mesh/dataplane_helpers.go:181-190` — `InboundIdentifyingName` returns the `Dataplane` KRI with the port as section name.
-* `pkg/plugins/runtime/k8s/controllers/meshservice_controller.go:374-385` — selector swaps `DataplaneTags` for `DataplaneLabels`, using the same Service selector keys.
-* `meshloadbalancingstrategy` — `priority.go:123-137` (`resolveAffinityValues`) and `locality_aware.go:151-154`, preferring inbound tags and falling back to Pod labels, pre-filtered to affinity keys so unrelated labels do not leak.
+* `pkg/core/resources/apis/mesh/dataplane_helpers.go:193-204`, `IdentifyingName` returns the `kuma.io/workload` label when tags are disabled, otherwise the `kuma.io/service` tag. Used by `mads/v1/generator/assignments.go:50`, `meshtrace/plugin.go:266`, `meshaccesslog/plugin.go:108` and `meshmetric/plugin.go:146`.
+* `pkg/core/resources/apis/mesh/dataplane_helpers.go:181-190`, `InboundIdentifyingName` returns the `Dataplane` KRI with the port as section name.
+* `pkg/plugins/runtime/k8s/controllers/meshservice_controller.go:374-385`, the selector swaps `DataplaneTags` for `DataplaneLabels` using the same Service selector keys.
+* `meshloadbalancingstrategy`, in `priority.go:123-137` (`resolveAffinityValues`) and `locality_aware.go:151-154`, prefers inbound tags and falls back to Pod labels, filtered down to affinity keys so unrelated labels don't leak.
 
-**No fallback — data simply dropped or relaxed:**
+Everywhere else the data is dropped or the rule is relaxed:
 
-* `pkg/insights/resyncer.go:443`, `:668` — `ServiceInsight` entries skipped for tagless dataplanes.
-* `pkg/core/resources/apis/mesh/dataplane_validator.go:105-111` — the `kuma.io/service` requirement becomes a no-op.
-* `pkg/xds/topology/outbound.go:386`, `:422` — `Locality` still derives from `getZone(inboundTags)`, tags only.
-* `pkg/core/xds/types.go:138`, `:422`, `:435` — `Protocol()`, `ContainsTags`, selector matching: tags only.
-* `pkg/xds/generator/inbound_proxy_generator.go:96` — the inbound listener's tags, the gap this MADR closes.
+* `pkg/insights/resyncer.go:443`, `:668` skip `ServiceInsight` entries for dataplanes with no tags.
+* `pkg/core/resources/apis/mesh/dataplane_validator.go:105-111` turns the `kuma.io/service` requirement into a no-op.
+* `pkg/xds/topology/outbound.go:386`, `:422` still derive `Locality` from `getZone(inboundTags)`, tags only.
+* `pkg/core/xds/types.go:138`, `:422`, `:435`: `Protocol()`, `ContainsTags` and selector matching are tags only.
+* `pkg/xds/generator/inbound_proxy_generator.go:96`, the inbound listener's tags, which is the gap this MADR closes.
 
-`io.kuma.labels` (`metadata.go:104`) is worth a caveat: despite the generic name it is a closed three-site loop — written at `endpoints/v3/endpoints.go:41`, encoded/decoded in `metadata.go:50`/`:71`, and read by exactly **one** consumer, `meshloadbalancingstrategy/locality_aware.go:64`. It is not a general identity channel.
+One caveat on `io.kuma.labels` (`metadata.go:104`): the name sounds general, but it is a closed loop of three sites. It is written at `endpoints/v3/endpoints.go:41`, encoded and decoded in `metadata.go:50` and `:71`, and read by a single consumer, `meshloadbalancingstrategy/locality_aware.go:64`. Don't treat it as a general identity channel.
 
 ### Where the labels come from
 
-The destination resource is already resolved at generation time and then discarded (`pkg/plugins/policies/core/xds/meshroute/listeners.go:147-167`):
+The destination resource is already resolved at generation time and then thrown away (`pkg/plugins/policies/core/xds/meshroute/listeners.go:147-167`):
 
 ```go
 if svc = meshCtx.GetServiceByKRI(outbound.Resource); svc == nil {
@@ -345,11 +345,11 @@ result = append(result, DestinationService{
 })
 ```
 
-`GetServiceByKRI` returns a `core.Destination`, which embeds `core_model.Resource` and exposes `GetMeta().GetLabels()`. `DestinationService` (`:68-72`) keeps only the KRI and a synthesized name, so the labels are thrown away — threading them through needs no new lookup.
+`GetServiceByKRI` returns a `core.Destination`, which embeds `core_model.Resource` and so exposes `GetMeta().GetLabels()`. `DestinationService` (`:68-72`) keeps only the KRI and a synthesized name, so the labels are discarded. Threading them through needs no extra lookup.
 
-A `MeshService` carries identity in labels, not its spec. The computed set is centralised in `pkg/core/resources/labels/registry.go:10-23`; the Universal generator (`meshservice/generate/generator.go:272-284`) sets `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/managed-by`, `kuma.io/env`, `kuma.io/zone`, and `kuma.io/origin`, plus user labels when `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` is on. The Kubernetes controller adds `k8s.kuma.io/namespace` and `k8s.kuma.io/is-headless-service` (`meshservice_controller.go:373-489`). Note there is no `kuma.io/namespace` label — it is `k8s.kuma.io/namespace` (`mesh_proto.KubeNamespaceTag`).
+A `MeshService` keeps its identity in labels rather than its spec. The computed set lives in `pkg/core/resources/labels/registry.go:10-23`. The Universal generator (`meshservice/generate/generator.go:272-284`) sets `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/managed-by`, `kuma.io/env`, `kuma.io/zone` and `kuma.io/origin`, plus user labels when `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` is on. The Kubernetes controller adds `k8s.kuma.io/namespace` and `k8s.kuma.io/is-headless-service` (`meshservice_controller.go:373-489`). There is no `kuma.io/namespace` label in Kuma; the namespace label is `k8s.kuma.io/namespace` (`mesh_proto.KubeNamespaceTag`).
 
-A resulting outbound listener for `MeshService` `backend` in namespace `kuma-demo`, zone `east`:
+The resulting outbound listener for `MeshService` `backend` in namespace `kuma-demo`, zone `east`:
 
 ```yaml
 metadata:
@@ -366,7 +366,7 @@ metadata:
 
 ### Implementation notes
 
-* `DestinationService` (`meshroute/listeners.go:68-72`) must carry the resolved `core.Destination` (or its labels) through from `CollectServices`.
-* Both outbound generators share the `TagsOrNil().WithoutTags(MeshTag)` line and must both be updated: `meshtcproute/plugin/v1alpha1/listeners.go:41` and `meshhttproute/plugin/v1alpha1/listeners.go:78`.
+* `DestinationService` (`meshroute/listeners.go:68-72`) has to carry the resolved `core.Destination`, or its labels, through from `CollectServices`.
+* Both outbound generators share the `TagsOrNil().WithoutTags(MeshTag)` line and both need updating: `meshtcproute/plugin/v1alpha1/listeners.go:41` and `meshhttproute/plugin/v1alpha1/listeners.go:78`.
 * The inbound half is `inbound_proxy_generator.go:96`, which needs the `Dataplane`'s labels when `iface.GetTags()` is empty. `pkg/xds/context/context.go:40` already carries `InboundTagsDisabled` into the xDS context.
-* Legacy branches — `LegacyOutbound != nil`, and inbounds with tags enabled — keep their current behaviour unchanged.
+* Legacy branches keep their current behaviour: `LegacyOutbound != nil`, and inbounds with tags enabled.
