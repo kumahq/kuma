@@ -3,8 +3,6 @@ package localityawarelb
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -22,9 +20,17 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
+const (
+	// demoClientName is the sole client app whose proxy stats collectMetric
+	// reads through the control plane inspect API, and namespace is the only
+	// Kubernetes namespace this suite deploys into. Both are fixed for the
+	// suite, so collectMetric takes neither as a parameter.
+	demoClientName = "demo-client-mesh-route"
+	namespace      = "locality-aware-lb"
+)
+
 func LocalityAwareLB() {
 	const mesh = "locality-aware-lb"
-	const namespace = "locality-aware-lb"
 
 	BeforeAll(func() {
 		// Global
@@ -126,7 +132,7 @@ func LocalityAwareLB() {
 				democlient.Install(
 					democlient.WithMesh(mesh),
 					democlient.WithNamespace(namespace),
-					democlient.WithName("demo-client-mesh-route"),
+					democlient.WithName(demoClientName),
 				),
 				testserver.Install(
 					testserver.WithName("test-server"),
@@ -333,9 +339,9 @@ spec:
 		// then traffic should be routed equally
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(
-				multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
+				multizone.KubeZone2, demoClientName, "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
 				client.WithNumberOfRequests(200),
-				client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
+				client.FromKubernetesPod(namespace, demoClientName),
 			)
 		}, "30s", "10s").Should(
 			And(
@@ -367,54 +373,54 @@ spec:
 
 		Expect(NewClusterSetup().Install(YamlUniversal(meshLoadBalancingStrategyDemoClientMeshRoute)).Setup(multizone.Global)).To(Succeed())
 
-		// then - wait for MLBS EDS to converge before measuring the distribution
+		// then - wait for MLBS EDS to converge before measuring the distribution.
+		// Counters can't be reset (Envoy admin is no longer reachable over the
+		// pod network), so snapshot a baseline and assert on the delta over the
+		// 200 requests sent within each iteration.
+		const failed5xx = "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx"
+		const success2xx = "test-server-mesh-route_locality-aware-lb_svc_80-70a8d85bc2519528.upstream_rq_2xx"
 		Eventually(func(g Gomega) {
-			g.Expect(resetCounter(multizone.KubeZone2, "demo-client-mesh-route", namespace)).To(Succeed())
+			base5xx, err := collectMetric(failed5xx)
+			g.Expect(err).ToNot(HaveOccurred())
+			base2xx, err := collectMetric(success2xx)
+			g.Expect(err).ToNot(HaveOccurred())
 
-			_, err := client.CollectResponsesAndFailures(
-				multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
+			_, err = client.CollectResponsesAndFailures(
+				multizone.KubeZone2, demoClientName, "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
 				client.WithNumberOfRequests(200),
 				client.NoFail(),
 				client.WithoutRetries(),
-				client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
+				client.FromKubernetesPod(namespace, demoClientName),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			failedRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx")
+			failedRequests, err := collectMetric(failed5xx)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(failedRequests).To(BeNumerically("~", 100, 25))
+			g.Expect(failedRequests - base5xx).To(BeNumerically("~", 100, 25))
 
-			successRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-70a8d85bc2519528.upstream_rq_2xx")
+			successRequests, err := collectMetric(success2xx)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(successRequests).To(BeNumerically("~", 100, 25))
+			g.Expect(successRequests - base2xx).To(BeNumerically("~", 100, 25))
 		}, "60s", "10s").Should(Succeed())
 	})
 }
 
-func collectMetric(cluster Cluster, name string, namespace string, metricName string) (int, error) {
-	resp, _, err := client.CollectResponse(cluster, name, fmt.Sprintf("http://localhost:9902/stats?filter=%s", metricName), client.FromKubernetesPod(namespace, name))
+// collectMetric reads a single Envoy stat value for the demo client's proxy
+// through the control plane inspect API (Envoy admin is no longer reachable
+// over the pod network). GetStats filters to metricName (a regex, partial
+// match like Envoy's own /stats filter), and SingleValue enforces that the
+// filter identifies exactly one counter. A stat Envoy hasn't created yet
+// reads as 0.
+func collectMetric(metricName string) (int, error) {
+	s, err := multizone.KubeZone2.GetEnvoyAdminTunnel(demoClientName, namespace).GetStats(metricName)
 	if err != nil {
 		return -1, err
 	}
-	split := strings.Split(resp, ": ")
-	if len(split) == 2 {
-		i, err := strconv.Atoi(split[1])
-		if err != nil {
-			return -1, err
-		}
-		return i, nil
-	} else {
-		return -1, errors.New("no metric found")
+	value, err := s.SingleValue()
+	if err != nil {
+		return -1, errors.Wrapf(err, "reading stat %q", metricName)
 	}
-}
-
-func resetCounter(cluster Cluster, name string, namespace string) error {
-	_, _, err := client.CollectResponse(
-		cluster, name, "http://localhost:9902/reset_counters",
-		client.FromKubernetesPod(namespace, name),
-		client.WithMethod("POST"),
-	)
-	return err
+	return int(value), nil
 }
 
 // TODO(lukidzi): use test-server implementation: https://github.com/kumahq/kuma/issues/8245
