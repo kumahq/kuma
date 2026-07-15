@@ -47,7 +47,10 @@ spec:
         name: test-server
       default:
         outlierDetection:
-          healthyPanicThreshold: 61`, meshName)
+          healthyPanicThreshold: 61
+          detectors:
+            totalFailures:
+              consecutive: 100`, meshName)
 
 	dp := func(idx int) string {
 		return fmt.Sprintf(`

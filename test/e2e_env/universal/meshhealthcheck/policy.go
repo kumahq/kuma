@@ -57,7 +57,10 @@ spec:
         name: test-server
       default:
         outlierDetection:
-          healthyPanicThreshold: 0`, mesh)
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
@@ -150,7 +153,10 @@ spec:
         name: test-server
       default:
         outlierDetection:
-          healthyPanicThreshold: 0`, mesh)
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 
 		BeforeAll(func() {
@@ -251,7 +257,10 @@ spec:
         name: %s
       default:
         outlierDetection:
-          healthyPanicThreshold: 0`, mesh, serviceName)
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh, serviceName)
 		}
 		meshName := "meshhealthcheck-tcp"
 		BeforeAll(func() {
@@ -357,7 +366,10 @@ spec:
         name: %s
       default:
         outlierDetection:
-          healthyPanicThreshold: 0`, mesh, serviceName)
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh, serviceName)
 		}
 		meshName := "meshhealthcheck-mtls-permissive-tcp"
 		BeforeAll(func() {
@@ -448,7 +460,10 @@ spec:
         name: test-server
       default:
         outlierDetection:
-          healthyPanicThreshold: 0`, mesh)
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
@@ -559,7 +574,10 @@ spec:
         name: test-server
       default:
         outlierDetection:
-          healthyPanicThreshold: 0`, mesh)
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 
 		meshHttpRoute := fmt.Sprintf(`

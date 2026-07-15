@@ -61,6 +61,9 @@ spec:
       default:
         outlierDetection:
           healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100
 `, config.CpNamespace, config.Mesh)
 
 		BeforeAll(func() {
