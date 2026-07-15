@@ -26,8 +26,7 @@ var _ = Describe("MeshProxyPatch", func() {
 			},
 			Entry("cluster modifications", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 default:
   appendModifications:
   - cluster:
@@ -83,10 +82,7 @@ default:
     `),
 			Entry("listener modifications", `
 targetRef:
-  kind: MeshServiceSubset
-  name: backend
-  tags:
-    version: v2
+  kind: Mesh
 default:
   appendModifications:
   - listener:
@@ -202,9 +198,7 @@ default:
     `),
 			Entry("http filter modifications", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/zone: east
+  kind: Mesh
 default:
   appendModifications:
   - httpFilter:

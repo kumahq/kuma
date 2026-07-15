@@ -53,39 +53,6 @@ from:
     default:
       action: Deny
 `),
-			Entry("allow MeshSubset at top-level targetRef", `
-targetRef:
-  kind: MeshSubset
-  tags:
-    env: prod
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
-			Entry("allow MeshService at top-level targetRef", `
-targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
-			Entry("allow MeshServiceSubset at top-level targetRef", `
-targetRef:
-  kind: MeshServiceSubset
-  name: backend
-  tags:
-    version: v2
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
 			Entry("full rules example", `
 targetRef:
   kind: Mesh
@@ -155,8 +122,7 @@ rules:
 			Entry("empty 'from' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 from: []
 `,
 				expected: `
@@ -167,14 +133,67 @@ violations:
 			Entry("empty 'rules' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 rules: []
 `,
 				expected: `
 violations:
   - field: spec
     message: at least one of 'from' or 'rules' has to be defined`,
+			}),
+			Entry("not supported kind at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshSubset
+  tags:
+    env: prod
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: Deny
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshSubset' is not supported
+`,
+			}),
+			Entry("not supported kind (MeshService) at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: Deny
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshService' is not supported
+`,
+			}),
+			Entry("not supported kind (MeshServiceSubset) at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshServiceSubset
+  name: backend
+  tags:
+    version: v2
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: Deny
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshServiceSubset' is not supported
+`,
 			}),
 			Entry("sectionName without from or rules", testCase{
 				inputYaml: `
@@ -193,9 +212,8 @@ violations:
 			Entry("not supported kinds in 'from' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
-from: 
+  kind: Mesh
+from:
   - targetRef:
       kind: MeshGatewayRoute
       name: mgr-1
