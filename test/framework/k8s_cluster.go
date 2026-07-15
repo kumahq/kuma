@@ -1806,17 +1806,22 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 
 	pullCtx, cancelPull := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelPull()
+	trustCachedTags := os.Getenv("KUMA_E2E_TRUST_CACHED_IMAGE_TAGS") == "true"
 	var wg sync.WaitGroup
 	pullErrs := make([]error, len(images))
 	for i, img := range images {
 		wg.Add(1)
 		go func(i int, img string) {
 			defer wg.Done()
-			localRef := img
-			if tagged, _, ok := splitDigestRef(img); ok {
-				localRef = tagged
-			}
-			if exec.CommandContext(pullCtx, "docker", "image", "inspect", localRef).Run() == nil {
+			if tagged, digestRef, ok := splitDigestRef(img); ok {
+				if exec.CommandContext(pullCtx, "docker", "image", "inspect", digestRef).Run() == nil {
+					_ = exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged).Run()
+					return
+				}
+				if trustCachedTags && exec.CommandContext(pullCtx, "docker", "image", "inspect", tagged).Run() == nil {
+					return
+				}
+			} else if exec.CommandContext(pullCtx, "docker", "image", "inspect", img).Run() == nil {
 				return
 			}
 			_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "pull image "+img, 5, 5*time.Second, func() (string, error) {

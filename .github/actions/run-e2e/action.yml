@@ -76,6 +76,7 @@ runs:
       env:
         KUMA_DEBUG: ${{ runner.debug == '1' }}
         KUMA_E2E_PRELOAD_MANIFEST: ${{ runner.temp }}/e2e-preloaded-images.txt
+        KUMA_E2E_TRUST_CACHED_IMAGE_TAGS: "true"
         E2E_K8S_VERSION: ${{ inputs.k8s_version }}
         E2E_CNI_NETWORK_PLUGIN: ${{ inputs.cni_network_plugin }}
         E2E_ARCH: ${{ inputs.arch }}
