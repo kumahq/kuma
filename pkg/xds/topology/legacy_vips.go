@@ -5,6 +5,8 @@ import (
 	"maps"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
+
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -192,6 +194,10 @@ func virtualOutboundViewFromConfig(config string) (*vips.VirtualOutboundMeshView
 	return vips.NewVirtualOutboundView(view)
 }
 
+func isLegacyVirtualOutboundEntry(origin string) bool {
+	return strings.HasPrefix(origin, vips.VirtualOutboundPrefix)
+}
+
 func VIPOutbounds(
 	virtualOutboundView *vips.VirtualOutboundMeshView,
 	topLevelDomain string,
@@ -200,43 +206,80 @@ func VIPOutbounds(
 	var vipDomains []xds_types.VIPDomains
 	var outbounds xds_types.Outbounds
 	for _, key := range virtualOutboundView.HostnameEntries() {
-		if key.Type != vips.Service {
-			continue
-		}
-
 		voutbound := virtualOutboundView.Get(key)
-		if voutbound == nil || voutbound.Address == "" || len(voutbound.Outbounds) == 0 {
+		if voutbound == nil || voutbound.Address == "" {
 			continue
 		}
 
-		domain := xds_types.VIPDomains{Address: voutbound.Address}
+		switch key.Type {
+		case vips.Host, vips.FullyQualifiedDomain:
+			var kept []vips.OutboundEntry
+			for _, ob := range voutbound.Outbounds {
+				if !isLegacyVirtualOutboundEntry(ob.Origin) {
+					kept = append(kept, ob)
+				}
+			}
+			if len(kept) == 0 {
+				continue
+			}
 
-		outbound := voutbound.Outbounds[0]
-		service := outbound.TagSet[mesh_proto.ServiceTag]
-		if service == "" {
-			service = key.Name
-		}
+			domain := xds_types.VIPDomains{Address: voutbound.Address}
+			if govalidator.IsDNSName(key.Name) {
+				domain.Domains = []string{key.Name}
+				vipDomains = append(vipDomains, domain)
+			}
+			seenGlobalVip := false
+			for _, ob := range kept {
+				seenGlobalVip = seenGlobalVip || ob.Port == vipPort
+				if ob.Port != 0 {
+					outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+						Address: voutbound.Address,
+						Port:    ob.Port,
+						Tags:    ob.TagSet,
+					}})
+				}
+			}
+			if key.Type == vips.Host && !seenGlobalVip && len(domain.Domains) > 0 {
+				outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Address: voutbound.Address,
+					Port:    vipPort,
+					Tags:    kept[0].TagSet,
+				}})
+			}
+		case vips.Service:
+			if len(voutbound.Outbounds) == 0 {
+				continue
+			}
 
-		domain.Domains = []string{service + "." + topLevelDomain}
-		cleanedDomain := strings.ReplaceAll(service, "_", ".") + "." + topLevelDomain
-		if cleanedDomain != domain.Domains[0] {
-			domain.Domains = append(domain.Domains, cleanedDomain)
+			domain := xds_types.VIPDomains{Address: voutbound.Address}
+
+			outbound := voutbound.Outbounds[0]
+			service := outbound.TagSet[mesh_proto.ServiceTag]
+			if service == "" {
+				service = key.Name
+			}
+
+			domain.Domains = []string{service + "." + topLevelDomain}
+			cleanedDomain := strings.ReplaceAll(service, "_", ".") + "." + topLevelDomain
+			if cleanedDomain != domain.Domains[0] {
+				domain.Domains = append(domain.Domains, cleanedDomain)
+			}
+			if outbound.Port != 0 {
+				outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Address: voutbound.Address,
+					Port:    outbound.Port,
+					Tags:    outbound.TagSet,
+				}})
+			}
+			if outbound.Port != vipPort {
+				outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Address: voutbound.Address,
+					Port:    vipPort,
+					Tags:    outbound.TagSet,
+				}})
+			}
+			vipDomains = append(vipDomains, domain)
 		}
-		if outbound.Port != 0 {
-			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-				Address: voutbound.Address,
-				Port:    outbound.Port,
-				Tags:    outbound.TagSet,
-			}})
-		}
-		if outbound.Port != vipPort {
-			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-				Address: voutbound.Address,
-				Port:    vipPort,
-				Tags:    outbound.TagSet,
-			}})
-		}
-		vipDomains = append(vipDomains, domain)
 	}
 	return vipDomains, outbounds
 }
