@@ -63,7 +63,7 @@ runs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/e2e-image-cache
-        key: e2e-images-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.parallel_runner_id }}-${{ hashFiles('test/framework/deployments/**') }}
+        key: e2e-images-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.shards }}-${{ inputs.parallel_runner_id }}-${{ hashFiles('test/framework/deployments/**') }}
     - name: "Load cached e2e images into docker"
       shell: bash
       run: |
