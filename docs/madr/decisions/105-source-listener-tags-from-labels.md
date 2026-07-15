@@ -72,7 +72,7 @@ Write labels under a new listener key and add `listenerLabels`/`labels` to the `
 * Good, because it keeps labels and tags cleanly apart.
 * Good, because it looks consistent with what endpoints already do, and consistency is worth something.
 * Bad, because the endpoint split exists for a reason that doesn't apply here. On endpoints, tags live under `envoy.lb` and `envoy.transport_socket_match`, and Envoy reads both of those: they drive LB subset matching for traffic splitting and TLS selection. Putting arbitrary Pod labels in there would change routing and TLS behaviour, so a second key was the only option. `io.kuma.tags` is read by nothing except our own matcher, so we have no such constraint and copying the split would be copying a workaround without the problem it worked around.
-* Bad, because `io.kuma.labels` is an internal hand-off, not a selector surface. It exists so `MeshLoadBalancingStrategy` can read labels back out of endpoints another generator already built, it is filtered down to the affinity keys that policy names, and no user ever writes it in a policy. Reusing the name on listeners would give it a second, unrelated meaning.
+* Bad, because `io.kuma.labels` is an internal hand-off rather than a selector surface. It exists so `MeshLoadBalancingStrategy` can read labels back out of endpoints another generator already built, it has one consumer, it is undocumented for users, and nobody ever writes it in a policy. Reusing the name on listeners would give it a second, unrelated meaning.
 * Bad, because it changes a public API across three match types, and means regenerating CRDs and OpenAPI.
 * Bad, because users then have to know which of the two selectors applies to a given listener, and the answer depends on whether the destination is legacy or a real resource. That is an internal detail they should not have to care about.
 * Bad, because the matcher and the behaviour come out the same as Option 4, and only the key name differs. We would be paying for an API migration to get tidier naming.
@@ -369,27 +369,15 @@ func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) cor
 	endpoint.Labels = envoy_metadata.ExtractLbLabels(lbEndpoint.Metadata)
 ```
 
-That is a stage-to-stage channel between our own components. `io.kuma.tags` on a listener is the opposite: a surface users write policies against. The two keys look alike and do different jobs.
+That is a stage-to-stage channel between our own components. `io.kuma.tags` on a listener is a surface users write policies against. The two keys look alike and do different jobs.
 
-Third, its scope is narrow and deliberately kept that way. It is written on every endpoint (`endpoints/v3/endpoints.go:41`), encoded and decoded in `metadata.go:50` and `:71`, and read by exactly one consumer, `meshloadbalancingstrategy/locality_aware.go:64`. `MeshLoadBalancingStrategy` then trims the labels down to the affinity keys its own policy names, so unrelated Pod labels don't stay in the config (`priority.go:109-121`):
+Envoy never sees the labels as labels, either. `MeshLoadBalancingStrategy` turns a match into `locality.sub_zone` and a load balancing weight (`locality_aware.go:114-127`), and that is the part Envoy acts on. `io.kuma.labels` only exists so the later stage can see what the earlier one knew.
 
-```go
-func affinityTagPodLabels(labels map[string]string, conf api.Conf) map[string]string {
-	la := conf.LocalityAwareness
-	if la == nil || la.LocalZone == nil || la.LocalZone.AffinityTags == nil {
-		return nil
-	}
-	filtered := make(map[string]string)
-	for _, tag := range *la.LocalZone.AffinityTags {
-		if v, ok := labels[tag.Key]; ok {
-			filtered[tag.Key] = v
-		}
-	}
-	return filtered
-}
-```
+There is a neat symmetry here worth naming: `io.kuma.labels` is to endpoints what `io.kuma.tags` is to listeners. Both are `io.kuma.` namespaced, both are invisible to Envoy, and both exist only as Kuma-to-Kuma channels through xDS. In practice the `io.kuma.` prefix is our marker for "Envoy ignores this".
 
-The name sounds like a general identity channel and it isn't one. Worth knowing before assuming it carries labels broadly, or that a listener can just read from it.
+Third, it is narrower than its name suggests, and messier. It has one consumer, `meshloadbalancingstrategy/locality_aware.go:64`, and no user-facing documentation. It only appears on local-zone endpoints: `Labels` is set at `pkg/xds/topology/outbound.go:384` and `:421`, while the cross-zone builders (`fillRemoteMeshServices` at `:258` and `:298`, `fillIngressOutbounds` at `:636` and `:652`) never set it. Since labels come from Pod metadata, it is effectively Kubernetes-only too. And on the base CLA it carries **every Pod label of every endpoint**, straight from `dataplane.GetMeta().GetLabels()` with no filtering. `MeshLoadBalancingStrategy` trims them to the affinity keys its policy names (`affinityTagPodLabels`, `priority.go:109-121`), but only on the path where it rebuilds the assignment. With no MLBS policy in play, the unfiltered set stays in the config.
+
+So it is a local-zone, Kubernetes-only, unfiltered, single-consumer channel that reads like a general identity surface. Worth knowing before assuming it carries labels broadly, or that a listener could just read from it.
 
 Note also what `io.kuma.labels` confirms about the shape of our fix. The endpoint path did not invent a new idea; it shipped labels next to tags and let consumers fall back. We are doing the same thing for listeners, and merging rather than adding a key only because the constraint that forced the split on endpoints doesn't exist on listeners.
 
