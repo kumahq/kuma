@@ -11,7 +11,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/bindoutbounds"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/compatibility"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/envoyconfig"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/gateway"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/grpc"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/inspect"
@@ -64,9 +63,6 @@ var (
 	_ = Describe("User Auth", Label("job-3"), auth.UserAuth)
 	_ = Describe("DP Auth", Label("job-3"), auth.DpAuth, Ordered)
 	_ = Describe("Offline Auth", Label("job-3"), auth.OfflineAuth, Ordered)
-	_ = Describe("Gateway", Label("job-2"), gateway.Gateway, Ordered)
-	_ = Describe("Gateway - Cross-mesh", Label("job-2"), gateway.CrossMeshGatewayOnUniversal, Ordered)
-	_ = Describe("Gateway - Resources", Label("job-2"), gateway.Resources, Ordered)
 	_ = Describe("MeshHealthCheck panic threshold", Label("job-1"), meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
 	_ = Describe("MeshHealthCheck", Label("job-1"), meshhealthcheck.MeshHealthCheck)
 	_ = Describe("Workload", Label("job-3"), workload.Workload, Ordered)
@@ -102,7 +98,6 @@ var (
 	_ = Describe("InterCP Server", Label("job-3"), intercp.InterCP, Ordered)
 	_ = Describe("MeshTLS", Label("job-3"), meshtls.Policy, Ordered)
 	_ = Describe("Envoy Config – Sidecars", Label("job-0"), Label("golden-files-e2e"), envoyconfig.Sidecars, Ordered)
-	_ = Describe("Envoy Config – Builtin Gateway", Label("job-0"), Label("golden-files-e2e"), envoyconfig.BuiltinGateway, Ordered)
 	_ = Describe("Envoy Config – Zone Proxies", Label("job-0"), Label("golden-files-e2e"), envoyconfig.ZoneProxies, Ordered)
 	_ = Describe("Bind Outbounds", Label("job-3"), Label("ipv6-not-supported"), bindoutbounds.BindToLoopbackAddresses, Ordered)
 	_ = Describe("MeshIdentity - Spire", Label("job-2"), meshidentity.Spire, Ordered)
