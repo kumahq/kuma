@@ -326,14 +326,9 @@ var _ = Describe("JsonPatchBlock Validator", func() {
 		Entry("Mesh", &common_api.TargetRef{Kind: common_api.Mesh}),
 		Entry("Dataplane", &common_api.TargetRef{Kind: common_api.Dataplane}),
 		Entry("MeshGateway", &common_api.TargetRef{Kind: common_api.MeshGateway}),
+		Entry("MeshHTTPRoute", &common_api.TargetRef{Kind: common_api.MeshHTTPRoute}),
 		Entry("MeshService", &common_api.TargetRef{Kind: common_api.MeshService}),
 		Entry("MeshServiceSubset", &common_api.TargetRef{Kind: common_api.MeshServiceSubset}),
 		Entry("MeshSubset", &common_api.TargetRef{Kind: common_api.MeshSubset}),
 	)
-
-	It("still warns about deprecated top-level MeshHTTPRoute targetRef", func() {
-		Expect(jsonpatch_validators.TopLevelTargetRefDeprecations(&common_api.TargetRef{Kind: common_api.MeshHTTPRoute})).To(ConsistOf(
-			"MeshHTTPRoute value for 'targetRef.kind' is deprecated, use MeshHTTPRoute in spec.to[].targetRef",
-		))
-	})
 })
