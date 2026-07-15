@@ -100,7 +100,7 @@ Default (no labels) is correct for most code PRs. Reach for `skip-*` only to sav
 - `pkg/dp-server/`: data plane server (SDS, health checks)
 - `pkg/plugins/policies/`: policy plugins; see `.claude/rules/policies.md`
 - `pkg/plugins/`: plugin architecture (bootstrap, runtime, CA, resources, policies)
-- `pkg/transparentproxy/`: transparent proxy (iptables, eBPF)
+- `pkg/transparentproxy/`: transparent proxy (iptables)
 - `pkg/config/`: configuration management
 - `pkg/test/`: test utilities, matchers, and resource builders
 - `tools/`: code generation tools (policy-gen, resource-gen, openapi)

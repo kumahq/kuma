@@ -13,7 +13,8 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Routes envoy_common.Routes
+	Routes                envoy_common.Routes
+	ConfigureRouteTimeout bool
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
@@ -159,20 +160,20 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_config_route_v3.RouteAction {
 	routeAction := &envoy_config_route_v3.RouteAction{}
-	if len(clusters) != 0 {
-		// Timeout can be configured only per outbound listener. So all clusters in the split
-		// must have the same timeout. That's why we can take the timeout from the first cluster.
-		if cluster, ok := clusters[0].(*envoy_common.ClusterImpl); ok {
-			routeAction.Timeout = util_proto.Duration(cluster.Timeout().GetHttp().GetRequestTimeout().AsDuration())
-		} else {
-			routeAction.Timeout = util_proto.Duration(0)
-		}
+	if c.ConfigureRouteTimeout && len(clusters) != 0 {
+		routeAction.Timeout = util_proto.Duration(0)
 	}
-	if len(clusters) == 1 {
+
+	switch len(clusters) {
+	case 0:
+		// Leave the cluster unset when no upstreams survive route generation.
+		// Callers currently filter those routes out, but avoiding an empty
+		// WeightedClusters config keeps this helper safe on its own.
+	case 1:
 		routeAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 			Cluster: clusters[0].Name(),
 		}
-	} else {
+	default:
 		var weightedClusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 		for _, cluster := range clusters {
 			cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{

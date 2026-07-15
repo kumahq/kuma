@@ -85,13 +85,8 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 
 func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_meta.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
 	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
-	var timeoutPolicyConf *mesh_proto.Timeout_Conf
-	if timeoutPolicy := proxy.Policies.Timeouts[oface]; timeoutPolicy != nil {
-		timeoutPolicyConf = timeoutPolicy.Spec.GetConf()
-	}
 	var dpTags mesh_proto.MultiValueTagSet
 	if ctx.Mesh.IsXKumaTagsUsed() {
 		dpTags = proxy.Dataplane.Spec.TagSet()
@@ -102,25 +97,11 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		case core_meta.ProtocolGRPC:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-				Configure(envoy_listeners.Tracing(
-					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
-					sourceService,
-					envoy_common.TrafficDirectionOutbound,
-					serviceName,
-					false,
-				)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, dpTags)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-				Configure(envoy_listeners.Tracing(
-					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
-					sourceService,
-					envoy_common.TrafficDirectionOutbound,
-					serviceName,
-					false,
-				)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName), serviceName, routes, proxy.Dataplane.Spec.TagSet()))
 		case core_meta.ProtocolKafka:
 			filterChainBuilder.
@@ -131,9 +112,6 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 			filterChainBuilder.
 				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...))
 		}
-
-		filterChainBuilder.
-			Configure(envoy_listeners.Timeout(timeoutPolicyConf, protocol))
 		return filterChainBuilder
 	}()
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP).
@@ -160,8 +138,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		for _, c := range service.Clusters() {
 			cluster := c.(*envoy_common.ClusterImpl)
 			clusterName := cluster.Name()
-			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
-				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol))
+			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
@@ -293,11 +270,6 @@ func (OutboundProxyGenerator) determineRoutes(
 		return nil
 	}
 
-	var timeoutConf *mesh_proto.Timeout_Conf
-	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
-		timeoutConf = timeout.Spec.GetConf()
-	}
-
 	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) []envoy_common.Cluster {
 		var clusters []envoy_common.Cluster
 		for _, destination := range splits {
@@ -333,7 +305,6 @@ func (OutboundProxyGenerator) determineRoutes(
 				// from a MeshGateway virtual outbound and is not part of the
 				// service tags
 				envoy_common.WithTags(allTags.WithoutTags(mesh_proto.MeshTag)),
-				envoy_common.WithTimeout(timeoutConf),
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),
 				envoy_common.WithExternalService(isExternalService),
 			)

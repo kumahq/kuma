@@ -37,8 +37,3 @@ spec:
         kuma.io/protocol: http
         kuma.io/service: example_demo_svc_80
         kuma.io/zone: zone-1
-    outbound:
-    - address: 192.168.0.1
-      port: 80
-      tags:
-        kuma.io/service: example_demo_svc_80

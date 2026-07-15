@@ -170,9 +170,6 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.OutboundInterface][]core_model.Resource {
 	result := map[mesh_proto.OutboundInterface][]core_model.Resource{}
 
-	for outbound, timeout := range matchedPolicies.Timeouts {
-		result[outbound] = append(result[outbound], timeout)
-	}
 	for outbound, tr := range matchedPolicies.TrafficRoutes {
 		result[outbound] = append(result[outbound], tr)
 	}
@@ -199,9 +196,6 @@ func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.Ser
 
 func getDataplaneMatchedPolicies(matchedPolicies *xds.MatchedPolicies) []core_model.Resource {
 	var resources []core_model.Resource
-	if matchedPolicies.TrafficTrace != nil {
-		resources = append(resources, matchedPolicies.TrafficTrace)
-	}
 	if matchedPolicies.ProxyTemplate != nil {
 		resources = append(resources, matchedPolicies.ProxyTemplate)
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
@@ -266,6 +267,8 @@ func NewTestRuntime(ctx context.Context, cfg kuma_cp.Config, store store.Resourc
 func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	cfg := kuma_cp.DefaultConfig()
 	cfg.Mode = config_core.Global
+	cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	return &KdsServerBuilder{
 		rt:             NewTestRuntime(context.Background(), cfg, store),
 		providedMapper: reconcile_v2.NoopResourceMapper,
@@ -294,6 +297,6 @@ func (b *KdsServerBuilder) WithTypes(types []model.ResourceType) *KdsServerBuild
 }
 
 func (b *KdsServerBuilder) Delta() (delta.Server, error) {
-	srv, _, err := kds_server_v2.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, 100*time.Millisecond, b.providedFilter, b.providedMapper, 1*time.Second)
+	srv, _, err := kds_server_v2.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second)
 	return srv, err
 }

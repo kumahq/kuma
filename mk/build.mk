@@ -29,7 +29,7 @@ export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 # An optional extension to the coredns packages
 COREDNS_EXT ?=
 # renovate: datasource=github-tags depName=coredns packageName=kumahq/coredns-builds versioning=semver
-COREDNS_VERSION = v1.14.2
+COREDNS_VERSION = v1.14.6
 
 # List of binaries that we have build/release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy
@@ -109,7 +109,7 @@ build/artifacts-$(1)-$(2)/kuma-dp:
 	$(Build_Go_Application) ./app/kuma-dp
 
 .PHONY: build/artifacts-$(1)-$(2)/kumactl
-build/artifacts-$(1)-$(2)/kumactl: build/ebpf
+build/artifacts-$(1)-$(2)/kumactl:
 	$(Build_Go_Application) ./app/kumactl
 
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cni
@@ -140,5 +140,5 @@ endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
 
 .PHONY: clean/build
-clean/build: clean/ebpf ## Dev: Remove build/ dir
+clean/build: ## Dev: Remove build/ dir
 	rm -rf "$(BUILD_DIR)"
