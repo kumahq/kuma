@@ -80,7 +80,6 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		PrometheusEndpointGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
-		OutboundProxyGenerator{},
 		DirectAccessProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
