@@ -209,7 +209,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func meshOpenTelemetryBackend(name, displayName, endpoint string) InstallFunc {
+func meshOpenTelemetryBackend(mesh, name, displayName, endpoint string) InstallFunc {
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
 		panic(err)
@@ -221,12 +221,13 @@ metadata:
   name: %s
   namespace: %s
   labels:
+    kuma.io/mesh: %s
     kuma.io/display-name: %s
 spec:
   endpoint:
     address: %s
     port: %s
-`, name, Config.KumaNamespace, displayName, host, port)
+`, name, Config.KumaNamespace, mesh, displayName, host, port)
 	return YamlK8s(backend)
 }
 
@@ -257,7 +258,7 @@ spec:
           refreshInterval: 30s
 `, Config.KumaNamespace, mesh)
 	return Combine(
-		meshOpenTelemetryBackend("otel-backend", "otel-backend", openTelemetryEndpoint),
+		meshOpenTelemetryBackend(mesh, "otel-backend", "otel-backend", openTelemetryEndpoint),
 		YamlK8s(meshMetric),
 	)
 }
@@ -290,7 +291,7 @@ spec:
           refreshInterval: 30s
 `, Config.KumaNamespace, mesh)
 	return Combine(
-		meshOpenTelemetryBackend("otel-backend", "otel-backend", openTelemetryEndpoint),
+		meshOpenTelemetryBackend(mesh, "otel-backend", "otel-backend", openTelemetryEndpoint),
 		YamlK8s(meshMetric),
 	)
 }
@@ -328,7 +329,7 @@ spec:
             mode: Disabled
 `, Config.KumaNamespace, mesh)
 	return Combine(
-		meshOpenTelemetryBackend("otel-backend", "otel-backend", openTelemetryEndpoint),
+		meshOpenTelemetryBackend(mesh, "otel-backend", "otel-backend", openTelemetryEndpoint),
 		YamlK8s(meshMetric),
 	)
 }
@@ -367,8 +368,8 @@ spec:
           refreshInterval: 30s
 `, Config.KumaNamespace, mesh)
 	return Combine(
-		meshOpenTelemetryBackend("primary-otel-backend", "primary-otel-backend", primaryOpenTelemetryEndpoint),
-		meshOpenTelemetryBackend("secondary-otel-backend", "secondary-otel-backend", secondaryOpenTelemetryEndpoint),
+		meshOpenTelemetryBackend(mesh, "primary-otel-backend", "primary-otel-backend", primaryOpenTelemetryEndpoint),
+		meshOpenTelemetryBackend(mesh, "secondary-otel-backend", "secondary-otel-backend", secondaryOpenTelemetryEndpoint),
 		YamlK8s(meshMetric),
 	)
 }

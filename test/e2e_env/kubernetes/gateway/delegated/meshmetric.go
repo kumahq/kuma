@@ -30,12 +30,13 @@ metadata:
   name: otel-backend-delegated
   namespace: %s
   labels:
+    kuma.io/mesh: %s
     kuma.io/display-name: otel-backend-delegated
 spec:
   endpoint:
     address: %s
     port: %s
-`, config.CpNamespace, host, port))
+`, config.CpNamespace, config.Mesh, host, port))
 		}
 
 		meshMetric := func(otelEndpoint string) framework.InstallFunc {
