@@ -182,14 +182,20 @@ func (s *statsCallbacks) OnStreamOpen(context.Context, int64, string) error {
 
 func (s *statsCallbacks) OnStreamClosed(streamID int64) {
 	s.Lock()
-	defer s.Unlock()
 	s.streamsActive--
+	var last lastSend
+	var hasLast bool
 	if ver, ok := s.versionsForStream[streamID]; ok {
 		s.versionsMetric.WithLabelValues(ver).Dec()
 		delete(s.versionsForStream, streamID)
 	}
-	if last, ok := s.lastSendByStream[streamID]; ok {
+	if lastSend, ok := s.lastSendByStream[streamID]; ok {
 		delete(s.lastSendByStream, streamID)
+		last = lastSend
+		hasLast = true
+	}
+	s.Unlock()
+	if hasLast {
 		s.maybeReportWindowDepletion(last)
 	}
 }
@@ -248,14 +254,20 @@ func (s *statsCallbacks) OnDeltaStreamOpen(context.Context, int64, string) error
 
 func (s *statsCallbacks) OnDeltaStreamClosed(streamID int64) {
 	s.Lock()
-	defer s.Unlock()
 	s.streamsActive--
+	var last lastSend
+	var hasLast bool
 	if ver, ok := s.versionsForStream[streamID]; ok {
 		s.versionsMetric.WithLabelValues(ver).Dec()
 		delete(s.versionsForStream, streamID)
 	}
-	if last, ok := s.lastSendByStream[streamID]; ok {
+	if lastSend, ok := s.lastSendByStream[streamID]; ok {
 		delete(s.lastSendByStream, streamID)
+		last = lastSend
+		hasLast = true
+	}
+	s.Unlock()
+	if hasLast {
 		s.maybeReportWindowDepletion(last)
 	}
 }
@@ -308,9 +320,7 @@ func (s *statsCallbacks) recordLastSend(streamID int64, size int, typeURL, nodeI
 // maybeReportWindowDepletion emits the warning log and increments the
 // counter when the most recent send on a now-closed stream matches the
 // receive-window-depletion signature: a large response immediately
-// followed by stream closure. See kumahq/kuma#16355. Callers hold the
-// lock; the work here (a counter increment and a log line) is cheap
-// enough to keep inside the critical section.
+// followed by stream closure. See kumahq/kuma#16355.
 func (s *statsCallbacks) maybeReportWindowDepletion(last lastSend) {
 	elapsed := core.Now().Sub(last.sentAt)
 	if elapsed >= closureWindow || last.size < sizeThreshold {
@@ -318,7 +328,7 @@ func (s *statsCallbacks) maybeReportWindowDepletion(last lastSend) {
 	}
 	s.likelyWindowDepletionMetric.WithLabelValues(last.typeURL).Inc()
 	statsLogger.Info(
-		"xds stream closed within window of sending a large response; likely caller-side gRPC receive-window depletion (kumahq/kuma#16355). "+
+		"xds stream closed within window of sending a large response; likely caller-side gRPC receive-window depletion. "+
 			"If using google_grpc xDS transport, raise KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES.",
 		"dataplane", last.nodeID,
 		"elapsed", elapsed,
