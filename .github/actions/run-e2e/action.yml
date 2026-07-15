@@ -96,20 +96,24 @@ runs:
           export KUMA_DEFAULT_TIMEOUT="6s"
         fi
 
-        # investigation-only: test whether serial specs (--procs 1) avoid the init-hang I/O wave
-        if [[ "$GITHUB_HEAD_REF" == "test/e2e-init-hang-diagnostics" ]]; then
-          export GINKGO_OPTS="--procs 1 --github-output --output-interceptor-mode=none"
-        fi
 
         NODE_TELEMETRY_DIR="${GITHUB_WORKSPACE}/build/reports/e2e-debug-node-telemetry"
         mkdir -p "${NODE_TELEMETRY_DIR}"
         ./.github/workflows/scripts/e2e-node-telemetry.sh "${NODE_TELEMETRY_DIR}" &
         TELEMETRY_PID=$!
 
+        # investigation-only: prototype the page-cache prewarm fix for kumahq/kuma#17426
+        PREWARM_PID=""
+        if [[ "$GITHUB_HEAD_REF" == "test/e2e-init-hang-diagnostics" ]]; then
+          ./.github/workflows/scripts/e2e-prewarm-layers.sh &
+          PREWARM_PID=$!
+        fi
+
         function on_exit()
         {
           kill "${TELEMETRY_PID}" 2>/dev/null || true
           wait "${TELEMETRY_PID}" 2>/dev/null || true
+          [[ -n "${PREWARM_PID}" ]] && { kill "${PREWARM_PID}" 2>/dev/null || true; wait "${PREWARM_PID}" 2>/dev/null || true; }
           docker logout docker.io 2>/dev/null || true
         }
         trap "on_exit" EXIT
