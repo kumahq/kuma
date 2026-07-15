@@ -113,7 +113,9 @@ match:
 
 #### Why we don't gate this behind a flag
 
-`MeshServiceLabelPropagation` is gated because it writes to a stored resource that users can see and that KDS syncs around. Listener metadata is generated, short-lived, and only our own matcher reads it. Since the change can only add matches, a flag set to `false` would have no real use. User labels are already gated further up by `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED`, which decides whether a `MeshService` carries user labels at all, and we don't need a second switch for that.
+`MeshServiceLabelPropagation` is gated because it writes to a stored resource that users can see and that KDS syncs around. Listener metadata is generated, short-lived, and only our own matcher reads it. Since the change can only add matches, a flag set to `false` would have no real use.
+
+That is an argument against an on/off flag, not against bounding which labels we copy. There is no gate further up to lean on: `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` only applies to the Universal generator, while on Kubernetes a `MeshService` copies its `Service`'s labels wholesale with nothing filtering them. Whether we copy every label or only keys we choose is the open question in the implementation notes, and it is a separate decision from gating the fix itself.
 
 #### How this design evolved
 
@@ -127,7 +129,8 @@ The third draft only covered outbound and treated the `InboundTagsDisabled` gap 
 
 Low. The data we propagate is metadata the proxy's owner can already see. The outbound exists because the destination is reachable, and its VIP and port are already in the config dump.
 
-* Listener metadata shows up in `/config_dump`, so any user label on a `MeshService` is visible to anyone who can reach the Envoy admin API. That is already true for endpoint labels, and operators who care can use the existing `AllowedLabelKeys` allowlist.
+* Listener metadata shows up in `/config_dump`, so any user label on a `MeshService` is visible to anyone who can reach the Envoy admin API. That is already true for endpoint labels, which carry the proxy's whole `Dataplane` label set today.
+* On Kubernetes nothing bounds that set. A `MeshService` generated from a `Service` copies the `Service`'s labels wholesale (`meshservice_controller.go:483`), and `MeshServiceLabelPropagation` only gates the Universal generator, so it does not apply. Whatever a Helm chart, an Argo sync or a cost-allocation webhook stamps on a `Service` would reach the listener metadata of every proxy that talks to it. Limiting this to a list of label keys we choose ourselves would bound it, and that is the open question in the implementation notes.
 * Someone could set a label like `kuma.io/display-name` and shadow a tag the control plane computes, so reserved `kuma.io/` tags have to be written last and win over user labels. We already reject reserved keys in the label-propagation config, so this matches what we do elsewhere.
 
 ## Reliability implications
@@ -136,7 +139,12 @@ Low. The data we propagate is metadata the proxy's owner can already see. The ou
 * New matches will happen, which is the point, but it is still a behaviour change and needs a changelog entry. A policy matching `listenerTags: {kuma.io/zone: east}` with no `origin` set will start matching listeners it used to miss. This only affects policies that match `kuma.io/` keys, leave `origin` unset, and run on an affected proxy.
 * Traffic is unaffected. `io.kuma.tags` only exists on listeners and only our matcher reads it. Clusters and endpoints use other keys that we don't touch, so there is no path from here to load balancing, mTLS or endpoint selection.
 * Labels are not recomputed for resources that came from elsewhere, so a `MeshService` synced from global keeps the labels it arrived with. Tags built at generation time have to cope with labels computed by another control plane. A `MeshMultiZoneService`, for instance, has no `kuma.io/zone` label at all, so that key just won't be there.
-* Listener metadata now changes when labels change, so editing a label triggers an xDS update for every proxy with an outbound to that destination. Labels rarely change and we already regenerate the listener on any `MeshService` change, so this is small.
+* Listener metadata now changes when labels change, so editing a label on a `MeshService` updates the outbound listener of every proxy that talks to it. The trigger is not new. We hash a `MeshService` by its version, so any write to it already regenerates every proxy in the mesh. What is new is that the regeneration now produces different bytes. Today it is thrown away, because we compare the generated resources against the previous snapshot and skip the push when they marshal identically. Writes that leave labels alone, status updates in particular, stay free for the same reason.
+* Each push carries one listener. kuma-dp bootstraps with `DELTA_GRPC` (`pkg/xds/bootstrap/template_v3.go:122`), so a proxy receives the listener that changed rather than its whole set. The listener keeps its name, so Envoy replaces it in place and drains the old one.
+* Copying labels wholesale would tie listener churn to how often people deploy. Keys like `app.kubernetes.io/version` and `argocd.argoproj.io/instance` change on every rollout, and each change would replace a listener on every proxy reaching that service, for labels nobody is matching on. A fixed key list removes this, since only keys we picked can move the bytes.
+* Memory on the proxy is a small addition to something larger that already ships. Outbound listeners are one per destination and port, while endpoints are one per pod, and every local endpoint already carries the full unfiltered `Dataplane` label set (`pkg/xds/topology/outbound.go:384`, `:421`). A typical `MeshService` carries around 500 bytes of keys and values, closer to a kilobyte once it is a `google.protobuf.Struct`. A proxy reaching 200 services would hold roughly 200 KB of listener metadata against the few megabytes of endpoint labels it already holds. The control plane keeps a snapshot per proxy, so it scales the same way and the same ratio applies there.
+* The typical case is not the worst one. Nothing caps how many labels a `Service` can have, in Kuma or in Kubernetes, so a heavily labelled `Service` reaches a few kilobytes per listener and the tail is open-ended. This is another reason to bound the key set rather than to rely on the ratio above staying true.
+* This adds to a config we are otherwise trying to shrink. `InboundTagsDisabled` exists to cut memory, and #11065 wants to strip tags from endpoints for the same reason. The addition here is modest and lands on listeners rather than endpoints, but it points the other way, so we should not spend more of that budget than the feature needs.
 * Every affected golden file gains an `io.kuma.tags` block. It is a big mechanical diff, and it is worth actually reading it to catch labels we didn't mean to expose.
 
 ## Backport
@@ -401,7 +409,9 @@ result = append(result, DestinationService{
 
 `GetServiceByKRI` returns a `core.Destination`, which embeds `core_model.Resource` and so exposes `GetMeta().GetLabels()`. `DestinationService` (`:68-72`) keeps only the KRI and a synthesized name, so the labels are discarded. Threading them through needs no extra lookup.
 
-A `MeshService` keeps its identity in labels rather than its spec. The computed set lives in `pkg/core/resources/labels/registry.go:10-23`. The Universal generator (`meshservice/generate/generator.go:272-284`) sets `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/managed-by`, `kuma.io/env`, `kuma.io/zone` and `kuma.io/origin`, plus user labels when `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` is on. The Kubernetes controller adds `k8s.kuma.io/namespace` and `k8s.kuma.io/is-headless-service` (`meshservice_controller.go:373-489`). There is no `kuma.io/namespace` label in Kuma; the namespace label is `k8s.kuma.io/namespace` (`mesh_proto.KubeNamespaceTag`).
+A `MeshService` keeps its identity in labels rather than its spec. The computed set lives in `pkg/core/resources/labels/registry.go:10-23`, and only six of its twelve keys ever land on a `MeshService`, since the rest are for proxies and policies. The Universal generator (`meshservice/generate/generator.go:272-284`) sets `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/managed-by`, `kuma.io/env`, `kuma.io/zone` and `kuma.io/origin`, plus user labels when `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` is on. The Kubernetes controller adds `k8s.kuma.io/namespace` and `k8s.kuma.io/is-headless-service` (`meshservice_controller.go:373-489`). There is no `kuma.io/namespace` label in Kuma; the namespace label is `k8s.kuma.io/namespace` (`mesh_proto.KubeNamespaceTag`).
+
+The two environments differ in how user labels get there, which matters for how much we would be copying. The Universal generator filters them through `AllowedLabelKeys` and only runs when propagation is enabled, which is off by default. The Kubernetes controller does not: `ms.Labels = maps.Clone(svc.GetLabels())` at `meshservice_controller.go:483` takes every label off the `Service` unconditionally, and `MeshServiceLabelPropagation` never reaches that path. So on Kubernetes, which is where most of this runs, a `MeshService` carries whatever labels its `Service` carries.
 
 The resulting outbound listener for `MeshService` `backend` in namespace `kuma-demo`, zone `east`:
 
@@ -415,7 +425,7 @@ metadata:
       kuma.io/env: kubernetes
       kuma.io/origin: zone
       kuma.io/managed-by: k8s-controller
-      team: payments          # user label, when label propagation is enabled
+      team: payments          # user label, copied from the Service on Kubernetes
 ```
 
 ### Implementation notes
@@ -424,3 +434,5 @@ metadata:
 * Both outbound generators share the `TagsOrNil().WithoutTags(MeshTag)` line and both need updating: `meshtcproute/plugin/v1alpha1/listeners.go:41` and `meshhttproute/plugin/v1alpha1/listeners.go:78`.
 * The inbound half is `inbound_proxy_generator.go:96`, which needs the `Dataplane`'s labels when `iface.GetTags()` is empty. `pkg/xds/context/context.go:40` already carries `InboundTagsDisabled` into the xDS context.
 * Legacy branches keep their current behaviour: `LegacyOutbound != nil`, and inbounds with tags enabled.
+* Open question: we may want to copy only labels whose keys are on a list we choose ourselves, rather than every label the resource happens to carry. The computed labels are bounded, stable and already the ones we tell people to match on: `kuma.io/display-name`, `k8s.kuma.io/namespace`, `kuma.io/zone`, `kuma.io/env`, `kuma.io/origin` and `kuma.io/managed-by`. User labels are neither bounded nor stable, and on Kubernetes they arrive wholesale from the `Service` with nothing filtering them. A fixed list keeps the metadata small, keeps rollouts from churning listeners, and keeps the config dump free of labels nobody selects on. It needs settling before implementation, because it is easier to add keys later than to take them away.
+* A list we choose ourselves and UC3 pull against each other. Group targeting by a user label such as `team: payments` only works if that key reaches the listener, and we cannot know those keys up front. Either the list holds computed labels only and UC3 goes away, which takes with it the main advantage Option 4 has over Option 1, or operators name the extra keys themselves and UC3 survives at the cost of configuration. The middle option is to reuse `MeshServiceLabelPropagation.AllowedLabelKeys`, which already exists, already rejects reserved keys and is already validated. It does not gate the Kubernetes path today, so wiring it in would mean extending it rather than adding a flag. Note its current default is "empty means allow all", which is the opposite of what we want here.
