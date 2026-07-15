@@ -1807,6 +1807,13 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 	pullCtx, cancelPull := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelPull()
 	trustCachedTags := os.Getenv("KUMA_E2E_TRUST_CACHED_IMAGE_TAGS") == "true"
+	tagDigestRef := func(tagged, digestRef string) error {
+		tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
+		if out, err := tagCmd.CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
+		}
+		return nil
+	}
 	var wg sync.WaitGroup
 	pullErrs := make([]error, len(images))
 	for i, img := range images {
@@ -1815,7 +1822,9 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 			defer wg.Done()
 			if tagged, digestRef, ok := splitDigestRef(img); ok {
 				if exec.CommandContext(pullCtx, "docker", "image", "inspect", digestRef).Run() == nil {
-					_ = exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged).Run()
+					if err := tagDigestRef(tagged, digestRef); err != nil {
+						pullErrs[i] = err
+					}
 					return
 				}
 				if trustCachedTags && exec.CommandContext(pullCtx, "docker", "image", "inspect", tagged).Run() == nil {
@@ -1840,9 +1849,8 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 			if !ok {
 				return
 			}
-			tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
-			if out, err := tagCmd.CombinedOutput(); err != nil {
-				pullErrs[i] = errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
+			if err := tagDigestRef(tagged, digestRef); err != nil {
+				pullErrs[i] = err
 			}
 		}(i, img)
 	}

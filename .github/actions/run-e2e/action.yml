@@ -63,20 +63,21 @@ runs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/e2e-image-cache
-        key: e2e-images-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ hashFiles('test/framework/deployments/**') }}
+        key: e2e-images-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.parallel_runner_id }}-${{ hashFiles('test/framework/deployments/**') }}
     - name: "Load cached e2e images into docker"
       shell: bash
       run: |
         tar="${{ runner.temp }}/e2e-image-cache/images.tar"
+        echo "KUMA_E2E_TRUST_CACHED_IMAGE_TAGS=false" >> "$GITHUB_ENV"
         if [[ -f "$tar" ]]; then
           docker load -i "$tar"
+          echo "KUMA_E2E_TRUST_CACHED_IMAGE_TAGS=true" >> "$GITHUB_ENV"
         fi
     - name: "Run E2E tests"
       shell: bash
       env:
         KUMA_DEBUG: ${{ runner.debug == '1' }}
         KUMA_E2E_PRELOAD_MANIFEST: ${{ runner.temp }}/e2e-preloaded-images.txt
-        KUMA_E2E_TRUST_CACHED_IMAGE_TAGS: "true"
         E2E_K8S_VERSION: ${{ inputs.k8s_version }}
         E2E_CNI_NETWORK_PLUGIN: ${{ inputs.cni_network_plugin }}
         E2E_ARCH: ${{ inputs.arch }}
