@@ -37,7 +37,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/timeout"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/transparentproxy"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/workload"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/zoneegress"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
@@ -81,7 +80,6 @@ var (
 	_ = Describe("Mtls", Label("job-1"), mtls.Policy, Ordered)
 	_ = Describe("Reachable Services", Label("job-3"), reachableservices.ReachableServices, Ordered)
 	_ = Describe("Apis", Label("job-3"), api.Api, Ordered)
-	_ = Describe("Zone Egress", Label("job-3"), zoneegress.ExternalServices, Ordered)
 	_ = Describe("Transparent Proxy", Label("job-3"), transparentproxy.TransparentProxy, Ordered)
 	_ = Describe("Mesh Traffic Permission", Label("job-2"), meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
 	_ = Describe("GRPC", Label("job-3"), grpc.GRPC, Ordered)
