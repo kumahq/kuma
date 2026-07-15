@@ -2,11 +2,9 @@ package uninstall
 
 import (
 	"github.com/spf13/cobra"
-
-	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 )
 
-func NewUninstallCmd(root *kumactl_cmd.RootContext) *cobra.Command {
+func NewUninstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "uninstall",
 		Short: "Uninstall various Kuma components.",
@@ -15,7 +13,6 @@ func NewUninstallCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 
 	// sub-commands
 	cmd.AddCommand(newUninstallTransparentProxy())
-	cmd.AddCommand(newUninstallEbpf(root))
 
 	return cmd
 }
