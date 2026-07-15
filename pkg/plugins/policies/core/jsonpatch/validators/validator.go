@@ -118,19 +118,12 @@ func validatePath(path *string, op string) validators.ValidationError {
 	return err
 }
 
+// TopLevelTargetRefDeprecations used to also warn about MeshService, MeshServiceSubset
+// and MeshSubset as top-level targetRef kinds. Those kinds are now rejected outright by
+// top-level targetRef validation, so there is nothing left to deprecate for them.
 func TopLevelTargetRefDeprecations(targetRef *common_api.TargetRef) []string {
 	if targetRef == nil {
 		return nil
-	}
-	replacedByDataplane := map[common_api.TargetRefKind]struct{}{
-		common_api.MeshService:       {},
-		common_api.MeshServiceSubset: {},
-		common_api.MeshSubset:        {},
-	}
-	if _, ok := replacedByDataplane[targetRef.Kind]; ok {
-		return []string{
-			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with labels instead", targetRef.Kind, common_api.Dataplane),
-		}
 	}
 	if targetRef.Kind == common_api.MeshHTTPRoute {
 		return []string{
