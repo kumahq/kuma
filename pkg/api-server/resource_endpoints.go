@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+
 	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
