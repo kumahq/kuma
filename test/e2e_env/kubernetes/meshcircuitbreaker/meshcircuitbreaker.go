@@ -93,7 +93,7 @@ spec:
 			return client.CollectResponsesAndFailures(
 				kubernetes.Cluster,
 				"demo-client",
-				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 			)
@@ -110,7 +110,7 @@ spec:
 			return client.CollectResponsesAndFailures(
 				kubernetes.Cluster,
 				"demo-client",
-				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 				// increase processing time of a request to increase a probability of triggering maxPendingRequest limit
