@@ -21,9 +21,8 @@
                 {
                   "endpoint": {
                     "address": {
-                      "socketAddress": {
-                        "address": "otel-collector.observability",
-                        "portValue": 4317
+                      "pipe": {
+                        "path": "/tmp/kuma-otel-mt-otel-backend.sock"
                       }
                     }
                   }
@@ -33,7 +32,7 @@
           ]
         },
         "name": "meshtrace:opentelemetry",
-        "type": "STRICT_DNS",
+        "type": "STATIC",
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
@@ -41,6 +40,50 @@
               "http2ProtocolOptions": {}
             }
           }
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
+      "value": {
+        "directResponse": {
+          "body": {
+            "inlineString": "{\"backends\":[{\"name\":\"mt-otel-backend\",\"socketPath\":\"/tmp/kuma-otel-mt-otel-backend.sock\",\"endpoint\":\"otel-collector.observability:4317\",\"useHTTP\":false,\"traces\":{\"enabled\":true}}]}"
+          },
+          "status": 200
+        },
+        "match": {
+          "path": "/otel"
+        },
+        "name": "_kuma:dynamicconfig:/otel",
+        "responseHeadersToAdd": [
+          {
+            "header": {
+              "key": "Etag",
+              "value": "f6c360f6a3de7ef7b6d57536168ddc8f033f7b46e147ad472ba97d0ce69ad5fd"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
+      "value": {
+        "directResponse": {
+          "status": 304
+        },
+        "match": {
+          "headers": [
+            {
+              "name": "If-None-Match",
+              "stringMatch": {
+                "exact": "f6c360f6a3de7ef7b6d57536168ddc8f033f7b46e147ad472ba97d0ce69ad5fd"
+              }
+            }
+          ],
+          "path": "/otel"
         }
       }
     },
@@ -588,9 +631,8 @@
                 {
                   "endpoint": {
                     "address": {
-                      "socketAddress": {
-                        "address": "otel-collector.observability",
-                        "portValue": 4317
+                      "pipe": {
+                        "path": "/tmp/kuma-otel-mt-otel-backend.sock"
                       }
                     }
                   }
@@ -600,7 +642,7 @@
           ]
         },
         "name": "meshtrace:opentelemetry",
-        "type": "STRICT_DNS",
+        "type": "STATIC",
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
@@ -859,6 +901,34 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC",
                   "matcher": {
+                    "matcherList": {
+                      "matchers": [
+                        {
+                          "onMatch": {
+                            "action": {
+                              "name": "envoy.filters.rbac.action",
+                              "typedConfig": {
+                                "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                "name": "kri_mtp_envoyconfig-zoneproxies_kuma-3__allow-all-envoyconfig-zoneproxies-0_"
+                              }
+                            }
+                          },
+                          "predicate": {
+                            "singlePredicate": {
+                              "input": {
+                                "name": "envoy.matching.inputs.uri_san",
+                                "typedConfig": {
+                                  "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                }
+                              },
+                              "valueMatch": {
+                                "prefix": "spiffe://envoyconfig-zoneproxies.kuma-3.mesh.local"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
                     "onNoMatch": {
                       "action": {
                         "name": "envoy.filters.rbac.action",
