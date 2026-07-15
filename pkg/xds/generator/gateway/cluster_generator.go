@@ -229,7 +229,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	destProtocol := core_meta.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
 	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
-	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
 		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, false, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}, len(meshCtx.CAsByTrustDomain) > 0),
@@ -268,7 +268,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 	return buildClusterResource(
 		dest.Destination,
-		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol, dest).Configure(
+		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol).Configure(
 			clusters.ProvidedEndpointCluster(info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
@@ -281,18 +281,9 @@ func newClusterBuilder(
 	version core_xds.APIVersion,
 	name string,
 	protocol core_meta.Protocol,
-	dest *route.Destination,
 ) *clusters.ClusterBuilder {
-	var timeout *mesh_proto.Timeout_Conf
-	if timeoutResource := timeoutPolicyFor(dest); timeoutResource != nil {
-		timeout = timeoutResource.Spec.GetConf()
-	}
-
 	builder := clusters.NewClusterBuilder(version, name).Configure(
-		clusters.Timeout(timeout, protocol),
-		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
-		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),
-		clusters.HealthCheck(protocol, healthCheckPolicyFor(dest)),
+		clusters.Timeout(nil, protocol),
 	)
 
 	// TODO(jpeach) OutboundProxyGenerator unconditionally
@@ -364,28 +355,4 @@ func RouteDestinationsMutable(entries []route.Entry) []*route.Destination {
 	}
 
 	return destinations
-}
-
-func timeoutPolicyFor(dest *route.Destination) *core_mesh.TimeoutResource {
-	if policy, ok := dest.Policies[core_mesh.TimeoutType]; ok {
-		return policy.(*core_mesh.TimeoutResource)
-	}
-
-	return nil // TODO(jpeach) default timeout policy
-}
-
-func circuitBreakerPolicyFor(dest *route.Destination) *core_mesh.CircuitBreakerResource {
-	if policy, ok := dest.Policies[core_mesh.CircuitBreakerType]; ok {
-		return policy.(*core_mesh.CircuitBreakerResource)
-	}
-
-	return nil // TODO(jpeach) default circuit breaker policy
-}
-
-func healthCheckPolicyFor(dest *route.Destination) *core_mesh.HealthCheckResource {
-	if policy, ok := dest.Policies[core_mesh.HealthCheckType]; ok {
-		return policy.(*core_mesh.HealthCheckResource)
-	}
-
-	return nil // TODO(jpeach) default health check policy
 }

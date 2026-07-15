@@ -116,7 +116,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-1:externalservice
-                  timeout: 0s
           statPrefix: externalservice
       name: externalservice_mesh-1
       transportSocket:
@@ -181,7 +180,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-2:externalservice
-                  timeout: 0s
           statPrefix: externalservice
       name: externalservice_mesh-2
       transportSocket:

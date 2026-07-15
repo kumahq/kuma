@@ -3,7 +3,7 @@ experimental = true # To enable installation of Go tools from source with mise.
 
 [tools]
 actionlint = "1.7.12"
-buf = "1.70.0"
+buf = "1.71.0"
 container-structure-test = "1.22.1"
 ginkgo = "2.32.0"
 go = "1.26.5"
@@ -26,7 +26,7 @@ node = "24"
 "aqua:protocolbuffers/protobuf-go/protoc-gen-go" = "1.36.11"
 "aqua:stackrox/kube-linter" = "0.8.3"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
-"go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.7.1"
+"go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.7.2"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.21.0"
 "aqua:kubernetes-sigs/controller-runtime/setup-envtest" = "0.24.1"
 "ubi:grafana/dashboard-linter" = "v0.2.0"

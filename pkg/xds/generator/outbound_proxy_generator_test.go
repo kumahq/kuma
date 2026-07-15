@@ -71,23 +71,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		}},
 	}
 
-	timeout := &mesh_proto.Timeout{
-		Conf: &mesh_proto.Timeout_Conf{
-			ConnectTimeout: util_proto.Duration(100 * time.Second),
-			Tcp: &mesh_proto.Timeout_Conf_Tcp{
-				IdleTimeout: util_proto.Duration(101 * time.Second),
-			},
-			Http: &mesh_proto.Timeout_Conf_Http{
-				RequestTimeout: util_proto.Duration(102 * time.Second),
-				IdleTimeout:    util_proto.Duration(103 * time.Second),
-			},
-			Grpc: &mesh_proto.Timeout_Conf_Grpc{
-				StreamIdleTimeout: util_proto.Duration(104 * time.Second),
-				MaxStreamDuration: util_proto.Duration(105 * time.Second),
-			},
-		},
-	}
-
 	plainCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{},
 		Mesh: xds_context.MeshContext{
@@ -593,41 +576,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					OutboundTargets:                outboundTargets,
 					ExternalServiceOutboundTargets: esOutboundTargets,
-				},
-				Policies: model.MatchedPolicies{
-					TrafficLogs: model.TrafficLogMap{
-						"api-http": &core_mesh.TrafficLogResource{
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{
-									Backend: "file",
-								},
-							},
-						},
-						"api-tcp": &core_mesh.TrafficLogResource{
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{
-									Backend: "elk",
-								},
-							},
-						},
-					},
-					CircuitBreakers: model.CircuitBreakerMap{
-						"api-http": &core_mesh.CircuitBreakerResource{
-							Spec: &mesh_proto.CircuitBreaker{
-								Conf: &mesh_proto.CircuitBreaker_Conf{
-									Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-										TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
-									},
-								},
-							},
-						},
-					},
-					Timeouts: map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource{
-						{DataplaneIP: "127.0.0.1", DataplanePort: 40002}: {Spec: timeout},
-						{DataplaneIP: "127.0.0.1", DataplanePort: 40003}: {Spec: timeout},
-						{DataplaneIP: "127.0.0.1", DataplanePort: 40004}: {Spec: timeout},
-						{DataplaneIP: "127.0.0.1", DataplanePort: 18082}: {Spec: timeout},
-					},
 				},
 				Metadata: &model.DataplaneMetadata{
 					Features: xds_types.Features{"feature-tcp-accesslog-via-named-pipe": true},

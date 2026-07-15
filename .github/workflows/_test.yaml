@@ -7,12 +7,15 @@ on:
       RUNNERS_BY_ARCH:
         required: true
         type: string
+      IS_PULL_REQUEST:
+        required: true
+        type: boolean
 permissions:
   contents: read
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.32.13-k3s1
+  K8S_MIN_VERSION: v1.34.9-k3s1
   K8S_MAX_VERSION: v1.35.3-k3s1
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
 jobs:
@@ -20,6 +23,8 @@ jobs:
     timeout-minutes: 30
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    env:
+      UNIT_CLEAN_TESTCACHE: ${{ inputs.IS_PULL_REQUEST && 'false' || 'true' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -31,6 +36,16 @@ jobs:
           version: 2026.5.7
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: Cache Go build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
+            go-test-race-${{ runner.os }}-
       - run: |
           make test
   gen_e2e_matrix:
@@ -49,8 +64,7 @@ jobs:
                 "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
                 "parallelism": [4],
-                "cniNetworkPlugin": ["flannel"],
-                "sidecarContainers": [""]
+                "cniNetworkPlugin": ["flannel"]
               },
               "test_e2e_env": {
                 "target": ["kubernetes", "universal", "multizone"],
@@ -58,18 +72,15 @@ jobs:
                 "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
-                "sidecarContainers": [""],
                 "exclude":[
                   {"target": "kubernetes", "k8sVersion":"kind"},
                   {"target": "multizone", "k8sVersion":"kind"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
                 "include":[
-                  {"sidecarContainers": "false", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
                   {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "amd64"},
                   {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "amd64"},
                   {"k8sVersion": "kind", "target": "universal", "arch": "arm64"},
-                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
                   {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
                 ]
               }
@@ -78,6 +89,7 @@ jobs:
           OVERRIDE_JQ_CMD: |-
             .test_e2e = false
             | .test_e2e_env.include = []
+            | .test_e2e_env.parallelism = [4]
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
           FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
           SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
@@ -94,7 +106,7 @@ jobs:
           # Expand parallelRunnerId into the matrix based on each suite's parallelism, then remove parallelism
           BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq '
             if .test_e2e and (.test_e2e | type == "object") then .test_e2e.parallelRunnerId = [range(.test_e2e.parallelism[0] // 1)] | del(.test_e2e.parallelism) else . end |
-            if .test_e2e_env and (.test_e2e_env | type == "object") then .test_e2e_env.parallelRunnerId = [range(.test_e2e_env.parallelism[0] // 1)] | del(.test_e2e_env.parallelism) else . end
+            if .test_e2e_env and (.test_e2e_env | type == "object") then .test_e2e_env.shards = [.test_e2e_env.parallelism[0] // 1] | .test_e2e_env.parallelRunnerId = [range(.test_e2e_env.parallelism[0] // 1)] | del(.test_e2e_env.parallelism) else . end
           ')
 
           echo "final matrix: $BASE_MATRIX_ALL"
@@ -110,7 +122,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 5
+      max-parallel: ${{ github.event_name == 'pull_request' && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
     env:
@@ -127,17 +139,17 @@ jobs:
           k8s_version: ${{ matrix.k8sVersion }}
           cni_network_plugin: ${{ matrix.cniNetworkPlugin }}
           arch: ${{ matrix.arch }}
-          sidecar_containers: ${{ matrix.sidecarContainers }}
           target: ${{ matrix.target }}
           parallel_runner_id: ${{ matrix.parallelRunnerId }}
+          shards: ${{ matrix.shards }}
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
-    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }}${{ matrix.sidecarContainers != '' && ', noSidecarContainers' || '' }})"
+    name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     strategy:
-      max-parallel: 5
+      max-parallel: ${{ github.event_name == 'pull_request' && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
     env:
@@ -154,6 +166,6 @@ jobs:
           k8s_version: ${{ matrix.k8sVersion }}
           cni_network_plugin: ${{ matrix.cniNetworkPlugin }}
           arch: ${{ matrix.arch }}
-          sidecar_containers: ${{ matrix.sidecarContainers }}
           target: ${{ matrix.target }}
           parallel_runner_id: ${{ matrix.parallelRunnerId }}
+          shards: ${{ matrix.shards }}

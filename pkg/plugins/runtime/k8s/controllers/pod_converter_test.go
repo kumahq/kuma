@@ -44,8 +44,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 	type testCase struct {
 		pod                 string
 		servicesForPod      string
-		otherDataplanes     string
-		otherServices       string
 		otherReplicaSets    string
 		otherJobs           string
 		node                string
@@ -77,19 +75,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			// other services
-			var serviceGetter kube_client.Reader
-			if given.otherServices != "" {
-				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherServices))
-				Expect(err).ToNot(HaveOccurred())
-				YAMLs := util_yaml.SplitYAML(string(bytes))
-				services, err := Parse[*kube_core.Service](YAMLs)
-				Expect(err).ToNot(HaveOccurred())
-				reader, err := newFakeServiceReader(services)
-				Expect(err).ToNot(HaveOccurred())
-				serviceGetter = reader
-			}
-
 			// node
 			var nodeGetter kube_client.Reader
 			if given.node != "" {
@@ -109,16 +94,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				jobGetter = getJobsReader("testdata", given.otherJobs)
 			}
 
-			// other dataplanes
-			var otherDataplanes []*mesh_k8s.Dataplane
-			if given.otherDataplanes != "" {
-				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherDataplanes))
-				Expect(err).ToNot(HaveOccurred())
-				YAMLs := util_yaml.SplitYAML(string(bytes))
-				otherDataplanes, err = Parse[*mesh_k8s.Dataplane](YAMLs)
-				Expect(err).ToNot(HaveOccurred())
-			}
-
 			// existing dataplane
 			existingDataplane := &mesh_k8s.Dataplane{}
 			if given.existingDataplane != "" {
@@ -132,7 +107,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			existingDataplane.Name = pod.Name
 
 			converter := PodConverter{
-				ServiceGetter: serviceGetter,
 				InboundConverter: InboundConverter{
 					NameExtractor: NameExtractor{
 						ReplicaSetGetter: replicaSetGetter,
@@ -156,7 +130,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Build()
 
 			// when
-			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
+			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, mesh)
 
 			// then
 			if given.expectedErr != "" {
@@ -174,38 +148,20 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "01.services-for-pod.yaml",
 			dataplane:      "01.dataplane.yaml",
 		}),
-		Entry("02. Pod with 1 Service and 1 other Dataplane", testCase{
-			pod:             "02.pod.yaml",
-			servicesForPod:  "02.services-for-pod.yaml",
-			otherDataplanes: "02.other-dataplanes.yaml",
-			otherServices:   "02.other-services.yaml",
-			dataplane:       "02.dataplane.yaml",
-		}),
 		Entry("03. Pod with gateway annotation and 1 service - legacy", testCase{
 			pod:            "03.pod.yaml",
 			servicesForPod: "03.services-for-pod.yaml",
 			dataplane:      "03.dataplane.yaml",
 		}),
 		Entry("04. Pod with direct access to all services", testCase{
-			pod:             "04.pod.yaml",
-			servicesForPod:  "04.services-for-pod.yaml",
-			otherDataplanes: "04.other-dataplanes.yaml",
-			otherServices:   "04.other-services.yaml",
-			dataplane:       "04.dataplane.yaml",
+			pod:            "04.pod.yaml",
+			servicesForPod: "04.services-for-pod.yaml",
+			dataplane:      "04.dataplane.yaml",
 		}),
 		Entry("05. Pod with direct access to chosen services", testCase{
-			pod:             "05.pod.yaml",
-			servicesForPod:  "05.services-for-pod.yaml",
-			otherDataplanes: "05.other-dataplanes.yaml",
-			otherServices:   "05.other-services.yaml",
-			dataplane:       "05.dataplane.yaml",
-		}),
-		Entry("06. Pod with headless service and communication to headless services", testCase{
-			pod:             "06.pod.yaml",
-			servicesForPod:  "06.services-for-pod.yaml",
-			otherDataplanes: "06.other-dataplanes.yaml",
-			otherServices:   "06.other-services.yaml",
-			dataplane:       "06.dataplane.yaml",
+			pod:            "05.pod.yaml",
+			servicesForPod: "05.services-for-pod.yaml",
+			dataplane:      "05.dataplane.yaml",
 		}),
 		Entry("07. Pod with metrics override", testCase{
 			pod:            "07.pod.yaml",
@@ -256,11 +212,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:      "16.dataplane.yaml",
 		}),
 		Entry("17. Pod with reachable services", testCase{
-			pod:             "17.pod.yaml",
-			servicesForPod:  "17.services-for-pod.yaml",
-			otherDataplanes: "17.other-dataplanes.yaml",
-			otherServices:   "17.other-services.yaml",
-			dataplane:       "17.dataplane.yaml",
+			pod:            "17.pod.yaml",
+			servicesForPod: "17.services-for-pod.yaml",
+			dataplane:      "17.dataplane.yaml",
 		}),
 		Entry("18. Gateway with non tcp appProtocol", testCase{
 			pod:            "18.pod.yaml",
@@ -340,7 +294,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:               "update-dataplane.pod.yaml",
 			servicesForPod:    "update-dataplane.services-for-pod.yaml",
 			existingDataplane: "update-dataplane.existing-dataplane.yaml",
-			otherServices:     "update-dataplane.other-services.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
 		}),
 		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled", testCase{
@@ -456,7 +409,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter:     nil,
 				NodeGetter:        nodeGetter,
 				ResourceConverter: k8s.NewSimpleConverter(),
 				Zone:              "zone-1",
@@ -473,6 +425,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				err = yaml.Unmarshal(bytes, ingress)
 				Expect(err).ToNot(HaveOccurred())
 			}
+			ingress.Name = pod.Name
 
 			// then
 			err = converter.PodToIngress(context.Background(), ingress, pod, services)
@@ -561,7 +514,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter:     nil,
 				NodeGetter:        nodeGetter,
 				ResourceConverter: k8s.NewSimpleConverter(),
 				Zone:              "zone-1",
@@ -577,6 +529,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				err = yaml.Unmarshal(bytes, egress)
 				Expect(err).ToNot(HaveOccurred())
 			}
+			egress.Name = pod.Name
 
 			// when
 			err = converter.PodToEgress(ctx, egress, pod, services)
@@ -1109,35 +1062,6 @@ var _ = Describe("Serviceless Name for(...)", func() {
 		}),
 	)
 })
-
-type fakeServiceReader map[string]string
-
-func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, error) {
-	servicesMap := map[string]string{}
-	for _, service := range services {
-		bytes, err := yaml.Marshal(service)
-		if err != nil {
-			return nil, err
-		}
-		servicesMap[service.GetNamespace()+"/"+service.GetName()] = string(bytes)
-	}
-	return servicesMap, nil
-}
-
-var _ kube_client.Reader = fakeServiceReader{}
-
-func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
-	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
-	data, ok := r[fqName]
-	if !ok {
-		return errors.Errorf("service not found: %s", fqName)
-	}
-	return yaml.Unmarshal([]byte(data), obj)
-}
-
-func (f fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
-	return errors.New("not implemented")
-}
 
 type fakeNodeReader string
 

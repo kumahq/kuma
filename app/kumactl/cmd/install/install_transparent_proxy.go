@@ -173,20 +173,6 @@ runuser -u kuma-dp -- \
 				cfg.Redirect.DNS.Enabled = true
 			}
 
-			if cfg.Ebpf.Enabled {
-				if cfg.Ebpf.InstanceIP == "" {
-					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
-				}
-
-				if cfg.StoreFirewalld {
-					fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used")
-				}
-
-				if cfg.Redirect.DNS.SkipConntrackZoneSplit {
-					fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used")
-				}
-			}
-
 			// Bound the total setup time so that a hung iptables binary
 			// causes a clean failure (and pod restart) instead of a
 			// permanent hang that blocks the pod in init phase forever.
@@ -203,7 +189,7 @@ runuser -u kuma-dp -- \
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}
 
-			if !cfg.Ebpf.Enabled && cfg.StoreFirewalld {
+			if cfg.StoreFirewalld {
 				if _, err := firewalld.NewIptablesTranslator().
 					WithDryRun(cfg.DryRun).
 					WithOutput(cfg.RuntimeStdout).
@@ -246,14 +232,6 @@ runuser -u kuma-dp -- \
 		),
 	)
 	cmd.Flags().BoolVar(&cfg.DropInvalidPackets, "drop-invalid-packets", cfg.DropInvalidPackets, "This flag enables dropping of packets in invalid states, improving application stability by preventing them from reaching the backend. This is particularly beneficial during high-throughput requests where out-of-order packets might bypass DNAT. Note: Enabling this flag may introduce slight performance overhead. Weigh the trade-off between connection stability and performance before enabling it.")
-
-	// ebpf
-	cmd.Flags().BoolVar(&cfg.Ebpf.Enabled, "ebpf-enabled", cfg.Ebpf.Enabled, "use ebpf instead of iptables to install transparent proxy")
-	cmd.Flags().StringVar(&cfg.Ebpf.ProgramsSourcePath, "ebpf-programs-source-path", cfg.Ebpf.ProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
-	cmd.Flags().StringVar(&cfg.Ebpf.InstanceIP, "ebpf-instance-ip", cfg.Ebpf.InstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
-	cmd.Flags().StringVar(&cfg.Ebpf.BPFFSPath, "ebpf-bpffs-path", cfg.Ebpf.BPFFSPath, "the path of the BPF filesystem")
-	cmd.Flags().StringVar(&cfg.Ebpf.CgroupPath, "ebpf-cgroup-path", cfg.Ebpf.CgroupPath, "the path of cgroup2")
-	cmd.Flags().StringVar(&cfg.Ebpf.TCAttachIface, "ebpf-tc-attach-iface", cfg.Ebpf.TCAttachIface, "name of the interface which TC eBPF programs should be attached to")
 
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForUIDs, "exclude-outbound-ports-for-uids", []string{}, "outbound ports to exclude for specific uids in a format of protocol:ports:uids where protocol and ports can be omitted or have value tcp or udp and ports can be a single value, a list, a range or a combination of all or * and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for both TCP and UDP for uids 106, 107, 108")
 	cmd.Flags().StringArrayVar(&cfg.Redirect.VNet.Networks, "vnet", cfg.Redirect.VNet.Networks, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")

@@ -8,6 +8,126 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### eBPF transparent proxy removed
+
+The experimental eBPF transparent proxy feature has been removed. This feature
+used prebuilt merbridge binaries for traffic interception instead of iptables.
+
+The following configuration no longer has any effect and is silently ignored:
+
+- Control plane: `runtime.kubernetes.injector.ebpf.*` environment variables
+  (`KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_*`).
+- Helm values: `experimental.ebpf.*`, `hooks.ebpfCleanup`,
+  `cni.experimental.imageEbpf`, and `transparentProxy.configMap.config.ebpf`.
+- Pod annotations: `kuma.io/transparent-proxying-ebpf*`.
+
+The following CLI surface has been removed:
+
+- CLI flags: `kumactl install transparent-proxy --ebpf-*` and
+  `kumactl uninstall transparent-proxy --ebpf-*`.
+- CLI command: `kumactl uninstall ebpf`.
+
+**Action required**
+
+If you are using eBPF transparent proxy (`experimental.ebpf.enabled=true`), you
+must migrate to the iptables-based transparent proxy before upgrading. Remove
+the eBPF configuration from your Helm values and pod annotations. The
+iptables-based transparent proxy is the default and does not require additional
+configuration.
+
+If you have eBPF programs pinned on cluster nodes, clean them up **before**
+upgrading by running `kumactl uninstall ebpf` with the pre-upgrade Kuma version.
+After upgrading, this command is no longer available. If you skip this step,
+residual BPF state remains on affected nodes: pinned programs under bpffs
+(`/sys/fs/bpf`), cgroup connect hooks, and TC filter attachments. This state
+continues intercepting traffic until manually removed. Consult the merbridge
+documentation for manual cleanup procedures if needed.
+
+### North-south Gateway API (built-in gateway) support removed
+
+The control plane no longer reconciles the north-south Gateway API resources
+`Gateway`, `GatewayClass`, and `ReferenceGrant` used to configure the
+built-in gateway via the Kubernetes Gateway API. `HTTPRoute` is still
+reconciled, but only for its east-west (GAMMA) use — `HTTPRoute`s whose
+`parentRefs` target a `Service` and get translated to `MeshHTTPRoute`.
+`HTTPRoute`s that target a `Gateway` are now ignored by the control plane.
+Any status that Kuma already wrote for those `Gateway` parent references is
+left unchanged, but it is no longer updated.
+
+The built-in gateway itself (`MeshGateway`, `MeshGatewayInstance`) is
+unaffected by this change. See "Built-in gateway Kubernetes controllers
+removed" below for the separate removal of `MeshGatewayInstance` management.
+
+**Action required**
+
+- Before upgrading, delete any `Gateway` and `ReferenceGrant` resources you
+  created for the built-in gateway; the control plane no longer manages them
+  and leaves them untouched on disk.
+- The `kuma` `GatewayClass` that the Helm chart used to install is no longer
+  installed. On startup, the control plane removes the legacy
+  `gateway-exists-finalizer.gateway.networking.k8s.io` finalizer from
+  Kuma-managed `GatewayClass` objects so Helm-pruned objects can finish
+  deleting. If you manage RBAC manually, grant the control plane `get`, `list`,
+  `patch`, and `update` on `gatewayclasses` and `get`, `patch`, and `update`
+  on `gatewayclasses/finalizers` during the upgrade, or remove that finalizer
+  before upgrading.
+- Any Kuma `Secret` that was copied from a Gateway API TLS `Secret` (name
+  prefixed `gapi-`) is now orphaned and must be deleted manually.
+- The default Helm-installed cluster RBAC no longer grants access to
+  `gateways` and `referencegrants`. It still grants access to `httproutes`
+  for the GAMMA path, plus narrow `gatewayclasses` access for the finalizer
+  cleanup described above. If you manage RBAC manually, add the
+  `gatewayclasses` permissions called out above for the upgrade window.
+- The config field `runtime.kubernetes.supportGatewaySecretsInAllNamespaces`
+  (env `KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES`)
+  and the Helm value `controlPlane.supportGatewaySecretsInAllNamespaces` have
+  been removed. The control plane now always scopes its `Secret` watch to its
+  own system namespace. Remove this key from your config file and Helm
+  values — leaving it in place is harmless but has no effect.
+
+### Built-in gateway Kubernetes controllers removed
+
+The control plane no longer reconciles `MeshGatewayInstance` resources on
+Kubernetes. It no longer creates or manages the `Service` and `Deployment`
+generated for a `MeshGatewayInstance`, no longer converts `Pod`s annotated
+`kuma.io/gateway: builtin` into a built-in gateway `Dataplane`, and no longer
+runs the `MeshGatewayInstance` admission validator. `kumactl inspect
+meshgateway` has been removed along with its client. Delegated gateway modes
+(`kuma.io/gateway: enabled` / `provided`) and the Gateway API `HTTPRoute`
+GAMMA path are unaffected.
+
+The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
+`MeshGatewayRoute` resources themselves are not removed by this change.
+
+**Action required**
+
+- Existing `MeshGatewayInstance` resources become inert: the control plane
+  stops reconciling them, so any `Service`, `Deployment`, and `BUILTIN`
+  `Dataplane` it previously generated for them is not updated, recreated, or
+  cleaned up automatically. If you still rely on a built-in gateway, migrate
+  it to a delegated gateway (bring your own `Deployment`/`Service` fronting a
+  Kuma-injected pod annotated `kuma.io/gateway: enabled` or `provided`) before
+  upgrading.
+- Before upgrading, or as part of your migration, manually delete the
+  `MeshGatewayInstance` resources you no longer need, along with the
+  `Service`, `Deployment`, and `Dataplane` objects they previously generated
+  (they are owned by the `MeshGatewayInstance`, so deleting it will cascade
+  via owner references, but only for objects created before this upgrade).
+- The default Helm-installed cluster RBAC no longer grants access to
+  `meshgatewayinstances`, `meshgatewayinstances/status`, or
+  `meshgatewayinstances/finalizers`, and the validating webhook configuration
+  no longer includes `meshgatewayinstances`. If you manage RBAC manually,
+  remove these permissions and webhook rules; if you keep them, they are
+  harmless but unused.
+- Rolling back a control plane upgraded past this version does not restore the
+  removed gateway controller behavior automatically: the objects generated for
+  any `MeshGatewayInstance` created
+  or changed while running the new control plane are not retroactively
+  reconciled by an older control plane's cache until it re-lists them, and a
+  Helm rollback alone does not restore RBAC/webhook rules removed by a
+  `helm upgrade` that already ran with the new chart — reapply the previous
+  chart version to restore them.
+
 ### Default `TrafficPermission`/`TrafficRoute` creation removed
 
 The control plane no longer creates the default allow-all `TrafficPermission`
@@ -58,11 +178,72 @@ annotations on Kubernetes). Traffic that is not permitted by a
 `MeshTrafficPermission` is still denied at the proxy; it is simply no longer
 pruned from the proxy configuration.
 
+
 ### `kumactl install observability` removed
 
 The deprecated `kumactl install observability` command has been removed for Kuma 3.0.
 Use separately managed observability components or your platform's preferred observability stack instead.
 Kuma still ships first-party Grafana dashboards in the release tarball under `dashboards/grafana/`.
+
+### `TrafficLog` no longer affects generated Envoy config
+
+The legacy `TrafficLog` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `TrafficLog` resource no
+longer changes the access log configuration of any listener.
+
+The `TrafficLog` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate access logging to `MeshAccessLog`, which replaces `TrafficLog`.
+
+### KDS snapshot watchdog config removed
+
+KDS now always uses the event-based snapshot watchdog. The previous polling
+fallback and the configuration that controlled it have been removed.
+
+The following configuration has been removed:
+
+- Control plane: `experimental.kdsEventBasedWatchdog.enabled`
+  (`KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED`).
+- Global control plane: `multizone.global.kds.refreshInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL`).
+- Zone control plane: `multizone.zone.kds.refreshInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL`).
+
+**Action required**
+
+Remove the settings above from your control plane config and environment if
+set. KDS snapshot generation is event-driven, with periodic full resync
+controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
+
+### `TrafficTrace` no longer affects generated Envoy config
+
+The legacy `TrafficTrace` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `TrafficTrace` resource no
+longer changes the tracing configuration of any listener.
+
+The `TrafficTrace` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate tracing to `MeshTrace`, which replaces `TrafficTrace`.
+
+### `Timeout` no longer affects generated Envoy config
+
+The legacy `Timeout` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `Timeout` resource no
+longer changes the connection, request, or idle timeout configuration of
+any listener, route, or cluster.
+
+The `Timeout` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate timeouts to `MeshTimeout`, which replaces `Timeout`.
 
 ### Delta xDS is now the only xDS protocol
 
@@ -146,6 +327,10 @@ A new explicit flag preserves the previous insecure behavior:
 - `kumactl config control-planes add --skip-verify`
 
 Do not use this in production.
+
+### Rolling-upgrade note: inbound listeners use SO_REUSEPORT by default
+
+See [Inbound listeners now use SO_REUSEPORT by default](#inbound-listeners-now-use-so_reuseport-by-default).
 
 ## Upgrade to `2.12.11`
 
@@ -331,31 +516,17 @@ This will become a hard validation error in 3.0.
 
 Rename any `MeshMultiZoneService` whose name exceeds 63 characters.
 
-### Kubernetes native sidecar containers enabled by default
+### Kubernetes native sidecar containers are now the only injection mode
 
-The `experimental.sidecarContainers` feature (K8s native sidecar containers via init containers with `restartPolicy: Always`) is now **enabled by default**.
+The `experimental.sidecarContainers` opt-out (Helm value and `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` env var) has been removed. Kubernetes native sidecar containers (init containers with `restartPolicy: Always`, GA since Kubernetes 1.29) are now unconditionally used.
 
 **What changed:**
-- `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` defaults to `true`
-- Helm value: `experimental.sidecarContainers` (default `true`)
-- Requires Kubernetes 1.29+ (native sidecar container support is GA)
+- The Helm value `experimental.sidecarContainers` and the `KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS` env var no longer exist; setting either has no effect.
+- The control plane still detects the Kubernetes server version and automatically falls back to legacy (non-native) injection on clusters older than 1.29, but this is no longer configurable.
 
 **Action required:**
 
-None for Kubernetes 1.29+. Native sidecars start before app containers and outlive them, improving graceful shutdown and startup ordering.
-
-To revert to the old behavior (init-based injection without `restartPolicy: Always`):
-
-**Kubernetes (Helm)**
-```yaml
-experimental:
-  sidecarContainers: false
-```
-
-**Control plane environment variable**
-```sh
-KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=false
-```
+None for Kubernetes 1.29+, which is already below Kuma's own minimum tested/supported Kubernetes version. If you were relying on `sidecarContainers: false` to opt out, that is no longer possible; remove the setting from your Helm values or environment.
 
 ### DNS server domain must not start with a dot
 
@@ -1026,6 +1197,14 @@ is not a correct value, we have decided to deprecate it. If you are using `Sourc
 
 Policies no longer attach directly to built-in `MeshGateway` listeners through `spec.targetRef.kind: MeshGateway` for `MeshAccessLog`, `MeshCircuitBreaker`, `MeshFaultInjection`, `MeshHealthCheck`, `MeshRateLimit`, `MeshRetry`, `MeshTimeout`, `MeshTLS`, `MeshTrace`, or `MeshLoadBalancingStrategy`.
 Use `MeshHTTPRoute` or `MeshTCPRoute` resources for built-in gateway routing behavior, and move the affected policy configuration to supported target kinds before upgrading.
+
+### Legacy `FaultInjection` policy no longer generates Envoy configuration
+
+The legacy `FaultInjection` policy (`kind: FaultInjection`, superseded by `MeshFaultInjection`) no longer produces any Envoy fault-injection filters. Existing `FaultInjection` resources remain creatable and readable through the API, but they have no effect on data plane proxies.
+
+**Action required**
+
+Migrate any remaining `FaultInjection` resources to `MeshFaultInjection` before upgrading. See the [MeshFaultInjection documentation](https://kuma.io/docs/latest/policies/meshfaultinjection/) for the equivalent configuration.
 
 ### MeshHealthCheck
 

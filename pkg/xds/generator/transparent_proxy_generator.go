@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -75,22 +74,11 @@ func CreateOutboundPassthroughListener(
 	outboundPort uint32,
 	statPrefix string,
 ) (envoy_common.NamedResource, error) {
-	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
-	meshName := ctx.Mesh.Resource.GetMeta().GetName()
-
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, outboundPort, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
-			Configure(envoy_listeners.NetworkAccessLog(
-				meshName,
-				envoy_common.TrafficDirectionUnspecified,
-				sourceService,
-				"external",
-				ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
-				proxy,
-			)))).
+			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {

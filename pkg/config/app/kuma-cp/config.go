@@ -281,16 +281,13 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			KubeOutboundsAsVIPs:             true,
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
-				Enabled:            false,
-				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
 				DelayFullResync:    false,
 			},
-			SidecarContainers: true,
 		},
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
@@ -457,9 +454,6 @@ func DefaultDefaultsConfig() *Defaults {
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
-	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
-	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
 	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
 	// It is recommended to use tag first model for deployments with more than 2k services
 	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
@@ -473,16 +467,11 @@ type ExperimentalConfig struct {
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
 	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
-	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
-	// environment.
-	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
-	// If true, then experimental event based watchdog to generate KDS snapshot is used.
-	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
 	// How often we flush changes when experimental event based watchdog is used.
 	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
 	// How often we schedule full KDS resync when experimental event based watchdog is used.

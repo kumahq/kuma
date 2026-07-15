@@ -2,7 +2,6 @@ resources:
 - name: es2-b5516780eaf1ed13
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     loadAssignment:
       clusterName: es2-b5516780eaf1ed13
       endpoints:
@@ -24,14 +23,11 @@ resources:
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        commonHttpProtocolOptions:
-          idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
 - name: es2-d79214c8b3a5805b
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     loadAssignment:
       clusterName: es2-d79214c8b3a5805b
       endpoints:
@@ -53,8 +49,6 @@ resources:
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        commonHttpProtocolOptions:
-          idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
 - name: outbound:240.0.0.0:80
@@ -70,8 +64,6 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -98,7 +90,6 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: es2-b5516780eaf1ed13
@@ -106,7 +97,6 @@ resources:
                     - name: es2-d79214c8b3a5805b
                       weight: 90
           statPrefix: es2
-          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -126,8 +116,6 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -154,7 +142,6 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: es2-b5516780eaf1ed13
@@ -162,7 +149,6 @@ resources:
                     - name: es2-d79214c8b3a5805b
                       weight: 90
           statPrefix: es2
-          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -182,8 +168,6 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -210,7 +194,6 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: es2-b5516780eaf1ed13
@@ -218,7 +201,6 @@ resources:
                     - name: es2-d79214c8b3a5805b
                       weight: 90
           statPrefix: es2
-          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:

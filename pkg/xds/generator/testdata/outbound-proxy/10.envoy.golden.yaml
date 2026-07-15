@@ -2,7 +2,6 @@ resources:
 - name: backend
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -77,7 +76,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
-          idleTimeout: 0s
           statPrefix: backend
     metadata:
       filterMetadata:

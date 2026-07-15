@@ -110,7 +110,6 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.admissionServerPort | int | `5443` | Define a new server port for the admission controller. Recommended to set in combination with hostNetwork to prevent multiple port bindings on the same port (like Calico in AWS EKS). |
 | controlPlane.podSecurityContext | object | `{"runAsNonRoot":true,"seccompProfile":{"type":"RuntimeDefault"}}` | Security context at the pod level for control plane. |
 | controlPlane.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for control plane. |
-| controlPlane.supportGatewaySecretsInAllNamespaces | bool | `false` | If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace. The downside is that control plane requires permission to read Secrets in all namespaces. |
 | controlPlane.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the control-plane pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
 | controlPlane.dns.policy | string | `""` | Defines how DNS resolution is configured for that Pod. |
 | controlPlane.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
@@ -134,10 +133,6 @@ A Helm chart for the Kuma Control Plane
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
 | cni.restartPolicy | string | `"Always"` | Pod restart policy for the CNI pods |
 | cni.delayStartupSeconds | int | `0` | it's only useful in tests to trigger a possible race condition |
-| cni.experimental | object | `{"imageEbpf":{"registry":"docker.io/kumahq","repository":"merbridge","tag":"0.8.5"}}` | use new CNI (experimental) |
-| cni.experimental.imageEbpf.registry | string | `"docker.io/kumahq"` | CNI experimental eBPF image registry |
-| cni.experimental.imageEbpf.repository | string | `"merbridge"` | CNI experimental eBPF image repository |
-| cni.experimental.imageEbpf.tag | string | `"0.8.5"` | CNI experimental eBPF image tag |
 | cni.resources.requests.cpu | string | `"100m"` |  |
 | cni.resources.requests.memory | string | `"100Mi"` |  |
 | cni.resources.limits.memory | string | `"100Mi"` |  |
@@ -298,9 +293,6 @@ A Helm chart for the Kuma Control Plane
 | hooks.ttlSecondsAfterFinished | int | `0` | TTL in seconds for hook Jobs after they finish. Set to null to disable automatic TTL-based deletion (recommended when using ArgoCD, which needs to read job status before deletion). |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
-| hooks.ebpfCleanup | object | `{"containerSecurityContext":{"readOnlyRootFilesystem":false},"podSecurityContext":{"runAsNonRoot":false}}` | ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs Changing below values will potentially break ebpf cleanup completely, so be cautious when doing so. |
-| hooks.ebpfCleanup.podSecurityContext | object | `{"runAsNonRoot":false}` | Security context at the pod level for crd/webhook/cleanup-ebpf |
-| hooks.ebpfCleanup.containerSecurityContext | object | `{"readOnlyRootFilesystem":false}` | Security context at the container level for crd/webhook/cleanup-ebpf |
 | transparentProxy.configMap.enabled | bool | `false` | If true, enables the use of a ConfigMap to manage transparent proxy configuration instead of directly configuring it within the Kuma system |
 | transparentProxy.configMap.name | string | `"kuma-transparent-proxy-config"` | The name of the ConfigMap used to store the transparent proxy configuration |
 | transparentProxy.configMap.config.kumaDPUser | string | `"5678"` | The username or UID of the user that will run kuma-dp. If not provided, the system will use the default UID ("5678") or the default username ("kuma-dp") |
@@ -325,12 +317,6 @@ A Helm chart for the Kuma Control Plane
 | transparentProxy.configMap.config.redirect.outbound.includePorts | list | `[]` | List of ports to include in outbound traffic redirection |
 | transparentProxy.configMap.config.redirect.outbound.insertRedirectInsteadOfAppend | bool | `false` | Inserts the redirection rule at the beginning of the chain instead of appending it |
 | transparentProxy.configMap.config.redirect.vnet.networks | list | `[]` | Specifies virtual networks using the format interfaceName:CIDR Allows matching traffic on specific network interfaces Examples: - "docker0:172.17.0.0/16" - "br+:172.18.0.0/16" (matches any interface starting with "br") - "iface:::1/64" (for IPv6) |
-| transparentProxy.configMap.config.ebpf.enabled | bool | `false` | Enables eBPF support for handling traffic redirection in the transparent proxy |
-| transparentProxy.configMap.config.ebpf.bpffsPath | string | `"/run/kuma/bpf"` | The path of the BPF filesystem |
-| transparentProxy.configMap.config.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | The path of cgroup2 |
-| transparentProxy.configMap.config.ebpf.instanceIPEnvVarName | string | `""` | The name of the environment variable containing the IP address of the instance (pod/vm) where transparent proxy will be installed |
-| transparentProxy.configMap.config.ebpf.programsSourcePath | string | `"/tmp/kuma-ebpf"` | Path where compiled eBPF programs and other necessary files for eBPF mode can be found |
-| transparentProxy.configMap.config.ebpf.tcAttachIface | string | `""` | The network interface for TC eBPF programs to bind to. If not provided, it will be automatically determined |
 | transparentProxy.configMap.config.retry.maxRetries | int | `4` | The maximum number of retry attempts for operations |
 | transparentProxy.configMap.config.retry.sleepBetweenRetries | string | `"2s"` | The time duration to wait between retry attempts |
 | transparentProxy.configMap.config.iptablesExecutables.iptables | string | `""` | Custom path for the iptables executable (IPv4) |
@@ -346,12 +332,6 @@ A Helm chart for the Kuma Control Plane
 | transparentProxy.configMap.config.dropInvalidPackets | bool | `false` | Drops invalid packets to avoid connection resets in high-throughput scenarios |
 | transparentProxy.configMap.config.storeFirewalld | bool | `false` | Enables firewalld support to store iptables rules |
 | transparentProxy.configMap.config.verbose | bool | `false` | Enables verbose mode with longer argument/flag names and additional comments |
-| experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
-| experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |
-| experimental.ebpf.bpffsPath | string | `"/sys/fs/bpf"` | Path where BPF file system should be mounted |
-| experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
-| experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
-| experimental.ebpf.programsSourcePath | string | `"/tmp/kuma-ebpf"` | Path where compiled eBPF programs which will be installed can be found |
 | experimental.sidecarContainers | bool | `true` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
 | experimental.inboundTagsDisabled | bool | `false` | If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching. |
 | experimental.envoyAdminUnixSocket | bool | `true` | If true, Envoy admin API binds to a Unix domain socket instead of TCP. |
