@@ -37,7 +37,6 @@ type BackendRefDestination struct {
 
 // BuildMeshDestinations builds destinations for legacy zone proxies using the hash-based SNI format.
 func BuildMeshDestinations(
-	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	systemNamespace string,
 	resources xds_context.Resources,
 	realResourceLists ...core_resources.DestinationList,

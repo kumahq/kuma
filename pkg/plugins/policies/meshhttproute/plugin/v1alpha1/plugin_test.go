@@ -17,7 +17,6 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
@@ -27,7 +26,6 @@ import (
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
@@ -35,7 +33,6 @@ import (
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
@@ -3703,9 +3700,6 @@ func meshContextWithResources(
 		xds_server.MeshResourceTypes(),
 		lookupIPFunc,
 		"zone-1",
-		vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
-		"mesh",
-		80,
 		nil,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")

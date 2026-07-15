@@ -10,10 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
-	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
@@ -35,9 +32,6 @@ var _ = Describe("hash", func() {
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
-			"mesh",
-			80,
 			nil,
 		)
 	})

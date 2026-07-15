@@ -37,9 +37,6 @@ type meshContextBuilder struct {
 	typeSet                map[core_model.ResourceType]struct{}
 	ipFunc                 lookup.LookupIPFunc
 	zone                   string
-	vipsPersistence        *vips.Persistence
-	topLevelDomain         string
-	vipPort                uint32
 	caProvider             secrets.CaProvider
 	withPolicyMatchingHash bool
 }
@@ -79,9 +76,6 @@ func NewMeshContextBuilder(
 	types []core_model.ResourceType, // types that should be taken into account when MeshContext is built.
 	ipFunc lookup.LookupIPFunc,
 	zone string,
-	vipsPersistence *vips.Persistence,
-	topLevelDomain string,
-	vipPort uint32,
 	caProvider secrets.CaProvider,
 	opts ...MeshContextBuilderOption,
 ) MeshContextBuilder {
@@ -91,14 +85,11 @@ func NewMeshContextBuilder(
 	}
 
 	builder := &meshContextBuilder{
-		rm:              rm,
-		typeSet:         typeSet,
-		ipFunc:          ipFunc,
-		zone:            zone,
-		vipsPersistence: vipsPersistence,
-		topLevelDomain:  topLevelDomain,
-		vipPort:         vipPort,
-		caProvider:      caProvider,
+		rm:         rm,
+		typeSet:    typeSet,
+		ipFunc:     ipFunc,
+		zone:       zone,
+		caProvider: caProvider,
 	}
 	for _, opt := range opts {
 		opt(builder)

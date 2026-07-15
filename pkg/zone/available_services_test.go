@@ -12,12 +12,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -51,9 +49,6 @@ var _ = Describe("AvailableServices Tracker", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(resourceStore), false),
-				".mesh",
-				80,
 				nil,
 			)
 			var err error
@@ -165,9 +160,6 @@ var _ = Describe("AvailableServices Tracker", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(resourceStore), false),
-				".mesh",
-				80,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(

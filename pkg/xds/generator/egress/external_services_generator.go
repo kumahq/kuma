@@ -51,7 +51,6 @@ func getExternalServicesClusters(
 	svcAcc := envoy_common.NewServicesAccumulator(nil)
 	localResources := xds_context.Resources{MeshLocalResources: resources.Resources}
 	destinations := zoneproxy.BuildMeshDestinations(
-		nil,
 		"",
 		localResources,
 		localResources.MeshExternalServices(),

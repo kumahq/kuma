@@ -51,7 +51,6 @@ func genInternalResources(
 	availableServices := util_maps.AllValues(availableServicesMap)
 
 	destinations := zoneproxy.BuildMeshDestinations(
-		availableServices,
 		"",
 		xds_context.Resources{MeshLocalResources: resources.Resources},
 	)

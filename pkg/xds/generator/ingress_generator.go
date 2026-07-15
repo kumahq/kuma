@@ -66,7 +66,6 @@ func (i IngressGenerator) Generate(
 		}
 
 		dest := zoneproxy.BuildMeshDestinations(
-			availableServices[meshName],
 			cp.SystemNamespace,
 			meshResources,
 			localMS,
