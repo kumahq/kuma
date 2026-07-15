@@ -81,10 +81,6 @@ func (r Resources) TrafficPermissions() *core_mesh.TrafficPermissionResourceList
 	return r.ListOrEmpty(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
 }
 
-func (r Resources) Timeouts() *core_mesh.TimeoutResourceList {
-	return r.ListOrEmpty(core_mesh.TimeoutType).(*core_mesh.TimeoutResourceList)
-}
-
 func (r Resources) RateLimits() *core_mesh.RateLimitResourceList {
 	return r.ListOrEmpty(core_mesh.RateLimitType).(*core_mesh.RateLimitResourceList)
 }

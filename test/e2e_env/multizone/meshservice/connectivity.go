@@ -14,7 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
@@ -88,76 +87,6 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		meshGateway := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshGateway
-metadata:
-  name: edge-gateway-ms
-  labels:
-    kuma.io/origin: zone
-mesh: %s
-spec:
-  selectors:
-  - match:
-      kuma.io/service: edge-gateway-ms_%s_svc
-  conf:
-    listeners:
-    - port: 8080
-      protocol: HTTP
-`, meshName, namespace)
-		gatewayRoute := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: route-ms
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-    kuma.io/origin: zone
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: edge-gateway-ms
-  to:
-    - targetRef:
-        kind: Mesh
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /local
-          default:
-            backendRefs:
-              - kind: MeshService
-                name: test-server
-                namespace: %s
-                port: 80
-                weight: 1
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /uni-2
-          default:
-            backendRefs:
-              - kind: MeshService
-                labels:
-                  kuma.io/display-name: test-server
-                  kuma.io/zone: kuma-5
-                port: 80
-                weight: 1
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /no-matching-backend
-          default:
-            backendRefs:
-              - kind: MeshService
-                labels:
-                  kuma.io/display-name: this-doesnt-exist
-                port: 80
-                weight: 1
-`, Config.KumaNamespace, meshName, namespace)
-
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -182,9 +111,6 @@ spec:
 				),
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
 			)).
-			Install(YamlK8s(meshGateway)).
-			Install(YamlK8s(gatewayRoute)).
-			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-ms", namespace, meshName))).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
@@ -256,55 +182,6 @@ spec:
 		expectedInstance string
 		should           types.GomegaMatcher
 	}
-
-	DescribeTable("Gateway in Kubernetes",
-		func(given testCase) {
-			if given.should == nil {
-				given.should = Succeed()
-			}
-			Eventually(func(g Gomega) {
-				response, err := client.CollectEchoResponse(
-					multizone.KubeZone1, "demo-client",
-					fmt.Sprintf("http://edge-gateway-ms.%s:8080/%s", namespace, given.address()),
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(Equal(given.expectedInstance))
-			}, "30s", "1s").Should(Succeed())
-		},
-		Entry("should access service in the same Kubernetes cluster via a mesh-targeted generator name", testCase{
-			address:          func() string { return "local" },
-			expectedInstance: "kube-test-server-1",
-		}),
-		Entry("should access service in the a Universal cluster", testCase{
-			address:          func() string { return "uni-2" },
-			expectedInstance: "uni-test-server",
-		}),
-	)
-
-	type failureCase struct {
-		path         string
-		responseCode int
-	}
-	DescribeTable("Gateway in Kubernetes with incorrect routes",
-		func(given failureCase) {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
-					multizone.KubeZone1, "demo-client",
-					fmt.Sprintf("http://edge-gateway-ms.%s:8080/%s", namespace, given.path),
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(given.responseCode))
-			}, "30s", "1s").Should(Succeed())
-		},
-		Entry("no matching backend should return 500", failureCase{
-			path:         "no-matching-backend",
-			responseCode: 500,
-		}),
-	)
 
 	DescribeTable("client from Kubernetes",
 		func(given testCase) {
