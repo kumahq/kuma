@@ -127,6 +127,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 				err = yaml.Unmarshal(bytes, existingDataplane)
 				Expect(err).ToNot(HaveOccurred())
 			}
+			// mirror production: the controller always names the Dataplane after the Pod
+			// before conversion (see pod_controller.go), which drives kuma.io/display-name
+			existingDataplane.Name = pod.Name
 
 			converter := PodConverter{
 				ServiceGetter: serviceGetter,

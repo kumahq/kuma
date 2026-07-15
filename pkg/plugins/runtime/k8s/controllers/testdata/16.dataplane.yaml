@@ -3,10 +3,11 @@ metadata:
   labels:
     app: kuma-egress
     k8s.kuma.io/namespace: kuma-system
-    kuma.io/display-name: ""
+    kuma.io/display-name: kuma-egress-74c9b794cf-vft7l
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     pod-template-hash: 74c9b794cf
+  name: kuma-egress-74c9b794cf-vft7l
 spec:
   networking:
     address: 10.244.0.8
