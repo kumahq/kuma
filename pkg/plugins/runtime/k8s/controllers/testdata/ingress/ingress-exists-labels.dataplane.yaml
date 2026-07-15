@@ -2,9 +2,10 @@ metadata:
   labels:
     app: kuma-ingress
     k8s.kuma.io/namespace: kuma-system
-    kuma.io/display-name: ""
+    kuma.io/display-name: kuma-ingress
     kuma.io/proxy-type: zoneingress
     test: new
+  name: kuma-ingress
 spec:
   availableServices:
   - instances: 3
