@@ -259,6 +259,28 @@ this release; existing resources are still accepted and stored.
 
 Migrate to `MeshHTTPRoute`/`MeshTCPRoute`, which replace `VirtualOutbound`.
 
+### `TrafficRoute` no longer affects generated Envoy config
+
+The legacy `TrafficRoute` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `TrafficRoute` resource no
+longer changes outbound routing, load balancing, or reachable destinations
+for any dataplane, zone ingress, or zone egress.
+
+Traffic between services now always flows by default, the same way it
+already did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A
+`TrafficRoute` resource previously already used to be required to make
+communication between services possible; it no longer has any effect,
+including its side effect of disabling default routing until a
+`MeshHTTPRoute`/`MeshTCPRoute` was applied.
+
+The `TrafficRoute` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate routing to `MeshHTTPRoute`/`MeshTCPRoute`, which replace
+`TrafficRoute`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using

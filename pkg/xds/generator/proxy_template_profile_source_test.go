@@ -132,28 +132,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Routing: core_xds.Routing{
-					TrafficRoutes: core_xds.RouteMap{
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 54321,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("db"),
-								},
-							},
-						},
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 59200,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("elastic"),
-								},
-							},
-						},
-					},
 					OutboundTargets: outboundTargets,
 				},
 				Metadata: &core_xds.DataplaneMetadata{

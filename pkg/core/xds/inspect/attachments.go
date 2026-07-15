@@ -170,9 +170,6 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.OutboundInterface][]core_model.Resource {
 	result := map[mesh_proto.OutboundInterface][]core_model.Resource{}
 
-	for outbound, tr := range matchedPolicies.TrafficRoutes {
-		result[outbound] = append(result[outbound], tr)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for outbound, elts := range matchedPolicies.Dynamic[tpe].OutboundPolicies {
 			result[outbound] = append(result[outbound], elts...)

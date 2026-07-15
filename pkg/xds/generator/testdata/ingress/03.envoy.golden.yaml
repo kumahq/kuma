@@ -8,15 +8,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - region
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - version
     name: mesh1:backend
     type: EDS
 - name: mesh1:backend
@@ -66,34 +57,6 @@ resources:
         portValue: 10001
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        serverNames:
-        - backend{mesh=mesh1,version=v2}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                version: v2
-          statPrefix: mesh1_backend
-    - filterChainMatch:
-        serverNames:
-        - backend{mesh=mesh1,region=eu}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                region: eu
-          statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh1}

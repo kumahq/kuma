@@ -55,8 +55,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		return nil, errors.Wrap(err, "could not match policies")
 	}
 
-	matchedPolicies.TrafficRoutes = routing.TrafficRoutes
-
 	meshName := meshContext.Resource.GetMeta().GetName()
 
 	allMeshNames := []string{}
@@ -99,9 +97,6 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 
 	outbounds := p.resolveVIPOutbounds(meshContext, dataplane, tpEnabled, bindOutbounds)
 
-	// pick a single the most specific route for each outbound interface
-	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
-
 	endpointMap := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshContext.Resource,
@@ -110,7 +105,6 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		p.Zone,
 	)
 	routing := &core_xds.Routing{
-		TrafficRoutes:                  routes,
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
 	}

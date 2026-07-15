@@ -49,16 +49,11 @@ func genInternalResources(
 	}
 
 	availableServices := util_maps.AllValues(availableServicesMap)
-	localResources := xds_context.Resources{MeshLocalResources: resources.Resources}
-	availableServicesForDestinations := availableServices
-	if len(localResources.TrafficRoutes().Items) > 0 {
-		availableServicesForDestinations = nil
-	}
 
 	destinations := zoneproxy.BuildMeshDestinations(
-		availableServicesForDestinations,
+		availableServices,
 		"",
-		localResources,
+		xds_context.Resources{MeshLocalResources: resources.Resources},
 	)
 
 	services := zoneproxy.GetServices(destinations, resources.EndpointMap, availableServices, unifiedNaming)
