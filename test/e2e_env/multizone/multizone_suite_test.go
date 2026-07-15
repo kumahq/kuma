@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/cni"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/connectivity"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/defaults"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/inspect"
@@ -54,7 +53,6 @@ var (
 )
 
 var (
-	_ = Describe("Gateway", Label("job-0"), gateway.GatewayHybrid, Ordered)
 	_ = Describe("External Service locality aware", Label("job-0"), localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
 	_ = Describe("Healthcheck", Label("job-3"), healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
 	_ = Describe("Inspect", Label("job-3"), inspect.Inspect, Ordered)

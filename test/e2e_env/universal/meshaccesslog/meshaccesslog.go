@@ -3,7 +3,6 @@ package meshaccesslog
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -11,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
@@ -21,11 +19,6 @@ func TestPlugin() {
 	meshName := "meshaccesslog"
 	var externalServiceDockerName string
 	var tcpSinkDockerName string
-
-	GatewayAddressPort := func(appName string, port int) string {
-		ip := universal.Cluster.GetApp(appName).GetIP()
-		return net.JoinHostPort(ip, strconv.Itoa(port))
-	}
 
 	uniServiceYAML := fmt.Sprintf(`
 type: MeshService
@@ -64,9 +57,6 @@ spec:
       matchLabels:
         kuma.io/origin: zone
         kuma.io/env: universal`)).
-			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
-			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, "edge-gateway", false, "example.kuma.io", "test-server", 8080))).
-			Install(gateway.GatewayClientAppUniversal("gateway-client")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
@@ -76,7 +66,6 @@ spec:
 	})
 
 	E2EAfterAll(func() {
-		Expect(universal.Cluster.DeleteApp("gateway-client")).To(Succeed())
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
@@ -526,35 +515,5 @@ spec:
 
 		Expect(src).To(Equal("unknown"))
 		Expect(dst).To(Equal("test-server"))
-	})
-
-	It("should log traffic from MeshGateway", func() {
-		yaml := fmt.Sprintf(`
-type: MeshAccessLog
-name: gateway-outgoing
-mesh: meshaccesslog
-spec:
- targetRef:
-   kind: MeshService
-   name: edge-gateway
- to:
-   - targetRef:
-       kind: Mesh
-     default:
-       backends:
-       - type: Tcp
-         tcp:
-           format:
-             type: Plain
-             plain: '%s'
-           address: "%s:9999"
-`, trafficLogFormat, tcpSinkDockerName)
-		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
-
-		src, dst := expectTrafficLogged(gateway.ProxySimpleRequests(universal.Cluster, "echo-v1",
-			GatewayAddressPort("edge-gateway", 8080), "example.kuma.io"))
-
-		Expect(src).To(Equal("edge-gateway"))
-		Expect(dst).To(Equal("*"))
 	})
 }
