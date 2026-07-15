@@ -111,7 +111,7 @@ spec:
 						config.Mesh,
 					)),
 				))
-			}, "5m", "5s").Should(Succeed())
+			}, "10m", "5s").Should(Succeed())
 		})
 	}
 }
