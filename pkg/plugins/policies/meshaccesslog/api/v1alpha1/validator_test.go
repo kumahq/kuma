@@ -30,8 +30,7 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			Entry("mesh from/to example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -60,8 +59,7 @@ to:
 `),
 			Entry("empty format", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -73,8 +71,7 @@ from:
 `),
 			Entry("empty backend list", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -96,8 +93,7 @@ to:
 `),
 			Entry("openTelemetry with backendRef", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -112,8 +108,7 @@ from:
 `),
 			Entry("openTelemetry with backendRef using labels", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -128,8 +123,7 @@ from:
 `),
 			Entry("openTelemetry with valid attributes", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -178,8 +172,7 @@ violations:
 			Entry("empty 'path'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -199,8 +192,7 @@ violations:
 			Entry("invalid 'path'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -221,8 +213,7 @@ violations:
 			Entry("empty 'key'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -244,8 +235,7 @@ violations:
 			Entry("empty 'value'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -267,8 +257,7 @@ violations:
 			Entry("invalid 'key'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -359,8 +348,7 @@ violations:
 			Entry("'address' not valid", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -383,8 +371,7 @@ violations:
 			Entry("empty format json list", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -413,8 +400,7 @@ violations:
 			Entry("empty format.plain", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -443,8 +429,7 @@ violations:
 			Entry("backend must be defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -466,8 +451,7 @@ violations:
 			Entry("format must be defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -494,8 +478,7 @@ violations:
 			Entry("openTelemetry neither endpoint nor backendRef", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -513,8 +496,7 @@ violations:
 			Entry("openTelemetry both endpoint and backendRef", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -536,8 +518,7 @@ violations:
 			Entry("openTelemetry backendRef no labels", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -556,8 +537,7 @@ violations:
 			Entry("openTelemetry attribute key with spaces", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -578,8 +558,7 @@ violations:
 			Entry("openTelemetry attribute key with placeholders", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -600,8 +579,7 @@ violations:
 			Entry("openTelemetry attribute key with reserved prefix", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -622,8 +600,7 @@ violations:
 			Entry("openTelemetry attribute keys accumulate violations", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
