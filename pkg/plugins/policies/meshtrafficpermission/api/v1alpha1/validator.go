@@ -30,9 +30,6 @@ func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.Target
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		IsInboundPolicy: isInboundPolicy,
