@@ -238,7 +238,17 @@ spec:
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
+	return cleanupAfterTest(
+		zoneProxyMeshName,
+		[]string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"},
+		func(cluster Cluster) error {
+			return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				zoneProxyMeshName,
+				fmt.Sprintf("%s.%s.mesh.local", zoneProxyMeshName, universal.Cluster.ZoneName()),
+			)(cluster)
+		},
+		policies...,
+	)
 }
 
 func CleanupAfterZoneProxySuite() {
