@@ -40,7 +40,9 @@ Cases 2 and 3 are not regressions Kuma stumbled into. They are a deliberate migr
 
 ## Design
 
-Whatever we choose has to answer one question: when a listener's tags are gone, what identifies the thing that listener represents? For an outbound, that is the **destination resource**. For an inbound, it is the **proxy's own `Dataplane`**. In both cases the answer is now labels.
+Whatever we choose has to answer one question: when a listener's tags are gone, what identifies the thing that listener represents? An outbound listener represents **the destination service** — the `Mesh*Service` resource it was generated from — and an inbound listener represents **the proxy itself**. In both cases the identity of that thing now lives in labels.
+
+Note what an outbound listener does *not* represent: the individual workloads behind the destination. Those are its endpoints, they are selected by the service rather than named by the listener, and their per-instance labels already travel separately under `io.kuma.labels` on the endpoints themselves. So the labels of the destination's `Dataplane`s are the wrong source here, even though they are the right source on the endpoint path.
 
 ### Option 1: Do nothing — require unified resource naming and `match.name`
 
@@ -154,7 +156,7 @@ The downstream project ships policies that patch listeners by tag and inherits b
 
 Listener `io.kuma.tags` is sourced from labels wherever tags no longer exist.
 
-1. **Outbound listeners backed by a real resource** (`MeshService`, `MeshMultiZoneService`, `MeshExternalService`) take the **destination resource's labels**.
+1. **Outbound listeners backed by a real resource** take the labels of the **destination `Mesh*Service` resource itself** — the `MeshService`, `MeshMultiZoneService`, or `MeshExternalService` the listener was generated from. Not the labels of the `Dataplane`s backing it: the listener represents the service, not its instances, and per-instance labels already reach Envoy separately on the endpoints under `io.kuma.labels`.
 2. **Inbound listeners whose tags have been emptied** by `InboundTagsDisabled` take the **proxy's own `Dataplane` labels**.
 
 Point 2 is worth stating positively, because the flag's name invites the opposite reading: disabling *inbound tags* must not mean disabling *listener tags*. The flag governs what goes on the `Dataplane`'s inbounds, not what the listener advertises about itself. An inbound listener keeps carrying a populated `io.kuma.tags` either way — sourced from tags when they exist, from the `Dataplane`'s labels when they do not. It is never left empty.
