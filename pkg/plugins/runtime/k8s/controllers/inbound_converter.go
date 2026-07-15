@@ -183,10 +183,11 @@ func (i *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string
 
 // deduplicateInboundsByAddressAndPort collapses inbounds that share an address,
 // a port and a state into the first one. Inbounds differing only by state are
-// kept, because state is not interchangeable: when a Service does not select the
-// Pod its inbound is Ignored, and a Service that does select it yields a Ready
-// inbound on the very same port. Collapsing those two would hide the serving one
-// and take the MeshService down (#17142).
+// kept to fix the Argo Rollouts blue-green problem (#17142): with
+// KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS ignoring the
+// rollouts-pod-template-hash label, both the active Service and the -preview
+// Service match the same Pod on the same port, one Ready and one Ignored.
+// Collapsing those would hide the Ready inbound and mark the MeshService down.
 func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
 	inboundKey := func(iface *mesh_proto.Dataplane_Networking_Inbound) string {
 		return fmt.Sprintf("%s:%d:%d", iface.Address, iface.Port, iface.State)
