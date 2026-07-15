@@ -5,10 +5,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	system_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
@@ -74,6 +76,61 @@ var _ = Describe("LegacyDomains", func() {
 			{
 				Address: "240.0.0.13",
 				Domains: []string{"global-svc.mesh"},
+			},
+		}))
+	})
+
+	It("should remap MeshService hostnames to legacy service VIPs from config", func() {
+		meshService := builders.MeshService().
+			WithName("local-test-server").
+			WithNamespace("mesh-service-reachable-backends").
+			WithLabels(map[string]string{
+				mesh_proto.EnvTag:           mesh_proto.KubernetesEnvironment,
+				mesh_proto.KubeNamespaceTag: "mesh-service-reachable-backends",
+			}).
+			AddIntPort(80, 80, "").
+			WithKumaVIP("241.0.0.10").
+			Build()
+		meshService.Status.Addresses = []hostnamegenerator_api.Address{{
+			Hostname: "local-test-server.mesh-service-reachable-backends.svc.kuma-1.mesh.local",
+		}}
+
+		config := system_api.NewConfigResource()
+		config.Spec = &system_proto.Config{
+			Config: `{"0:local-test-server_mesh-service-reachable-backends_svc_80":{"address":"240.0.0.10","outbounds":[{"TagSet":{"kuma.io/service":"local-test-server_mesh-service-reachable-backends_svc_80"}}]}}`,
+		}
+
+		domains, outbounds, err := xds_topology.LegacyVIPCompatibility(
+			[]*system_api.ConfigResource{config},
+			"mesh",
+			80,
+			[]*meshservice_api.MeshServiceResource{meshService},
+			nil,
+			nil,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(domains).To(ContainElements(
+			xds_types.VIPDomains{
+				Address: "240.0.0.10",
+				Domains: []string{
+					"local-test-server.mesh-service-reachable-backends.svc.kuma-1.mesh.local",
+				},
+			},
+			xds_types.VIPDomains{
+				Address: "240.0.0.10",
+				Domains: []string{
+					"local-test-server_mesh-service-reachable-backends_svc_80.mesh",
+					"local-test-server.mesh-service-reachable-backends.svc.80.mesh",
+				},
+			},
+		))
+		Expect(outbounds).To(ContainElement(&xds_types.Outbound{
+			LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+				Address: "240.0.0.10",
+				Port:    80,
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "local-test-server_mesh-service-reachable-backends_svc_80",
+				},
 			},
 		}))
 	})

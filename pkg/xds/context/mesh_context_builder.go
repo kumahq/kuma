@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	dns_server "github.com/kumahq/kuma/v3/pkg/config/dns-server"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
@@ -37,6 +38,8 @@ type meshContextBuilder struct {
 	typeSet                map[core_model.ResourceType]struct{}
 	ipFunc                 lookup.LookupIPFunc
 	zone                   string
+	legacyDNSDomain        string
+	legacyServiceVIPPort   uint32
 	caProvider             secrets.CaProvider
 	withPolicyMatchingHash bool
 }
@@ -49,6 +52,13 @@ type MeshContextBuilderOption func(*meshContextBuilder)
 func WithPolicyMatchingHash() MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
 		m.withPolicyMatchingHash = true
+	}
+}
+
+func WithLegacyVIPConfig(domain string, serviceVIPPort uint32) MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.legacyDNSDomain = domain
+		m.legacyServiceVIPPort = serviceVIPPort
 	}
 }
 
@@ -85,11 +95,13 @@ func NewMeshContextBuilder(
 	}
 
 	builder := &meshContextBuilder{
-		rm:         rm,
-		typeSet:    typeSet,
-		ipFunc:     ipFunc,
-		zone:       zone,
-		caProvider: caProvider,
+		rm:                   rm,
+		typeSet:              typeSet,
+		ipFunc:               ipFunc,
+		zone:                 zone,
+		legacyDNSDomain:      dns_server.DefaultDNSServerConfig().Domain,
+		legacyServiceVIPPort: dns_server.DefaultDNSServerConfig().ServiceVipPort,
+		caProvider:           caProvider,
 	}
 	for _, opt := range opts {
 		opt(builder)
@@ -173,6 +185,20 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	domains = append(domains, xds_topology.Domains(meshExternalServices)...)
 	domains = append(domains, xds_topology.Domains(meshMultiZoneServices)...)
 	domains = append(domains, xds_topology.LegacyDomains(meshServices, meshExternalServices, meshMultiZoneServices)...)
+
+	legacyDomains, legacyOutbounds, err := xds_topology.LegacyVIPCompatibility(
+		resources.ListOrEmpty(system.ConfigType).(*system.ConfigResourceList).Items,
+		m.legacyDNSDomain,
+		m.legacyServiceVIPPort,
+		meshServices,
+		meshExternalServices,
+		meshMultiZoneServices,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not build legacy VIP compatibility")
+	}
+	domains = append(domains, legacyDomains...)
+	outbounds = append(outbounds, legacyOutbounds...)
 
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh

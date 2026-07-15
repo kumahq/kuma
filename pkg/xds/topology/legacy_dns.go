@@ -75,17 +75,31 @@ func legacyMeshServiceDomains(ms *meshservice_api.MeshServiceResource) []string 
 
 	namespace := meshServiceNamespace(ms)
 	if ms.GetMeta().GetLabels()[mesh_proto.EnvTag] != mesh_proto.KubernetesEnvironment || namespace == "" {
-		return []string{displayName + "." + legacyMeshDomain}
+		return []string{legacyMeshServiceName(displayName, namespace, 0) + "." + legacyMeshDomain}
 	}
 
 	unique := map[string]struct{}{}
 	for _, port := range ms.Spec.Ports {
-		serviceTag := fmt.Sprintf("%s_%s_svc_%d", displayName, namespace, port.Port)
+		serviceTag := legacyMeshServiceName(displayName, namespace, port.Port)
 		unique[serviceTag+"."+legacyMeshDomain] = struct{}{}
 		unique[strings.ReplaceAll(serviceTag, "_", ".")+"."+legacyMeshDomain] = struct{}{}
 	}
 
 	return slices.Sorted(maps.Keys(unique))
+}
+
+func legacyMeshServiceEntryName(ms *meshservice_api.MeshServiceResource, port int32) string {
+	return legacyMeshServiceName(core_model.GetDisplayName(ms.GetMeta()), meshServiceNamespace(ms), port)
+}
+
+func legacyMeshServiceName(displayName, namespace string, port int32) string {
+	if displayName == "" {
+		return ""
+	}
+	if namespace == "" || port == 0 {
+		return displayName
+	}
+	return fmt.Sprintf("%s_%s_svc_%d", displayName, namespace, port)
 }
 
 func meshServiceNamespace(ms *meshservice_api.MeshServiceResource) string {
