@@ -428,6 +428,9 @@ spec:
       default:
         outlierDetection:
           healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100
 `, Config.KumaNamespace, meshName, Kuma2)
 		// update HealthCheck policy to check for another status code, and disable panic mode
 		Expect(YamlK8s(healthCheck)(multizone.KubeZone1)).To(Succeed())
