@@ -66,6 +66,10 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		rt.CAProvider(),
 		idProvider,
 		rt.Metrics(),
+		secrets.CertBackoff(
+			rt.Config().General.CertGenerationBaseBackoff.Duration,
+			rt.Config().General.CertGenerationMaxBackoff.Duration,
+		),
 	)
 	if err != nil {
 		return err

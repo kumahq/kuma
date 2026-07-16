@@ -408,6 +408,10 @@ type GeneralConfig struct {
 	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff" envconfig:"kuma_general_resilient_component_base_backoff"`
 	// ResilientComponentMaxBackoff configures max backoff for restarting resilient component: KDS sync, Insight resync, PostgresEventListener, etc.
 	ResilientComponentMaxBackoff config_types.Duration `json:"resilientComponentMaxBackoff" envconfig:"kuma_general_resilient_component_max_backoff"`
+	// CertGenerationBaseBackoff configures the base backoff before retrying dataplane certificate generation after a failure (e.g. a misconfigured CA backend), so a failing backend is not called on every DP sync tick.
+	CertGenerationBaseBackoff config_types.Duration `json:"certGenerationBaseBackoff" envconfig:"kuma_general_cert_generation_base_backoff"`
+	// CertGenerationMaxBackoff configures the max backoff before retrying dataplane certificate generation after a failure (e.g. a misconfigured CA backend).
+	CertGenerationMaxBackoff config_types.Duration `json:"certGenerationMaxBackoff" envconfig:"kuma_general_cert_generation_max_backoff"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -429,6 +433,12 @@ func (g *GeneralConfig) Validate() error {
 	if _, err := config_types.TLSCiphers(g.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
+	if g.CertGenerationBaseBackoff.Duration <= 0 {
+		errs = multierr.Append(errs, errors.New(".CertGenerationBaseBackoff must be greater than 0"))
+	}
+	if g.CertGenerationMaxBackoff.Duration < g.CertGenerationBaseBackoff.Duration {
+		errs = multierr.Append(errs, errors.New(".CertGenerationMaxBackoff must be greater than or equal to .CertGenerationBaseBackoff"))
+	}
 	return errs
 }
 
@@ -440,6 +450,8 @@ func DefaultGeneralConfig() *GeneralConfig {
 		TlsMinVersion:                 "TLSv1_2",
 		ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},
 		ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
+		CertGenerationBaseBackoff:     config_types.Duration{Duration: 5 * time.Second},
+		CertGenerationMaxBackoff:      config_types.Duration{Duration: 5 * time.Minute},
 	}
 }
 

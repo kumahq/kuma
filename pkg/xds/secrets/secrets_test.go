@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -146,7 +147,7 @@ var _ = Describe("Secrets", Ordered, func() {
 		identityProvider, err := NewIdentityProvider(caManagers, metrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		secrets, err = NewSecrets(caProvider, identityProvider, metrics)
+		secrets, err = NewSecrets(caProvider, identityProvider, metrics, CertBackoff(5*time.Second, 5*time.Minute))
 		Expect(err).ToNot(HaveOccurred())
 
 		now = time.Now()
@@ -403,6 +404,8 @@ var _ = Describe("Secrets", Ordered, func() {
 	})
 
 	Context("certificate generation backoff", func() {
+		const backoffBase = 5 * time.Second
+
 		var calls int
 		var failingSecrets Secrets
 		var failMetrics core_metrics.Metrics
@@ -443,11 +446,11 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 			identityProvider, err := NewIdentityProvider(caManagers, m)
 			Expect(err).ToNot(HaveOccurred())
-			failingSecrets, err = NewSecrets(caProvider, identityProvider, m)
+			// deterministic (no jitter) backoff so the test is stable
+			failingSecrets, err = NewSecrets(caProvider, identityProvider, m, func() retry.Backoff {
+				return retry.NewConstant(backoffBase)
+			})
 			Expect(err).ToNot(HaveOccurred())
-
-			CertGenerationBackoffBase = 5 * time.Second
-			CertGenerationBackoffMax = 5 * time.Minute
 		})
 
 		It("should not call the CA on every tick after a failure", func() {
@@ -469,7 +472,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(calls).To(Equal(1))
 
 			// when the backoff window passes
-			now = now.Add(CertGenerationBackoffBase + time.Second)
+			now = now.Add(backoffBase + time.Second)
 			_, _, err = failingSecrets.GetForDataPlane(context.Background(), newDataplane(), failingMesh(), nil)
 
 			// then the CA is retried

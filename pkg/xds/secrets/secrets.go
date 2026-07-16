@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sethvargo/go-retry"
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -25,13 +26,16 @@ import (
 
 var log = core.Log.WithName("xds").WithName("secrets")
 
-// Backoff applied to certificate generation after a failure so that a
-// misconfigured or failing CA backend can't be hammered on every DP sync tick
-// (which defaults to 1s). Exposed as vars so tests can shorten them.
-var (
-	CertGenerationBackoffBase = 5 * time.Second
-	CertGenerationBackoffMax  = 5 * time.Minute
-)
+// CertBackoff returns a factory for the backoff used to throttle certificate
+// generation retries after a failure so that a misconfigured or failing CA
+// backend can't be hammered on every DP sync tick (which defaults to 1s). The
+// backoff is exponential from base, capped at max, with jitter so proxies don't
+// retry in lockstep. base and max are configured via KUMA_GENERAL_CERT_GENERATION_*.
+func CertBackoff(base, maxBackoff time.Duration) func() retry.Backoff {
+	return func() retry.Backoff {
+		return retry.WithJitter(base, retry.WithCappedDuration(maxBackoff, retry.NewExponential(base)))
+	}
+}
 
 type MeshCa struct {
 	Mesh     string
@@ -77,7 +81,7 @@ func (c *Info) ExpiringSoon() bool {
 	return core.Now().After(c.Generation.Add(c.CertLifetime() / 5 * 4))
 }
 
-func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics) (Secrets, error) {
+func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics, newBackoff func() retry.Backoff) (Secrets, error) {
 	certGenerationsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Help: "Number of generated certificates",
 		Name: "cert_generation",
@@ -97,6 +101,7 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 	return &secrets{
 		caProvider:                   caProvider,
 		identityProvider:             identityProvider,
+		newBackoff:                   newBackoff,
 		cachedCerts:                  map[certCacheKey]*certs{},
 		backoffs:                     map[certCacheKey]*certBackoff{},
 		certGenerationsMetric:        certGenerationsMetric,
@@ -109,16 +114,17 @@ type certCacheKey struct {
 	proxyType mesh_proto.ProxyType
 }
 
-// certBackoff tracks how long to wait before retrying certificate generation
+// certBackoff tracks when the next certificate generation attempt is allowed
 // for a given proxy after a failure.
 type certBackoff struct {
-	attempts int
-	nextTry  time.Time
+	backoff retry.Backoff
+	nextTry time.Time
 }
 
 type secrets struct {
 	caProvider       CaProvider
 	identityProvider IdentityProvider
+	newBackoff       func() retry.Backoff
 
 	sync.RWMutex
 	cachedCerts                  map[certCacheKey]*certs
@@ -225,13 +231,13 @@ func (s *secrets) get(
 		// A previous generation failed and we're still within the backoff
 		// window - don't call the CA again. Serve the existing certs if we
 		// have them (they're likely still valid), otherwise report the backoff.
-		if s.inBackoff(key) {
+		if remaining := s.backoffRemaining(key); remaining > 0 {
 			if certs == nil {
-				return nil, nil, MeshCa{}, errors.New("backing off certificate generation after a previous failure")
+				return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for %s after a previous failure", remaining)
 			}
 			log.V(1).Info(
 				"skipping certificate generation, backing off after a previous failure",
-				string(resource.Descriptor().Name), resourceKey,
+				string(resource.Descriptor().Name), resourceKey, "backoff", remaining,
 			)
 			return certs.identity, caMap(certs, meshName), certs.allInOneCa, nil
 		}
@@ -247,7 +253,7 @@ func (s *secrets) get(
 			s.certGenerationFailuresMetric.WithLabelValues(meshName).Inc()
 			log.Info(
 				"could not generate certificates, backing off before retrying",
-				string(resource.Descriptor().Name), resourceKey, "backoff", backoff, "error", err.Error(),
+				string(resource.Descriptor().Name), resourceKey, "backoff", backoff, "error", err,
 			)
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
@@ -277,39 +283,34 @@ func caMap(certs *certs, meshName string) map[string]*core_xds.CaSecret {
 	return result
 }
 
-// inBackoff reports whether certificate generation for the given proxy is
-// currently in a backoff window after a previous failure.
-func (s *secrets) inBackoff(key certCacheKey) bool {
+// backoffRemaining returns how long certificate generation for the given proxy
+// is still being backed off after a previous failure, or 0 if it may proceed.
+func (s *secrets) backoffRemaining(key certCacheKey) time.Duration {
 	s.RLock()
 	defer s.RUnlock()
 	b, ok := s.backoffs[key]
 	if !ok {
-		return false
+		return 0
 	}
-	return core.Now().Before(b.nextTry)
+	if remaining := b.nextTry.Sub(core.Now()); remaining > 0 {
+		return remaining
+	}
+	return 0
 }
 
 // recordFailure registers a generation failure and returns the delay before the
-// next attempt is allowed. The delay grows exponentially up to a cap.
+// next attempt is allowed. The delay grows exponentially up to a cap (see
+// NewDefaultCertBackoff).
 func (s *secrets) recordFailure(key certCacheKey) time.Duration {
 	s.Lock()
 	defer s.Unlock()
 	b, ok := s.backoffs[key]
 	if !ok {
-		b = &certBackoff{}
+		b = &certBackoff{backoff: s.newBackoff()}
 		s.backoffs[key] = b
 	}
 
-	delay := CertGenerationBackoffBase
-	for i := 0; i < b.attempts && delay < CertGenerationBackoffMax; i++ {
-		delay *= 2
-	}
-	if delay > CertGenerationBackoffMax || delay <= 0 {
-		delay = CertGenerationBackoffMax
-	}
-	if delay < CertGenerationBackoffMax {
-		b.attempts++
-	}
+	delay, _ := b.backoff.Next()
 	b.nextTry = core.Now().Add(delay)
 	return delay
 }

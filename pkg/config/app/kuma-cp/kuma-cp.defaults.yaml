@@ -543,6 +543,13 @@ general:
   # ResilientComponentMaxBackoff configures max backoff for restarting resilient component:
   # KDS sync, Insight resync, PostgresEventListener, etc.
   resilientComponentMaxBackoff: 1m # ENV: KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF
+  # CertGenerationBaseBackoff configures the base backoff before retrying dataplane certificate
+  # generation after a failure (e.g. a misconfigured CA backend), so a failing backend is not
+  # called on every DP sync tick.
+  certGenerationBaseBackoff: 5s # ENV: KUMA_GENERAL_CERT_GENERATION_BASE_BACKOFF
+  # CertGenerationMaxBackoff configures the max backoff before retrying dataplane certificate
+  # generation after a failure (e.g. a misconfigured CA backend).
+  certGenerationMaxBackoff: 5m # ENV: KUMA_GENERAL_CERT_GENERATION_MAX_BACKOFF
 # DNS Server configuration
 dnsServer:
   # The domain that the server will resolve the services for

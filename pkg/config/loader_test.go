@@ -1007,6 +1007,8 @@ meshService:
 				"KUMA_GENERAL_WORK_DIR":                                                                    "/custom/work/dir",
 				"KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF":                                            "1s",
 				"KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF":                                             "3m",
+				"KUMA_GENERAL_CERT_GENERATION_BASE_BACKOFF":                                                "2s",
+				"KUMA_GENERAL_CERT_GENERATION_MAX_BACKOFF":                                                 "4m",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
