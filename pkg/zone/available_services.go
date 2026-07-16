@@ -92,50 +92,28 @@ func availableServicesEqual(services []*mesh_proto.ZoneIngress_AvailableService,
 	return true
 }
 
-func (t *ZoneAvailableServicesTracker) getIngressExternalServices(
-	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
-) []*core_mesh.ExternalServiceResource {
-	var externalServices []*core_mesh.ExternalServiceResource
-
-	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		if !mesh.ZoneEgressEnabled() || mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive {
-			continue
-		}
-
-		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(mesh.GetMeta().GetName())
-		// look for external services that are only available in my zone and expose them
-		for _, es := range meshCtx.Resources.ExternalServices().Items {
-			if es.Spec.Tags[mesh_proto.ZoneTag] == t.zone {
-				externalServices = append(externalServices, es)
-			}
-		}
-	}
-
-	return externalServices
-}
-
 func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) error {
 	zis := core_mesh.ZoneIngressResourceList{}
 	if err := t.resManager.List(ctx, &zis); err != nil {
 		return err
 	}
 
-	var availableServices []*mesh_proto.ZoneIngress_AvailableService
 	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, t.resManager, t.meshCache.GetMeshContext)
 	if err != nil {
 		return err
 	}
+	// kuma.io/service based dataplane services are represented by MeshService now that
+	// meshServices.mode is always Exclusive, so skip every mesh's legacy AvailableServices:
+	// only cross-mesh MeshGateway listeners (which aren't mode-gated) still get published.
 	skipAvailableServices := map[xds.MeshName]struct{}{}
-	for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
-		if meshCtx.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive {
-			skipAvailableServices[mesh] = struct{}{}
-		}
+	for mesh := range aggregatedMeshCtxs.MeshContextsByName {
+		skipAvailableServices[mesh] = struct{}{}
 	}
-	availableServices = ingress.GetAvailableServices(
+	availableServices := ingress.GetAvailableServices(
 		skipAvailableServices,
 		aggregatedMeshCtxs.AllDataplanes(),
 		aggregatedMeshCtxs.AllMeshGateways(),
-		t.getIngressExternalServices(aggregatedMeshCtxs),
+		nil,
 		t.ingressTagFilters,
 	)
 

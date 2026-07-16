@@ -13,7 +13,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -21,7 +20,6 @@ import (
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -77,8 +75,6 @@ var _ = Describe("GenerateSnapshot", func() {
 		}
 		store = core_store.NewPaginationStore(store)
 
-		rm := manager.NewResourceManager(store)
-
 		gen = &v3.TemplateSnapshotGenerator{
 			ProxyTemplateResolver: generator.DefaultTemplateResolver,
 		}
@@ -90,9 +86,6 @@ var _ = Describe("GenerateSnapshot", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rm, config_manager.NewConfigManager(store), false),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
 			nil,
 		)
 
