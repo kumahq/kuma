@@ -50,7 +50,7 @@ func (p *PodConverter) PodToDataplane(
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = mesh.Meta.GetName()
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, mesh.Spec.MeshServicesMode())
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,6 @@ func (p *PodConverter) dataplaneFor(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
 	annotations := metadata.Annotations(pod.Annotations)
@@ -321,8 +320,8 @@ func (p *PodConverter) dataplaneFor(
 			// inbound tags are enabled each service produces a distinctly tagged
 			// inbound with its own Ready/Ignored state; deduplication would drop
 			// one of them (e.g. keep an Ignored inbound over a Ready one), so we
-			// keep every inbound like the non-Exclusive path does.
-			if msMode == mesh_proto.Mesh_MeshServices_Exclusive && p.InboundConverter.InboundTagsDisabled {
+			// keep every inbound like the tagged path does.
+			if p.InboundConverter.InboundTagsDisabled {
 				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
 				if err != nil {
 					return nil, err
