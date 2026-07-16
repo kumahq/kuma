@@ -196,6 +196,21 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	processingErrorsCh := make(chan error, 1)
 	go func() {
 		kdsStream := kds_client_v2.NewDeltaKDSStream(serverStreamAdapter{stream}, zone, g.instanceID, "", len(g.typesSentByZone))
+<<<<<<< HEAD
+=======
+		cb := kds_sync_store_v2.GlobalSyncCallback(
+			stream.Context(),
+			g.resourceSyncer,
+			g.k8sStore,
+			k8s.NewSimpleKubeFactory(),
+			g.systemNamespace,
+			g.metrics.KdsZoneAttributionRewrites,
+		)
+		zoneName := zone
+		cb.OnNACK = func(resourceType core_model.ResourceType) {
+			g.metrics.KdsNackTotal.WithLabelValues(zoneName, string(resourceType)).Inc()
+		}
+>>>>>>> db8309dd90 (fix(kds): attribute zone-to-global synced resources by authenticated zone (#17456))
 		sink := kds_client_v2.NewKDSSyncClient(
 			logger,
 			g.typesSentByZone,
