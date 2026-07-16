@@ -53,14 +53,11 @@ to:
 - targetRef:
     kind: Mesh
 `),
-		ErrorCases("spec.to.targetRef MeshService not allowed with top MeshGateway",
-			[]validators.Violation{{
-				Field:   `spec.targetRef.kind`,
-				Message: `value 'MeshGateway' is not supported`,
-			}, {
+		ErrorCase("spec.to.targetRef MeshService not allowed with top MeshGateway",
+			validators.Violation{
 				Field:   `spec.to[0].targetRef.kind`,
 				Message: `value 'MeshService' is not supported`,
-			}}, `
+			}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -356,14 +353,11 @@ to:
           - kind: MeshService
             name: backend
 `),
-		ErrorCases("top level MeshGateway requires backendRefs",
-			[]validators.Violation{{
-				Field:   `spec.targetRef.kind`,
-				Message: `value 'MeshGateway' is not supported`,
-			}, {
+		ErrorCase("top level MeshGateway requires backendRefs",
+			validators.Violation{
 				Field:   `spec.to[0].rules[0].default.backendRefs`,
 				Message: `must not be empty`,
-			}}, `
+			}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -568,10 +562,10 @@ to:
             urlRewrite:
               hostname: a23456789-a23456789-a234567890.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a2345678.com.
 `),
-		ErrorCase("top-level MeshGateway is rejected even with an otherwise valid gateway route", validators.Violation{
-			Field:   `spec.targetRef.kind`,
-			Message: `value 'MeshGateway' is not supported`,
-		}, `
+	)
+	DescribeValidCases(
+		api.NewMeshHTTPRouteResource,
+		Entry("MeshGateway to Mesh allowed", `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -595,10 +589,7 @@ to:
           - kind: MeshService
             name: backend
 `),
-		ErrorCase("top-level MeshGateway is rejected even with hostnames", validators.Violation{
-			Field:   `spec.targetRef.kind`,
-			Message: `value 'MeshGateway' is not supported`,
-		}, `
+		Entry("MeshGateway with hostnames allowed", `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -620,9 +611,6 @@ to:
           - kind: MeshService
             name: backend
 `),
-	)
-	DescribeValidCases(
-		api.NewMeshHTTPRouteResource,
 		Entry("accepts valid resource", `
 type: MeshHTTPRoute
 mesh: mesh-1

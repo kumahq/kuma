@@ -34,6 +34,7 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
+				common_api.MeshGateway,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
@@ -42,6 +43,7 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
+				common_api.MeshGateway,
 				common_api.Dataplane,
 			},
 		})
