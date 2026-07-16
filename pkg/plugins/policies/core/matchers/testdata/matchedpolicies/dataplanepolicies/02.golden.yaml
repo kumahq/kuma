@@ -28,38 +28,6 @@ items:
       kind: Mesh
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
-  kri: kri_mtp_mesh-1___222_
-  mesh: mesh-1
-  modificationTime: "0001-01-01T00:00:00Z"
-  name: "222"
-  spec:
-    from:
-    - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
-    targetRef:
-      kind: MeshSubset
-      tags:
-        version: v1
-  type: MeshTrafficPermission
-- creationTime: "0001-01-01T00:00:00Z"
-  kri: kri_mtp_mesh-1___111_
-  mesh: mesh-1
-  modificationTime: "0001-01-01T00:00:00Z"
-  name: "111"
-  spec:
-    from:
-    - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
-    targetRef:
-      kind: MeshSubset
-      tags:
-        version: v1
-  type: MeshTrafficPermission
-- creationTime: "0001-01-01T00:00:00Z"
   kri: kri_mtp_mesh-1___my-policy-2_
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
@@ -71,8 +39,9 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshService
-      name: web
+      kind: Dataplane
+      labels:
+        kuma.io/service: web
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_mtp_mesh-1___my-policy-1_
@@ -86,8 +55,9 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshService
-      name: web
+      kind: Dataplane
+      labels:
+        kuma.io/service: web
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_mtp_mesh-1___bbb_
@@ -101,9 +71,9 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshServiceSubset
-      name: web
-      tags:
+      kind: Dataplane
+      labels:
+        kuma.io/service: web
         version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
@@ -118,9 +88,41 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshServiceSubset
-      name: web
-      tags:
+      kind: Dataplane
+      labels:
+        kuma.io/service: web
+        version: v1
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___222_
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: "222"
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      labels:
+        version: v1
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  kri: kri_mtp_mesh-1___111_
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: "111"
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      labels:
         version: v1
   type: MeshTrafficPermission
 next: null

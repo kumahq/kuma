@@ -9,8 +9,9 @@ name: foo
 mesh: default
 spec:
   targetRef:
-    kind: MeshService
-    name: foo
+    kind: Dataplane
+    labels:
+      kuma.io/service: foo
   from:
     - targetRef:
         kind: Mesh
@@ -23,6 +24,7 @@ mesh: default
 labels:
   k8s.kuma.io/namespace: kuma-demo
   kuma.io/display-name: dp-1
+  kuma.io/service: foo
 networking:
   address: 127.0.0.1
   inbound:

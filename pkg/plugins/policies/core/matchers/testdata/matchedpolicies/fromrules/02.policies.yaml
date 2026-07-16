@@ -4,10 +4,9 @@ mesh: mesh-1
 name: mtp-1
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
-      version: v1
+    kind: Dataplane
+    name: dp-1
+    sectionName: v1
   from:
     - targetRef:
         kind: MeshServiceSubset

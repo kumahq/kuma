@@ -16,20 +16,20 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /meshsubset
+              path: /mesh
             type: File
         Origin:
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___mesh_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: mesh
-          type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
           kri: kri_mal_mesh-1___meshsubset_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -39,20 +39,20 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /meshsubset
+              path: /mesh
             type: File
         Origin:
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___mesh_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: mesh
-          type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
           kri: kri_mal_mesh-1___meshsubset_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -62,20 +62,20 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /meshsubset
+              path: /mesh
             type: File
         Origin:
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___mesh_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: mesh
-          type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
           kri: kri_mal_mesh-1___meshsubset_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          kri: kri_mal_mesh-1___mesh_
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -85,15 +85,9 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /applied-only-to-hostname
+              path: /mesh
             type: File
         Origin:
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___mesh_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: mesh
-          type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
           kri: kri_mal_mesh-1___meshsubset_
           mesh: mesh-1
@@ -101,10 +95,10 @@ ToRules:
           name: meshsubset
           type: MeshAccessLog
         - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___only-one-hostname-listener_
+          kri: kri_mal_mesh-1___mesh_
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
-          name: only-one-hostname-listener
+          name: mesh
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -184,7 +178,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /applied-only-to-hostname
+              path: /meshsubset
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -198,12 +192,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___only-one-hostname-listener_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: only-one-hostname-listener
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
