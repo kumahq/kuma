@@ -1,0 +1,32 @@
+kind: Pod
+metadata:
+  namespace: demo
+  ownerReferences:
+    - name: test-server-1
+      kind: ReplicaSet
+  name: test-server-1-1
+  labels:
+    app: example
+    version: "0.1"
+spec:
+  containers:
+    - name: app-1
+      ports:
+        - containerPort: 7070
+    - name: app-2
+      ports:
+        - containerPort: 6060
+          name: metrics
+    - name: kuma-sidecar
+status:
+  podIP: 192.168.0.1
+  containerStatuses:
+    - name: app-1
+      ready: true
+      started: true
+    - name: app-2
+      ready: false
+      started: true
+    - name: kuma-sidecar
+      ready: true
+      started: true

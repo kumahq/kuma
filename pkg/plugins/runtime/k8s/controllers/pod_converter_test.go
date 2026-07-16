@@ -375,13 +375,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "43.services-for-pod.yaml",
 			expectedErr:    "conflicting listener types on port 10001",
 		}),
-		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
-			pod:              "44.pod.yaml",
-			servicesForPod:   "44.services-for-pod.yaml",
-			dataplane:        "44.dataplane.yaml",
-			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
-		}),
-	)
+			Entry("45. Service targetPort not declared by any container, app container not ready", testCase{
+				pod:            "45.pod.yaml",
+				servicesForPod: "45.services-for-pod.yaml",
+				dataplane:      "45.dataplane.yaml",
+			}),
+			Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
+				pod:              "44.pod.yaml",
+				servicesForPod:   "44.services-for-pod.yaml",
+				dataplane:        "44.dataplane.yaml",
+				meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
+			}),
+		)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
 		func(given testCase) {

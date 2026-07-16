@@ -21,11 +21,17 @@ import (
 
 // podReady returns false when any of the following is true:
 //   - the given container (if non-nil) is not ready
+//   - when container is nil (no container declares the service's targetPort), all non-sidecar app containers are not ready
 //   - the kuma-sidecar container is not ready
 //   - the pod has a DeletionTimestamp (terminating)
 func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 	if container != nil {
 		if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+			return false
+		}
+	} else {
+		// No container declares the service's targetPort — check all non-sidecar app containers
+		if !appContainersReady(pod) {
 			return false
 		}
 	}
@@ -38,6 +44,20 @@ func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 	}
 	if pod.DeletionTimestamp != nil {
 		return false
+	}
+	return true
+}
+
+// appContainersReady checks if all non-sidecar app containers in the pod are ready.
+// Returns true if all are ready, false if any is not ready.
+// Iterates pod.Spec.Containers (app containers only; init containers are not checked).
+func appContainersReady(pod *kube_core.Pod) bool {
+	for _, c := range pod.Spec.Containers {
+		if c.Name != util_k8s.KumaSidecarContainerName {
+			if cs := util_k8s.FindContainerStatus(c.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+				return false
+			}
+		}
 	}
 	return true
 }
@@ -121,13 +141,9 @@ func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Po
 		Ready: true,
 	}
 
-	for _, container := range pod.Spec.Containers {
-		if container.Name != util_k8s.KumaSidecarContainerName {
-			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
-				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
-				health.Ready = false
-			}
-		}
+	if !appContainersReady(pod) {
+		state = mesh_proto.Dataplane_Networking_Inbound_NotReady
+		health.Ready = false
 	}
 
 	// also we're checking whether kuma-sidecar container is ready
