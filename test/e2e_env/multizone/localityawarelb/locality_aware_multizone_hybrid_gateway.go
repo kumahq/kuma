@@ -64,23 +64,26 @@ conf:
     tags:
       hostname: example.kuma.io
 `, mesh))
-	meshGatewayRoute := YamlUniversal(fmt.Sprintf(`
-type: MeshGatewayRoute
+	meshHTTPRoute := YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
 mesh: %s
 name: lb-edge-gateway-route
-selectors:
-- match:
-    kuma.io/service: lb-edge-gateway
-conf:
-  http:
-    rules:
-    - matches:
-      - path:
-          match: PREFIX
-          value: /
-      backends:
-      - destination:
-          kuma.io/service: test-server_locality-aware-lb-gateway_svc_80
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: lb-edge-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+          - path:
+              type: PathPrefix
+              value: /
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: test-server_locality-aware-lb-gateway_svc_80
 `, mesh))
 
 	BeforeAll(func() {
@@ -137,7 +140,7 @@ conf:
 		Expect(group.Wait()).To(Succeed())
 
 		Expect(multizone.Global.Install(meshGateway)).To(Succeed())
-		Expect(multizone.Global.Install(meshGatewayRoute)).To(Succeed())
+		Expect(multizone.Global.Install(meshHTTPRoute)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
