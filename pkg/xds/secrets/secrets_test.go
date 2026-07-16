@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -400,4 +401,109 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(secrets.Info(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))).To(BeNil())
 		})
 	})
+
+	Context("certificate generation backoff", func() {
+		var calls int
+		var failingSecrets Secrets
+		var failMetrics core_metrics.Metrics
+
+		failingMesh := func() *core_mesh.MeshResource {
+			return &core_mesh.MeshResource{
+				Meta: &model.ResourceMeta{Name: "default"},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "ca-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "ca-1",
+								Type: "failing",
+								DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
+									Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
+										Expiration: "1h",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+
+		BeforeEach(func() {
+			calls = 0
+			caManagers := core_ca.Managers{
+				"failing": &failingCaManager{calls: &calls},
+			}
+
+			m, err := core_metrics.NewMetrics("local")
+			Expect(err).ToNot(HaveOccurred())
+			failMetrics = m
+
+			caProvider, err := NewCaProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			identityProvider, err := NewIdentityProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			failingSecrets, err = NewSecrets(caProvider, identityProvider, m)
+			Expect(err).ToNot(HaveOccurred())
+
+			CertGenerationBackoffBase = 5 * time.Second
+			CertGenerationBackoffMax = 5 * time.Minute
+		})
+
+		It("should not call the CA on every tick after a failure", func() {
+			// when the first attempt fails
+			_, _, err := failingSecrets.GetForDataPlane(context.Background(), newDataplane(), failingMesh(), nil)
+
+			// then it starts a backoff and records a failure
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(1))
+			Expect(test_metrics.FindMetric(failMetrics, "cert_generation_failure").GetCounter().GetValue()).To(Equal(1.0))
+
+			// when subsequent ticks happen within the backoff window
+			for range 5 {
+				_, _, err = failingSecrets.GetForDataPlane(context.Background(), newDataplane(), failingMesh(), nil)
+				Expect(err).To(HaveOccurred())
+			}
+
+			// then the CA is not called again
+			Expect(calls).To(Equal(1))
+
+			// when the backoff window passes
+			now = now.Add(CertGenerationBackoffBase + time.Second)
+			_, _, err = failingSecrets.GetForDataPlane(context.Background(), newDataplane(), failingMesh(), nil)
+
+			// then the CA is retried
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(2))
+		})
+	})
 })
+
+// failingCaManager is a ca.Manager whose GenerateDataplaneCert always fails,
+// used to exercise the certificate generation backoff.
+type failingCaManager struct {
+	calls *int
+}
+
+var _ core_ca.Manager = &failingCaManager{}
+
+func (f *failingCaManager) GenerateDataplaneCert(context.Context, string, *mesh_proto.CertificateAuthorityBackend, mesh_proto.MultiValueTagSet) (core_ca.KeyPair, error) {
+	*f.calls++
+	return core_ca.KeyPair{}, errors.New("failing CA")
+}
+
+func (f *failingCaManager) ValidateBackend(context.Context, string, *mesh_proto.CertificateAuthorityBackend) error {
+	return nil
+}
+
+func (f *failingCaManager) EnsureBackends(context.Context, core_model.Resource, []*mesh_proto.CertificateAuthorityBackend) error {
+	return nil
+}
+
+func (f *failingCaManager) UsedSecrets(string, *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+	return nil, nil
+}
+
+func (f *failingCaManager) GetRootCert(context.Context, string, *mesh_proto.CertificateAuthorityBackend) ([]core_ca.Cert, error) {
+	return nil, nil
+}

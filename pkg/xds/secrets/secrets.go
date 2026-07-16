@@ -25,6 +25,14 @@ import (
 
 var log = core.Log.WithName("xds").WithName("secrets")
 
+// Backoff applied to certificate generation after a failure so that a
+// misconfigured or failing CA backend can't be hammered on every DP sync tick
+// (which defaults to 1s). Exposed as vars so tests can shorten them.
+var (
+	CertGenerationBackoffBase = 5 * time.Second
+	CertGenerationBackoffMax  = 5 * time.Minute
+)
+
 type MeshCa struct {
 	Mesh     string
 	CaSecret *core_xds.CaSecret
@@ -78,11 +86,21 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 		return nil, err
 	}
 
+	certGenerationFailuresMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Help: "Number of failed certificate generations",
+		Name: "cert_generation_failure",
+	}, []string{"mesh"})
+	if err := metrics.Register(certGenerationFailuresMetric); err != nil {
+		return nil, err
+	}
+
 	return &secrets{
-		caProvider:            caProvider,
-		identityProvider:      identityProvider,
-		cachedCerts:           map[certCacheKey]*certs{},
-		certGenerationsMetric: certGenerationsMetric,
+		caProvider:                   caProvider,
+		identityProvider:             identityProvider,
+		cachedCerts:                  map[certCacheKey]*certs{},
+		backoffs:                     map[certCacheKey]*certBackoff{},
+		certGenerationsMetric:        certGenerationsMetric,
+		certGenerationFailuresMetric: certGenerationFailuresMetric,
 	}, nil
 }
 
@@ -91,13 +109,22 @@ type certCacheKey struct {
 	proxyType mesh_proto.ProxyType
 }
 
+// certBackoff tracks how long to wait before retrying certificate generation
+// for a given proxy after a failure.
+type certBackoff struct {
+	attempts int
+	nextTry  time.Time
+}
+
 type secrets struct {
 	caProvider       CaProvider
 	identityProvider IdentityProvider
 
 	sync.RWMutex
-	cachedCerts           map[certCacheKey]*certs
-	certGenerationsMetric *prometheus.CounterVec
+	cachedCerts                  map[certCacheKey]*certs
+	backoffs                     map[certCacheKey]*certBackoff
+	certGenerationsMetric        *prometheus.CounterVec
+	certGenerationFailuresMetric *prometheus.CounterVec
 }
 
 var _ Secrets = &secrets{}
@@ -183,6 +210,10 @@ func (s *secrets) get(
 
 	resourceKey := model.MetaToResourceKey(resource.GetMeta())
 	resourceKey.Mesh = meshName
+	key := certCacheKey{
+		resource:  resourceKey,
+		proxyType: proxyType,
+	}
 	certs := s.certs(proxyType, resourceKey)
 
 	if updateKinds, debugReason := s.shouldGenerateCerts(
@@ -191,45 +222,102 @@ func (s *secrets) get(
 		mesh,
 		otherMeshes,
 	); len(updateKinds) > 0 {
+		// A previous generation failed and we're still within the backoff
+		// window - don't call the CA again. Serve the existing certs if we
+		// have them (they're likely still valid), otherwise report the backoff.
+		if s.inBackoff(key) {
+			if certs == nil {
+				return nil, nil, MeshCa{}, errors.New("backing off certificate generation after a previous failure")
+			}
+			log.V(1).Info(
+				"skipping certificate generation, backing off after a previous failure",
+				string(resource.Descriptor().Name), resourceKey,
+			)
+			return certs.identity, caMap(certs, meshName), certs.allInOneCa, nil
+		}
+
 		log.Info(
 			"generating certificate",
 			string(resource.Descriptor().Name), resourceKey, "reason", debugReason,
 		)
 
-		certs, err := s.generateCerts(ctx, tags, mesh, otherMeshes, certs, updateKinds)
+		newCerts, err := s.generateCerts(ctx, tags, mesh, otherMeshes, certs, updateKinds)
 		if err != nil {
+			backoff := s.recordFailure(key)
+			s.certGenerationFailuresMetric.WithLabelValues(meshName).Inc()
+			log.Info(
+				"could not generate certificates, backing off before retrying",
+				string(resource.Descriptor().Name), resourceKey, "backoff", backoff, "error", err.Error(),
+			)
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
+		s.clearBackoff(key)
 
-		key := certCacheKey{
-			resource:  resourceKey,
-			proxyType: proxyType,
-		}
 		s.Lock()
-		s.cachedCerts[key] = certs
+		s.cachedCerts[key] = newCerts
 		s.Unlock()
 
-		caMap := map[string]*core_xds.CaSecret{
-			meshName: certs.ownCa.CaSecret,
-		}
-		for _, otherCa := range certs.otherCas {
-			caMap[otherCa.Mesh] = otherCa.CaSecret
-		}
-		return certs.identity, caMap, certs.allInOneCa, nil
+		return newCerts.identity, caMap(newCerts, meshName), newCerts.allInOneCa, nil
 	}
 
 	if certs == nil { // previous "if" should guarantee that the certs are always there
 		return nil, nil, MeshCa{}, errors.New("certificates were not generated")
 	}
 
-	caMap := map[string]*core_xds.CaSecret{
+	return certs.identity, caMap(certs, meshName), certs.allInOneCa, nil
+}
+
+func caMap(certs *certs, meshName string) map[string]*core_xds.CaSecret {
+	result := map[string]*core_xds.CaSecret{
 		meshName: certs.ownCa.CaSecret,
 	}
 	for _, otherCa := range certs.otherCas {
-		caMap[otherCa.Mesh] = otherCa.CaSecret
+		result[otherCa.Mesh] = otherCa.CaSecret
+	}
+	return result
+}
+
+// inBackoff reports whether certificate generation for the given proxy is
+// currently in a backoff window after a previous failure.
+func (s *secrets) inBackoff(key certCacheKey) bool {
+	s.RLock()
+	defer s.RUnlock()
+	b, ok := s.backoffs[key]
+	if !ok {
+		return false
+	}
+	return core.Now().Before(b.nextTry)
+}
+
+// recordFailure registers a generation failure and returns the delay before the
+// next attempt is allowed. The delay grows exponentially up to a cap.
+func (s *secrets) recordFailure(key certCacheKey) time.Duration {
+	s.Lock()
+	defer s.Unlock()
+	b, ok := s.backoffs[key]
+	if !ok {
+		b = &certBackoff{}
+		s.backoffs[key] = b
 	}
 
-	return certs.identity, caMap, certs.allInOneCa, nil
+	delay := CertGenerationBackoffBase
+	for i := 0; i < b.attempts && delay < CertGenerationBackoffMax; i++ {
+		delay *= 2
+	}
+	if delay > CertGenerationBackoffMax || delay <= 0 {
+		delay = CertGenerationBackoffMax
+	}
+	if delay < CertGenerationBackoffMax {
+		b.attempts++
+	}
+	b.nextTry = core.Now().Add(delay)
+	return delay
+}
+
+func (s *secrets) clearBackoff(key certCacheKey) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.backoffs, key)
 }
 
 func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) {
@@ -239,6 +327,7 @@ func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKe
 	}
 	s.Lock()
 	delete(s.cachedCerts, key)
+	delete(s.backoffs, key)
 	s.Unlock()
 }
 
