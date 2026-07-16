@@ -375,7 +375,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "43.services-for-pod.yaml",
 			expectedErr:    "conflicting listener types on port 10001",
 		}),
-		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
+		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode creates listeners", testCase{
 			pod:              "44.pod.yaml",
 			servicesForPod:   "44.services-for-pod.yaml",
 			dataplane:        "44.dataplane.yaml",

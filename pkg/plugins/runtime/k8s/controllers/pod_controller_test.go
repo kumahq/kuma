@@ -1101,7 +1101,7 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should create Dataplane for zone proxy pod even when MeshServices mode is not Exclusive", func() {
+	It("should create Dataplane listeners for zone proxy pod even when MeshServices mode is not Exclusive", func() {
 		// given - zone-proxy-pod is in mesh "poc" which has no MeshServices mode (defaults to Disabled)
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "zone-proxy-pod"},
@@ -1121,5 +1121,10 @@ var _ = Describe("PodReconciler", func() {
 		dataplane := &mesh_k8s.Dataplane{}
 		err = kubeClient.Get(context.Background(), kube_types.NamespacedName{Namespace: "demo", Name: "zone-proxy-pod"}, dataplane)
 		Expect(err).ToNot(HaveOccurred())
+		spec, err := dataplane.GetSpec()
+		Expect(err).ToNot(HaveOccurred())
+		dataplaneSpec := spec.(*mesh_proto.Dataplane)
+		Expect(dataplaneSpec.Networking.Listeners).To(HaveLen(1))
+		Expect(dataplaneSpec.Networking.Listeners[0].Type).To(Equal(mesh_proto.Dataplane_Networking_Listener_ZoneIngress))
 	})
 })

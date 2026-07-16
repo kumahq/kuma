@@ -336,33 +336,31 @@ func (p *PodConverter) dataplaneFor(
 			dataplane.Networking.Inbound = ifaces
 		}
 
-		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
-			// portSvc tracks which service already claimed each address:port to produce
-			// actionable conflict messages instead of generic validator errors.
-			type portEntry struct {
-				svcName string
-				typ     mesh_proto.Dataplane_Networking_Listener_Type
+		// portSvc tracks which service already claimed each address:port to produce
+		// actionable conflict messages instead of generic validator errors.
+		type portEntry struct {
+			svcName string
+			typ     mesh_proto.Dataplane_Networking_Listener_Type
+		}
+		portSvc := map[string]portEntry{}
+		for _, zpSvc := range zoneProxyServices {
+			listeners, lErr := ListenersForService(pod, zpSvc)
+			if lErr != nil {
+				return nil, lErr
 			}
-			portSvc := map[string]portEntry{}
-			for _, zpSvc := range zoneProxyServices {
-				listeners, lErr := ListenersForService(pod, zpSvc)
-				if lErr != nil {
-					return nil, lErr
-				}
-				for _, l := range listeners {
-					key := fmt.Sprintf("%s:%d", l.Address, l.Port)
-					if existing, ok := portSvc[key]; ok {
-						if existing.typ != l.Type {
-							return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
-								l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
-						}
-						converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
-							"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
-						continue
+			for _, l := range listeners {
+				key := fmt.Sprintf("%s:%d", l.Address, l.Port)
+				if existing, ok := portSvc[key]; ok {
+					if existing.typ != l.Type {
+						return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
+							l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
 					}
-					portSvc[key] = portEntry{zpSvc.Name, l.Type}
-					dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
+					converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
+						"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
+					continue
 				}
+				portSvc[key] = portEntry{zpSvc.Name, l.Type}
+				dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
 			}
 		}
 

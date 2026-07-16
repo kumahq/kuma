@@ -13,3 +13,15 @@ networking:
     - port: 8080
       tags:
         kuma.io/service: foo
+---
+type: MeshTimeout
+name: legacy-to-rules
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
