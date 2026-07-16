@@ -57,7 +57,7 @@ var _ = Describe("Updater", func() {
 		close(stopCh)
 	})
 
-	It("should initialize MeshIdentity and create MeshTrust when meshService.mode is not Exclusive", func() {
+	It("should initialize MeshIdentity and create MeshTrust when meshServices.mode is not Exclusive", func() {
 		// when
 		Expect(
 			samples.MeshDefaultBuilder().

@@ -8,20 +8,29 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
-### MeshService mode no longer disables zone proxy listeners and inspect policy endpoints
+### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
 
 The control plane now generates mesh-scoped zone proxy listeners and serves
-Dataplane inspect policy endpoints regardless of `meshServices.mode`.
+Dataplane inspect `_layout` and policy endpoints regardless of
+`meshServices.mode`.
 
 The Kubernetes warning event reason `ZoneProxyListenersSkipped`, previously
 emitted when a zone proxy Service was ignored outside `Exclusive` mode, has been
 removed because these listeners are no longer skipped.
+
+The `MeshIdentity` status reason `MeshServicesDisabled`, previously reported
+when identity initialization was skipped outside `Exclusive` mode, has also
+been removed because MeshIdentity initialization now proceeds in every
+MeshService mode.
 
 **Action required**
 
 If you alert on `ZoneProxyListenersSkipped`, remove or update that alert before
 upgrading. Zone proxy Pods that previously depended on this skipped-listener
 behavior will now receive listener configuration in every MeshService mode.
+Also update any automation that expected the `MeshServicesDisabled`
+`MeshIdentity` status reason or treated inspect `_layout` as unavailable
+outside `Exclusive` mode.
 
 ### CoreDNS removed from the data plane
 
