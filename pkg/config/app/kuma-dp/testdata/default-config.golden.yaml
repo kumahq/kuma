@@ -25,8 +25,5 @@ dataplaneRuntime:
   spire: {}
   strictInboundPortsEnabled: true
 dns:
-  coreDnsBinaryPath: coredns
-  coreDnsPort: 15053
   enabled: true
-  envoyDnsPort: 15054
-  prometheusPort: 19153
+  proxyPort: 15053
