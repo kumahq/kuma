@@ -8,6 +8,30 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
+
+The control plane now generates mesh-scoped zone proxy listeners and serves
+Dataplane inspect `_layout` and policy endpoints regardless of
+`meshServices.mode`.
+
+The Kubernetes warning event reason `ZoneProxyListenersSkipped`, previously
+emitted when a zone proxy Service was ignored outside `Exclusive` mode, has been
+removed because these listeners are no longer skipped.
+
+The `MeshIdentity` status reason `MeshServicesDisabled`, previously reported
+when identity initialization was skipped outside `Exclusive` mode, has also
+been removed because MeshIdentity initialization now proceeds in every
+MeshService mode.
+
+**Action required**
+
+If you alert on `ZoneProxyListenersSkipped`, remove or update that alert before
+upgrading. Zone proxy Pods that previously depended on this skipped-listener
+behavior will now receive listener configuration in every MeshService mode.
+Also update any automation that expected the `MeshServicesDisabled`
+`MeshIdentity` status reason or treated inspect `_layout` as unavailable
+outside `Exclusive` mode.
+
 ### CoreDNS removed from the data plane
 
 The bundled CoreDNS binary has been removed. The data plane now always uses the in-process embedded DNS proxy (previously the default on Kubernetes and opt-in on Universal). CoreDNS and the Envoy DNS filter are no longer used, and the `coredns` binary is no longer shipped in the release tarball or the `kuma-dp` image.
