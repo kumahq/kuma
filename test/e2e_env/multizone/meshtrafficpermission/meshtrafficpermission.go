@@ -65,7 +65,8 @@ func MeshTrafficPermission() {
 		// Universal Zone 1
 		NewClusterSetup().
 			Install(Parallel(
-				TestServerUniversal("test-server", meshName,
+				TestServerUniversal(
+					"test-server", meshName,
 					WithArgs([]string{"echo", "--instance", "echo"}),
 					WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 				),

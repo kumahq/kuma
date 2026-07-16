@@ -139,7 +139,8 @@ spec:
 `, meshName))(multizone.Global)).To(Succeed())
 
 		execRequest := func(path string) (types.EchoResponse, error) {
-			return client.CollectEchoResponse(multizone.KubeZone1, "demo-client", "test-server:80"+path,
+			return client.CollectEchoResponse(
+				multizone.KubeZone1, "demo-client", "test-server:80"+path,
 				client.FromKubernetesPod(meshName, "demo-client"),
 			)
 		}

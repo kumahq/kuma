@@ -58,11 +58,13 @@ spec:
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(rateLimitPolicy)).
 			Install(YamlUniversal(rateLimitPolicyTcp)).
-			Install(TestServerUniversal("test-server", meshName,
+			Install(TestServerUniversal(
+				"test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 			)).
-			Install(TestServerUniversal("test-server-tcp", meshName,
+			Install(TestServerUniversal(
+				"test-server-tcp", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-2"}),
 				WithServiceName("test-server-tcp"),
 				WithLabels(map[string]string{"kuma.io/service": "test-server-tcp"}),

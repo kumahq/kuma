@@ -79,11 +79,13 @@ spec:
 			Install(YamlUniversal(faultInjection)).
 			Install(YamlUniversal(faultInjectionAllSources)).
 			Install(YamlUniversal(timeout)).
-			Install(TestServerUniversal("test-server", meshName,
+			Install(TestServerUniversal(
+				"test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 			)).
-			Install(TestServerUniversal("test-server-block-all-sources", meshName,
+			Install(TestServerUniversal(
+				"test-server-block-all-sources", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithServiceName("test-service-block-all-sources"),
 				WithLabels(map[string]string{"kuma.io/service": "test-service-block-all-sources"}),
@@ -109,7 +111,8 @@ spec:
 		expectedResponseCode int
 	}
 
-	DescribeTable("should be affected by fault and return",
+	DescribeTable(
+		"should be affected by fault and return",
 		func(given testCase) {
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(

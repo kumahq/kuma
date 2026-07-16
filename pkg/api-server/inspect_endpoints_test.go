@@ -75,7 +75,8 @@ var _ = Describe("Inspect WS", func() {
 		core.Now = time.Now
 	})
 
-	DescribeTable("should return valid response",
+	DescribeTable(
+		"should return valid response",
 		func(given testCase) {
 			// setup
 			core.Now = func() time.Time { return time.Time{} }

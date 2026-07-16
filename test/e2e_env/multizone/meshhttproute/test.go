@@ -40,7 +40,8 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 			Install(Parallel(
 				DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true),
 					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient})),
-				TestServerUniversal("dp-echo-1", meshName,
+				TestServerUniversal(
+					"dp-echo-1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone1-v1"}),
 					WithServiceVersion("v1"),
 				),
@@ -49,19 +50,23 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 
 		NewClusterSetup().
 			Install(Parallel(
-				TestServerUniversal("dp-echo-2-v1", meshName,
+				TestServerUniversal(
+					"dp-echo-2-v1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone2-v1"}),
 					WithServiceVersion("v1"),
 				),
-				TestServerUniversal("dp-echo-2-v2", meshName,
+				TestServerUniversal(
+					"dp-echo-2-v2", meshName,
 					WithArgs([]string{"echo", "--instance", "zone2-v2"}),
 					WithServiceVersion("v2"),
 				),
-				TestServerUniversal("dp-echo-2-v3", meshName,
+				TestServerUniversal(
+					"dp-echo-2-v3", meshName,
 					WithArgs([]string{"echo", "--instance", "zone2-v3"}),
 					WithServiceVersion("v3"),
 				),
-				TestServerUniversal("dp-echo-4", meshName,
+				TestServerUniversal(
+					"dp-echo-4", meshName,
 					WithArgs([]string{"echo", "--instance", "alias-zone2"}),
 					WithServiceName("alias-test-server"),
 					WithServiceVersion("v2"),

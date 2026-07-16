@@ -61,7 +61,8 @@ spec:
 	})
 
 	BeforeEach(func() {
-		Expect(DeleteMeshResources(universal.Cluster, meshName,
+		Expect(DeleteMeshResources(
+			universal.Cluster, meshName,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
 			meshfault_api.MeshFaultInjectionResourceTypeDescriptor,
 			meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,

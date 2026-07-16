@@ -29,11 +29,13 @@ func Test() {
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(Parallel(
-				DemoClientUniversal(AppModeDemoClient, meshName,
+				DemoClientUniversal(
+					AppModeDemoClient, meshName,
 					WithTransparentProxy(true),
 					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}),
 				),
-				TestServerUniversal("test-server-echo-1", meshName,
+				TestServerUniversal(
+					"test-server-echo-1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone1"}),
 					WithServiceVersion("v1"),
 				),
@@ -42,11 +44,13 @@ func Test() {
 
 		NewClusterSetup().
 			Install(Parallel(
-				TestServerUniversal("test-server-echo-2", meshName,
+				TestServerUniversal(
+					"test-server-echo-2", meshName,
 					WithArgs([]string{"echo", "--instance", "zone2"}),
 					WithServiceVersion("v2"),
 				),
-				TestServerUniversal("test-server-echo-3", meshName,
+				TestServerUniversal(
+					"test-server-echo-3", meshName,
 					WithArgs([]string{"echo", "--instance", "alias-zone2"}),
 					WithServiceName("alias-test-server"),
 					WithServiceVersion("v2"),

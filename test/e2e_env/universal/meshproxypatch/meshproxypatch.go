@@ -17,7 +17,8 @@ func MeshProxyPatch() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
-			Install(TestServerUniversal("test-server", mesh,
+			Install(TestServerUniversal(
+				"test-server", mesh,
 				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),

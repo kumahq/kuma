@@ -54,31 +54,39 @@ func LocalityAwareLB() {
 						map[string]string{
 							"k8s.io/node": "node-1",
 							"k8s.io/az":   "az-1",
-						}),
+						},
+					),
 				),
-				TestServerUniversal("test-server-node-1", mesh, WithAdditionalTags(
-					map[string]string{
-						"k8s.io/node": "node-1",
-						"k8s.io/az":   "az-1",
-					}),
+				TestServerUniversal(
+					"test-server-node-1", mesh, WithAdditionalTags(
+						map[string]string{
+							"k8s.io/node": "node-1",
+							"k8s.io/az":   "az-1",
+						},
+					),
 					WithServiceName("test-server_locality-aware-lb_svc_80"),
 					WithArgs([]string{"echo", "--instance", "test-server-node-1-zone-4"}),
 				),
-				TestServerUniversal("test-server-az-1", mesh, WithAdditionalTags(
-					map[string]string{
-						"k8s.io/az": "az-1",
-					}),
+				TestServerUniversal(
+					"test-server-az-1", mesh, WithAdditionalTags(
+						map[string]string{
+							"k8s.io/az": "az-1",
+						},
+					),
 					WithServiceName("test-server_locality-aware-lb_svc_80"),
 					WithArgs([]string{"echo", "--instance", "test-server-az-1-zone-4"}),
 				),
-				TestServerUniversal("test-server-node-2", mesh, WithAdditionalTags(
-					map[string]string{
-						"k8s.io/node": "node-2",
-					}),
+				TestServerUniversal(
+					"test-server-node-2", mesh, WithAdditionalTags(
+						map[string]string{
+							"k8s.io/node": "node-2",
+						},
+					),
 					WithServiceName("test-server_locality-aware-lb_svc_80"),
 					WithArgs([]string{"echo", "--instance", "test-server-node-2-zone-4"}),
 				),
-				TestServerUniversal("test-server-no-tags", mesh,
+				TestServerUniversal(
+					"test-server-no-tags", mesh,
 					WithArgs([]string{"echo", "--instance", "test-server-no-tags-zone-4"}),
 					WithServiceName("test-server_locality-aware-lb_svc_80"),
 				),
@@ -95,11 +103,13 @@ func LocalityAwareLB() {
 					WithServiceName("demo-client_locality-aware-lb_svc"),
 					WithLabels(map[string]string{"kuma.io/service": "demo-client_locality-aware-lb_svc"}),
 				),
-				TestServerUniversal("test-server", mesh,
+				TestServerUniversal(
+					"test-server", mesh,
 					WithServiceName("test-server_locality-aware-lb_svc_80"),
 					WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
 				),
-				TestServerUniversal("test-server-mesh-route", mesh,
+				TestServerUniversal(
+					"test-server-mesh-route", mesh,
 					WithServiceName("test-server-mesh-route_locality-aware-lb_svc_80"),
 					WithArgs([]string{"echo", "--instance", "test-server-mesh-route-zone-5"}),
 				),

@@ -103,7 +103,8 @@ var _ = Describe("snapshotGenerator", func() {
 			expectedSnapshots map[string]map[string]envoy_types.Resource
 		}
 
-		DescribeTable("",
+		DescribeTable(
+			"",
 			func(given testCase) {
 				// setup
 				zone := ""
