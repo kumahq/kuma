@@ -234,7 +234,8 @@ jobs:
           only-new-issues: false
 
       # Lint and "make check" are redundant on a tag: release_sha_gate already
-      # requires a green branch push run for this exact tree/SHA.
+      # requires a green branch push run for this exact tree/SHA. We still run
+      # metadata and SCA so release tags continue publishing security assets.
       - if: ${{ github.ref_type != 'tag' }}
         run: |
           make clean
@@ -260,11 +261,9 @@ jobs:
       # and should be ignored. Since we currently can't change the working directory
       # for the SCA step, it must run after "make check." Instead, we clean ./build
       # after "make check" to exclude tool binaries from the SBOM.
-      - if: ${{ github.ref_type != 'tag' }}
-        run: |
+      - run: |
           make clean/build
       - name: "Generate SBOM and CVE report (Software Composition Analysis)"
-        if: ${{ github.ref_type != 'tag' }}
         id: sca-project
         uses: Kong/public-shared-actions/security-actions/sca@4cb2f03c59d51085256a1405c81e0dd7e9a91fe9 # v6.0.2
         env:
