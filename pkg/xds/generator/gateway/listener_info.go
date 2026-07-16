@@ -4,18 +4,14 @@ import (
 	"context"
 	"maps"
 	"sort"
-	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -52,18 +48,13 @@ func GatewayListenerInfoFromProxy(
 	}
 
 	externalServices := meshCtx.Resources.ExternalServices()
-	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(
-		proxy.Dataplane,
-		externalServices,
-		meshCtx.Resources.TrafficPermissions(),
-	)
 
 	outboundEndpoints := core_xds.EndpointMap{}
 	maps.Copy(outboundEndpoints, meshCtx.EndpointMap)
 	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshCtx.Resource,
-		matchedExternalServices,
+		externalServices.Items,
 		meshCtx.DataSourceLoader,
 		proxy.Zone,
 	)
@@ -112,22 +103,10 @@ func MakeGatewayListener(
 
 	for _, rawListener := range listeners {
 		hostname := rawListener.GetNonEmptyHostname()
-		allRoutes := match.Routes(meshContext.Resources.GatewayRoutes().Items, rawListener.GetTags())
-		routes := route.FilterProtocols(allRoutes, listener.Protocol)
 
 		host := GatewayHost{
 			Hostname: hostname,
-			Policies: map[core_model.ResourceType][]match.RankedPolicy{},
 			Tags:     rawListener.GetTags(),
-			Routes:   routes,
-		}
-
-		for _, policyType := range ConnectionPolicyTypes {
-			matches := match.ConnectionPoliciesBySource(
-				rawListener.GetTags(),
-				match.ToConnectionPolicies(meshContext.Resources.MeshLocalResources[policyType]),
-			)
-			host.Policies[policyType] = matches
 		}
 
 		hostnameKey := mesh_proto.WildcardHostname
@@ -147,7 +126,7 @@ func MakeGatewayListener(
 	var listenerHostnames []GatewayListenerHostname
 	for _, hostname := range match.SortHostnamesByExactnessDec(util_maps.AllKeys(hostsByName)) {
 		hostAcc := hostsByName[hostname]
-		hosts := RedistributeWildcardRoutes(hostAcc.hosts)
+		hosts := hostAcc.hosts
 
 		sort.Slice(hosts, func(i, j int) bool {
 			return hosts[i].Hostname > hosts[j].Hostname
@@ -161,8 +140,7 @@ func MakeGatewayListener(
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
 			hostInfos = append(hostInfos, GatewayHostInfo{
-				Host:                    host,
-				meshGatewayRouteEntries: GenerateEnvoyRouteEntries(host),
+				Host: host,
 			})
 		}
 
@@ -175,83 +153,4 @@ func MakeGatewayListener(
 	}
 
 	return listener, listenerHostnames
-}
-
-// RedistributeWildcardRoutes moves routes attached to a wildcard listener to
-// concrete virtual hosts when the route explicitly names those hostnames.
-func RedistributeWildcardRoutes(hosts []GatewayHost) []GatewayHost {
-	hostsByName := map[string]GatewayHost{}
-	for _, host := range hosts {
-		hostsByName[host.Hostname] = host
-	}
-
-	wild, ok := hostsByName[mesh_proto.WildcardHostname]
-	if !ok {
-		return hosts
-	}
-
-	wildcardRoutes := wild.Routes
-	wild.Routes = nil
-	for _, gatewayRoute := range wildcardRoutes {
-		names := gatewayRoute.Spec.GetConf().GetHttp().GetHostnames()
-		if len(names) == 0 {
-			wild.Routes = append(wild.Routes, gatewayRoute)
-			continue
-		}
-
-		appendRoutesToHost := func(host GatewayHost) {
-			host.Routes = append(host.Routes, gatewayRoute)
-			hostsByName[host.Hostname] = host
-		}
-
-		for _, name := range names {
-			host, ok := hostsByName[name]
-			if !ok {
-				host = wild
-				host.Routes = nil
-				host.Hostname = name
-			}
-
-			appendRoutesToHost(host)
-
-			if suffix := strings.TrimPrefix(name, "*."); len(suffix) != len(name) {
-				for hostName, host := range hostsByName {
-					if strings.HasSuffix(hostName, suffix) {
-						appendRoutesToHost(host)
-					}
-				}
-			}
-		}
-	}
-
-	hostsByName[mesh_proto.WildcardHostname] = wild
-
-	var flattened []GatewayHost
-	for _, host := range hostsByName {
-		host.Routes = uniqueGatewayRoutes(host.Routes)
-		flattened = append(flattened, host)
-	}
-
-	return flattened
-}
-
-func uniqueGatewayRoutes(all []*core_mesh.MeshGatewayRouteResource) []*core_mesh.MeshGatewayRouteResource {
-	type key struct {
-		key core_model.ResourceKey
-		typ core_model.ResourceType
-	}
-
-	set := map[key]*core_mesh.MeshGatewayRouteResource{}
-	for _, resource := range all {
-		set[key{
-			key: core_model.MetaToResourceKey(resource.GetMeta()),
-			typ: resource.Descriptor().Name,
-		}] = resource
-	}
-
-	var unique []*core_mesh.MeshGatewayRouteResource
-	for _, resource := range set {
-		unique = append(unique, resource)
-	}
-	return unique
 }

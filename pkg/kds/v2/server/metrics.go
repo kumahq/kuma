@@ -14,10 +14,11 @@ const (
 )
 
 type Metrics struct {
-	KdsGenerations           *prometheus.HistogramVec
-	KdsGenerationErrors      prometheus.Counter
-	KdsZoneActiveConnections *prometheus.GaugeVec
-	KdsNackTotal             *prometheus.CounterVec
+	KdsGenerations             *prometheus.HistogramVec
+	KdsGenerationErrors        prometheus.Counter
+	KdsZoneActiveConnections   *prometheus.GaugeVec
+	KdsNackTotal               *prometheus.CounterVec
+	KdsZoneAttributionRewrites *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -41,14 +42,20 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Help: "Total KDS NACKs sent by zone and resource type.",
 	}, []string{"zone_name", "resource_type"})
 
-	if err := metrics.BulkRegister(kdsGenerations, kdsGenerationsErrors, kdsZoneActiveConnections, kdsNackTotal); err != nil {
+	kdsZoneAttributionRewrites := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "kds_zone_attribution_rewrites_total",
+		Help: "Total zone-to-global synced resources whose zone attribution was rewritten to the connecting zone's client-id because a sender-provided value differed, by resource type.",
+	}, []string{"resource_type"})
+
+	if err := metrics.BulkRegister(kdsGenerations, kdsGenerationsErrors, kdsZoneActiveConnections, kdsNackTotal, kdsZoneAttributionRewrites); err != nil {
 		return nil, err
 	}
 
 	return &Metrics{
-		KdsGenerations:           kdsGenerations,
-		KdsGenerationErrors:      kdsGenerationsErrors,
-		KdsZoneActiveConnections: kdsZoneActiveConnections,
-		KdsNackTotal:             kdsNackTotal,
+		KdsGenerations:             kdsGenerations,
+		KdsGenerationErrors:        kdsGenerationsErrors,
+		KdsZoneActiveConnections:   kdsZoneActiveConnections,
+		KdsNackTotal:               kdsNackTotal,
+		KdsZoneAttributionRewrites: kdsZoneAttributionRewrites,
 	}, nil
 }

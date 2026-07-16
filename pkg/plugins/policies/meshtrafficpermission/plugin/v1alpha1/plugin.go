@@ -112,15 +112,15 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
+// configureLegacyRules now only serves two callers: dataplanes still relying on the old
+// MeshTrafficPermission `Rules` format, and zone egress (see configureEgress). Legacy
+// TrafficPermission no longer contributes to xDS generation, so the absence of an old-format
+// rule always means default-deny.
 func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
 	//nolint:staticcheck // SA1019 configureLegacyRules explicitly uses old Rules format for legacy RBAC
 	rules, ok := mtp.FromRules.Rules[key]
 	if !ok {
-		if len(proxy.Policies.TrafficPermissions) == 0 {
-			rules = p.denyRules()
-		} else {
-			return nil
-		}
+		rules = p.denyRules()
 	}
 
 	configurer := &v3.LegacyRBACConfigurer{
@@ -258,14 +258,10 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 			}
 			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
 			if len(rules.Rules) == 0 {
-				if resource.ExternalServicePermissionMap[esName] == nil {
-					rules = core_rules.FromRules{
-						Rules: map[core_rules.InboundListener]core_rules.Rules{
-							{}: p.denyRules(),
-						},
-					}
-				} else {
-					continue
+				rules = core_rules.FromRules{
+					Rules: map[core_rules.InboundListener]core_rules.Rules{
+						{}: p.denyRules(),
+					},
 				}
 			}
 

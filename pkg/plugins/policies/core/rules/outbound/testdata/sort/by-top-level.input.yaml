@@ -4,9 +4,8 @@ name: matched-for-rules-bbb
 mesh: mesh-1
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
-      app: backend
+    kind: Dataplane
+    name: backend-dp
   to:
     - targetRef:
         kind: Mesh

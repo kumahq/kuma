@@ -94,17 +94,6 @@ func HttpConnectionManager(statsName string, forwardClientCertDetails bool, inte
 	return AddFilterChainConfigurer(hcmConfigurer)
 }
 
-func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
-	if !rbacEnabled {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.NetworkRBACConfigurer{
-		StatsName:  statsName,
-		Permission: permission,
-	})
-}
-
 type splitAdapter struct {
 	clusterName string
 	weight      uint32

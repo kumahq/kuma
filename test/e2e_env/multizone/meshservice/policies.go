@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshhealthcheck_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -104,6 +105,7 @@ spec:
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshtcproute_api.MeshTCPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, core_mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone2, meshName, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
 	})
@@ -284,10 +286,8 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/proxy-type: sidecar
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
           http:
             - abort:
                 httpStatus: 503
@@ -404,14 +404,37 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
         http:
           path: /are-you-healthy
           expectedStatuses:
           - 500`, Config.KumaNamespace, meshName, Kuma2)
-		// update HealthCheck policy to check for another status code
+		circuitBreaker := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshCircuitBreaker
+metadata:
+  name: mcb-for-ms-in-kuma-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/origin: zone
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: %s
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100
+`, Config.KumaNamespace, meshName, Kuma2)
+		// update HealthCheck policy to check for another status code, and disable panic mode
 		Expect(YamlK8s(healthCheck)(multizone.KubeZone1)).To(Succeed())
+		Expect(YamlK8s(circuitBreaker)(multizone.KubeZone1)).To(Succeed())
 
 		// check that test-server is unhealthy
 		Eventually(func(g Gomega) {

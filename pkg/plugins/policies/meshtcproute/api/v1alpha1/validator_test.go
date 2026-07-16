@@ -36,8 +36,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: Mesh
@@ -51,8 +50,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -73,8 +71,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -93,8 +90,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -110,8 +106,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService

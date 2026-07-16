@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -53,7 +52,6 @@ var _ = Describe("EgressGenerator", func() {
 			// given
 			var zoneEgress *core_mesh.ZoneEgressResource
 			var zoneIngresses []*core_mesh.ZoneIngressResource
-			var trafficPermissions []*core_mesh.TrafficPermissionResource
 
 			meshResourcesMap := map[string]*core_xds.MeshResources{}
 
@@ -80,8 +78,6 @@ var _ = Describe("EgressGenerator", func() {
 					zoneEgress = res.(*core_mesh.ZoneEgressResource)
 				case core_mesh.ZoneIngressType:
 					zoneIngresses = append(zoneIngresses, res.(*core_mesh.ZoneIngressResource))
-				case core_mesh.TrafficPermissionType:
-					trafficPermissions = append(trafficPermissions, res.(*core_mesh.TrafficPermissionResource))
 				case core_mesh.MeshType:
 					meshName := res.GetMeta().GetName()
 
@@ -149,11 +145,6 @@ var _ = Describe("EgressGenerator", func() {
 					meshResources.ExternalServices,
 					mes,
 					&loader,
-				)
-
-				meshResources.ExternalServicePermissionMap = permissions.BuildExternalServicesPermissionsMapForZoneEgress(
-					meshResources.ExternalServices,
-					trafficPermissions,
 				)
 			}
 

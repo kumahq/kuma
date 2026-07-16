@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"strconv"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -818,15 +817,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 			return nil, err
 		} else {
 			result[metadata.KumaBuiltinDNSPort] = fmt.Sprintf("%d", v)
-		}
-
-		if v, _, err := annotations.GetEnabledWithDefault(
-			i.cfg.BuiltinDNS.Logging,
-			metadata.KumaBuiltinDNSLogging,
-		); err != nil {
-			return nil, err
-		} else {
-			result[metadata.KumaBuiltinDNSLogging] = strconv.FormatBool(v)
 		}
 	}
 

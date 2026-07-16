@@ -14,38 +14,18 @@ InboundRules:
         name: mt-2
         type: MeshTimeout
       RuleIndex: 0
-  - conf:
-      connectionTimeout: 33s
-      http:
-        requestTimeout: 33s
-    match: null
-    origin:
-      Resource:
-        creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mt_mesh-1___mt-1_
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mt-1
-        type: MeshTimeout
-      RuleIndex: 0
 Rules:
   :0:
   - Conf:
-      connectionTimeout: 33s
+      connectionTimeout: 22s
       http:
-        requestTimeout: 33s
+        requestTimeout: 22s
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       kri: kri_mt_mesh-1___mt-2_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: mt-2
-      type: MeshTimeout
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_mesh-1___mt-1_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mt-1
       type: MeshTimeout
     OriginByMatches: {}
     Subset: []

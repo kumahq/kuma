@@ -75,7 +75,8 @@ var _ = Describe("Inspect WS", func() {
 		core.Now = time.Now
 	})
 
-	DescribeTable("should return valid response",
+	DescribeTable(
+		"should return valid response",
 		func(given testCase) {
 			// setup
 			core.Now = func() time.Time { return time.Time{} }
@@ -802,7 +803,7 @@ var _ = Describe("Inspect WS", func() {
 				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").Build(),
 				builders.MeshTrafficPermission().
 					WithMesh("mesh-1").
-					WithTargetRef(builders.TargetRefService("backend")).
+					WithTargetRef(builders.TargetRefDataplaneName("backend-1")).
 					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
@@ -959,15 +960,15 @@ var _ = Describe("Inspect WS", func() {
 				samples2.MeshDefault(),
 				samples2.DataplaneWeb(),
 				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefService("web")).
+					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
 					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), v1alpha1.Deny).
 					Build(),
 				builders.MeshAccessLog().
-					WithTargetRef(builders.TargetRefService("web")).
+					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
 					AddTo(builders.TargetRefMesh(), samples2.MeshAccessLogFileConf()).
 					Build(),
 				builders.MeshTrace().
-					WithTargetRef(builders.TargetRefService("web")).
+					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
 					WithZipkinBackend(samples2.ZipkinBackend()).
 					Build(),
 			},
@@ -988,20 +989,20 @@ var _ = Describe("Inspect WS", func() {
 					Build(),
 				builders.MeshTrafficPermission().
 					WithName("mtp-1").
-					WithTargetRef(builders.TargetRefService("web")).
+					WithTargetRef(builders.TargetRefDataplaneName("dp-1")).
 					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east", "version", "2"), v1alpha1.Allow).
 					Build(),
 				builders.MeshTrafficPermission().
 					WithName("mtp-2").
-					WithTargetRef(builders.TargetRefService("web")).
+					WithTargetRef(builders.TargetRefDataplaneName("dp-1")).
 					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), v1alpha1.Deny).
 					Build(),
 				builders.MeshAccessLog().
-					WithTargetRef(builders.TargetRefService("web")).
+					WithTargetRef(builders.TargetRefDataplaneName("dp-1")).
 					AddTo(builders.TargetRefMesh(), samples2.MeshAccessLogFileConf()).
 					Build(),
 				builders.MeshTrace().
-					WithTargetRef(builders.TargetRefService("web")).
+					WithTargetRef(builders.TargetRefDataplaneName("dp-1")).
 					WithZipkinBackend(samples2.ZipkinBackend()).
 					Build(),
 			},

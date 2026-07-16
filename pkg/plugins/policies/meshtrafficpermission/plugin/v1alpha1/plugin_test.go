@@ -55,7 +55,9 @@ var _ = Describe("RBAC", func() {
 				Resource: listener,
 			})
 
-			// listener that is originated from inbound proxy generator but won't match
+			// listener that is originated from inbound proxy generator but won't match: proves the
+			// fail-closed default-deny fallback (mTLS inbound + zero MeshTrafficPermission rules still
+			// gets an empty-policy, deny-all envoy.filters.network.rbac filter; see apply.golden.yaml)
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).

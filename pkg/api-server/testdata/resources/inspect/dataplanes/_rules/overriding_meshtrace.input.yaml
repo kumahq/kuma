@@ -41,8 +41,8 @@ name: override
 mesh: default
 spec:
   targetRef:
-    kind: MeshService
-    name: foo
+    kind: Dataplane
+    name: dp-1
   default:
     backends:
       - type: Zipkin

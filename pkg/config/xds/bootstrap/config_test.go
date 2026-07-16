@@ -18,9 +18,6 @@ var _ = Describe("BootstrappServerConfig", func() {
 		// given
 		cfg := BootstrapServerConfig{}
 
-		fileError := os.WriteFile("/tmp/corefile", []byte("abc"), 0o600)
-		Expect(fileError).ToNot(HaveOccurred())
-
 		// when
 		err := config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)
 
@@ -35,7 +32,6 @@ var _ = Describe("BootstrappServerConfig", func() {
 		Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 		Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
 		Expect(cfg.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
-		Expect(cfg.Params.CorefileTemplatePath).To(Equal("/tmp/corefile"))
 	})
 
 	Context("with modified environment variables", func() {

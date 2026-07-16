@@ -85,8 +85,10 @@
       "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-3_",
       "spec": {
         "targetRef": {
-          "kind": "MeshService",
-          "name": "api-play-002_microservice-mesh_svc_8080"
+          "kind": "Dataplane",
+          "labels": {
+            "kuma.io/service": "api-play-002_microservice-mesh_svc_8080"
+          }
         },
         "to": [
           {
@@ -119,8 +121,10 @@
       "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-4_",
       "spec": {
         "targetRef": {
-          "kind": "MeshService",
-          "name": "api-play-000_microservice-mesh_svc_8080"
+          "kind": "Dataplane",
+          "labels": {
+            "kuma.io/service": "api-play-000_microservice-mesh_svc_8080"
+          }
         },
         "to": [
           {

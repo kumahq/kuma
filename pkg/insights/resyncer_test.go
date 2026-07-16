@@ -605,13 +605,14 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
-	It("should not compute services when meshServices.mode is Exclusive", func() {
+	It("should only compute delegated gateways when meshServices.mode is Exclusive", func() {
 		// given a mesh with meshServices.mode=Exclusive
 		mesh := core_mesh.NewMeshResource()
 		mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Exclusive}
 		err := rm.Create(context.Background(), mesh, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
+		// an inbound-based service, represented by MeshService in Exclusive mode
 		dp1 := core_mesh.NewDataplaneResource()
 		dp1.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
@@ -627,6 +628,34 @@ var _ = Describe("Insight Persistence", func() {
 			},
 		}
 		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// a delegated gateway, which is never turned into a MeshService
+		delegatedGw := core_mesh.NewDataplaneResource()
+		delegatedGw.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.2",
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{"kuma.io/service": "delegated-gw"},
+					Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+				},
+			},
+		}
+		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// a builtin gateway, which is not reported in Exclusive mode
+		builtinGw := core_mesh.NewDataplaneResource()
+		builtinGw.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.3",
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{"kuma.io/service": "builtin-gw"},
+					Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+				},
+			},
+		}
+		err = rm.Create(context.Background(), builtinGw, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		externalService := core_mesh.NewExternalServiceResource()
@@ -649,10 +678,17 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(meshInsight.Spec.Services).To(BeNil())
 		}).Should(Succeed())
 
-		// and no ServiceInsight is created since the empty insight equals the default spec
-		serviceInsight := core_mesh.NewServiceInsightResource()
-		err = rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
-		Expect(store.IsNotFound(err)).To(BeTrue())
+		// and the ServiceInsight only contains the delegated gateway
+		Eventually(func(g Gomega) {
+			serviceInsight := core_mesh.NewServiceInsightResource()
+			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(serviceInsight.Spec.Services).To(HaveKey("delegated-gw"))
+			g.Expect(serviceInsight.Spec.Services["delegated-gw"].ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_gateway_delegated))
+			g.Expect(serviceInsight.Spec.Services).ToNot(HaveKey("backend"))
+			g.Expect(serviceInsight.Spec.Services).ToNot(HaveKey("builtin-gw"))
+			g.Expect(serviceInsight.Spec.Services).ToNot(HaveKey("external-service"))
+		}).Should(Succeed())
 	})
 
 	It("should not create a service insight entry for inbounds without a kuma.io/service tag", func() {

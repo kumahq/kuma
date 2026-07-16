@@ -42,17 +42,20 @@ networking:
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(Parallel(
-				DemoClientUniversal("demo-client", mesh, WithTransparentProxy(true)),
+				DemoClientUniversal("demo-client", mesh, WithTransparentProxy(true),
+					WithLabels(map[string]string{"kuma.io/service": "demo-client"})),
 				InstallExternalService("es-1"),
 				InstallExternalService("es-2"),
-				TestServerUniversal("test-server-1", mesh,
+				TestServerUniversal(
+					"test-server-1", mesh,
 					WithArgs([]string{"echo", "--instance", "ts-1"}),
 				),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
 		NewClusterSetup().
-			Install(TestServerUniversal("test-server-2", mesh,
+			Install(TestServerUniversal(
+				"test-server-2", mesh,
 				WithArgs([]string{"echo", "--instance", "ts-2"}),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
@@ -87,8 +90,9 @@ name: mlbs-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService
@@ -111,8 +115,9 @@ name: mlbs-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService

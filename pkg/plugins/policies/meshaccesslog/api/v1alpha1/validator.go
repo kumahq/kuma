@@ -38,10 +38,6 @@ func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isIn
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshGateway,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
