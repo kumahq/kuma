@@ -172,9 +172,7 @@ func buildExternalServiceFilterChain(
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
 		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming, false)).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
-		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
-		// Zone Egress will configure these filter chains only for meshes with mTLS enabled, so we can safely pass here true
-		Configure(envoy_listeners.NetworkRBAC(esName, true, resources.ExternalServicePermissionMap[esName]))
+		Configure(envoy_listeners.MatchServerNames(cluster.SNI()))
 
 	// Protocol is not HTTP based, so we can use TCP proxy instead of HTTP connection manager and return early
 	if !core_meta.IsHTTPBased(endpoints[0].Protocol()) {

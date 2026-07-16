@@ -73,10 +73,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				continue
 			}
 
-			isExternalService := xdsCtx.Mesh.IsExternalService(service)
-			if len(xdsCtx.Mesh.Resources.TrafficPermissions().Items) > 0 {
-				isExternalService = route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
-			}
+			isExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
 
 			matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 

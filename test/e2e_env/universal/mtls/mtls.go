@@ -173,15 +173,19 @@ mtls:
 
 			By("When adding traffic-permission")
 			perm := fmt.Sprintf(`
-type: TrafficPermission
+type: MeshTrafficPermission
 name: example
 mesh: "%s"
-sources:
-  - match:
-      kuma.io/service: demo-client
-destinations:
-  - match:
-      kuma.io/service: test-server
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server
+  from:
+    - targetRef:
+        kind: MeshService
+        name: demo-client
+      default:
+        action: Allow
 `, meshName)
 			Expect(universal.Cluster.Install(YamlUniversal(perm))).To(Succeed())
 

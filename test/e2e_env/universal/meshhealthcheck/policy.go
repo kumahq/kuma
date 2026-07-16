@@ -39,17 +39,34 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: /%s
-          expectedStatuses: 
+          expectedStatuses:
           - %s`, mesh, method, status)
+		}
+		disablePanic := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
+				Install(YamlUniversal(disablePanic(meshName))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
@@ -118,12 +135,28 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: /%s
-          expectedStatuses: 
+          expectedStatuses:
           - %s`, mesh, method, status)
+		}
+		disablePanic := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 
 		BeforeAll(func() {
@@ -133,6 +166,7 @@ spec:
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 				)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
+				Install(YamlUniversal(disablePanic(meshName))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
@@ -205,17 +239,34 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        tcp: 
+        tcp:
           send: %s
           receive:
           - %s`, mesh, serviceName, sendBase64, recvBase64)
+		}
+		disablePanic := func(mesh, serviceName string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: %s
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh, serviceName)
 		}
 		meshName := "meshhealthcheck-tcp"
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
+				Install(YamlUniversal(disablePanic(meshName, "test-server"))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
@@ -297,17 +348,34 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        tcp: 
+        tcp:
           send: %s
           receive:
             - %s`, mesh, serviceName, sendBase64, recvBase64)
+		}
+		disablePanic := func(mesh, serviceName string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: gateway-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: %s
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh, serviceName)
 		}
 		meshName := "meshhealthcheck-mtls-permissive-tcp"
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(mtlsPermissiveMesh(meshName)).
+				Install(YamlUniversal(disablePanic(meshName, "test-server-mtls"))).
 				Install(DemoClientUniversal("dp-demo-client-mtls", meshName,
 					WithTransparentProxy(true)),
 				).
@@ -377,15 +445,32 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
         grpc: {}`, mesh)
+		}
+		disablePanic := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName))).
+				Install(YamlUniversal(disablePanic(meshName))).
 				Install(TestServerUniversal("test-client", meshName,
 					WithServiceName("test-client"),
 					WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80"}),
@@ -471,12 +556,28 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: /%s
-          expectedStatuses: 
+          expectedStatuses:
           - %s`, mesh, method, status)
+		}
+		disablePanic := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 
 		meshHttpRoute := fmt.Sprintf(`
@@ -518,6 +619,7 @@ spec:
 			err := NewClusterSetup().
 				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
+				Install(YamlUniversal(disablePanic(meshName))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true),
 					WithLabels(map[string]string{"kuma.io/service": "dp-demo-client"})),

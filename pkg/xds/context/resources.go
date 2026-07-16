@@ -73,14 +73,6 @@ func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
 	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
 }
 
-func (r Resources) TrafficRoutes() *core_mesh.TrafficRouteResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
-}
-
-func (r Resources) TrafficPermissions() *core_mesh.TrafficPermissionResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
-}
-
 func (r Resources) RateLimits() *core_mesh.RateLimitResourceList {
 	return r.ListOrEmpty(core_mesh.RateLimitType).(*core_mesh.RateLimitResourceList)
 }

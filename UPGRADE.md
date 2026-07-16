@@ -270,6 +270,56 @@ release; existing resources are still accepted and stored.
 
 Migrate timeouts to `MeshTimeout`, which replaces `Timeout`.
 
+### `TrafficRoute` no longer affects generated Envoy config
+
+The legacy `TrafficRoute` policy is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `TrafficRoute` resource no
+longer changes outbound routing, load balancing, or reachable destinations
+for any dataplane, zone ingress, or zone egress.
+
+Traffic between services now always flows by default, the same way it
+already did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A
+`TrafficRoute` resource previously already used to be required to make
+communication between services possible; it no longer has any effect,
+including its side effect of disabling default routing until a
+`MeshHTTPRoute`/`MeshTCPRoute` was applied.
+
+The `TrafficRoute` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate routing to `MeshHTTPRoute`/`MeshTCPRoute`, which replace
+`TrafficRoute`.
+
+### `TrafficPermission` no longer affects generated Envoy config
+
+The legacy `TrafficPermission` policy is no longer consumed when generating
+Envoy configuration. Applying, updating, or removing a `TrafficPermission`
+resource no longer changes the RBAC rules of any dataplane inbound listener,
+zone egress external-service filter chain, or gateway external-service
+routing. `MeshTrafficPermission` is the only policy that now controls
+inbound and egress access.
+
+For dataplanes, zone egresses, and gateways already using
+`MeshTrafficPermission`, this is a no-op: `MeshTrafficPermission` already
+took precedence over `TrafficPermission` and provably re-owns every mTLS
+inbound RBAC filter. For any inbound, external service, or gateway route
+that still relied solely on a `TrafficPermission` grant with no equivalent
+`MeshTrafficPermission`, access now defaults to deny instead of allow. No
+mTLS inbound listener or egress external-service filter chain loses its RBAC
+filter — every one still gets a default-deny filter, so this is a fail-closed
+change rather than fail-open. External-service outbound clusters are also now
+always generated, instead of only when a `TrafficPermission` granted access.
+
+The `TrafficPermission` resource, API, and KDS sync are still in place for
+this release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate access control to `MeshTrafficPermission`, which replaces
+`TrafficPermission`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using

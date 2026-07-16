@@ -58,13 +58,12 @@ spec:
         kind: MeshService
         name: test-server_%[2]s_svc_80
       default:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-header
         loadBalancer:
           type: RingHash
-          ringHash:
-            hashPolicies:
-              - type: Header
-                header:
-                  name: x-header
 `, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
 
 			Eventually(func(g Gomega) {

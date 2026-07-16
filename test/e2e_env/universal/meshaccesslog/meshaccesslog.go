@@ -135,7 +135,8 @@ spec:
      kuma.io/service: demo-client
  to:
    - targetRef:
-       kind: Mesh
+       kind: MeshService
+       name: test-server
      default:
        backends:
        - type: Tcp
@@ -202,7 +203,8 @@ mesh: %s
 spec:
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
       default:
         backends:
           - type: Tcp
@@ -339,7 +341,8 @@ spec:
      kuma.io/service: demo-client
  to:
    - targetRef:
-       kind: Mesh
+       kind: MeshService
+       name: test-server
      default:
        backends:
        - type: Tcp

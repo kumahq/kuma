@@ -155,9 +155,6 @@ func GroupByPolicy(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.
 func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.InboundInterface][]core_model.Resource {
 	result := map[mesh_proto.InboundInterface][]core_model.Resource{}
 
-	for inbound, tp := range matchedPolicies.TrafficPermissions {
-		result[inbound] = append(result[inbound], tp)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for inbound, elts := range matchedPolicies.Dynamic[tpe].InboundPolicies {
 			result[inbound] = append(result[inbound], elts...)
@@ -170,9 +167,6 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.OutboundInterface][]core_model.Resource {
 	result := map[mesh_proto.OutboundInterface][]core_model.Resource{}
 
-	for outbound, tr := range matchedPolicies.TrafficRoutes {
-		result[outbound] = append(result[outbound], tr)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for outbound, elts := range matchedPolicies.Dynamic[tpe].OutboundPolicies {
 			result[outbound] = append(result[outbound], elts...)
