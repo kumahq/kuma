@@ -67,13 +67,12 @@ spec:
         kind: MeshService
         name: test-server
       default:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-header
         loadBalancer:
           type: RingHash
-          ringHash:
-            hashPolicies:
-              - type: Header
-                header:
-                  name: x-header
 `)(universal.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {

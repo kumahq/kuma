@@ -12,6 +12,11 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
+// minCompatibleDPVersion is the oldest data plane version compatible with the
+// current control plane. CoreDNS was removed from the data plane in 2.14.x, so
+// older data planes can no longer resolve mesh services against a newer CP.
+const minCompatibleDPVersion = "2.14.0"
+
 func UniversalCompatibility() {
 	meshName := "compatibility"
 
@@ -65,5 +70,5 @@ func UniversalCompatibility() {
 			}, "20s", "250ms").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),
-		SupportedVersionEntries())
+		SupportedVersionEntriesAtLeast(minCompatibleDPVersion))
 }

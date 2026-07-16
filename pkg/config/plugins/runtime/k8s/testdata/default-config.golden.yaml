@@ -13,7 +13,6 @@ injector:
   applicationProbeProxyPort: 9001
   builtinDNS:
     enabled: true
-    experimentalProxy: true
     port: 15053
   caCertFile: ""
   cniEnabled: false
