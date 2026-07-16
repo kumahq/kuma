@@ -66,6 +66,10 @@ jobs:
         name: Image tag
         run: |
           echo "::notice title=Image tag::$(make build/info/version)"
+      - name: Assert built binary reports tag version
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          make build/assert-tag-version
       - run: |
           make -j build/distributions
       - id: inspect-binary-output
