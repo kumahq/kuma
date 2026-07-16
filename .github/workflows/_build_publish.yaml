@@ -44,27 +44,30 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   assert-tag-version:
-    # Runs before build-binaries/build-images/publish-helm so a tag whose
-    # binary reports the wrong version can't slip through to a publish step
-    # in a job that doesn't depend on build-binaries.
-    if: ${{ github.ref_type == 'tag' }}
+    # Tag check lives on the steps, not the job, so this job always reports
+    # success/failure and never "skipped". That lets build-binaries and
+    # build-images depend on it with a plain `needs:` and GitHub's default
+    # job-status semantics, which correctly cascade to digest-images and
+    # publish-helm further down the chain and correctly stop on cancellation.
     timeout-minutes: 10
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: ${{ github.ref_type == 'tag' }}
         with:
           persist-credentials: false
           fetch-depth: 0
       - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        if: ${{ github.ref_type == 'tag' }}
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
       - name: Assert built binary reports tag version
+        if: ${{ github.ref_type == 'tag' }}
         run: |
           make build/assert-tag-version
   build-binaries:
     needs: [assert-tag-version]
-    if: ${{ always() && (needs.assert-tag-version.result == 'success' || needs.assert-tag-version.result == 'skipped') }}
     timeout-minutes: 70
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
@@ -120,7 +123,6 @@ jobs:
           make publish/pulp
   build-images:
     needs: [assert-tag-version]
-    if: ${{ always() && (needs.assert-tag-version.result == 'success' || needs.assert-tag-version.result == 'skipped') }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write # Required for image signing
