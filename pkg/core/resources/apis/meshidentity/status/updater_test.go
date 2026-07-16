@@ -57,7 +57,7 @@ var _ = Describe("Updater", func() {
 		close(stopCh)
 	})
 
-	It("should not initialize MeshIdentity if meshService.mode is not Exclusive", func() {
+	It("should initialize MeshIdentity and create MeshTrust when meshService.mode is not Exclusive", func() {
 		// when
 		Expect(
 			samples.MeshDefaultBuilder().
@@ -75,24 +75,31 @@ var _ = Describe("Updater", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(mid.Status.Conditions).To(ContainElements(
 				common_api.Condition{
-					Type:    meshidentity_api.DependenciesReadyType,
-					Status:  kube_meta.ConditionFalse,
-					Reason:  "MeshServicesDisabled",
-					Message: "MeshIdentity requires MeshServices to be enabled on the mesh. To enable, set `spec.meshServices.mode: Exclusive` on the mesh.",
+					Type:    meshidentity_api.ProviderConditionType,
+					Status:  kube_meta.ConditionTrue,
+					Reason:  "ProviderInitialized",
+					Message: "Provider successfully initialized",
+				},
+				common_api.Condition{
+					Type:    meshidentity_api.MeshTrustConditionType,
+					Status:  kube_meta.ConditionTrue,
+					Reason:  "MeshTrustCreated",
+					Message: "MeshTrust has been successfully created",
 				},
 				common_api.Condition{
 					Type:    meshidentity_api.ReadyConditionType,
-					Status:  kube_meta.ConditionFalse,
-					Reason:  "Failure",
-					Message: "One of initialization steps failed",
+					Status:  kube_meta.ConditionTrue,
+					Reason:  "Ready",
+					Message: "Successfully initialized",
 				},
 			))
 		}, "10s", "100ms").Should(Succeed())
 
-		// meshtrust should not be created
-		meshTrustList := &meshtrust_api.MeshTrustResourceList{}
-		Expect(resManager.List(context.Background(), meshTrustList, store.ListByMesh("default"))).To(Succeed())
-		Expect(meshTrustList.Items).To(BeEmpty())
+		// meshtrust should be created
+		meshTrust := meshtrust_api.NewMeshTrustResource()
+		Expect(resManager.Get(context.Background(), meshTrust, store.GetByKey(identity.Meta.GetName(), "default"))).ToNot(HaveOccurred())
+		Expect(meshTrust.Status.Origin.KRI).To(Equal(pointer.To(kri.From(identity).String())))
+		Expect(meshTrust.Spec.CABundles).To(HaveLen(1))
 	})
 
 	It("should successfully reconcile mesh identity", func() {

@@ -298,11 +298,6 @@ func (r *resourceInspectHandler) getPoliciesConf(plugins []core_plugins.Register
 			return
 		}
 
-		if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _policies endpoint without meshService enabled"), "Bad Request")
-			return
-		}
-
 		var matchedPolicies []core_xds.TypedMatchingPolicies
 		allPlugins := plugins
 		for _, policyPlugin := range allPlugins {
