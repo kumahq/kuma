@@ -148,6 +148,39 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		if err := g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream); err != nil {
 			processingErrorsCh <- err
 		}
+<<<<<<< HEAD
+=======
+		kdsStream := kds_client_v2.NewDeltaKDSStream(serverStreamAdapter{stream}, zone, g.instanceID, "", len(g.typesSentByZone))
+		cb := kds_sync_store_v2.GlobalSyncCallback(
+			stream.Context(),
+			g.resourceSyncer,
+			g.k8sStore,
+			k8s.NewSimpleKubeFactory(),
+			g.systemNamespace,
+			g.metrics.KdsZoneAttributionRewrites,
+		)
+		zoneName := zone
+		cb.OnNACK = func(resourceType core_model.ResourceType) {
+			g.metrics.KdsNackTotal.WithLabelValues(zoneName, string(resourceType)).Inc()
+		}
+		sink := kds_client_v2.NewKDSSyncClient(
+			logger,
+			g.typesSentByZone,
+			kdsStream,
+			cb,
+			kds_client_v2.SyncClientConfig{
+				ResponseBackoff: g.responseBackoff,
+				LogPayloads:     g.logPayloads,
+			},
+		)
+		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			processingErrorsCh <- errors.Wrap(err, "KDSSyncClient finished with an error")
+			return
+		}
+
+		logger.V(1).Info("KDSSyncClient finished gracefully")
+		processingErrorsCh <- nil
+>>>>>>> db8309dd90 (fix(kds): attribute zone-to-global synced resources by authenticated zone (#17456))
 	}()
 
 	if err := g.storeStreamConnection(stream.Context(), zone, service.ZoneToGlobal, connectTime); err != nil {
