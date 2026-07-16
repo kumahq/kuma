@@ -97,17 +97,10 @@ func DefaultReconciler(
 	statsCallbacks util_xds.StatsCallbacks,
 	metrics *xds_metrics.Metrics,
 ) xds_sync.SnapshotReconciler {
-	resolver := xds_template.SequentialResolver(
-		&xds_template.SimpleProxyTemplateResolver{
-			ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
-		},
-		generator.DefaultTemplateResolver,
-	)
-
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
-			ProxyTemplateResolver: resolver,
+			ProxyTemplateResolver: generator.DefaultTemplateResolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 		statsCallbacks: statsCallbacks,

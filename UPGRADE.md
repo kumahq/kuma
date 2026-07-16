@@ -335,6 +335,25 @@ this release; existing resources are still accepted and stored.
 Migrate access control to `MeshTrafficPermission`, which replaces
 `TrafficPermission`.
 
+### `ProxyTemplate` no longer affects generated Envoy config
+
+The `ProxyTemplate` resource is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `ProxyTemplate` resource no
+longer changes the Envoy configuration of any dataplane: neither the
+user-selected profile imports nor the raw xDS resources and modifications
+(`Conf.Resources`, `Conf.Modifications`) are applied anymore. The
+default-profile mechanism that `ProxyTemplate` used internally is unaffected
+and still generates the standard Envoy configuration for every dataplane.
+
+The `ProxyTemplate` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate raw Envoy resource modifications to `MeshProxyPatch`, which replaces
+the `ProxyTemplate.Conf.Resources` and `ProxyTemplate.Conf.Modifications`
+raw-Envoy paths.
+
 ### Built-in gateway no longer falls back to `MeshGatewayRoute` or legacy connection policies
 
 The built-in gateway (`MeshGateway`) no longer consumes the legacy
