@@ -10,16 +10,11 @@ import (
 )
 
 // StartDeltaClient starts a KDS sync client per stream. clientIDs[i] is the
-// authenticated peer identity for clientStreams[i]; in production this is the
-// zone name from util.ClientIDFromIncomingCtx and it drives resource
-// attribution on the global ingest path. If clientIDs is shorter than
-// clientStreams the remaining streams fall back to "client-<i>".
+// client-id for clientStreams[i] (the zone name in production, which drives
+// attribution) and must be provided for every stream.
 func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, clientIDs []string, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
 	for i := range clientStreams {
-		clientID := fmt.Sprintf("client-%d", i)
-		if i < len(clientIDs) {
-			clientID = clientIDs[i]
-		}
+		clientID := clientIDs[i]
 		item := clientStreams[i]
 		kdsStream := kds_client_v2.NewDeltaKDSStream(item, clientID, fmt.Sprintf("cp-%d", i), "", len(resourceTypes))
 		comp := kds_client_v2.NewKDSSyncClient(

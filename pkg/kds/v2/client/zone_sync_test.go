@@ -417,7 +417,7 @@ var _ = Describe("KDSSyncClient logging", func() {
 				"addedResourcesCount",
 				"removedResourcesCount",
 			},
-			// ControlPlaneId now reflects the authenticated client-id ("zone-1"),
+			// ControlPlaneId now reflects the connecting peer's client-id ("zone-1"),
 			// not the in-band "cp-1"; it must not leak into summary logs.
 			[]string{
 				"zone-1",

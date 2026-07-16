@@ -1,14 +1,8 @@
-// KDS zone-to-global sync attribution guard.
-//
-// The global CP must attribute a synced resource by the authenticated
-// connection identity (the client-id from util.ClientIDFromIncomingCtx, wired
-// into the stream in pkg/kds/mux/zone_sync.go), not by values the sender
-// provides in-band. These tests drive the real global ingest wiring
-// (NewDeltaKDSStream(stream, <authenticated zone>, ...) -> GlobalSyncCallback ->
-// KDSSyncClient.Receive) with a stream whose authenticated client-id ("zone-b")
-// differs from the in-band ControlPlane.Identifier and the in-spec kuma.io/zone
-// tags ("zone-a"), and assert that all attribution resolves to the authenticated
-// client-id.
+// Tests that the global CP attributes KDS zone-to-global synced resources by the
+// connecting peer's declared client-id, not by sender-provided in-band values.
+// Each case drives the real global ingest with a client-id ("zone-b") that
+// differs from the payload's zone ("zone-a"), and asserts everything resolves to
+// the connecting zone.
 package client_test
 
 import (
@@ -19,6 +13,8 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -38,26 +34,21 @@ import (
 )
 
 const (
-	// authenticatedZone is the connection's authenticated identity (client-id),
-	// which zone_sync.go passes to NewDeltaKDSStream and which must drive
-	// attribution.
-	authenticatedZone = "zone-b"
-	// otherZone is a different, already-enrolled zone named by the sender's
-	// in-band ControlPlane.Identifier and in-spec kuma.io/zone tags.
+	// connectingZone is the client-id the connection presents.
+	connectingZone = "zone-b"
+	// otherZone is the differing zone the sender names in-band.
 	otherZone = "zone-a"
 )
 
-// newGlobalSink wires the global-CP KDS zone-to-global ingest as
-// pkg/kds/mux/zone_sync.go does, feeding a memory-backed store. authClientID is
-// the authenticated zone (client-id), intentionally different from the
-// per-message ControlPlane.Identifier and in-spec tags the responses carry.
-func newGlobalSink(t *testing.T, ctx context.Context, authClientID string, typ core_model.ResourceType) (store.ResourceStore, *test_grpc.MockDeltaClientStream, func()) {
+// newGlobalSink wires the global-CP KDS ingest as pkg/kds/mux/zone_sync.go does,
+// over a memory store; the connecting peer's client-id is connectingZone.
+func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceType) (store.ResourceStore, *test_grpc.MockDeltaClientStream, *prometheus.CounterVec, func()) {
 	t.Helper()
 	g := NewWithT(t)
 
 	globalStore := memory.NewStore()
 	// Both zones exist on global, as in any federated mesh.
-	for _, z := range []string{otherZone, authenticatedZone} {
+	for _, z := range []string{otherZone, connectingZone} {
 		err := globalStore.Create(ctx,
 			&system.ZoneResource{Spec: &system_proto.Zone{Enabled: util_proto.Bool(true)}},
 			store.CreateByKey(z, core_model.NoMesh))
@@ -69,15 +60,20 @@ func newGlobalSink(t *testing.T, ctx context.Context, authClientID string, typ c
 	syncer, err := sync_store_v2.NewResourceSyncer(core.Log.WithName("crosszone-syncer"), globalStore, store.NoTransactions{}, metrics, context.Background())
 	g.Expect(err).ToNot(HaveOccurred())
 
+	// Counts resources whose zone attribution the global ingest rewrote because
+	// a sender-provided value differed from the connecting zone.
+	rewrites := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "test_kds_zone_attribution_rewrites_total",
+	}, []string{"resource_type"})
+
 	clientStream := test_grpc.NewMockDeltaClientStream()
-	// authClientID is the authenticated zone that must drive attribution, not
-	// the in-band ControlPlane.Identifier.
-	kdsStream := client_v2.NewDeltaKDSStream(clientStream, authClientID, authClientID+"-instance", "", 1)
+	// The client-id drives attribution, not the in-band ControlPlane.Identifier.
+	kdsStream := client_v2.NewDeltaKDSStream(clientStream, connectingZone, connectingZone+"-instance", "", 1)
 	sink := client_v2.NewKDSSyncClient(
 		core.Log.WithName("crosszone-global-sink"),
 		[]core_model.ResourceType{typ},
 		kdsStream,
-		sync_store_v2.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system"),
+		sync_store_v2.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", rewrites),
 		client_v2.SyncClientConfig{},
 	)
 
@@ -92,11 +88,10 @@ func newGlobalSink(t *testing.T, ctx context.Context, authClientID string, typ c
 		_ = kdsStream.CloseSend()
 		<-done
 	}
-	return globalStore, clientStream, cleanup
+	return globalStore, clientStream, rewrites, cleanup
 }
 
-// deltaResponse builds a KDS DeltaDiscoveryResponse carrying one resource and a
-// chosen ControlPlane.Identifier - the wire shape a zone CP sends.
+// deltaResponse builds the one-resource DeltaDiscoveryResponse a zone CP would send.
 func deltaResponse(t *testing.T, typ core_model.ResourceType, controlPlaneID, name, mesh string, spec core_model.ResourceSpec) *envoy_sd.DeltaDiscoveryResponse {
 	t.Helper()
 	g := NewWithT(t)
@@ -122,19 +117,15 @@ func deltaResponse(t *testing.T, typ core_model.ResourceType, controlPlaneID, na
 	}
 }
 
-// dataplaneWithDivergentZoneTags returns a Dataplane whose inbound kuma.io/zone
-// tag names a zone different from the connection's authenticated zone. That tag
-// feeds the global service inventory via createOrUpdateServiceInsight for
-// non-Exclusive meshes, so global ingest must resolve it to the authenticated
-// zone.
-func dataplaneWithDivergentZoneTags() *mesh_proto.Dataplane {
+// dataplaneWithZoneTag returns a Dataplane whose inbound carries the given kuma.io/zone tag.
+func dataplaneWithZoneTag(zone string) *mesh_proto.Dataplane {
 	return &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.1",
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 				Port: 1212,
 				Tags: map[string]string{
-					mesh_proto.ZoneTag:    otherZone,
+					mesh_proto.ZoneTag:    zone,
 					mesh_proto.ServiceTag: "svc-a",
 				},
 			}},
@@ -149,9 +140,10 @@ func dataplaneWithDivergentZoneTags() *mesh_proto.Dataplane {
 	}
 }
 
-// gatewayDataplaneWithDivergentZoneTag returns a gateway Dataplane whose gateway
-// kuma.io/zone tag names a zone different from the connection's authenticated
-// zone.
+func dataplaneWithDivergentZoneTags() *mesh_proto.Dataplane {
+	return dataplaneWithZoneTag(otherZone)
+}
+
 func gatewayDataplaneWithDivergentZoneTag() *mesh_proto.Dataplane {
 	return &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
@@ -167,14 +159,9 @@ func gatewayDataplaneWithDivergentZoneTag() *mesh_proto.Dataplane {
 	}
 }
 
-// zoneIngressWithDivergentZoneTags returns a ZoneIngress whose AvailableServices
-// carry a kuma.io/zone tag naming a zone different from the connection's
-// authenticated zone. That tag drives cross-zone endpoint locality in
-// fillIngressOutbounds, so global ingest must resolve it to the authenticated
-// zone.
 func zoneIngressWithDivergentZoneTags() *mesh_proto.ZoneIngress {
 	return &mesh_proto.ZoneIngress{
-		Zone: authenticatedZone,
+		Zone: otherZone,
 		Networking: &mesh_proto.ZoneIngress_Networking{
 			Address: "10.0.0.1",
 			Port:    10001,
@@ -220,62 +207,82 @@ func storedZoneIngress(t *testing.T, s store.ResourceStore, ctx context.Context)
 	return stored
 }
 
-// TestZoneToGlobalSyncAttribution asserts that every zone attribution the global
-// CP derives from a synced resource follows the authenticated client-id, not the
-// sender-provided in-band values. It covers the top-level metadata (kuma.io/zone
-// label, ZoneIngress.Spec.Zone) and the zone tags carried inside the specs
-// (ZoneIngress AvailableServices; Dataplane inbound/gateway), which are consumed
-// downstream for endpoint locality and the global service inventory. The stream
-// authenticates as authenticatedZone while the payload names otherZone
-// throughout; all of it must resolve to authenticatedZone.
+// TestZoneToGlobalSyncAttribution asserts the top-level attribution (kuma.io/zone
+// label, ZoneIngress.Spec.Zone) and the in-spec zone tags (ZoneIngress
+// AvailableServices, Dataplane inbound/gateway) all resolve to the connecting
+// zone's client-id, and that a matching zone is a no-op.
 func TestZoneToGlobalSyncAttribution(t *testing.T) {
 	t.Run("Dataplane", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, cleanup := newGlobalSink(t, ctx, authenticatedZone, core_mesh.DataplaneType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, otherZone, "dp-1", "default", dataplaneWithDivergentZoneTags())
 
 		stored := storedDataplane(t, globalStore, ctx)
 		zone := stored.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-		g.Expect(zone).To(Equal(authenticatedZone),
-			"kuma.io/zone label must be the authenticated client-id %q, not the sender-provided zone %q", authenticatedZone, zone)
+		g.Expect(zone).To(Equal(connectingZone),
+			"kuma.io/zone label must be the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, zone)
 
 		inboundZone := stored.Spec.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
-		g.Expect(inboundZone).To(Equal(authenticatedZone),
-			"Dataplane inbound kuma.io/zone tag must resolve to the authenticated client-id %q, not the sender-provided zone %q", authenticatedZone, inboundZone)
+		g.Expect(inboundZone).To(Equal(connectingZone),
+			"Dataplane inbound kuma.io/zone tag must resolve to the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, inboundZone)
+
+		g.Expect(testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.DataplaneType)))).To(Equal(1.0),
+			"the rewrite must be counted once for the diverging Dataplane")
 	})
 
 	t.Run("DataplaneGateway", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, cleanup := newGlobalSink(t, ctx, authenticatedZone, core_mesh.DataplaneType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, otherZone, "gw-dp-1", "default", gatewayDataplaneWithDivergentZoneTag())
 
 		stored := storedDataplane(t, globalStore, ctx)
 		gatewayZone := stored.Spec.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
-		g.Expect(gatewayZone).To(Equal(authenticatedZone),
-			"Dataplane gateway kuma.io/zone tag must resolve to the authenticated client-id %q, not the sender-provided zone %q", authenticatedZone, gatewayZone)
+		g.Expect(gatewayZone).To(Equal(connectingZone),
+			"Dataplane gateway kuma.io/zone tag must resolve to the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, gatewayZone)
+
+		g.Expect(testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.DataplaneType)))).To(Equal(1.0))
 	})
 
 	t.Run("ZoneIngress", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, cleanup := newGlobalSink(t, ctx, authenticatedZone, core_mesh.ZoneIngressType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.ZoneIngressType)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.ZoneIngressType, otherZone, "zi-1", "", zoneIngressWithDivergentZoneTags())
 
 		stored := storedZoneIngress(t, globalStore, ctx)
-		g.Expect(stored.Spec.GetZone()).To(Equal(authenticatedZone),
-			"ZoneIngress.Spec.Zone must be the authenticated client-id %q, not the sender-provided zone %q", authenticatedZone, stored.Spec.GetZone())
-		g.Expect(stored.GetMeta().GetLabels()[mesh_proto.ZoneTag]).To(Equal(authenticatedZone))
+		g.Expect(stored.Spec.GetZone()).To(Equal(connectingZone),
+			"ZoneIngress.Spec.Zone must be the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, stored.Spec.GetZone())
+		g.Expect(stored.GetMeta().GetLabels()[mesh_proto.ZoneTag]).To(Equal(connectingZone))
 
 		svcZone := stored.Spec.GetAvailableServices()[0].GetTags()[mesh_proto.ZoneTag]
-		g.Expect(svcZone).To(Equal(authenticatedZone),
-			"ZoneIngress AvailableServices kuma.io/zone tag must resolve to the authenticated client-id %q, not the sender-provided zone %q", authenticatedZone, svcZone)
+		g.Expect(svcZone).To(Equal(connectingZone),
+			"ZoneIngress AvailableServices kuma.io/zone tag must resolve to the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, svcZone)
+
+		g.Expect(testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.ZoneIngressType)))).To(Equal(1.0))
+	})
+
+	// When the sender's values already match the connecting zone (ordinary
+	// sync), nothing is rewritten and the counter stays at zero.
+	t.Run("MatchingZoneIsNoOp", func(t *testing.T) {
+		g := NewWithT(t)
+		ctx := hashSuffixCtx()
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
+		defer cleanup()
+
+		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, connectingZone, "dp-ok", "default", dataplaneWithZoneTag(connectingZone))
+
+		stored := storedDataplane(t, globalStore, ctx)
+		g.Expect(stored.Spec.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]).To(Equal(connectingZone))
+		g.Consistently(func() float64 {
+			return testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.DataplaneType)))
+		}, "1s", "100ms").Should(Equal(0.0), "no rewrite must be counted when values already match")
 	})
 }
