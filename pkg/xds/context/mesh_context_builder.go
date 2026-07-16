@@ -188,7 +188,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh
-	if mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+	if mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Disabled {
 		legacyDomains, legacyOutbounds, err := xds_topology.LegacyVIPCompatibility(
 			resources.ListOrEmpty(system.ConfigType).(*system.ConfigResourceList).Items,
 			m.legacyDNSDomain,
