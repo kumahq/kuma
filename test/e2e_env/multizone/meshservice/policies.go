@@ -285,10 +285,8 @@ spec:
   targetRef:
     kind: Mesh
     proxyTypes: ["Sidecar"]
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
           http:
             - abort:
                 httpStatus: 503

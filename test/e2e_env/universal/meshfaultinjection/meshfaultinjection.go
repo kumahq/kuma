@@ -64,10 +64,8 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/service: test-service-block-all-sources
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 421
