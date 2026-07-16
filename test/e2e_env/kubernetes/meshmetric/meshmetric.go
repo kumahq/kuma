@@ -211,9 +211,7 @@ spec:
 
 func meshOpenTelemetryBackend(mesh, name, displayName, endpoint string) InstallFunc {
 	host, port, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		panic(err)
-	}
+	Expect(err).ToNot(HaveOccurred())
 	backend := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshOpenTelemetryBackend
