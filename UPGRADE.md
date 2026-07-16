@@ -335,6 +335,30 @@ this release; existing resources are still accepted and stored.
 Migrate access control to `MeshTrafficPermission`, which replaces
 `TrafficPermission`.
 
+### Built-in gateway no longer falls back to `MeshGatewayRoute` or legacy connection policies
+
+The built-in gateway (`MeshGateway`) no longer consumes the legacy
+`MeshGatewayRoute` policy when generating Envoy configuration. Previously, a
+gateway listener/hostname without any matching `MeshHTTPRoute`/`MeshTCPRoute`
+fell back to routes derived from `MeshGatewayRoute` resources; that fallback
+is gone, so a gateway host with no `MeshHTTPRoute`/`MeshTCPRoute` now serves a
+`404` for every request instead.
+
+The built-in gateway also no longer binds the legacy `FaultInjection` and
+`HealthCheck` connection policies to routes it generates; those policies
+never had any effect on `MeshHTTPRoute`/`MeshTCPRoute`-derived routes and are
+now also ignored for `MeshGatewayRoute`-derived ones.
+
+The `MeshGatewayRoute`, `FaultInjection`, and `HealthCheck` resources, APIs,
+and KDS sync are still in place for this release; existing resources are
+still accepted and stored.
+
+**Action required**
+
+Migrate gateway routing to `MeshHTTPRoute`/`MeshTCPRoute`, which replace
+`MeshGatewayRoute`. Migrate fault injection and health checking on gateway
+routes to `MeshFaultInjection` and `MeshHealthCheck`.
+
 ### Delta xDS is now the only xDS protocol
 
 The control plane previously delivered configuration to data plane proxies using
