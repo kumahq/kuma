@@ -209,6 +209,26 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
+func meshOpenTelemetryBackend(mesh, name, displayName, endpoint string) InstallFunc {
+	host, port, err := net.SplitHostPort(endpoint)
+	Expect(err).ToNot(HaveOccurred())
+	backend := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshOpenTelemetryBackend
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/display-name: %s
+spec:
+  endpoint:
+    address: %s
+    port: %s
+`, name, Config.KumaNamespace, mesh, displayName, host, port)
+	return YamlK8s(backend)
+}
+
 func MeshMetricWithOpenTelemetryBackend(mesh, openTelemetryEndpoint string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -228,11 +248,17 @@ spec:
           - name: All
     backends:
       - type: OpenTelemetry
-        openTelemetry: 
-          endpoint: %s
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            labels:
+              kuma.io/display-name: otel-backend
           refreshInterval: 30s
-`, Config.KumaNamespace, mesh, openTelemetryEndpoint)
-	return YamlK8s(meshMetric)
+`, Config.KumaNamespace, mesh)
+	return Combine(
+		meshOpenTelemetryBackend(mesh, "otel-backend", "otel-backend", openTelemetryEndpoint),
+		YamlK8s(meshMetric),
+	)
 }
 
 func MeshMetricWithOpenTelemetryAndIncludeUnused(mesh, openTelemetryEndpoint string) InstallFunc {
@@ -256,10 +282,16 @@ spec:
     backends:
       - type: OpenTelemetry
         openTelemetry:
-          endpoint: %s
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            labels:
+              kuma.io/display-name: otel-backend
           refreshInterval: 30s
-`, Config.KumaNamespace, mesh, openTelemetryEndpoint)
-	return YamlK8s(meshMetric)
+`, Config.KumaNamespace, mesh)
+	return Combine(
+		meshOpenTelemetryBackend(mesh, "otel-backend", "otel-backend", openTelemetryEndpoint),
+		YamlK8s(meshMetric),
+	)
 }
 
 func MeshMetricWithOpenTelemetryAndPrometheusBackend(mesh, openTelemetryEndpoint string) InstallFunc {
@@ -281,17 +313,23 @@ spec:
           - name: All
     backends:
       - type: OpenTelemetry
-        openTelemetry: 
-          endpoint: %s
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            labels:
+              kuma.io/display-name: otel-backend
           refreshInterval: 30s
       - type: Prometheus
-        prometheus: 
+        prometheus:
           port: 8080
           path: /metrics
           tls:
             mode: Disabled
-`, Config.KumaNamespace, mesh, openTelemetryEndpoint)
-	return YamlK8s(meshMetric)
+`, Config.KumaNamespace, mesh)
+	return Combine(
+		meshOpenTelemetryBackend(mesh, "otel-backend", "otel-backend", openTelemetryEndpoint),
+		YamlK8s(meshMetric),
+	)
 }
 
 func MeshMetricWithMultipleOpenTelemetryBackends(mesh, primaryOpenTelemetryEndpoint string, secondaryOpenTelemetryEndpoint string) InstallFunc {
@@ -313,15 +351,25 @@ spec:
           - name: All
     backends:
       - type: OpenTelemetry
-        openTelemetry: 
-          endpoint: %s
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            labels:
+              kuma.io/display-name: primary-otel-backend
           refreshInterval: 30s
       - type: OpenTelemetry
         openTelemetry:
-          endpoint: %s
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            labels:
+              kuma.io/display-name: secondary-otel-backend
           refreshInterval: 30s
-`, Config.KumaNamespace, mesh, primaryOpenTelemetryEndpoint, secondaryOpenTelemetryEndpoint)
-	return YamlK8s(meshMetric)
+`, Config.KumaNamespace, mesh)
+	return Combine(
+		meshOpenTelemetryBackend(mesh, "primary-otel-backend", "primary-otel-backend", primaryOpenTelemetryEndpoint),
+		meshOpenTelemetryBackend(mesh, "secondary-otel-backend", "secondary-otel-backend", secondaryOpenTelemetryEndpoint),
+		YamlK8s(meshMetric),
+	)
 }
 
 func MeshMetric() {

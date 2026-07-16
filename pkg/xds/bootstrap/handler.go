@@ -128,8 +128,7 @@ func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.B
 			Aggregate: aggregate,
 		},
 		Networking: types.NetworkingConfiguration{
-			Address:          config.NetworkingConfig.Address,
-			CorefileTemplate: config.NetworkingConfig.CorefileTemplate,
+			Address: config.NetworkingConfig.Address,
 		},
 	}
 	return &bootstrapConfig

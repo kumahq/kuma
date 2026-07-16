@@ -196,7 +196,6 @@ var booleanAnnotations = map[string]bool{
 	metadata.KumaTrafficIptablesLogs:               true,
 	metadata.KumaWaitForDataplaneReady:             true,
 	metadata.KumaBuiltinDNS:                        true,
-	metadata.KumaBuiltinDNSLogging:                 true,
 	metadata.KumaGatewayAnnotation:                 true,
 	metadata.KumaSidecarInjectionAnnotation:        true,
 	metadata.KumaIngressAnnotation:                 true,

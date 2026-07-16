@@ -8,6 +8,21 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### CoreDNS removed from the data plane
+
+The bundled CoreDNS binary has been removed. The data plane now always uses the in-process embedded DNS proxy (previously the default on Kubernetes and opt-in on Universal). CoreDNS and the Envoy DNS filter are no longer used, and the `coredns` binary is no longer shipped in the release tarball or the `kuma-dp` image.
+
+The following configuration has been removed:
+
+- Data plane (`kuma-dp`): `dns.coreDnsPort`, `dns.envoyDnsPort`, `dns.coreDnsBinaryPath`, `dns.coreDnsConfigTemplatePath`, `dns.configDir`, `dns.prometheusPort` and `dns.coreDNSLogging`, together with the matching `KUMA_DNS_CORE_DNS_PORT`, `KUMA_DNS_ENVOY_DNS_PORT`, `KUMA_DNS_CORE_DNS_BINARY_PATH`, `KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH`, `KUMA_DNS_CONFIG_DIR`, `KUMA_DNS_PROMETHEUS_PORT` and `KUMA_DNS_ENABLE_LOGGING` env vars, and the `--dns-envoy-port`, `--dns-coredns-port`, `--dns-coredns-path`, `--dns-coredns-config-template-path`, `--dns-server-config-dir`, `--dns-prometheus-port` and `--dns-enable-logging` flags. The DNS listen port is now configured solely via `dns.proxyPort` (`KUMA_DNS_PROXY_PORT`, `--dns-proxy-port`), defaulting to `15053`.
+- Control plane: `bootstrapServer.params.corefileTemplatePath` (`KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH`), `runtime.kubernetes.injector.builtinDNS.experimentalProxy` (`KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY`) and `runtime.kubernetes.injector.builtinDNS.logging` (`KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING`).
+- Helm: `dataPlane.dnsLogging`.
+- The `kuma.io/builtin-dns-logging` pod annotation.
+
+**Action required**
+
+Because the control plane no longer emits the Envoy DNS filter configuration that older CoreDNS-based data planes rely on, upgrade the control plane and all data planes together. Remove any of the settings listed above from your control plane config, Helm values and `kuma-dp` invocations.
+
 ### eBPF transparent proxy removed
 
 The experimental eBPF transparent proxy feature has been removed. This feature

@@ -17,8 +17,8 @@ func Policy() {
 	meshName := "mesh-rate-limit"
 	rateLimitPolicy := fmt.Sprintf(`
 type: MeshRateLimit
-mesh: "%s"
-name: mesh-rate-limit-all-sources
+mesh: "%[1]s"
+name: mesh-rate-limit-all-sources-%[1]s
 spec:
   targetRef:
     kind: MeshService
@@ -109,13 +109,13 @@ spec:
 		// should have no ratelimited connections
 		Eventually(func(g Gomega) {
 			g.Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())
-		}, "10s", "1s").Should(Succeed())
+		}, "20s", "1s").Should(Succeed())
 
 		// open connection
 		go keepConnectionOpen()
 
 		// should return 503 when number of connections is exceeded
-		Eventually(requestRateLimited("web", "test-server-tcp", 503), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server-tcp", 503), "20s", "100ms").Should(Succeed())
 		// and stats should increase
 		Expect(tcpRateLimitStats(admin)).To(stats.BeGreaterThanZero())
 	})

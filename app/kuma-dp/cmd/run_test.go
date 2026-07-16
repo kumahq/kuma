@@ -138,15 +138,14 @@ var _ = Describe("run", func() {
 			// setup
 			envoyPidFile := filepath.Join(tmpDir, "envoy-mock.pid")
 			envoyCmdlineFile := filepath.Join(tmpDir, "envoy-mock.cmdline")
-			corednsPidFile := filepath.Join(tmpDir, "coredns-mock.pid")
-			corednsCmdlineFile := filepath.Join(tmpDir, "coredns-mock.cmdline")
 
 			// and
 			env := given.envVars
 			env["ENVOY_MOCK_PID_FILE"] = envoyPidFile
 			env["ENVOY_MOCK_CMDLINE_FILE"] = envoyCmdlineFile
-			env["COREDNS_MOCK_PID_FILE"] = corednsPidFile
-			env["COREDNS_MOCK_CMDLINE_FILE"] = corednsCmdlineFile
+			// The embedded DNS proxy is exercised by its own package tests; disable it
+			// here so these Envoy-launch tests stay hermetic and don't bind a UDP port.
+			env["KUMA_DNS_ENABLED"] = "false"
 			for key, value := range env {
 				Expect(os.Setenv(key, value)).To(Succeed())
 			}
@@ -187,12 +186,6 @@ var _ = Describe("run", func() {
 				}
 			})
 
-			corednsPid := verifyComponentProcess("coredns", corednsPidFile, corednsCmdlineFile, func(actualArgs []string) {
-				Expect(actualArgs).To(HaveLen(3))
-				Expect(actualArgs[0]).To(Equal("-conf"))
-				Expect(actualArgs[2]).To(Equal("-quiet"))
-			})
-
 			// when
 			By("signaling the dataplane manager to stop")
 			// we need to close writer, otherwise Cmd#Wait will never finish.
@@ -207,13 +200,6 @@ var _ = Describe("run", func() {
 			Eventually(func() bool {
 				// send sig 0 to check whether Envoy process still exists
 				err := syscall.Kill(int(envoyPid), syscall.Signal(0))
-				// we expect Envoy process to get killed by now
-				return err != nil
-			}, "5s", "100ms").Should(BeTrue())
-			By("waiting for dataplane (coredns) to get stopped")
-			Eventually(func() bool {
-				// send sig 0 to check whether Envoy process still exists
-				err := syscall.Kill(int(corednsPid), syscall.Signal(0))
 				// we expect Envoy process to get killed by now
 				return err != nil
 			}, "5s", "100ms").Should(BeTrue())
@@ -236,7 +222,6 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
-					"KUMA_DNS_CORE_DNS_BINARY_PATH": filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				args:         []string{},
 				expectedFile: "",
@@ -250,7 +235,6 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":  tmpDir,
-					"KUMA_DNS_CORE_DNS_BINARY_PATH":      filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				args:         []string{},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
@@ -265,7 +249,6 @@ var _ = Describe("run", func() {
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
-					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
 			}
@@ -279,7 +262,6 @@ var _ = Describe("run", func() {
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--config-dir", tmpDir,
-					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
@@ -293,7 +275,6 @@ var _ = Describe("run", func() {
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--work-dir", tmpDir,
-					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
@@ -308,7 +289,6 @@ var _ = Describe("run", func() {
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--config-dir", filepath.Join(tmpDir, "config-dir"),
 					"--work-dir", tmpDir,
-					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
@@ -323,7 +303,6 @@ var _ = Describe("run", func() {
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--dataplane-token-file", filepath.Join("testdata", "token"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
-					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
 			}
@@ -336,7 +315,6 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
-					"KUMA_DNS_CORE_DNS_BINARY_PATH": filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				args:         []string{},
 				expectedFile: "",
@@ -351,7 +329,6 @@ var _ = Describe("run", func() {
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
-					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
 			}
@@ -366,26 +343,8 @@ var _ = Describe("run", func() {
 					"--dataplane-file", filepath.Join("testdata", "dataplane_template.yaml"),
 					"--dataplane-var", "name=example",
 					"--dataplane-var", "address=127.0.0.1",
-					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
-			}
-		}),
-		Entry("can be launched with given coredns configuration path", func() testCase {
-			corefileTemplate := filepath.Join(tmpDir, "Corefile")
-			_ = os.WriteFile(corefileTemplate, []byte("abcd"), 0o600)
-			return testCase{
-				envVars: map[string]string{
-					"KUMA_CONTROL_PLANE_API_SERVER_URL":      "http://localhost:1234",
-					"KUMA_DATAPLANE_NAME":                    "example",
-					"KUMA_DATAPLANE_MESH":                    "default",
-					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":     filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":      tmpDir,
-					"KUMA_DNS_CORE_DNS_BINARY_PATH":          filepath.Join("testdata", "coredns-mock.sleep.sh"),
-					"KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH": corefileTemplate,
-				},
-				args:         []string{},
-				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
 		}),
 	)
@@ -402,7 +361,6 @@ var _ = Describe("run", func() {
 			"--dataplane-var", "address=127.0.0.1",
 			"--name=xyz",
 			"--mesh=xyz",
-			"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 		})
 
 		// when
@@ -421,7 +379,6 @@ var _ = Describe("run", func() {
 			"--cp-address", "http://localhost:1234",
 			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 			"--dataplane-file", filepath.Join("testdata", "dataplane_template.yaml"),
-			"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 			"--proxy-type", "phoney",
 		})
 
