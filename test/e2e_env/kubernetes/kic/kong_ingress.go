@@ -36,10 +36,6 @@ func KICKubernetes() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			// The "should route to service using Kuma DNS" test resolves the
-			// legacy VIP hostname test-server.kic.svc.80.mesh. Under the
-			// Exclusive meshServices default that hostname is no longer served,
-			// so pin the mesh to Disabled to keep exercising Kuma VIP DNS.
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -47,7 +43,7 @@ metadata:
   name: %s
 spec:
   meshServices:
-    mode: Disabled
+    mode: Exclusive
   mtls:
     enabledBackend: ca-1
     backends:
@@ -179,7 +175,7 @@ metadata:
   namespace: kic
 spec:
   type: ExternalName
-  externalName: test-server.kic.svc.80.mesh
+  externalName: test-server.kic.svc.kuma-1.mesh.local
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

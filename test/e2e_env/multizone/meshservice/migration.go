@@ -20,7 +20,7 @@ func Migration() {
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled")).
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -89,19 +89,7 @@ func Migration() {
 		}).Should(Succeed())
 	}
 
-	noMeshServices := func() {
-		// call hasMeshServices with no names
-		hasMeshServices()
-	}
-
-	It("should automatically create MeshServices when the mode is 'Exclusive'", func() {
-		// given
-		noMeshServices()
-
-		// when enable 'mode: Exclusive'
-		Expect(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")(multizone.Global)).To(Succeed())
-
-		// then
+	It("should automatically create MeshServices", func() {
 		hasMeshServices(
 			hash.HashedName(meshName, "demo-client", Kuma1, namespace),
 			hash.HashedName(meshName, "test-server", Kuma1, namespace),
@@ -136,12 +124,13 @@ spec:
 		)
 	})
 
-	It("should delete automatically created MeshServices when the mode is 'Disabled'", func() {
-		// when mode is 'Disabled'
-		Expect(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled")(multizone.Global)).To(Succeed())
+	It("should keep automatically created MeshServices when the mesh is re-applied", func() {
+		Expect(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")(multizone.Global)).To(Succeed())
 
-		// then
 		hasMeshServices(
+			hash.HashedName(meshName, "demo-client", Kuma1, namespace),
+			hash.HashedName(meshName, "test-server", Kuma1, namespace),
+			hash.HashedName(meshName, "test-server", Kuma4),
 			hash.HashedName(meshName, "manually-created-ms", Kuma4),
 		)
 	})

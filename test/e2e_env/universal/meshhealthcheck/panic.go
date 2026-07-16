@@ -68,13 +68,8 @@ networking:
 	}
 
 	BeforeAll(func() {
-		// This test simulates unhealthy endpoints with registered-but-never-connected
-		// dataplanes (dp-echo-7..10). Under Exclusive, MeshService endpoints only
-		// include connected dataplanes, so those never enter the cluster and panic
-		// mode never triggers. Pin to Disabled to keep the legacy EDS behavior the
-		// test relies on.
 		err := NewClusterSetup().
-			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build())).
 			Install(YamlUniversal(healthCheck)).
 			Install(YamlUniversal(circuitBreaker)).
 			Setup(universal.Cluster)

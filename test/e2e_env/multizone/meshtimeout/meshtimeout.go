@@ -34,7 +34,7 @@ func MeshTimeout() {
 					builders.Mesh().
 						WithName(mesh).
 						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere),
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 				),
 			).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).

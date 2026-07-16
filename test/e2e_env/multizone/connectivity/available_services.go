@@ -26,7 +26,7 @@ func AvailableServices() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled")).
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -85,12 +85,12 @@ func AvailableServices() {
 
 		Consistently(func(g Gomega) {
 			ingress := getIngress(g, kumactl, ingress1Port)
-			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
+			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}).Should(Succeed())
 
 		Consistently(func(g Gomega) {
 			ingress := getIngress(g, kumactl, ingress2Port)
-			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
+			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}).Should(Succeed())
 
 		// Kill ingress

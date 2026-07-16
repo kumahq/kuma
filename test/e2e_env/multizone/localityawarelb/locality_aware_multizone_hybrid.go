@@ -35,7 +35,7 @@ func LocalityAwareLB() {
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(mesh, "Disabled")).
+			Install(MTLSMeshWithMeshServicesUniversal(mesh, "Exclusive")).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())

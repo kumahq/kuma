@@ -20,7 +20,7 @@ func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh string, zoneEgress string) str
 type: Mesh
 name: %s
 meshServices:
-  mode: Disabled
+  mode: Exclusive
 mtls:
   enabledBackend: ca-1
   backends:

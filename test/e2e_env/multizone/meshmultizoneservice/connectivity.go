@@ -19,7 +19,7 @@ func Connectivity() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService

@@ -22,13 +22,9 @@ func HeadlessServices() {
 	meshName := "headless-svc"
 	namespace := "headless-svc"
 
-	// The test reaches the headless Service through native kube DNS
-	// (test-server-headless:9090), which resolves to raw Pod IPs served by the
-	// legacy kuma.io/service headless VIP outbounds. Under the Exclusive
-	// meshServices default those per-endpoint outbounds are replaced by per-Pod
-	// MeshServices addressed via <pod>.<svc>.<ns>.svc.<zone>.mesh.local, so pin
-	// the mesh to Disabled to keep exercising the legacy native-DNS path.
-	mtlsMeshDisabledMeshServices := func(name string) InstallFunc {
+	// Headless services are addressed through per-pod hostnames under the
+	// Exclusive-only MeshService model.
+	mtlsMeshExclusiveMeshServices := func(name string) InstallFunc {
 		return YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -36,7 +32,7 @@ metadata:
   name: %s
 spec:
   meshServices:
-    mode: Disabled
+    mode: Exclusive
   mtls:
     enabledBackend: ca-1
     backends:
@@ -47,7 +43,7 @@ spec:
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(mtlsMeshDisabledMeshServices(meshName)).
+			Install(mtlsMeshExclusiveMeshServices(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
@@ -108,10 +104,12 @@ spec:
 
 	It("should be able to connect to the headless service", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
+			podName, err := PodNameOfApp(kubernetes.Cluster, "test-server", namespace)
+			g.Expect(err).ToNot(HaveOccurred())
+			_, err = client.CollectEchoResponse(
 				kubernetes.Cluster,
 				"demo-client",
-				"test-server-headless:9090",
+				fmt.Sprintf("%s.test-server-headless.%s.svc.cluster.local:9090", podName, namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

@@ -620,12 +620,8 @@ spec:
                 weight: 50`, meshName)
 
 		BeforeAll(func() {
-			// This test splits traffic across kuma.io/service version subsets via
-			// MeshServiceSubset backendRefs, which resolve only in non-Exclusive
-			// mode. Exclusive-native MeshService health checking is covered by the
-			// "HTTP to real MeshService" describe above. Pin to Disabled.
 			err := NewClusterSetup().
-				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
+				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build())).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(YamlUniversal(disablePanic(meshName))).
 				Install(
