@@ -97,9 +97,9 @@ routing:
 	Context("when the client is from kubernetes cluster", func() {
 		It("should access internal service behind k8s zoneingress through zoneegress", func() {
 			filter := fmt.Sprintf(
-				"cluster.%s_%s_%s_svc_80.upstream_rq_total",
+				"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_total",
 				meshName,
-				"test-server",
+				multizone.KubeZone2.ZoneName(),
 				namespace,
 			)
 
@@ -109,7 +109,9 @@ routing:
 
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					multizone.KubeZone1, "demo-client", "test-server_ze-internal_svc_80.mesh",
+					multizone.KubeZone1,
+					"demo-client",
+					fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, multizone.KubeZone2.ZoneName()),
 					client.FromKubernetesPod(namespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -125,9 +127,9 @@ routing:
 	Context("when the client is from universal cluster", func() {
 		It("should access internal service behind universal zoneingress through zoneegress", func() {
 			filter := fmt.Sprintf(
-				"cluster.%s_%s.upstream_rq_total",
+				"cluster.kri_msvc_%s_%s__zone4-test-server_80.upstream_rq_total",
 				meshName,
-				"zone4-test-server",
+				multizone.UniZone2.ZoneName(),
 			)
 
 			Eventually(func(g Gomega) {
@@ -137,7 +139,9 @@ routing:
 
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					multizone.UniZone1, "zone3-demo-client", "zone4-test-server.mesh",
+					multizone.UniZone1,
+					"zone3-demo-client",
+					fmt.Sprintf("zone4-test-server.svc.%s.mesh.local", multizone.UniZone2.ZoneName()),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())

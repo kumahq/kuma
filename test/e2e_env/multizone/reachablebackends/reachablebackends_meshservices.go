@@ -133,7 +133,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("%s_local-test-server_%s_kuma-1_msvc_80", meshName, namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("kri_msvc_%s_%s_%s_local-test-server_main", meshName, multizone.KubeZone1.ZoneName(), namespace)))
 		}, "10s", "1s").Should(Succeed())
 	})
 
@@ -165,7 +165,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("%s_local-test-server_%s_kuma-1_msvc_80", meshName, namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("kri_msvc_%s_%s_%s_local-test-server_main", meshName, multizone.KubeZone1.ZoneName(), namespace)))
 		}, "10s", "500ms", MustPassRepeatedly(5)).Should(Succeed())
 
 		Eventually(func(g Gomega) {

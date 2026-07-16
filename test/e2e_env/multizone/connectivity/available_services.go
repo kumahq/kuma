@@ -77,7 +77,11 @@ func AvailableServices() {
 
 	It("is always updated on all ZoneIngresses, even if they are offline", func() {
 		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(multizone.UniZone1, "demo-client", "http://test-server.mesh")
+			response, err := client.CollectEchoResponse(
+				multizone.UniZone1,
+				"demo-client",
+				fmt.Sprintf("http://test-server.svc.%s.mesh.local", statefulCluster.ZoneName()),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("uni-test-server"))
 		}, "30s", "1s").Should(Succeed())
