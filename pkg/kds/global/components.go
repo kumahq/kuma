@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -65,6 +66,16 @@ func Setup(rt runtime.Runtime) error {
 	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 
+	// Counts zone-to-global synced resources whose zone attribution was rewritten
+	// to the connecting zone's client-id because a sender-provided value differed.
+	zoneAttributionRewrites := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "kds_zone_attribution_rewrites_total",
+		Help: "Total zone-to-global synced resources whose zone attribution was rewritten to the connecting zone's client-id because a sender-provided value differed, by resource type.",
+	}, []string{"resource_type"})
+	if err := rt.Metrics().BulkRegister(zoneAttributionRewrites); err != nil {
+		return err
+	}
+
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
@@ -120,7 +131,7 @@ func Setup(rt runtime.Runtime) error {
 			log,
 			reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
 			kdsStream,
-			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace),
+			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace, zoneAttributionRewrites),
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
