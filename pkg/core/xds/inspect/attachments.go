@@ -190,9 +190,6 @@ func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.Ser
 
 func getDataplaneMatchedPolicies(matchedPolicies *xds.MatchedPolicies) []core_model.Resource {
 	var resources []core_model.Resource
-	if matchedPolicies.ProxyTemplate != nil {
-		resources = append(resources, matchedPolicies.ProxyTemplate)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		resources = append(resources, matchedPolicies.Dynamic[tpe].DataplanePolicies...)
 	}

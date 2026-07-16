@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -184,8 +183,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*core_xds.MatchedPolicies, error) {
 	resources := meshContext.Resources
 	matchedPolicies := &core_xds.MatchedPolicies{
-		ProxyTemplate: template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
-		Dynamic:       core_xds.PluginOriginatedPolicies{},
+		Dynamic: core_xds.PluginOriginatedPolicies{},
 	}
 	opts := []core_plugins.MatchedPoliciesOption{}
 	if p.IncludeShadow {

@@ -34,9 +34,6 @@ const (
 	// OriginProxyTemplateModifications is the origin for resources created by ProxyTemplate modifications
 	OriginProxyTemplateModifications Origin = "proxy-template-modifications"
 
-	// OriginProxyTemplateRaw is the origin for resources created by raw ProxyTemplate snippets
-	OriginProxyTemplateRaw Origin = "proxy-template-raw"
-
 	// OriginSecrets is the origin for resources produced by the secrets generator
 	OriginSecrets Origin = "secrets"
 

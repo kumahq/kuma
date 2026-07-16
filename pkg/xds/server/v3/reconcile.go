@@ -19,7 +19,6 @@ import (
 	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/modifications"
 	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 	xds_sync "github.com/kumahq/kuma/v3/pkg/xds/sync"
@@ -332,9 +331,6 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 		if err := hook.Modify(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
 		}
-	}
-	if err := modifications.Apply(rs, template.GetConf().GetModifications(), proxy.APIVersion); err != nil {
-		return nil, errors.Wrap(err, "could not apply modifications")
 	}
 
 	version := "" // empty value is a sign to other components to generate the version automatically

@@ -101,10 +101,6 @@ func (r Resources) GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
 	return r.ListOrEmpty(core_mesh.MeshGatewayRouteType).(*core_mesh.MeshGatewayRouteResourceList)
 }
 
-func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
-	return r.ListOrEmpty(core_mesh.ProxyTemplateType).(*core_mesh.ProxyTemplateResourceList)
-}
-
 func (r Resources) Secrets() *system.SecretResourceList {
 	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
 }
