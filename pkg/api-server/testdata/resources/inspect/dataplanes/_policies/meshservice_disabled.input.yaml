@@ -1,4 +1,4 @@
-#/meshes/default/dataplanes/dp-1/_policies 400
+#/meshes/default/dataplanes/dp-1/_policies 200
 type: Mesh
 meshServices:
   mode: Disabled
