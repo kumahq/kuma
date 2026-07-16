@@ -17,20 +17,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/kds"
-	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
-	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
-	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	test_grpc "github.com/kumahq/kuma/v3/pkg/test/grpc"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/kds"
+	client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
+	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	test_grpc "github.com/kumahq/kuma/v2/pkg/test/grpc"
+	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 )
 
 const (
@@ -57,7 +59,7 @@ func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceTyp
 
 	metrics, err := core_metrics.NewMetrics("")
 	g.Expect(err).ToNot(HaveOccurred())
-	syncer, err := sync_store_v2.NewResourceSyncer(core.Log.WithName("crosszone-syncer"), globalStore, store.NoTransactions{}, metrics, context.Background())
+	syncer, err := sync_store_v2.NewResourceSyncer(core.Log.WithName("crosszone-syncer"), globalStore, store.NoTransactions{}, metrics, ctx)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Counts resources whose zone attribution the global ingest rewrote because
@@ -68,13 +70,13 @@ func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceTyp
 
 	clientStream := test_grpc.NewMockDeltaClientStream()
 	// The client-id drives attribution, not the in-band ControlPlane.Identifier.
-	kdsStream := client_v2.NewDeltaKDSStream(clientStream, connectingZone, connectingZone+"-instance", "", 1)
+	kdsStream := client_v2.NewDeltaKDSStream(clientStream, connectingZone, core_runtime.NewRuntimeInfo(connectingZone+"-instance", config_core.Global), "", 1)
 	sink := client_v2.NewKDSSyncClient(
 		core.Log.WithName("crosszone-global-sink"),
 		[]core_model.ResourceType{typ},
 		kdsStream,
 		sync_store_v2.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", rewrites),
-		client_v2.SyncClientConfig{},
+		0,
 	)
 
 	done := make(chan struct{})
