@@ -229,9 +229,6 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		nameToVersion: nameToVersion,
 	}
 	return UpstreamResponse{
-<<<<<<< HEAD
-		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
-=======
 		// Attribute the batch to the connecting peer's declared client-id
 		// (s.clientID), not the ControlPlane.Identifier in the payload. The
 		// client-id is request metadata the peer declares; verifying it per
@@ -239,8 +236,6 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		// path's. The two match in ordinary sync, so this only changes behavior
 		// when they diverge.
 		ControlPlaneId:      s.clientID,
-		Nonce:               resp.GetNonce(),
->>>>>>> db8309dd90 (fix(kds): attribute zone-to-global synced resources by authenticated zone (#17456))
 		Type:                rs.GetItemType(),
 		AddedResources:      rs,
 		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),
