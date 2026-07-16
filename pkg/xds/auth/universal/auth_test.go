@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -18,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/tokens"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
@@ -58,7 +60,7 @@ var _ = Describe("Authentication flow", func() {
 			UseSecrets: true,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneTokenValidator, "zone-1")
+		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneTokenValidator, resManager, config_core.UniversalEnvironment, "zone-1")
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
@@ -215,6 +217,92 @@ var _ = Describe("Authentication flow", func() {
 			err:   "dataplane has no workload label required by the token",
 		}),
 	)
+
+	// A MeshIdentity whose SPIFFE ID path template references the workload makes
+	// the kuma.io/workload label the proxy's identity, so a token that is not
+	// bound to that workload must not be accepted when the dataplane declares a
+	// workload label. MeshIdentities whose path does not reference the workload
+	// (the Kubernetes ns/sa template, custom non-workload templates) leave
+	// unbound tokens valid, since the workload label is not the identity.
+	Context("workload label as the proxy's SPIFFE identity", func() {
+		// tagsOnlyToken returns a token bound to tags but not to a workload; it
+		// matches both dpRes and dpResWithWorkload.
+		tagsOnlyToken := func() string {
+			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
+				Tags: map[string]map[string]bool{
+					"kuma.io/service": {
+						"web":     true,
+						"web-api": true,
+					},
+				},
+			}, 24*time.Hour)
+			Expect(err).ToNot(HaveOccurred())
+			return token
+		}
+
+		Context("when the matched MeshIdentity derives the identity from the workload label", func() {
+			BeforeEach(func() {
+				// Empty selector matches every dataplane and, with no custom
+				// SpiffeID, uses the default universal template
+				// (/workload/{{ .Workload }}).
+				Expect(builders.MeshIdentity().WithName("identity-1").Create(resStore)).To(Succeed())
+			})
+
+			It("should reject a tags-only token when the dataplane declares a workload label", func() {
+				// when a token that is not bound to a workload is presented for a
+				// dataplane that declares a workload label
+				err := authenticator.Authenticate(ctx, &dpResWithWorkload, tagsOnlyToken())
+
+				// then it is rejected
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("requires a workload-bound token"))
+			})
+
+			It("should accept a workload-bound token matching the dataplane workload label", func() {
+				// given a token bound to the workload
+				token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+					Mesh:     "default",
+					Workload: "backend",
+				}, 24*time.Hour)
+				Expect(err).ToNot(HaveOccurred())
+
+				// when / then
+				Expect(authenticator.Authenticate(ctx, &dpResWithWorkload, token)).To(Succeed())
+			})
+
+			It("should accept a tags-only token when the dataplane has no workload label", func() {
+				// when a tags-only token is presented for a dataplane that does
+				// not declare a workload label, there is no workload label to bind
+				Expect(authenticator.Authenticate(ctx, &dpRes, tagsOnlyToken())).To(Succeed())
+			})
+		})
+
+		DescribeTable("should accept a tags-only token when the identity does not derive from the workload label",
+			func(spiffeIDPath string) {
+				// given a MeshIdentity whose SPIFFE path does not reference the workload
+				Expect(builders.MeshIdentity().
+					WithName("identity-1").
+					WithSpiffeID("{{ .Mesh }}.{{ .Zone }}.mesh.local", spiffeIDPath).
+					Create(resStore)).To(Succeed())
+
+				// when a token that is not bound to a workload is presented for a
+				// dataplane that declares a workload label
+				err := authenticator.Authenticate(ctx, &dpResWithWorkload, tagsOnlyToken())
+
+				// then it is accepted, because the workload label is not the identity
+				Expect(err).ToNot(HaveOccurred())
+			},
+			Entry("Kubernetes ns/sa template", "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"),
+			Entry("custom non-workload template", "/custom/{{ .Mesh }}"),
+		)
+
+		It("should accept a tags-only token with a workload label when no MeshIdentity matches", func() {
+			// given no MeshIdentity in the mesh, the identity does not derive from
+			// the workload label, so a tags-only token stays valid
+			Expect(authenticator.Authenticate(ctx, &dpResWithWorkload, tagsOnlyToken())).To(Succeed())
+		})
+	})
 
 	It("should throw an error on invalid token", func() {
 		// when
