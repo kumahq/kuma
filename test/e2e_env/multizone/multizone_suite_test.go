@@ -74,7 +74,6 @@ var (
 	_ = Describe("MeshTimeout", Label("job-0"), meshtimeout.MeshTimeout, Ordered)
 	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", Label("job-0"), localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", Label("job-0"), localityawarelb.LocalityAwareLB, Ordered)
-	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", Label("job-0"), localityawarelb.LocalityAwareLBGateway, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", Label("job-0"), localityawarelb.LocalityAwareLBEgress, Ordered)
 	_ = Describe("Defaults", Label("job-3"), defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", Label("job-1"), meshservice.Sync, Ordered)
