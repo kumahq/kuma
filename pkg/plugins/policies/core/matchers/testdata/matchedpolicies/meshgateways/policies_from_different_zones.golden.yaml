@@ -34,7 +34,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /servicesubset
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -45,15 +45,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh-in-zone-1
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1_zone-1__in-zone-1_
-          labels:
-            kuma.io/origin: zone
-            kuma.io/zone: zone-1
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: in-zone-1
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -104,7 +95,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /servicesubset
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -115,15 +106,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh-in-zone-1
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1_zone-1__in-zone-1_
-          labels:
-            kuma.io/origin: zone
-            kuma.io/zone: zone-1
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: in-zone-1
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []

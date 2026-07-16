@@ -36,7 +36,6 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) v
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
 			common_api.Dataplane,
 		},
 	})

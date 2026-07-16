@@ -22,6 +22,7 @@ func MeshTrafficPermissionUniversal() {
 				"test-server",
 				meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithLabels(map[string]string{"kuma.io/service": "test-server", "team": "server-owners"}),
 			)).
 			Install(TestServerUniversal(
 				"test-server-tcp",
@@ -29,6 +30,7 @@ func MeshTrafficPermissionUniversal() {
 				WithArgs([]string{"echo", "--instance", "test-server-tcp"}),
 				WithServiceName("test-server-tcp"),
 				WithProtocol("tcp"),
+				WithLabels(map[string]string{"kuma.io/service": "test-server-tcp", "team": "server-owners"}),
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
@@ -112,8 +114,9 @@ name: mtp-1
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  from:
    - targetRef:
        kind: MeshService
@@ -139,8 +142,9 @@ name: mtp-2
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server-tcp
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
  from:
    - targetRef:
        kind: MeshService
@@ -167,8 +171,8 @@ name: mtp-3
 mesh: meshtrafficpermission
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       team: server-owners
   from:
     - targetRef:
@@ -203,8 +207,9 @@ name: mtp-4
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  from:
    - targetRef:
        kind: MeshService
@@ -239,8 +244,9 @@ name: mtp-5
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server-tcp
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
  from:
    - targetRef:
        kind: MeshService

@@ -15,8 +15,9 @@ modificationTime: "0001-01-01T00:00:00Z"
 name: mal-1
 spec:
   targetRef:
-    kind: MeshService
-    name: web
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
   to:
   - default:
       backends:
@@ -42,8 +43,9 @@ modificationTime: "0001-01-01T00:00:00Z"
 name: mal-with-origin
 spec:
   targetRef:
-    kind: MeshService
-    name: web
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
   to:
   - default:
       backends:

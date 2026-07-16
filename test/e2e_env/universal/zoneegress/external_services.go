@@ -44,7 +44,8 @@ func ExternalServerUniversal(name string) InstallFunc {
 			WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", name}),
 			WithName(name),
 			WithoutDataplane(),
-			WithVerbose())
+			WithVerbose(),
+		)
 	}
 }
 
@@ -156,8 +157,8 @@ mesh: ze-external-services
 name: mesh-fault-injecton-402
 spec:
   targetRef:
-    kind: MeshService
-    name: external-service
+    kind: Mesh
+    proxyTypes: ["Sidecar"]
   from:
     - targetRef:
         kind: MeshService
@@ -226,8 +227,8 @@ mesh: ze-external-services
 name: rate-limit-demo-client
 spec:
   targetRef:
-    kind: MeshService
-    name: external-service
+    kind: Mesh
+    proxyTypes: ["Sidecar"]
   from:
     - targetRef:
         kind: Mesh

@@ -22,8 +22,8 @@ type: MeshTCPRoute
 name: split-40-40-20
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       team: mesh
   to:
     - targetRef:

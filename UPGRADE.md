@@ -169,6 +169,31 @@ longer available in Kuma 3.0.0. Existing `TrafficPermission` and `TrafficRoute`
 resources remain fully valid and supported; this change only affects automatic
 creation of new defaults.
 
+### Legacy top-level policy `targetRef` selector kinds removed
+
+Policies no longer accept `spec.targetRef.kind: MeshSubset`,
+`spec.targetRef.kind: MeshService`, or
+`spec.targetRef.kind: MeshServiceSubset` at the top level. Creating or updating
+a policy with one of these top-level kinds is rejected during validation.
+
+This restriction applies to all admission paths, including policies replicated
+from a Global control plane to Kubernetes Zone control planes by KDS. A policy
+that still uses one of these legacy top-level kinds can fail to sync into a
+Zone after the Zone is upgraded.
+
+**Action required**
+
+Before upgrading, migrate every policy that uses one of these top-level
+`targetRef` kinds:
+
+- Use `kind: Mesh` when the policy should apply to the whole mesh.
+- Use `kind: Dataplane` with `labels` when the policy should apply to a subset
+  of dataplanes previously selected by `MeshSubset`, `MeshService`, or
+  `MeshServiceSubset`.
+
+After the migration, verify the intended policy coverage in every Zone before
+upgrading Zone control planes.
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control

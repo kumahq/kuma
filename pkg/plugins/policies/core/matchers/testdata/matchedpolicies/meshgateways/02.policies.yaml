@@ -19,7 +19,7 @@ mesh: mesh-1
 name: meshsubset
 spec:
   targetRef:
-    kind: MeshSubset
+    kind: Mesh
     proxyTypes: ["Gateway"]
   to:
     - targetRef:
@@ -35,9 +35,9 @@ mesh: mesh-1
 name: nonmatchinggatewaylistener
 spec:
   targetRef:
-    kind: MeshGateway
-    name: other-gateway
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: other-gateway
       listener: three
   to:
     - targetRef:
@@ -53,9 +53,9 @@ mesh: mesh-1
 name: only-one-hostname-listener
 spec:
   targetRef:
-    kind: MeshGateway
-    name: gateway-1
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: edge-gateway
       listener: four-hostname-1
   to:
     - targetRef:

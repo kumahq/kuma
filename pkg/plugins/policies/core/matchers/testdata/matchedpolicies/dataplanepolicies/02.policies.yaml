@@ -4,9 +4,9 @@ mesh: mesh-1
 name: aaa
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v1
   from:
     - targetRef:
@@ -19,9 +19,9 @@ mesh: mesh-1
 name: bbb
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v1
   from:
     - targetRef:
@@ -58,8 +58,9 @@ mesh: mesh-1
 name: my-policy-2
 spec:
   targetRef:
-    kind: MeshService
-    name: web
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
   from:
     - targetRef:
         kind: Mesh
@@ -71,8 +72,9 @@ mesh: mesh-1
 name: my-policy-1
 spec:
   targetRef:
-    kind: MeshService
-    name: web
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
   from:
     - targetRef:
         kind: Mesh
@@ -84,8 +86,8 @@ mesh: mesh-1
 name: "222"
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       version: v1
   from:
     - targetRef:
@@ -98,8 +100,8 @@ mesh: mesh-1
 name: "111"
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       version: v1
   from:
     - targetRef:

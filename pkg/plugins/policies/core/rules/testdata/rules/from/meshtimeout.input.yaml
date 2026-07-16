@@ -19,8 +19,9 @@ name: override
 mesh: default
 spec:
   targetRef:
-    kind: MeshService
-    name: foo
+    kind: Dataplane
+    labels:
+      kuma.io/service: foo
   from:
     - targetRef:
         kind: Mesh

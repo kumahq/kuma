@@ -16,8 +16,7 @@ type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Dataplane
 from:
   - targetRef:
       kind: MeshService
@@ -45,8 +44,7 @@ type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Dataplane
 from:
   - targetRef:
       kind: MeshService
@@ -148,8 +146,7 @@ type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Dataplane
 from:
   - targetRef:
       kind: MeshService
@@ -275,8 +272,7 @@ type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Dataplane
 from:
   - targetRef:
       kind: MeshService
@@ -331,8 +327,7 @@ type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Dataplane
 from:
   - targetRef:
       kind: MeshService

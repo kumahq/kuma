@@ -6,9 +6,8 @@ labels:
   kuma.io/policy-role: consumer
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
-      app: frontend
+    kind: Dataplane
+    name: frontend-dp
   to:
     - targetRef:
         kind: Mesh

@@ -19,9 +19,9 @@ mesh: mesh-1
 name: servicesubset
 spec:
  targetRef:
-  kind: MeshServiceSubset
-  name: edge-gateway
-  tags:
+  kind: Dataplane
+  labels:
+    kuma.io/service: edge-gateway
     listener: two
  to:
   - targetRef:
@@ -37,8 +37,9 @@ mesh: mesh-1
 name: gateway
 spec:
  targetRef:
-  kind: MeshGateway
-  name: gateway-1
+  kind: Dataplane
+  labels:
+    kuma.io/service: edge-gateway
  from:
   - targetRef:
      kind: Mesh
@@ -61,9 +62,9 @@ mesh: mesh-1
 name: gatewaylistener
 spec:
  targetRef:
-  kind: MeshGateway
-  name: gateway-1
-  tags:
+  kind: Dataplane
+  labels:
+    kuma.io/service: edge-gateway
     listener: one
  to:
   - targetRef:
@@ -79,9 +80,9 @@ mesh: mesh-1
 name: nonmatchinggatewaylistener
 spec:
  targetRef:
-  kind: MeshGateway
-  name: other-gateway
-  tags:
+  kind: Dataplane
+  labels:
+    kuma.io/service: other-gateway
     listener: three
  to:
   - targetRef:

@@ -30,6 +30,5 @@
     type: MeshTimeout
   RuleIndex: 0
   TopLevel:
-    kind: MeshSubset
-    tags:
-      app: backend
+    kind: Dataplane
+    name: backend-dp

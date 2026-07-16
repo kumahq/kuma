@@ -50,8 +50,9 @@ metadata:
     kuma.io/mesh: meshtrafficpermission-api
 spec:
   targetRef:
-    kind: MeshService
-    name: backend
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
   from:
     - targetRef:
         kind: Mesh

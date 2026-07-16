@@ -5,10 +5,12 @@ networking:
   address: 1.1.1.1
   inbound:
     - port: 8080
+      name: v1
       tags:
         kuma.io/service: web
         version: v1
     - port: 8081
+      name: v3
       tags:
         kuma.io/service: web
         version: v3

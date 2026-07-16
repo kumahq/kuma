@@ -26,8 +26,7 @@ var _ = Describe("MeshTimeout", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -53,8 +52,7 @@ to:
         maxConnectionDuration: 1h`),
 			Entry("only to targetRef", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -69,8 +67,7 @@ to:
         maxConnectionDuration: 1h`),
 			Entry("minimal example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -78,23 +75,9 @@ to:
     default:
       http:
         requestTimeout: 1s`),
-			Entry("top-level TargetRefKind is MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-        requestTimeout: 1s
-        streamIdleTimeout: 2s
-`),
 			Entry("example MeshExternalService", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshExternalService
@@ -111,9 +94,7 @@ to:
         requestTimeout: 1s`),
 			Entry("example MeshHTTPRoute", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshHTTPRoute
@@ -123,9 +104,7 @@ to:
         requestTimeout: 1s`),
 			Entry("example MeshHTTPRoute with labels", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshHTTPRoute
@@ -185,8 +164,7 @@ violations:
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: MeshGatewayRoute
@@ -201,8 +179,7 @@ violations:
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshServiceSubset
@@ -235,8 +212,7 @@ violations:
 			Entry("missing timeout configuration", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -249,8 +225,7 @@ violations:
 			Entry("timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -265,8 +240,7 @@ violations:
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -285,8 +259,7 @@ violations:
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -337,6 +310,8 @@ from:
       connectionTimeout: 11s`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.from
     message: must not be defined
   - field: spec.to[0].targetRef.kind

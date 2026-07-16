@@ -37,8 +37,8 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}))).
+			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": "demo-client"}))).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}), WithLabels(map[string]string{"kuma.io/service": "test-server"}))).
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
 type: HostnameGenerator
@@ -61,7 +61,8 @@ spec:
 	})
 
 	BeforeEach(func() {
-		Expect(DeleteMeshResources(universal.Cluster, meshName,
+		Expect(DeleteMeshResources(
+			universal.Cluster, meshName,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
 			meshfault_api.MeshFaultInjectionResourceTypeDescriptor,
 			meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,
@@ -84,8 +85,9 @@ mesh: "%s"
 name: mesh-fault-injecton
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
   from:
     - targetRef:
         kind: Mesh
@@ -101,8 +103,9 @@ mesh: "%s"
 name: meshretry-policy
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService
@@ -161,8 +164,9 @@ mesh: "%s"
 name: mesh-fault-injecton
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
   from:
     - targetRef:
         kind: Mesh
