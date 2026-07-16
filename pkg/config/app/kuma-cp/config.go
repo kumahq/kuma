@@ -433,12 +433,6 @@ func (g *GeneralConfig) Validate() error {
 	if _, err := config_types.TLSCiphers(g.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	if g.CertGenerationBaseBackoff.Duration <= 0 {
-		errs = multierr.Append(errs, errors.New(".CertGenerationBaseBackoff must be greater than 0"))
-	}
-	if g.CertGenerationMaxBackoff.Duration < g.CertGenerationBaseBackoff.Duration {
-		errs = multierr.Append(errs, errors.New(".CertGenerationMaxBackoff must be greater than or equal to .CertGenerationBaseBackoff"))
-	}
 	return errs
 }
 

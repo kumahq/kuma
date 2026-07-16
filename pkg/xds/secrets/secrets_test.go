@@ -480,6 +480,74 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(calls).To(Equal(2))
 		})
 	})
+
+	Context("does not serve stale certs while backing off", func() {
+		dpCert := func() *mesh_proto.CertificateAuthorityBackend_DpCert {
+			return &mesh_proto.CertificateAuthorityBackend_DpCert{
+				Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{Expiration: "1h"},
+			}
+		}
+		// mesh with a working builtin backend (ca-1) and a failing one (ca-2)
+		meshWith := func(enabled string) *core_mesh.MeshResource {
+			return &core_mesh.MeshResource{
+				Meta: &model.ResourceMeta{Name: "default"},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: enabled,
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{Name: "ca-1", Type: "builtin", DpCert: dpCert()},
+							{Name: "ca-2", Type: "failing", DpCert: dpCert()},
+						},
+					},
+				},
+			}
+		}
+
+		It("returns an error instead of stale certs so the watchdog keeps retrying", func() {
+			resStore := memory.NewStore()
+			rm := manager.NewResourceManager(resStore)
+			secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
+			builtinCaManager := ca_builtin.NewBuiltinCaManager(secretManager)
+
+			var calls int
+			caManagers := core_ca.Managers{
+				"builtin": builtinCaManager,
+				"failing": &failingCaManager{calls: &calls},
+			}
+
+			mesh := meshWith("ca-1")
+			Expect(rm.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
+			Expect(builtinCaManager.EnsureBackends(context.Background(), mesh, []*mesh_proto.CertificateAuthorityBackend{mesh.Spec.Mtls.Backends[0]})).To(Succeed())
+
+			m, err := core_metrics.NewMetrics("local")
+			Expect(err).ToNot(HaveOccurred())
+			caProvider, err := NewCaProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			identityProvider, err := NewIdentityProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			s, err := NewSecrets(caProvider, identityProvider, m, CertBackoff(5*time.Second, 5*time.Minute))
+			Expect(err).ToNot(HaveOccurred())
+
+			// given a DP with certs issued by the working backend
+			identity, _, err := s.GetForDataPlane(context.Background(), newDataplane(), meshWith("ca-1"), nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(identity).ToNot(BeNil())
+
+			// when the enabled backend switches to a failing one
+			failing := meshWith("ca-2")
+			_, _, err = s.GetForDataPlane(context.Background(), newDataplane(), failing, nil)
+
+			// then generation fails and a backoff starts
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(1))
+
+			// and while backing off it returns an error (not stale certs), so the
+			// watchdog keeps its hash stale and keeps retrying; the CA is not hit again
+			_, _, err = s.GetForDataPlane(context.Background(), newDataplane(), failing, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(1))
+		})
+	})
 })
 
 // failingCaManager is a ca.Manager whose GenerateDataplaneCert always fails,

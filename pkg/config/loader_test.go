@@ -255,6 +255,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.General.DNSCacheTTL.Duration).To(Equal(19 * time.Second))
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
+			Expect(cfg.General.CertGenerationBaseBackoff.Duration).To(Equal(2 * time.Second))
+			Expect(cfg.General.CertGenerationMaxBackoff.Duration).To(Equal(4 * time.Minute))
 
 			Expect(cfg.Mode).To(Equal(config_core.Zone))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
@@ -634,6 +636,8 @@ general:
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   dnsCacheTTL: 19s
   workDir: /custom/work/dir
+  certGenerationBaseBackoff: 2s
+  certGenerationMaxBackoff: 4m
 mode: zone
 multizone:
   global:

@@ -26,12 +26,23 @@ import (
 
 var log = core.Log.WithName("xds").WithName("secrets")
 
+// certBackoffMinBase is the floor applied to a misconfigured (<= 0) base
+// backoff. It guards against retry.NewExponential(0) panicking, since
+// GeneralConfig.Validate() is not currently wired into Config.Validate().
+const certBackoffMinBase = time.Second
+
 // CertBackoff returns a factory for the backoff used to throttle certificate
 // generation retries after a failure so that a misconfigured or failing CA
 // backend can't be hammered on every DP sync tick (which defaults to 1s). The
 // backoff is exponential from base, capped at max, with jitter so proxies don't
 // retry in lockstep. base and max are configured via KUMA_GENERAL_CERT_GENERATION_*.
 func CertBackoff(base, maxBackoff time.Duration) func() retry.Backoff {
+	if base <= 0 {
+		base = certBackoffMinBase
+	}
+	if maxBackoff < base {
+		maxBackoff = base
+	}
 	return func() retry.Backoff {
 		return retry.WithJitter(base, retry.WithCappedDuration(maxBackoff, retry.NewExponential(base)))
 	}
@@ -229,17 +240,14 @@ func (s *secrets) get(
 		otherMeshes,
 	); len(updateKinds) > 0 {
 		// A previous generation failed and we're still within the backoff
-		// window - don't call the CA again. Serve the existing certs if we
-		// have them (they're likely still valid), otherwise report the backoff.
+		// window - return an error without calling the CA. We must NOT serve
+		// stale certs here: a nil error lets the watchdog advance its hash
+		// (dataplane_watchdog.go) and skip subsequent ticks, so the backoff
+		// would never elapse and the DP would keep the old certs until the next
+		// mesh change. Returning the error keeps the hash stale so ticks keep
+		// re-checking the backoff (cheaply, without hitting the CA).
 		if remaining := s.backoffRemaining(key); remaining > 0 {
-			if certs == nil {
-				return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for %s after a previous failure", remaining)
-			}
-			log.V(1).Info(
-				"skipping certificate generation, backing off after a previous failure",
-				string(resource.Descriptor().Name), resourceKey, "backoff", remaining,
-			)
-			return certs.identity, caMap(certs, meshName), certs.allInOneCa, nil
+			return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for %s after a previous failure", remaining)
 		}
 
 		log.Info(
@@ -300,7 +308,7 @@ func (s *secrets) backoffRemaining(key certCacheKey) time.Duration {
 
 // recordFailure registers a generation failure and returns the delay before the
 // next attempt is allowed. The delay grows exponentially up to a cap (see
-// NewDefaultCertBackoff).
+// CertBackoff).
 func (s *secrets) recordFailure(key certCacheKey) time.Duration {
 	s.Lock()
 	defer s.Unlock()
