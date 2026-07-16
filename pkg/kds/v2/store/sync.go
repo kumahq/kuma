@@ -31,6 +31,8 @@ import (
 	zone_tokens "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
 )
 
+var globalSyncLog = core.Log.WithName("kds-global-sync")
+
 // ResourceSyncer allows to synchronize resources in Store
 type ResourceSyncer interface {
 	// Sync method takes 'upstream' as a basis and synchronize underlying store.
@@ -328,6 +330,7 @@ func GlobalSyncCallback(
 	k8sStore bool,
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
+	rewrites *prometheus.CounterVec,
 ) *client_v2.Callbacks {
 	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
 
@@ -353,14 +356,36 @@ func GlobalSyncCallback(
 				}
 			}
 
+			// In-spec zone tags feed downstream logic too (ZoneIngress
+			// AvailableServices -> cross-zone endpoint locality, Dataplane
+			// inbound/gateway tags -> global service inventory), so pin them
+			// alongside the top-level Spec.Zone.
+			clientID := upstream.ControlPlaneId
 			switch upstream.Type {
 			case core_mesh.ZoneIngressType:
 				for _, zi := range upstream.AddedResources.(*core_mesh.ZoneIngressResourceList).Items {
-					zi.Spec.Zone = upstream.ControlPlaneId
+					var rejected []string
+					rejected = pinZone(&zi.Spec.Zone, clientID, rejected)
+					for _, svc := range zi.Spec.GetAvailableServices() {
+						rejected = pinZoneTag(svc.GetTags(), clientID, rejected)
+					}
+					recordZoneRewrite(rewrites, upstream.Type, zi.GetMeta(), clientID, rejected)
 				}
 			case core_mesh.ZoneEgressType:
 				for _, ze := range upstream.AddedResources.(*core_mesh.ZoneEgressResourceList).Items {
-					ze.Spec.Zone = upstream.ControlPlaneId
+					var rejected []string
+					rejected = pinZone(&ze.Spec.Zone, clientID, rejected)
+					recordZoneRewrite(rewrites, upstream.Type, ze.GetMeta(), clientID, rejected)
+				}
+			case core_mesh.DataplaneType:
+				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
+					var rejected []string
+					networking := dp.Spec.GetNetworking()
+					for _, inbound := range networking.GetInbound() {
+						rejected = pinZoneTag(inbound.GetTags(), clientID, rejected)
+					}
+					rejected = pinZoneTag(networking.GetGateway().GetTags(), clientID, rejected)
+					recordZoneRewrite(rewrites, upstream.Type, dp.GetMeta(), clientID, rejected)
 				}
 			}
 
@@ -377,6 +402,49 @@ func GlobalSyncCallback(
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}
+}
+
+// pinZone sets *field to zone, recording in rejected any differing value it replaces.
+func pinZone(field *string, zone string, rejected []string) []string {
+	if *field != "" && *field != zone {
+		rejected = append(rejected, *field)
+	}
+	*field = zone
+	return rejected
+}
+
+// pinZoneTag pins an existing kuma.io/zone tag to zone (an absent tag names no
+// zone, so it is left alone), recording any differing value in rejected. A nil
+// map is fine: the read misses and the write never runs.
+func pinZoneTag(tags map[string]string, zone string, rejected []string) []string {
+	if v, ok := tags[mesh_proto.ZoneTag]; ok {
+		if v != "" && v != zone {
+			rejected = append(rejected, v)
+		}
+		tags[mesh_proto.ZoneTag] = zone
+	}
+	return rejected
+}
+
+// recordZoneRewrite reports an attribution rewrite only when it replaced a
+// differing value (in ordinary sync rejected is empty and nothing is recorded).
+// The counter is deliberately labeled only by resource type to stay
+// low-cardinality; the unbounded detail goes to the log line.
+func recordZoneRewrite(rewrites *prometheus.CounterVec, resType core_model.ResourceType, meta core_model.ResourceMeta, clientID string, rejected []string) {
+	if len(rejected) == 0 {
+		return
+	}
+	if rewrites != nil {
+		rewrites.WithLabelValues(string(resType)).Inc()
+	}
+	globalSyncLog.Info(
+		"[WARNING] rewrote synced resource zone attribution to the connecting zone's client-id because a payload value differed",
+		"type", string(resType),
+		"name", meta.GetName(),
+		"mesh", meta.GetMesh(),
+		"clientID", clientID,
+		"replacedValues", rejected,
+	)
 }
 
 func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream client_v2.UpstreamResponse, ns string) error {

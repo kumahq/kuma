@@ -254,10 +254,14 @@ var _ = Describe("Global Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 			stopCh := make(chan struct{})
 			clientStreams := []*grpc.MockDeltaClientStream{}
-			for _, ss := range serverStreams {
+			zoneNames := []string{}
+			for i, ss := range serverStreams {
 				clientStreams = append(clientStreams, ss.ClientStream(stopCh))
+				// The client-id equals the zone name in production;
+				// it drives attribution on the global ingest path.
+				zoneNames = append(zoneNames, fmt.Sprintf(zoneName, i))
 			}
-			kds_setup.StartDeltaClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system"))
+			kds_setup.StartDeltaClient(clientStreams, zoneNames, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system", nil))
 
 			// Create Zone resources for each Kuma CP Zone
 			for i := 0; i < numOfZones; i++ {
