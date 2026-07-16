@@ -274,6 +274,7 @@ jobs:
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
       IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+      IS_RELEASE_TAG: ${{ github.ref_type == 'tag' }}
       # Per-arch lookup (each side independent):
       #   1. fork PR                    -> free GitHub-hosted runners (security)
       #   2. vars.RUNS_ON_MASTER_<ARCH> -> per-branch + per-arch override
