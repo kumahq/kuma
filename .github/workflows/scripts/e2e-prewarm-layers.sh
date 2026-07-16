@@ -6,7 +6,17 @@
 set -u
 
 INTERVAL="${E2E_PREWARM_INTERVAL:-10}"
-SEEN_DIR="$(mktemp -d)"
+case "${INTERVAL}" in
+  ''|*[!0-9]*|0) INTERVAL=10 ;;
+esac
+
+# Stop polling after this many consecutive intervals with nothing new to warm,
+# so the background loop doesn't keep scanning the snapshot trees for the
+# rest of the e2e step once the cluster is fully warmed.
+IDLE_LIMIT=6
+
+SEEN_DIR="$(mktemp -d)" || exit 0
+[ -d "${SEEN_DIR}" ] || exit 0
 
 cleanup() { rm -rf "${SEEN_DIR}"; }
 trap cleanup EXIT
@@ -37,11 +47,20 @@ warm_node() {
   [ -n "${new}" ] || return 0
   printf '%s\n' "${new}" | docker exec -i "$node" xargs cat >/dev/null 2>&1
   printf '%s\n' "${current}" > "${seen}"
+  echo warmed
 }
 
+idle=0
 while true; do
+  warmed_any=""
   for node in $(node_containers); do
-    warm_node "${node}"
+    [ -z "$(warm_node "${node}")" ] || warmed_any=1
   done
+  if [ -n "${warmed_any}" ]; then
+    idle=0
+  else
+    idle=$((idle + 1))
+    [ "${idle}" -lt "${IDLE_LIMIT}" ] || exit 0
+  fi
   sleep "${INTERVAL}"
 done
