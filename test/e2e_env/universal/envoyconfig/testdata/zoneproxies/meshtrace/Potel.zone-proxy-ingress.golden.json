@@ -21,9 +21,8 @@
                 {
                   "endpoint": {
                     "address": {
-                      "socketAddress": {
-                        "address": "otel-collector.observability",
-                        "portValue": 4317
+                      "pipe": {
+                        "path": "/tmp/kuma-otel-mt-otel-backend.sock"
                       }
                     }
                   }
@@ -33,7 +32,7 @@
           ]
         },
         "name": "meshtrace:opentelemetry",
-        "type": "STRICT_DNS",
+        "type": "STATIC",
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
@@ -42,6 +41,96 @@
             }
           }
         }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig",
+      "value": {
+        "address": {
+          "pipe": {
+            "path": "/tmp/kuma-mesh-metric-config.sock"
+          }
+        },
+        "filterChains": [
+          {
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      }
+                    ]
+                  },
+                  "routeConfig": {
+                    "maxDirectResponseBodySizeBytes": 0,
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
+                        ],
+                        "name": "_kuma:dynamicconfig",
+                        "routes": [
+                          {
+                            "directResponse": {
+                              "status": 304
+                            },
+                            "match": {
+                              "headers": [
+                                {
+                                  "name": "If-None-Match",
+                                  "stringMatch": {
+                                    "exact": "f6c360f6a3de7ef7b6d57536168ddc8f033f7b46e147ad472ba97d0ce69ad5fd"
+                                  }
+                                }
+                              ],
+                              "path": "/otel"
+                            }
+                          },
+                          {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": "{\"backends\":[{\"name\":\"mt-otel-backend\",\"socketPath\":\"/tmp/kuma-otel-mt-otel-backend.sock\",\"endpoint\":\"otel-collector.observability:4317\",\"useHTTP\":false,\"traces\":{\"enabled\":true}}]}"
+                              },
+                              "status": 200
+                            },
+                            "match": {
+                              "path": "/otel"
+                            },
+                            "name": "_kuma:dynamicconfig:/otel",
+                            "responseHeadersToAdd": [
+                              {
+                                "header": {
+                                  "key": "Etag",
+                                  "value": "f6c360f6a3de7ef7b6d57536168ddc8f033f7b46e147ad472ba97d0ce69ad5fd"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED"
+                }
+              }
+            ]
+          }
+        ],
+        "name": "_kuma:dynamicconfig"
       }
     }
   ],
@@ -183,9 +272,8 @@
                 {
                   "endpoint": {
                     "address": {
-                      "socketAddress": {
-                        "address": "otel-collector.observability",
-                        "portValue": 4317
+                      "pipe": {
+                        "path": "/tmp/kuma-otel-mt-otel-backend.sock"
                       }
                     }
                   }
@@ -195,7 +283,7 @@
           ]
         },
         "name": "meshtrace:opentelemetry",
-        "type": "STRICT_DNS",
+        "type": "STATIC",
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
