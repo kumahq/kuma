@@ -359,3 +359,78 @@ var _ = Describe("Zone Delta Sync", func() {
 		}, "5s", "100ms").Should(Succeed())
 	})
 })
+<<<<<<< HEAD
+=======
+
+var _ = Describe("KDSSyncClient logging", func() {
+	DescribeTable("should log received responses according to config",
+		func(logPayloads bool, expected []string, unexpected []string) {
+			logBuf := &bytes.Buffer{}
+			clientStream := grpc.NewMockDeltaClientStream()
+			kdsStream := client_v2.NewDeltaKDSStream(clientStream, "zone-1", "zone-inst", "", 1)
+			DeferCleanup(func() {
+				close(clientStream.RecvCh)
+				Expect(kdsStream.CloseSend()).To(Succeed())
+			})
+
+			clientStream.RecvCh <- &envoy_sd.DeltaDiscoveryResponse{
+				TypeUrl: string(mesh.MeshType),
+				Nonce:   "nonce-1",
+				ControlPlane: &envoy_core.ControlPlane{
+					Identifier: "cp-1",
+				},
+			}
+
+			syncClient := client_v2.NewKDSSyncClient(
+				kuma_log.NewLoggerTo(logBuf, kuma_log.DebugLevel),
+				[]model.ResourceType{mesh.MeshType},
+				kdsStream,
+				&client_v2.Callbacks{
+					OnResourcesReceived: func(client_v2.UpstreamResponse) (error, error) {
+						return stderrors.New("stop processing"), nil
+					},
+				},
+				client_v2.SyncClientConfig{
+					LogPayloads: logPayloads,
+				},
+			)
+
+			err := syncClient.Receive()
+
+			Expect(err).To(MatchError(ContainSubstring("stop processing")))
+			for _, substring := range expected {
+				Expect(logBuf.String()).To(ContainSubstring(substring))
+			}
+			for _, substring := range unexpected {
+				Expect(logBuf.String()).ToNot(ContainSubstring(substring))
+			}
+		},
+		Entry("summary logging by default",
+			false,
+			[]string{
+				"DeltaDiscoveryResponse received",
+				"nonce",
+				"addedResourcesCount",
+				"removedResourcesCount",
+			},
+			// ControlPlaneId now reflects the connecting peer's client-id ("zone-1"),
+			// not the in-band "cp-1"; it must not leak into summary logs.
+			[]string{
+				"zone-1",
+			},
+		),
+		Entry("full payload logging when enabled",
+			true,
+			[]string{
+				"DeltaDiscoveryResponse received",
+				"zone-1",
+				"nonce-1",
+			},
+			[]string{
+				"addedResourcesCount",
+				"removedResourcesCount",
+			},
+		),
+	)
+})
+>>>>>>> db8309dd90 (fix(kds): attribute zone-to-global synced resources by authenticated zone (#17456))
