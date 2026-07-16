@@ -147,7 +147,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func MeshMetricWithSpecificPrometheusBackendForMeshService(mesh string, clientId string, serviceName string) InstallFunc {
+func MeshMetricWithSpecificPrometheusBackendForMeshService(mesh string, clientId string, appName string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -158,8 +158,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: %s
+    kind: Dataplane
+    labels:
+      app: %s
   default:
     sidecar:
       profiles:
@@ -167,13 +168,13 @@ spec:
           - name: All
     backends:
       - type: Prometheus
-        prometheus: 
+        prometheus:
           clientId: %s
           port: 8080
           path: /metrics
           tls:
             mode: Disabled
-`, Config.KumaNamespace, mesh, serviceName, clientId)
+`, Config.KumaNamespace, mesh, appName, clientId)
 	return YamlK8s(meshMetric)
 }
 
@@ -614,7 +615,7 @@ func MeshMetric() {
 	It("override MADS response for single DPP in mesh", func() {
 		// given
 		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusClientId("main-mesh-policy", mainMesh, mainPrometheusId))).To(Succeed())
-		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusBackendForMeshService(mainMesh, secondaryPrometheusId, "test-server-1_meshmetric_svc_80"))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusBackendForMeshService(mainMesh, secondaryPrometheusId, "test-server-1"))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {

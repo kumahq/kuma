@@ -65,8 +65,10 @@ func MeshTrafficPermission() {
 		// Universal Zone 1
 		NewClusterSetup().
 			Install(Parallel(
-				TestServerUniversal("test-server", meshName,
+				TestServerUniversal(
+					"test-server", meshName,
 					WithArgs([]string{"echo", "--instance", "echo"}),
+					WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 				),
 				TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test")),
 			)).
@@ -160,8 +162,9 @@ name: mtp-2
 mesh: mtp-test
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  from:
    - targetRef:
        kind: MeshSubset
@@ -188,8 +191,9 @@ name: mtp-3
 mesh: mtp-test
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  from:
    - targetRef:
        kind: MeshSubset
@@ -216,8 +220,9 @@ name: mtp-4
 mesh: mtp-test
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  from:
    - targetRef:
        kind: MeshSubset

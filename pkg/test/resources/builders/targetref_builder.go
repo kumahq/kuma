@@ -18,6 +18,20 @@ func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
 	}
 }
 
+func TargetRefDataplaneLabels(kv ...string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind:   common_api.Dataplane,
+		Labels: pointer.To(TagsKVToMap(kv)),
+	}
+}
+
+func TargetRefDataplaneName(name string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind: common_api.Dataplane,
+		Name: &name,
+	}
+}
+
 func TargetRefService(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshService,

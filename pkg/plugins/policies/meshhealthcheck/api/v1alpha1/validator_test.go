@@ -27,8 +27,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -142,8 +141,7 @@ violations:
 			Entry("required fields are missing", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -158,8 +156,7 @@ violations:
 			Entry("positive values are out of range", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -181,8 +178,7 @@ violations:
 			Entry("positive durations are out of range", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -213,8 +209,7 @@ violations:
 			Entry("all percentages are out of percentage range", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -238,8 +233,7 @@ violations:
 			Entry("path is invalid", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -260,8 +254,7 @@ violations:
 			Entry("status codes out of range in expectedStatuses", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService

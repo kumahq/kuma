@@ -31,7 +31,6 @@ func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef, isInbound
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
 			common_api.Dataplane,
 		},
 		IsInboundPolicy: isInboundPolicy,

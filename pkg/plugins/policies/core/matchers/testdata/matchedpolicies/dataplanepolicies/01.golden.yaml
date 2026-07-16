@@ -25,8 +25,8 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshSubset
-      tags:
+      kind: Dataplane
+      labels:
         version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
@@ -41,8 +41,9 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshService
-      name: web
+      kind: Dataplane
+      labels:
+        kuma.io/service: web
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_mtp_mesh-1___mtp-1_
@@ -56,9 +57,9 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshServiceSubset
-      name: web
-      tags:
+      kind: Dataplane
+      labels:
+        kuma.io/service: web
         version: v1
   type: MeshTrafficPermission
 next: null

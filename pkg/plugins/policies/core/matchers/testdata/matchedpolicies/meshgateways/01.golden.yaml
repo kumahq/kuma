@@ -1,98 +1,11 @@
 FromRules:
-  127.0.0.1:8080:
-  - Conf:
-      backends:
-      - file:
-          path: /from-gateway
-        type: File
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mal_mesh-1___gateway_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: gateway
-      type: MeshAccessLog
-    OriginByMatches: {}
-    Subset: []
-  127.0.0.1:8081:
-  - Conf:
-      backends:
-      - file:
-          path: /from-gateway
-        type: File
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mal_mesh-1___gateway_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: gateway
-      type: MeshAccessLog
-    OriginByMatches: {}
-    Subset: []
-  127.0.0.1:8082:
-  - Conf:
-      backends:
-      - file:
-          path: /from-gateway
-        type: File
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mal_mesh-1___gateway_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: gateway
-      type: MeshAccessLog
-    OriginByMatches: {}
-    Subset: []
+  127.0.0.1:8080: []
+  127.0.0.1:8081: []
+  127.0.0.1:8082: []
 InboundRules:
-  127.0.0.1:8080:
-  - conf:
-      backends:
-      - file:
-          path: /from-gateway
-        type: File
-    match: null
-    origin:
-      Resource:
-        creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mal_mesh-1___gateway_
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: gateway
-        type: MeshAccessLog
-      RuleIndex: 0
-  127.0.0.1:8081:
-  - conf:
-      backends:
-      - file:
-          path: /from-gateway
-        type: File
-    match: null
-    origin:
-      Resource:
-        creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mal_mesh-1___gateway_
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: gateway
-        type: MeshAccessLog
-      RuleIndex: 0
-  127.0.0.1:8082:
-  - conf:
-      backends:
-      - file:
-          path: /from-gateway
-        type: File
-    match: null
-    origin:
-      Resource:
-        creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mal_mesh-1___gateway_
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: gateway
-        type: MeshAccessLog
-      RuleIndex: 0
+  127.0.0.1:8080: []
+  127.0.0.1:8081: []
+  127.0.0.1:8082: []
 ToRules:
   ByListener:
     127.0.0.1:8080:
@@ -101,7 +14,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /gateway-listener
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -109,18 +22,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gateway_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gateway
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gatewaylistener_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gatewaylistener
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -130,7 +31,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /servicesubset
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -138,18 +39,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gateway_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gateway
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___servicesubset_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: servicesubset
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -159,7 +48,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /to-gateway
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -167,12 +56,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gateway_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gateway
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -183,7 +66,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /gateway-listener
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -191,18 +74,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gateway_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gateway
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gatewaylistener_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gatewaylistener
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -212,7 +83,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /to-gateway
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -220,18 +91,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___servicesubset_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: servicesubset
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gateway_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gateway
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []
@@ -241,7 +100,7 @@ ToRules:
       - Conf:
           backends:
           - file:
-              path: /to-gateway
+              path: /mesh
             type: File
         Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -249,12 +108,6 @@ ToRules:
           mesh: mesh-1
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh
-          type: MeshAccessLog
-        - creationTime: "0001-01-01T00:00:00Z"
-          kri: kri_mal_mesh-1___gateway_
-          mesh: mesh-1
-          modificationTime: "0001-01-01T00:00:00Z"
-          name: gateway
           type: MeshAccessLog
         OriginByMatches: {}
         Subset: []

@@ -5,11 +5,11 @@ status:
   details:
     causes:
     - field: spec.targetRef.kind
-      message: value 'MeshService' is not supported
+      message: value 'MeshHTTPRoute' is not supported
       reason: FieldValueInvalid
-    kind: MeshLoadBalancingStrategy
-    name: mlbs-deprecated
-  message: 'spec.targetRef.kind: value ''MeshService'' is not supported'
+    kind: MeshTimeout
+    name: backend-v3
+  message: 'spec.targetRef.kind: value ''MeshHTTPRoute'' is not supported'
   metadata: {}
   reason: Invalid
   status: Failure

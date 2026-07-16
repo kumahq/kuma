@@ -67,8 +67,9 @@ spec:
 				Install(MeshUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(YamlUniversal(disablePanic(meshName))).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+				Install(
+					DemoClientUniversal("dp-demo-client", meshName,
+						WithTransparentProxy(true)),
 				).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP))).
 				Setup(universal.Cluster)
@@ -161,14 +162,16 @@ spec:
 
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(Yaml(samples.MeshDefaultBuilder().
-					WithName(meshName).
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				Install(Yaml(
+					samples.MeshDefaultBuilder().
+						WithName(meshName).
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 				)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(YamlUniversal(disablePanic(meshName))).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+				Install(
+					DemoClientUniversal("dp-demo-client", meshName,
+						WithTransparentProxy(true)),
 				).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP))).
 				Setup(universal.Cluster)
@@ -267,12 +270,14 @@ spec:
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(YamlUniversal(disablePanic(meshName, "test-server"))).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+				Install(
+					DemoClientUniversal("dp-demo-client", meshName,
+						WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server", meshName,
-					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol(core_meta.ProtocolTCP)),
+				Install(
+					TestServerUniversal("test-server", meshName,
+						WithArgs([]string{"health-check", "tcp"}),
+						WithProtocol(core_meta.ProtocolTCP)),
 				).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
@@ -376,13 +381,15 @@ spec:
 			err := NewClusterSetup().
 				Install(mtlsPermissiveMesh(meshName)).
 				Install(YamlUniversal(disablePanic(meshName, "test-server-mtls"))).
-				Install(DemoClientUniversal("dp-demo-client-mtls", meshName,
-					WithTransparentProxy(true)),
+				Install(
+					DemoClientUniversal("dp-demo-client-mtls", meshName,
+						WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server-mtls", meshName,
-					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol(core_meta.ProtocolTCP),
-					WithServiceName("test-server-mtls")),
+				Install(
+					TestServerUniversal("test-server-mtls", meshName,
+						WithArgs([]string{"health-check", "tcp"}),
+						WithProtocol(core_meta.ProtocolTCP),
+						WithServiceName("test-server-mtls")),
 				).
 				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Setup(universal.Cluster)
@@ -471,7 +478,8 @@ spec:
 				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName))).
 				Install(YamlUniversal(disablePanic(meshName))).
-				Install(TestServerUniversal("test-client", meshName,
+				Install(TestServerUniversal(
+					"test-client", meshName,
 					WithServiceName("test-client"),
 					WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80"}),
 					WithTransparentProxy(true),
@@ -584,11 +592,12 @@ spec:
 type: MeshHTTPRoute
 mesh: %s
 name: http-route-1
-spec: 
-  targetRef: 
-    kind: MeshService
-    name: dp-demo-client
-  to: 
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: dp-demo-client
+  to:
     - targetRef: 
         kind: MeshService
         name: test-server
@@ -619,8 +628,10 @@ spec:
 				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(YamlUniversal(disablePanic(meshName))).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+				Install(
+					DemoClientUniversal("dp-demo-client", meshName,
+						WithTransparentProxy(true),
+						WithLabels(map[string]string{"kuma.io/service": "dp-demo-client"})),
 				).
 				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v1"))).
 				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v2"))).

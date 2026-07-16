@@ -11,9 +11,9 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshServiceSubset
-      name: web
-      tags:
+      kind: Dataplane
+      labels:
+        kuma.io/service: web
         version: v1
   type: MeshTrafficPermission
 next: null

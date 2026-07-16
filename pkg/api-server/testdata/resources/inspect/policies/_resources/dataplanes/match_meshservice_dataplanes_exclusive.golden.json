@@ -2,6 +2,7 @@
  "items": [
   {
    "labels": {
+    "app": "foo",
     "k8s.kuma.io/namespace": "kuma-demo",
     "kuma.io/display-name": "foo-dp-1"
    },
@@ -11,6 +12,7 @@
   },
   {
    "labels": {
+    "app": "foo",
     "k8s.kuma.io/namespace": "kuma-demo",
     "kuma.io/display-name": "foo-dp-2"
    },

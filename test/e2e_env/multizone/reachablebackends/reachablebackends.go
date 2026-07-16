@@ -49,10 +49,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
-      kuma.io/service: client-server_reachable-backends_svc_80
+    kind: Dataplane
+    labels:
+      app: client-server
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
 

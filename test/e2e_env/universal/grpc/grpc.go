@@ -15,22 +15,26 @@ func GRPC() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(TestServerUniversal("test-server", meshName,
+			Install(TestServerUniversal(
+				"test-server", meshName,
 				WithServiceName("test-server"),
 				WithProtocol("grpc"),
 				WithArgs([]string{"grpc", "server", "--port", "8080"}),
 				WithTransparentProxy(true),
 			)).
-			Install(TestServerUniversal("second-test-server", meshName,
+			Install(TestServerUniversal(
+				"second-test-server", meshName,
 				WithServiceName("second-test-server"),
 				WithProtocol("grpc"),
 				WithArgs([]string{"grpc", "server", "--port", "8080"}),
 				WithTransparentProxy(true),
 			)).
-			Install(TestServerUniversal("test-client", meshName,
+			Install(TestServerUniversal(
+				"test-client", meshName,
 				WithServiceName("test-client"),
 				WithArgs([]string{"grpc", "client", "--unary", "--address", "test-server.svc.mesh.local:80"}),
 				WithTransparentProxy(true),
+				WithLabels(map[string]string{"kuma.io/service": "test-client"}),
 			)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
@@ -72,8 +76,9 @@ name: http-route-1
 mesh: grpc
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-client
   to:
     - targetRef:
         kind: MeshService

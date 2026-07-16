@@ -157,7 +157,7 @@ mtls:
 		func(yaml string) {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithLabels(map[string]string{"kuma.io/service": "test-server"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
@@ -178,8 +178,9 @@ name: example
 mesh: "%s"
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
   from:
     - targetRef:
         kind: MeshService

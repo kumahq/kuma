@@ -5,8 +5,8 @@ mesh: default
 name: default-demo-app-a
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       k8s.kuma.io/service-name: demo-app
   from:
     - default:
@@ -33,8 +33,8 @@ mesh: default
 name: default-demo-app
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       k8s.kuma.io/service-name: demo-app
   from:
     - default:

@@ -36,11 +36,6 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isI
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshGateway,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshHTTPRoute,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
@@ -50,9 +45,6 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isI
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 			IsInboundPolicy: isInboundPolicy,
