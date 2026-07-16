@@ -8,39 +8,22 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
-// ConnectionPolicyTypes specifies the resource types the gateway will
-// bind for connection policies.
-var ConnectionPolicyTypes = []model.ResourceType{
-	core_mesh.FaultInjectionType,
-	core_mesh.HealthCheckType,
-}
-
 type GatewayHostInfo struct {
 	Host GatewayHost
-	// These are entries created internally in this plugin by MeshGatewayRoute
-	// before the Mesh*Route policies run
-	meshGatewayRouteEntries []route.Entry
-	// This are entries created by new Mesh*Route policies
+	// These are entries created by Mesh*Route policies
 	routeEntries []route.Entry
 }
 
 func (i GatewayHostInfo) Entries() []route.Entry {
-	// We need to return one or the other because the gateway plugin doesn't
-	// know about Mesh*Routes and generates a 404 entry.
-	if len(i.routeEntries) > 0 {
-		return i.routeEntries
-	}
-	return i.meshGatewayRouteEntries
+	return i.routeEntries
 }
 
 func (i *GatewayHostInfo) AppendEntries(entries []route.Entry) {
@@ -49,8 +32,6 @@ func (i *GatewayHostInfo) AppendEntries(entries []route.Entry) {
 
 type GatewayHost struct {
 	Hostname string
-	Routes   []*core_mesh.MeshGatewayRouteResource
-	Policies map[model.ResourceType][]match.RankedPolicy
 	// Contains MeshGateway, Listener and Dataplane object tags
 	Tags mesh_proto.TagSelector
 }

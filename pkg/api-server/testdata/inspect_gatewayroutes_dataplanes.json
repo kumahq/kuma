@@ -1,11 +1,4 @@
 {
- "total": 1,
- "items": [
-  {
-   "dataplane": {
-    "mesh": "default",
-    "name": "gateway-1"
-   }
-  }
- ]
+ "total": 0,
+ "items": []
 }
