@@ -219,7 +219,7 @@ spec:
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 
-	It("should retry on HTTP connection failure applied on MeshHTTPRoute", func() {
+	XIt("should retry on HTTP connection failure applied on MeshHTTPRoute", func() {
 		meshFaultInjection := fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"

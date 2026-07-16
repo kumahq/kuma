@@ -1,19 +1,4 @@
 {
- "total": 1,
- "items": [
-  {
-   "kind": "SidecarDataplane",
-   "dataplane": {
-    "mesh": "default",
-    "name": "redis-1"
-   },
-   "attachments": [
-    {
-     "type": "inbound",
-     "name": "127.0.0.1:80:8080",
-     "service": "redis"
-    }
-   ]
-  }
- ]
+ "total": 0,
+ "items": []
 }

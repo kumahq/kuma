@@ -148,11 +148,6 @@ type EgressEndpointGroup struct {
 // Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
 type EgressEndpointMap map[ServiceName]EgressEndpointGroup
 
-// TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
-type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
-
-type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
-
 // SocketAddressProtocol is the L4 protocol the listener should bind to
 type SocketAddressProtocol int32
 
@@ -269,10 +264,9 @@ type SecretsTracker interface {
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
-	Mesh                         *core_mesh.MeshResource
-	ExternalServices             []*core_mesh.ExternalServiceResource
-	ExternalServicePermissionMap ExternalServicePermissionMap
-	EndpointMap                  EndpointMap
+	Mesh             *core_mesh.MeshResource
+	ExternalServices []*core_mesh.ExternalServiceResource
+	EndpointMap      EndpointMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies
@@ -319,9 +313,7 @@ type ZoneIngressProxy struct {
 
 type Routing struct {
 	OutboundTargets EndpointMap
-	// ExternalServiceOutboundTargets contains endpoint map for direct access of external services (without egress)
-	// Since we take into account TrafficPermission to exclude external services from the map,
-	// it is specific for each data plane proxy.
+	// ExternalServiceOutboundTargets contains endpoint map for direct access of external services (without egress).
 	ExternalServiceOutboundTargets EndpointMap
 }
 

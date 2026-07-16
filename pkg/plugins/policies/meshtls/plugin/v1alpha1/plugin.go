@@ -402,7 +402,6 @@ func configureListener(
 	}
 
 	filterChainKumaTLS := filterChainBuilder(true).
-		Configure(envoy_listeners.NetworkRBAC(listenerName, true, proxy.Policies.TrafficPermissions[iface])).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
 
 	if getMeshTLSMode(
