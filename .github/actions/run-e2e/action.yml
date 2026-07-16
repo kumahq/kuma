@@ -34,7 +34,7 @@ runs:
         set -euo pipefail
         sudo systemctl stop docker.service docker.socket
         sudo mkdir -p /mnt/docker-tmpfs
-        sudo mount -t tmpfs -o size=9g tmpfs /mnt/docker-tmpfs
+        sudo mount -t tmpfs -o size=12g tmpfs /mnt/docker-tmpfs
         sudo mkdir -p /etc/docker
         if [ -s /etc/docker/daemon.json ]; then
           sudo jq '. + {"data-root":"/mnt/docker-tmpfs"}' /etc/docker/daemon.json > /tmp/daemon.json
