@@ -383,14 +383,32 @@ func GlobalSyncCallback(
 				}
 			}
 
+			// Resolve zone attribution to the authenticated zone
+			// (upstream.ControlPlaneId). Besides the top-level Spec.Zone, zone
+			// tags carried inside the specs are consumed downstream - the tag in
+			// ZoneIngress AvailableServices drives cross-zone endpoint locality
+			// (fillIngressOutbounds) and Dataplane inbound/gateway tags feed the
+			// global service inventory (createOrUpdateServiceInsight) - so these
+			// must stay consistent with the authenticated zone too.
 			switch upstream.Type {
 			case core_mesh.ZoneIngressType:
 				for _, zi := range upstream.AddedResources.(*core_mesh.ZoneIngressResourceList).Items {
 					zi.Spec.Zone = upstream.ControlPlaneId
+					for _, svc := range zi.Spec.GetAvailableServices() {
+						pinZoneTag(svc.GetTags(), upstream.ControlPlaneId)
+					}
 				}
 			case core_mesh.ZoneEgressType:
 				for _, ze := range upstream.AddedResources.(*core_mesh.ZoneEgressResourceList).Items {
 					ze.Spec.Zone = upstream.ControlPlaneId
+				}
+			case core_mesh.DataplaneType:
+				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
+					networking := dp.Spec.GetNetworking()
+					for _, inbound := range networking.GetInbound() {
+						pinZoneTag(inbound.GetTags(), upstream.ControlPlaneId)
+					}
+					pinZoneTag(networking.GetGateway().GetTags(), upstream.ControlPlaneId)
 				}
 			}
 
@@ -406,6 +424,17 @@ func GlobalSyncCallback(
 				return hasOldStylePrefix || hasZoneLabel
 			}), Zone(upstream.ControlPlaneId))
 		},
+	}
+}
+
+// pinZoneTag rewrites a kuma.io/zone tag to the authenticated zone. It only
+// touches tags that already carry the key, so resources that legitimately omit
+// it are left unchanged - an absent tag names no zone, so there is nothing to
+// reconcile. tags may be nil (e.g. a resource with no gateway); reads on a nil
+// map are safe and the write never runs.
+func pinZoneTag(tags map[string]string, zone string) {
+	if _, ok := tags[mesh_proto.ZoneTag]; ok {
+		tags[mesh_proto.ZoneTag] = zone
 	}
 }
 

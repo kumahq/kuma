@@ -229,7 +229,13 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		nameToVersion: nameToVersion,
 	}
 	return UpstreamResponse{
-		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
+		// Attribute the batch to the authenticated peer (s.clientID), not the
+		// in-band ControlPlane.Identifier the sender provides. On the global
+		// ingest path s.clientID is the zone from util.ClientIDFromIncomingCtx
+		// (see pkg/kds/mux/zone_sync.go); in legitimate zone-to-global sync it
+		// already equals the sender's identifier, so relying on it keeps
+		// attribution consistent with the authenticated zone.
+		ControlPlaneId:      s.clientID,
 		Nonce:               resp.GetNonce(),
 		Type:                rs.GetItemType(),
 		AddedResources:      rs,
