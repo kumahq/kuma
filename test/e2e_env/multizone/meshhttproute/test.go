@@ -38,7 +38,8 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(Parallel(
-				DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true)),
+				DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true),
+					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient})),
 				TestServerUniversal("dp-echo-1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone1-v1"}),
 					WithServiceVersion("v1"),
@@ -93,8 +94,8 @@ name: route-alias-test-server
 mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: demo-client
   to:
     - targetRef:

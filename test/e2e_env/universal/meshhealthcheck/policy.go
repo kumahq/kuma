@@ -483,11 +483,12 @@ spec:
 type: MeshHTTPRoute
 mesh: %s
 name: http-route-1
-spec: 
-  targetRef: 
-    kind: MeshService
-    name: dp-demo-client
-  to: 
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: dp-demo-client
+  to:
     - targetRef: 
         kind: MeshService
         name: test-server
@@ -518,7 +519,8 @@ spec:
 				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+					WithTransparentProxy(true),
+					WithLabels(map[string]string{"kuma.io/service": "dp-demo-client"})),
 				).
 				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v1"))).
 				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v2"))).

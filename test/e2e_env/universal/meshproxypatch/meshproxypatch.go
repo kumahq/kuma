@@ -22,7 +22,7 @@ func MeshProxyPatch() {
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
 			)).
-			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -44,8 +44,9 @@ mesh: %s
 name: backend-lua-filter
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   default:
     appendModifications:
       - httpFilter:

@@ -44,7 +44,7 @@ spec:
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TestServerUniversal(
-				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
+				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/service": "test-server"})),
 			).
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
@@ -74,7 +74,7 @@ spec:
 	BeforeEach(func() {
 		Expect(NewClusterSetup().
 			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
 			Setup(universal.Cluster),
 		).To(Succeed())
 	})
@@ -130,8 +130,9 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
        kind: Mesh
@@ -333,8 +334,9 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
        kind: Mesh
@@ -399,8 +401,9 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
        kind: Mesh
@@ -451,8 +454,9 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
        kind: MeshExternalService
@@ -490,8 +494,9 @@ name: server-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  rules:
    - default:
        backends:

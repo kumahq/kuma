@@ -31,6 +31,7 @@ func Test() {
 			Install(Parallel(
 				DemoClientUniversal(AppModeDemoClient, meshName,
 					WithTransparentProxy(true),
+					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}),
 				),
 				TestServerUniversal("test-server-echo-1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone1"}),
@@ -89,8 +90,8 @@ name: route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: demo-client
   to:
   - targetRef:

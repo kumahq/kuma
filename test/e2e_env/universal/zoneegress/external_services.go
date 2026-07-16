@@ -156,8 +156,7 @@ mesh: ze-external-services
 name: mesh-fault-injecton-402
 spec:
   targetRef:
-    kind: MeshService
-    name: external-service
+    kind: Mesh
   from:
     - targetRef:
         kind: MeshService
@@ -226,8 +225,7 @@ mesh: ze-external-services
 name: rate-limit-demo-client
 spec:
   targetRef:
-    kind: MeshService
-    name: external-service
+    kind: Mesh
   from:
     - targetRef:
         kind: Mesh

@@ -21,12 +21,14 @@ func GrpcRetry() {
 				WithProtocol("grpc"),
 				WithArgs([]string{"grpc", "server", "--port", "8080"}),
 				WithTransparentProxy(true),
+				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 			)).
 			Install(TestServerUniversal("test-client", meshName,
 				WithServiceName("test-client"),
 				WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80", "--unary", "true"}),
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
+				WithLabels(map[string]string{"kuma.io/service": "test-client"}),
 			)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -53,8 +55,9 @@ mesh: "%s"
 name: mesh-fault-injecton-500-grpc
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
   from:
     - targetRef:
         kind: MeshService
@@ -71,8 +74,9 @@ mesh: "%s"
 name: fake-meshretry-policy
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-client
   to:
     - targetRef:
         kind: MeshService

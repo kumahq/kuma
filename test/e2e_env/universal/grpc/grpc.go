@@ -31,6 +31,7 @@ func GRPC() {
 				WithServiceName("test-client"),
 				WithArgs([]string{"grpc", "client", "--unary", "--address", "test-server.svc.mesh.local:80"}),
 				WithTransparentProxy(true),
+				WithLabels(map[string]string{"kuma.io/service": "test-client"}),
 			)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
@@ -72,8 +73,9 @@ name: http-route-1
 mesh: grpc
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-client
   to:
     - targetRef:
         kind: MeshService

@@ -49,6 +49,7 @@ func LocalityAwareLB() {
 					mesh,
 					WithTransparentProxy(true),
 					WithServiceName("demo-client_locality-aware-lb_svc"),
+					WithLabels(map[string]string{"kuma.io/service": "demo-client_locality-aware-lb_svc"}),
 					WithAdditionalTags(
 						map[string]string{
 							"k8s.io/node": "node-1",
@@ -92,6 +93,7 @@ func LocalityAwareLB() {
 					mesh,
 					WithTransparentProxy(true),
 					WithServiceName("demo-client_locality-aware-lb_svc"),
+					WithLabels(map[string]string{"kuma.io/service": "demo-client_locality-aware-lb_svc"}),
 				),
 				TestServerUniversal("test-server", mesh,
 					WithServiceName("test-server_locality-aware-lb_svc_80"),
@@ -197,8 +199,9 @@ name: mlbs-1
 mesh: {{.Mesh}} 
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client_locality-aware-lb_svc
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client_locality-aware-lb_svc
   to:
     - targetRef:
         kind: MeshService
@@ -311,8 +314,9 @@ name: route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client-mesh-route_locality-aware-lb_svc
+    kind: Dataplane
+    labels:
+      app: demo-client-mesh-route
   to:
     - targetRef:
         kind: MeshService
@@ -357,8 +361,9 @@ name: mlbs-2
 mesh: "{{ .Mesh }}"
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client-mesh-route_{{ .Mesh }}_svc
+    kind: Dataplane
+    labels:
+      app: demo-client-mesh-route
   to:
     - targetRef:
         kind: MeshService

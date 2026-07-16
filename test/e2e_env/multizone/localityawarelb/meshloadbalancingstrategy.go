@@ -42,7 +42,8 @@ networking:
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(Parallel(
-				DemoClientUniversal("demo-client", mesh, WithTransparentProxy(true)),
+				DemoClientUniversal("demo-client", mesh, WithTransparentProxy(true),
+					WithLabels(map[string]string{"kuma.io/service": "demo-client"})),
 				InstallExternalService("es-1"),
 				InstallExternalService("es-2"),
 				TestServerUniversal("test-server-1", mesh,
@@ -87,8 +88,9 @@ name: mlbs-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService
@@ -111,8 +113,9 @@ name: mlbs-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService
