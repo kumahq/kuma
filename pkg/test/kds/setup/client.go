@@ -12,18 +12,9 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/grpc"
 )
 
-<<<<<<< HEAD
 func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client.Callbacks) {
 	for i := 0; i < len(clientStreams); i++ {
 		clientID := fmt.Sprintf("client-%d", i)
-=======
-// StartDeltaClient starts a KDS sync client per stream. clientIDs[i] is the
-// client-id for clientStreams[i] (the zone name in production, which drives
-// attribution) and must be provided for every stream.
-func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, clientIDs []string, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
-	for i := range clientStreams {
-		clientID := clientIDs[i]
->>>>>>> db8309dd90 (fix(kds): attribute zone-to-global synced resources by authenticated zone (#17456))
 		item := clientStreams[i]
 		comp := kds_client.NewKDSSink(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client.NewKDSStream(item, clientID, ""), cb)
 		go func() {
@@ -33,9 +24,12 @@ func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, clientIDs []s
 	}
 }
 
-func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
-	for i := 0; i < len(clientStreams); i++ {
-		clientID := fmt.Sprintf("client-%d", i)
+// StartDeltaClient starts a KDS sync client per stream. clientIDs[i] is the
+// client-id for clientStreams[i] (the zone name in production, which drives
+// attribution) and must be provided for every stream.
+func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, clientIDs []string, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
+	for i := range clientStreams {
+		clientID := clientIDs[i]
 		runtimeInfo := &mockRuntimeInfo{
 			instanceId: fmt.Sprintf("cp-%d", i),
 			mode:       config_core.Zone,
