@@ -40,6 +40,7 @@ type meshContextBuilder struct {
 	zone                   string
 	caProvider             secrets.CaProvider
 	withPolicyMatchingHash bool
+	inboundTagsDisabled    bool
 }
 
 // MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
@@ -50,6 +51,15 @@ type MeshContextBuilderOption func(*meshContextBuilder)
 func WithPolicyMatchingHash() MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
 		m.withPolicyMatchingHash = true
+	}
+}
+
+// WithInboundTagsDisabled mirrors KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED. When
+// set, endpoints built for this mesh fold Dataplane labels into their tags so
+// label-based identity keeps working without inbound tags.
+func WithInboundTagsDisabled(disabled bool) MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.inboundTagsDisabled = disabled
 	}
 }
 
@@ -208,6 +218,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
+		m.inboundTagsDisabled,
 	)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
@@ -223,6 +234,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		zoneEgressList,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
+		m.inboundTagsDisabled,
 	)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
@@ -242,6 +254,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshServices,
 		meshMultiZoneServices,
 		dataplanes,
+		m.inboundTagsDisabled,
 	)
 	dpZoneEgressEndpointMap := xds_topology.BuildDataplaneZoneEgressEndpointMap(
 		ctx,
