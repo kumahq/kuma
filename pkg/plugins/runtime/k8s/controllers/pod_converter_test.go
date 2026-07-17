@@ -258,7 +258,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "08.services-for-pod.yaml",
 			dataplane:      "25.dataplane.yaml",
 		}),
-		Entry("26. Should copy node label to the dataplane", testCase{
+		Entry("26. Should copy node label to the dataplane labels and inbound tags", testCase{
 			pod:              "26.pod.yaml",
 			node:             "26.node.yaml",
 			dataplane:        "26.dataplane.yaml",
@@ -269,6 +269,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			node:             "27.node.yaml",
 			dataplane:        "27.dataplane.yaml",
 			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
+		}),
+		Entry("Should copy node label to the dataplane labels even when inbound tags are disabled", testCase{
+			pod:                 "26.pod.yaml",
+			node:                "26.node.yaml",
+			dataplane:           "node-labels-inbound-tags-disabled.dataplane.yaml",
+			nodeLabelsToCopy:    []string{"topology.kubernetes.io/region"},
+			inboundTagsDisabled: true,
 		}),
 		Entry("28. Pod with reachable backend refs", testCase{
 			pod:            "28.pod.yaml",
