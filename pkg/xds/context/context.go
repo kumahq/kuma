@@ -212,4 +212,3 @@ func (m AggregatedMeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource
 	}
 	return nil
 }
-

@@ -129,7 +129,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 				resources.MeshLocalResources[resType] = rl
 			} else { // absent from all parent contexts get it now
 				managedTypes = append(managedTypes, resType)
-				rl, err = m.fetchResourceList(ctx, resType, baseMeshContext.Mesh, nil)
+				rl, err = m.fetchResourceList(ctx, resType, baseMeshContext.Mesh)
 				if err != nil {
 					return nil, errors.Wrap(err, fmt.Sprintf("could not fetch resources of type:%s", resType))
 				}
@@ -289,7 +289,7 @@ func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, la
 			return nil, err
 		}
 		if desc.Scope == core_model.ScopeGlobal && desc.Name != system.ConfigType { // For config we ignore them atm and prefer to rely on more specific filters.
-			rmap[t], err = m.fetchResourceList(ctx, t, nil, nil)
+			rmap[t], err = m.fetchResourceList(ctx, t, nil)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to build global context")
 			}
@@ -325,10 +325,10 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		// Only pick the policies, gateways, external services and the vip config map
 		switch {
 		case desc.IsDestination:
-			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
+			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 			destinations = append(destinations, rmap[t].GetItems())
 		case desc.IsPolicy || desc.Name == core_mesh.ExternalServiceType:
-			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
+			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 		default:
 			// DO nothing we're not interested in this type
 		}
@@ -349,10 +349,8 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 	}, nil
 }
 
-type filterFn = func(rs core_model.Resource) bool
-
 // fetch all resources of a type with potential filters etc
-func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core_model.ResourceType, mesh *core_mesh.MeshResource, filterFn filterFn) (core_model.ResourceList, error) {
+func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core_model.ResourceType, mesh *core_mesh.MeshResource) (core_model.ResourceList, error) {
 	l := log.AddFieldsFromCtx(logger, ctx, context.Background())
 	var listOptsFunc []core_store.ListOptionsFunc
 	desc, err := registry.Global().DescriptorFor(resType)
@@ -385,16 +383,11 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && filterFn == nil {
+	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
 	list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
-		// Because we're not using the pagination store we need to do the filtering ourselves outside of the store
-		// I believe this is to maximize cachability of the store
-		if filterFn != nil && !filterFn(resource) {
-			return nil, nil
-		}
 		switch resType {
 		case core_mesh.ZoneIngressType:
 			zi, ok := resource.(*core_mesh.ZoneIngressResource)

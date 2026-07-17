@@ -80,7 +80,8 @@ var _ = Describe("MeshAccessLog", func() {
 		inboundName         string
 		extraInbounds       []*builders.InboundBuilder
 	}
-	DescribeTable("should generate proper Envoy config",
+	DescribeTable(
+		"should generate proper Envoy config",
 		func(given sidecarTestCase) {
 			// given
 			resourceSet := core_xds.NewResourceSet()
@@ -134,17 +135,18 @@ var _ = Describe("MeshAccessLog", func() {
 					Features: given.features,
 				}).
 				WithDataplane(dpBuilder).
-				WithOutbounds(append(given.outbounds, &xds_types.Outbound{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-http").
-						WithAddress("127.0.0.1").
-						WithPort(27777).Build(),
-				}, &xds_types.Outbound{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-tcp").
-						WithAddress("127.0.0.1").
-						WithPort(37777).Build(),
-				},
+				WithOutbounds(append(
+					given.outbounds, &xds_types.Outbound{
+						LegacyOutbound: builders.Outbound().
+							WithService("other-service-http").
+							WithAddress("127.0.0.1").
+							WithPort(27777).Build(),
+					}, &xds_types.Outbound{
+						LegacyOutbound: builders.Outbound().
+							WithService("other-service-tcp").
+							WithAddress("127.0.0.1").
+							WithPort(37777).Build(),
+					},
 				)).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
@@ -713,22 +715,23 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									envoy_common.Routes{
+										{
+											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+												envoy_common.WithService("backend"),
+												envoy_common.WithWeight(100),
+											)},
+										},
 									},
-								},
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -765,22 +768,23 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									envoy_common.Routes{
+										{
+											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+												envoy_common.WithService("backend"),
+												envoy_common.WithWeight(100),
+											)},
+										},
 									},
-								},
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
 			extraInbounds: []*builders.InboundBuilder{
@@ -826,22 +830,23 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									envoy_common.Routes{
+										{
+											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+												envoy_common.WithService("backend"),
+												envoy_common.WithWeight(100),
+											)},
+										},
 									},
-								},
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
 			inboundTagsDisabled: true,
@@ -968,22 +973,23 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoutes(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									envoy_common.Routes{
+										{
+											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+												envoy_common.WithService("backend"),
+												envoy_common.WithWeight(100),
+											)},
+										},
 									},
-								},
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -1021,10 +1027,11 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound:zoneegress",
 				Origin: metadata.OriginEgress,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(MatchTransportProtocol("tls")).
-						Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
-						Configure(TcpProxyDeprecated("aws-aurora", envoy_common.NewCluster(envoy_common.WithService("aws-aurora")))),
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(MatchTransportProtocol("tls")).
+							Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+							Configure(TcpProxyDeprecated("aws-aurora", envoy_common.NewCluster(envoy_common.WithService("aws-aurora")))),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -1052,10 +1059,11 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound:zoneingress",
 				Origin: metadata.OriginIngress,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(MatchTransportProtocol("tls")).
-						Configure(MatchServerNames("inbound-backend{mesh=default}")).
-						Configure(TcpProxyDeprecated("backend", envoy_common.NewCluster(envoy_common.WithService("backend")))),
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(MatchTransportProtocol("tls")).
+							Configure(MatchServerNames("inbound-backend{mesh=default}")).
+							Configure(TcpProxyDeprecated("backend", envoy_common.NewCluster(envoy_common.WithService("backend")))),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -1131,13 +1139,14 @@ var _ = Describe("MeshAccessLog", func() {
 				builders.Dataplane().
 					WithName("backend").
 					WithMesh("default").
-					AddInbound(builders.Inbound().
-						WithService("backend").
-						WithAddress("127.0.0.1").
-						WithPort(17777).
-						WithTags(map[string]string{
-							mesh_proto.ProtocolTag: "http",
-						}),
+					AddInbound(
+						builders.Inbound().
+							WithService("backend").
+							WithAddress("127.0.0.1").
+							WithPort(17777).
+							WithTags(map[string]string{
+								mesh_proto.ProtocolTag: "http",
+							}),
 					),
 			).
 			WithOutbounds(xds_types.Outbounds{
@@ -1231,13 +1240,14 @@ var _ = Describe("MeshAccessLog", func() {
 				builders.Dataplane().
 					WithName("backend").
 					WithMesh("default").
-					AddInbound(builders.Inbound().
-						WithService("backend").
-						WithAddress("127.0.0.1").
-						WithPort(17777).
-						WithTags(map[string]string{
-							mesh_proto.ProtocolTag: "http",
-						}),
+					AddInbound(
+						builders.Inbound().
+							WithService("backend").
+							WithAddress("127.0.0.1").
+							WithPort(17777).
+							WithTags(map[string]string{
+								mesh_proto.ProtocolTag: "http",
+							}),
 					),
 			).
 			WithOutbounds(xds_types.Outbounds{
@@ -1290,7 +1300,6 @@ var _ = Describe("MeshAccessLog", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(string(listenerResources)).ToNot(ContainSubstring("open_telemetry"))
 	})
-
 })
 
 func otherServiceHTTPListener() core_xds.Resource {
