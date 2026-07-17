@@ -273,6 +273,10 @@ controlPlane:
 			extraArgs: []string{"--mode", "global"},
 			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
+		Entry("--mode global with a non-universal environment", errTestCase{
+			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=not-a-real-environment"},
+			errorMsg:  "controlPlane.environment=not-a-real-environment",
+		}),
 		Entry("", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},
 			errorMsg:  "Can't have egress.enabled when running controlPlane.mode=='universal'",
