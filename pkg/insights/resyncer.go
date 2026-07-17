@@ -478,10 +478,6 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
-	if exclusiveMeshServices {
-		// set ServiceInsight with empty Services map
-		return r.upsertServiceInsight(ctx, mesh, insight)
-	}
 
 	zonesMap := map[string]map[string]struct{}{}
 	addSvcToZones := func(svc, zone string) {
@@ -506,8 +502,19 @@ func (r *resyncer) createOrUpdateServiceInsight(
 			case mesh_proto.Dataplane_Networking_Gateway_DELEGATED:
 				svcType = mesh_proto.ServiceInsight_Service_gateway_delegated
 			}
-			populateInsight(svcType, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "")
-			addSvcToZones(gw.GetTags()[mesh_proto.ServiceTag], gw.GetTags()[mesh_proto.ZoneTag])
+			// In Exclusive mode kuma.io/service based services are replaced by
+			// MeshService, except delegated gateways which are never turned into
+			// MeshService and so must still be reported here.
+			if !exclusiveMeshServices || svcType == mesh_proto.ServiceInsight_Service_gateway_delegated {
+				populateInsight(svcType, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "")
+				addSvcToZones(gw.GetTags()[mesh_proto.ServiceTag], gw.GetTags()[mesh_proto.ZoneTag])
+			}
+			continue
+		}
+
+		if exclusiveMeshServices {
+			// internal services are represented by MeshService in Exclusive mode
+			continue
 		}
 
 		for _, inbound := range networking.GetInbound() {
@@ -520,9 +527,12 @@ func (r *resyncer) createOrUpdateServiceInsight(
 		}
 	}
 
-	for _, es := range externalServices {
-		populateInsight(mesh_proto.ServiceInsight_Service_external, insight, es.Spec.GetService(), "", "", es.Spec.Networking.GetAddress())
-		addSvcToZones(es.Spec.GetService(), es.Spec.GetTags()[mesh_proto.ZoneTag])
+	if !exclusiveMeshServices {
+		// external services are represented by MeshExternalService in Exclusive mode
+		for _, es := range externalServices {
+			populateInsight(mesh_proto.ServiceInsight_Service_external, insight, es.Spec.GetService(), "", "", es.Spec.Networking.GetAddress())
+			addSvcToZones(es.Spec.GetService(), es.Spec.GetTags()[mesh_proto.ZoneTag])
+		}
 	}
 
 	for svcName, svc := range insight.Services {
