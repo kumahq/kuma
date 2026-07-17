@@ -7,6 +7,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/config"
 	envoy_server_delta "github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
+	envoy_server_sotw "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -55,6 +56,21 @@ func RegisterXDS(
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
 
+	callbacks := util_xds_v3.CallbacksChain{
+		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
+		util_xds_v3.AdaptCallbacks(statsCallbacks),
+		util_xds_v3.AdaptCallbacks(authCallbacks),
+		util_xds_v3.AdaptCallbacks(workloadLabelValidator),
+		util_xds_v3.AdaptCallbacks(dpLifecycle),
+		util_xds_v3.AdaptCallbacks(syncTracker),
+		util_xds_v3.AdaptCallbacks(dpStatusTracker),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
+	}
+
+	if cb := rt.XDS().ServerCallbacks; cb != nil {
+		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
+	}
+
 	deltaCallbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
@@ -70,24 +86,27 @@ func RegisterXDS(
 		deltaCallbacks = append(deltaCallbacks, util_xds_v3.AdaptDeltaCallbacks(cb))
 	}
 
+	sotw := envoy_server_sotw.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
 	delta := envoy_server_delta.NewServer(rt.AppContext(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
 		o.Ordered = true
 	})
 
-	xdsServerLog.Info("registering Delta Aggregated Discovery Service V3 in Dataplane Server")
-	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), &deltaADSServer{delta: delta})
+	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
+	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), &adsServer{sotw: sotw, delta: delta})
 	return nil
 }
 
-// deltaADSServer serves only the incremental (Delta) ADS protocol. Kuma data plane
-// proxies always use Delta xDS, so the state-of-the-world StreamAggregatedResources
-// method is left unimplemented.
-type deltaADSServer struct {
+type adsServer struct {
 	envoy_service_discovery.UnimplementedAggregatedDiscoveryServiceServer
+	sotw  envoy_server_sotw.Server
 	delta envoy_server_delta.Server
 }
 
-func (s *deltaADSServer) DeltaAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
+func (s *adsServer) StreamAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
+	return s.sotw.StreamHandler(stream, envoy_resource.AnyType)
+}
+
+func (s *adsServer) DeltaAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
 	return s.delta.DeltaStreamHandler(stream, envoy_resource.AnyType)
 }
 
