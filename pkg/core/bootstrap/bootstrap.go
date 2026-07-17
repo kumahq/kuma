@@ -517,6 +517,9 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	if builder.Config().XdsServer.PolicyMatchingCacheSize > 0 {
 		mcbOpts = append(mcbOpts, xds_context.WithPolicyMatchingHash())
 	}
+	if builder.Config().Experimental.InboundTagsDisabled {
+		mcbOpts = append(mcbOpts, xds_context.WithInboundTagsDisabled(true))
+	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
 		xds_server.MeshResourceTypes(),
