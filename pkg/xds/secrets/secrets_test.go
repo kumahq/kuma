@@ -461,6 +461,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(err).To(HaveOccurred())
 			Expect(calls).To(Equal(1))
 			Expect(test_metrics.FindMetric(failMetrics, "cert_generation_failure").GetCounter().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(failMetrics, "cert_generation_backoff").GetGauge().GetValue()).To(Equal(1.0))
 
 			// when subsequent ticks happen within the backoff window
 			for range 5 {

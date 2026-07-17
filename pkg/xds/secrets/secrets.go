@@ -38,6 +38,8 @@ const certBackoffMinBase = time.Second
 // retry in lockstep. base and max are configured via KUMA_GENERAL_CERT_GENERATION_*.
 func CertBackoff(base, maxBackoff time.Duration) func() retry.Backoff {
 	if base <= 0 {
+		log.Info("configured certificate generation base backoff is not positive, using default instead",
+			"configured", base, "default", certBackoffMinBase)
 		base = certBackoffMinBase
 	}
 	if maxBackoff < base {
@@ -109,6 +111,14 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 		return nil, err
 	}
 
+	certGenerationBackoffMetric := prometheus.NewGauge(prometheus.GaugeOpts{
+		Help: "Number of proxies currently backing off certificate generation after a failure",
+		Name: "cert_generation_backoff",
+	})
+	if err := metrics.Register(certGenerationBackoffMetric); err != nil {
+		return nil, err
+	}
+
 	return &secrets{
 		caProvider:                   caProvider,
 		identityProvider:             identityProvider,
@@ -117,6 +127,7 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 		backoffs:                     map[certCacheKey]*certBackoff{},
 		certGenerationsMetric:        certGenerationsMetric,
 		certGenerationFailuresMetric: certGenerationFailuresMetric,
+		certGenerationBackoffMetric:  certGenerationBackoffMetric,
 	}, nil
 }
 
@@ -138,10 +149,14 @@ type secrets struct {
 	newBackoff       func() retry.Backoff
 
 	sync.RWMutex
-	cachedCerts                  map[certCacheKey]*certs
+	cachedCerts map[certCacheKey]*certs
+	// backoffs is in-memory only, so a kuma-cp restart or a DP reconnecting to a
+	// different replica resets backoff state. Tracked as a known trade-off in
+	// https://github.com/kumahq/kuma/issues/17473.
 	backoffs                     map[certCacheKey]*certBackoff
 	certGenerationsMetric        *prometheus.CounterVec
 	certGenerationFailuresMetric *prometheus.CounterVec
+	certGenerationBackoffMetric  prometheus.Gauge
 }
 
 var _ Secrets = &secrets{}
@@ -259,16 +274,21 @@ func (s *secrets) get(
 		if err != nil {
 			backoff := s.recordFailure(key)
 			s.certGenerationFailuresMetric.WithLabelValues(meshName).Inc()
-			log.Info(
-				"could not generate certificates, backing off before retrying",
+			// Debug level: the raw CA backend error can carry sensitive detail
+			// (credentials, IAM denials). The failure is surfaced by the
+			// cert_generation_failure / cert_generation_backoff metrics and the
+			// returned error.
+			log.V(1).Info(
+				"could not generate certificate, backing off before retrying",
 				string(resource.Descriptor().Name), resourceKey, "backoff", backoff, "error", err,
 			)
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
-		s.clearBackoff(key)
 
 		s.Lock()
+		delete(s.backoffs, key)
 		s.cachedCerts[key] = newCerts
+		s.certGenerationBackoffMetric.Set(float64(len(s.backoffs)))
 		s.Unlock()
 
 		return newCerts.identity, caMap(newCerts, meshName), newCerts.allInOneCa, nil
@@ -317,16 +337,11 @@ func (s *secrets) recordFailure(key certCacheKey) time.Duration {
 		b = &certBackoff{backoff: s.newBackoff()}
 		s.backoffs[key] = b
 	}
+	s.certGenerationBackoffMetric.Set(float64(len(s.backoffs)))
 
 	delay, _ := b.backoff.Next()
 	b.nextTry = core.Now().Add(delay)
 	return delay
-}
-
-func (s *secrets) clearBackoff(key certCacheKey) {
-	s.Lock()
-	defer s.Unlock()
-	delete(s.backoffs, key)
 }
 
 func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) {
@@ -337,6 +352,7 @@ func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKe
 	s.Lock()
 	delete(s.cachedCerts, key)
 	delete(s.backoffs, key)
+	s.certGenerationBackoffMetric.Set(float64(len(s.backoffs)))
 	s.Unlock()
 }
 
