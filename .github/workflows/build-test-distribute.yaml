@@ -191,7 +191,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
-        if: steps.changes.outputs.code == 'true'
+        if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' }}
         env:
           GOGC: "80" # run GC more aggressively
         with:
@@ -199,9 +199,15 @@ jobs:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           only-new-issues: false
 
-      - run: |
+      # Lint and "make check" are redundant on a tag: release_sha_gate already
+      # requires a green branch push run for this exact tree/SHA. We
+      # intentionally keep metadata and SBOM/SCA on tag refs so release tags
+      # continue publishing security assets.
+      - if: ${{ github.ref_type != 'tag' }}
+        run: |
           make clean
-      - run: |
+      - if: ${{ github.ref_type != 'tag' }}
+        run: |
           make check
       - name: "Set metadata for downstream jobs"
         id: metadata
