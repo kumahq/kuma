@@ -157,12 +157,6 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources for Global", testCase{
-			extraArgs: []string{
-				"--mode", "global",
-			},
-			goldenFile: "install-control-plane.global.golden.yaml",
-		}),
 		Entry("should generate Kubernetes resources for Global Universal mode", testCase{
 			extraArgs: []string{
 				"--mode",
@@ -274,6 +268,10 @@ controlPlane:
 		Entry("--mode is unknown", errTestCase{
 			extraArgs: []string{"--mode", "test"},
 			errorMsg:  "controlPlane.mode invalid got:'test'",
+		}),
+		Entry("--mode global with default (kubernetes) environment", errTestCase{
+			extraArgs: []string{"--mode", "global"},
+			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
 		Entry("", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},
