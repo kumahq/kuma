@@ -81,11 +81,7 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
 		return err
 	}
-	identityFromWorkload, err := u.identityDerivesFromWorkloadLabel(ctx, dataplane)
-	if err != nil {
-		return err
-	}
-	if err := validateWorkload(dpIdentity.Workload, dataplane.Meta.GetLabels(), identityFromWorkload); err != nil {
+	if err := u.validateWorkload(ctx, dpIdentity.Workload, dataplane); err != nil {
 		return err
 	}
 	return nil
@@ -149,15 +145,23 @@ func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.Multi
 	return nil
 }
 
-func validateWorkload(tokenWorkload string, dpLabels map[string]string, identityFromWorkloadLabel bool) error {
-	dpWorkload, exists := dpLabels[metadata.KumaWorkload]
+// validateWorkload checks the token's workload binding against the dataplane's
+// kuma.io/workload label. The MeshIdentity lookup runs lazily, only when it can
+// change the result: an unbound token on a dataplane that declares that label.
+func (u *universalAuthenticator) validateWorkload(ctx context.Context, tokenWorkload string, dataplane *core_mesh.DataplaneResource) error {
+	dpWorkload, exists := dataplane.Meta.GetLabels()[metadata.KumaWorkload]
 	if tokenWorkload == "" {
-		// When the dataplane's SPIFFE identity is derived from the kuma.io/workload
-		// label, that label becomes the proxy's identity. A token that is not bound
-		// to a workload does not constrain the label, so accepting it would let the
-		// dataplane pick an arbitrary workload identity. Require a workload-bound
-		// token so the token's scope stays consistent with the issued identity.
-		if identityFromWorkloadLabel && exists {
+		if !exists {
+			return nil
+		}
+		// If the identity is derived from that label, the label is the proxy's
+		// identity and an unbound token can't constrain it, so require a
+		// workload-bound token.
+		identityFromWorkloadLabel, err := u.identityDerivesFromWorkloadLabel(ctx, dataplane)
+		if err != nil {
+			return err
+		}
+		if identityFromWorkloadLabel {
 			return errors.Errorf("dataplane with %q label %q derives its identity from the workload, so it requires a workload-bound token", metadata.KumaWorkload, dpWorkload)
 		}
 		return nil
