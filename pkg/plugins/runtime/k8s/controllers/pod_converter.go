@@ -62,7 +62,7 @@ func (p *PodConverter) PodToDataplane(
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
 	// Copy the allow-listed node labels onto the Dataplane labels, the same set
 	// that lands on inbound tags.
-	nodeLabels := map[string]string{}
+	var nodeLabels map[string]string
 	if p.InboundConverter.InboundTagsDisabled {
 		nodeLabels, err = p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
 		if err != nil {

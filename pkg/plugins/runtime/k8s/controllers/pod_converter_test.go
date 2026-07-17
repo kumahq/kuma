@@ -258,7 +258,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "08.services-for-pod.yaml",
 			dataplane:      "25.dataplane.yaml",
 		}),
-		Entry("26. Should copy node label to the dataplane labels and inbound tags", testCase{
+		Entry("26. Should copy node label to the inbound tags", testCase{
 			pod:              "26.pod.yaml",
 			node:             "26.node.yaml",
 			dataplane:        "26.dataplane.yaml",

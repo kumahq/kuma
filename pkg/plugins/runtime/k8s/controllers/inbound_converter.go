@@ -171,9 +171,15 @@ func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone strin
 }
 
 func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	nodeLabels, err := ic.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
-	if err != nil {
-		return nil, err
+	// Node labels only end up on inbound tags, so skip fetching them when tags
+	// are disabled; PodToDataplane copies them onto the Dataplane labels itself.
+	var nodeLabels map[string]string
+	if !ic.InboundTagsDisabled {
+		var err error
+		nodeLabels, err = ic.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
