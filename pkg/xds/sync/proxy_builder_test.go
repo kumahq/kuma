@@ -22,7 +22,6 @@ import (
 	rest_types "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/v3/pkg/test/runtime"
@@ -87,9 +86,6 @@ var _ = Describe("Proxy Builder", func() {
 		server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), false),
-		builder.Config().DNSServer.Domain,
-		builder.Config().DNSServer.ServiceVipPort,
 		builder.CAProvider(),
 	)
 	metrics, err := core_metrics.NewMetrics("cache")

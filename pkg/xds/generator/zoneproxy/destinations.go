@@ -110,6 +110,7 @@ func buildKumaIoServiceDestinations(
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
 	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
 	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
+	addAvailableServiceDestinations(availableServices, destForMesh)
 	return destForMesh
 }
 
@@ -190,6 +191,21 @@ func addMeshTCPRouteToDestinations(
 func addDestination(tags map[string]string, destinations map[string][]envoy_tags.Tags) {
 	service := tags[mesh_proto.ServiceTag]
 	destinations[service] = append(destinations[service], tags)
+}
+
+func addAvailableServiceDestinations(
+	availableServices []*mesh_proto.ZoneIngress_AvailableService,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, availableService := range availableServices {
+		service := availableService.Tags[mesh_proto.ServiceTag]
+		if service == "" {
+			continue
+		}
+		addDestination(envoy_tags.Tags{
+			mesh_proto.ServiceTag: service,
+		}, destinations)
+	}
 }
 
 // addTrafficFlowByDefaultDestination makes sure there is a "match all"

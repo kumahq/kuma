@@ -214,4 +214,3 @@ func (r Resources) MeshZoneAddresses() *meshzoneaddress_api.MeshZoneAddressResou
 	}
 	return list.(*meshzoneaddress_api.MeshZoneAddressResourceList)
 }
-

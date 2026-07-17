@@ -145,13 +145,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 				continue
 			}
 
-			// we need to skip adding Mesh*Service outbounds when ReachableBackends are not configured and MeshServicesMode is set to ReachableBackends,
-			// so we don't send additional clusters and to not impact performance
-			if dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends() == nil &&
-				meshContext.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_ReachableBackends {
-				continue
-			}
-
 			if onlySelectedBackends {
 				// check if there is an entry with specific port or without port
 				_, selected := reachableBackends[outbound.Resource]

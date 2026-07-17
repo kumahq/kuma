@@ -30,7 +30,7 @@ func MeshServicesWithReachableBackendsOption() {
 type: Mesh
 name: "%s"
 meshServices:
-  mode: ReachableBackends
+  mode: Exclusive
 mtls:
   enabledBackend: ca-1
   backends:
@@ -116,7 +116,7 @@ spec:
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should be able to connect to k8s VIP, using legacy cluster, if reachable backends isn't set", func() {
+	It("should be able to connect to local MeshService if reachable backends isn't set", func() {
 		Eventually(func(g Gomega) {
 			// when
 			resp, err := client.CollectEchoResponse(
@@ -133,22 +133,8 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("local-test-server_%s_svc_80", namespace)))
-			g.Expect(stdout).ToNot(ContainSubstring("_msvc_"))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("kri_msvc_%s_%s_%s_local-test-server_main", meshName, multizone.KubeZone1.ZoneName(), namespace)))
 		}, "10s", "1s").Should(Succeed())
-	})
-
-	It("should not be able to connect to cross-zone MeshService if reachable backends isn't set", func() {
-		Consistently(func(g Gomega) {
-			// when
-			resp, err := client.CollectFailure(
-				multizone.KubeZone1, "client-without-reachable", "other-zone-test-server.mesh-service-reachable-backends.svc.kuma-2.mesh.local",
-				client.FromKubernetesPod(namespace, "client-without-reachable"),
-			)
-			// then
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Exitcode).To(Or(Equal(6), Equal(28)))
-		}, "15s", "500ms", MustPassRepeatedly(5)).Should(Succeed())
 	})
 
 	It("should be able to connect if reachable backends is set", func() {
@@ -166,7 +152,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("%s_local-test-server_%s_kuma-1_msvc_80", meshName, namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("kri_msvc_%s_%s_%s_local-test-server_main", meshName, multizone.KubeZone1.ZoneName(), namespace)))
 		}, "10s", "500ms", MustPassRepeatedly(5)).Should(Succeed())
 
 		Eventually(func(g Gomega) {

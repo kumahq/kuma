@@ -36,18 +36,12 @@ func KICKubernetes() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			// The "should route to service using Kuma DNS" test resolves the
-			// legacy VIP hostname test-server.kic.svc.80.mesh. Under the
-			// Exclusive meshServices default that hostname is no longer served,
-			// so pin the mesh to Disabled to keep exercising Kuma VIP DNS.
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: %s
 spec:
-  meshServices:
-    mode: Disabled
   mtls:
     enabledBackend: ca-1
     backends:
@@ -142,72 +136,6 @@ spec:
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", fmt.Sprintf("http://%s/test-server", kicIP),
-				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-	})
-
-	It("should route to service using Kuma DNS", func() {
-		const ingressMeshDNS = `
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: echo
-  namespace: kic
-  annotations:
-    konghq.com/strip-path: 'true'
-spec:
-  parentRefs:
-  - name: kong
-    namespace: kic
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /test-server
-    backendRefs:
-    - name: test-server
-      kind: Service
-      port: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: test-server-externalname
-  namespace: kic
-spec:
-  type: ExternalName
-  externalName: test-server.kic.svc.80.mesh
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: k8s-ingress-dot-mesh
-  namespace: kic
-  annotations:
-    konghq.com/strip-path: 'true'
-spec:
-  parentRefs:
-  - name: kong
-    namespace: kic
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /dot-mesh
-    backendRefs:
-    - name: test-server-externalname
-      kind: Service
-      port: 80
-`
-
-		Expect(kubernetes.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())
-
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
-				kubernetes.Cluster, "demo-client", fmt.Sprintf("http://%s/dot-mesh", kicIP),
 				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
