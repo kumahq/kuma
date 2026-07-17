@@ -116,7 +116,7 @@ spec:
 	})
 
 	retryStat := func(admin envoy_admin.Tunnel) *stats.Stats {
-		s, err := admin.GetStats("cluster.real-resource-mesh_test-server_real-resource-ns_kuma-2_msvc_80.upstream_rq_retry_success")
+		s, err := admin.GetStats(fmt.Sprintf("cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_retry_success", meshName, Kuma2, namespace))
 		Expect(err).ToNot(HaveOccurred())
 		return s
 	}
