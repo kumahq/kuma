@@ -56,6 +56,10 @@ var panicServiceDesc = grpc.ServiceDesc{
 	},
 }
 
+// panicService is the registered implementation. The handlers in
+// panicServiceDesc do not use it, but RegisterService wants a non-nil value.
+type panicService struct{}
+
 var _ = Describe("DpServer gRPC recovery wiring", func() {
 	var lis *bufconn.Listener
 	var conn *grpc.ClientConn
@@ -72,7 +76,7 @@ var _ = Describe("DpServer gRPC recovery wiring", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		grpcServer = dpServer.GrpcServer()
-		grpcServer.RegisterService(&panicServiceDesc, nil)
+		grpcServer.RegisterService(&panicServiceDesc, &panicService{})
 
 		lis = bufconn.Listen(1024 * 1024)
 		go func() {
