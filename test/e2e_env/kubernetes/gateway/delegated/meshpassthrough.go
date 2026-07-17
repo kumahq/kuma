@@ -39,10 +39,9 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Gateway"]
-    tags:
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   default:
     appendModifications:
       - networkFilter:
@@ -69,10 +68,9 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Gateway"]
-    tags:
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   default:
     passthroughMode: None
 `, config.CpNamespace, config.Mesh)
@@ -102,10 +100,9 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Gateway"]
-    tags:
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   default:
     passthroughMode: Matched
     appendMatch:

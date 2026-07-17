@@ -11,14 +11,15 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	system_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
@@ -142,66 +143,115 @@ var _ = Describe("hash", func() {
 	}, test.EntriesForFolder("meshcontext_hash"))
 })
 
-var _ = Describe("legacy VIP compatibility", func() {
-	It("should ignore persisted legacy service VIPs when mesh services are exclusive", func() {
-		ctx := context.Background()
-		resourceStore := memory.NewStore()
-		meshContextBuilder := xds_context.NewMeshContextBuilder(
+var _ = Describe("ServicesInformation", func() {
+	lookupIPFunc := func(s string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP(s)}, nil
+	}
+	var resourceStore store.ResourceStore
+	var meshContextBuilder xds_context.MeshContextBuilder
+
+	BeforeEach(func() {
+		resourceStore = memory.NewStore()
+		meshContextBuilder = xds_context.NewMeshContextBuilder(
 			resourceStore,
 			xds_server.MeshResourceTypes(),
-			func(s string) ([]net.IP, error) {
-				return []net.IP{net.ParseIP(s)}, nil
-			},
+			lookupIPFunc,
 			"zone-1",
 			nil,
 		)
+	})
 
-		Expect(builders.Mesh().
-			WithName("default").
-			WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
-			Create(resourceStore),
-		).To(Succeed())
+	It("resolves TLS readiness off MeshService status and treats external services as always ready", func() {
+		// given a mesh with a PERMISSIVE mTLS backend
+		meshBuilder := builders.Mesh().
+			WithBuiltinMTLSBackend("ca-1").
+			WithEnabledMTLSBackend("ca-1").
+			WithPermissiveMTLSBackends()
+		Expect(meshBuilder.Create(resourceStore)).To(Succeed())
+		meshName := meshBuilder.Build().GetMeta().GetName()
 
-		meshService := builders.MeshService().
-			WithMesh("default").
-			WithName("local-test-server").
-			WithNamespace("mesh-service-reachable-backends").
-			WithLabels(map[string]string{
-				mesh_proto.EnvTag:           mesh_proto.KubernetesEnvironment,
-				mesh_proto.KubeNamespaceTag: "mesh-service-reachable-backends",
-			}).
-			AddIntPort(80, 80, "").
-			WithKumaVIP("241.0.0.10").
-			Build()
-		meshService.Status.Addresses = []hostnamegenerator_api.Address{{
-			Hostname: "local-test-server.mesh-service-reachable-backends.svc.kuma-1.mesh.local",
-		}}
-		Expect(resourceStore.Create(
-			ctx,
-			meshService,
-			store.CreateByKey(meshService.GetMeta().GetName(), meshService.GetMeta().GetMesh()),
-			store.CreateWithLabels(meshService.GetMeta().GetLabels()),
-		)).To(Succeed())
+		// and a MeshService-backed service whose status is TLS ready
+		msBuilder := builders.MeshService().
+			WithMesh(meshName).
+			WithName("backend").
+			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
+			WithTLSStatus(meshservice_api.TLSReady)
+		Expect(msBuilder.Create(resourceStore)).To(Succeed())
+		ms := msBuilder.Build()
 
-		config := system_api.NewConfigResource()
-		config.Spec = &system_proto.Config{
-			Config: `{"0:local-test-server_mesh-service-reachable-backends_svc_80":{"address":"240.0.0.10","outbounds":[{"TagSet":{"kuma.io/service":"local-test-server_mesh-service-reachable-backends_svc_80"}}]}}`,
+		// and a legacy external service, which is always considered TLS ready
+		externalService := &core_mesh.ExternalServiceResource{
+			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "external-svc"},
+			Spec: &mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "httpbin.org:80",
+				},
+				Tags: map[string]string{mesh_proto.ServiceTag: "external-svc"},
+			},
 		}
-		Expect(resourceStore.Create(
-			ctx,
-			config,
-			store.CreateByKey("kuma-default-dns-vips", core_model.NoMesh),
-		)).To(Succeed())
+		Expect(resourceStore.Create(context.Background(), externalService, store.CreateByKey("external-svc", meshName))).To(Succeed())
 
-		meshCtx, err := meshContextBuilder.Build(ctx, "default")
+		// and a builtin and a delegated gateway dataplane, neither of which is a regular service
+		builtinGatewayBuilder := builders.Dataplane().
+			WithMesh(meshName).
+			WithName("gateway-builtin-dp").
+			WithAddress("127.0.0.1").
+			WithBuiltInGateway("gateway-builtin")
+		Expect(builtinGatewayBuilder.Create(resourceStore)).To(Succeed())
+
+		delegatedGatewayBuilder := builders.Dataplane().
+			WithMesh(meshName).
+			WithName("gateway-delegated-dp").
+			WithAddress("127.0.0.1").
+			WithBuiltInGateway("gateway-delegated")
+		delegatedGateway := delegatedGatewayBuilder.Build()
+		delegatedGateway.Spec.Networking.Gateway.Type = mesh_proto.Dataplane_Networking_Gateway_DELEGATED
+		Expect(resourceStore.Create(context.Background(), delegatedGateway, store.CreateByKey("gateway-delegated-dp", meshName))).To(Succeed())
+
+		// when
+		mc, err := meshContextBuilder.Build(context.Background(), meshName)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(meshCtx.VIPDomains).To(ContainElement(HaveField("Address", "241.0.0.10")))
-		for _, vipDomain := range meshCtx.VIPDomains {
-			Expect(vipDomain.Address).ToNot(Equal("240.0.0.10"))
-		}
-		for _, outbound := range meshCtx.VIPOutbounds {
-			Expect(outbound.GetAddress()).ToNot(Equal("240.0.0.10"))
+		// then the MeshService-backed service is TLS ready
+		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		Expect(mc.ServicesInformation[msKey]).ToNot(BeNil())
+		Expect(mc.ServicesInformation[msKey].TLSReadiness).To(BeTrue())
+
+		// and the external service is unconditionally TLS ready
+		Expect(mc.ServicesInformation["external-svc"]).ToNot(BeNil())
+		Expect(mc.ServicesInformation["external-svc"].IsExternalService).To(BeTrue())
+		Expect(mc.ServicesInformation["external-svc"].TLSReadiness).To(BeTrue())
+
+		// and gateway dataplanes (builtin and delegated) never had ServiceInsight-backed
+		// TLS readiness and still don't get a ServicesInformation entry of their own
+		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-builtin"))
+		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-delegated"))
+	})
+
+	It("does not mark services TLS ready when the mesh CA backend is not PERMISSIVE", func() {
+		meshBuilder := builders.Mesh().
+			WithBuiltinMTLSBackend("ca-1").
+			WithEnabledMTLSBackend("ca-1")
+		Expect(meshBuilder.Create(resourceStore)).To(Succeed())
+		meshName := meshBuilder.Build().GetMeta().GetName()
+
+		msBuilder := builders.MeshService().
+			WithMesh(meshName).
+			WithName("backend").
+			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
+			WithTLSStatus(meshservice_api.TLSReady)
+		Expect(msBuilder.Create(resourceStore)).To(Succeed())
+		ms := msBuilder.Build()
+
+		mc, err := meshContextBuilder.Build(context.Background(), meshName)
+		Expect(err).ToNot(HaveOccurred())
+
+		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		info, found := mc.ServicesInformation[msKey]
+		if found {
+			Expect(info.TLSReadiness).To(BeFalse())
 		}
 	})
 })

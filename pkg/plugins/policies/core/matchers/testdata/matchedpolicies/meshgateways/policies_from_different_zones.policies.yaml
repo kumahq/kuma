@@ -25,9 +25,9 @@ labels:
   kuma.io/zone: zone-1
 spec:
  targetRef:
-  kind: MeshServiceSubset
-  name: edge-gateway
-  tags:
+  kind: Dataplane
+  labels:
+    kuma.io/service: edge-gateway
     listener: two
  to:
   - targetRef:
@@ -46,8 +46,9 @@ labels:
   kuma.io/zone: zone-2
 spec:
  targetRef:
-  kind: MeshGateway
-  name: gateway-1
+  kind: Dataplane
+  labels:
+    kuma.io/service: edge-gateway
  from:
   - targetRef:
      kind: Mesh

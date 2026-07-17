@@ -19,7 +19,7 @@
  },
  "caCert": "",
  "dynamicMetadata": null,
- "dnsPort": 15054,
+ "dnsPort": 15053,
  "readinessPort": 9902,
  "operatingSystem": "linux",
  "features": [

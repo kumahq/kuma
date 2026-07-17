@@ -101,7 +101,8 @@ var _ = Describe("snapshotGenerator", func() {
 			expectedSnapshots map[string]map[string]envoy_types.Resource
 		}
 
-		DescribeTable("",
+		DescribeTable(
+			"",
 			func(given testCase) {
 				// setup
 				zone := ""
@@ -487,7 +488,7 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.MeshService,
+								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-01"),
 							},
 							Default: v1alpha1.Conf{
@@ -585,7 +586,7 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.MeshService,
+								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-02"),
 							},
 							Default: v1alpha1.Conf{
@@ -705,7 +706,7 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.MeshService,
+								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-02"),
 							},
 							Default: v1alpha1.Conf{

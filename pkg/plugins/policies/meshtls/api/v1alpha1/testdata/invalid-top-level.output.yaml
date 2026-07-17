@@ -1,4 +1,6 @@
 violations:
+- field: spec.targetRef.kind
+  message: value 'MeshSubset' is not supported
 - field: spec.from[0].default.tlsCiphers
   message: 'tlsCiphers can only be defined with top level targetRef kind: Mesh'
 - field: spec.from[0].default.tlsVersion

@@ -12,12 +12,13 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	dns_server "github.com/kumahq/kuma/v3/pkg/config/dns-server"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -26,7 +27,6 @@ import (
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
@@ -38,8 +38,6 @@ type meshContextBuilder struct {
 	typeSet                map[core_model.ResourceType]struct{}
 	ipFunc                 lookup.LookupIPFunc
 	zone                   string
-	legacyDNSDomain        string
-	legacyServiceVIPPort   uint32
 	caProvider             secrets.CaProvider
 	withPolicyMatchingHash bool
 }
@@ -52,13 +50,6 @@ type MeshContextBuilderOption func(*meshContextBuilder)
 func WithPolicyMatchingHash() MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
 		m.withPolicyMatchingHash = true
-	}
-}
-
-func WithLegacyVIPConfig(domain string, serviceVIPPort uint32) MeshContextBuilderOption {
-	return func(m *meshContextBuilder) {
-		m.legacyDNSDomain = domain
-		m.legacyServiceVIPPort = serviceVIPPort
 	}
 }
 
@@ -95,13 +86,11 @@ func NewMeshContextBuilder(
 	}
 
 	builder := &meshContextBuilder{
-		rm:                   rm,
-		typeSet:              typeSet,
-		ipFunc:               ipFunc,
-		zone:                 zone,
-		legacyDNSDomain:      dns_server.DefaultDNSServerConfig().Domain,
-		legacyServiceVIPPort: dns_server.DefaultDNSServerConfig().ServiceVipPort,
-		caProvider:           caProvider,
+		rm:         rm,
+		typeSet:    typeSet,
+		ipFunc:     ipFunc,
+		zone:       zone,
+		caProvider: caProvider,
 	}
 	for _, opt := range opts {
 		opt(builder)
@@ -184,26 +173,9 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	domains = append(domains, xds_topology.Domains(meshServices)...)
 	domains = append(domains, xds_topology.Domains(meshExternalServices)...)
 	domains = append(domains, xds_topology.Domains(meshMultiZoneServices)...)
-	domains = append(domains, xds_topology.LegacyDomains(meshServices, meshExternalServices, meshMultiZoneServices)...)
 
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh
-	if mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Disabled {
-		legacyDomains, legacyOutbounds, err := xds_topology.LegacyVIPCompatibility(
-			resources.ListOrEmpty(system.ConfigType).(*system.ConfigResourceList).Items,
-			m.legacyDNSDomain,
-			m.legacyServiceVIPPort,
-			meshServices,
-			meshExternalServices,
-			meshMultiZoneServices,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not build legacy VIP compatibility")
-		}
-		domains = append(domains, legacyDomains...)
-		outbounds = append(outbounds, legacyOutbounds...)
-	}
-
 	casByTrustDomain := getCAsByTrustDomain(resources.MeshTrusts().Items)
 	// add a mesh mTLS CA
 	if len(casByTrustDomain) > 0 && mesh.MTLSEnabled() {
@@ -305,7 +277,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
-		ServicesInformation:             m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
+		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap, esEndpointMap),
 		DataSourceLoader:                loader,
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
@@ -364,10 +336,6 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 			destinations = append(destinations, rmap[t].GetItems())
 		case desc.IsPolicy || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
-		case desc.Name == system.ConfigType:
-			rmap[t], err = m.fetchResourceList(ctx, t, mesh, func(rs core_model.Resource) bool {
-				return rs.GetMeta().GetName() == vips.ConfigKey(meshName)
-			})
 		default:
 			// DO nothing we're not interested in this type
 		}
@@ -498,13 +466,13 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 
 func (m *meshContextBuilder) generateServicesInformation(
 	mesh *core_mesh.MeshResource,
-	serviceInsights *core_mesh.ServiceInsightResourceList,
+	meshServices []*meshservice_api.MeshServiceResource,
 	endpointMap xds.EndpointMap,
 	esEndpointMap xds.EndpointMap,
 ) map[string]*ServiceInformation {
 	servicesInformation := map[string]*ServiceInformation{}
 	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformation)
-	m.resolveTLSReadiness(mesh, serviceInsights, servicesInformation)
+	m.resolveTLSReadiness(mesh, meshServices, servicesInformation)
 	return servicesInformation
 }
 
@@ -534,29 +502,32 @@ func (m *meshContextBuilder) resolveProtocol(
 
 func (m *meshContextBuilder) resolveTLSReadiness(
 	mesh *core_mesh.MeshResource,
-	serviceInsights *core_mesh.ServiceInsightResourceList,
+	meshServices []*meshservice_api.MeshServiceResource,
 	servicesInformation map[string]*ServiceInformation,
 ) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
-	// checking ServiceInsights if we aren't.
+	// checking MeshServices if we aren't.
 	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
 		return
 	}
 
-	if len(serviceInsights.Items) == 0 {
-		// Nothing about the TLS readiness has been reported yet
-		logger.Info("could not determine service TLS readiness, ServiceInsight is not yet present")
-		return
-	}
-	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
-		serviceInfo := getServiceInformation(servicesInformation, svc)
-		if insight.ServiceType == mesh_proto.ServiceInsight_Service_external {
-			serviceInfo.TLSReadiness = true
-		} else {
-			serviceInfo.TLSReadiness = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
+	// External services are always considered TLS ready: traffic to them never
+	// goes through mTLS issued by this mesh's CA.
+	for svc, info := range servicesInformation {
+		if info.IsExternalService {
+			info.TLSReadiness = true
+			servicesInformation[svc] = info
 		}
-		servicesInformation[svc] = serviceInfo
+	}
+
+	for _, ms := range meshServices {
+		for _, port := range ms.Spec.Ports {
+			svc := destinationname.MustResolve(false, ms, port)
+			serviceInfo := getServiceInformation(servicesInformation, svc)
+			serviceInfo.TLSReadiness = ms.Status.TLS.Status == meshservice_api.TLSReady
+			servicesInformation[svc] = serviceInfo
+		}
 	}
 }
 

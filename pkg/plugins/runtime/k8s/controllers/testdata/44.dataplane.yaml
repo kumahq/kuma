@@ -10,3 +10,10 @@ metadata:
 spec:
   networking:
     address: 192.168.0.1
+    listeners:
+    - address: 192.168.0.1
+      name: zi-main
+      port: 10001
+      type: ZoneIngress
+    transparentProxying:
+      reachableBackends: {}

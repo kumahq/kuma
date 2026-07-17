@@ -67,13 +67,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_RUNTIME_DYNAMIC_CONFIGURATION_REFRESH_INTERVAL": "5s",
 				"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED":        "true",
 				"KUMA_DNS_ENABLED":                                              "true",
-				"KUMA_DNS_CORE_DNS_PORT":                                        "5300",
-				"KUMA_DNS_ENVOY_DNS_PORT":                                       "5302",
-				"KUMA_DNS_CORE_DNS_BINARY_PATH":                                 "/tmp/coredns",
-				"KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH":                        "/tmp/Corefile",
-				"KUMA_DNS_CONFIG_DIR":                                           "/var/run/dnsserver",
-				"KUMA_DNS_PROMETHEUS_PORT":                                      "6001",
-				"KUMA_DNS_ENABLE_LOGGING":                                       "true",
+				"KUMA_DNS_PROXY_PORT":                                           "5300",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -104,13 +98,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration).To(Equal(5 * time.Second))
 			Expect(cfg.DataplaneRuntime.UnifiedResourceNamingEnabled).To(BeTrue())
 			Expect(cfg.DNS.Enabled).To(BeTrue())
-			Expect(cfg.DNS.CoreDNSPort).To(Equal(uint32(5300)))
-			Expect(cfg.DNS.EnvoyDNSPort).To(Equal(uint32(5302)))
-			Expect(cfg.DNS.CoreDNSBinaryPath).To(Equal("/tmp/coredns"))
-			Expect(cfg.DNS.CoreDNSConfigTemplatePath).To(Equal("/tmp/Corefile"))
-			Expect(cfg.DNS.ConfigDir).To(Equal("/var/run/dnsserver"))
-			Expect(cfg.DNS.PrometheusPort).To(Equal(uint32(6001)))
-			Expect(cfg.DNS.CoreDNSLogging).To(BeTrue())
+			Expect(cfg.DNS.ProxyPort).To(Equal(uint32(5300)))
 		})
 	})
 

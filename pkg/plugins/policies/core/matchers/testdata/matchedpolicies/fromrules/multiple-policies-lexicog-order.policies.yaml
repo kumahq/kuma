@@ -4,8 +4,8 @@ mesh: default
 name: rule-b
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       k8s.kuma.io/service-name: demo-app
   from:
     - default:
@@ -32,8 +32,8 @@ mesh: default
 name: rule-a
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       k8s.kuma.io/service-name: demo-app
   from:
     - default:

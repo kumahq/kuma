@@ -43,8 +43,10 @@ spec:
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, AppModeTcpSink)
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
-			Install(TestServerUniversal(
-				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
+			Install(
+				TestServerUniversal(
+					"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+				),
 			).
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
@@ -72,10 +74,11 @@ spec:
 
 	// Always have new MeshAccessLog resources and log sink
 	BeforeEach(func() {
-		Expect(NewClusterSetup().
-			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
-			Setup(universal.Cluster),
+		Expect(
+			NewClusterSetup().
+				Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
+				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
+				Setup(universal.Cluster),
 		).To(Succeed())
 	})
 	E2EAfterEach(func() {
@@ -130,11 +133,13 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
-       kind: Mesh
+       kind: MeshService
+       name: test-server
      default:
        backends:
        - type: Tcp
@@ -201,7 +206,8 @@ mesh: %s
 spec:
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
       default:
         backends:
           - type: Tcp
@@ -333,11 +339,13 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
-       kind: Mesh
+       kind: MeshService
+       name: test-server
      default:
        backends:
        - type: Tcp
@@ -399,8 +407,9 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
        kind: Mesh
@@ -451,8 +460,9 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
        kind: MeshExternalService
@@ -490,8 +500,9 @@ name: server-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  rules:
    - default:
        backends:

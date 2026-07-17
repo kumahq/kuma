@@ -461,8 +461,6 @@ cni:
     runAsGroup: 0
 
 dataPlane:
-  # -- If true, then turn on CoreDNS query logging
-  dnsLogging: false
   image:
     # -- The Kuma DP image repository
     repository: "kuma-dp"
@@ -1126,9 +1124,6 @@ transparentProxy:
       verbose: false
 
 experimental:
-  # -- If true, enable native Kubernetes sidecars. This requires at least
-  # Kubernetes v1.29
-  sidecarContainers: true
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.

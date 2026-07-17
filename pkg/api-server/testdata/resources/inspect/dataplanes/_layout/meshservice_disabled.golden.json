@@ -1,7 +1,14 @@
 {
- "type": "/std-errors",
- "status": 400,
- "title": "Bad Request",
- "detail": "bad request: can't use _layout endpoint without meshService enabled",
- "details": "bad request: can't use _layout endpoint without meshService enabled"
+ "inbounds": [
+  {
+   "kri": "kri_dp_default___dp-1_8080",
+   "port": 8080,
+   "protocol": "",
+   "proxyResourceName": "self_inbound_dp_8080"
+  }
+ ],
+ "kri": "kri_dp_default___dp-1_",
+ "labels": null,
+ "listeners": [],
+ "outbounds": []
 }

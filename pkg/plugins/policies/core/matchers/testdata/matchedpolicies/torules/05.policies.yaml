@@ -30,9 +30,8 @@ mesh: mesh-1
 name: mtp-3
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
+    kind: Dataplane
+    labels:
       version: "v1"
   to:
     - targetRef:

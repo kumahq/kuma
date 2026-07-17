@@ -9,8 +9,6 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	manager_dataplane "github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
-	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -23,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -93,14 +90,12 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	tpEnabled bool,
 	bindOutbounds bool,
 ) (*core_xds.Routing, []*xds_types.Outbound) {
-	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
-
 	outbounds := p.resolveVIPOutbounds(meshContext, dataplane, tpEnabled, bindOutbounds)
 
 	endpointMap := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshContext.Resource,
-		matchedExternalServices,
+		meshContext.Resources.ExternalServices().Items,
 		meshContext.DataSourceLoader,
 		p.Zone,
 	)
@@ -150,13 +145,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 				continue
 			}
 
-			// we need to skip adding Mesh*Service outbounds when ReachableBackends are not configured and MeshServicesMode is set to ReachableBackends,
-			// so we don't send additional clusters and to not impact performance
-			if dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends() == nil &&
-				meshContext.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_ReachableBackends {
-				continue
-			}
-
 			if onlySelectedBackends {
 				// check if there is an entry with specific port or without port
 				_, selected := reachableBackends[outbound.Resource]
@@ -186,17 +174,9 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 }
 
 func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*core_xds.MatchedPolicies, error) {
-	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, meshContext.Resource)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch additional inbounds")
-	}
-	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-
 	resources := meshContext.Resources
 	matchedPolicies := &core_xds.MatchedPolicies{
-		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
-		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
-		Dynamic:            core_xds.PluginOriginatedPolicies{},
+		Dynamic: core_xds.PluginOriginatedPolicies{},
 	}
 	opts := []core_plugins.MatchedPoliciesOption{}
 	if p.IncludeShadow {

@@ -30,8 +30,9 @@ name: route-1
 mesh: mesh-1
 spec:
   targetRef:
-    kind: MeshService
-    name: other-service
+    kind: Dataplane
+    labels:
+      kuma.io/service: other-service
   to:
     - targetRef:
         kind: MeshService

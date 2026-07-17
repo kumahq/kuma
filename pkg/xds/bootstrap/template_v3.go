@@ -25,11 +25,10 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
@@ -59,10 +58,8 @@ var (
 )
 
 func genConfig(parameters configParameters, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
-	getNameOrDefault := system_names.GetNameOrDefault(meshResource != nil &&
-		parameters.Features != nil &&
-		parameters.Features.HasFeature(xds_types.FeatureUnifiedResourceNaming) &&
-		meshResource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive,
+	getNameOrDefault := system_names.GetNameOrDefault(
+		unified_naming.Enabled(&core_xds.DataplaneMetadata{Features: parameters.Features}, meshResource),
 	)
 
 	staticClusters, err := buildStaticClusters(

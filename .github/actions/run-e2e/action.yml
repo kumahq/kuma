@@ -57,10 +57,27 @@ runs:
         }
         EOF
         sudo service docker restart
+    # Cache third-party images the e2e framework preloads (spire, cnpg, coredns, ...)
+    # so runs don't depend on external registries (cgr.dev/ghcr.io) being reachable.
+    - name: "Restore cached e2e images"
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/e2e-image-cache
+        key: e2e-images-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.shards }}-${{ inputs.parallel_runner_id }}-${{ hashFiles('test/e2e/**/*.go', 'test/e2e_env/**/*.go', 'test/framework/deployments/**') }}
+    - name: "Load cached e2e images into docker"
+      shell: bash
+      run: |
+        tar="${{ runner.temp }}/e2e-image-cache/images.tar"
+        echo "KUMA_E2E_TRUST_CACHED_IMAGE_TAGS=false" >> "$GITHUB_ENV"
+        if [[ -f "$tar" ]]; then
+          docker load -i "$tar"
+          echo "KUMA_E2E_TRUST_CACHED_IMAGE_TAGS=true" >> "$GITHUB_ENV"
+        fi
     - name: "Run E2E tests"
       shell: bash
       env:
         KUMA_DEBUG: ${{ runner.debug == '1' }}
+        KUMA_E2E_PRELOAD_MANIFEST: ${{ runner.temp }}/e2e-preloaded-images.txt
         E2E_K8S_VERSION: ${{ inputs.k8s_version }}
         E2E_CNI_NETWORK_PLUGIN: ${{ inputs.cni_network_plugin }}
         E2E_ARCH: ${{ inputs.arch }}
@@ -96,10 +113,16 @@ runs:
           export KUMA_DEFAULT_TIMEOUT="6s"
         fi
 
+        # Keep imported node image layers hot in the page cache so the concurrent pod-startup wave doesn't stall on cold binary page-in (kumahq/kuma#17426).
+        ./.github/workflows/scripts/e2e-prewarm-layers.sh &
+        PREWARM_PID=$!
+
         function on_exit()
         {
-          docker logout docker.io
+          kill "${PREWARM_PID}" 2>/dev/null || true
+          docker logout docker.io 2>/dev/null || true
         }
+        trap "on_exit" EXIT
 
         # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
         # to prevent this, we support specifying a pull credential here
@@ -107,7 +130,6 @@ runs:
           DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
           DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
           echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
-          trap "on_exit" EXIT
         fi
 
         if [[ "$E2E_TARGET" != "" ]]; then
@@ -116,6 +138,25 @@ runs:
           target="test/e2e"
         fi
         make ${MAKE_PARAMETERS} CI=true "${target}"
+    - name: "Save preloaded e2e images for caching"
+      if: always()
+      shell: bash
+      run: |
+        manifest="${{ runner.temp }}/e2e-preloaded-images.txt"
+        dir="${{ runner.temp }}/e2e-image-cache"
+        mkdir -p "$dir"
+        if [[ ! -s "$manifest" ]]; then
+          exit 0
+        fi
+        present=()
+        while IFS= read -r img; do
+          if docker image inspect "$img" >/dev/null 2>&1; then
+            present+=("$img")
+          fi
+        done < <(sort -u "$manifest")
+        if [[ ${#present[@]} -gt 0 ]]; then
+          docker save "${present[@]}" -o "$dir/images.tar"
+        fi
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:

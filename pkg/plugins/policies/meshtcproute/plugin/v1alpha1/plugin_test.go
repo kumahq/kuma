@@ -1071,7 +1071,7 @@ var _ = Describe("MeshTCPRoute", func() {
 		}()),
 	)
 
-	It("falls back to legacy MeshGatewayRoute resources for built-in TCP gateways", func() {
+	It("does not fall back to legacy MeshGatewayRoute resources for built-in TCP gateways", func() {
 		metrics, err := metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 
@@ -1122,9 +1122,7 @@ var _ = Describe("MeshTCPRoute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(listeners).To(ContainSubstring("sample-gateway:TCP:8080"))
 
-		clusters, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(clusters).To(ContainSubstring("backend"))
+		Expect(resourceSet.ListOf(envoy_resource.ClusterType)).To(BeEmpty())
 	})
 })
 

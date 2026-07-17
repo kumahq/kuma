@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -78,17 +77,13 @@ func CollectListenerInfos(
 	for port, listener := range listenersByPort {
 		externalServices := meshCtx.Resources.ExternalServices()
 
-		matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(
-			proxy.Dataplane, externalServices, meshCtx.Resources.TrafficPermissions(),
-		)
-
 		outboundEndpoints := core_xds.EndpointMap{}
 		maps.Copy(outboundEndpoints, meshCtx.EndpointMap)
 
 		esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 			ctx,
 			meshCtx.Resource,
-			matchedExternalServices,
+			externalServices.Items,
 			meshCtx.DataSourceLoader,
 			proxy.Zone,
 		)

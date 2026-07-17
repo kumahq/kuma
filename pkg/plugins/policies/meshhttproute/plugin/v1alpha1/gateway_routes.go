@@ -142,20 +142,12 @@ func sortRulesToHosts(
 			// We may end up duplicating info more than once so we copy it here
 			host := plugin_gateway.GatewayHost{
 				Hostname: hostnameMatch,
-				Routes:   nil,
-				Policies: map[model.ResourceType][]match.RankedPolicy{},
 				Tags:     hostnameTag.Tags,
-			}
-			for _, t := range plugin_gateway.ConnectionPolicyTypes {
-				matches := match.ConnectionPoliciesBySource(
-					host.Tags,
-					match.ToConnectionPolicies(meshCtx.Resources.MeshLocalResources[t]))
-				host.Policies[t] = matches
 			}
 			hostInfo := plugin_gateway.GatewayHostInfo{
 				Host: host,
 			}
-			hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rules, resolver))
+			hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, rules, resolver))
 
 			meshroute_gateway.AddToListenerByHostname(
 				hostInfosByHostname,
@@ -173,7 +165,6 @@ func sortRulesToHosts(
 
 func generateEnvoyRouteEntries(
 	meshCtx xds_context.MeshContext,
-	host plugin_gateway.GatewayHost,
 	toRules []ruleByHostname,
 	resolver resolve.LabelResourceIdentifierResolver,
 ) []route.Entry {
@@ -218,7 +209,7 @@ func generateEnvoyRouteEntries(
 		}
 	}
 
-	return dedupRouteEntries(plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries))
+	return dedupRouteEntries(plugin_gateway.HandlePrefixMatches(exactEntries, prefixEntries, entries))
 }
 
 // dedupRouteEntries removes exact duplicate route entries while preserving order.

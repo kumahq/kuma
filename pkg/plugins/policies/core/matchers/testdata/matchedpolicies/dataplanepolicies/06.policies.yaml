@@ -3,8 +3,9 @@ name: mt1
 mesh: default
 spec:
   targetRef:
-    kind: MeshHTTPRoute
-    name: route-1
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-client_multizone-meshtimeout-ns_svc_80
   to:
     - targetRef:
         kind: Mesh
@@ -19,8 +20,9 @@ labels:
   kuma.io/display-name: route-1
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client_multizone-meshtimeout-ns_svc_80
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-client_multizone-meshtimeout-ns_svc_80
   to:
     - targetRef:
         kind: MeshService

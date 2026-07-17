@@ -3515,7 +3515,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 		}()),
 	)
 
-	It("falls back to legacy MeshGatewayRoute resources for built-in gateways", func() {
+	It("does not fall back to legacy MeshGatewayRoute resources for built-in gateways", func() {
 		metrics, err := metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 
@@ -3566,7 +3566,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(listeners).To(ContainSubstring("sample-gateway:HTTP:8080"))
 
-		Expect(resourceSet.ListOf(envoy_resource.RouteType)).ToNot(BeEmpty())
+		routes, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.RouteType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(routes).ToNot(ContainSubstring("backend"))
+
+		Expect(resourceSet.ListOf(envoy_resource.ClusterType)).To(BeEmpty())
 	})
 })
 

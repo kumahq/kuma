@@ -111,9 +111,6 @@ var _ = Describe("DNSGenerator", func() {
 			expected:      "3-envoy-config.golden.yaml",
 		}),
 		Entry("04. DNS using proxy map", testCase{
-			features: map[string]bool{
-				"feature-embedded-dns": true,
-			},
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
 			dpLabels: map[string]string{
@@ -128,7 +125,6 @@ var _ = Describe("DNSGenerator", func() {
 			expected:         "5-envoy-config.golden.yaml",
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
 			features: map[string]bool{
-				"feature-embedded-dns":            true,
 				"feature-unified-resource-naming": true,
 			},
 			dpLabels: map[string]string{

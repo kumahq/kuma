@@ -192,7 +192,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		},
 		DynamicMetadata: metadata,
 		OtelEnv:         otelEnv,
-		DNSPort:         opts.Config.DNS.EnvoyDNSPort,
+		DNSPort:         opts.Config.DNS.ProxyPort,
 		ReadinessPort:   opts.Config.Dataplane.ReadinessPort,
 		// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 		//

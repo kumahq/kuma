@@ -92,10 +92,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         connectionTimeout: 20s
         http:
           requestTimeout: 1s`, meshName)),

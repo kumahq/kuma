@@ -26,13 +26,8 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
-# An optional extension to the coredns packages
-COREDNS_EXT ?=
-# renovate: datasource=github-tags depName=coredns packageName=kumahq/coredns-builds versioning=semver
-COREDNS_VERSION = v1.14.6
-
 # List of binaries that we have build/release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-cni install-cni envoy
 # List of binaries that we have build/test build roles for.
 BUILD_TEST_BINARIES += test-server
 
@@ -75,6 +70,15 @@ build/info/short:
 .PHONY: build/info/version
 build/info/version:
 	@echo $(BUILD_INFO_VERSION)
+
+.PHONY: build/assert-tag-version
+build/assert-tag-version: build/kuma-cp ## Dev: Assert the built kuma-cp binary reports the tag version
+	@actual=$$($(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp version | awk '{print $$NF}'); \
+	if [ -z "$$actual" ] || [ "$$actual" != "$(BUILD_INFO_VERSION)" ]; then \
+		echo "kuma-cp binary reports version '$$actual', expected tag version '$(BUILD_INFO_VERSION)'"; \
+		exit 1; \
+	fi; \
+	echo "kuma-cp binary correctly reports tag version '$(BUILD_INFO_VERSION)'"
 
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
@@ -119,12 +123,6 @@ build/artifacts-$(1)-$(2)/kuma-cni:
 .PHONY: build/artifacts-$(1)-$(2)/install-cni
 build/artifacts-$(1)-$(2)/install-cni:
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
-
-.PHONY: build/artifacts-$(1)-$(2)/coredns
-build/artifacts-$(1)-$(2)/coredns:
-	mkdir -p $$(@) && \
-	[ -f $$(@)/coredns ] || \
-	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
 
 .PHONY: build/artifacts-$(1)-$(2)/envoy
 build/artifacts-$(1)-$(2)/envoy:

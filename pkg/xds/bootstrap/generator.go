@@ -175,13 +175,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.IsGatewayDataplane = true
 		}
 		kumaDpBootstrap.NetworkingConfig.Address = dataplane.Spec.GetNetworking().GetAddress()
-		if b.config.Params.CorefileTemplatePath != "" {
-			corefileTemplate, err := os.ReadFile(b.config.Params.CorefileTemplatePath)
-			if err != nil {
-				return nil, kumaDpBootstrap, errors.Wrap(err, "could not read Corefile template")
-			}
-			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
-		}
 		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 

@@ -42,8 +42,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshServiceSubset
@@ -87,8 +86,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -115,8 +113,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -161,8 +158,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -189,8 +185,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -217,8 +212,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -452,8 +446,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -483,8 +476,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -520,8 +512,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshHTTPRoute
@@ -547,8 +538,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshHTTPRoute
@@ -572,8 +562,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshHTTPRoute
@@ -596,8 +585,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -621,8 +609,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -642,8 +629,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
