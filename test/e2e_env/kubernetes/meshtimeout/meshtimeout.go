@@ -264,7 +264,6 @@ spec:
 			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 		})
 	},
-		Entry("Disabled", mesh_proto.Mesh_MeshServices_Disabled),
 		Entry("Exclusive", mesh_proto.Mesh_MeshServices_Exclusive),
 	)
 }

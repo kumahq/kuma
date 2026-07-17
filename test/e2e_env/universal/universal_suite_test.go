@@ -62,7 +62,6 @@ var (
 	_ = Describe("User Auth", Label("job-3"), auth.UserAuth)
 	_ = Describe("DP Auth", Label("job-3"), auth.DpAuth, Ordered)
 	_ = Describe("Offline Auth", Label("job-3"), auth.OfflineAuth, Ordered)
-	_ = Describe("MeshHealthCheck panic threshold", Label("job-1"), meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
 	_ = Describe("MeshHealthCheck", Label("job-1"), meshhealthcheck.MeshHealthCheck)
 	_ = Describe("Workload", Label("job-3"), workload.Workload, Ordered)
 	_ = Describe("Service Probes", Label("job-3"), healthcheck.ServiceProbes, Ordered)

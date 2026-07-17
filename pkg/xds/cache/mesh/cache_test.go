@@ -13,12 +13,10 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
@@ -118,9 +116,6 @@ var _ = Describe("MeshSnapshot Cache", func() {
 			[]core_model.ResourceType{core_mesh.DataplaneType, core_mesh.TrafficRouteType, core_mesh.ZoneIngressType},
 			lookupIPFunc,
 			"zone-1",
-			vips.NewPersistence(core_manager.NewResourceManager(s), manager.NewConfigManager(s), false),
-			"mesh",
-			80,
 			nil,
 		)
 		meshCache, err = mesh.NewCache(

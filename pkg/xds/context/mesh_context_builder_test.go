@@ -11,15 +11,16 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
@@ -31,19 +32,14 @@ var _ = Describe("hash", func() {
 	}
 	var resourceStore store.ResourceStore
 	var meshContextBuilder xds_context.MeshContextBuilder
-	var vipsPersistence *vips.Persistence
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		vipsPersistence = vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false)
 		meshContextBuilder = xds_context.NewMeshContextBuilder(
 			resourceStore,
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			vipsPersistence,
-			"mesh",
-			80,
 			nil,
 		)
 	})
@@ -230,49 +226,12 @@ status:
 		Expect(after.Hash).To(Equal(before.Hash))
 	})
 
-	It("should recompute the mesh context when VIP outbounds change", func() {
-		Expect(test_store.LoadResources(context.Background(), resourceStore, `
-type: Mesh
-name: mesh-1
-meshServices:
-  mode: Everywhere
-`)).To(Succeed())
-
-		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(before.VIPOutbounds).To(BeEmpty())
-
-		view, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
-			vips.NewServiceEntry("backend"): {
-				Address: "240.0.0.1",
-				Outbounds: []vips.OutboundEntry{{
-					Port: 8080,
-					TagSet: map[string]string{
-						"kuma.io/service": "backend",
-					},
-					Origin: "test",
-				}},
-			},
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(vipsPersistence.Set(context.Background(), "mesh-1", view)).To(Succeed())
-
-		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(after).ToNot(BeIdenticalTo(before), "VIP outbound changes should invalidate the mesh xDS context")
-		Expect(after.Hash).ToNot(Equal(before.Hash))
-		Expect(after.VIPOutbounds).ToNot(BeEmpty())
-	})
-
 	It("keeps PolicyMatchingHash stable across resourceVersion-only Dataplane writes", func() {
 		builderWithPolicyMatchingHash := xds_context.NewMeshContextBuilder(
 			resourceStore,
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
-			"mesh",
-			80,
 			nil,
 			xds_context.WithPolicyMatchingHash(),
 		)
@@ -318,9 +277,6 @@ networking:
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
-			"mesh",
-			80,
 			nil,
 			xds_context.WithPolicyMatchingHash(),
 		)
@@ -435,5 +391,118 @@ status:
 		ctx3, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", ctx2)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ctx3.Hash).ToNot(Equal(ctx2.Hash), "VIP allocation must invalidate the mesh context")
+	})
+})
+
+var _ = Describe("ServicesInformation", func() {
+	lookupIPFunc := func(s string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP(s)}, nil
+	}
+	var resourceStore store.ResourceStore
+	var meshContextBuilder xds_context.MeshContextBuilder
+
+	BeforeEach(func() {
+		resourceStore = memory.NewStore()
+		meshContextBuilder = xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			nil,
+		)
+	})
+
+	It("resolves TLS readiness off MeshService status and treats external services as always ready", func() {
+		// given a mesh with a PERMISSIVE mTLS backend
+		meshBuilder := builders.Mesh().
+			WithBuiltinMTLSBackend("ca-1").
+			WithEnabledMTLSBackend("ca-1").
+			WithPermissiveMTLSBackends()
+		Expect(meshBuilder.Create(resourceStore)).To(Succeed())
+		meshName := meshBuilder.Build().GetMeta().GetName()
+
+		// and a MeshService-backed service whose status is TLS ready
+		msBuilder := builders.MeshService().
+			WithMesh(meshName).
+			WithName("backend").
+			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
+			WithTLSStatus(meshservice_api.TLSReady)
+		Expect(msBuilder.Create(resourceStore)).To(Succeed())
+		ms := msBuilder.Build()
+
+		// and a legacy external service, which is always considered TLS ready
+		externalService := &core_mesh.ExternalServiceResource{
+			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "external-svc"},
+			Spec: &mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "httpbin.org:80",
+				},
+				Tags: map[string]string{mesh_proto.ServiceTag: "external-svc"},
+			},
+		}
+		Expect(resourceStore.Create(context.Background(), externalService, store.CreateByKey("external-svc", meshName))).To(Succeed())
+
+		// and a builtin and a delegated gateway dataplane, neither of which is a regular service
+		builtinGatewayBuilder := builders.Dataplane().
+			WithMesh(meshName).
+			WithName("gateway-builtin-dp").
+			WithAddress("127.0.0.1").
+			WithBuiltInGateway("gateway-builtin")
+		Expect(builtinGatewayBuilder.Create(resourceStore)).To(Succeed())
+
+		delegatedGatewayBuilder := builders.Dataplane().
+			WithMesh(meshName).
+			WithName("gateway-delegated-dp").
+			WithAddress("127.0.0.1").
+			WithBuiltInGateway("gateway-delegated")
+		delegatedGateway := delegatedGatewayBuilder.Build()
+		delegatedGateway.Spec.Networking.Gateway.Type = mesh_proto.Dataplane_Networking_Gateway_DELEGATED
+		Expect(resourceStore.Create(context.Background(), delegatedGateway, store.CreateByKey("gateway-delegated-dp", meshName))).To(Succeed())
+
+		// when
+		mc, err := meshContextBuilder.Build(context.Background(), meshName)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the MeshService-backed service is TLS ready
+		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		Expect(mc.ServicesInformation[msKey]).ToNot(BeNil())
+		Expect(mc.ServicesInformation[msKey].TLSReadiness).To(BeTrue())
+
+		// and the external service is unconditionally TLS ready
+		Expect(mc.ServicesInformation["external-svc"]).ToNot(BeNil())
+		Expect(mc.ServicesInformation["external-svc"].IsExternalService).To(BeTrue())
+		Expect(mc.ServicesInformation["external-svc"].TLSReadiness).To(BeTrue())
+
+		// and gateway dataplanes (builtin and delegated) never had ServiceInsight-backed
+		// TLS readiness and still don't get a ServicesInformation entry of their own
+		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-builtin"))
+		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-delegated"))
+	})
+
+	It("does not mark services TLS ready when the mesh CA backend is not PERMISSIVE", func() {
+		meshBuilder := builders.Mesh().
+			WithBuiltinMTLSBackend("ca-1").
+			WithEnabledMTLSBackend("ca-1")
+		Expect(meshBuilder.Create(resourceStore)).To(Succeed())
+		meshName := meshBuilder.Build().GetMeta().GetName()
+
+		msBuilder := builders.MeshService().
+			WithMesh(meshName).
+			WithName("backend").
+			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
+			WithTLSStatus(meshservice_api.TLSReady)
+		Expect(msBuilder.Create(resourceStore)).To(Succeed())
+		ms := msBuilder.Build()
+
+		mc, err := meshContextBuilder.Build(context.Background(), meshName)
+		Expect(err).ToNot(HaveOccurred())
+
+		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		info, found := mc.ServicesInformation[msKey]
+		if found {
+			Expect(info.TLSReadiness).To(BeFalse())
+		}
 	})
 })
