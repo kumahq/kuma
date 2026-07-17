@@ -181,7 +181,7 @@ spec:
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			_, err := framework_client.CollectEchoResponse(
-				multizone.KubeZone1, "test-client", "test-server_multizone-meshtimeout-ns_svc_80.mesh",
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
 				framework_client.WithMaxTime(10),
@@ -205,7 +205,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server_multizone-meshtimeout-ns_svc_80
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 2s
@@ -213,7 +214,7 @@ spec:
 
 		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(
-				multizone.KubeZone1, "test-client", "test-server_multizone-meshtimeout-ns_svc_80.mesh",
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
 				framework_client.WithMaxTime(10),
