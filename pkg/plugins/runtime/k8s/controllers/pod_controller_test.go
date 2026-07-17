@@ -15,6 +15,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
@@ -1126,5 +1127,26 @@ var _ = Describe("PodReconciler", func() {
 		dataplaneSpec := spec.(*mesh_proto.Dataplane)
 		Expect(dataplaneSpec.Networking.Listeners).To(HaveLen(1))
 		Expect(dataplaneSpec.Networking.Listeners[0].Type).To(Equal(mesh_proto.Dataplane_Networking_Listener_ZoneIngress))
+	})
+})
+
+var _ = Describe("MeshUpdateIgnoredPredicate", func() {
+	predicate := MeshUpdateIgnoredPredicate{}
+	mesh := &mesh_k8s.Mesh{}
+
+	It("drops Update events", func() {
+		Expect(predicate.Update(event.UpdateEvent{ObjectOld: mesh, ObjectNew: mesh})).To(BeFalse())
+	})
+
+	It("keeps the predicate.Funcs default of true for Create events", func() {
+		Expect(predicate.Create(event.CreateEvent{Object: mesh})).To(BeTrue())
+	})
+
+	It("keeps the predicate.Funcs default of true for Delete events", func() {
+		Expect(predicate.Delete(event.DeleteEvent{Object: mesh})).To(BeTrue())
+	})
+
+	It("keeps the predicate.Funcs default of true for Generic events", func() {
+		Expect(predicate.Generic(event.GenericEvent{Object: mesh})).To(BeTrue())
 	})
 })

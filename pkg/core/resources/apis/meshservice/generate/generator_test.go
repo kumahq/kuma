@@ -15,7 +15,6 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -23,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
@@ -71,9 +69,6 @@ var _ = Describe("MeshService generator", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"zone",
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-			".mesh",
-			80,
 			nil,
 		)
 		meshCache, err := cache_mesh.NewCache(
@@ -482,9 +477,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-				".mesh",
-				80,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -620,9 +612,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-				".mesh",
-				80,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -694,9 +683,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-				".mesh",
-				80,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -1014,9 +1000,6 @@ var _ = Describe("MeshService generator", func() {
 					server.MeshResourceTypes(),
 					net.LookupIP,
 					"zone",
-					vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-					".mesh",
-					80,
 					nil,
 				)
 				meshCache, err := cache_mesh.NewCache(

@@ -32,6 +32,29 @@ Also update any automation that expected the `MeshServicesDisabled`
 `MeshIdentity` status reason or treated inspect `_layout` as unavailable
 outside `Exclusive` mode.
 
+### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
+
+With `meshServices.mode` always `Exclusive`, `kuma.io/service`-tagged services and
+legacy `ExternalService` resources are represented by `MeshService` and
+`MeshExternalService` instead, so the control plane no longer computes their
+legacy statistics:
+
+- `ServiceInsight.services` no longer contains entries for regular
+  (non-gateway) services or legacy `ExternalService` resources. Only delegated
+  gateways (which are never turned into a `MeshService`) are still reported.
+- `MeshInsight.services` (the `Total`/`Internal`/`External` service count
+  stat) is no longer populated and is always absent from the response.
+- The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
+  legacy `toRules` field on each rule entry; it is always an empty array.
+  `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.
+
+**Action required**
+
+Update any automation or dashboards that read `ServiceInsight.services` for
+non-gateway services, `MeshInsight.services`, or the `_rules` `toRules` field
+to use `MeshService`/`MeshExternalService` status and `_rules`
+`toResourceRules` instead.
+
 ### CoreDNS removed from the data plane
 
 The bundled CoreDNS binary has been removed. The data plane now always uses the in-process embedded DNS proxy (previously the default on Kubernetes and opt-in on Universal). CoreDNS and the Envoy DNS filter are no longer used, and the `coredns` binary is no longer shipped in the release tarball or the `kuma-dp` image.

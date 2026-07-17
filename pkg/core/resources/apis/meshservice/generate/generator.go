@@ -463,27 +463,9 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 				return err
 			}
 			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
-				if meshCtx.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Disabled {
-					dataplanes := meshCtx.Resources.Dataplanes()
-					meshServices := meshCtx.Resources.MeshServices()
-					g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
-				} else {
-					for _, meshService := range meshCtx.Resources.MeshServices().Items {
-						if !meshService.IsLocalMeshService() {
-							// Synced from another zone via KDS, this zone's generator must not delete it.
-							continue
-						}
-						if managedBy, ok := meshService.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]; !ok || managedBy != managedByValue {
-							continue
-						}
-						log := g.logger.WithValues("mesh", mesh, "MeshService", meshService.GetMeta().GetName())
-						if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
-							log.Error(err, "couldn't delete MeshService")
-							continue
-						}
-						log.Info("deleted MeshService")
-					}
-				}
+				dataplanes := meshCtx.Resources.Dataplanes()
+				meshServices := meshCtx.Resources.MeshServices()
+				g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
 			}
 			g.metric.Observe(float64(time.Since(start).Milliseconds()))
 
