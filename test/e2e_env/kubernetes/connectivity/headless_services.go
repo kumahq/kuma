@@ -72,6 +72,11 @@ spec:
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-server-headless",
 				Namespace: namespace,
+				// Without this the generated MeshService lands in the default mesh
+				// and the client never gets an outbound for it.
+				Labels: map[string]string{
+					"kuma.io/mesh": meshName,
+				},
 			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
