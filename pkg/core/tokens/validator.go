@@ -50,7 +50,11 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 				return 0, fmt.Errorf("JWT token must have %s header", KeyIDHeader)
 			}
 		} else {
-			keyID = kid.(string)
+			var ok bool
+			keyID, ok = kid.(string)
+			if !ok {
+				return 0, fmt.Errorf("JWT token %s header must be a string", KeyIDHeader)
+			}
 		}
 		switch token.Method.Alg() {
 		case jwt.SigningMethodHS256.Name:
