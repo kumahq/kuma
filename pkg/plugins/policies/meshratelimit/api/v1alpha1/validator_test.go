@@ -26,8 +26,7 @@ var _ = Describe("MeshRateLimit", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
   - targetRef:
       kind: Mesh
@@ -51,8 +50,7 @@ from:
             interval: 100ms`),
 			Entry("full example, only http", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
   - targetRef:
       kind: Mesh
@@ -70,8 +68,7 @@ from:
                 value: "123"`),
 			Entry("full example, only tcp", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
   - targetRef:
       kind: Mesh
@@ -84,8 +81,7 @@ from:
             interval: 100ms`),
 			Entry("minimal example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
   - targetRef:
       kind: Mesh
@@ -101,8 +97,7 @@ from:
             interval: 100ms`),
 			Entry("disable rate limit", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
   - targetRef:
       kind: Mesh
@@ -112,23 +107,6 @@ from:
           disabled: true
         tcp:
           disabled: true`),
-			Entry("gateway example and targeting MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: http-route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      local:
-        http:
-          requestRate:
-            num: 100
-            interval: 10s
-        tcp:
-          connectionRate:
-            num: 100
-            interval: 100ms`),
 			Entry("rules example with sni match", `
 targetRef:
   kind: Dataplane
@@ -168,8 +146,7 @@ rules:
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
   - targetRef:
       kind: MeshGatewayRoute
@@ -187,8 +164,7 @@ violations:
 			Entry("not allow invalid values", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: Mesh
@@ -216,8 +192,7 @@ violations:
 			Entry("not allow from to be MeshService for tcp", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: MeshService
@@ -236,8 +211,7 @@ violations:
 			Entry("not allow from to be MeshService when http and tcp set", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: MeshService
@@ -260,8 +234,7 @@ violations:
 			Entry("not allow from to be MeshService", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: MeshService
@@ -280,8 +253,7 @@ violations:
 			Entry("empty default", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: Mesh
@@ -310,8 +282,7 @@ violations:
 			Entry("neither tcp or http defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: Mesh
@@ -325,8 +296,7 @@ violations:
 			Entry("empty tcp", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: Mesh
@@ -341,8 +311,7 @@ violations:
 			Entry("empty http", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Dataplane
 from:
 - targetRef:
     kind: Mesh
@@ -403,8 +372,33 @@ from:
             interval: 100ms`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.from
     message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
+			}),
+			Entry("top-level MeshHTTPRoute is rejected", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: http-route-1
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported`,
 			}),
 			Entry("spiffeID match with tcp rule", testCase{
 				inputYaml: `

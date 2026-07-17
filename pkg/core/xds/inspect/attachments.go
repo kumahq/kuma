@@ -155,9 +155,6 @@ func GroupByPolicy(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.
 func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.InboundInterface][]core_model.Resource {
 	result := map[mesh_proto.InboundInterface][]core_model.Resource{}
 
-	for inbound, tp := range matchedPolicies.TrafficPermissions {
-		result[inbound] = append(result[inbound], tp)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for inbound, elts := range matchedPolicies.Dynamic[tpe].InboundPolicies {
 			result[inbound] = append(result[inbound], elts...)
@@ -170,12 +167,6 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.OutboundInterface][]core_model.Resource {
 	result := map[mesh_proto.OutboundInterface][]core_model.Resource{}
 
-	for outbound, timeout := range matchedPolicies.Timeouts {
-		result[outbound] = append(result[outbound], timeout)
-	}
-	for outbound, tr := range matchedPolicies.TrafficRoutes {
-		result[outbound] = append(result[outbound], tr)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for outbound, elts := range matchedPolicies.Dynamic[tpe].OutboundPolicies {
 			result[outbound] = append(result[outbound], elts...)
@@ -188,9 +179,6 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.ServiceName][]core_model.Resource {
 	result := map[xds.ServiceName][]core_model.Resource{}
 
-	for service, tl := range matchedPolicies.TrafficLogs {
-		result[service] = append(result[service], tl)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		for serviceName, elts := range matchedPolicies.Dynamic[tpe].ServicePolicies {
 			result[serviceName] = append(result[serviceName], elts...)
@@ -202,12 +190,6 @@ func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.Ser
 
 func getDataplaneMatchedPolicies(matchedPolicies *xds.MatchedPolicies) []core_model.Resource {
 	var resources []core_model.Resource
-	if matchedPolicies.TrafficTrace != nil {
-		resources = append(resources, matchedPolicies.TrafficTrace)
-	}
-	if matchedPolicies.ProxyTemplate != nil {
-		resources = append(resources, matchedPolicies.ProxyTemplate)
-	}
 	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
 		resources = append(resources, matchedPolicies.Dynamic[tpe].DataplanePolicies...)
 	}

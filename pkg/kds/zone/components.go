@@ -30,7 +30,6 @@ func Setup(rt core_runtime.Runtime) error {
 		rt,
 		kdsCtx.TypesSentByZone,
 		zone,
-		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,

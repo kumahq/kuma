@@ -484,38 +484,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 			useTokenPath:       true,
 		}),
-		Entry("dns corefile template", testCase{
-			dpAuthForProxyType: map[string]bool{},
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				return &bootstrap_config.BootstrapServerConfig{
-					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:         "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminAccessLogPath:   "/var/log",
-						XdsHost:              "localhost",
-						XdsPort:              15678,
-						XdsConnectTimeout:    config_types.Duration{Duration: 2 * time.Second},
-						CorefileTemplatePath: filepath.Join("testdata", "corefile.template"),
-					},
-				}
-			}(),
-			dataplane: func() *core_mesh.DataplaneResource {
-				dp := defaultDataplane()
-				dp.Spec.Networking.Admin.Port = 9902
-				return dp
-			},
-			request: types.BootstrapRequest{
-				Mesh:    "mesh",
-				Name:    "name.namespace",
-				Version: defaultVersion,
-				Workdir: "/tmp",
-			},
-			dpBootstrapVerifier: func(dpBootstrap KumaDpBootstrap) {
-				expected, err := os.ReadFile(filepath.Join("testdata", "corefile.template"))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(dpBootstrap.NetworkingConfig.CorefileTemplate).To(Equal(expected))
-			},
-			hdsEnabled: true,
-		}),
 		Entry("readiness port and application probe proxy", testCase{
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {

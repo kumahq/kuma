@@ -22,6 +22,7 @@ func MeshTrafficPermissionUniversal() {
 				"test-server",
 				meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithLabels(map[string]string{"kuma.io/service": "test-server", "team": "server-owners"}),
 			)).
 			Install(TestServerUniversal(
 				"test-server-tcp",
@@ -29,6 +30,7 @@ func MeshTrafficPermissionUniversal() {
 				WithArgs([]string{"echo", "--instance", "test-server-tcp"}),
 				WithServiceName("test-server-tcp"),
 				WithProtocol("tcp"),
+				WithLabels(map[string]string{"kuma.io/service": "test-server-tcp", "team": "server-owners"}),
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
@@ -112,19 +114,18 @@ name: mtp-1
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// then
 		trafficAllowed("test-server.svc.mesh.local")
 	})
 
@@ -139,14 +140,15 @@ name: mtp-2
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -167,8 +169,8 @@ name: mtp-3
 mesh: meshtrafficpermission
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       team: server-owners
   from:
     - targetRef:
@@ -203,14 +205,15 @@ name: mtp-4
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then
@@ -239,14 +242,15 @@ name: mtp-5
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then

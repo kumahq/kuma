@@ -11,52 +11,9 @@
    "hosts": [
     {
      "hostName": "*",
-     "routes": [
-      {
-       "route": "route-1",
-       "destinations": [
-        {
-         "tags": {
-          "kuma.io/service": "backend"
-         },
-         "policies": {
-          "HealthCheck": {
-           "type": "HealthCheck",
-           "mesh": "default",
-           "name": "hc-1",
-           "creationTime": "0001-01-01T00:00:00Z",
-           "modificationTime": "0001-01-01T00:00:00Z"
-          }
-         }
-        },
-        {
-         "tags": {
-          "kuma.io/service": "redis"
-         },
-         "policies": {
-          "Timeout": {
-           "type": "Timeout",
-           "mesh": "default",
-           "name": "t-1",
-           "creationTime": "0001-01-01T00:00:00Z",
-           "modificationTime": "0001-01-01T00:00:00Z"
-          }
-         }
-        }
-       ]
-      }
-     ]
+     "routes": []
     }
    ]
   }
- ],
- "policies": {
-  "TrafficLog": {
-   "type": "TrafficLog",
-   "mesh": "default",
-   "name": "tl-1",
-   "creationTime": "0001-01-01T00:00:00Z",
-   "modificationTime": "0001-01-01T00:00:00Z"
-  }
- }
+ ]
 }

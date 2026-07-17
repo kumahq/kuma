@@ -47,21 +47,14 @@ resources:
         - externalservice-2{mesh=mesh-1,version=v1}
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              allow-all-traffic:
-                permissions:
-                - any: true
-                principals:
-                - any: true
-          statPrefix: externalservice-2.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules: {}
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -82,7 +75,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-1:externalservice-2
-                  timeout: 0s
           statPrefix: externalservice-2
       name: externalservice-2_mesh-1
       transportSocket:
@@ -112,21 +104,14 @@ resources:
         - externalservice-2{mesh=mesh-1,version=v2}
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              allow-all-traffic:
-                permissions:
-                - any: true
-                principals:
-                - any: true
-          statPrefix: externalservice-2.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules: {}
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -147,7 +132,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-1:externalservice-2
-                  timeout: 0s
           statPrefix: externalservice-2
       name: externalservice-2_mesh-1
       transportSocket:
@@ -177,21 +161,14 @@ resources:
         - externalservice-2{mesh=mesh-1}
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              allow-all-traffic:
-                permissions:
-                - any: true
-                principals:
-                - any: true
-          statPrefix: externalservice-2.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules: {}
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -212,7 +189,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-1:externalservice-2
-                  timeout: 0s
           statPrefix: externalservice-2
       name: externalservice-2_mesh-1
       transportSocket:

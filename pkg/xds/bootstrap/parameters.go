@@ -16,8 +16,7 @@ type KumaDpBootstrap struct {
 }
 
 type NetworkingConfig struct {
-	CorefileTemplate []byte
-	Address          string
+	Address string
 }
 
 type AggregateMetricsConfig struct {

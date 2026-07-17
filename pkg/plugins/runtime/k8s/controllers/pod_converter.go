@@ -31,15 +31,13 @@ var (
 )
 
 type PodConverter struct {
-	ServiceGetter       kube_client.Reader
-	NodeGetter          kube_client.Reader
-	ResourceConverter   k8s_common.Converter
-	InboundConverter    InboundConverter
-	Zone                string
-	SystemNamespace     string
-	Mode                config_core.CpMode
-	KubeOutboundsAsVIPs bool
-	WorkloadLabels      []string
+	NodeGetter        kube_client.Reader
+	ResourceConverter k8s_common.Converter
+	InboundConverter  InboundConverter
+	Zone              string
+	SystemNamespace   string
+	Mode              config_core.CpMode
+	WorkloadLabels    []string
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -47,13 +45,12 @@ func (p *PodConverter) PodToDataplane(
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
 	mesh *core_mesh.MeshResource,
 ) error {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = mesh.Meta.GetName()
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, mesh.Spec.MeshServicesMode())
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services)
 	if err != nil {
 		return err
 	}
@@ -198,8 +195,6 @@ func (p *PodConverter) dataplaneFor(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
-	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
 	annotations := metadata.Annotations(pod.Annotations)
@@ -325,8 +320,8 @@ func (p *PodConverter) dataplaneFor(
 			// inbound tags are enabled each service produces a distinctly tagged
 			// inbound with its own Ready/Ignored state; deduplication would drop
 			// one of them (e.g. keep an Ignored inbound over a Ready one), so we
-			// keep every inbound like the non-Exclusive path does.
-			if msMode == mesh_proto.Mesh_MeshServices_Exclusive && p.InboundConverter.InboundTagsDisabled {
+			// keep every inbound like the tagged path does.
+			if p.InboundConverter.InboundTagsDisabled {
 				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
 				if err != nil {
 					return nil, err
@@ -340,33 +335,31 @@ func (p *PodConverter) dataplaneFor(
 			dataplane.Networking.Inbound = ifaces
 		}
 
-		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
-			// portSvc tracks which service already claimed each address:port to produce
-			// actionable conflict messages instead of generic validator errors.
-			type portEntry struct {
-				svcName string
-				typ     mesh_proto.Dataplane_Networking_Listener_Type
+		// portSvc tracks which service already claimed each address:port to produce
+		// actionable conflict messages instead of generic validator errors.
+		type portEntry struct {
+			svcName string
+			typ     mesh_proto.Dataplane_Networking_Listener_Type
+		}
+		portSvc := map[string]portEntry{}
+		for _, zpSvc := range zoneProxyServices {
+			listeners, lErr := ListenersForService(pod, zpSvc)
+			if lErr != nil {
+				return nil, lErr
 			}
-			portSvc := map[string]portEntry{}
-			for _, zpSvc := range zoneProxyServices {
-				listeners, lErr := ListenersForService(pod, zpSvc)
-				if lErr != nil {
-					return nil, lErr
-				}
-				for _, l := range listeners {
-					key := fmt.Sprintf("%s:%d", l.Address, l.Port)
-					if existing, ok := portSvc[key]; ok {
-						if existing.typ != l.Type {
-							return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
-								l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
-						}
-						converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
-							"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
-						continue
+			for _, l := range listeners {
+				key := fmt.Sprintf("%s:%d", l.Address, l.Port)
+				if existing, ok := portSvc[key]; ok {
+					if existing.typ != l.Type {
+						return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
+							l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
 					}
-					portSvc[key] = portEntry{zpSvc.Name, l.Type}
-					dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
+					converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
+						"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
+					continue
 				}
+				portSvc[key] = portEntry{zpSvc.Name, l.Type}
+				dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
 			}
 		}
 
@@ -381,14 +374,6 @@ func (p *PodConverter) dataplaneFor(
 				dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
 			}
 		}
-	}
-
-	if !p.KubeOutboundsAsVIPs {
-		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, tp.ReachableServices)
-		if err != nil {
-			return nil, err
-		}
-		dataplane.Networking.Outbound = ofaces
 	}
 
 	metrics, err := MetricsFor(pod)

@@ -73,10 +73,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				continue
 			}
 
-			isExternalService := xdsCtx.Mesh.IsExternalService(service)
-			if len(xdsCtx.Mesh.Resources.TrafficPermissions().Items) > 0 {
-				isExternalService = route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
-			}
+			isExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
 
 			matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 
@@ -229,7 +226,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	destProtocol := core_meta.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
 	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
-	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
 		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, false, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}, len(meshCtx.CAsByTrustDomain) > 0),
@@ -268,7 +265,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 	return buildClusterResource(
 		dest.Destination,
-		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol, dest).Configure(
+		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol).Configure(
 			clusters.ProvidedEndpointCluster(info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
@@ -281,15 +278,9 @@ func newClusterBuilder(
 	version core_xds.APIVersion,
 	name string,
 	protocol core_meta.Protocol,
-	dest *route.Destination,
 ) *clusters.ClusterBuilder {
-	var timeout *mesh_proto.Timeout_Conf
-	if timeoutResource := timeoutPolicyFor(dest); timeoutResource != nil {
-		timeout = timeoutResource.Spec.GetConf()
-	}
-
 	builder := clusters.NewClusterBuilder(version, name).Configure(
-		clusters.Timeout(timeout, protocol),
+		clusters.Timeout(nil, protocol),
 	)
 
 	// TODO(jpeach) OutboundProxyGenerator unconditionally
@@ -361,12 +352,4 @@ func RouteDestinationsMutable(entries []route.Entry) []*route.Destination {
 	}
 
 	return destinations
-}
-
-func timeoutPolicyFor(dest *route.Destination) *core_mesh.TimeoutResource {
-	if policy, ok := dest.Policies[core_mesh.TimeoutType]; ok {
-		return policy.(*core_mesh.TimeoutResource)
-	}
-
-	return nil // TODO(jpeach) default timeout policy
 }

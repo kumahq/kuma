@@ -4,9 +4,9 @@ mesh: mesh-1
 name: mtp-1
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v1
   from:
     - targetRef:
@@ -31,8 +31,9 @@ mesh: mesh-1
 name: mtp-3
 spec:
   targetRef:
-    kind: MeshService
-    name: web
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
   from:
     - targetRef:
         kind: Mesh
@@ -44,8 +45,8 @@ mesh: mesh-1
 name: mtp-4
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       version: v1
   from:
     - targetRef:
@@ -58,8 +59,9 @@ mesh: mesh-1
 name: mtp-5
 spec:
   targetRef:
-    kind: MeshService
-    name: backend
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
   from:
     - targetRef:
         kind: Mesh
@@ -71,9 +73,9 @@ mesh: mesh-1
 name: mtp-6
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v2
   from:
     - targetRef:
@@ -86,9 +88,9 @@ mesh: mesh-1
 name: mtp-7
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       env: dev
   from:
     - targetRef:

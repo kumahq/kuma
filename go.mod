@@ -10,7 +10,6 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20260622121138-ddf65ac69581
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/cilium/ebpf v0.22.0
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.9.1
 	github.com/emicklei/go-restful/v3 v3.13.0
@@ -40,7 +39,6 @@ require (
 	github.com/josephburnett/jd/v2 v2.5.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/miekg/dns v1.1.72
-	github.com/moby/sys/mountinfo v0.7.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.1
@@ -97,7 +95,7 @@ require (
 	sigs.k8s.io/controller-tools v0.21.0
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.6.0
-	sigs.k8s.io/gateway-api/conformance v1.6.0
+	sigs.k8s.io/gateway-api/conformance v0.0.0-20260603141352-8f69037cd891
 	sigs.k8s.io/yaml v1.6.0
 )
 

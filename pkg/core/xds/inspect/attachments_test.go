@@ -59,12 +59,20 @@ var _ = Describe("GroupByAttachment", func() {
 		},
 		Entry("group by inbounds", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficPermissions: core_xds.TrafficPermissionMap{
-					inbound("192.168.0.1", 80, 81): {Meta: meta1},
-					inbound("192.168.0.2", 80, 81): {Meta: meta2},
-					inbound("192.168.0.2", 90, 91): {Meta: meta3},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
+							inbound("192.168.0.1", 80, 81): {
+								&core_mesh.HealthCheckResource{Meta: meta1},
+							},
+							inbound("192.168.0.2", 80, 81): {
+								&core_mesh.HealthCheckResource{Meta: meta2},
+							},
+							inbound("192.168.0.2", 90, 91): {
+								&core_mesh.HealthCheckResource{Meta: meta3},
+							},
+						},
+					},
 					core_mesh.CircuitBreakerType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.2", 90, 91): {
@@ -111,18 +119,18 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
-					core_mesh.TrafficPermissionType: []core_model.Resource{
-						&core_mesh.TrafficPermissionResource{Meta: meta1},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
-					core_mesh.TrafficPermissionType: []core_model.Resource{
-						&core_mesh.TrafficPermissionResource{Meta: meta2},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta2},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
-					core_mesh.TrafficPermissionType: []core_model.Resource{
-						&core_mesh.TrafficPermissionResource{Meta: meta3},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta3},
 					},
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Meta: meta5},
@@ -174,19 +182,23 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				Timeouts: core_xds.TimeoutMap{
-					outbound("192.168.0.1", 80): {Meta: meta1},
-					outbound("192.168.0.2", 80): {Meta: meta2},
-					outbound("192.168.0.2", 90): {Meta: meta3},
-					outbound("192.168.0.3", 90): {Meta: meta4},
-				},
-				TrafficRoutes: core_xds.RouteMap{
-					outbound("192.168.0.1", 80): {Meta: meta1},
-					outbound("192.168.0.2", 80): {Meta: meta2},
-					outbound("192.168.0.2", 90): {Meta: meta3},
-					outbound("192.168.0.4", 90): {Meta: meta5},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
+							outbound("192.168.0.1", 80): {
+								&core_mesh.HealthCheckResource{Meta: meta1},
+							},
+							outbound("192.168.0.2", 80): {
+								&core_mesh.HealthCheckResource{Meta: meta2},
+							},
+							outbound("192.168.0.2", 90): {
+								&core_mesh.HealthCheckResource{Meta: meta3},
+							},
+							outbound("192.168.0.4", 90): {
+								&core_mesh.HealthCheckResource{Meta: meta5},
+							},
+						},
+					},
 					core_mesh.CircuitBreakerType: {
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.4", 90): {
@@ -205,32 +217,18 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"}: {
-					core_mesh.TimeoutType: []core_model.Resource{
-						&core_mesh.TimeoutResource{Meta: meta1},
-					},
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta1},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:80", Service: "postgres"}: {
-					core_mesh.TimeoutType: []core_model.Resource{
-						&core_mesh.TimeoutResource{Meta: meta2},
-					},
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta2},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta2},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
-					core_mesh.TimeoutType: []core_model.Resource{
-						&core_mesh.TimeoutResource{Meta: meta3},
-					},
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta3},
-					},
-				},
-				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.3:90", Service: "elastic"}: {
-					core_mesh.TimeoutType: []core_model.Resource{
-						&core_mesh.TimeoutResource{Meta: meta4},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta3},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
@@ -240,8 +238,8 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.CircuitBreakerType: []core_model.Resource{
 						&core_mesh.CircuitBreakerResource{Meta: meta6},
 					},
-					core_mesh.TrafficRouteType: []core_model.Resource{
-						&core_mesh.TrafficRouteResource{Meta: meta5},
+					core_mesh.HealthCheckType: []core_model.Resource{
+						&core_mesh.HealthCheckResource{Meta: meta5},
 					},
 				},
 			},
@@ -249,10 +247,6 @@ var _ = Describe("GroupByAttachment", func() {
 		Entry("group by service", testCase{
 			dpNetworking: &mesh_proto.Dataplane_Networking{},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficLogs: core_xds.TrafficLogMap{
-					"backend":  &core_mesh.TrafficLogResource{Meta: meta1},
-					"postgres": &core_mesh.TrafficLogResource{Meta: meta2},
-				},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.TrafficLogType: {
 						ServicePolicies: map[core_xds.ServiceName][]core_model.Resource{
@@ -264,16 +258,6 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 			},
 			expected: inspect.AttachmentMap{
-				inspect.Attachment{Type: inspect.Service, Name: "backend", Service: "backend"}: {
-					core_mesh.TrafficLogType: []core_model.Resource{
-						&core_mesh.TrafficLogResource{Meta: meta1},
-					},
-				},
-				inspect.Attachment{Type: inspect.Service, Name: "postgres", Service: "postgres"}: {
-					core_mesh.TrafficLogType: []core_model.Resource{
-						&core_mesh.TrafficLogResource{Meta: meta2},
-					},
-				},
 				inspect.Attachment{Type: inspect.Service, Name: "redis", Service: "redis"}: {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Meta: meta6},
@@ -283,8 +267,6 @@ var _ = Describe("GroupByAttachment", func() {
 		}),
 		Entry("group by dataplane", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficTrace:  &core_mesh.TrafficTraceResource{Meta: meta1},
-				ProxyTemplate: &core_mesh.ProxyTemplateResource{Meta: meta2},
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.TrafficTraceType: {
 						DataplanePolicies: []core_model.Resource{
@@ -296,11 +278,7 @@ var _ = Describe("GroupByAttachment", func() {
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Dataplane, Name: ""}: {
 					core_mesh.TrafficTraceType: []core_model.Resource{
-						&core_mesh.TrafficTraceResource{Meta: meta1},
 						&core_mesh.TrafficTraceResource{Meta: meta3},
-					},
-					core_mesh.ProxyTemplateType: []core_model.Resource{
-						&core_mesh.ProxyTemplateResource{Meta: meta2},
 					},
 				},
 			},
@@ -356,29 +334,39 @@ var _ = Describe("GroupByPolicy", func() {
 				},
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficPermissions: core_xds.TrafficPermissionMap{
-					inbound("192.168.0.1", 80, 81): &core_mesh.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
-					},
-					inbound("192.168.0.2", 90, 91): &core_mesh.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
-					},
-					inbound("192.168.0.3", 80, 81): &core_mesh.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{Name: "tp-2", Mesh: "default"},
+				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
+							inbound("192.168.0.1", 80, 81): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
+								},
+							},
+							inbound("192.168.0.2", 90, 91): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
+								},
+							},
+							inbound("192.168.0.3", 80, 81): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-2", Mesh: "default"},
+								},
+							},
+						},
 					},
 				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.TrafficPermissionType,
-					Key:  core_model.ResourceKey{Name: "tp-1", Mesh: "default"},
+					Type: core_mesh.HealthCheckType,
+					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
 					{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
 				},
 				inspect.PolicyKey{
-					Type: core_mesh.TrafficPermissionType,
-					Key:  core_model.ResourceKey{Name: "tp-2", Mesh: "default"},
+					Type: core_mesh.HealthCheckType,
+					Key:  core_model.ResourceKey{Name: "t-2", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
@@ -404,53 +392,30 @@ var _ = Describe("GroupByPolicy", func() {
 				},
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
-				Timeouts: core_xds.TimeoutMap{
-					outbound("192.168.0.1", 80): &core_mesh.TimeoutResource{
-						Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
-					},
-					outbound("192.168.0.2", 90): &core_mesh.TimeoutResource{
-						Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
+				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					core_mesh.HealthCheckType: {
+						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
+							outbound("192.168.0.1", 80): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
+								},
+							},
+							outbound("192.168.0.2", 90): {
+								&core_mesh.HealthCheckResource{
+									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
+								},
+							},
+						},
 					},
 				},
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.TimeoutType,
+					Type: core_mesh.HealthCheckType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},
 					{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
-				},
-			},
-		}),
-		Entry("group by service policies", testCase{
-			dpNetworking: &mesh_proto.Dataplane_Networking{},
-			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficLogs: core_xds.TrafficLogMap{
-					"backend": &core_mesh.TrafficLogResource{
-						Meta: &test_model.ResourceMeta{Name: "tl-1", Mesh: "mesh-1"},
-					},
-					"postgres": &core_mesh.TrafficLogResource{
-						Meta: &test_model.ResourceMeta{Name: "tl-1", Mesh: "mesh-1"},
-					},
-					"redis": &core_mesh.TrafficLogResource{
-						Meta: &test_model.ResourceMeta{Name: "tl-2", Mesh: "mesh-1"},
-					},
-				},
-			},
-			expected: inspect.AttachmentsByPolicy{
-				inspect.PolicyKey{
-					Type: core_mesh.TrafficLogType,
-					Key:  core_model.ResourceKey{Name: "tl-1", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "backend", Service: "backend"},
-					{Type: inspect.Service, Name: "postgres", Service: "postgres"},
-				},
-				inspect.PolicyKey{
-					Type: core_mesh.TrafficLogType,
-					Key:  core_model.ResourceKey{Name: "tl-2", Mesh: "mesh-1"},
-				}: {
-					{Type: inspect.Service, Name: "redis", Service: "redis"},
 				},
 			},
 		}),

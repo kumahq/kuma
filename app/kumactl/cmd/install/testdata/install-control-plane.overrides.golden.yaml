@@ -124,7 +124,6 @@ rules:
       - traffictraces
       - meshgateways
       - meshgatewayroutes
-      - meshgatewayinstances
       - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
@@ -162,8 +161,6 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - meshgatewayinstances/status
-      - meshgatewayinstances/finalizers
       - meshes/finalizers
       - dataplanes/finalizers
     verbs:
@@ -449,7 +446,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: 89f763d2b27e31d39f08410650331a8e49d955fafa9576a23e459a187b0660fe
+        checksum/tls-secrets: b3170f10304287f4ac5903d7085fcf047a3a125b342c87d7da5df65f36450d2a
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -948,7 +945,6 @@ webhooks:
           - dataplanes
           - externalservices
           - faultinjections
-          - meshgatewayinstances
           - healthchecks
           - meshes
           - meshgateways

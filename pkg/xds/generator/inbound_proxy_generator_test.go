@@ -80,42 +80,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 				},
 				SecretsTracker: envoy_common.NewSecretsTracker(xdsCtx.Mesh.Resource.Meta.GetName(), []string{xdsCtx.Mesh.Resource.Meta.GetName()}),
 				APIVersion:     envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficPermissions: model.TrafficPermissionMap{
-						mesh_proto.InboundInterface{
-							DataplaneAdvertisedIP: "192.168.0.1",
-							DataplaneIP:           "192.168.0.1",
-							DataplanePort:         80,
-							WorkloadIP:            "192.168.0.1",
-							WorkloadPort:          8080,
-							InboundName:           "80",
-						}: &core_mesh.TrafficPermissionResource{
-							Meta: &test_model.ResourceMeta{
-								Name: "tp-1",
-								Mesh: "default",
-							},
-							Spec: &mesh_proto.TrafficPermission{
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "web1",
-											"version":         "1.0",
-										},
-									},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "backend1",
-											"env":             "dev",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Metadata: given.dataplaneMeta,
+				Metadata:       given.dataplaneMeta,
 				InternalAddresses: []model.InternalAddress{
 					{AddressPrefix: "100.64.0.0", PrefixLen: 16},
 					{AddressPrefix: "fc00::/7", PrefixLen: 128},

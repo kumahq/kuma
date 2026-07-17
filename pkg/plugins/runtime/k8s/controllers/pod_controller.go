@@ -2,8 +2,6 @@ package controllers
 
 import (
 	"context"
-	"sync"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -45,57 +43,7 @@ const (
 	// FailedToGenerateKumaDataplaneReason is added to an event when
 	// a Dataplane cannot be generated or is not valid.
 	FailedToGenerateKumaDataplaneReason = "FailedToGenerateKumaDataplane"
-	// ZoneProxyListenersSkippedReason is added to a warning event when
-	// zone proxy Services are found but MeshServices mode is not Exclusive,
-	// so listener generation is skipped.
-	ZoneProxyListenersSkippedReason = "ZoneProxyListenersSkipped"
 )
-
-// errSamplerWindow is the dedup window for parse-error log sampling.
-const errSamplerWindow = time.Minute
-
-// parseSampler rate-limits repeated "failed to parse Dataplane" errors so a
-// single malformed resource does not flood the log on every reconcile.
-var parseSampler = newErrSampler()
-
-// errSampler allows at most one Error log per unique key per errSamplerWindow.
-// It prevents tight loops from flooding the log when the same parse error
-// repeats for the same resource across reconcile passes.
-// The key should be a stable identifier (e.g. namespace/name), not include
-// variable error text - that avoids cardinality explosions from embedded
-// resource names in error messages.
-type errSampler struct {
-	mu         sync.Mutex
-	last       map[string]time.Time
-	suppressed map[string]int
-}
-
-func newErrSampler() *errSampler {
-	return &errSampler{
-		last:       map[string]time.Time{},
-		suppressed: map[string]int{},
-	}
-}
-
-// allow reports whether the caller should log for key.
-// The second return value is the number of calls suppressed since the last
-// allowed log (zero on first occurrence in a window).
-func (s *errSampler) allow(key string) (bool, int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	now := time.Now()
-	if t, ok := s.last[key]; ok {
-		if now.Sub(t) < errSamplerWindow {
-			s.suppressed[key]++
-			return false, 0
-		}
-		// window expired - fall through and re-allow
-	}
-	suppressed := s.suppressed[key]
-	s.last[key] = now
-	s.suppressed[key] = 0
-	return true, suppressed
-}
 
 // PodReconciler reconciles a Pod object
 type PodReconciler struct {
@@ -142,12 +90,6 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		return kube_ctrl.Result{}, r.reconcileZoneEgress(ctx, pod, log)
 	}
 
-	// If we are using a builtin gateway, we want to generate a builtin gateway
-	// dataplane.
-	if name, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaGatewayAnnotation); name == metadata.AnnotationBuiltin {
-		return kube_ctrl.Result{}, r.reconcileBuiltinGatewayDataplane(ctx, pod, log)
-	}
-
 	// only Pods with injected Kuma need a Dataplane descriptor
 	injected, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectedAnnotation)
 	if err != nil {
@@ -190,16 +132,7 @@ func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.P
 		return err
 	}
 
-	var others []*mesh_k8s.Dataplane
-	// we don't need other Dataplane objects when outbounds are stored in ConfigMap
-	if !r.PodConverter.KubeOutboundsAsVIPs {
-		others, err = r.findOtherDataplanes(ctx, pod, &ns)
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := r.createOrUpdateDataplane(ctx, pod, &ns, services, others); err != nil {
+	if err := r.createOrUpdateDataplane(ctx, pod, &ns, services); err != nil {
 		return err
 	}
 	return nil
@@ -221,21 +154,6 @@ func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_mode
 	}
 	log.Info("Object deleted")
 	return nil
-}
-
-func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
-	if pod.Status.PodIP == "" {
-		dp := &mesh_k8s.Dataplane{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
-		}
-		return r.deleteObjectIfExist(ctx, dp, "pod IP is empty", log)
-	}
-
-	ns := kube_core.Namespace{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
-		return errors.Wrap(err, "unable to get Namespace for Pod")
-	}
-	return r.createOrUpdateBuiltinGatewayDataplane(ctx, pod, &ns)
 }
 
 func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
@@ -339,42 +257,11 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 	return matchingServices, nil
 }
 
-func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) ([]*mesh_k8s.Dataplane, error) {
-	// List all Dataplanes
-	allDataplanes := &mesh_k8s.DataplaneList{}
-	if err := r.List(ctx, allDataplanes); err != nil {
-		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
-		log.Error(err, "unable to list Dataplanes")
-		return nil, err
-	}
-
-	// only consider Dataplanes in the same Mesh as Pod
-	mesh := util_k8s.MeshOfByLabelOrAnnotation(converterLog, pod, ns)
-	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
-	for i := range allDataplanes.Items {
-		dataplane := allDataplanes.Items[i]
-		dp := core_mesh.NewDataplaneResource()
-		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
-			name := kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: dataplane.Name}
-			if ok, suppressed := parseSampler.allow(name.String()); ok {
-				converterLog.Error(err, "failed to parse Dataplane", "dataplane_ref", name.String(), "suppressed_count", suppressed)
-			}
-			continue // one invalid Dataplane definition should not break the entire mesh
-		}
-		if dataplane.Mesh == mesh {
-			otherDataplanes = append(otherDataplanes, &dataplane)
-		}
-	}
-
-	return otherDataplanes, nil
-}
-
 func (r *PodReconciler) createOrUpdateDataplane(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	ns *kube_core.Namespace,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
 ) error {
 	meshName := util_k8s.MeshOfByLabelOrAnnotation(r.Log, pod, ns)
 	k8sMesh := mesh_k8s.Mesh{}
@@ -393,7 +280,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh); err != nil {
+		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, mesh); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
@@ -409,16 +296,6 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		}
 
 		return err
-	}
-	if operationResult != kube_controllerutil.OperationResultNone &&
-		mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		for _, svc := range services {
-			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
-				r.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
-					"Zone proxy Services found but spec.meshServices.mode is not set to Exclusive; set spec.meshServices.mode: Exclusive on the Mesh to enable zone proxy listener generation")
-				break
-			}
-		}
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:

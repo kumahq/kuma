@@ -15,8 +15,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -51,8 +50,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -77,8 +75,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: Prometheus
@@ -94,8 +91,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: Prometheus
@@ -113,8 +109,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   applications:
     - port: 95599
@@ -130,8 +125,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -151,8 +145,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -170,8 +163,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -189,8 +181,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -208,8 +199,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -227,8 +217,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -245,8 +234,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -268,8 +256,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -288,8 +275,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry

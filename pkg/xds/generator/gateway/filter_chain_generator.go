@@ -17,7 +17,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -68,7 +67,7 @@ func (g *HTTPFilterChainGenerator) Generate(
 
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
-	chain := newHTTPFilterChain(ctx.Mesh, info)
+	chain := newHTTPFilterChain(info)
 
 	chain.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.EnvoyListenerName + ":*"))
 	return nil, []*envoy_listeners.FilterChainBuilder{chain}, nil
@@ -83,7 +82,7 @@ func newTLSFilterChain(
 	log.V(1).Info("generating filter chain", "hostname", listenerHostname.Hostname)
 
 	routeName := listenerHostname.EnvoyRouteName(info.Listener.EnvoyListenerName)
-	builder := newHTTPFilterChain(ctx.Mesh, info).Configure(
+	builder := newHTTPFilterChain(info).Configure(
 		envoy_listeners.HttpDynamicRoute(routeName),
 	)
 
@@ -190,7 +189,7 @@ func newDownstreamTypedConfig(alpnProtocols []string) *envoy_extensions_transpor
 	return conf
 }
 
-func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
+func newHTTPFilterChain(info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
 	service := info.Proxy.Dataplane.IdentifyingName(false)
 
@@ -229,31 +228,9 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		),
 	)
 
-	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
+	// Logging has to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(
-			ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace),
-			service,
-			envoy_common.TrafficDirectionUnspecified,
-			"",
-			true,
-		),
-		// In mesh proxies, the access log is configured on the outbound
-		// listener, which is why we index the Logs slice by destination
-		// service name.  A Gateway listener by definition forwards traffic
-		// to multiple destinations, so rather than making up some arbitrary
-		// rules about which destination service we should accept here, we
-		// match the log policy for the generic pass through service. This
-		// will be the only policy available for a Dataplane with no outbounds.
-		envoy_listeners.HttpAccessLog(
-			ctx.Resource.Meta.GetName(),
-			envoy_common.TrafficDirectionInbound,
-			service,                // Source service is the gateway service.
-			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
-			info.Proxy,
-		),
 	)
 
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
@@ -325,21 +302,12 @@ func newSecretError(i int, msg string) error {
 }
 
 func newTCPFilterChain(
-	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 	service string,
 	clusters []envoy_common.Cluster,
 ) *envoy_listeners.FilterChainBuilder {
 	return envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 		envoy_listeners.TcpProxyDeprecated(service, clusters...),
-		envoy_listeners.NetworkAccessLog(
-			ctx.Mesh.Resource.Meta.GetName(),
-			envoy_common.TrafficDirectionInbound,
-			service,                // Source service is the gateway service.
-			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
-			proxy,
-		),
 	)
 }
 
@@ -387,7 +355,7 @@ func (g *TCPFilterChainGenerator) Generate(
 			clusters := clustersByHostname[filter.Hostname]
 			sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
-			builder := newTCPFilterChain(ctx, info.Proxy, service, clusters)
+			builder := newTCPFilterChain(info.Proxy, service, clusters)
 			tlsResources, err := configureTLS(
 				ctx,
 				info,
@@ -405,7 +373,7 @@ func (g *TCPFilterChainGenerator) Generate(
 		}
 		return resources, filterChains, nil
 	default:
-		builder := newTCPFilterChain(ctx, info.Proxy, service, allClusters)
+		builder := newTCPFilterChain(info.Proxy, service, allClusters)
 		return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
 	}
 }

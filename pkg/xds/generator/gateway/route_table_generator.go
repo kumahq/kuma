@@ -5,14 +5,12 @@ import (
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/route"
 )
 
@@ -73,13 +71,6 @@ func GenerateVirtualHost(
 			routeBuilder.Configure(
 				envoy_routes.RouteSetRewriteHostToBackendHostname(e.Rewrite.HostToBackendHostname),
 				envoy_routes.RouteReplaceHostHeader(pointer.Deref(e.Rewrite.ReplaceHostname)),
-			)
-		}
-
-		if t := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.TimeoutType); t != nil {
-			timeout := t.(*core_mesh.TimeoutResource)
-			routeBuilder.Configure(
-				envoy_routes.RouteActionRequestTimeout(timeout.Spec.GetConf().GetHttp().GetRequestTimeout().AsDuration()),
 			)
 		}
 

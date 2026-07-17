@@ -3,7 +3,6 @@ package context
 import (
 	"encoding/base64"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -130,36 +129,6 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-}
-
-func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
-	if tt == nil {
-		return nil
-	}
-	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
-		logger.Info("Tracing backend is not found. Ignoring.",
-			"backendName", tt.Spec.GetConf().GetBackend(),
-			"trafficTraceName", tt.GetMeta().GetName(),
-			"trafficTraceMesh", tt.GetMeta().GetMesh())
-		return nil
-	} else {
-		return tb
-	}
-}
-
-func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
-	if tl == nil {
-		return nil
-	}
-	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
-		logger.Info("Logging backend is not found. Ignoring.",
-			"backendName", tl.Spec.GetConf().GetBackend(),
-			"trafficLogName", tl.GetMeta().GetName(),
-			"trafficLogMesh", tl.GetMeta().GetMesh())
-		return nil
-	} else {
-		return lb
-	}
 }
 
 func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {

@@ -3,9 +3,9 @@ mesh: mesh-1
 name: mtp-1
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: external-database
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: external-database
       version: v1
   from:
     - targetRef:

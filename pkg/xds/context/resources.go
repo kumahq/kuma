@@ -73,26 +73,6 @@ func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
 	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
 }
 
-func (r Resources) TrafficTraces() *core_mesh.TrafficTraceResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficTraceType).(*core_mesh.TrafficTraceResourceList)
-}
-
-func (r Resources) TrafficRoutes() *core_mesh.TrafficRouteResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
-}
-
-func (r Resources) TrafficPermissions() *core_mesh.TrafficPermissionResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
-}
-
-func (r Resources) TrafficLogs() *core_mesh.TrafficLogResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficLogType).(*core_mesh.TrafficLogResourceList)
-}
-
-func (r Resources) Timeouts() *core_mesh.TimeoutResourceList {
-	return r.ListOrEmpty(core_mesh.TimeoutType).(*core_mesh.TimeoutResourceList)
-}
-
 func (r Resources) RateLimits() *core_mesh.RateLimitResourceList {
 	return r.ListOrEmpty(core_mesh.RateLimitType).(*core_mesh.RateLimitResourceList)
 }
@@ -119,10 +99,6 @@ func (r Resources) Gateways() *core_mesh.MeshGatewayResourceList {
 
 func (r Resources) GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
 	return r.ListOrEmpty(core_mesh.MeshGatewayRouteType).(*core_mesh.MeshGatewayRouteResourceList)
-}
-
-func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
-	return r.ListOrEmpty(core_mesh.ProxyTemplateType).(*core_mesh.ProxyTemplateResourceList)
 }
 
 func (r Resources) Secrets() *system.SecretResourceList {

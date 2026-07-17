@@ -9,9 +9,6 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	"github.com/kumahq/kuma/v3/pkg/core/logs"
-	manager_dataplane "github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
-	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -24,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -55,8 +51,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	if err != nil {
 		return nil, errors.Wrap(err, "could not match policies")
 	}
-
-	matchedPolicies.TrafficRoutes = routing.TrafficRoutes
 
 	meshName := meshContext.Resource.GetMeta().GetName()
 
@@ -96,22 +90,16 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	tpEnabled bool,
 	bindOutbounds bool,
 ) (*core_xds.Routing, []*xds_types.Outbound) {
-	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
-
 	outbounds := p.resolveVIPOutbounds(meshContext, dataplane, tpEnabled, bindOutbounds)
-
-	// pick a single the most specific route for each outbound interface
-	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
 
 	endpointMap := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshContext.Resource,
-		matchedExternalServices,
+		meshContext.Resources.ExternalServices().Items,
 		meshContext.DataSourceLoader,
 		p.Zone,
 	)
 	routing := &core_xds.Routing{
-		TrafficRoutes:                  routes,
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
 	}
@@ -193,20 +181,9 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 }
 
 func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*core_xds.MatchedPolicies, error) {
-	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, meshContext.Resource)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch additional inbounds")
-	}
-	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-
 	resources := meshContext.Resources
 	matchedPolicies := &core_xds.MatchedPolicies{
-		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
-		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
-		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, resources.TrafficTraces().Items),
-		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
-		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
-		Dynamic:            core_xds.PluginOriginatedPolicies{},
+		Dynamic: core_xds.PluginOriginatedPolicies{},
 	}
 	opts := []core_plugins.MatchedPoliciesOption{}
 	if p.IncludeShadow {

@@ -9,7 +9,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	policies_generator "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/generator"
-	util_envoy "github.com/kumahq/kuma/v3/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/egress"
@@ -23,6 +22,9 @@ type ProxyTemplateGenerator struct {
 }
 
 func (g *ProxyTemplateGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	if len(g.ProxyTemplate.GetConf().GetResources()) > 0 || len(g.ProxyTemplate.GetConf().GetModifications()) > 0 {
+		return nil, fmt.Errorf("ProxyTemplate.Conf.Resources and ProxyTemplate.Conf.Modifications are no longer applied; use MeshProxyPatch instead")
+	}
 	resources := model.NewResourceSet()
 	for i, name := range g.ProxyTemplate.GetConf().GetImports() {
 		generator := &ProxyTemplateProfileSource{ProfileName: name}
@@ -31,33 +33,6 @@ func (g *ProxyTemplateGenerator) Generate(ctx context.Context, xdsCtx xds_contex
 		} else {
 			resources.AddSet(rs)
 		}
-	}
-	generator := &ProxyTemplateRawSource{Resources: g.ProxyTemplate.GetConf().GetResources()}
-	if rs, err := generator.Generate(xdsCtx, proxy); err != nil {
-		return nil, fmt.Errorf("resources: %s", err)
-	} else {
-		resources.AddSet(rs)
-	}
-	return resources, nil
-}
-
-type ProxyTemplateRawSource struct {
-	Resources []*mesh_proto.ProxyTemplateRawResource
-}
-
-func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, _ *model.Proxy) (*model.ResourceSet, error) {
-	resources := model.NewResourceSet()
-	for i, r := range s.Resources {
-		res, err := util_envoy.ResourceFromYaml(r.Resource)
-		if err != nil {
-			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
-		}
-
-		resources.Add(&model.Resource{
-			Name:     r.Name,
-			Origin:   metadata.OriginProxyTemplateRaw,
-			Resource: res,
-		})
 	}
 	return resources, nil
 }
@@ -80,9 +55,7 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		PrometheusEndpointGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
-		OutboundProxyGenerator{},
 		DirectAccessProxyGenerator{},
-		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
 		ZoneProxyListenerGenerator{},

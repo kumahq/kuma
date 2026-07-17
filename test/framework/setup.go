@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
+	common_k8s "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/tls"
 	tproxy_consts "github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
@@ -142,7 +143,10 @@ kind: Mesh
 metadata:
   name: %s
 `, name)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
 }
 
 func MeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
@@ -155,7 +159,10 @@ spec:
   meshServices:
     mode: %s
 `, name, meshServicesEnabled)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
 }
 
 func MTLSMeshKubernetes(name string) InstallFunc {
@@ -171,7 +178,10 @@ spec:
       - name: ca-1
         type: builtin
 `, name)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
 }
 
 func MTLSMeshKubernetesWithEgressRouting(name string) InstallFunc {
@@ -189,7 +199,57 @@ spec:
       - name: ca-1
         type: builtin
 `, name)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
+}
+
+func WaitMeshKubernetesReady(name string) InstallFunc {
+	return func(cluster Cluster) error {
+		_, err := retry.DoWithRetryContextE(
+			cluster.GetTesting(),
+			context.Background(),
+			fmt.Sprintf("wait for mesh %q defaults to be generated", name),
+			DefaultRetries,
+			DefaultTimeout,
+			func() (string, error) {
+				out, err := k8s.RunKubectlAndGetOutputContextE(
+					cluster.GetTesting(),
+					context.Background(),
+					cluster.GetKubectlOptions(),
+					"get",
+					"mesh",
+					name,
+					"-o",
+					"json",
+				)
+				if err != nil {
+					return "", err
+				}
+
+				var mesh struct {
+					Metadata struct {
+						Annotations map[string]string `json:"annotations"`
+					} `json:"metadata"`
+				}
+				if err := json.Unmarshal([]byte(out), &mesh); err != nil {
+					return "", err
+				}
+
+				if mesh.Metadata.Annotations[common_k8s.K8sMeshDefaultsGenerated] != "true" {
+					return "", errors.Errorf(
+						"mesh %q defaults annotation %q is not ready yet",
+						name,
+						common_k8s.K8sMeshDefaultsGenerated,
+					)
+				}
+
+				return "", nil
+			},
+		)
+		return err
+	}
 }
 
 func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {

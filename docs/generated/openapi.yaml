@@ -18419,7 +18419,7 @@ components:
                       dependencies:
                         additionalProperties:
                           type: string
-                        description: Versions of other dependencies, i.e. CoreDNS
+                        description: Versions of other dependencies
                         type: object
                       envoy:
                         description: Version of Envoy

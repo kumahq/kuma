@@ -13,17 +13,10 @@ injector:
   applicationProbeProxyPort: 9001
   builtinDNS:
     enabled: true
-    experimentalProxy: true
     port: 15053
   caCertFile: ""
   cniEnabled: false
   containerPatches: []
-  ebpf:
-    bpffsPath: /sys/fs/bpf
-    cgroupPath: /sys/fs/cgroup
-    enabled: false
-    instanceIPEnvVarName: INSTANCE_IP
-    programsSourcePath: /tmp/kuma-ebpf
   exceptions:
     labels:
       openshift.io/build.name: '*'

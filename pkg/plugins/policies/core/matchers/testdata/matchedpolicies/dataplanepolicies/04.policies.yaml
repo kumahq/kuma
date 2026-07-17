@@ -4,9 +4,9 @@ mesh: mesh-1
 name: mtp-1
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v1
       env: dev
       team: mesh

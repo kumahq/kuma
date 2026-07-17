@@ -26,8 +26,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -158,8 +157,7 @@ to:
           healthyPanicThreshold: 90`),
 			Entry("only to targetRef", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: Mesh
@@ -224,8 +222,7 @@ to:
             threshold: 75`),
 			Entry("minimal example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -295,8 +292,7 @@ violations:
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: MeshGatewayRoute
@@ -310,8 +306,7 @@ violations:
 			Entry("from mixed with rules", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -328,8 +323,7 @@ violations:
 			Entry("to mixed with rules", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshServiceSubset
@@ -348,8 +342,7 @@ violations:
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshServiceSubset
@@ -380,8 +373,7 @@ violations:
 			Entry("missing configuration", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -394,8 +386,7 @@ violations:
 			Entry("limits cannot be be equal 0 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -423,8 +414,7 @@ violations:
 			Entry("any outlierDetection's numeric property except 'healthyPanicThreshold' cannot be be 0 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -476,8 +466,7 @@ violations:
 			Entry("any outlierDetection's percentage property cannot be be greater than 100 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -501,8 +490,7 @@ violations:
 			Entry("any outlierDetection's percentage property cannot be be smaller than 0 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -523,8 +511,7 @@ violations:
 			Entry("detectors are not defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -540,8 +527,7 @@ violations:
 			Entry("detector is empty", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -558,8 +544,7 @@ violations:
 			Entry("detector has incorrect values", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService

@@ -76,7 +76,6 @@ func generateGatewayClusters(
 
 func generateEnvoyRouteEntries(
 	meshCtx xds_context.MeshContext,
-	host plugin_gateway.GatewayHost,
 	toRules rules.Rules,
 	resolver resolve.LabelResourceIdentifierResolver,
 ) []route.Entry {
@@ -95,7 +94,7 @@ func generateEnvoyRouteEntries(
 		)
 	}
 
-	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, nil, nil, entries)
+	return entries
 }
 
 func makeTcpRouteEntry(

@@ -81,21 +81,14 @@ resources:
         - externalservice{mesh=mesh-1}
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              allow-all-traffic-1:
-                permissions:
-                - any: true
-                principals:
-                - any: true
-          statPrefix: externalservice.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules: {}
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -116,7 +109,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-1:externalservice
-                  timeout: 0s
           statPrefix: externalservice
       name: externalservice_mesh-1
       transportSocket:
@@ -146,21 +138,14 @@ resources:
         - externalservice{mesh=mesh-2}
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              allow-all-traffic-1:
-                permissions:
-                - any: true
-                principals:
-                - any: true
-          statPrefix: externalservice.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules: {}
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -181,7 +166,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: mesh-2:externalservice
-                  timeout: 0s
           statPrefix: externalservice
       name: externalservice_mesh-2
       transportSocket:

@@ -16,9 +16,6 @@ import (
 	util_net "github.com/kumahq/kuma/v3/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/dynconf"
-	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 type DNSGenerator struct{}
@@ -52,58 +49,28 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 	}
 	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
-	if proxy.Metadata.HasFeature(xds_types.FeatureEmbeddedDNS) {
-		// This is purposefully set to 30s to avoid DNS cache stale with ExternalService and Kong Gateway see: https://github.com/kumahq/kuma/issues/13353.
-		// https://github.com/kumahq/kuma/issues/13463
-		dnsInfo := dpapi.DNSProxyConfig{TTL: 30, Records: []dpapi.DNSRecord{}, ExtraLabels: dnsExtraLabels(proxy)}
-		for name, addresses := range vips {
-			dnsInfo.Records = append(dnsInfo.Records, dpapi.DNSRecord{
-				Name: name,
-				IPs:  addresses,
-			})
-		}
 
-		slices.SortFunc(dnsInfo.Records, func(a, b dpapi.DNSRecord) int {
-			return cmp.Compare(a.Name, b.Name)
+	// This is purposefully set to 30s to avoid DNS cache stale with ExternalService and Kong Gateway see: https://github.com/kumahq/kuma/issues/13353.
+	// https://github.com/kumahq/kuma/issues/13463
+	dnsInfo := dpapi.DNSProxyConfig{TTL: 30, Records: []dpapi.DNSRecord{}, ExtraLabels: dnsExtraLabels(proxy)}
+	for name, addresses := range vips {
+		dnsInfo.Records = append(dnsInfo.Records, dpapi.DNSRecord{
+			Name: name,
+			IPs:  addresses,
 		})
-		bytes, err := json.Marshal(dnsInfo)
-		if err != nil {
-			return nil, err
-		}
-		err = dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("dns", dpapi.PATH), dpapi.PATH, bytes)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
 	}
 
-	listener, err := envoy_listeners.
-		NewInboundListenerBuilder(
-			proxy.APIVersion,
-			"127.0.0.1",
-			uint32(tp.Redirect.DNS.Port),
-			core_xds.SocketAddressProtocolUDP,
-			proxy.Metadata.HasFeature(xds_types.FeatureReusePort),
-		).
-		WithOverwriteName(
-			getNameOrDefault(
-				core_system_names.AsSystemName("dns"),
-				names.GetDNSListenerName(),
-			),
-		).
-		Configure(envoy_listeners.DNS(vips)).
-		Build()
+	slices.SortFunc(dnsInfo.Records, func(a, b dpapi.DNSRecord) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	bytes, err := json.Marshal(dnsInfo)
 	if err != nil {
 		return nil, err
 	}
-
-	resources := core_xds.NewResourceSet()
-	resources.Add(&core_xds.Resource{
-		Name:     names.GetDNSListenerName(),
-		Resource: listener,
-		Origin:   metadata.OriginDNS,
-	})
-	return resources, nil
+	if err := dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("dns", dpapi.PATH), dpapi.PATH, bytes); err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 func dnsExtraLabels(proxy *core_xds.Proxy) map[string]string {

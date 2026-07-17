@@ -62,36 +62,24 @@ type ServiceName = string
 
 type MeshName = string
 
-// RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
-type RouteMap map[mesh_proto.OutboundInterface]*core_mesh.TrafficRouteResource
-
-// TimeoutMap holds the most specific TimeoutResource for each OutboundInterface
-type TimeoutMap map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource
-
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
-// DestinationMap holds a set of selectors for all reachable Dataplanes grouped by service name.
-// DestinationMap is based on ServiceName and not on the OutboundInterface because TrafficRoute can introduce new service destinations that were not included in a outbound section.
-// Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
-type (
-	DestinationMap  map[ServiceName]TagSelectorSet
-	ExternalService struct {
-		Protocol                 core_meta.Protocol
-		TLSEnabled               bool
-		FallbackToSystemCa       bool
-		CaCert                   []byte
-		ClientCert               []byte
-		ClientKey                []byte // #nosec G117 -- TLS config field, not hardcoded key
-		AllowRenegotiation       bool
-		SkipHostnameVerification bool
-		ServerName               string
-		SANs                     []SAN
-		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		OwnerResource            kri.Identifier
-	}
-)
+type ExternalService struct {
+	Protocol                 core_meta.Protocol
+	TLSEnabled               bool
+	FallbackToSystemCa       bool
+	CaCert                   []byte
+	ClientCert               []byte
+	ClientKey                []byte // #nosec G117 -- TLS config field, not hardcoded key
+	AllowRenegotiation       bool
+	SkipHostnameVerification bool
+	ServerName               string
+	SANs                     []SAN
+	MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+	MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+	OwnerResource            kri.Identifier
+}
 
 type MatchType string
 
@@ -159,14 +147,6 @@ type EgressEndpointGroup struct {
 // EgressEndpointMap groups endpoints by service name with group-level metadata.
 // Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
 type EgressEndpointMap map[ServiceName]EgressEndpointGroup
-
-// TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
-type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
-
-// TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
-type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
-
-type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
 
 // SocketAddressProtocol is the L4 protocol the listener should bind to
 type SocketAddressProtocol int32
@@ -284,10 +264,9 @@ type SecretsTracker interface {
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
-	Mesh                         *core_mesh.MeshResource
-	ExternalServices             []*core_mesh.ExternalServiceResource
-	ExternalServicePermissionMap ExternalServicePermissionMap
-	EndpointMap                  EndpointMap
+	Mesh             *core_mesh.MeshResource
+	ExternalServices []*core_mesh.ExternalServiceResource
+	EndpointMap      EndpointMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies
@@ -333,11 +312,8 @@ type ZoneIngressProxy struct {
 }
 
 type Routing struct {
-	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
-	// ExternalServiceOutboundTargets contains endpoint map for direct access of external services (without egress)
-	// Since we take into account TrafficPermission to exclude external services from the map,
-	// it is specific for each data plane proxy.
+	// ExternalServiceOutboundTargets contains endpoint map for direct access of external services (without egress).
 	ExternalServiceOutboundTargets EndpointMap
 }
 

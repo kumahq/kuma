@@ -31,6 +31,7 @@ func Policy() {
 				WithArgs([]string{"echo", "--instance", "test-server"}),
 				WithServiceName("mesh-tls-test-server"),
 				WithDockerContainerName(testServerContainerName),
+				WithLabels(map[string]string{"kuma.io/service": "mesh-tls-test-server"}),
 			)).
 			Install(TestServerUniversal(
 				testServer2Name, meshName,
@@ -59,13 +60,11 @@ mesh: %s
 name: mesh-tls-policy
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: %s
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Permissive`, meshName, testServerName)
 		// when
 		// default strict mode on mesh
@@ -159,13 +158,11 @@ mesh: %s
 name: mesh-tls-policy
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: %s
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Strict`, meshName, testServerName)
 		// when
 		// default strict mode on mesh
@@ -263,10 +260,8 @@ name: mesh-tls-policy
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         tlsVersion:
           min: TLS13
           max: TLS13`, meshName)
@@ -326,10 +321,8 @@ name: mesh-tls-policy
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         tlsVersion:
           min: TLS12
           max: TLS12
