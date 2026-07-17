@@ -106,7 +106,10 @@ spec:
 	})
 
 	activeCxStat := func(admin envoy_admin.Tunnel) *stats.Stats {
-		s, err := admin.GetStats("cluster.multizone-meshtimeout_test-server_multizone-meshtimeout-ns_kuma-2_msvc_80.upstream_cx_active")
+		s, err := admin.GetStats(fmt.Sprintf(
+			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_cx_active",
+			mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace,
+		))
 		Expect(err).ToNot(HaveOccurred())
 		return s
 	}
