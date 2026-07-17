@@ -96,10 +96,12 @@ routing:
 
 	Context("when the client is from kubernetes cluster", func() {
 		It("should access internal service behind k8s zoneingress through zoneegress", func() {
+			// Egress internal-service clusters are still keyed by kuma.io/service:
+			// they are built from ZoneIngress AvailableServices, not from MeshServices.
 			filter := fmt.Sprintf(
-				"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_total",
+				"cluster.%s_%s_%s_svc_80.upstream_rq_total",
 				meshName,
-				multizone.KubeZone2.ZoneName(),
+				"test-server",
 				namespace,
 			)
 
@@ -127,9 +129,9 @@ routing:
 	Context("when the client is from universal cluster", func() {
 		It("should access internal service behind universal zoneingress through zoneegress", func() {
 			filter := fmt.Sprintf(
-				"cluster.kri_msvc_%s_%s__zone4-test-server_80.upstream_rq_total",
+				"cluster.%s_%s.upstream_rq_total",
 				meshName,
-				multizone.UniZone2.ZoneName(),
+				"zone4-test-server",
 			)
 
 			Eventually(func(g Gomega) {

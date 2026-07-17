@@ -22,17 +22,13 @@ func HeadlessServices() {
 	meshName := "headless-svc"
 	namespace := "headless-svc"
 
-	// Headless services are addressed through per-pod hostnames under the
-	// Exclusive-only MeshService model.
-	mtlsMeshExclusiveMeshServices := func(name string) InstallFunc {
+	mtlsMesh := func(name string) InstallFunc {
 		return YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: %s
 spec:
-  meshServices:
-    mode: Exclusive
   mtls:
     enabledBackend: ca-1
     backends:
@@ -43,7 +39,7 @@ spec:
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(mtlsMeshExclusiveMeshServices(meshName)).
+			Install(mtlsMesh(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
@@ -104,12 +100,10 @@ spec:
 
 	It("should be able to connect to the headless service", func() {
 		Eventually(func(g Gomega) {
-			podName, err := PodNameOfApp(kubernetes.Cluster, "test-server", namespace)
-			g.Expect(err).ToNot(HaveOccurred())
-			_, err = client.CollectEchoResponse(
+			_, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
 				"demo-client",
-				fmt.Sprintf("%s.test-server-headless.%s.svc.cluster.local:9090", podName, namespace),
+				"test-server-headless:9090",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
