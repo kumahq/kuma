@@ -28,6 +28,9 @@ func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.R
 // client-id for clientStreams[i] (the zone name in production, which drives
 // attribution) and must be provided for every stream.
 func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, clientIDs []string, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
+	if len(clientIDs) != len(clientStreams) {
+		panic(fmt.Sprintf("StartDeltaClient: clientIDs length (%d) must match clientStreams length (%d)", len(clientIDs), len(clientStreams)))
+	}
 	for i := range clientStreams {
 		clientID := clientIDs[i]
 		runtimeInfo := &mockRuntimeInfo{
