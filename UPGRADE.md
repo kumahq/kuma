@@ -332,6 +332,20 @@ release; existing resources are still accepted and stored.
 
 Migrate timeouts to `MeshTimeout`, which replaces `Timeout`.
 
+### `VirtualOutbound` no longer affects generated Envoy config
+
+The legacy `VirtualOutbound` policy is no longer consumed when generating
+Envoy configuration. Applying, updating, or removing a `VirtualOutbound`
+resource no longer changes the outbounds, DNS domains, or zone ingress
+destinations of any dataplane proxy.
+
+The `VirtualOutbound` resource, API, and KDS sync are still in place for
+this release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate to `MeshHTTPRoute`/`MeshTCPRoute`, which replace `VirtualOutbound`.
+
 ### `TrafficRoute` no longer affects generated Envoy config
 
 The legacy `TrafficRoute` policy is no longer consumed when generating Envoy

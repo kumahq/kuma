@@ -12,7 +12,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
-	"github.com/kumahq/kuma/v3/pkg/dns"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -111,7 +110,7 @@ func buildKumaIoServiceDestinations(
 	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
 	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
-	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
+	addAvailableServiceDestinations(availableServices, destForMesh)
 	return destForMesh
 }
 
@@ -253,6 +252,21 @@ func addDestination(tags map[string]string, destinations map[string][]envoy_tags
 	destinations[service] = append(destinations[service], tags)
 }
 
+func addAvailableServiceDestinations(
+	availableServices []*mesh_proto.ZoneIngress_AvailableService,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, availableService := range availableServices {
+		service := availableService.Tags[mesh_proto.ServiceTag]
+		if service == "" {
+			continue
+		}
+		addDestination(envoy_tags.Tags{
+			mesh_proto.ServiceTag: service,
+		}, destinations)
+	}
+}
+
 // addTrafficFlowByDefaultDestination makes sure there is a "match all"
 // destination pointing to all services (kuma.io/service:* -> kuma.io/service:*).
 // MeshHTTPRoute/MeshTCPRoute expect traffic to flow between services by
@@ -276,26 +290,4 @@ func addTrafficFlowByDefaultDestination(
 	}
 
 	destinations[mesh_proto.MatchAllTag] = matchAllDestinations
-}
-
-func addVirtualOutboundDestinations(
-	virtualOutbounds []*core_mesh.VirtualOutboundResource,
-	availableServices []*mesh_proto.ZoneIngress_AvailableService,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	// If there are no VirtualOutbounds, we are not modifying destinations
-	if len(virtualOutbounds) == 0 {
-		return
-	}
-
-	for _, availableService := range availableServices {
-		for _, matched := range dns.Match(virtualOutbounds, availableService.Tags) {
-			service := availableService.Tags[mesh_proto.ServiceTag]
-			tags := envoy_tags.Tags{}
-			for _, param := range matched.Spec.GetConf().GetParameters() {
-				tags[param.TagKey] = availableService.Tags[param.TagKey]
-			}
-			destinations[service] = append(destinations[service], tags)
-		}
-	}
 }
