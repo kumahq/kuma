@@ -75,6 +75,10 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filte
 			MinTime:             GrpcKeepAliveTime,
 			PermitWithoutStream: true,
 		}),
+		// Recover from panics in handlers so a single failing call is aborted
+		// instead of bringing down the whole server.
+		grpc.ChainUnaryInterceptor(recoveryUnaryInterceptor),
+		grpc.ChainStreamInterceptor(recoveryStreamInterceptor),
 	}
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
 	grpcServer := grpc.NewServer(grpcOptions...)
