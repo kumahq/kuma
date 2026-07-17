@@ -248,7 +248,13 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		nameToVersion: nameToVersion,
 	}
 	return UpstreamResponse{
-		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
+		// Attribute the batch to the connecting peer's declared client-id
+		// (s.clientId), not the ControlPlane.Identifier in the payload. The
+		// client-id is request metadata the peer declares; verifying it per
+		// connection is the (enterprise) zone-token filter's job, not this
+		// path's. The two match in ordinary sync, so this only changes behavior
+		// when they diverge.
+		ControlPlaneId:      s.clientId,
 		Type:                rs.GetItemType(),
 		AddedResources:      rs,
 		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),

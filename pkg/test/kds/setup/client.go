@@ -24,9 +24,15 @@ func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.R
 	}
 }
 
-func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
-	for i := 0; i < len(clientStreams); i++ {
-		clientID := fmt.Sprintf("client-%d", i)
+// StartDeltaClient starts a KDS sync client per stream. clientIDs[i] is the
+// client-id for clientStreams[i] (the zone name in production, which drives
+// attribution) and must be provided for every stream.
+func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, clientIDs []string, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
+	if len(clientIDs) != len(clientStreams) {
+		panic(fmt.Sprintf("StartDeltaClient: clientIDs length (%d) must match clientStreams length (%d)", len(clientIDs), len(clientStreams)))
+	}
+	for i := range clientStreams {
+		clientID := clientIDs[i]
 		runtimeInfo := &mockRuntimeInfo{
 			instanceId: fmt.Sprintf("cp-%d", i),
 			mode:       config_core.Zone,
