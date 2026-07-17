@@ -109,69 +109,8 @@ func buildKumaIoServiceDestinations(
 	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
 	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
-	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
-	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
 	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
 	return destForMesh
-}
-
-func addMeshGatewayDestinations(
-	meshGateways []*core_mesh.MeshGatewayResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, meshGateway := range meshGateways {
-		for _, selector := range meshGateway.Selectors() {
-			addMeshGatewayListenersDestinations(
-				meshGateway.Spec,
-				selector.GetMatch(),
-				destinations,
-			)
-		}
-	}
-}
-
-func addMeshGatewayListenersDestinations(
-	meshGateway *mesh_proto.MeshGateway,
-	matchTags map[string]string,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	service := matchTags[mesh_proto.ServiceTag]
-
-	for _, listener := range meshGateway.GetConf().GetListeners() {
-		if !listener.CrossMesh {
-			continue
-		}
-
-		destinations[service] = append(
-			destinations[service],
-			mesh_proto.Merge(
-				meshGateway.GetTags(),
-				matchTags,
-				listener.GetTags(),
-			),
-		)
-	}
-}
-
-func addGatewayRouteDestinations(
-	gatewayRoutes []*core_mesh.MeshGatewayRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	var backends []*mesh_proto.MeshGatewayRoute_Backend
-
-	for _, route := range gatewayRoutes {
-		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-
-		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-	}
-
-	for _, backend := range backends {
-		addDestination(backend.Destination, destinations)
-	}
 }
 
 func addMeshHTTPRouteDestinations(

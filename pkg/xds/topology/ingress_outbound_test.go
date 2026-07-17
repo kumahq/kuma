@@ -55,7 +55,6 @@ var _ = Describe("IngressTrafficRoute", func() {
 					nil,
 					given.dataplanes,
 					given.externalServices,
-					nil,
 					given.zoneEgress,
 					egressAddresses,
 					dataSourceLoader,

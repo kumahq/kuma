@@ -64,9 +64,6 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 		case core_mesh.ExternalServiceType:
 			externalService := res.(*core_mesh.ExternalServiceResource)
 			Expect(resourceManager.Create(ctx, externalService, store.CreateBy(core_model.MetaToResourceKey(externalService.GetMeta())))).To(Succeed())
-		case core_mesh.MeshGatewayType:
-			meshGateway := res.(*core_mesh.MeshGatewayResource)
-			Expect(resourceManager.Create(ctx, meshGateway, store.CreateBy(core_model.MetaToResourceKey(meshGateway.GetMeta())))).To(Succeed())
 		}
 	}
 }

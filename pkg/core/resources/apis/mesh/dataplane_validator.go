@@ -59,25 +59,7 @@ func (d *DataplaneResource) Validate() error {
 		err.Add(validateProbes(d.Spec.GetProbes()))
 
 	case d.Spec.IsBuiltinGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
-			err.AddViolationAt(net.Field("inbound"), "inbound cannot be defined for builtin gateways")
-		}
-
-		if len(d.Spec.GetNetworking().GetOutbound()) > 0 {
-			err.AddViolationAt(net.Field("outbound"), "outbound cannot be defined for builtin gateways")
-		}
-
-		if len(d.Spec.GetNetworking().GetListeners()) > 0 {
-			err.AddViolationAt(net.Field("listeners"),
-				"listeners cannot be defined for builtin gateways")
-		}
-
-		if d.Spec.GetProbes() != nil {
-			err.AddViolationAt(net.Field("probes"), "probes cannot be defined for builtin gateways")
-		}
-
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
+		err.AddViolationAt(net.Field("gateway").Field("type"), "BUILTIN gateways are no longer supported, use DELEGATED instead")
 
 	default:
 		err.Add(validateNetworking(d.Spec.GetNetworking()))

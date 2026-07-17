@@ -146,10 +146,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 
-	if err := m.decorateWithCrossMeshResources(ctx, meshName, resources); err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve cross mesh resources")
-	}
-
 	// This base64 encoding seems superfluous but keeping it for backward compatibility
 	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
 	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
@@ -241,7 +237,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshExternalServices,
 		dataplanes,
 		externalServices,
-		resources.Gateways().Items,
 		zoneEgresses,
 		zoneEgressList,
 		loader,
@@ -249,13 +244,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
-	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
-		crossMeshEndpointMap[otherMeshName] = xds_topology.BuildCrossMeshEndpointMap(
+	for _, otherMesh := range resources.OtherMeshes(meshName).Items {
+		crossMeshEndpointMap[otherMesh.GetMeta().GetName()] = xds_topology.BuildCrossMeshEndpointMap(
 			mesh,
-			gateways.Mesh,
+			otherMesh,
 			m.zone,
-			gateways.Gateways,
-			gateways.Dataplanes,
 			zoneIngresses,
 			zoneEgresses,
 		)
@@ -352,7 +345,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		case desc.IsDestination:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
 			destinations = append(destinations, rmap[t].GetItems())
-		case desc.IsPolicy || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
+		case desc.IsPolicy || desc.Name == core_mesh.ExternalServiceType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
 		case desc.Name == system.ConfigType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, func(rs core_model.Resource) bool {
@@ -548,55 +541,6 @@ func (m *meshContextBuilder) resolveTLSReadiness(
 		}
 		servicesInformation[svc] = serviceInfo
 	}
-}
-
-func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context, localMesh string, resources Resources) error {
-	// Expand with crossMesh info
-	otherMeshesByName := map[string]*core_mesh.MeshResource{}
-	for _, m := range resources.OtherMeshes(localMesh).GetItems() {
-		otherMeshesByName[m.GetMeta().GetName()] = m.(*core_mesh.MeshResource)
-		resources.CrossMeshResources[m.GetMeta().GetName()] = map[core_model.ResourceType]core_model.ResourceList{
-			core_mesh.DataplaneType:   &core_mesh.DataplaneResourceList{},
-			core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{},
-		}
-	}
-	var gatewaysByMesh map[string]core_model.ResourceList
-	if _, ok := m.typeSet[core_mesh.MeshGatewayType]; ok {
-		// For all meshes, get all cross mesh gateways
-		rl, err := m.fetchResourceList(ctx, core_mesh.MeshGatewayType, nil, func(rs core_model.Resource) bool {
-			_, exists := otherMeshesByName[rs.GetMeta().GetMesh()]
-			return exists && rs.(*core_mesh.MeshGatewayResource).Spec.IsCrossMesh()
-		})
-		if err != nil {
-			return errors.Wrap(err, "could not fetch cross mesh meshGateway resources")
-		}
-		gatewaysByMesh, err = core_model.ResourceListByMesh(rl)
-		if err != nil {
-			return errors.Wrap(err, "failed building cross mesh meshGateway resources")
-		}
-	}
-	if _, ok := m.typeSet[core_mesh.DataplaneType]; ok {
-		for otherMeshName, gws := range gatewaysByMesh { // Only iterate over meshes that have crossMesh gateways
-			otherMesh := otherMeshesByName[otherMeshName]
-			var gwResources []*core_mesh.MeshGatewayResource
-			for _, gw := range gws.GetItems() {
-				gwResources = append(gwResources, gw.(*core_mesh.MeshGatewayResource))
-			}
-			rl, err := m.fetchResourceList(ctx, core_mesh.DataplaneType, otherMesh, func(rs core_model.Resource) bool {
-				dp := rs.(*core_mesh.DataplaneResource)
-				if !dp.Spec.IsBuiltinGateway() {
-					return false
-				}
-				return xds_topology.SelectGateway(gwResources, dp.Spec.Matches) != nil
-			})
-			if err != nil {
-				return errors.Wrap(err, "could not fetch cross mesh meshGateway resources")
-			}
-			resources.CrossMeshResources[otherMeshName][core_mesh.DataplaneType] = rl
-			resources.CrossMeshResources[otherMeshName][core_mesh.MeshGatewayType] = gws
-		}
-	}
-	return nil
 }
 
 func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {

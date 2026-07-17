@@ -1,8 +1,6 @@
 package v1alpha1_test
 
 import (
-	"context"
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -17,7 +15,6 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -1294,167 +1291,7 @@ var _ = Describe("MeshAccessLog", func() {
 		Expect(string(listenerResources)).ToNot(ContainSubstring("open_telemetry"))
 	})
 
-	type gatewayTestCase struct {
-		routeRules core_rules.GatewayRules
-		logRules   core_rules.GatewayRules
-	}
-	DescribeTable("should generate proper Envoy config for MeshGateway Dataplanes",
-		func(given gatewayTestCase) {
-			gateways := core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{{
-					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
-					Spec: &mesh_proto.MeshGateway{
-						Selectors: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									mesh_proto.ServiceTag: "gateway",
-								},
-							},
-						},
-						Conf: &mesh_proto.MeshGateway_Conf{
-							Listeners: []*mesh_proto.MeshGateway_Listener{
-								{
-									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-									Port:     8080,
-								},
-							},
-						},
-					},
-				}},
-			}
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &gateways
-
-			xdsCtx := *xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithResources(resources).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-				AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
-				Build()
-			proxy := xds_builders.Proxy().
-				WithDataplane(
-					builders.Dataplane().
-						WithName("gateway").
-						WithMesh("default").
-						WithBuiltInGateway("gateway"),
-				).
-				WithPolicies(
-					xds_builders.MatchedPolicies().
-						WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.routeRules).
-						WithGatewayPolicy(api.MeshAccessLogType, given.logRules),
-				).
-				Build()
-
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-
-			generatedResources := core_xds.NewResourceSet()
-
-			routePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(routePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			accessLogPlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(accessLogPlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			nameSplit := strings.Split(GinkgoT().Name(), " ")
-			name := nameSplit[len(nameSplit)-1]
-
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
-		},
-		Entry("basic-gateway", gatewayTestCase{
-			routeRules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("127.0.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{{
-										Matches: []meshhttproute_api.Match{{
-											Path: &meshhttproute_api.PathMatch{
-												Type:  meshhttproute_api.Exact,
-												Value: "/",
-											},
-										}},
-										Default: meshhttproute_api.RuleConf{
-											BackendRefs: &[]common_api.BackendRef{
-												{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(1)),
-												},
-												{
-													TargetRef: builders.TargetRefService("other-service"),
-													Weight:    pointer.To(uint(1)),
-												},
-											},
-										},
-									}},
-								},
-							}},
-						},
-					},
-				},
-			},
-			logRules: core_rules.GatewayRules{
-				FromRules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 8080}: {
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								Backends: &[]api.Backend{{
-									Type: api.FileBackendType,
-									File: &api.FileBackend{
-										Path: "/tmp/from-log",
-									},
-								}},
-							},
-						},
-					},
-				},
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "127.0.0.1", Port: 8080}: {
-						{
-							Conf: api.Conf{
-								Backends: &[]api.Backend{{
-									Type: api.FileBackendType,
-									File: &api.FileBackend{
-										Path: "/tmp/from-log",
-									},
-								}},
-							},
-						},
-					},
-				},
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "127.0.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									Backends: &[]api.Backend{{
-										Type: api.FileBackendType,
-										File: &api.FileBackend{
-											Path: "/tmp/to-log",
-										},
-									}},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-	)
 })
-
-func getResourceYaml(list core_xds.ResourceList) []byte {
-	actualResource, err := util_proto.ToYAML(list[0].Resource)
-	Expect(err).ToNot(HaveOccurred())
-	return actualResource
-}
 
 func otherServiceHTTPListener() core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(

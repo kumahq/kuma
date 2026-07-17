@@ -130,7 +130,6 @@ func BuildIngressEndpointMap(
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	externalServices []*core_mesh.ExternalServiceResource,
-	gateways []*core_mesh.MeshGatewayResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	egressAddresses []core_xds.ZoneEgressInstance,
 	loader datasource.Loader,
@@ -139,7 +138,6 @@ func BuildIngressEndpointMap(
 	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
 	// This way we only keep local endpoints.
 	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, nil, zoneEgresses, externalServices, loader, mtlsEnabled, egressAddresses)
-	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
 	return outbound
 }
 
@@ -428,51 +426,16 @@ func fillLocalMeshServices(
 	}
 }
 
-func CrossMeshEndpointTags(
-	gateways []*core_mesh.MeshGatewayResource,
-	dataplanes []*core_mesh.DataplaneResource,
-) []mesh_proto.SingleValueTagSet {
-	endpoints := []mesh_proto.SingleValueTagSet{}
-
-	for _, dataplane := range dataplanes {
-		if !dataplane.Spec.IsBuiltinGateway() {
-			continue
-		}
-
-		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
-		if gateway == nil {
-			continue
-		}
-
-		dpSpec := dataplane.Spec
-		dpNetworking := dpSpec.GetNetworking()
-
-		dpGateway := dpNetworking.GetGateway()
-		dpTags := dpGateway.GetTags()
-
-		for _, listener := range gateway.Spec.GetConf().GetListeners() {
-			if !listener.CrossMesh {
-				continue
-			}
-			endpoints = append(endpoints, mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()))
-		}
-	}
-
-	return endpoints
-}
-
 func BuildCrossMeshEndpointMap(
 	mesh *core_mesh.MeshResource,
 	otherMesh *core_mesh.MeshResource,
 	localZone string,
-	gateways []*core_mesh.MeshGatewayResource,
-	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	ingressInstances := fillIngressOutbounds(
+	fillIngressOutbounds(
 		outbound,
 		zoneIngresses,
 		zoneEgresses,
@@ -483,53 +446,7 @@ func BuildCrossMeshEndpointMap(
 		map[core_xds.ServiceName]struct{}{},
 	)
 
-	endpointWeight := uint32(1)
-	if ingressInstances > 0 {
-		endpointWeight = ingressInstances
-	}
-	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, endpointWeight, localZone)
 	return outbound
-}
-
-func fillLocalCrossMeshOutbounds(
-	outbound core_xds.EndpointMap,
-	mesh *core_mesh.MeshResource,
-	dataplanes []*core_mesh.DataplaneResource,
-	gateways []*core_mesh.MeshGatewayResource,
-	endpointWeight uint32,
-	localZone string,
-) {
-	for _, dataplane := range dataplanes {
-		if !dataplane.Spec.IsBuiltinGateway() {
-			continue
-		}
-
-		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
-		if gateway == nil {
-			continue
-		}
-
-		dpSpec := dataplane.Spec
-		dpNetworking := dpSpec.GetNetworking()
-
-		dpGateway := dpNetworking.GetGateway()
-		dpTags := dpGateway.GetTags()
-		serviceName := dpTags[mesh_proto.ServiceTag]
-
-		for _, listener := range gateway.Spec.GetConf().GetListeners() {
-			if !listener.CrossMesh {
-				continue
-			}
-
-			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   dpNetworking.GetAddress(),
-				Port:     listener.GetPort(),
-				Tags:     mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
-				Weight:   endpointWeight,
-				Locality: GetLocality(localZone, getZone(dpTags), mesh.LocalityAwareLbEnabled()),
-			})
-		}
-	}
 }
 
 func buildCoordinates(address string, port uint32) string {

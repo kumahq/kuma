@@ -59,7 +59,7 @@ func validateFrom(from []From, topLevelKind common_api.TargetRefKind) validators
 	fromPath := validators.RootedAt("from")
 
 	switch topLevelKind {
-	case common_api.MeshHTTPRoute, common_api.MeshGateway:
+	case common_api.MeshHTTPRoute:
 		if len(from) != 0 {
 			verr.AddViolationAt(fromPath, validators.MustNotBeDefined)
 		}
@@ -87,7 +87,7 @@ func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.Valid
 
 		var supportedKinds []common_api.TargetRefKind
 		switch topLevelKind {
-		case common_api.MeshHTTPRoute, common_api.MeshGateway:
+		case common_api.MeshHTTPRoute:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshExternalService,
