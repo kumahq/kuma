@@ -8,12 +8,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - kuma.io/instance
     name: mesh1:backend
     type: EDS
 - name: mesh1:backend
@@ -59,34 +53,6 @@ resources:
         portValue: 10001
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        serverNames:
-        - backend{kuma.io/instance=ins-0,mesh=mesh1}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/instance: ins-0
-          statPrefix: mesh1_backend
-    - filterChainMatch:
-        serverNames:
-        - backend{kuma.io/instance=ins-1,mesh=mesh1}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/instance: ins-1
-          statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh1}

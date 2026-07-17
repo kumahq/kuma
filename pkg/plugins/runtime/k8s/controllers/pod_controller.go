@@ -384,7 +384,7 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 		// on Service update reconcile affected Pods (all Pods selected by this service)
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
 		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient()))).
-		Watches(&mesh_k8s.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(MeshServiceExclusivePredicate{})).
+		Watches(&mesh_k8s.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(MeshUpdateIgnoredPredicate{})).
 		Complete(r)
 }
 
@@ -512,34 +512,15 @@ func MeshToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.Map
 	}
 }
 
-type MeshServiceExclusivePredicate struct {
+// MeshUpdateIgnoredPredicate drops Mesh Update events: no Mesh spec change
+// (meshServices.mode is always Exclusive now, unlike when this predicate
+// only re-triggered Pod reconciliation on a mode flip) affects Pod
+// reconciliation, so Updates are never relevant. Create/Delete/Generic keep
+// the predicate.Funcs default of true.
+type MeshUpdateIgnoredPredicate struct {
 	predicate.Funcs
 }
 
-func (p MeshServiceExclusivePredicate) Update(e event.UpdateEvent) bool {
-	oldMesh, err := e.ObjectOld.(*mesh_k8s.Mesh).GetSpec()
-	if err != nil {
-		return false
-	}
-	newMesh, err := e.ObjectNew.(*mesh_k8s.Mesh).GetSpec()
-	if err != nil {
-		return false
-	}
-
-	oldMSMode := oldMesh.(*mesh_proto.Mesh).MeshServicesMode()
-	newMSMode := newMesh.(*mesh_proto.Mesh).MeshServicesMode()
-
-	// MeshService mode changed to Exclusive
-	if newMSMode == mesh_proto.Mesh_MeshServices_Exclusive &&
-		oldMSMode != mesh_proto.Mesh_MeshServices_Exclusive {
-		return true
-	}
-
-	// MeshService mode changed back from Exclusive
-	if newMSMode != mesh_proto.Mesh_MeshServices_Exclusive &&
-		oldMSMode == mesh_proto.Mesh_MeshServices_Exclusive {
-		return true
-	}
-
+func (p MeshUpdateIgnoredPredicate) Update(e event.UpdateEvent) bool {
 	return false
 }

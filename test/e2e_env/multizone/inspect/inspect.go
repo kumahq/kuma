@@ -197,7 +197,7 @@ func Inspect() {
 		})
 
 		It("should execute inspect rules of dataplane", func() {
-			Expect(multizone.Global.Install(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled"))).To(Succeed())
+			Expect(multizone.Global.Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive"))).To(Succeed())
 			Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshTimeout
 name: mt1
@@ -230,9 +230,9 @@ spec:
 				g.Expect(result.Rules).ToNot(BeEmpty())
 				for _, rule := range result.Rules {
 					if rule.Type == "MeshTimeout" {
-						g.Expect(rule.ToRules).ToNot(BeNil())
-						g.Expect(*rule.ToRules).ToNot(BeEmpty())
-						g.Expect((*rule.ToRules)[0].Origin[0].Name).To(ContainSubstring("mt1"))
+						if rule.ToRules != nil {
+							g.Expect(*rule.ToRules).To(BeEmpty())
+						}
 					}
 				}
 			}, "30s", "1s").Should(Succeed())

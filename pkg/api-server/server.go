@@ -41,7 +41,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
@@ -528,9 +527,6 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
 			rt.CAProvider(),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

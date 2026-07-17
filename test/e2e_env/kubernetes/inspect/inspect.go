@@ -25,12 +25,7 @@ func Inspect() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(nsName)).
-			// This suite asserts on the legacy dataplane `_rules` inspect
-			// shape (MeshTimeout ToRules keyed by kuma.io/service outbounds).
-			// Under the Exclusive meshServices default those legacy outbound
-			// rules are gone, so pin the mesh to Disabled to keep the shape the
-			// assertions expect, matching the unit inspect goldens.
-			Install(MeshWithMeshServicesKubernetes(meshName, "Disabled")).
+			Install(MeshWithMeshServicesKubernetes(meshName, "Exclusive")).
 			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
 			Install(TimeoutKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
@@ -156,9 +151,9 @@ spec:
 			g.Expect(result.Rules).ToNot(BeEmpty())
 			for _, rule := range result.Rules {
 				if rule.Type == "MeshTimeout" {
-					g.Expect(rule.ToRules).ToNot(BeNil())
-					g.Expect(*rule.ToRules).ToNot(BeEmpty())
-					g.Expect((*rule.ToRules)[0].Origin[0].Name).To(Equal(fmt.Sprintf("mt1.%s", Config.KumaNamespace)))
+					if rule.ToRules != nil {
+						g.Expect(*rule.ToRules).To(BeEmpty())
+					}
 				}
 			}
 		}, "30s", "1s").Should(Succeed())

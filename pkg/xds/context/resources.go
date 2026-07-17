@@ -109,10 +109,6 @@ func (r Resources) MeshGateways() *core_mesh.MeshGatewayResourceList {
 	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
 }
 
-func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
-	return r.ListOrEmpty(core_mesh.VirtualOutboundType).(*core_mesh.VirtualOutboundResourceList)
-}
-
 func (r Resources) MeshFaultInjections() *meshfaultinjection_api.MeshFaultInjectionResourceList {
 	return r.ListOrEmpty(meshfaultinjection_api.MeshFaultInjectionType).(*meshfaultinjection_api.MeshFaultInjectionResourceList)
 }

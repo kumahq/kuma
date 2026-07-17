@@ -60,7 +60,7 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return core_manager.MeshNotFound(opts.Mesh)
 	}
 
-	m.setInboundsClusterTag(dp, owner)
+	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
 	labels, err := resource_labels.Compute(
@@ -101,7 +101,7 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		return core_manager.MeshNotFound(resource.GetMeta().GetMesh())
 	}
 
-	m.setInboundsClusterTag(dp, owner)
+	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 
 	opts := core_store.NewUpdateOptions(fs...)
@@ -135,18 +135,14 @@ func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.D
 	return dp, nil
 }
 
-func (m *dataplaneManager) setInboundsClusterTag(dp *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) {
+func (m *dataplaneManager) setInboundsClusterTag(dp *core_mesh.DataplaneResource) {
 	if m.zone == "" || dp.Spec.Networking == nil {
 		return
 	}
-	skipTagGeneration := mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive
 
 	for _, inbound := range dp.Spec.Networking.Inbound {
-		if len(inbound.Tags) == 0 && skipTagGeneration {
+		if len(inbound.Tags) == 0 {
 			continue
-		}
-		if inbound.Tags == nil {
-			inbound.Tags = make(map[string]string)
 		}
 		inbound.Tags[mesh_proto.ZoneTag] = m.zone
 	}
