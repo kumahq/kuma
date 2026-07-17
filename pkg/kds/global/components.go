@@ -98,7 +98,7 @@ func Setup(rt runtime.Runtime) error {
 			log,
 			rt.KDSContext().TypesSentByZone,
 			kdsStream,
-			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace),
+			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace, nil),
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
 		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {

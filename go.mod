@@ -269,6 +269,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/google/cel-go v0.26.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
