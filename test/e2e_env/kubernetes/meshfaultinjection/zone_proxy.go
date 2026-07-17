@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -196,8 +195,7 @@ func ZoneProxy() {
 			Install(Namespace(extNs)).
 			Install(Yaml(builders.Mesh().
 				WithName(mesh).
-				WithoutInitialPolicies().
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithoutInitialPolicies())).
 			Install(YamlK8s(zoneProxyMeshTrafficPermission(mesh, targetedSNI, untargetedSNI))).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),

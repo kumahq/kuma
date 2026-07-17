@@ -25,7 +25,7 @@ func Inspect() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(nsName)).
-			Install(MeshWithMeshServicesKubernetes(meshName, "Exclusive")).
+			Install(MeshKubernetes(meshName)).
 			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
 			Install(TimeoutKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
