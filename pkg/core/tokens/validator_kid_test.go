@@ -50,5 +50,6 @@ var _ = Describe("Validator with a non-string kid header", func() {
 			err = validator.ParseWithValidation(ctx, token, &TestClaims{})
 		}).ToNot(Panic())
 		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("kid header must be a string"))
 	})
 })
