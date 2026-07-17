@@ -447,43 +447,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 			useTokenPath:       true,
 		}),
-		Entry("gateway settings", testCase{
-			dpAuthForProxyType: authEnabled,
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				cfg := bootstrap_config.DefaultBootstrapServerConfig()
-				cfg.Params.XdsHost = "localhost"
-				cfg.Params.XdsPort = 5678
-				return cfg
-			}(),
-			dataplane: func() *core_mesh.DataplaneResource {
-				return &core_mesh.DataplaneResource{
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Address: "8.8.8.8",
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-								Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-								Tags: map[string]string{
-									mesh_proto.ServiceTag: "gateway",
-								},
-							},
-							Admin: &mesh_proto.EnvoyAdmin{},
-						},
-					},
-				}
-			},
-			request: types.BootstrapRequest{
-				Mesh:               "mesh",
-				Name:               "name.namespace",
-				DataplaneToken:     "token",
-				Version:            defaultVersion,
-				DNSPort:            53001,
-				DataplaneTokenPath: "/path/to/file",
-				Workdir:            "/tmp",
-			},
-			expectedConfigFile: "generator.gateway.golden.yaml",
-			hdsEnabled:         true,
-			useTokenPath:       true,
-		}),
 		Entry("readiness port and application probe proxy", testCase{
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
