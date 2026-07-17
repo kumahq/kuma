@@ -40,6 +40,11 @@ func legacyMesh() *core_mesh.MeshResource {
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
+	// rawStore bypasses manager-level validation. It exists to seed dataplanes
+	// that predate an upgrade (e.g. a BUILTIN gateway created before the CP
+	// started rejecting them at admission) so resyncer read-path compat with
+	// already-persisted legacy data keeps being exercised.
+	var rawStore store.ResourceStore
 	var metric metrics.Metrics
 	minInterval := time.Second
 	stepsToResync := 4
@@ -59,7 +64,8 @@ var _ = Describe("Insight Persistence", func() {
 				tickCh <- time.UnixMilli(atomic.LoadInt64(now))
 			}
 		}
-		rm = manager.NewResourceManager(memory.NewStore())
+		rawStore = memory.NewStore()
+		rm = manager.NewResourceManager(rawStore)
 
 		stopCh = make(chan struct{})
 		eventCh = make(chan events.Event)
@@ -572,10 +578,15 @@ var _ = Describe("Insight Persistence", func() {
 			},
 		}
 
-		for n, entity := range map[string]model.Resource{"dp1": dp1, "dgw": delegatedGw, "bgw": builtinGw, "externalService": externalService} {
+		for n, entity := range map[string]model.Resource{"dp1": dp1, "dgw": delegatedGw, "externalService": externalService} {
 			err = rm.Create(context.Background(), entity, store.CreateByKey(n, "mesh-1"))
 			Expect(err).ToNot(HaveOccurred(), n)
 		}
+		// BUILTIN gateways are rejected by DataplaneResource.Validate() on
+		// creation, so seed this one directly through the store to simulate
+		// data that was already persisted before the upgrade.
+		err = rawStore.Create(context.Background(), builtinGw, store.CreateByKey("bgw", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
 
 		step(stepsToResync)
 
@@ -655,7 +666,10 @@ var _ = Describe("Insight Persistence", func() {
 				},
 			},
 		}
-		err = rm.Create(context.Background(), builtinGw, store.CreateByKey("dp3", "mesh-1"))
+		// BUILTIN gateways are rejected by DataplaneResource.Validate() on
+		// creation, so seed this one directly through the store to simulate
+		// data that was already persisted before the upgrade.
+		err = rawStore.Create(context.Background(), builtinGw, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		externalService := core_mesh.NewExternalServiceResource()
