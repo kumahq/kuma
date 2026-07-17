@@ -61,11 +61,11 @@ An outbound listener does not stand for the individual workloads behind the dest
 ### Option 1: Do nothing, require unified resource naming and `match.name`
 
 * Good, because it needs no code change, and a KRI-based name is exact and can tell individual ports apart.
-* Bad, because User case 1 stays broken and silent, so users find out in production.
+* Bad, because the `kuma.io/service` selector stays broken and silent, so users find out in production.
 * Bad, because without unified naming the listener is called `outbound:<address>:<port>`, and that address is a VIP we allocate at runtime. You cannot know it up front and it changes across restarts, so there is no way to write the policy.
 * Bad, because getting a stable name means turning on unified naming across the whole mesh (`meshServices: Exclusive` plus a DP feature flag). That is a lot to ask of someone who wants to patch one listener.
-* Bad, because a name matches a single listener, so User case 3 needs one policy per destination and has to be regenerated whenever the set changes.
-* Bad, because it does nothing for User case 4. `InboundTagsDisabled` has no alternative based on names.
+* Bad, because a name matches a single listener, so patching a group of destinations needs one policy per member and has to be regenerated whenever the set changes.
+* Bad, because it does nothing for the emptied inbound listener. `InboundTagsDisabled` has no alternative based on names.
 * Bad, because every affected listener keeps an empty `io.kuma.tags`, which looks like a listener with no tags.
 
 ### Option 2: Build a `kuma.io/service` tag
@@ -76,7 +76,7 @@ Rebuild a `kuma.io/service` value from the destination resource and keep writing
 * Bad, because `kuma.io/service` has been deliberately removed, and bringing it back on the listener works against the whole point of `MeshService`.
 * Bad, because the value would not match anyway, and we cannot make one that does. What we can build is the legacy resolver's `<mesh>_<name>_<namespace>_<zone>_<shortName>_<port>`, and the policy says `backend`. We could invent a shorter string, but `backend` on its own does not say which namespace or which of the three destination kinds is meant, so any string we invent is a guess at what the user meant and they would find out at runtime.
 
-### Option 3: A separate `io.kuma.labels` key on listeners, with new match fields
+### Option 3: A separate `io.kuma.labels` key on listeners, with new match fields (Option for 3.0)
 
 Write labels under a new listener key and add `listenerLabels`/`labels` to the `MeshProxyPatch` API. We already have an `io.kuma.labels` key on endpoints, added for this exact problem, so the obvious move is to copy it onto listeners.
 
@@ -108,7 +108,7 @@ match:
     k8s.kuma.io/namespace: kuma-demo
 ```
 
-And User case 3, which no name-based selector can do at all, becomes:
+And group targeting, which no name-based selector can do at all, becomes:
 
 ```yaml
 match:
@@ -119,8 +119,8 @@ match:
 
 * Good, because there is no API change. The selector people already use starts working again, and it is safe to ship as a patch.
 * Good, because it can only add matches. The affected listeners have empty tags today, so nothing that matches now can stop matching.
-* Good, because labels give you more to match on than the single `kuma.io/service` string ever did. Zone, origin, env and user labels all become usable, which is what makes User case 3 possible.
-* Good, because one rule handles both directions, so User case 4 falls out of the same change.
+* Good, because labels give you more to match on than the single `kuma.io/service` string ever did. Zone, origin, env and user labels all become usable, which is what makes group targeting possible.
+* Good, because one rule handles both directions, so the emptied inbound falls out of the same change.
 * Bad, because the key is called `tags` and now holds labels. That is confusing, though `io.kuma.tags` was never a user-facing "Dataplane tags" surface. It is our own listener selector map, written in one place and read only by our policy matching.
 * Bad, because labels belong to a resource while listeners belong to a port. The two listeners of a two-port `MeshService` get identical tags and `listenerTags` cannot tell them apart. You still need `match.name` with unified naming for that, and this MADR does not fix it.
 * Bad, because labels don't say what kind of resource a listener stands for. A `MeshMultiZoneService` groups the `MeshService`s of one service across zones, and it is normal to give it the same name as the `MeshService`s it groups. Its labels are then a subset of theirs, and a selector cannot say "this key must be absent". So a policy that matches the group also matches the single service behind it, and the group cannot be patched on its own. Sub-option B below addresses this.
@@ -147,7 +147,7 @@ match:
 ```
 
 * Good, because the keys are the ones people already read in `kubectl get` output and already write in `targetRef.labels`, so nothing new has to be learned.
-* Good, because it is the only one of the three that does User case 3. A selector can match a set, so `team: payments` or `kuma.io/zone: east` patches a group without naming its members.
+* Good, because it is the only one of the three that does group targeting. A selector can match a set, so `team: payments` or `kuma.io/zone: east` patches a group without naming its members.
 * Good, because it degrades gracefully. A missing key just doesn't match, and every listener still carries something.
 * Bad, because it cannot express kind or port, which is what the two collisions below are about.
 * Bad, because we copy whatever labels the resource happens to have. On Kubernetes that is every label on the `Service`. Which keys we should copy is left open, in the implementation notes.
@@ -501,9 +501,9 @@ The two environments differ in how user labels get there, which matters for how 
 
 ### A Universal `MeshService` with no tags
 
-Worth separating two things that sound the same. A `MeshService` never has tags, in either environment: it has labels only, never tags, and the tags in question live on the `Dataplane`s behind it. So "the destination has no tags" cannot empty a Universal outbound listener, because none of the six computed labels is derived from a tag. `desiredLabels` (`generate/generator.go:272-284`) sets them unconditionally, and after `kuma.io/mesh` is stripped the listener carries `kuma.io/display-name`, `kuma.io/zone`, `kuma.io/env: universal`, `kuma.io/origin: zone` and `kuma.io/managed-by: meshservice-generator`. There is no `k8s.kuma.io/namespace`, since Universal has no namespaces, so the User case 2 pair we recommend on Kubernetes reduces to `kuma.io/display-name` alone.
+Worth separating two things that sound the same. A `MeshService` never has tags, in either environment: it has labels only, never tags, and the tags in question live on the `Dataplane`s behind it. So "the destination has no tags" cannot empty a Universal outbound listener, because none of the six computed labels is derived from a tag. `desiredLabels` (`generate/generator.go:272-284`) sets them unconditionally, and after `kuma.io/mesh` is stripped the listener carries `kuma.io/display-name`, `kuma.io/zone`, `kuma.io/env: universal`, `kuma.io/origin: zone` and `kuma.io/managed-by: meshservice-generator`. There is no `k8s.kuma.io/namespace`, since Universal has no namespaces, so the `kuma.io/display-name` plus `k8s.kuma.io/namespace` pair we recommend on Kubernetes reduces to `kuma.io/display-name` alone.
 
-What tagless `Dataplane`s do cost on Universal is user labels, and only when propagation is on. `dpContribution` (`generate/labels.go:80-183`) reads two sources: the non-reserved inbound tags that every inbound of the service agrees on, with conflicts dropped, overlaid with the `Dataplane`'s own metadata labels, both filtered through `AllowedLabelKeys`. `mergeAcrossDataplanes` (`:193-244`) then settles disagreements between `Dataplane`s by majority. Empty inbound tags simply contribute nothing to step one; the metadata labels still land, and the six computed labels are untouched. User case 3 on Universal therefore depends on operators labelling `Dataplane`s rather than on tags surviving.
+What tagless `Dataplane`s do cost on Universal is user labels, and only when propagation is on. `dpContribution` (`generate/labels.go:80-183`) reads two sources: the non-reserved inbound tags that every inbound of the service agrees on, with conflicts dropped, overlaid with the `Dataplane`'s own metadata labels, both filtered through `AllowedLabelKeys`. `mergeAcrossDataplanes` (`:193-244`) then settles disagreements between `Dataplane`s by majority. Empty inbound tags simply contribute nothing to step one; the metadata labels still land, and the six computed labels are untouched. Group targeting on Universal therefore depends on operators labelling `Dataplane`s rather than on tags surviving.
 
 A hand-written Universal `MeshService` skips the generator entirely. It goes through the API server, which calls `resource_labels.Compute` (`resource_endpoints.go:481-499`), and comes out with `kuma.io/display-name`, `kuma.io/mesh`, `kuma.io/origin: zone`, `kuma.io/zone` and `kuma.io/env: universal`. `kuma.io/managed-by` is absent, and that absence is intentional rather than an oversight: it is how the generator knows to leave the resource alone (`generator.go:319-321`). Labels the author wrote under `metadata.labels` are kept as they are, with no propagation flag and no allow list in the way, because those only gate what the generator copies off a `Dataplane`. A `MeshService` that arrived over KDS is not recomputed at all (`compute.go:126-128`), so it keeps the labels the other control plane gave it.
 
@@ -528,7 +528,7 @@ So the canonical multi-zone setup already has a destination that `listenerTags` 
 
 The computed labels are the bounded half. Six of the twelve keys in `AllComputedLabels` (`labels/registry.go:10-23`) can land on a `Mesh*Service`, the rest being for proxies and policies: `kuma.io/display-name`, `kuma.io/mesh`, `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env` and `k8s.kuma.io/namespace`. Two more are written outside `Compute` and so are not in the registry at all: `kuma.io/managed-by` and, on Kubernetes, `k8s.kuma.io/is-headless-service`. Taking the candidates one at a time:
 
-* `kuma.io/display-name`, the service's name and the direct replacement for `kuma.io/service: backend`. It carries User case 1 and User case 2, and it is the one key set unconditionally by every creation path in both environments (`compute.go:150`, `generator.go:278`).
+* `kuma.io/display-name`, the service's name and the direct replacement for `kuma.io/service: backend`. It covers both the broken `kuma.io/service` selector and the namespaced-outbound patch, and it is the one key set unconditionally by every creation path in both environments (`compute.go:150`, `generator.go:278`).
 * `k8s.kuma.io/namespace`, the other half of a Kubernetes identity, since display names only disambiguate within a namespace. Kubernetes only: `Compute` gates it on `IsK8s` (`compute.go:173`) and the controller sets it directly. Never present on Universal, which has no namespaces.
 * `kuma.io/zone`, which makes zone-scoped patches possible. It is set only for a resource created on a zone, and only when its descriptor has `ProvidedByZoneFlag` (`compute.go:156-170`, where the flag check sits inside the zone branch). A `MeshMultiZoneService` fails both tests: it is created on global, and it lacks the flag. Anything created on global lacks the key, including a `MeshService` created there.
 * `kuma.io/env`, `kubernetes` or `universal`. Set in the same branch under the same two conditions, so it is present and absent exactly where `kuma.io/zone` is. It is the natural key for "patch every Universal destination".
@@ -565,4 +565,4 @@ metadata:
 * Legacy branches keep their current behaviour: `LegacyOutbound != nil`, and inbounds with tags enabled.
 * Out of scope, noted because this fix rewrites the same metadata and should stay consistent with it. Two neighbours are left alone on purpose. Node labels (see "Case 3" in the deep dive) only ever lived in the inbound tags, so a selector on `topology.kubernetes.io/zone` or `kubernetes.io/hostname` breaks under the flag and the `Dataplane`-label fallback cannot restore it without also propagating those node labels onto the `Dataplane`'s labels. And the endpoint path fixed the same class of bug with a second key (`io.kuma.labels`) rather than by filling `envoy.lb` from labels; the reasoning for why listeners merge and endpoints split is in the `io.kuma.labels` section. Both would add metadata we are otherwise trying to keep minimal, so this MADR takes neither on and each is a separate follow-up.
 * Open question: we may want to copy only labels whose keys are on a list we choose ourselves, rather than every label the resource happens to carry. The candidates and what each one buys are in "Which labels reach the listener" above: the six computed keys are bounded, stable and already the ones we tell people to match on, while user labels are neither bounded nor stable and on Kubernetes arrive wholesale from the `Service`. A fixed list keeps the metadata small, keeps rollouts from churning listeners, and keeps the config dump free of labels nobody selects on. It needs settling before implementation, because it is easier to add keys later than to take them away.
-* A list we choose ourselves and User case 3 pull against each other. Group targeting by a user label such as `team: payments` only works if that key reaches the listener, and we cannot know those keys up front. Either the list holds computed labels only and User case 3 goes away, which takes with it the main advantage Option 4 has over Option 1, or operators name the extra keys themselves and User case 3 survives at the cost of configuration. The middle option is to reuse `MeshServiceLabelPropagation.AllowedLabelKeys`, which already exists, already rejects reserved keys and is already validated. It does not gate the Kubernetes path today, so wiring it in would mean extending it rather than adding a flag. Note its current default is "empty means allow all", which is the opposite of what we want here.
+* A list we choose ourselves and group targeting pull against each other. Group targeting by a user label such as `team: payments` only works if that key reaches the listener, and we cannot know those keys up front. Either the list holds computed labels only and group targeting goes away, which takes with it the main advantage Option 4 has over Option 1, or operators name the extra keys themselves and group targeting survives at the cost of configuration. The middle option is to reuse `MeshServiceLabelPropagation.AllowedLabelKeys`, which already exists, already rejects reserved keys and is already validated. It does not gate the Kubernetes path today, so wiring it in would mean extending it rather than adding a flag. Note its current default is "empty means allow all", which is the opposite of what we want here.
