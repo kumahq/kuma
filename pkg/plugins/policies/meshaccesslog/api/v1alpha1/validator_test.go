@@ -643,9 +643,7 @@ to:
 				expected: `
 violations:
 - field: spec.targetRef.kind
-  message: value 'MeshGateway' is not supported
-- field: spec.to[0].targetRef.kind
-  message: value 'MeshService' is not supported`,
+  message: value 'MeshGateway' is not supported`,
 			}),
 		)
 	})

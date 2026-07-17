@@ -213,11 +213,3 @@ func (m AggregatedMeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource
 	return nil
 }
 
-func (m AggregatedMeshContexts) AllMeshGateways() []*core_mesh.MeshGatewayResource {
-	var resources []*core_mesh.MeshGatewayResource
-	for _, mesh := range m.Meshes {
-		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
-		resources = append(resources, meshCtx.Resources.MeshGateways().Items...)
-	}
-	return resources
-}

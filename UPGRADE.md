@@ -437,6 +437,40 @@ with a fresh bootstrap. Once the control plane is upgraded to Kuma 3.0.0, any
 proxy still trying to use the removed SOTW stream cannot establish ADS and must
 be restarted with a Delta xDS bootstrap.
 
+### Built-in gateway API and CRDs removed
+
+The built-in gateway API has been removed entirely. The `MeshGateway`,
+`MeshGatewayRoute`, `MeshGatewayInstance`, and `MeshGatewayConfig` resources,
+their Go/proto types, their Kubernetes CRDs
+(`meshgateways.kuma.io`, `meshgatewayroutes.kuma.io`,
+`meshgatewayinstances.kuma.io`, `meshgatewayconfigs.kuma.io`), and KDS sync
+registration for these types no longer exist. `MeshGateway` is also no longer
+a valid `targetRef.kind` for any policy.
+
+A `Dataplane` with `networking.gateway.type: BUILTIN` is now rejected at
+admission and update. The `Dataplane.networking.gateway` message and the
+`DELEGATED` gateway type are unaffected — delegated gateways (bring your own
+`Deployment`/`Service` fronting a Kuma-injected pod annotated
+`kuma.io/gateway: enabled` or `provided`) continue to work exactly as before.
+
+**Action required**
+
+- Before upgrading, delete any remaining `MeshGateway`, `MeshGatewayRoute`,
+  `MeshGatewayInstance`, and `MeshGatewayConfig` resources. On Kubernetes,
+  deleting their CRDs (as this Helm chart upgrade does) removes any resources
+  still stored under them; delete them explicitly first if you need to inspect
+  or back them up beforehand.
+- Migrate any remaining `BUILTIN` gateway `Dataplane`s to `DELEGATED` before
+  upgrading (see "Built-in gateway Kubernetes controllers removed" above) —
+  after upgrading, creating or updating a `Dataplane` with
+  `networking.gateway.type: BUILTIN` fails validation.
+- The default Helm-installed cluster RBAC no longer grants access to
+  `meshgateways`, `meshgatewayroutes`, `meshgatewayinstances`,
+  `meshgatewayconfigs`, or their `/status` and `/finalizers` subresources, and
+  the validating webhook configuration no longer includes these types. If you
+  manage RBAC or webhooks manually, remove these rules; if you keep them, they
+  are harmless but unused.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

@@ -53,14 +53,11 @@ to:
 - targetRef:
     kind: Mesh
 `),
-		ErrorCases("spec.to.targetRef MeshService not allowed with top MeshGateway",
-			[]validators.Violation{{
+		ErrorCase("top-level MeshGateway is rejected",
+			validators.Violation{
 				Field:   `spec.targetRef.kind`,
 				Message: `value 'MeshGateway' is not supported`,
-			}, {
-				Field:   `spec.to[0].targetRef.kind`,
-				Message: `value 'MeshService' is not supported`,
-			}}, `
+			}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -329,7 +326,7 @@ to:
 				Message: `must not be defined`,
 			}, {
 				Field:   "spec.to[0].rules[0].default.filters[0].urlRewrite.hostToBackendHostname",
-				Message: "can only be set with MeshGateway",
+				Message: validators.MustNotBeSet,
 			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
@@ -355,36 +352,6 @@ to:
         backendRefs:
           - kind: MeshService
             name: backend
-`),
-		ErrorCases("top level MeshGateway requires backendRefs",
-			[]validators.Violation{{
-				Field:   `spec.targetRef.kind`,
-				Message: `value 'MeshGateway' is not supported`,
-			}, {
-				Field:   `spec.to[0].rules[0].default.backendRefs`,
-				Message: `must not be empty`,
-			}}, `
-type: MeshHTTPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: Mesh
-  rules:
-    - matches:
-      - path:
-          type: PathPrefix
-          value: /
-      default:
-        filters:
-          - type: URLRewrite
-            urlRewrite:
-              path:
-                type: ReplacePrefixMatch
-                replacePrefixMatch: /other
 `),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
@@ -568,7 +535,7 @@ to:
             urlRewrite:
               hostname: a23456789-a23456789-a234567890.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a2345678.com.
 `),
-		ErrorCase("top-level MeshGateway is rejected even with an otherwise valid gateway route", validators.Violation{
+		ErrorCase("top-level MeshGateway is rejected even with an otherwise valid route", validators.Violation{
 			Field:   `spec.targetRef.kind`,
 			Message: `value 'MeshGateway' is not supported`,
 		}, `
@@ -580,36 +547,8 @@ targetRef:
   name: edge
 to:
 - targetRef:
-    kind: Mesh
-  rules:
-    - matches:
-      - path:
-          value: /
-          type: PathPrefix
-      default:
-        filters:
-          - type: URLRewrite
-            urlRewrite:
-              hostToBackendHostname: true
-        backendRefs:
-          - kind: MeshService
-            name: backend
-`),
-		ErrorCase("top-level MeshGateway is rejected even with hostnames", validators.Violation{
-			Field:   `spec.targetRef.kind`,
-			Message: `value 'MeshGateway' is not supported`,
-		}, `
-type: MeshHTTPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: Mesh
-  hostnames:
-    - exammple.com
+    kind: MeshService
+    name: backend
   rules:
     - matches:
       - path:

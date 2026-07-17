@@ -134,7 +134,6 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 	availableServices = ingress.GetAvailableServices(
 		skipAvailableServices,
 		aggregatedMeshCtxs.AllDataplanes(),
-		aggregatedMeshCtxs.AllMeshGateways(),
 		t.getIngressExternalServices(aggregatedMeshCtxs),
 		t.ingressTagFilters,
 	)

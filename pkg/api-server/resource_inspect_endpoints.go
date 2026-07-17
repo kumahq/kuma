@@ -60,9 +60,7 @@ func (r *resourceInspectHandler) matchingDataplanesForPolicy() restful.RouteFunc
 
 		var dependentTypes []core_model.ResourceType
 		if r.descriptor.IsTargetRefBased {
-			dependentTypes = []core_model.ResourceType{meshhttproute_api.MeshHTTPRouteType, core_mesh.MeshGatewayType}
-		} else if r.descriptor.Name == core_mesh.MeshGatewayRouteType {
-			dependentTypes = []core_model.ResourceType{core_mesh.MeshGatewayType}
+			dependentTypes = []core_model.ResourceType{meshhttproute_api.MeshHTTPRouteType}
 		}
 		dependentResources := xds_context.NewResources()
 		for _, dependentType := range dependentTypes {
@@ -534,25 +532,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 		switch r.descriptor.Name {
 		case core_mesh.DataplaneType:
 			dp = resource.(*core_mesh.DataplaneResource)
-		case core_mesh.MeshGatewayType:
-			// Create a dataplane that would match this gateway.
-			// It might not show all policies but most of the ones matching this specific gateway and its routes
-			gw := resource.(*core_mesh.MeshGatewayResource)
-			if len(gw.Spec.Selectors) == 0 {
-				rest_errors.HandleError(request.Request.Context(), response, errors.New("no selectors on MeshGateway this is not supported"), "Invalid MeshGateway")
-				return
-			}
-			dp = &core_mesh.DataplaneResource{
-				Meta: gw.Meta,
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-							Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-							Tags: gw.Spec.Selectors[0].Match,
-						},
-					},
-				},
-			}
 		// In the future we will probably add externalService
 		default:
 			rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("rules not supported for type %s", r.descriptor.Name), "Unsupported resource type")
@@ -697,27 +676,18 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
 			})
 
-			isMeshGateway := r.descriptor.Name == core_mesh.MeshGatewayType
 			toResourceRules := []api_common.ResourceRule{}
-			if !isMeshGateway {
-				for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
-					toResourceRules = append(toResourceRules, api_common.ResourceRule{
-						Conf:                resourceRuleItem.Conf,
-						Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
-						ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
-						ResourceSectionName: &resourceRuleItem.ResourceSectionName,
-					})
-				}
+			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
+				toResourceRules = append(toResourceRules, api_common.ResourceRule{
+					Conf:                resourceRuleItem.Conf,
+					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
+					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
+					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
+				})
 			}
 			sort.Slice(toResourceRules, func(i, j int) bool {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
-			if isMeshGateway {
-				proxyRule = nil
-				toRules = []api_common.Rule{}
-				fromRules = []api_common.FromRule{}
-				inboundRules = []api_common.InboundRulesEntry{}
-			}
 
 			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
 				// No matches for this policy, keep going...
