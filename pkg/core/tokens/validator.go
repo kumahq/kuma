@@ -38,12 +38,13 @@ var _ Validator = &jwtTokenValidator{}
 
 func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken Token, claims Claims) error {
 	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (interface{}, error) {
-		var keyID KeyID
 		kid, exists := token.Header[KeyIDHeader]
 		if !exists {
 			return 0, fmt.Errorf("JWT token must have %s header", KeyIDHeader)
-		} else {
-			keyID = kid.(string)
+		}
+		keyID, ok := kid.(string)
+		if !ok {
+			return 0, fmt.Errorf("JWT token %s header must be a string", KeyIDHeader)
 		}
 		switch token.Method.Alg() {
 		case jwt.SigningMethodHS256.Name:
