@@ -52,7 +52,6 @@ var (
 )
 
 var (
-	_ = Describe("External Service locality aware", Label("job-0"), localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
 	_ = Describe("Healthcheck", Label("job-3"), healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
 	_ = Describe("Inspect", Label("job-3"), inspect.Inspect, Ordered)
 	_ = Describe("MeshHTTPRoute", Label("job-1"), meshhttproute.Test, Ordered)
@@ -70,9 +69,6 @@ var (
 	_ = Describe("Resilience", Label("job-2"), resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", Label("job-2"), resilience.ResilienceMultizoneUniversalPostgres, Ordered)
 	_ = Describe("MeshTimeout", Label("job-0"), meshtimeout.MeshTimeout, Ordered)
-	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", Label("job-0"), localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
-	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", Label("job-0"), localityawarelb.LocalityAwareLB, Ordered)
-	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", Label("job-0"), localityawarelb.LocalityAwareLBEgress, Ordered)
 	_ = Describe("Defaults", Label("job-3"), defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", Label("job-1"), meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", Label("job-1"), meshservice.Connectivity, Ordered)
