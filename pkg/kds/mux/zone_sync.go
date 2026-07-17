@@ -115,7 +115,6 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 
 	processingErrorsCh := make(chan error)
 	go g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream, processingErrorsCh)
-
 	select {
 	case <-shouldDisconnectStream.Recv():
 		logger.Info("ending stream, zone health check failed")
