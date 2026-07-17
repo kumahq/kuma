@@ -24,7 +24,7 @@ metadata:
   name: default
 spec:
   meshServices:
-    mode: Disabled
+    mode: Exclusive
 `
 
 	var cluster Cluster
@@ -103,15 +103,7 @@ spec:
 
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					cluster, "demo-client", "test-server_kuma-test_svc_80.mesh",
-					client.FromKubernetesPod(TestNamespace, "demo-client"),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-			}, "10s", "1s").Should(Succeed())
-
-			Eventually(func(g Gomega) { // should access a service with . instead of _
-				_, err := client.CollectEchoResponse(
-					cluster, "demo-client", "test-server.kuma-test.svc.80.mesh",
+					cluster, "demo-client", fmt.Sprintf("test-server.%s.svc.cluster.local", TestNamespace),
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
