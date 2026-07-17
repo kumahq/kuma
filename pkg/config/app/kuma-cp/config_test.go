@@ -6,6 +6,7 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 )
 
 var _ = Describe("Config Validate", func() {
@@ -37,6 +38,24 @@ var _ = Describe("Config Validate", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should reject global mode with kubernetes store", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Mode = core.Global
+		cfg.Environment = core.UniversalEnvironment
+		cfg.Store.Type = store.KubernetesStore
+
+		// when
+		err := cfg.Validate()
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("Kubernetes-native Global Control Plane is not supported"))
+		Expect(err.Error()).To(ContainSubstring("mode=global"))
+		Expect(err.Error()).To(ContainSubstring("store.type=kubernetes"))
+		Expect(err.Error()).To(ContainSubstring("environment=universal"))
 	})
 
 	It("should reject global mode with an invalid environment", func() {

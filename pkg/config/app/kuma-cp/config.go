@@ -333,6 +333,13 @@ func (c *Config) Validate() error {
 				core.Global, core.KubernetesEnvironment, core.Global, core.UniversalEnvironment,
 			)
 		}
+		if c.Store.Type == store.KubernetesStore {
+			return errors.Errorf(
+				"Kubernetes-native Global Control Plane is not supported: mode=%s cannot be combined with store.type=%s. "+
+					"Run mode=%s with environment=%s backed by a non-Kubernetes store such as PostgreSQL, even when Kuma CP itself is deployed on Kubernetes",
+				core.Global, store.KubernetesStore, core.Global, core.UniversalEnvironment,
+			)
+		}
 		if err := c.Multizone.Global.Validate(); err != nil {
 			return errors.Wrap(err, "Multizone Global validation failed")
 		}
