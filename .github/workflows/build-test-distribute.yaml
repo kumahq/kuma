@@ -234,8 +234,9 @@ jobs:
           only-new-issues: false
 
       # Lint and "make check" are redundant on a tag: release_sha_gate already
-      # requires a green branch push run for this exact tree/SHA. We still run
-      # metadata and SCA so release tags continue publishing security assets.
+      # requires a green branch push run for this exact tree/SHA. We
+      # intentionally keep metadata and SBOM/SCA on tag refs so release tags
+      # continue publishing security assets.
       - if: ${{ github.ref_type != 'tag' }}
         run: |
           make clean
