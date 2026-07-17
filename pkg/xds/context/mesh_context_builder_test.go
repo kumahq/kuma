@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -17,6 +18,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
@@ -356,5 +359,81 @@ status:
 		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash))
+	})
+
+	It("recomputes the mesh context when a remote MeshService and its ZoneIngress newly appear", func() {
+		// given an mTLS-enabled mesh with MeshServices everywhere, matching the e2e repro
+		Expect(samples.MeshMTLSBuilder().
+			WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
+			Create(resourceStore)).To(Succeed())
+
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(before.EndpointMap).To(BeEmpty())
+
+		// when a remote zone's ZoneIngress (with a resolved public address and
+		// AvailableServices) and its auto-generated MeshService arrive together,
+		// as they would over KDS when a new zone joins
+		Expect(builders.ZoneIngress().
+			WithZone("east").
+			WithAddress("192.168.0.1").
+			WithAdvertisedAddress("192.168.0.1").
+			WithPort(10001).
+			WithAdvertisedPort(10001).
+			AddSimpleAvailableService("backend").
+			Create(resourceStore)).To(Succeed())
+		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
+
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the mesh context must be rebuilt, with the new remote endpoint present
+		Expect(after.Hash).ToNot(Equal(before.Hash), "a newly synced remote MeshService+ZoneIngress must invalidate the mesh context")
+		Expect(after).ToNot(BeIdenticalTo(before))
+		Expect(after.EndpointMap).ToNot(BeEmpty(), "the remote MeshService should get an endpoint via the ZoneIngress")
+	})
+
+	It("recomputes the mesh context through the staged arrival matching the real KDS sequence", func() {
+		// given an mTLS-enabled mesh with MeshServices everywhere
+		Expect(samples.MeshMTLSBuilder().
+			WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
+			Create(resourceStore)).To(Succeed())
+
+		ctx0, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// stage 1: the remote zone's ZoneIngress arrives first, fully resolved
+		// (matches the real KDS trace: ZoneIngress observed complete from creationTime)
+		Expect(builders.ZoneIngress().
+			WithZone("east").
+			WithAddress("192.168.0.1").
+			WithAdvertisedAddress("192.168.0.1").
+			WithPort(10001).
+			WithAdvertisedPort(10001).
+			Create(resourceStore)).To(Succeed())
+
+		ctx1, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", ctx0)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ctx1.Hash).ToNot(Equal(ctx0.Hash), "ZoneIngress arrival alone must invalidate the mesh context")
+		Expect(ctx1.EndpointMap).To(BeEmpty(), "no MeshService exists yet, so there's nothing to route to")
+
+		// stage 2: the auto-generated MeshService is created next, WITHOUT a VIP yet
+		// (matches the real KDS trace: MeshService created ~2s before "vips.allocator: allocating IP")
+		Expect(samples.MeshServiceSyncedBackendBuilder().WithoutVIP().Create(resourceStore)).To(Succeed())
+
+		ctx2, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", ctx1)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ctx2.Hash).ToNot(Equal(ctx1.Hash), "MeshService arrival must invalidate the mesh context")
+		Expect(ctx2.EndpointMap).ToNot(BeEmpty(), "cross-zone routing goes through the ZoneIngress and does not require a VIP")
+
+		// stage 3: the VIP is allocated a couple seconds later
+		meshService := meshservice_api.NewMeshServiceResource()
+		Expect(resourceStore.Get(context.Background(), meshService, store.GetByKey(samples.MeshServiceSyncedBackendBuilder().Build().GetMeta().GetName(), "default"))).To(Succeed())
+		meshService.Status.VIPs = []meshservice_api.VIP{{IP: "240.0.0.3"}}
+		Expect(resourceStore.Update(context.Background(), meshService, store.UpdateWithLabels(meshService.GetMeta().GetLabels()))).To(Succeed())
+
+		ctx3, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", ctx2)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ctx3.Hash).ToNot(Equal(ctx2.Hash), "VIP allocation must invalidate the mesh context")
 	})
 })
