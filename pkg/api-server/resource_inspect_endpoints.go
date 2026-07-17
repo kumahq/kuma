@@ -11,7 +11,6 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
 	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
 	oapi_helpers "github.com/kumahq/kuma/v3/pkg/api-server/oapi-helpers"
