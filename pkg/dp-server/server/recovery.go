@@ -18,6 +18,11 @@ func recoverGRPCHandler(p any) error {
 	return status.Error(codes.Internal, "internal server error")
 }
 
+// The interceptors below wrap the handler call, so they recover panics that
+// happen synchronously on the handler goroutine (the one gRPC invokes the
+// handler on). Work a handler offloads to a goroutine it starts itself runs
+// outside this wrapper and has to recover on its own.
+
 func recoveryUnaryInterceptor(
 	ctx context.Context,
 	req any,
