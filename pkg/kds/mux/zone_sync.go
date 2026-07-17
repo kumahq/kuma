@@ -206,6 +206,9 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 				g.k8sStore,
 				k8s.NewSimpleKubeFactory(),
 				g.systemNamespace,
+				// Attribution rewrites are surfaced via the kds-global-sync
+				// log line; the optional counter is not wired on this branch.
+				nil,
 			),
 			g.responseBackoff,
 		)
