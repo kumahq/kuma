@@ -696,15 +696,6 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "zone-proxy-demo-client",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "zone-proxy-demo-client",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -746,15 +737,6 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -796,15 +778,6 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "zone-proxy-test-server",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "zone-proxy-test-server",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
