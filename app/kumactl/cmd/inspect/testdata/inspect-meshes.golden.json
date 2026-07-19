@@ -38,9 +38,6 @@
         },
         "TrafficRoute": {
           "total": 2
-        },
-        "TrafficTrace": {
-          "total": 1
         }
       }
     },
@@ -81,9 +78,6 @@
         },
         "TrafficRoute": {
           "total": 20
-        },
-        "TrafficTrace": {
-          "total": 10
         }
       }
     }

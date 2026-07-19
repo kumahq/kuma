@@ -298,17 +298,6 @@
    "isOutbound": false
   },
   {
-   "name": "TrafficTrace",
-   "readOnly": false,
-   "path": "traffic-traces",
-   "singularDisplayName": "Traffic Trace",
-   "pluralDisplayName": "Traffic Traces",
-   "isExperimental": false,
-   "isTargetRefBased": false,
-   "isInbound": false,
-   "isOutbound": false
-  },
-  {
    "name": "VirtualOutbound",
    "readOnly": false,
    "path": "virtual-outbounds",

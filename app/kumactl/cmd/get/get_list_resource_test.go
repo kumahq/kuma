@@ -55,7 +55,6 @@ var _ = Describe("kumactl get [resource]", func() {
 		Entry("traffic-log", "traffic-logs"),
 		Entry("traffic-permission", "traffic-permissions"),
 		Entry("traffic-route", "traffic-routes"),
-		Entry("traffic-trace", "traffic-traces"),
 		Entry("zone-ingress", "zone-ingresses"),
 		Entry("zoneegress", "zoneegresses"),
 		Entry("zone", "zones"),

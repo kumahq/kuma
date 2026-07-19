@@ -214,12 +214,6 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return core_mesh.NewTrafficRouteResource() },
 					expectedMessage: "deleted TrafficRoute \"web-to-backend\"\n",
 				}),
-				Entry("traffic-traces", testCase{
-					typ:             "traffic-trace",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficTraceResource() },
-					expectedMessage: "deleted TrafficTrace \"web\"\n",
-				}),
 				Entry("secrets", testCase{
 					typ:             "secret",
 					name:            "web",
@@ -331,12 +325,6 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web-to-backend",
 					resource:        func() core_model.Resource { return core_mesh.NewTrafficRouteResource() },
 					expectedMessage: "Error: there is no TrafficRoute with name \"web-to-backend\"\n",
-				}),
-				Entry("traffic-traces", testCase{
-					typ:             "traffic-trace",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficRouteResource() },
-					expectedMessage: "Error: there is no TrafficTrace with name \"web\"\n",
 				}),
 				Entry("fault-injections", testCase{
 					typ:             "fault-injection",

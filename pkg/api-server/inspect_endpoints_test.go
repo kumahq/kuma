@@ -696,72 +696,6 @@ var _ = Describe("Inspect WS", func() {
 			},
 			contentType: restful.MIME_JSON,
 		}),
-		Entry("inspect traffic trace", testCase{
-			path:    "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.TrafficTraceResource{
-					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.TrafficTrace{
-						Selectors: anyService(),
-						Conf:      samples.TrafficTrace.Conf,
-					},
-				},
-				&core_mesh.MeshGatewayResource{
-					Meta: &test_model.ResourceMeta{Name: "meshgateway", Mesh: "mesh-1"},
-					Spec: &mesh_proto.MeshGateway{
-						Selectors: selectors{
-							serviceSelector("meshgateway", ""),
-						},
-						Conf: &mesh_proto.MeshGateway_Conf{
-							Listeners: []*mesh_proto.MeshGateway_Listener{
-								{
-									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-									Port:     80,
-								},
-							},
-						},
-					},
-				},
-				&core_mesh.MeshGatewayRouteResource{
-					Meta: &test_model.ResourceMeta{Name: "route-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.MeshGatewayRoute{
-						Selectors: selectors{
-							serviceSelector("meshgateway", ""),
-						},
-						Conf: &mesh_proto.MeshGatewayRoute_Conf{
-							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-								Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
-									Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
-										{
-											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
-												{
-													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
-														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
-														Value: "/redis",
-													},
-												},
-											},
-											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
-												{
-													Destination: serviceSelector("redis", "").Match,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				builders.Dataplane().WithName("meshgateway-1").WithMesh("mesh-1").WithBuiltInGateway("meshgateway").Build(),
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithServices("web").AddOutboundsToServices("elastic", "backend").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
 		Entry("inspect proxytemplate", testCase{
 			path:    "/meshes/mesh-1/proxytemplates/tt-1/dataplanes",
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_proxytemplate.json")),
@@ -777,21 +711,6 @@ var _ = Describe("Inspect WS", func() {
 				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
 				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("redis", "elastic", "web").Build(),
 				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithServices("web").AddOutboundsToServices("elastic", "backend").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect traffic trace, empty response", testCase{
-			path:    "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace_empty-response.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.TrafficTraceResource{
-					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.TrafficTrace{
-						Selectors: anyService(),
-						Conf:      samples.TrafficTrace.Conf,
-					},
-				},
 			},
 			contentType: restful.MIME_JSON,
 		}),

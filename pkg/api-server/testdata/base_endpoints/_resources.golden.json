@@ -631,23 +631,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "TrafficTrace",
-   "path": "traffic-traces",
-   "pluralDisplayName": "Traffic Traces",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Traffic Trace"
-  },
-  {
-   "includeInFederation": true,
    "name": "VirtualOutbound",
    "path": "virtual-outbounds",
    "pluralDisplayName": "Virtual Outbounds",

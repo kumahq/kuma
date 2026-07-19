@@ -44,7 +44,6 @@ var meshInsightTable = printers.Table{
 		"HEALTH CHECKS",
 		"FAULT INJECTIONS",
 		"EXTERNAL SERVICES",
-		"TRAFFIC TRACES",
 		"TRAFFIC LOGS",
 		"PROXY TEMPLATES",
 		"RATE LIMITS",
@@ -87,11 +86,6 @@ var meshInsightTable = printers.Table{
 			es = stat.Total
 		}
 
-		var tt uint32
-		if stat, ok := meshInsight.Policies[string(mesh.TrafficTraceType)]; ok {
-			tt = stat.Total
-		}
-
 		var tl uint32
 		if stat, ok := meshInsight.Policies[string(mesh.TrafficLogType)]; ok {
 			tl = stat.Total
@@ -116,7 +110,6 @@ var meshInsightTable = printers.Table{
 			table.Number(hc), // HEALTH CHECKS
 			table.Number(fi), // FAULT INJECTIONS
 			table.Number(es), // EXTERNAL SERVICES
-			table.Number(tt), // TRAFFIC TRACES
 			table.Number(tl), // TRAFFIC LOGS
 			table.Number(pt), // PROXY TEMPLATES
 			table.Number(rl), // RATE LIMITS

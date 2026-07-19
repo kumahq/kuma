@@ -116,21 +116,10 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			serverResponseFile: "inspect-health-check-1.5.server-response.json",
 			cmdArgs:            []string{"inspect", "healthcheck", "hc1"},
 		}),
-		Entry("dataplane policy", testCase{
-			goldenFile:         "inspect-traffic-trace.golden.txt",
-			serverResponseFile: "inspect-traffic-trace.server-response.json",
-			cmdArgs:            []string{"inspect", "traffic-trace", "tt1"},
-		}),
 		Entry("new-api mtp", testCase{
 			goldenFile:         "inspect-mtp-dp.golden.txt",
 			serverResponseFile: "inspect-mtp-dp.server-response.json",
 			cmdArgs:            []string{"inspect", "meshtrafficpermission", "tt1", "--new-api"},
-		}),
-		Entry("other-mesh", testCase{
-			goldenFile:         "inspect-traffic-trace-other-mesh.golden.txt",
-			serverResponseFile: "inspect-traffic-trace-other-mesh.server-response.json",
-			mesh:               "other-mesh",
-			cmdArgs:            []string{"inspect", "traffic-trace", "tt1", "--mesh", "other-mesh"},
 		}),
 	)
 })

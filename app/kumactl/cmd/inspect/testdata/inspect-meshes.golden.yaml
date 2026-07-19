@@ -25,8 +25,6 @@ items:
       total: 7
     TrafficRoute:
       total: 2
-    TrafficTrace:
-      total: 1
   type: MeshInsight
 - creationTime: "0001-01-01T00:00:00Z"
   dataplanes:
@@ -54,8 +52,6 @@ items:
       total: 70
     TrafficRoute:
       total: 20
-    TrafficTrace:
-      total: 10
   type: MeshInsight
 next: null
 total: 2

@@ -236,14 +236,6 @@ var (
 			}},
 		},
 	}
-	TrafficTrace = &mesh_proto.TrafficTrace{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{mesh_proto.ServiceTag: "*"},
-		}},
-		Conf: &mesh_proto.TrafficTrace_Conf{
-			Backend: "tracing-backend",
-		},
-	}
 	ProxyTemplate = &mesh_proto.ProxyTemplate{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{mesh_proto.ServiceTag: "*"},

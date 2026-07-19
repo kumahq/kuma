@@ -4220,80 +4220,6 @@ _kumactl_get_traffic-routes()
     noun_aliases=()
 }
 
-_kumactl_get_traffic-trace()
-{
-    last_command="kumactl_get_traffic-trace"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_traffic-traces()
-{
-    last_command="kumactl_get_traffic-traces"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_get_virtual-outbound()
 {
     last_command="kumactl_get_virtual-outbound"
@@ -5080,16 +5006,6 @@ _kumactl_get()
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
         command_aliases+=("")
         aliashash[""]="traffic-routes"
-    fi
-    commands+=("traffic-trace")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="traffic-trace"
-    fi
-    commands+=("traffic-traces")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="traffic-traces"
     fi
     commands+=("virtual-outbound")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
@@ -6331,44 +6247,6 @@ _kumactl_inspect_traffic-route()
     noun_aliases=()
 }
 
-_kumactl_inspect_traffic-trace()
-{
-    last_command="kumactl_inspect_traffic-trace"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--new-api")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_inspect_zoneegress()
 {
     last_command="kumactl_inspect_zoneegress"
@@ -6572,7 +6450,6 @@ _kumactl_inspect()
     commands+=("traffic-log")
     commands+=("traffic-permission")
     commands+=("traffic-route")
-    commands+=("traffic-trace")
     commands+=("zoneegress")
     commands+=("zoneegresses")
     commands+=("zoneingress")
