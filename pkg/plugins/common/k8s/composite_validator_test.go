@@ -29,7 +29,7 @@ func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_
 }
 
 func (d *denyingValidator) Supports(req kube_admission.Request) bool {
-	gvk := mesh_k8s.GroupVersion.WithKind("TrafficRoute")
+	gvk := mesh_k8s.GroupVersion.WithKind("ExternalService")
 	return req.Kind.Group == gvk.Group && req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version
 }
 
@@ -47,10 +47,10 @@ var _ = Describe("Composite Validator", func() {
 		handler = composite.IntoWebhook(scheme)
 
 		kubeTypes = k8s_registry.NewTypeRegistry()
-		err := kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{
+		err := kubeTypes.RegisterObjectType(&mesh_proto.ExternalService{}, &mesh_k8s.ExternalService{
 			TypeMeta: kube_meta.TypeMeta{
 				APIVersion: mesh_k8s.GroupVersion.String(),
-				Kind:       "TrafficRoute",
+				Kind:       "ExternalService",
 			},
 		})
 		Expect(err).ToNot(HaveOccurred())
@@ -64,7 +64,7 @@ var _ = Describe("Composite Validator", func() {
 		yaml := `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "TrafficRoute",
+			  "kind": "ExternalService",
 			  "mesh": "demo",
 			  "metadata": {
 				"namespace": "example",
@@ -72,15 +72,13 @@ var _ = Describe("Composite Validator", func() {
 				"creationTimestamp": null
 			  },
 			  "spec": {
-				"conf": {
-				  "destination": {
-				    "path": "/random"
-				  }
+				"tags": {
+				  "path": "/random"
 				}
 			  }
 			}
 			`
-		obj, err := kubeTypes.NewObject(&mesh_proto.TrafficRoute{})
+		obj, err := kubeTypes.NewObject(&mesh_proto.ExternalService{})
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{

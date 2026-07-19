@@ -30,25 +30,19 @@ var _ = Describe("Resource Manager", func() {
 		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, model.NoMesh))
 	}
 
-	createSampleResource := func(mesh string) (*core_mesh.TrafficRouteResource, error) {
-		trRes := core_mesh.TrafficRouteResource{
-			Spec: &mesh_proto.TrafficRoute{
-				Sources: []*mesh_proto.Selector{{Match: map[string]string{
-					mesh_proto.ServiceTag: "*",
-				}}},
-				Destinations: []*mesh_proto.Selector{{Match: map[string]string{
-					mesh_proto.ServiceTag: "*",
-				}}},
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					Destination: map[string]string{
-						mesh_proto.ServiceTag: "*",
-						"path":                "demo",
-					},
+	createSampleResource := func(mesh string) (*core_mesh.ExternalServiceResource, error) {
+		esRes := core_mesh.ExternalServiceResource{
+			Spec: &mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "192.168.0.1:8080",
+				},
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "es-1",
 				},
 			},
 		}
-		err := resManager.Create(context.Background(), &trRes, store.CreateByKey("tr-1", mesh))
-		return &trRes, err
+		err := resManager.Create(context.Background(), &esRes, store.CreateByKey("tr-1", mesh))
+		return &esRes, err
 	}
 
 	Describe("Create()", func() {
@@ -85,47 +79,44 @@ var _ = Describe("Resource Manager", func() {
 			_, err = createSampleResource("mesh-2")
 			Expect(err).ToNot(HaveOccurred())
 
-			tlKey := model.ResourceKey{
+			dpKey := model.ResourceKey{
 				Mesh: "mesh-1",
-				Name: "tl-1",
+				Name: "dp-1",
 			}
-			trafficLog := &core_mesh.TrafficLogResource{
-				Spec: &mesh_proto.TrafficLog{
-					Sources: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"kuma.io/service": "*",
-							},
-						},
-					},
-					Destinations: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"kuma.io/service": "*",
+			dataplane := &core_mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port: 1234,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+								},
 							},
 						},
 					},
 				},
 			}
-			err = resManager.Create(context.Background(), trafficLog, store.CreateBy(tlKey))
+			err = resManager.Create(context.Background(), dataplane, store.CreateBy(dpKey))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = resManager.DeleteAll(context.Background(), &core_mesh.TrafficRouteResourceList{}, store.DeleteAllByMesh("mesh-1"))
+			err = resManager.DeleteAll(context.Background(), &core_mesh.ExternalServiceResourceList{}, store.DeleteAllByMesh("mesh-1"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// and resource from mesh-1 is deleted
-			res1 := core_mesh.NewTrafficRouteResource()
+			res1 := core_mesh.NewExternalServiceResource()
 			err = resManager.Get(context.Background(), res1, store.GetByKey("tr-1", "mesh-1"))
 			Expect(store.IsNotFound(err)).To(BeTrue())
 
-			// and only TrafficRoutes are deleted
-			Expect(resManager.Get(context.Background(), core_mesh.NewTrafficLogResource(), store.GetBy(tlKey))).To(Succeed())
+			// and only ExternalServices are deleted
+			Expect(resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), store.GetBy(dpKey))).To(Succeed())
 
 			// and resource from mesh-2 is retained
-			res2 := core_mesh.NewTrafficRouteResource()
+			res2 := core_mesh.NewExternalServiceResource()
 			err = resManager.Get(context.Background(), res2, store.GetByKey("tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
 		})

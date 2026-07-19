@@ -213,8 +213,8 @@ var _ = Describe("Compute", func() {
 			mode:      core.Zone,
 			isK8s:     true,
 			localZone: "zone-1",
-			r: &mesh.TimeoutResource{
-				Spec: samples.Timeout,
+			r: &mesh.ExternalServiceResource{
+				Spec: samples.ExternalService,
 				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "sample-timeout"},
 			},
 			expectedLabels: map[string]string{

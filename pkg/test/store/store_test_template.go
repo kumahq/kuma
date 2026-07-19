@@ -37,7 +37,7 @@ func ExecuteStoreTests(
 	})
 
 	BeforeEach(func() {
-		list := core_mesh.TrafficRouteResourceList{}
+		list := core_mesh.ExternalServiceResourceList{}
 		err := s.List(context.Background(), &list)
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range list.Items {
@@ -54,13 +54,11 @@ func ExecuteStoreTests(
 		}
 	})
 
-	createResource := func(name string, keyAndValues ...string) *core_mesh.TrafficRouteResource {
-		res := core_mesh.TrafficRouteResource{
-			Spec: &v1alpha1.TrafficRoute{
-				Conf: &v1alpha1.TrafficRoute_Conf{
-					Destination: map[string]string{
-						"path": "demo",
-					},
+	createResource := func(name string, keyAndValues ...string) *core_mesh.ExternalServiceResource {
+		res := core_mesh.ExternalServiceResource{
+			Spec: &v1alpha1.ExternalService{
+				Tags: map[string]string{
+					"path": "demo",
 				},
 			},
 		}
@@ -86,7 +84,7 @@ func ExecuteStoreTests(
 				created := createResource(name, "foo", "bar")
 
 				// when retrieve created object
-				resource := core_mesh.NewTrafficRouteResource()
+				resource := core_mesh.NewExternalServiceResource()
 				err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 				// then
@@ -187,7 +185,7 @@ func ExecuteStoreTests(
 				versionBeforeUpdate := resource.Meta.GetVersion()
 
 				// when
-				resource.Spec.Conf.Destination["path"] = "new-path"
+				resource.Spec.Tags["path"] = "new-path"
 				newLabels := map[string]string{
 					"foo":      "barbar",
 					"newlabel": "newvalue",
@@ -205,14 +203,14 @@ func ExecuteStoreTests(
 				}
 
 				// when retrieve the resource
-				res := core_mesh.NewTrafficRouteResource()
+				res := core_mesh.NewExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// and
-				Expect(res.Spec.Conf.Destination["path"]).To(Equal("new-path"))
+				Expect(res.Spec.Tags["path"]).To(Equal("new-path"))
 				Expect(resource.Meta.GetLabels()).To(And(HaveKeyWithValue("foo", "barbar"), HaveKeyWithValue("newlabel", "newvalue")))
 
 				// and modification time is updated
@@ -231,13 +229,13 @@ func ExecuteStoreTests(
 				resource := createResource(name, "foo", "bar")
 
 				// when
-				resource.Spec.Conf.Destination["path"] = "new-path"
+				resource.Spec.Tags["path"] = "new-path"
 				err := s.Update(context.Background(), resource)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				res := core_mesh.NewTrafficRouteResource()
+				res := core_mesh.NewExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
@@ -249,13 +247,13 @@ func ExecuteStoreTests(
 				resource := createResource(name, "foo", "bar")
 
 				// when
-				resource.Spec.Conf.Destination["path"] = "new-path"
+				resource.Spec.Tags["path"] = "new-path"
 				err := s.Update(context.Background(), resource, store.UpdateWithLabels(map[string]string{}))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				res := core_mesh.NewTrafficRouteResource()
+				res := core_mesh.NewExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Meta.GetLabels()).ToNot(HaveKeyWithValue("foo", "bar"))
@@ -312,7 +310,7 @@ func ExecuteStoreTests(
 			It("should throw an error if resource is not found", func() {
 				// given
 				name := "non-existent-name.demo"
-				resource := core_mesh.NewTrafficRouteResource()
+				resource := core_mesh.NewExternalServiceResource()
 
 				// when
 				err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
@@ -336,7 +334,7 @@ func ExecuteStoreTests(
 				Expect(store.IsNotFound(err)).To(BeTrue())
 
 				// and when getting the given resource
-				getResource := core_mesh.NewTrafficRouteResource()
+				getResource := core_mesh.NewExternalServiceResource()
 				err = s.Get(context.Background(), getResource, store.GetByKey(name, mesh))
 
 				// then resource still exists
@@ -349,14 +347,14 @@ func ExecuteStoreTests(
 				createResource(name)
 
 				// when
-				resource := core_mesh.NewTrafficRouteResource()
+				resource := core_mesh.NewExternalServiceResource()
 				err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when query for deleted resource
-				resource = core_mesh.NewTrafficRouteResource()
+				resource = core_mesh.NewExternalServiceResource()
 				err = s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 				// then resource cannot be found
@@ -368,7 +366,7 @@ func ExecuteStoreTests(
 			It("should return an error if resource is not found", func() {
 				// given
 				name := "non-existing-resource.demo"
-				resource := core_mesh.NewTrafficRouteResource()
+				resource := core_mesh.NewExternalServiceResource()
 
 				// when
 				err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
@@ -384,7 +382,7 @@ func ExecuteStoreTests(
 				createResource(name)
 
 				// when
-				resource := core_mesh.NewTrafficRouteResource()
+				resource := core_mesh.NewExternalServiceResource()
 				err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 				// then
@@ -397,7 +395,7 @@ func ExecuteStoreTests(
 				createdResource := createResource(name)
 
 				// when
-				res := core_mesh.NewTrafficRouteResource()
+				res := core_mesh.NewExternalServiceResource()
 				err := s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 				// then
@@ -415,23 +413,23 @@ func ExecuteStoreTests(
 				res := createResource(name)
 
 				// when trying to retrieve resource with proper version
-				err := s.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
+				err := s.Get(context.Background(), core_mesh.NewExternalServiceResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
 
 				// then resource is found
 				Expect(err).ToNot(HaveOccurred())
 
 				// when trying to retrieve resource with different version
-				err = s.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
+				err = s.Get(context.Background(), core_mesh.NewExternalServiceResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
 
 				// then resource precondition failed error occurred
-				Expect(err).Should(MatchError(store.ErrorResourceConflict(core_mesh.TrafficRouteType, name, mesh)))
+				Expect(err).Should(MatchError(store.ErrorResourceConflict(core_mesh.ExternalServiceType, name, mesh)))
 			})
 		})
 
 		Describe("List()", func() {
 			It("should return an empty list if there are no matching resources", func() {
 				// given
-				list := core_mesh.TrafficRouteResourceList{}
+				list := core_mesh.ExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByMesh(mesh))
@@ -449,7 +447,7 @@ func ExecuteStoreTests(
 				createResource("res-1.demo")
 				createResource("res-2.demo")
 
-				list := core_mesh.TrafficRouteResourceList{}
+				list := core_mesh.ExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list)
@@ -464,9 +462,9 @@ func ExecuteStoreTests(
 				names := []string{list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName()}
 				Expect(names).To(ConsistOf("res-1.demo", "res-2.demo"))
 				Expect(list.Items[0].Meta.GetMesh()).To(Equal(mesh))
-				Expect(list.Items[0].Spec.Conf.Destination["path"]).To(Equal("demo"))
+				Expect(list.Items[0].Spec.Tags["path"]).To(Equal("demo"))
 				Expect(list.Items[1].Meta.GetMesh()).To(Equal(mesh))
-				Expect(list.Items[1].Spec.Conf.Destination["path"]).To(Equal("demo"))
+				Expect(list.Items[1].Spec.Tags["path"]).To(Equal("demo"))
 			})
 
 			It("should not return a list of resources in different mesh", func() {
@@ -474,7 +472,7 @@ func ExecuteStoreTests(
 				createResource("list-res-1.demo")
 				createResource("list-res-2.demo")
 
-				list := core_mesh.TrafficRouteResourceList{}
+				list := core_mesh.ExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByMesh("different-mesh"))
@@ -493,7 +491,7 @@ func ExecuteStoreTests(
 				createResource("list-res-2.demo")
 				createResource("list-mes-1.demo")
 
-				list := core_mesh.TrafficRouteResourceList{}
+				list := core_mesh.ExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByNameContains("list-res"))
@@ -503,7 +501,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(2)))
 				// and
-				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.TrafficRouteResource) []string {
+				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.ExternalServiceResource) []string {
 					var res []string
 					for _, v := range itms {
 						res = append(res, v.GetMeta().GetName())
@@ -518,7 +516,7 @@ func ExecuteStoreTests(
 				createResource("list-res-2.demo")
 				createResource("list-mes-1.demo")
 
-				list := core_mesh.TrafficRouteResourceList{}
+				list := core_mesh.ExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByNameContains("list-res"), store.ListByMesh(mesh))
@@ -528,7 +526,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(2)))
 				// and
-				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.TrafficRouteResource) []string {
+				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.ExternalServiceResource) []string {
 					var res []string
 					for _, v := range itms {
 						res = append(res, v.GetMeta().GetName())
@@ -544,7 +542,7 @@ func ExecuteStoreTests(
 				rs3 := createResource("list-mes-1.demo")
 				rs4 := createResource("list-mes-1.default")
 
-				list := core_mesh.TrafficRouteResourceList{}
+				list := core_mesh.ExternalServiceResourceList{}
 				rk := []core_model.ResourceKey{core_model.MetaToResourceKey(rs3.GetMeta()), core_model.MetaToResourceKey(rs4.GetMeta())}
 
 				// when
@@ -555,7 +553,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(2)))
 				// and
-				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.TrafficRouteResource) []string {
+				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.ExternalServiceResource) []string {
 					var res []string
 					for _, v := range itms {
 						res = append(res, v.GetMeta().GetName())
@@ -579,7 +577,7 @@ func ExecuteStoreTests(
 
 					// when list first two pages with 2 elements
 					for i := 1; i <= 2; i++ {
-						list := core_mesh.TrafficRouteResourceList{}
+						list := core_mesh.ExternalServiceResourceList{}
 						err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
 
 						Expect(err).ToNot(HaveOccurred())
@@ -592,7 +590,7 @@ func ExecuteStoreTests(
 					}
 
 					// when list third page with 1 element (less than page size)
-					list := core_mesh.TrafficRouteResourceList{}
+					list := core_mesh.ExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
 
 					// then
@@ -614,7 +612,7 @@ func ExecuteStoreTests(
 					createResource("res-1.demo")
 
 					// when
-					list := core_mesh.TrafficRouteResourceList{}
+					list := core_mesh.ExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(5, ""))
 
 					// then
@@ -629,7 +627,7 @@ func ExecuteStoreTests(
 					createResource("res-1.demo")
 
 					// when
-					list := core_mesh.TrafficRouteResourceList{}
+					list := core_mesh.ExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(1, ""))
 
 					// then
@@ -641,7 +639,7 @@ func ExecuteStoreTests(
 
 				It("next offset should be null when queried empty collection", func() {
 					// when
-					list := core_mesh.TrafficRouteResourceList{}
+					list := core_mesh.ExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, ""))
 
 					// then
@@ -653,7 +651,7 @@ func ExecuteStoreTests(
 
 				It("next offset should return error when query with invalid offset", func() {
 					// when
-					list := core_mesh.TrafficRouteResourceList{}
+					list := core_mesh.ExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, "123invalidOffset"))
 
 					// then

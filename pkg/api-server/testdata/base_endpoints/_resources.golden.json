@@ -1,23 +1,6 @@
 {
  "resources": [
   {
-   "includeInFederation": true,
-   "name": "CircuitBreaker",
-   "path": "circuit-breakers",
-   "pluralDisplayName": "Circuit Breakers",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Circuit Breaker"
-  },
-  {
    "includeInFederation": false,
    "name": "Dataplane",
    "path": "dataplanes",
@@ -49,23 +32,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "FaultInjection",
-   "path": "fault-injections",
-   "pluralDisplayName": "Fault Injections",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Fault Injection"
-  },
-  {
-   "includeInFederation": true,
    "name": "GlobalSecret",
    "path": "globalsecrets",
    "pluralDisplayName": "Global Secrets",
@@ -73,23 +39,6 @@
    "scope": "Global",
    "shortName": "",
    "singularDisplayName": "Global Secret"
-  },
-  {
-   "includeInFederation": true,
-   "name": "HealthCheck",
-   "path": "health-checks",
-   "pluralDisplayName": "Health Checks",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Health Check"
   },
   {
    "includeInFederation": true,
@@ -526,23 +475,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "Retry",
-   "path": "retries",
-   "pluralDisplayName": "Retries",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Retry"
-  },
-  {
-   "includeInFederation": true,
    "name": "Secret",
    "path": "secrets",
    "pluralDisplayName": "Secrets",
@@ -560,74 +492,6 @@
    "scope": "Mesh",
    "shortName": "",
    "singularDisplayName": "Service Insight"
-  },
-  {
-   "includeInFederation": true,
-   "name": "Timeout",
-   "path": "timeouts",
-   "pluralDisplayName": "Timeouts",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Timeout"
-  },
-  {
-   "includeInFederation": true,
-   "name": "TrafficLog",
-   "path": "traffic-logs",
-   "pluralDisplayName": "Traffic Logs",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Traffic Log"
-  },
-  {
-   "includeInFederation": true,
-   "name": "TrafficPermission",
-   "path": "traffic-permissions",
-   "pluralDisplayName": "Traffic Permissions",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Traffic Permission"
-  },
-  {
-   "includeInFederation": true,
-   "name": "TrafficRoute",
-   "path": "traffic-routes",
-   "pluralDisplayName": "Traffic Routes",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Traffic Route"
   },
   {
    "includeInFederation": true,

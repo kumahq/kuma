@@ -38,13 +38,7 @@ var meshInsightTable = printers.Table{
 	Headers: []string{
 		"MESH",
 		"DATAPLANES",
-		"TRAFFIC PERMISSIONS",
-		"TRAFFIC ROUTES",
-		"CIRCUIT BREAKERS",
-		"HEALTH CHECKS",
-		"FAULT INJECTIONS",
 		"EXTERNAL SERVICES",
-		"TRAFFIC LOGS",
 		"PROXY TEMPLATES",
 		"RATE LIMITS",
 	},
@@ -56,39 +50,9 @@ var meshInsightTable = printers.Table{
 		meta := meshInsights.Items[i].Meta
 		meshInsight := meshInsights.Items[i].Spec
 
-		var tp uint32
-		if stat, ok := meshInsight.Policies[string(mesh.TrafficPermissionType)]; ok {
-			tp = stat.Total
-		}
-
-		var tr uint32
-		if stat, ok := meshInsight.Policies[string(mesh.TrafficRouteType)]; ok {
-			tr = stat.Total
-		}
-
-		var cb uint32
-		if stat, ok := meshInsight.Policies[string(mesh.CircuitBreakerType)]; ok {
-			cb = stat.Total
-		}
-
-		var hc uint32
-		if stat, ok := meshInsight.Policies[string(mesh.HealthCheckType)]; ok {
-			hc = stat.Total
-		}
-
-		var fi uint32
-		if stat, ok := meshInsight.Policies[string(mesh.FaultInjectionType)]; ok {
-			fi = stat.Total
-		}
-
 		var es uint32
 		if stat, ok := meshInsight.Policies[string(mesh.ExternalServiceType)]; ok {
 			es = stat.Total
-		}
-
-		var tl uint32
-		if stat, ok := meshInsight.Policies[string(mesh.TrafficLogType)]; ok {
-			tl = stat.Total
 		}
 
 		var pt uint32
@@ -104,13 +68,7 @@ var meshInsightTable = printers.Table{
 		return []string{
 			meta.GetName(), // MESH
 			fmt.Sprintf("%d/%d", meshInsight.Dataplanes.Online, meshInsight.Dataplanes.Total), // DATAPLANES
-			table.Number(tp), // TRAFFIC PERMISSIONS
-			table.Number(tr), // TRAFFIC ROUTES
-			table.Number(cb), // CIRCUIT BREAKERS
-			table.Number(hc), // HEALTH CHECKS
-			table.Number(fi), // FAULT INJECTIONS
 			table.Number(es), // EXTERNAL SERVICES
-			table.Number(tl), // TRAFFIC LOGS
 			table.Number(pt), // PROXY TEMPLATES
 			table.Number(rl), // RATE LIMITS
 		}, nil

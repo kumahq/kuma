@@ -1,4 +1,0 @@
-#/meshes/default/circuit-breakers/web-to-backend 201 method=PUT
-#/meshes/default/circuit-breakers/web-to-backend 200
-type: Mesh
-name: default

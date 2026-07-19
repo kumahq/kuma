@@ -189,31 +189,17 @@ var _ = Describe("Context", func() {
 				},
 			}),
 			Entry("should not change non-insight", testCase{
-				resource: &core_mesh.CircuitBreakerResource{
+				resource: &core_mesh.ExternalServiceResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "cb-1",
 					},
-					Spec: &mesh_proto.CircuitBreaker{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match1": "source",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match2": "dest",
-								},
-							},
-						},
-						Conf: &mesh_proto.CircuitBreaker_Conf{
-							SplitExternalAndLocalErrors: true,
+					Spec: &mesh_proto.ExternalService{
+						Networking: &mesh_proto.ExternalService_Networking{
+							Address: "192.168.0.1:8080",
 						},
 					},
 				},
-				expect: &core_mesh.CircuitBreakerResource{
+				expect: &core_mesh.ExternalServiceResource{
 					Meta: &test_model.ResourceMeta{
 						Name: hash.HashedName("", "cb-1", "zone"),
 						Labels: map[string]string{
@@ -222,23 +208,9 @@ var _ = Describe("Context", func() {
 							"kuma.io/zone":         "zone",
 						},
 					},
-					Spec: &mesh_proto.CircuitBreaker{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match1": "source",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match2": "dest",
-								},
-							},
-						},
-						Conf: &mesh_proto.CircuitBreaker_Conf{
-							SplitExternalAndLocalErrors: true,
+					Spec: &mesh_proto.ExternalService{
+						Networking: &mesh_proto.ExternalService_Networking{
+							Address: "192.168.0.1:8080",
 						},
 					},
 				},
@@ -476,7 +448,7 @@ var _ = Describe("Context", func() {
 		}
 
 		resource := func(given testCase) model.Resource {
-			var r model.Resource = core_mesh.NewCircuitBreakerResource()
+			var r model.Resource = core_mesh.NewExternalServiceResource()
 			switch given.scope {
 			case model.ScopeGlobal:
 				r = core_system.NewGlobalSecretResource()

@@ -102,7 +102,7 @@ var _ = Describe("Insight Persistence", func() {
 		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
+		err = rm.Create(context.Background(), &core_mesh.ExternalServiceResource{Spec: &mesh_proto.ExternalService{Networking: &mesh_proto.ExternalService_Networking{Address: "192.168.0.1:8080"}, Tags: map[string]string{mesh_proto.ServiceTag: "es-1"}}}, store.CreateByKey("es-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		step(stepsToResync + 1)
@@ -111,7 +111,7 @@ var _ = Describe("Insight Persistence", func() {
 			insight := core_mesh.NewMeshInsightResource()
 			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(insight.Spec.Resources[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
+			g.Expect(insight.Spec.Resources[string(core_mesh.ExternalServiceType)].Total).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 

@@ -12,32 +12,14 @@
         "offline": 10
       },
       "policies": {
-        "CircuitBreaker": {
-          "total": 5
-        },
         "ExternalService": {
           "total": 9
-        },
-        "FaultInjection": {
-          "total": 6
-        },
-        "HealthCheck": {
-          "total": 4
         },
         "ProxyTemplate": {
           "total": 8
         },
         "RateLimit": {
           "total": 10
-        },
-        "TrafficLog": {
-          "total": 3
-        },
-        "TrafficPermission": {
-          "total": 7
-        },
-        "TrafficRoute": {
-          "total": 2
         }
       }
     },
@@ -52,32 +34,14 @@
         "offline": 10
       },
       "policies": {
-        "CircuitBreaker": {
-          "total": 50
-        },
         "ExternalService": {
           "total": 90
-        },
-        "FaultInjection": {
-          "total": 60
-        },
-        "HealthCheck": {
-          "total": 40
         },
         "ProxyTemplate": {
           "total": 80
         },
         "RateLimit": {
           "total": 100
-        },
-        "TrafficLog": {
-          "total": 30
-        },
-        "TrafficPermission": {
-          "total": 70
-        },
-        "TrafficRoute": {
-          "total": 20
         }
       }
     }

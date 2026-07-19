@@ -15,31 +15,6 @@ networking:
   address: 192.168.0.1
   port: 10002
 ---
-type: TrafficPermission
-name: allow-all-traffic
-mesh: zone-1
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: '*'
----
-type: TrafficRoute
-name: trafficroute-0
-mesh: mesh-1
-sources:
-- match:
-    kuma.io/service: foo
-destinations:
-- match:
-    kuma.io/service: externalservice-1
-conf:
-  loadBalancer:
-    roundRobin: {}
-  destination:
-    kuma.io/service: externalservice-2
----
 type: ZoneIngress
 name: zone-2-zoneingress-1
 zone: zone-2

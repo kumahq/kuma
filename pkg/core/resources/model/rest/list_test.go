@@ -2,7 +2,6 @@ package rest_test
 
 import (
 	"encoding/json"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,7 +15,6 @@ import (
 	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Unmarshal ResourceList", func() {
@@ -27,33 +25,29 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			{
 				"items": [
 				 {
-					"type": "TrafficRoute",
+					"type": "ExternalService",
 					"mesh": "default",
 					"name": "one",
-					"conf": {
-					  "destination": {
-						"path": "/example"
-					  }
+					"networking": {
+					  "address": "192.168.0.1:8080"
 					}
 				 },
 				 {
-					"type": "TrafficRoute",
+					"type": "ExternalService",
 					"mesh": "demo",
 					"name": "two",
-					"conf": {
-					  "destination": {
-						"path": "/another"
-					  }
+					"networking": {
+					  "address": "192.168.0.2:8080"
 					}
 				 }
 				],
-				"next": "http://localhost:5681/meshes/default/traffic-routes?offset=1"
+				"next": "http://localhost:5681/meshes/default/external-services?offset=1"
 			}`
 
 			// when
 			rsr := &rest.ResourceListReceiver{
 				NewResource: func() core_model.Resource {
-					return mesh.NewTrafficRouteResource()
+					return mesh.NewExternalServiceResource()
 				},
 			}
 			err := json.Unmarshal([]byte(content), rsr)
@@ -66,151 +60,26 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			// then
 			Expect(rs.Items).To(HaveLen(2))
 			Expect(rs.Items[0].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "TrafficRoute",
+				Type: "ExternalService",
 				Mesh: "default",
 				Name: "one",
 			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					Destination: map[string]string{
-						"path": "/example",
-					},
+			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "192.168.0.1:8080",
 				},
 			}))
 			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "TrafficRoute",
+				Type: "ExternalService",
 				Mesh: "demo",
 				Name: "two",
 			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					Destination: map[string]string{
-						"path": "/another",
-					},
+			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "192.168.0.2:8080",
 				},
 			}))
-			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/traffic-routes?offset=1"))
-		})
-		It("it should be possible to unmarshal JSON response with protobuf field types", func() {
-			// given
-			content := `
-{
-	"items": [
-	 {
-		"type": "CircuitBreaker",
-		"mesh": "default",
-		"name": "one",
-		"sources": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-			  }
-			}
-		],
-		"destinations": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-				}
-			}
-		],
-		"conf": {
-			"interval": "99s",
-			"detectors": {
-				"totalErrors": {
-					"consecutive": 3
-				}
-			}
-		}
-	},
-	{
-		"type": "CircuitBreaker",
-		"mesh": "default",
-		"name": "two",
-		"sources": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-			  }
-			}
-		],
-		"destinations": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-				}
-			}
-		],
-		"conf": {
-			"interval": "11s",
-			"detectors": {
-				"totalErrors": {
-					"consecutive": 10
-				}
-			}
-		}	
-	}
-	],
-	"next": "http://localhost:5681/meshes/default/circuit-breakers?offset=1"
-}`
-
-			// when
-			rsr := &rest.ResourceListReceiver{
-				NewResource: func() core_model.Resource {
-					return mesh.NewCircuitBreakerResource()
-				},
-			}
-			err := json.Unmarshal([]byte(content), rsr)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			rs := rsr.ResourceList
-
-			Expect(rs.Items).To(HaveLen(2))
-			Expect(rs.Items[0].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "CircuitBreaker",
-				Mesh: "default",
-				Name: "one",
-			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.CircuitBreaker{
-				Sources: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Conf: &mesh_proto.CircuitBreaker_Conf{
-					Interval: util_proto.Duration(99 * time.Second),
-					Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-						TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{
-							Consecutive: util_proto.UInt32(3),
-						},
-					},
-				},
-			}))
-			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "CircuitBreaker",
-				Mesh: "default",
-				Name: "two",
-			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.CircuitBreaker{
-				Sources: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Conf: &mesh_proto.CircuitBreaker_Conf{
-					Interval: util_proto.Duration(11 * time.Second),
-					Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-						TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{
-							Consecutive: util_proto.UInt32(10),
-						},
-					},
-				},
-			}))
-			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/circuit-breakers?offset=1"))
+			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/external-services?offset=1"))
 		})
 	})
 

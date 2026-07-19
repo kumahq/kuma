@@ -1,2 +1,0 @@
-MESH      NAME                AGE
-default   fault-injection-1   292y

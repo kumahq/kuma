@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/util/channels"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
@@ -75,9 +74,6 @@ spec:
 			g.Expect(address).ToNot(BeEmpty())
 			gwIP = address
 		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP")
-
-		// remove retries to avoid covering failed request
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
