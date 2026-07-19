@@ -1,2 +1,0 @@
-MESH      NAME              AGE
-default   proxytemplate-1   292y

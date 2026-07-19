@@ -10,7 +10,6 @@ import (
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
@@ -23,8 +22,6 @@ import (
 )
 
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
-
-const HasToBeDefinedViolation = "has to be defined"
 
 var (
 	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
@@ -545,17 +542,4 @@ func isSet[T ~string | ~map[string]string | ~[]common_api.TargetRefProxyType](va
 	default:
 		return false
 	}
-}
-
-func validatePercentage(path validators.PathBuilder, percentage *wrapperspb.DoubleValue) validators.ValidationError {
-	var err validators.ValidationError
-	if percentage == nil {
-		err.AddViolationAt(path.Field("percentage"), "cannot be empty")
-		return err
-	}
-
-	if percentage.GetValue() < 0.0 || percentage.GetValue() > 100.0 {
-		err.AddViolationAt(path.Field("percentage"), "has to be in [0.0 - 100.0] range")
-	}
-	return err
 }

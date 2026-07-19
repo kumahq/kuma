@@ -52,11 +52,6 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &ExternalService{},
 				expectedKind: "ExternalService",
 			}),
-			Entry("ProxyTemplate", testCase{
-				inputType:    &mesh_proto.ProxyTemplate{},
-				expectedType: &ProxyTemplate{},
-				expectedKind: "ProxyTemplate",
-			}),
 		)
 	})
 
@@ -98,11 +93,6 @@ var _ = Describe("global TypeRegistry", func() {
 				inputType:    &mesh_proto.ExternalService{},
 				expectedType: &ExternalServiceList{},
 				expectedKind: "ExternalServiceList",
-			}),
-			Entry("ProxyTemplateList", testCase{
-				inputType:    &mesh_proto.ProxyTemplate{},
-				expectedType: &ProxyTemplateList{},
-				expectedKind: "ProxyTemplateList",
 			}),
 		)
 	})

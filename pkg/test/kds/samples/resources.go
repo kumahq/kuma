@@ -144,14 +144,6 @@ var (
 			}},
 		},
 	}
-	ProxyTemplate = &mesh_proto.ProxyTemplate{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{mesh_proto.ServiceTag: "*"},
-		}},
-		Conf: &mesh_proto.ProxyTemplate_Conf{
-			Imports: []string{"default-proxy"},
-		},
-	}
 	Timeout = &mesh_proto.Timeout{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
@@ -208,18 +200,6 @@ var (
 					"port": "8080",
 				},
 			}},
-		},
-	}
-	GatewayRoute = &mesh_proto.MeshGatewayRoute{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "gateway",
-			},
-		}},
-		Conf: &mesh_proto.MeshGatewayRoute_Conf{
-			Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-				Http: &mesh_proto.MeshGatewayRoute_HttpRoute{},
-			},
 		},
 	}
 	MeshTrafficPermission = &meshtrafficpermissions.MeshTrafficPermission{

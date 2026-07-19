@@ -19,7 +19,6 @@ var IgnoredTypes = map[model.ResourceType]bool{
 	mesh.ZoneIngressInsightType: true, // uses DataplaneInsight under the hood
 	mesh.ZoneEgressInsightType:  true, // uses DataplaneInsight under the hood
 	mesh.MeshGatewayType:        true, // Gateway is only in Universal ATM.
-	mesh.MeshGatewayRouteType:   true, // GatewayRoute is only in Universal ATM.
 }
 
 var _ = Describe("Consistent Kind Types", func() {

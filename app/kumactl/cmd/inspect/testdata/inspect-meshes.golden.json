@@ -14,9 +14,6 @@
       "policies": {
         "ExternalService": {
           "total": 9
-        },
-        "ProxyTemplate": {
-          "total": 8
         }
       }
     },
@@ -33,9 +30,6 @@
       "policies": {
         "ExternalService": {
           "total": 90
-        },
-        "ProxyTemplate": {
-          "total": 80
         }
       }
     }

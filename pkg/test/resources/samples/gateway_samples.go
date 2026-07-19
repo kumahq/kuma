@@ -3,33 +3,8 @@ package samples
 import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
-
-func BackendGatewayRoute() *core_mesh.MeshGatewayRouteResource {
-	return builders.GatewayRoute().
-		WithName("sample-gateway-route").
-		WithGateway("sample-gateway").
-		WithExactMatchHttpRoute("/", "backend").
-		Build()
-}
-
-func BackendGatewaySecondRoute() *core_mesh.MeshGatewayRouteResource {
-	return builders.GatewayRoute().
-		WithName("sample-gateway-route-second").
-		WithGateway("sample-gateway").
-		WithExactMatchHttpRoute("/another", "backend").
-		Build()
-}
-
-func BackendGatewayTCPRoute() *core_mesh.MeshGatewayRouteResource {
-	return builders.GatewayRoute().
-		WithName("sample-tcp-gateway-route").
-		WithGateway("sample-gateway").
-		WithTCPRoute("backend").
-		Build()
-}
 
 func GatewayResource() *core_mesh.MeshGatewayResource {
 	return &core_mesh.MeshGatewayResource{

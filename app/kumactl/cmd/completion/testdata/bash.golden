@@ -1887,80 +1887,6 @@ _kumactl_get_meshgateway()
     noun_aliases=()
 }
 
-_kumactl_get_meshgatewayroute()
-{
-    last_command="kumactl_get_meshgatewayroute"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_meshgatewayroutes()
-{
-    last_command="kumactl_get_meshgatewayroutes"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_get_meshgateways()
 {
     last_command="kumactl_get_meshgateways"
@@ -3406,80 +3332,6 @@ _kumactl_get_meshzoneaddresses()
     noun_aliases=()
 }
 
-_kumactl_get_proxytemplate()
-{
-    last_command="kumactl_get_proxytemplate"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_proxytemplates()
-{
-    last_command="kumactl_get_proxytemplates"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_get_secret()
 {
     last_command="kumactl_get_secret"
@@ -3952,16 +3804,6 @@ _kumactl_get()
         command_aliases+=("")
         aliashash[""]="meshgateway"
     fi
-    commands+=("meshgatewayroute")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="meshgatewayroute"
-    fi
-    commands+=("meshgatewayroutes")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="meshgatewayroutes"
-    fi
     commands+=("meshgateways")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
         command_aliases+=("")
@@ -4156,16 +3998,6 @@ _kumactl_get()
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
         command_aliases+=("")
         aliashash[""]="meshzoneaddresses"
-    fi
-    commands+=("proxytemplate")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="proxytemplate"
-    fi
-    commands+=("proxytemplates")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="proxytemplates"
     fi
     commands+=("secret")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
@@ -4992,44 +4824,6 @@ _kumactl_inspect_meshtrafficpermission()
     noun_aliases=()
 }
 
-_kumactl_inspect_proxytemplate()
-{
-    last_command="kumactl_inspect_proxytemplate"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--new-api")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_inspect_services()
 {
     last_command="kumactl_inspect_services"
@@ -5257,7 +5051,6 @@ _kumactl_inspect()
     commands+=("meshtls")
     commands+=("meshtrace")
     commands+=("meshtrafficpermission")
-    commands+=("proxytemplate")
     commands+=("services")
     commands+=("zoneegress")
     commands+=("zoneegresses")

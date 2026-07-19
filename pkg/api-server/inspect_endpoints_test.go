@@ -24,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
@@ -32,16 +31,6 @@ import (
 )
 
 type selectors []*mesh_proto.Selector
-
-func anyService() []*mesh_proto.Selector {
-	return []*mesh_proto.Selector{
-		{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		},
-	}
-}
 
 func serviceSelector(name string) *mesh_proto.Selector {
 	return &mesh_proto.Selector{
@@ -160,52 +149,6 @@ var _ = Describe("Inspect WS", func() {
 						},
 					},
 				},
-				&core_mesh.MeshGatewayRouteResource{
-					Meta: &test_model.ResourceMeta{Name: "route-1", Mesh: "default"},
-					Spec: &mesh_proto.MeshGatewayRoute{
-						Selectors: selectors{
-							serviceSelector("elastic"),
-						},
-						Conf: &mesh_proto.MeshGatewayRoute_Conf{
-							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-								Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
-									Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
-										{
-											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
-												{
-													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
-														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
-														Value: "/redis",
-													},
-												},
-											},
-											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
-												{
-													Destination: serviceSelector("redis").Match,
-												},
-											},
-										},
-										{
-											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
-												{
-													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
-														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
-														Value: "/backend",
-													},
-												},
-											},
-											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
-												{
-													Destination: serviceSelector("backend").Match,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
 			},
 			contentType: restful.MIME_JSON,
 		}),
@@ -243,92 +186,6 @@ var _ = Describe("Inspect WS", func() {
 						},
 					},
 				},
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect meshgatewayroute dataplanes", testCase{
-			path:    "/meshes/default/meshgatewayroutes/gatewayroute/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_gatewayroutes_dataplanes.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().Build(),
-				builders.Dataplane().
-					WithName("gateway-1").
-					WithBuiltInGateway("elastic").
-					Build(),
-				builders.Dataplane().
-					WithName("othergateway-1").
-					WithBuiltInGateway("othergateway").
-					Build(),
-				builders.Dataplane().
-					WithName("redis-1").
-					WithServices("redis").
-					AddOutboundsToServices("backend", "elastic").
-					Build(),
-				&core_mesh.MeshGatewayResource{
-					Meta: &test_model.ResourceMeta{Name: "elastic", Mesh: "default"},
-					Spec: &mesh_proto.MeshGateway{
-						Selectors: selectors{
-							serviceSelector("elastic"),
-						},
-						Conf: &mesh_proto.MeshGateway_Conf{
-							Listeners: []*mesh_proto.MeshGateway_Listener{
-								{
-									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-									Port:     80,
-								},
-							},
-						},
-					},
-				},
-				&core_mesh.MeshGatewayRouteResource{
-					Meta: &test_model.ResourceMeta{Name: "gatewayroute", Mesh: "default"},
-					Spec: &mesh_proto.MeshGatewayRoute{
-						Selectors: selectors{
-							serviceSelector("elastic"),
-						},
-						Conf: &mesh_proto.MeshGatewayRoute_Conf{
-							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-								Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
-									Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
-										{
-											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
-												{
-													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
-														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
-														Value: "/redis",
-													},
-												},
-											},
-											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
-												{
-													Destination: serviceSelector("redis").Match,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect proxytemplate", testCase{
-			path:    "/meshes/mesh-1/proxytemplates/tt-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_proxytemplate.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.ProxyTemplateResource{
-					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.ProxyTemplate{
-						Selectors: anyService(),
-						Conf:      samples.ProxyTemplate.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithServices("web").AddOutboundsToServices("elastic", "backend").Build(),
 			},
 			contentType: restful.MIME_JSON,
 		}),

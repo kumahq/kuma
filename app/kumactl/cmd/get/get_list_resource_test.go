@@ -44,7 +44,6 @@ var _ = Describe("kumactl get [resource]", func() {
 		Entry("external-service", "external-services"),
 		Entry("global-secret", "global-secrets"),
 		Entry("mesh", "meshes"),
-		Entry("proxytemplate", "proxytemplates"),
 		Entry("secret", "secrets"),
 		Entry("zone-ingress", "zone-ingresses"),
 		Entry("zoneegress", "zoneegresses"),

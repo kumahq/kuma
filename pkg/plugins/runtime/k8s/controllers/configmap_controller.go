@@ -177,34 +177,6 @@ func MeshGatewayToMeshMapper(client kube_client.Reader, l logr.Logger, ns string
 	}
 }
 
-func MeshGatewayRouteToMeshMapper(client kube_client.Reader, l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
-	l = l.WithName("meshgatewayroute-to-mesh-mapper")
-	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
-		cause, ok := obj.(*mesh_k8s.MeshGatewayRoute)
-		if !ok {
-			l.WithValues("meshgatewayroute", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
-			return nil
-		}
-
-		causeName := fmt.Sprintf("%s/%s", cause.Namespace, cause.Name)
-
-		meshes := &mesh_k8s.MeshList{}
-		if err := client.List(ctx, meshes); err != nil {
-			l.WithValues("meshgatewayroute", causeName).Error(err, "failed to fetch Meshes")
-			return nil
-		}
-
-		var requests []kube_reconile.Request
-		for _, mesh := range meshes.Items {
-			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh.Name)},
-			})
-		}
-
-		return requests
-	}
-}
-
 func ZoneIngressToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
 	l = l.WithName("zone-ingress-to-mesh-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {

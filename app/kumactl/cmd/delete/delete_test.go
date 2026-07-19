@@ -154,12 +154,6 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return core_mesh.NewExternalServiceResource() },
 					expectedMessage: "deleted ExternalService \"httpbin\"\n",
 				}),
-				Entry("proxytemplate", testCase{
-					typ:             "proxytemplate",
-					name:            "test-pt",
-					resource:        func() core_model.Resource { return core_mesh.NewProxyTemplateResource() },
-					expectedMessage: "deleted ProxyTemplate \"test-pt\"\n",
-				}),
 				Entry("secrets", testCase{
 					typ:             "secret",
 					name:            "web",

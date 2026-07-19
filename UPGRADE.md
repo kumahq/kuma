@@ -474,6 +474,37 @@ with a fresh bootstrap. Once the control plane is upgraded to Kuma 3.0.0, any
 proxy still trying to use the removed SOTW stream cannot establish ADS and must
 be restarted with a Delta xDS bootstrap.
 
+### Legacy policy resources removed
+
+The 13 legacy policy resources superseded by the `Mesh*` targetRef policies
+have been removed from the resource registry: `TrafficPermission`,
+`TrafficRoute`, `TrafficLog`, `TrafficTrace`, `HealthCheck`,
+`CircuitBreaker`, `Retry`, `Timeout`, `RateLimit`, `FaultInjection`,
+`VirtualOutbound`, `ProxyTemplate`, and `MeshGatewayRoute`. Each of these had
+already stopped affecting generated Envoy configuration in earlier releases
+(see the entries above); this change removes the resources themselves.
+
+For every one of these types: the REST API endpoints (including the generic
+`_resources`/`_dataplanes` inspect endpoints), `kumactl get`/`inspect`
+subcommands, KDS sync, and `MeshInsight`/`ServiceInsight` policy counters are
+gone, and the corresponding CRD is no longer installed on Kubernetes.
+
+The `ProxyTemplate` proto message and its default-profile machinery
+(`ProxyTemplateResolver`, profile imports) are unaffected — only the
+user-facing `ProxyTemplate` resource, API, and CRD are removed. Likewise,
+`MeshGateway` and the `Mesh*` targetRef policies are unaffected.
+
+On Kubernetes, the `HTTPRoute` controller no longer deletes orphaned
+`GatewayRoute.kuma.io` objects left over from pre-2.7.x upgrades, since the
+`MeshGatewayRoute` CRD backing them no longer exists.
+
+**Action required**
+
+Delete any remaining resources of these types before upgrading — the control
+plane no longer accepts create/update requests for them, and stored resources
+of a removed type are not migrated. Remove any automation, dashboards, or
+kumactl scripts that reference these resource types, REST paths, or CRDs.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

@@ -39,7 +39,6 @@ var meshInsightTable = printers.Table{
 		"MESH",
 		"DATAPLANES",
 		"EXTERNAL SERVICES",
-		"PROXY TEMPLATES",
 	},
 	RowForItem: func(i int, container any) ([]string, error) {
 		meshInsights := container.(*mesh.MeshInsightResourceList)
@@ -54,16 +53,10 @@ var meshInsightTable = printers.Table{
 			es = stat.Total
 		}
 
-		var pt uint32
-		if stat, ok := meshInsight.Policies[string(mesh.ProxyTemplateType)]; ok {
-			pt = stat.Total
-		}
-
 		return []string{
 			meta.GetName(), // MESH
 			fmt.Sprintf("%d/%d", meshInsight.Dataplanes.Online, meshInsight.Dataplanes.Total), // DATAPLANES
 			table.Number(es), // EXTERNAL SERVICES
-			table.Number(pt), // PROXY TEMPLATES
 		}, nil
 	},
 }

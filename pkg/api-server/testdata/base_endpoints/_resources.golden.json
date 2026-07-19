@@ -133,23 +133,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "MeshGatewayRoute",
-   "path": "meshgatewayroutes",
-   "pluralDisplayName": "Mesh Gateway Routes",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Mesh Gateway Route"
-  },
-  {
-   "includeInFederation": true,
    "name": "MeshHTTPRoute",
    "path": "meshhttproutes",
    "pluralDisplayName": "Mesh HTTP Routes",
@@ -438,23 +421,6 @@
    "scope": "Mesh",
    "shortName": "mza",
    "singularDisplayName": "Mesh Zone Address"
-  },
-  {
-   "includeInFederation": true,
-   "name": "ProxyTemplate",
-   "path": "proxytemplates",
-   "pluralDisplayName": "Proxy Templates",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Proxy Template"
   },
   {
    "includeInFederation": true,
