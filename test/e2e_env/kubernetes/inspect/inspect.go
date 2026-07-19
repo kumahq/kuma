@@ -101,7 +101,12 @@ spec:
 	DescribeTable("should execute inspect of policies",
 		func(policyType string, policyName string) {
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/meshtimeouts/inspect-timeout/_resources/dataplanes", meshName), http.NoBody)
+				req, err := http.NewRequestWithContext(
+					context.Background(),
+					http.MethodGet,
+					kubernetes.Cluster.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/%s/%s/_resources/dataplanes", meshName, policyType, policyName),
+					http.NoBody,
+				)
 				g.Expect(err).ToNot(HaveOccurred())
 				r, err := http.DefaultClient.Do(req)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -118,7 +123,7 @@ spec:
 				g.Expect(result.Items[0].Name).To(HavePrefix("demo-client-"))
 			}, "30s", "1s").Should(Succeed())
 		},
-		Entry("of dataplanes", "meshtimeouts", "inspect-timeout"),
+		Entry("of dataplanes", "meshtimeouts", fmt.Sprintf("inspect-timeout.%s", Config.KumaNamespace)),
 	)
 
 	It("should execute inspect rules of dataplane", func() {
