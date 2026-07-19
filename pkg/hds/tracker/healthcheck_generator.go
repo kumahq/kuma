@@ -61,8 +61,15 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	}
 
 	meshResource := mesh.NewMeshResource()
+	meshFound := true
 	if err := g.readOnlyResourceManager.Get(ctx, meshResource, store.GetByKey(proxyId.ToResourceKey().Mesh, model.NoMesh)); err != nil {
-		return nil, err
+		if !store.IsNotFound(err) {
+			return nil, err
+		}
+		// Mesh deletion doesn't cascade to Dataplanes (mesh_manager only deletes
+		// the Mesh itself), so an orphaned Dataplane can still reach HDS. Fall
+		// back to the legacy admin cluster name instead of failing the snapshot.
+		meshFound = false
 	}
 
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
@@ -71,7 +78,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	// published when unified_naming.Enabled is true, which additionally requires
 	// an Exclusive mesh. Keying off the feature bit alone would target the
 	// non-existent unified admin cluster on non-Exclusive meshes.
-	unifiedNamingEnabled := unified_naming.Enabled(md, meshResource)
+	unifiedNamingEnabled := meshFound && unified_naming.Enabled(md, meshResource)
 	clusterName := names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {
 		clusterName = system_names.SystemResourceNameEnvoyAdmin

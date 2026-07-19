@@ -27,9 +27,11 @@ import (
 
 var _ = Describe("HDS Snapshot generator", func() {
 	var resourceManager manager.ResourceManager
+	var rawStore store.ResourceStore
 
 	BeforeEach(func() {
-		resourceManager = manager.NewResourceManager(memory.NewStore())
+		rawStore = memory.NewStore()
+		resourceManager = manager.NewResourceManager(rawStore)
 
 		err := resourceManager.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -41,6 +43,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 		metadata         *structpb.Struct
 		hdsConfig        *dp_server.HdsConfig
 		meshServicesMode *mesh_proto.Mesh_MeshServices_Mode
+		deleteMesh       bool
 	}
 
 	DescribeTable(
@@ -59,8 +62,22 @@ var _ = Describe("HDS Snapshot generator", func() {
 			dp := mesh.NewDataplaneResource()
 			err := util_proto.FromYAML([]byte(given.dataplane), dp.Spec)
 			Expect(err).ToNot(HaveOccurred())
-			err = resourceManager.Create(context.Background(), dp, store.CreateByKey("dp-1", "mesh-1"))
+			if given.deleteMesh {
+				// Create directly on the store, bypassing the resource manager's
+				// owner tracking: in production, Mesh deletion doesn't cascade to
+				// Dataplanes (mesh_manager only deletes the Mesh itself), so an
+				// orphaned Dataplane can outlive its Mesh.
+				err = rawStore.Create(context.Background(), dp, store.CreateByKey("dp-1", "mesh-1"))
+			} else {
+				err = resourceManager.Create(context.Background(), dp, store.CreateByKey("dp-1", "mesh-1"))
+			}
 			Expect(err).ToNot(HaveOccurred())
+
+			if given.deleteMesh {
+				err := resourceManager.Delete(context.Background(), mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
+				Expect(err).ToNot(HaveOccurred())
+			}
+
 			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig, 9901)
 
 			// when
@@ -195,6 +212,45 @@ networking:
 			// though the dataplane advertises FeatureUnifiedResourceNaming.
 			goldenFile:       "hds.1.golden.yaml",
 			meshServicesMode: mesh_proto.Mesh_MeshServices_Disabled.Enum(),
+			dataplane: `
+networking:
+  address: 10.20.0.1
+  inbound:
+    - port: 9000
+      serviceAddress: 192.168.0.1
+      servicePort: 80
+      serviceProbe:
+        tcp: {}
+      tags:
+        kuma.io/service: backend
+`,
+			metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					xds.FieldFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{Kind: &structpb.Value_StringValue{StringValue: types.FeatureUnifiedResourceNaming}},
+						},
+					}}},
+				},
+			},
+			hdsConfig: &dp_server.HdsConfig{
+				Interval: config_types.Duration{Duration: 8 * time.Second},
+				Enabled:  true,
+				CheckDefaults: &dp_server.HdsCheck{
+					Interval:           config_types.Duration{Duration: 1 * time.Second},
+					NoTrafficInterval:  config_types.Duration{Duration: 2 * time.Second},
+					Timeout:            config_types.Duration{Duration: 3 * time.Second},
+					HealthyThreshold:   4,
+					UnhealthyThreshold: 5,
+				},
+			},
+		}),
+		Entry("should keep legacy admin cluster name for an orphaned dataplane whose mesh was deleted", testCase{
+			// Mesh deletion doesn't cascade to Dataplanes, so HDS can still see an
+			// orphaned dataplane after its mesh is gone. It must fall back to the
+			// legacy admin cluster name instead of failing the snapshot.
+			goldenFile: "hds.1.golden.yaml",
+			deleteMesh: true,
 			dataplane: `
 networking:
   address: 10.20.0.1
