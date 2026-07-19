@@ -108,7 +108,6 @@ func buildKumaIoServiceDestinations(
 	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
 	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
-	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
 	addAvailableServiceDestinations(availableServices, destForMesh)
 	return destForMesh
@@ -149,27 +148,6 @@ func addMeshGatewayListenersDestinations(
 				listener.GetTags(),
 			),
 		)
-	}
-}
-
-func addGatewayRouteDestinations(
-	gatewayRoutes []*core_mesh.MeshGatewayRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	var backends []*mesh_proto.MeshGatewayRoute_Backend
-
-	for _, route := range gatewayRoutes {
-		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-
-		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-	}
-
-	for _, backend := range backends {
-		addDestination(backend.Destination, destinations)
 	}
 }
 

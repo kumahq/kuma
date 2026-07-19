@@ -61,8 +61,6 @@ func (r *resourceInspectHandler) matchingDataplanesForPolicy() restful.RouteFunc
 		var dependentTypes []core_model.ResourceType
 		if r.descriptor.IsTargetRefBased {
 			dependentTypes = []core_model.ResourceType{meshhttproute_api.MeshHTTPRouteType, core_mesh.MeshGatewayType}
-		} else if r.descriptor.Name == core_mesh.MeshGatewayRouteType {
-			dependentTypes = []core_model.ResourceType{core_mesh.MeshGatewayType}
 		}
 		dependentResources := xds_context.NewResources()
 		for _, dependentType := range dependentTypes {

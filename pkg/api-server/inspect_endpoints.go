@@ -88,13 +88,6 @@ func addInspectEndpoints(
 			Returns(200, "OK", nil),
 	)
 	ws.Route(
-		ws.GET("/meshes/{mesh}/meshgatewayroutes/{name}/dataplanes").To(inspectGatewayRouteDataplanes(cfg, builder, rm)).
-			Doc("inspect MeshGatewayRoute").
-			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
-			Param(ws.PathParameter("name", "resource name").DataType("string")).
-			Returns(200, "OK", nil),
-	)
-	ws.Route(
 		ws.GET("/meshes/{mesh}/meshservices/{name}/_dataplanes").To(inspectMeshServiceDataplanes(rm, resourceAccess)).
 			Doc("inspect MeshService").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
