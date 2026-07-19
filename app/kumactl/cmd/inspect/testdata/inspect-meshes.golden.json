@@ -17,9 +17,6 @@
         },
         "ProxyTemplate": {
           "total": 8
-        },
-        "RateLimit": {
-          "total": 10
         }
       }
     },
@@ -39,9 +36,6 @@
         },
         "ProxyTemplate": {
           "total": 80
-        },
-        "RateLimit": {
-          "total": 100
         }
       }
     }

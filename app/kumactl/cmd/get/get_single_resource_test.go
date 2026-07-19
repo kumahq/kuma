@@ -43,7 +43,6 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("dataplane", "dataplane"),
 		Entry("mesh", "mesh"),
 		Entry("proxytemplate", "proxytemplate"),
-		Entry("rate-limit", "rate-limit"),
 		Entry("secret", "secret"),
 		Entry("global-secret", "global-secret"),
 		Entry("meshtimeout", "meshtimeout"),

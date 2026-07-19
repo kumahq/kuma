@@ -199,17 +199,6 @@
    "isOutbound": false
   },
   {
-   "name": "RateLimit",
-   "readOnly": false,
-   "path": "rate-limits",
-   "singularDisplayName": "Rate Limit",
-   "pluralDisplayName": "Rate Limits",
-   "isExperimental": false,
-   "isTargetRefBased": false,
-   "isInbound": false,
-   "isOutbound": false
-  },
-  {
    "name": "VirtualOutbound",
    "readOnly": false,
    "path": "virtual-outbounds",

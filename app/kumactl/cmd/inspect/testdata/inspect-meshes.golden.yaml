@@ -11,8 +11,6 @@ items:
       total: 9
     ProxyTemplate:
       total: 8
-    RateLimit:
-      total: 10
   type: MeshInsight
 - creationTime: "0001-01-01T00:00:00Z"
   dataplanes:
@@ -26,8 +24,6 @@ items:
       total: 90
     ProxyTemplate:
       total: 80
-    RateLimit:
-      total: 100
   type: MeshInsight
 next: null
 total: 2

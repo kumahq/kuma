@@ -80,10 +80,10 @@ var _ = Describe("GroupByAttachment", func() {
 							},
 						},
 					},
-					core_mesh.RateLimitType: {
+					core_mesh.ZoneIngressType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.2", 90, 91): {
-								&core_mesh.RateLimitResource{Meta: meta5},
+								&core_mesh.ZoneIngressResource{Meta: meta5},
 							},
 						},
 					},
@@ -132,8 +132,8 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.ExternalServiceType: []core_model.Resource{
 						&core_mesh.ExternalServiceResource{Meta: meta3},
 					},
-					core_mesh.RateLimitType: []core_model.Resource{
-						&core_mesh.RateLimitResource{Meta: meta5},
+					core_mesh.ZoneIngressType: []core_model.Resource{
+						&core_mesh.ZoneIngressResource{Meta: meta5},
 					},
 					core_mesh.DataplaneType: []core_model.Resource{
 						&core_mesh.DataplaneResource{Meta: meta4},
@@ -206,10 +206,10 @@ var _ = Describe("GroupByAttachment", func() {
 							},
 						},
 					},
-					core_mesh.RateLimitType: {
+					core_mesh.ZoneIngressType: {
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.4", 90): {
-								&core_mesh.RateLimitResource{Meta: meta6},
+								&core_mesh.ZoneIngressResource{Meta: meta6},
 							},
 						},
 					},
@@ -232,8 +232,8 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
-					core_mesh.RateLimitType: []core_model.Resource{
-						&core_mesh.RateLimitResource{Meta: meta6},
+					core_mesh.ZoneIngressType: []core_model.Resource{
+						&core_mesh.ZoneIngressResource{Meta: meta6},
 					},
 					core_mesh.DataplaneType: []core_model.Resource{
 						&core_mesh.DataplaneResource{Meta: meta6},
@@ -458,17 +458,17 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.RateLimitType: {
+					core_mesh.ZoneIngressType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.1", 80, 81): {
-								&core_mesh.RateLimitResource{
+								&core_mesh.ZoneIngressResource{
 									Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
 								},
 							},
 						},
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.3", 80): {
-								&core_mesh.RateLimitResource{
+								&core_mesh.ZoneIngressResource{
 									Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
 								},
 							},
@@ -478,7 +478,7 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.RateLimitType,
+					Type: core_mesh.ZoneIngressType,
 					Key:  core_model.ResourceKey{Name: "rl-3", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},

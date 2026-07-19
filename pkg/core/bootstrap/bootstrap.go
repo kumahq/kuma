@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplaneinsight"
 	externalservice_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/external_service"
 	mesh_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
-	ratelimit_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/ratelimit"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneegressinsight"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneingressinsight"
@@ -426,14 +425,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			builder.Extensions(),
 			cfg,
 		),
-	)
-
-	rateLimitValidator := ratelimit_managers.RateLimitValidator{
-		Store: builder.ResourceStore(),
-	}
-	customizableManager.Customize(
-		mesh.RateLimitType,
-		ratelimit_managers.NewRateLimitManager(builder.ResourceStore(), rateLimitValidator),
 	)
 
 	externalServiceValidator := externalservice_managers.ExternalServiceValidator{

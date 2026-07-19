@@ -458,23 +458,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "RateLimit",
-   "path": "rate-limits",
-   "pluralDisplayName": "Rate Limits",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Rate Limit"
-  },
-  {
-   "includeInFederation": true,
    "name": "Secret",
    "path": "secrets",
    "pluralDisplayName": "Secrets",

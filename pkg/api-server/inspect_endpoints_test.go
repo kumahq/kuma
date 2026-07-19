@@ -43,20 +43,11 @@ func anyService() []*mesh_proto.Selector {
 	}
 }
 
-func serviceSelector(name, protocol string) *mesh_proto.Selector {
-	if protocol == "" {
-		return &mesh_proto.Selector{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: name,
-			},
-		}
-	} else {
-		return &mesh_proto.Selector{
-			Match: map[string]string{
-				mesh_proto.ServiceTag:  name,
-				mesh_proto.ProtocolTag: protocol,
-			},
-		}
+func serviceSelector(name string) *mesh_proto.Selector {
+	return &mesh_proto.Selector{
+		Match: map[string]string{
+			mesh_proto.ServiceTag: name,
+		},
 	}
 }
 
@@ -157,7 +148,7 @@ var _ = Describe("Inspect WS", func() {
 					Meta: &test_model.ResourceMeta{Name: "elastic", Mesh: "default"},
 					Spec: &mesh_proto.MeshGateway{
 						Selectors: selectors{
-							serviceSelector("elastic", ""),
+							serviceSelector("elastic"),
 						},
 						Conf: &mesh_proto.MeshGateway_Conf{
 							Listeners: []*mesh_proto.MeshGateway_Listener{
@@ -173,7 +164,7 @@ var _ = Describe("Inspect WS", func() {
 					Meta: &test_model.ResourceMeta{Name: "route-1", Mesh: "default"},
 					Spec: &mesh_proto.MeshGatewayRoute{
 						Selectors: selectors{
-							serviceSelector("elastic", ""),
+							serviceSelector("elastic"),
 						},
 						Conf: &mesh_proto.MeshGatewayRoute_Conf{
 							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
@@ -190,7 +181,7 @@ var _ = Describe("Inspect WS", func() {
 											},
 											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
 												{
-													Destination: serviceSelector("redis", "").Match,
+													Destination: serviceSelector("redis").Match,
 												},
 											},
 										},
@@ -205,7 +196,7 @@ var _ = Describe("Inspect WS", func() {
 											},
 											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
 												{
-													Destination: serviceSelector("backend", "").Match,
+													Destination: serviceSelector("backend").Match,
 												},
 											},
 										},
@@ -240,7 +231,7 @@ var _ = Describe("Inspect WS", func() {
 					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
 					Spec: &mesh_proto.MeshGateway{
 						Selectors: selectors{
-							serviceSelector("gateway", ""),
+							serviceSelector("gateway"),
 						},
 						Conf: &mesh_proto.MeshGateway_Conf{
 							Listeners: []*mesh_proto.MeshGateway_Listener{
@@ -277,7 +268,7 @@ var _ = Describe("Inspect WS", func() {
 					Meta: &test_model.ResourceMeta{Name: "elastic", Mesh: "default"},
 					Spec: &mesh_proto.MeshGateway{
 						Selectors: selectors{
-							serviceSelector("elastic", ""),
+							serviceSelector("elastic"),
 						},
 						Conf: &mesh_proto.MeshGateway_Conf{
 							Listeners: []*mesh_proto.MeshGateway_Listener{
@@ -293,7 +284,7 @@ var _ = Describe("Inspect WS", func() {
 					Meta: &test_model.ResourceMeta{Name: "gatewayroute", Mesh: "default"},
 					Spec: &mesh_proto.MeshGatewayRoute{
 						Selectors: selectors{
-							serviceSelector("elastic", ""),
+							serviceSelector("elastic"),
 						},
 						Conf: &mesh_proto.MeshGatewayRoute_Conf{
 							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
@@ -310,46 +301,13 @@ var _ = Describe("Inspect WS", func() {
 											},
 											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
 												{
-													Destination: serviceSelector("redis", "").Match,
+													Destination: serviceSelector("redis").Match,
 												},
 											},
 										},
 									},
 								},
 							},
-						},
-					},
-				},
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect rate limit", testCase{
-			path:    "/meshes/mesh-1/rate-limits/rl-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_rate-limit.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.RateLimitResource{
-					Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.RateLimit{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("backend", "http"),
-							serviceSelector("redis", "http"),
-							serviceSelector("elastic", "http"),
-							serviceSelector("es", ""),
-						},
-						Conf: samples.RateLimit.Conf,
-					},
-				},
-				builders.Dataplane().WithName("elastic-1").WithMesh("mesh-1").WithHttpServices("elastic").AddOutboundsToServices("backend", "redis", "es").Build(),
-				// not matched by RateLimit
-				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithHttpServices("web").Build(),
-				&core_mesh.ExternalServiceResource{
-					Meta: &test_model.ResourceMeta{Name: "es-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.ExternalService{
-						Networking: &mesh_proto.ExternalService_Networking{Address: "2.2.2.2:80"},
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "es",
 						},
 					},
 				},

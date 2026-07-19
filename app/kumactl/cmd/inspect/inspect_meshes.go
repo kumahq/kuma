@@ -40,7 +40,6 @@ var meshInsightTable = printers.Table{
 		"DATAPLANES",
 		"EXTERNAL SERVICES",
 		"PROXY TEMPLATES",
-		"RATE LIMITS",
 	},
 	RowForItem: func(i int, container any) ([]string, error) {
 		meshInsights := container.(*mesh.MeshInsightResourceList)
@@ -60,17 +59,11 @@ var meshInsightTable = printers.Table{
 			pt = stat.Total
 		}
 
-		var rl uint32
-		if stat, ok := meshInsight.Policies[string(mesh.RateLimitType)]; ok {
-			rl = stat.Total
-		}
-
 		return []string{
 			meta.GetName(), // MESH
 			fmt.Sprintf("%d/%d", meshInsight.Dataplanes.Online, meshInsight.Dataplanes.Total), // DATAPLANES
 			table.Number(es), // EXTERNAL SERVICES
 			table.Number(pt), // PROXY TEMPLATES
-			table.Number(rl), // RATE LIMITS
 		}, nil
 	},
 }

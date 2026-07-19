@@ -35,7 +35,6 @@ var _ = Describe("kumactl inspect meshes", func() {
 				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
 					string(mesh.ProxyTemplateType):   {Total: 8},
 					string(mesh.ExternalServiceType): {Total: 9},
-					string(mesh.RateLimitType):       {Total: 10},
 				},
 			},
 		},
@@ -50,7 +49,6 @@ var _ = Describe("kumactl inspect meshes", func() {
 				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
 					string(mesh.ProxyTemplateType):   {Total: 80},
 					string(mesh.ExternalServiceType): {Total: 90},
-					string(mesh.RateLimitType):       {Total: 100},
 				},
 			},
 		},

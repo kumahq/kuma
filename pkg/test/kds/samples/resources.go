@@ -190,24 +190,6 @@ var (
 	Config = &system_proto.Config{
 		Config: "sample config",
 	}
-	RateLimit = &mesh_proto.RateLimit{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.RateLimit_Conf{
-			Http: &mesh_proto.RateLimit_Conf_Http{
-				Requests: 100,
-				Interval: util_proto.Duration(1 * time.Minute),
-			},
-		},
-	}
 	Gateway = &mesh_proto.MeshGateway{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{

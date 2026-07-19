@@ -57,11 +57,6 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &ProxyTemplate{},
 				expectedKind: "ProxyTemplate",
 			}),
-			Entry("RateLimit", testCase{
-				inputType:    &mesh_proto.RateLimit{},
-				expectedType: &RateLimit{},
-				expectedKind: "RateLimit",
-			}),
 		)
 	})
 

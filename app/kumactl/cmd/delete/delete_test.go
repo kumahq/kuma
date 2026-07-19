@@ -160,12 +160,6 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return core_mesh.NewProxyTemplateResource() },
 					expectedMessage: "deleted ProxyTemplate \"test-pt\"\n",
 				}),
-				Entry("rate-limits", testCase{
-					typ:             "rate-limit",
-					name:            "100-rps",
-					resource:        func() core_model.Resource { return core_mesh.NewRateLimitResource() },
-					expectedMessage: "deleted RateLimit \"100-rps\"\n",
-				}),
 				Entry("secrets", testCase{
 					typ:             "secret",
 					name:            "web",
