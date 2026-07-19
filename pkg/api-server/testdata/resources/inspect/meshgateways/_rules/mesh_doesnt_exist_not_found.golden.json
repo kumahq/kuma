@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 404,
+ "title": "Failed to retrieve Mesh",
+ "detail": "Not found",
+ "details": "Not found"
+}
