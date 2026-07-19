@@ -7,7 +7,7 @@ status:
     - field: mesh
       message: cannot be empty
       reason: FieldValueInvalid
-    kind: TrafficRoute
+    kind: ExternalService
     name: empty
   message: 'mesh: cannot be empty'
   metadata: {}
