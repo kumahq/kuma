@@ -289,8 +289,7 @@ func inboundHasRequestTimeout(cfg *config_dump.EnvoyConfig, port uint32, timeout
 		if err := util_proto.UnmarshalAnyTo(dl.ActiveState.Listener, &listener); err != nil {
 			return false, err
 		}
-		if !strings.HasPrefix(listener.GetName(), "inbound:") ||
-			listener.GetAddress().GetSocketAddress().GetPortValue() != port {
+		if listener.GetAddress().GetSocketAddress().GetPortValue() != port {
 			continue
 		}
 
