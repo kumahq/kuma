@@ -519,7 +519,7 @@ dataPlane:
     # This option only automates setting the required flags and does not enable or disable the feature itself.
     # You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
     # in ZoneIngress or ZoneEgress deployments, or in regular data plane proxies using a ContainerPatch
-    unifiedResourceNaming: false
+    unifiedResourceNaming: true
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
