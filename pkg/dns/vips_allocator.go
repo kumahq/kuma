@@ -117,11 +117,6 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context) error {
 		return err
 	}
 
-	virtualOutboundsByMesh, err := d.fetchVirtualOutboundsByMesh(ctx)
-	if err != nil {
-		return err
-	}
-
 	externalServicesByMesh, err := d.fetchExternalServicesByMesh(ctx)
 	if err != nil {
 		return err
@@ -134,7 +129,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context) error {
 
 	var errs error
 	for _, mesh := range meshesNames {
-		newView, err := d.buildVirtualOutboundMeshView(mesh, virtualOutboundsByMesh[mesh], dataplanesByMesh[mesh], zoneIngresses, externalServicesByMesh[mesh], meshGatewaysByMesh)
+		newView, err := d.buildVirtualOutboundMeshView(mesh, dataplanesByMesh[mesh], zoneIngresses, externalServicesByMesh[mesh], meshGatewaysByMesh)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -293,21 +288,6 @@ func (d *VIPsAllocator) fetchDataplanesByMesh(ctx context.Context) (map[string][
 	return out, nil
 }
 
-func (d *VIPsAllocator) fetchVirtualOutboundsByMesh(ctx context.Context) (map[string][]*core_mesh.VirtualOutboundResource, error) {
-	virtualOutbounds := core_mesh.VirtualOutboundResourceList{}
-	if err := d.rm.List(ctx, &virtualOutbounds); err != nil {
-		return nil, err
-	}
-
-	out := map[string][]*core_mesh.VirtualOutboundResource{}
-	for _, virtualOutbound := range virtualOutbounds.Items {
-		mesh := virtualOutbound.Meta.GetMesh()
-		out[mesh] = append(out[mesh], virtualOutbound)
-	}
-
-	return out, nil
-}
-
 func (d *VIPsAllocator) fetchExternalServicesByMesh(ctx context.Context) (map[string][]*core_mesh.ExternalServiceResource, error) {
 	externalServices := core_mesh.ExternalServiceResourceList{}
 	if err := d.rm.List(ctx, &externalServices); err != nil {
@@ -340,7 +320,6 @@ func (d *VIPsAllocator) fetchMeshGatewaysByMesh(ctx context.Context) (map[string
 
 func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 	mesh string,
-	virtualOutbounds []*core_mesh.VirtualOutboundResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
@@ -360,9 +339,6 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 			if d.serviceVipEnabled && inbound.GetService() != "" {
 				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
 			}
-			for _, vob := range Match(virtualOutbounds, inbound.Tags) {
-				addFromVirtualOutbound(outboundSet, vob, inbound.Tags, dp.Descriptor().Name, dp.Meta.GetName())
-			}
 		}
 	}
 
@@ -373,9 +349,6 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 			}
 			if service.Mesh == mesh && d.serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
-			}
-			for _, vob := range Match(virtualOutbounds, service.Tags) {
-				addFromVirtualOutbound(outboundSet, vob, service.Tags, zi.Descriptor().Name, zi.Meta.GetName())
 			}
 		}
 	}
@@ -401,9 +374,6 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 				errs = multierr.Append(errs, errors.Wrapf(addError, "cannot add outbound for external service '%s'", es.GetMeta().GetName()))
 			}
 		}
-		for _, vob := range Match(virtualOutbounds, tags) {
-			addFromVirtualOutbound(outboundSet, vob, tags, es.Descriptor().Name, es.Meta.GetName())
-		}
 	}
 
 	for mesh, gateways := range meshGatewaysByMesh {
@@ -420,11 +390,6 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 }
 
 func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh string) (*vips.VirtualOutboundMeshView, error) {
-	virtualOutbounds := core_mesh.VirtualOutboundResourceList{}
-	if err := d.rm.List(ctx, &virtualOutbounds, store.ListByMesh(mesh)); err != nil {
-		return nil, err
-	}
-
 	dataplanes := core_mesh.DataplaneResourceList{}
 	if err := d.rm.List(ctx, &dataplanes, store.ListByMesh(mesh)); err != nil {
 		return nil, err
@@ -450,7 +415,7 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 		return nil, err
 	}
 
-	return d.buildVirtualOutboundMeshView(mesh, virtualOutbounds.Items, dataplanes.Items, zoneIngresses.Items, externalServices.Items, meshGatewaysByMesh)
+	return d.buildVirtualOutboundMeshView(mesh, dataplanes.Items, zoneIngresses.Items, externalServices.Items, meshGatewaysByMesh)
 }
 
 func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView) error {
@@ -468,30 +433,6 @@ func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView)
 		}
 	}
 	return errs
-}
-
-func addFromVirtualOutbound(outboundSet *vips.VirtualOutboundMeshView, vob *core_mesh.VirtualOutboundResource, tags map[string]string, resourceType model.ResourceType, resourceName string) {
-	host, err := vob.EvalHost(tags)
-	l := Log.WithValues("mesh", vob.Meta.GetMesh(), "virtualOutboundName", vob.Meta.GetName(), "type", resourceType, "name", resourceName, "tags", tags)
-	if err != nil {
-		l.Info("Failed evaluating host template", "reason", err.Error())
-		return
-	}
-
-	port, err := vob.EvalPort(tags)
-	if err != nil {
-		l.Info("Failed evaluating port template", "reason", err.Error())
-		return
-	}
-
-	err = outboundSet.Add(vips.NewFqdnEntry(host), vips.OutboundEntry{
-		Port:   port,
-		TagSet: vob.FilterTags(tags),
-		Origin: vips.OriginVirtualOutbound(vob.Meta.GetName()),
-	})
-	if err != nil {
-		l.Info("Failed adding generated outbound", "reason", err.Error())
-	}
 }
 
 func addDefault(outboundSet *vips.VirtualOutboundMeshView, service string, port uint32) error {

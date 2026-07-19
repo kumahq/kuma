@@ -222,21 +222,6 @@ var (
 			},
 		},
 	}
-	VirtualOutbound = &mesh_proto.VirtualOutbound{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "virtual-outbound",
-			},
-		}},
-		Conf: &mesh_proto.VirtualOutbound_Conf{
-			Host: "{{.service}}.mesh",
-			Port: "{{.port}}",
-			Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-				{Name: "port"},
-				{Name: "service", TagKey: mesh_proto.ServiceTag},
-			},
-		},
-	}
 	MeshTrafficPermission = &meshtrafficpermissions.MeshTrafficPermission{
 		TargetRef: &common_api.TargetRef{
 			Kind: "Mesh",

@@ -477,23 +477,6 @@
    "singularDisplayName": "Service Insight"
   },
   {
-   "includeInFederation": true,
-   "name": "VirtualOutbound",
-   "path": "virtual-outbounds",
-   "pluralDisplayName": "Virtual Outbounds",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Virtual Outbound"
-  },
-  {
    "includeInFederation": false,
    "name": "Workload",
    "path": "workloads",

@@ -682,7 +682,7 @@ var _ = Describe("IngressGenerator", func() {
 				},
 			},
 		}),
-		Entry("with VirtualOutbound", testCase{
+		Entry("with instance tags", testCase{
 			ingress: `
             networking:
               address: 10.0.0.1
@@ -722,38 +722,6 @@ var _ = Describe("IngressGenerator", func() {
 									"mesh":             "mesh1",
 								},
 								Weight: 1,
-							},
-						},
-					},
-					Resources: map[core_model.ResourceType]core_model.ResourceList{
-						core_mesh.VirtualOutboundType: &core_mesh.VirtualOutboundResourceList{
-							Items: []*core_mesh.VirtualOutboundResource{
-								{
-									Spec: &mesh_proto.VirtualOutbound{
-										Selectors: []*mesh_proto.Selector{
-											{
-												Match: map[string]string{
-													mesh_proto.ServiceTag:  mesh_proto.MatchAllTag,
-													mesh_proto.InstanceTag: mesh_proto.MatchAllTag,
-												},
-											},
-										},
-										Conf: &mesh_proto.VirtualOutbound_Conf{
-											Host: "{{.svc}}.{{.inst}}.mesh",
-											Port: "8080",
-											Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-												{
-													Name:   "svc",
-													TagKey: mesh_proto.ServiceTag,
-												},
-												{
-													Name:   "inst",
-													TagKey: mesh_proto.InstanceTag,
-												},
-											},
-										},
-									},
-								},
 							},
 						},
 					},

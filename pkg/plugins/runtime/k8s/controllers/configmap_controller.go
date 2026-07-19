@@ -83,10 +83,9 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Named("kuma-configmap-controller").
 		For(&kube_core.ConfigMap{}).
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
-		// Dataplane is needed because we can add labels (converted to tags) in runtime that are then picked by VirtualOutbounds
+		// Dataplane is needed because we can add labels (converted to tags) in runtime that affect service VIP generation
 		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Watches(&mesh_k8s.ZoneIngress{}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
-		Watches(&mesh_k8s.VirtualOutbound{}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).
 		Watches(&mesh_k8s.ExternalService{}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace))).
 		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Complete(r)
@@ -241,21 +240,6 @@ func ExternalServiceToConfigMapsMapper(l logr.Logger, ns string) kube_handler.Ma
 		cause, ok := obj.(*mesh_k8s.ExternalService)
 		if !ok {
 			l.WithValues("externalService", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
-			return nil
-		}
-
-		return []kube_reconile.Request{{
-			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
-		}}
-	}
-}
-
-func VirtualOutboundToConfigMapsMapper(l logr.Logger, ns string) kube_handler.MapFunc {
-	l = l.WithName("virtual-outbound-to-configmap-mapper")
-	return func(_ context.Context, obj kube_client.Object) []kube_reconile.Request {
-		cause, ok := obj.(*mesh_k8s.VirtualOutbound)
-		if !ok {
-			l.WithValues("virtualOutbound", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 

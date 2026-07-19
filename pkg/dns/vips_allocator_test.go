@@ -607,126 +607,6 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
-	Entry("virtual outbound simple", outboundViewTestCase{
-		givenResources: map[model.ResourceKey]model.Resource{
-			model.WithMesh("mesh", "dp1-a"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "instance": "a", "port": "9000"})},
-			model.WithMesh("mesh", "dp1-b"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "instance": "b"})},
-			model.WithMesh("mesh", "dp2"):   &mesh.DataplaneResource{Spec: dp("service2")},
-			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
-				Spec: &mesh_proto.VirtualOutbound{
-					Selectors: []*mesh_proto.Selector{
-						{Match: map[string]string{mesh_proto.ServiceTag: "*", "instance": "*"}},
-					},
-					Conf: &mesh_proto.VirtualOutbound_Conf{
-						Host: "{{.srv}}.{{.instance}}.mesh",
-						Port: "{{if .port}}{{.port}}{{else}}8080{{end}}",
-						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-							{Name: "srv", TagKey: mesh_proto.ServiceTag},
-							{Name: "instance"},
-							{Name: "port"},
-						},
-					},
-				},
-			},
-		},
-		whenMesh: "mesh",
-		thenHostnameEntries: []vips.HostnameEntry{
-			vips.NewServiceEntry("service1"),
-			vips.NewServiceEntry("service2"),
-			vips.NewFqdnEntry("service1.a.mesh"),
-			vips.NewFqdnEntry("service1.b.mesh"),
-		},
-		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
-			vips.NewFqdnEntry("service1.a.mesh"): {
-				{Port: 9000, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "instance": "a", "port": "9000"}, Origin: "virtual-outbound:vob-1"},
-			},
-			vips.NewFqdnEntry("service1.b.mesh"): {
-				{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "instance": "b"}, Origin: "virtual-outbound:vob-1"},
-			},
-		},
-	}),
-	Entry("virtual outbound same hostname different ports", outboundViewTestCase{
-		givenResources: map[model.ResourceKey]model.Resource{
-			model.WithMesh("mesh", "dp1-a"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "port": "9000"})},
-			model.WithMesh("mesh", "dp1-b"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "port": "8000"})},
-			model.WithMesh("mesh", "dp2"):   &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service2"})},
-			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
-				Spec: &mesh_proto.VirtualOutbound{
-					Selectors: []*mesh_proto.Selector{
-						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
-					},
-					Conf: &mesh_proto.VirtualOutbound_Conf{
-						Host: "{{.srv}}.mesh",
-						Port: "{{if .port}}{{.port}}{{else}}8080{{end}}",
-						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-							{Name: "srv", TagKey: mesh_proto.ServiceTag},
-							{Name: "port"},
-						},
-					},
-				},
-			},
-		},
-		whenMesh: "mesh",
-		thenHostnameEntries: []vips.HostnameEntry{
-			vips.NewServiceEntry("service1"),
-			vips.NewServiceEntry("service2"),
-			vips.NewFqdnEntry("service1.mesh"),
-			vips.NewFqdnEntry("service2.mesh"),
-		},
-		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
-			vips.NewFqdnEntry("service1.mesh"): {
-				{Port: 8000, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "port": "8000"}, Origin: "virtual-outbound:vob-1"},
-				{Port: 9000, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "port": "9000"}, Origin: "virtual-outbound:vob-1"},
-			},
-			vips.NewFqdnEntry("service2.mesh"): {
-				{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "service2"}, Origin: "virtual-outbound:vob-1"},
-			},
-		},
-	}),
-	Entry("virtual outbound collision, picks the most specific", outboundViewTestCase{
-		givenResources: map[model.ResourceKey]model.Resource{
-			model.WithMesh("mesh", "dp1"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "instance": "1"})},
-			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
-				Spec: &mesh_proto.VirtualOutbound{
-					Selectors: []*mesh_proto.Selector{
-						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
-					},
-					Conf: &mesh_proto.VirtualOutbound_Conf{
-						Host: "{{.srv}}.mesh",
-						Port: "8080",
-						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-							{Name: "srv", TagKey: mesh_proto.ServiceTag},
-						},
-					},
-				},
-			},
-			model.WithMesh("mesh", "vob-2"): &mesh.VirtualOutboundResource{
-				Spec: &mesh_proto.VirtualOutbound{
-					Selectors: []*mesh_proto.Selector{
-						// High weight for this vob
-						{Match: map[string]string{mesh_proto.ServiceTag: "*", "instance": "*"}},
-					},
-					Conf: &mesh_proto.VirtualOutbound_Conf{
-						Host: "{{.srv}}.mesh",
-						Port: "8080",
-						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-							{Name: "srv", TagKey: mesh_proto.ServiceTag},
-						},
-					},
-				},
-			},
-		},
-		whenMesh: "mesh",
-		thenHostnameEntries: []vips.HostnameEntry{
-			vips.NewServiceEntry("service1"),
-			vips.NewFqdnEntry("service1.mesh"),
-		},
-		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
-			vips.NewFqdnEntry("service1.mesh"): {
-				{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "service1"}, Origin: "virtual-outbound:vob-2"},
-			},
-		},
-	}),
 	Entry("dp skip service vips", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "dp1"): &mesh.DataplaneResource{Spec: dp("service1")},
@@ -785,21 +665,6 @@ var _ = DescribeTable("outboundView",
 	Entry("skip ignored listener", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "dp-1"): samples.IgnoredDataplaneBackendBuilder().WithMesh("mesh").Build(),
-			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
-				Spec: &mesh_proto.VirtualOutbound{
-					Selectors: []*mesh_proto.Selector{
-						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
-					},
-					Conf: &mesh_proto.VirtualOutbound_Conf{
-						Host: "{{.srv}}.mesh",
-						Port: "8080",
-						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-							{Name: "srv", TagKey: mesh_proto.ServiceTag},
-							{Name: "port"},
-						},
-					},
-				},
-			},
 		},
 		whenMesh:            "mesh",
 		thenHostnameEntries: []vips.HostnameEntry{},
@@ -812,21 +677,6 @@ var _ = DescribeTable("outboundView",
 					resource.Spec.Networking.Inbound[0].Port = mesh_proto.TCPPortReserved
 				}).
 				WithMesh("mesh").Build(),
-			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
-				Spec: &mesh_proto.VirtualOutbound{
-					Selectors: []*mesh_proto.Selector{
-						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
-					},
-					Conf: &mesh_proto.VirtualOutbound_Conf{
-						Host: "{{.srv}}.mesh",
-						Port: "8080",
-						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-							{Name: "srv", TagKey: mesh_proto.ServiceTag},
-							{Name: "port"},
-						},
-					},
-				},
-			},
 		},
 		whenMesh:            "mesh",
 		thenHostnameEntries: []vips.HostnameEntry{},

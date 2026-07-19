@@ -197,17 +197,6 @@
    "isTargetRefBased": false,
    "isInbound": false,
    "isOutbound": false
-  },
-  {
-   "name": "VirtualOutbound",
-   "readOnly": false,
-   "path": "virtual-outbounds",
-   "singularDisplayName": "Virtual Outbound",
-   "pluralDisplayName": "Virtual Outbounds",
-   "isExperimental": false,
-   "isTargetRefBased": false,
-   "isInbound": false,
-   "isOutbound": false
   }
  ]
 }
