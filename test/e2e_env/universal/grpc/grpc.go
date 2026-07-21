@@ -63,8 +63,8 @@ func GRPC() {
 			cmd := tunnel.AdminCurlCmd("/stats?format=prometheus")
 			stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="grpc_test-server__kuma-3_msvc_80"}`))
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="grpc_test-server__kuma-3_msvc_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="kri_msvc_grpc_kuma-3__test-server_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="kri_msvc_grpc_kuma-3__test-server_80"}`))
 		}, "30s", "1s").Should(Succeed())
 	})
 
