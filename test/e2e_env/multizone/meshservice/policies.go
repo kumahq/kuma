@@ -282,8 +282,9 @@ metadata:
     kuma.io/origin: zone
 spec:
   targetRef:
-    kind: Mesh
-    proxyTypes: ["Sidecar"]
+    kind: Dataplane
+    labels:
+      kuma.io/proxy-type: sidecar
   rules:
     - default:
           http:
