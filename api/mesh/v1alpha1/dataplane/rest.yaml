@@ -49,11 +49,14 @@ components:
       properties:
         creationTime:
           description: Time at which the resource was created
+          example: 0001-01-01T00:00:00Z
           format: date-time
           readOnly: true
           type: string
         kri:
-          description: Kuma Resource Identifier (KRI) of the given resource
+          description: A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes and
+            may be used for cross-references or indexing
           readOnly: true
           type: string
         labels:
@@ -61,6 +64,12 @@ components:
             type: string
           type: object
         mesh:
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          example: 0001-01-01T00:00:00Z
+          format: date-time
+          readOnly: true
           type: string
         metrics:
           description: |-
@@ -81,11 +90,7 @@ components:
               description: Type of the backend (Kuma ships with 'prometheus')
               type: string
           type: object
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
+
         name:
           type: string
         networking:
