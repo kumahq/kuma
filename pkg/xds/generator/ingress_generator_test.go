@@ -624,7 +624,7 @@ var _ = Describe("IngressGenerator", func() {
                   kuma.io/service: backend
                   kuma.io/instance: ins-1
 `,
-			expected: "virtual-outbound.envoy.golden.yaml",
+			expected: "with-instance-tags.envoy.golden.yaml",
 			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
