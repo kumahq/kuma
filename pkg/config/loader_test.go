@@ -257,6 +257,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 			Expect(cfg.General.CertGenerationBaseBackoff.Duration).To(Equal(2 * time.Second))
 			Expect(cfg.General.CertGenerationMaxBackoff.Duration).To(Equal(4 * time.Minute))
+			Expect(cfg.General.CertGenerationCircuitBreakerMinProxies).To(Equal(7))
 
 			Expect(cfg.Mode).To(Equal(config_core.Zone))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
@@ -638,6 +639,7 @@ general:
   workDir: /custom/work/dir
   certGenerationBaseBackoff: 2s
   certGenerationMaxBackoff: 4m
+  certGenerationCircuitBreakerMinProxies: 7
 mode: zone
 multizone:
   global:
@@ -1013,6 +1015,7 @@ meshService:
 				"KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF":                                             "3m",
 				"KUMA_GENERAL_CERT_GENERATION_BASE_BACKOFF":                                                "2s",
 				"KUMA_GENERAL_CERT_GENERATION_MAX_BACKOFF":                                                 "4m",
+				"KUMA_GENERAL_CERT_GENERATION_CIRCUIT_BREAKER_MIN_PROXIES":                                 "7",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",

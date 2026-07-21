@@ -67,7 +67,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	maxBackoff := rt.Config().General.CertGenerationMaxBackoff.Duration
 	issuanceLimiter, err := issuer.NewLimiter(issuer.Config{
 		NewBackoff: issuer.CertBackoff(rt.Config().General.CertGenerationBaseBackoff.Duration, maxBackoff),
-		MinProxies: issuer.DefaultCircuitBreakerMinProxies,
+		MinProxies: rt.Config().General.CertGenerationCircuitBreakerMinProxies,
 		Window:     2 * maxBackoff,
 		Cooldown:   maxBackoff,
 	}, rt.Metrics())
