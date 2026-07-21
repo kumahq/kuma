@@ -12,43 +12,20 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sethvargo/go-retry"
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 var log = core.Log.WithName("xds").WithName("secrets")
-
-// certBackoffMinBase is the floor applied to a misconfigured (<= 0) base
-// backoff. It guards against retry.NewExponential(0) panicking, since
-// GeneralConfig.Validate() is not currently wired into Config.Validate().
-const certBackoffMinBase = time.Second
-
-// CertBackoff returns a factory for the backoff used to throttle certificate
-// generation retries after a failure so that a misconfigured or failing CA
-// backend can't be hammered on every DP sync tick (which defaults to 1s). The
-// backoff is exponential from base, capped at max, with jitter so proxies don't
-// retry in lockstep. base and max are configured via KUMA_GENERAL_CERT_GENERATION_*.
-func CertBackoff(base, maxBackoff time.Duration) func() retry.Backoff {
-	if base <= 0 {
-		log.Info("configured certificate generation base backoff is not positive, using default instead",
-			"configured", base, "default", certBackoffMinBase)
-		base = certBackoffMinBase
-	}
-	if maxBackoff < base {
-		maxBackoff = base
-	}
-	return func() retry.Backoff {
-		return retry.WithJitter(base, retry.WithCappedDuration(maxBackoff, retry.NewExponential(base)))
-	}
-}
 
 type MeshCa struct {
 	Mesh     string
@@ -94,7 +71,7 @@ func (c *Info) ExpiringSoon() bool {
 	return core.Now().After(c.Generation.Add(c.CertLifetime() / 5 * 4))
 }
 
-func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics, newBackoff func() retry.Backoff) (Secrets, error) {
+func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics, limiter *issuer.Limiter) (Secrets, error) {
 	certGenerationsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Help: "Number of generated certificates",
 		Name: "cert_generation",
@@ -111,23 +88,13 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 		return nil, err
 	}
 
-	certGenerationBackoffMetric := prometheus.NewGauge(prometheus.GaugeOpts{
-		Help: "Number of proxies currently backing off certificate generation after a failure",
-		Name: "cert_generation_backoff",
-	})
-	if err := metrics.Register(certGenerationBackoffMetric); err != nil {
-		return nil, err
-	}
-
 	return &secrets{
 		caProvider:                   caProvider,
 		identityProvider:             identityProvider,
-		newBackoff:                   newBackoff,
+		limiter:                      limiter,
 		cachedCerts:                  map[certCacheKey]*certs{},
-		backoffs:                     map[certCacheKey]*certBackoff{},
 		certGenerationsMetric:        certGenerationsMetric,
 		certGenerationFailuresMetric: certGenerationFailuresMetric,
-		certGenerationBackoffMetric:  certGenerationBackoffMetric,
 	}, nil
 }
 
@@ -136,27 +103,19 @@ type certCacheKey struct {
 	proxyType mesh_proto.ProxyType
 }
 
-// certBackoff tracks when the next certificate generation attempt is allowed
-// for a given proxy after a failure.
-type certBackoff struct {
-	backoff retry.Backoff
-	nextTry time.Time
-}
-
 type secrets struct {
 	caProvider       CaProvider
 	identityProvider IdentityProvider
-	newBackoff       func() retry.Backoff
+	// limiter throttles issuance: per-proxy backoff plus a per-backend circuit
+	// breaker. Its state is in-memory only, so a kuma-cp restart or a DP
+	// reconnecting to a different replica resets it - a known trade-off tracked
+	// in https://github.com/kumahq/kuma/issues/17473.
+	limiter *issuer.Limiter
 
 	sync.RWMutex
-	cachedCerts map[certCacheKey]*certs
-	// backoffs is in-memory only, so a kuma-cp restart or a DP reconnecting to a
-	// different replica resets backoff state. Tracked as a known trade-off in
-	// https://github.com/kumahq/kuma/issues/17473.
-	backoffs                     map[certCacheKey]*certBackoff
+	cachedCerts                  map[certCacheKey]*certs
 	certGenerationsMetric        *prometheus.CounterVec
 	certGenerationFailuresMetric *prometheus.CounterVec
-	certGenerationBackoffMetric  prometheus.Gauge
 }
 
 var _ Secrets = &secrets{}
@@ -254,15 +213,17 @@ func (s *secrets) get(
 		mesh,
 		otherMeshes,
 	); len(updateKinds) > 0 {
-		// A previous generation failed and we're still within the backoff
-		// window - return an error without calling the CA. We must NOT serve
-		// stale certs here: a nil error lets the watchdog advance its hash
-		// (dataplane_watchdog.go) and skip subsequent ticks, so the backoff
-		// would never elapse and the DP would keep the old certs until the next
-		// mesh change. Returning the error keeps the hash stale so ticks keep
-		// re-checking the backoff (cheaply, without hitting the CA).
-		if remaining := s.backoffRemaining(key); remaining > 0 {
-			return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for %s after a previous failure", remaining)
+		backend := issuerKRI(mesh)
+		source := kri.From(resource)
+
+		// A previous generation failed and we're within a backoff (or the
+		// backend circuit is open) - return an error without calling the CA. We
+		// must NOT serve stale certs here: a nil error lets the watchdog advance
+		// its hash (dataplane_watchdog.go) and skip subsequent ticks, so the
+		// backoff would never elapse. Returning the error keeps the hash stale
+		// so ticks keep re-checking (cheaply, without hitting the CA).
+		if ok, retryAfter := s.limiter.Allow(backend, source); !ok {
+			return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for backend %q after a previous failure (retry after %s)", backend.SectionName, retryAfter)
 		}
 
 		log.Info(
@@ -271,24 +232,22 @@ func (s *secrets) get(
 		)
 
 		newCerts, err := s.generateCerts(ctx, tags, mesh, otherMeshes, certs, updateKinds)
+		s.limiter.Record(backend, source, err == nil)
 		if err != nil {
-			backoff := s.recordFailure(key)
 			s.certGenerationFailuresMetric.WithLabelValues(meshName).Inc()
 			// Debug level: the raw CA backend error can carry sensitive detail
 			// (credentials, IAM denials). The failure is surfaced by the
-			// cert_generation_failure / cert_generation_backoff metrics and the
-			// returned error.
+			// cert_generation_failure / cert_generation_backoff / _circuit_open
+			// metrics and the returned error.
 			log.V(1).Info(
 				"could not generate certificate, backing off before retrying",
-				string(resource.Descriptor().Name), resourceKey, "backoff", backoff, "error", err,
+				string(resource.Descriptor().Name), resourceKey, "error", err,
 			)
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
 
 		s.Lock()
-		delete(s.backoffs, key)
 		s.cachedCerts[key] = newCerts
-		s.certGenerationBackoffMetric.Set(float64(len(s.backoffs)))
 		s.Unlock()
 
 		return newCerts.identity, caMap(newCerts, meshName), newCerts.allInOneCa, nil
@@ -311,37 +270,15 @@ func caMap(certs *certs, meshName string) map[string]*core_xds.CaSecret {
 	return result
 }
 
-// backoffRemaining returns how long certificate generation for the given proxy
-// is still being backed off after a previous failure, or 0 if it may proceed.
-func (s *secrets) backoffRemaining(key certCacheKey) time.Duration {
-	s.RLock()
-	defer s.RUnlock()
-	b, ok := s.backoffs[key]
-	if !ok {
-		return 0
+// issuerKRI identifies the CA backend issuing a mesh's dataplane certs, used as
+// the circuit-breaker key. A CA backend is a section of the Mesh resource, so
+// it's the Mesh KRI with the enabled backend name as the section name.
+func issuerKRI(mesh *core_mesh.MeshResource) kri.Identifier {
+	id := kri.From(mesh)
+	if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend != nil {
+		id = kri.WithSectionName(id, backend.GetName())
 	}
-	if remaining := b.nextTry.Sub(core.Now()); remaining > 0 {
-		return remaining
-	}
-	return 0
-}
-
-// recordFailure registers a generation failure and returns the delay before the
-// next attempt is allowed. The delay grows exponentially up to a cap (see
-// CertBackoff).
-func (s *secrets) recordFailure(key certCacheKey) time.Duration {
-	s.Lock()
-	defer s.Unlock()
-	b, ok := s.backoffs[key]
-	if !ok {
-		b = &certBackoff{backoff: s.newBackoff()}
-		s.backoffs[key] = b
-	}
-	s.certGenerationBackoffMetric.Set(float64(len(s.backoffs)))
-
-	delay, _ := b.backoff.Next()
-	b.nextTry = core.Now().Add(delay)
-	return delay
+	return id
 }
 
 func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) {
@@ -351,8 +288,6 @@ func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKe
 	}
 	s.Lock()
 	delete(s.cachedCerts, key)
-	delete(s.backoffs, key)
-	s.certGenerationBackoffMetric.Set(float64(len(s.backoffs)))
 	s.Unlock()
 }
 

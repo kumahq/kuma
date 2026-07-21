@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
 	secrets_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	secrets_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	ca_builtin "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -147,7 +148,7 @@ var _ = Describe("Secrets", Ordered, func() {
 		identityProvider, err := NewIdentityProvider(caManagers, metrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		secrets, err = NewSecrets(caProvider, identityProvider, metrics, CertBackoff(5*time.Second, 5*time.Minute))
+		secrets, err = NewSecrets(caProvider, identityProvider, metrics, newTestLimiter(metrics, 5*time.Second))
 		Expect(err).ToNot(HaveOccurred())
 
 		now = time.Now()
@@ -447,9 +448,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			identityProvider, err := NewIdentityProvider(caManagers, m)
 			Expect(err).ToNot(HaveOccurred())
 			// deterministic (no jitter) backoff so the test is stable
-			failingSecrets, err = NewSecrets(caProvider, identityProvider, m, func() retry.Backoff {
-				return retry.NewConstant(backoffBase)
-			})
+			failingSecrets, err = NewSecrets(caProvider, identityProvider, m, newTestLimiter(m, backoffBase))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -526,7 +525,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 			identityProvider, err := NewIdentityProvider(caManagers, m)
 			Expect(err).ToNot(HaveOccurred())
-			s, err := NewSecrets(caProvider, identityProvider, m, CertBackoff(5*time.Second, 5*time.Minute))
+			s, err := NewSecrets(caProvider, identityProvider, m, newTestLimiter(m, 5*time.Second))
 			Expect(err).ToNot(HaveOccurred())
 
 			// given a DP with certs issued by the working backend
@@ -550,6 +549,20 @@ var _ = Describe("Secrets", Ordered, func() {
 		})
 	})
 })
+
+// newTestLimiter builds a limiter with a deterministic (no-jitter) per-proxy
+// backoff and a circuit-breaker threshold above 1, so single-proxy tests
+// exercise the backoff without ever tripping the backend circuit.
+func newTestLimiter(m core_metrics.Metrics, backoff time.Duration) *issuer.Limiter {
+	l, err := issuer.NewLimiter(issuer.Config{
+		NewBackoff: func() retry.Backoff { return retry.NewConstant(backoff) },
+		MinProxies: 3,
+		Window:     time.Minute,
+		Cooldown:   30 * time.Second,
+	}, m)
+	Expect(err).ToNot(HaveOccurred())
+	return l
+}
 
 // failingCaManager is a ca.Manager whose GenerateDataplaneCert always fails,
 // used to exercise the certificate generation backoff.
