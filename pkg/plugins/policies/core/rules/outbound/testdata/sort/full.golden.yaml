@@ -77,6 +77,5 @@
     type: MeshTimeout
   RuleIndex: 0
   TopLevel:
-    kind: MeshSubset
-    tags:
-      app: frontend
+    kind: Dataplane
+    name: frontend-dp

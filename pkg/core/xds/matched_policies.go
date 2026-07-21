@@ -4,7 +4,6 @@ import (
 	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 )
@@ -26,17 +25,6 @@ type TypedMatchingPolicies struct {
 type PluginOriginatedPolicies map[core_model.ResourceType]TypedMatchingPolicies
 
 type MatchedPolicies struct {
-	// Inbound(Listener) -> Policy
-	TrafficPermissions TrafficPermissionMap
-
-	// Outbound(Listener) -> Policy
-	// Actual Envoy Configuration is generated without taking this TrafficRoutes into account
-	TrafficRoutes RouteMap
-
-	// Dataplane -> Policy
-	// Actual Envoy Configuration is generated without taking this ProxyTemplate into account
-	ProxyTemplate *core_mesh.ProxyTemplateResource
-
 	Dynamic PluginOriginatedPolicies
 }
 

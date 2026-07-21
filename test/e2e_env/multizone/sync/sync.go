@@ -39,12 +39,12 @@ labels:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: MeshService
-        name: client-server_kuma-test_svc_80 # this is just something to sync
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://%[1]s/client-server_kuma-test_svc_80 # this is just something to sync
 `, meshName)),
 			)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())

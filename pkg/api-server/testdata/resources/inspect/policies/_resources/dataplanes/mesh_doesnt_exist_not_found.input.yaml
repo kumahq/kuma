@@ -4,8 +4,7 @@ name: foo
 mesh: default
 spec:
   targetRef:
-    kind: MeshHTTPRoute
-    name: the-http-route
+    kind: Mesh
   to:
     - targetRef:
         kind: Mesh
@@ -18,8 +17,7 @@ name: the-http-route
 mesh: default
 spec:
   targetRef:
-    kind: MeshService
-    name: svc-1
+    kind: Mesh
   to:
     - targetRef:
         kind: MeshService

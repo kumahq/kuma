@@ -92,7 +92,8 @@ spec:
     kind: Mesh
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
       default:
         connectionTimeout: 5s
 `, mtName, mesh, origin)
@@ -112,7 +113,8 @@ spec:
     kind: Mesh
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
       default:
         connectionTimeout: 5s
 `, mtName, Config.KumaNamespace, mesh)

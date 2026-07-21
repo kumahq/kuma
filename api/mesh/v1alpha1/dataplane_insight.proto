@@ -146,7 +146,7 @@ message Version {
   // Version of Envoy
   EnvoyVersion envoy = 2;
 
-  // Versions of other dependencies, i.e. CoreDNS
+  // Versions of other dependencies
   map<string, string> dependencies = 3;
 }
 

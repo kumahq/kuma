@@ -13,9 +13,6 @@ const (
 	// OriginDirectAccess is the origin for resources produced by the direct-access proxy generator
 	OriginDirectAccess Origin = "direct-access"
 
-	// OriginDNS is the origin for resources produced by the DNS generator
-	OriginDNS Origin = "dns"
-
 	// OriginEgress is the origin for resources associated with the egress dataplane/proxy
 	OriginEgress Origin = "egress"
 
@@ -36,9 +33,6 @@ const (
 
 	// OriginProxyTemplateModifications is the origin for resources created by ProxyTemplate modifications
 	OriginProxyTemplateModifications Origin = "proxy-template-modifications"
-
-	// OriginProxyTemplateRaw is the origin for resources created by raw ProxyTemplate snippets
-	OriginProxyTemplateRaw Origin = "proxy-template-raw"
 
 	// OriginSecrets is the origin for resources produced by the secrets generator
 	OriginSecrets Origin = "secrets"

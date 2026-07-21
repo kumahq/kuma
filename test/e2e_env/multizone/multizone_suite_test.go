@@ -32,7 +32,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/unifiednaming"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/validation"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/zonedisable"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/zoneegress"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
@@ -53,7 +52,6 @@ var (
 )
 
 var (
-	_ = Describe("External Service locality aware", Label("job-0"), localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
 	_ = Describe("Healthcheck", Label("job-3"), healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
 	_ = Describe("Inspect", Label("job-3"), inspect.Inspect, Ordered)
 	_ = Describe("MeshHTTPRoute", Label("job-1"), meshhttproute.Test, Ordered)
@@ -61,7 +59,6 @@ var (
 	_ = Describe("MeshTCPRoute", Label("job-3"), meshtcproute.Test, Ordered)
 	_ = Describe("InboundPassthrough", Label("job-3"), inbound_communication.InboundPassthrough, Ordered)
 	_ = Describe("InboundPassthroughDisabled", Label("job-3"), inbound_communication.InboundPassthroughDisabled, Ordered)
-	_ = Describe("ZoneEgress Internal Services", Label("job-3"), zoneegress.InternalServices, Ordered)
 	_ = Describe("Connectivity", Label("job-1"), connectivity.Connectivity, Ordered)
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", Label("job-1"), connectivity.GatewayIPV6CNIV2, Ordered)
 	_ = Describe("Sync", Label("job-1"), multizone_sync.Sync, Ordered)
@@ -72,10 +69,6 @@ var (
 	_ = Describe("Resilience", Label("job-2"), resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", Label("job-2"), resilience.ResilienceMultizoneUniversalPostgres, Ordered)
 	_ = Describe("MeshTimeout", Label("job-0"), meshtimeout.MeshTimeout, Ordered)
-	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", Label("job-0"), localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
-	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", Label("job-0"), localityawarelb.LocalityAwareLB, Ordered)
-	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", Label("job-0"), localityawarelb.LocalityAwareLBGateway, Ordered)
-	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", Label("job-0"), localityawarelb.LocalityAwareLBEgress, Ordered)
 	_ = Describe("Defaults", Label("job-3"), defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", Label("job-1"), meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", Label("job-1"), meshservice.Connectivity, Ordered)

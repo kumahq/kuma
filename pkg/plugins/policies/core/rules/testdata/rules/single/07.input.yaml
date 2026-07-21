@@ -19,8 +19,9 @@ mesh: mesh-1
 name: mt-2
 spec:
   targetRef:
-    kind: MeshService
-    name: backend
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
   default:
     tags:
       - name: team

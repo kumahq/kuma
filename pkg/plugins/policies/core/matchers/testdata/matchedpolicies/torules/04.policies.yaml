@@ -38,9 +38,9 @@ mesh: mesh-1
 name: ccc
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v1
       team: mesh
   to:

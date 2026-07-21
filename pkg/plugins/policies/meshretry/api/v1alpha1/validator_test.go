@@ -181,19 +181,6 @@ to:
           - 500
           - 409
 `),
-			Entry("target MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-        retryOn:
-          - 500
-          - 409
-`),
 			Entry("empty 'to' allowed as override to disable inherited rules", `
 targetRef:
   kind: Dataplane
@@ -532,8 +519,29 @@ to:
         - 5xx`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.to[0].targetRef.kind
     message: value 'MeshService' is not supported`,
+			}),
+			Entry("top-level targetRef MeshHTTPRoute with valid to", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: route-1
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+        retryOn:
+          - 500
+          - 409
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported`,
 			}),
 		)
 	})

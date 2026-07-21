@@ -39,19 +39,37 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: /%s
-          expectedStatuses: 
+          expectedStatuses:
           - %s`, mesh, method, status)
+		}
+		disablePanic := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+				Install(YamlUniversal(disablePanic(meshName))).
+				Install(
+					DemoClientUniversal("dp-demo-client", meshName,
+						WithTransparentProxy(true)),
 				).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP))).
 				Setup(universal.Cluster)
@@ -118,23 +136,42 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: /%s
-          expectedStatuses: 
+          expectedStatuses:
           - %s`, mesh, method, status)
+		}
+		disablePanic := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(Yaml(samples.MeshDefaultBuilder().
-					WithName(meshName).
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				Install(Yaml(
+					samples.MeshDefaultBuilder().
+						WithName(meshName).
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 				)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+				Install(YamlUniversal(disablePanic(meshName))).
+				Install(
+					DemoClientUniversal("dp-demo-client", meshName,
+						WithTransparentProxy(true)),
 				).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP))).
 				Setup(universal.Cluster)
@@ -205,23 +242,42 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        tcp: 
+        tcp:
           send: %s
           receive:
           - %s`, mesh, serviceName, sendBase64, recvBase64)
+		}
+		disablePanic := func(mesh, serviceName string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: %s
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh, serviceName)
 		}
 		meshName := "meshhealthcheck-tcp"
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
+				Install(YamlUniversal(disablePanic(meshName, "test-server"))).
+				Install(
+					DemoClientUniversal("dp-demo-client", meshName,
+						WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server", meshName,
-					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol(core_meta.ProtocolTCP)),
+				Install(
+					TestServerUniversal("test-server", meshName,
+						WithArgs([]string{"health-check", "tcp"}),
+						WithProtocol(core_meta.ProtocolTCP)),
 				).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
@@ -297,24 +353,43 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        tcp: 
+        tcp:
           send: %s
           receive:
             - %s`, mesh, serviceName, sendBase64, recvBase64)
+		}
+		disablePanic := func(mesh, serviceName string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: gateway-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: %s
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh, serviceName)
 		}
 		meshName := "meshhealthcheck-mtls-permissive-tcp"
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(mtlsPermissiveMesh(meshName)).
-				Install(DemoClientUniversal("dp-demo-client-mtls", meshName,
-					WithTransparentProxy(true)),
+				Install(YamlUniversal(disablePanic(meshName, "test-server-mtls"))).
+				Install(
+					DemoClientUniversal("dp-demo-client-mtls", meshName,
+						WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server-mtls", meshName,
-					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol(core_meta.ProtocolTCP),
-					WithServiceName("test-server-mtls")),
+				Install(
+					TestServerUniversal("test-server-mtls", meshName,
+						WithArgs([]string{"health-check", "tcp"}),
+						WithProtocol(core_meta.ProtocolTCP),
+						WithServiceName("test-server-mtls")),
 				).
 				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Setup(universal.Cluster)
@@ -377,16 +452,34 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
         grpc: {}`, mesh)
+		}
+		disablePanic := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: everything-to-backend-panic
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100`, mesh)
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName))).
-				Install(TestServerUniversal("test-client", meshName,
+				Install(YamlUniversal(disablePanic(meshName))).
+				Install(TestServerUniversal(
+					"test-client", meshName,
 					WithServiceName("test-client"),
 					WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80"}),
 					WithTransparentProxy(true),
@@ -447,122 +540,6 @@ spec:
 				g.Expect(filtered).To(ContainSubstring("health_flags::healthy"))
 				g.Expect(filtered).ToNot(ContainSubstring("health_flags::/failed_active_hc"))
 			}, "30s", "500ms").Should(Succeed())
-		})
-	}, Ordered)
-
-	Describe("HTTP with MeshHTTPRoute", func() {
-		meshName := "meshhealthcheck-http-and-meshhttproute"
-		healthCheck := func(mesh, method, status string) string {
-			return fmt.Sprintf(`
-type: MeshHealthCheck
-mesh: %s
-name: everything-to-backend
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-    - targetRef:
-        kind: MeshService
-        name: test-server
-      default:
-        interval: 10s
-        timeout: 2s
-        unhealthyThreshold: 3
-        healthyThreshold: 1
-        failTrafficOnPanic: true
-        noTrafficInterval: 1s
-        healthyPanicThreshold: 0
-        reuseConnection: true
-        http: 
-          path: /%s
-          expectedStatuses: 
-          - %s`, mesh, method, status)
-		}
-
-		meshHttpRoute := fmt.Sprintf(`
-type: MeshHTTPRoute
-mesh: %s
-name: http-route-1
-spec: 
-  targetRef: 
-    kind: MeshService
-    name: dp-demo-client
-  to: 
-    - targetRef: 
-        kind: MeshService
-        name: test-server
-      rules: 
-        - matches: 
-            - path: 
-                value: /
-                type: PathPrefix
-          default: 
-            backendRefs: 
-              - kind: MeshServiceSubset
-                name: test-server
-                tags: 
-                  version: v1
-                weight: 50
-              - kind: MeshServiceSubset
-                name: test-server
-                tags: 
-                  version: v2
-                weight: 50`, meshName)
-
-		BeforeAll(func() {
-			// This test splits traffic across kuma.io/service version subsets via
-			// MeshServiceSubset backendRefs, which resolve only in non-Exclusive
-			// mode. Exclusive-native MeshService health checking is covered by the
-			// "HTTP to real MeshService" describe above. Pin to Disabled.
-			err := NewClusterSetup().
-				Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build())).
-				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
-					WithTransparentProxy(true)),
-				).
-				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v1"))).
-				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(core_meta.ProtocolHTTP), WithServiceVersion("v2"))).
-				Setup(universal.Cluster)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())
-		})
-
-		E2EAfterAll(func() {
-			Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
-		})
-
-		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
-			// check that test-server is healthy
-			Eventually(func(g Gomega) {
-				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("response"))
-			}).Should(Succeed())
-
-			// update HealthCheck policy to check for another status code
-			Expect(YamlUniversal(healthCheck(meshName, "are-you-healthy", "500"))(universal.Cluster)).To(Succeed())
-
-			// wait for both split clusters to be marked as unhealthy
-			Eventually(func(g Gomega) {
-				cmd := tunnel.AdminCurlCmd("/clusters")
-				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
-				g.Expect(err).ToNot(HaveOccurred())
-				filtered := filterLines(stdout, "test-server")
-				count := strings.Count(filtered, "health_flags::/failed_active_hc")
-				g.Expect(count).To(Equal(2))
-			}, "30s", "500ms").Should(Succeed())
-
-			// check that test-server is unhealthy
-			Consistently(func(g Gomega) {
-				response, err := client.CollectFailure(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(503))
-			}).Should(Succeed())
 		})
 	}, Ordered)
 }

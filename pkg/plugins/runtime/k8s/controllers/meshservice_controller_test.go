@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -73,7 +72,6 @@ var _ = Describe("MeshServiceController", func() {
 				Log:                 logr.Discard(),
 				Scheme:              k8sClientScheme,
 				EventRecorder:       kube_events.NewFakeRecorder(10),
-				ResourceConverter:   k8s.NewSimpleConverter(),
 				InboundTagsDisabled: given.inboundTagsDisabled,
 			}
 
@@ -124,7 +122,7 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "ignore.resources.yaml",
 			outputFile: "ignore.meshservice.yaml",
 		}),
-		Entry("headless gateway service with mode Disabled", testCase{
+		Entry("headless gateway service is unaffected by meshServices.mode", testCase{
 			inputFile:  "headless-gateway-disabled.resources.yaml",
 			outputFile: "headless-gateway-disabled.meshservice.yaml",
 		}),

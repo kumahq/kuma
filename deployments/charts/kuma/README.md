@@ -138,7 +138,6 @@ A Helm chart for the Kuma Control Plane
 | cni.resources.limits.memory | string | `"100Mi"` |  |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{"readOnlyRootFilesystem":true,"runAsGroup":0,"runAsNonRoot":false,"runAsUser":0}` | Security context at the container level for cni |
-| dataPlane.dnsLogging | bool | `false` | If true, then turn on CoreDNS query logging |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
@@ -332,7 +331,6 @@ A Helm chart for the Kuma Control Plane
 | transparentProxy.configMap.config.dropInvalidPackets | bool | `false` | Drops invalid packets to avoid connection resets in high-throughput scenarios |
 | transparentProxy.configMap.config.storeFirewalld | bool | `false` | Enables firewalld support to store iptables rules |
 | transparentProxy.configMap.config.verbose | bool | `false` | Enables verbose mode with longer argument/flag names and additional comments |
-| experimental.sidecarContainers | bool | `true` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
 | experimental.inboundTagsDisabled | bool | `false` | If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching. |
 | experimental.envoyAdminUnixSocket | bool | `true` | If true, Envoy admin API binds to a Unix domain socket instead of TCP. |
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |

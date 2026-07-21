@@ -315,8 +315,9 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
-	It("should add zone tag to empty inbound when not in Exclusive mode", func() {
-		// setup
+	It("should not add zone tag to empty inbound regardless of meshServices.mode", func() {
+		// setup: mode no longer affects this at all, so a Disabled mesh must
+		// behave exactly like an Exclusive one.
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
@@ -353,7 +354,7 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
+		Expect(actual.Spec.Networking.Inbound[0].Tags).To(BeEmpty())
 	})
 
 	It("should not add zone tag on update when inbound tags empty and Exclusive mode", func() {

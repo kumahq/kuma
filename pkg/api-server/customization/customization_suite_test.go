@@ -12,14 +12,12 @@ import (
 	config_api_server "github.com/kumahq/kuma/v3/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
@@ -83,9 +81,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
 			nil,
 		),
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),

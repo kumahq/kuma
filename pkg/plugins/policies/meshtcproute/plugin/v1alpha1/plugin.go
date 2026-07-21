@@ -8,7 +8,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -19,7 +18,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	plugin_gateway "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/match"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -51,10 +49,6 @@ func (p plugin) Apply(
 	}
 
 	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
-	// Only fallback if we have TrafficRoutes & No MeshTCPRoutes
-	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
-		return nil
-	}
 
 	if err := ApplyToOutbounds(proxy, rs, ctx, policies); err != nil {
 		return err
@@ -181,8 +175,6 @@ func sortRulesToHosts(
 	for _, hostnameTag := range sublisteners {
 		host := plugin_gateway.GatewayHost{
 			Hostname: hostnameTag.Hostname,
-			Routes:   nil,
-			Policies: map[model.ResourceType][]match.RankedPolicy{},
 			Tags:     hostnameTag.Tags,
 		}
 		hostInfo := plugin_gateway.GatewayHostInfo{
@@ -199,7 +191,7 @@ func sortRulesToHosts(
 		}
 		// it's ok for us to ignore ResourceRules because MeshGateway routes
 		// target kind: Mesh
-		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rulesForListener.Rules, resolver))
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, rulesForListener.Rules, resolver))
 		meshroute_gateway.AddToListenerByHostname(
 			hostInfosByHostname,
 			protocol,

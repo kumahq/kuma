@@ -32,8 +32,8 @@ mesh: mesh-1
 name: mr-3
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: kong_kong_svc_80
   to:
     - targetRef:

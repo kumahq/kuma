@@ -17,7 +17,6 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
@@ -25,7 +24,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
@@ -33,7 +31,6 @@ import (
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
@@ -1074,7 +1071,7 @@ var _ = Describe("MeshTCPRoute", func() {
 		}()),
 	)
 
-	It("falls back to legacy MeshGatewayRoute resources for built-in TCP gateways", func() {
+	It("does not fall back to legacy MeshGatewayRoute resources for built-in TCP gateways", func() {
 		metrics, err := metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 
@@ -1125,9 +1122,7 @@ var _ = Describe("MeshTCPRoute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(listeners).To(ContainSubstring("sample-gateway:TCP:8080"))
 
-		clusters, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(clusters).To(ContainSubstring("backend"))
+		Expect(resourceSet.ListOf(envoy_resource.ClusterType)).To(BeEmpty())
 	})
 })
 
@@ -1200,9 +1195,6 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 		xds_server.MeshResourceTypes(),
 		lookupIPFunc,
 		"zone-1",
-		vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
-		"mesh",
-		80,
 		nil,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")

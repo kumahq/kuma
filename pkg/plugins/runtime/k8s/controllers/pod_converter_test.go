@@ -102,6 +102,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 				err = yaml.Unmarshal(bytes, existingDataplane)
 				Expect(err).ToNot(HaveOccurred())
 			}
+			// mirror production: the controller always names the Dataplane after the Pod
+			// before conversion (see pod_controller.go), which drives kuma.io/display-name
+			existingDataplane.Name = pod.Name
 
 			converter := PodConverter{
 				InboundConverter: InboundConverter{
@@ -299,6 +302,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:           "duplicated-inbounds.dataplane.yaml",
 			inboundTagsDisabled: true,
 		}),
+		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled and MeshServices mode is non-Exclusive", testCase{
+			pod:                 "duplicated-inbounds.pod.yaml",
+			servicesForPod:      "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:           "duplicated-inbounds.dataplane.yaml",
+			inboundTagsDisabled: true,
+			meshServicesMode:    pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
+		}),
 		Entry("Multiple services selecting a single port keeps all inbounds when inbound tags enabled", testCase{
 			pod:            "overlapping-inbounds.pod.yaml",
 			servicesForPod: "overlapping-inbounds.services-for-pod.yaml",
@@ -372,7 +382,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "43.services-for-pod.yaml",
 			expectedErr:    "conflicting listener types on port 10001",
 		}),
-		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
+		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode creates listeners", testCase{
 			pod:              "44.pod.yaml",
 			servicesForPod:   "44.services-for-pod.yaml",
 			dataplane:        "44.dataplane.yaml",
@@ -422,6 +432,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				err = yaml.Unmarshal(bytes, ingress)
 				Expect(err).ToNot(HaveOccurred())
 			}
+			ingress.Name = pod.Name
 
 			// then
 			err = converter.PodToIngress(context.Background(), ingress, pod, services)
@@ -525,6 +536,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				err = yaml.Unmarshal(bytes, egress)
 				Expect(err).ToNot(HaveOccurred())
 			}
+			egress.Name = pod.Name
 
 			// when
 			err = converter.PodToEgress(ctx, egress, pod, services)

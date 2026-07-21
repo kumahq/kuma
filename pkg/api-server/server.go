@@ -41,7 +41,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
@@ -308,13 +307,15 @@ func addResourcesEndpoints(
 			endpointsCtx.zoneName = cfg.Multizone.Zone.Name
 		}
 		endpoints := resourceEndpoints{
-			resourceEndpointsContext:     endpointsCtx,
-			k8sMapper:                    k8sMapper,
-			federatedZone:                cfg.IsFederatedZoneCP(),
-			filter:                       filters.Resource(definition),
-			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
-			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
-			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			resourceCrudHandler: &resourceCrudHandler{
+				resourceEndpointsContext:     endpointsCtx,
+				k8sMapper:                    k8sMapper,
+				federatedZone:                cfg.IsFederatedZoneCP(),
+				filter:                       filters.Resource(definition),
+				disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
+				systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
+				isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			},
 			inspect: &resourceInspectHandler{
 				resourceEndpointsContext: endpointsCtx,
 				meshContextBuilder:       meshContextBuilder,
@@ -526,9 +527,6 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
 			rt.CAProvider(),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

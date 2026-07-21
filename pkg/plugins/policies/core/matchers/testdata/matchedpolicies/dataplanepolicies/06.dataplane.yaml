@@ -1,6 +1,8 @@
 type: Dataplane
 name: the-dp
 mesh: default
+labels:
+  kuma.io/service: test-client_multizone-meshtimeout-ns_svc_80
 networking:
   address: 127.0.0.1
   inbound:

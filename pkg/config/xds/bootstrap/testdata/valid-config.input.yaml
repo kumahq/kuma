@@ -7,6 +7,5 @@ params:
   xdsPort: 10101
   xdsConnectTimeout: 2s
   xdsGrpcMaxReceiveMessageBytes: 33554432
-  corefileTemplatePath: /tmp/corefile
 tlsCertFile: ""
 tlsKeyFile: ""

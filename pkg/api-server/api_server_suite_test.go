@@ -26,14 +26,12 @@ import (
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
@@ -196,9 +194,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store), false),
-			cfg.DNSServer.Domain,
-			80,
 			nil,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

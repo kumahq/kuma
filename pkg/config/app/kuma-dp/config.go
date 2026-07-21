@@ -46,14 +46,8 @@ var DefaultConfig = func() Config {
 			ReusePortEnabled:          true,
 		},
 		DNS: DNS{
-			Enabled:                   true,
-			CoreDNSPort:               15053,
-			EnvoyDNSPort:              15054,
-			CoreDNSBinaryPath:         "coredns",
-			CoreDNSConfigTemplatePath: "",
-			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
-			PrometheusPort:            19153,
-			CoreDNSLogging:            false,
+			Enabled:   true,
+			ProxyPort: 15053,
 		},
 		ApplicationProbeProxyServer: ApplicationProbeProxyServer{
 			Port: 0,
@@ -415,42 +409,19 @@ func (d *ApiServer) Validate() error {
 type DNS struct {
 	config.BaseConfig
 
-	// If true then builtin DNS functionality is enabled and CoreDNS server is started
+	// If true then builtin DNS functionality is enabled and the embedded DNS proxy is started
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
 
-	// ProxyPort defines the port of the embedded DNS proxy (if non 0 then the embedded proxy replaces coreDNS + Envoy. recommended value: 15053)
+	// ProxyPort defines the port on which the embedded DNS proxy listens. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
 	ProxyPort uint32 `json:"proxyPort,omitempty" envconfig:"kuma_dns_proxy_port"`
-	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
-	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
-	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.
-	EnvoyDNSPort uint32 `json:"envoyDnsPort,omitempty" envconfig:"kuma_dns_envoy_dns_port"`
-	// CoreDNSBinaryPath defines a path to CoreDNS binary.
-	CoreDNSBinaryPath string `json:"coreDnsBinaryPath,omitempty" envconfig:"kuma_dns_core_dns_binary_path"`
-	// CoreDNSConfigTemplatePath defines a path to a CoreDNS config template.
-	CoreDNSConfigTemplatePath string `json:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
-	// Dir to store auto-generated DNS Server config in.
-	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
-	// PrometheusPort where Prometheus stats will be exposed for the DNS Server
-	PrometheusPort uint32 `json:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
-	// If true then CoreDNS logging is enabled
-	CoreDNSLogging bool `json:"coreDNSLogging,omitempty" envconfig:"kuma_dns_enable_logging"`
 }
 
 func (d *DNS) Validate() error {
 	if !d.Enabled {
 		return nil
 	}
-	if d.CoreDNSPort > 65353 {
-		return errors.New(".CoreDNSPort has to be in [0, 65353] range")
-	}
-	if d.EnvoyDNSPort > 65353 {
-		return errors.New(".EnvoyDNSPort has to be in [0, 65353] range")
-	}
-	if d.PrometheusPort > 65353 {
-		return errors.New(".PrometheusPort has to be in [0, 65353] range")
-	}
-	if d.CoreDNSBinaryPath == "" {
-		return errors.New(".CoreDNSBinaryPath cannot be empty")
+	if d.ProxyPort == 0 || d.ProxyPort > 65535 {
+		return errors.New(".ProxyPort has to be in (0, 65535] range")
 	}
 	return nil
 }
@@ -465,8 +436,8 @@ func (p *ApplicationProbeProxyServer) Validate() error {
 	if p.Port == 0 {
 		return nil
 	}
-	if p.Port > 65353 {
-		return errors.New(".Port has to be in [0, 65353] range")
+	if p.Port > 65535 {
+		return errors.New(".Port has to be in [0, 65535] range")
 	}
 	return nil
 }

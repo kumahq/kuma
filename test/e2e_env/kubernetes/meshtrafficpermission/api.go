@@ -50,25 +50,25 @@ metadata:
     kuma.io/mesh: meshtrafficpermission-api
 spec:
   targetRef:
-    kind: MeshService
-    name: backend
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
-    - targetRef:
-        kind: MeshService
-        name: backend
-      default:
-        action: AllowWithShadowDeny
-    - targetRef:
-        kind: MeshServiceSubset
-        name: backend
-        tags:
-          version: v1
-      default:
-        action: Deny
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://meshtrafficpermission-api
+    - default:
+        allowWithShadowDeny:
+          - spiffeID:
+              type: Exact
+              value: spiffe://meshtrafficpermission-api/backend
+    - default:
+        deny:
+          - spiffeID:
+              type: Exact
+              value: spiffe://meshtrafficpermission-api/backend/v1
 `, Config.KumaNamespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then

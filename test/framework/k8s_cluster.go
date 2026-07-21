@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1806,12 +1807,33 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 
 	pullCtx, cancelPull := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelPull()
+	trustCachedTags := os.Getenv("KUMA_E2E_TRUST_CACHED_IMAGE_TAGS") == "true"
+	tagDigestRef := func(tagged, digestRef string) error {
+		tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
+		if out, err := tagCmd.CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
+		}
+		return nil
+	}
 	var wg sync.WaitGroup
 	pullErrs := make([]error, len(images))
 	for i, img := range images {
 		wg.Add(1)
 		go func(i int, img string) {
 			defer wg.Done()
+			if tagged, digestRef, ok := splitDigestRef(img); ok {
+				if exec.CommandContext(pullCtx, "docker", "image", "inspect", digestRef).Run() == nil {
+					if err := tagDigestRef(tagged, digestRef); err != nil {
+						pullErrs[i] = err
+					}
+					return
+				}
+				if trustCachedTags && exec.CommandContext(pullCtx, "docker", "image", "inspect", tagged).Run() == nil {
+					return
+				}
+			} else if exec.CommandContext(pullCtx, "docker", "image", "inspect", img).Run() == nil {
+				return
+			}
 			_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "pull image "+img, 5, 5*time.Second, func() (string, error) {
 				pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
 				out, err := pullCmd.CombinedOutput()
@@ -1828,9 +1850,8 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 			if !ok {
 				return
 			}
-			tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
-			if out, err := tagCmd.CombinedOutput(); err != nil {
-				pullErrs[i] = errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
+			if err := tagDigestRef(tagged, digestRef); err != nil {
+				pullErrs[i] = err
 			}
 		}(i, img)
 	}
@@ -1849,6 +1870,10 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		} else {
 			importImages[i] = img
 		}
+	}
+
+	if manifest := os.Getenv("KUMA_E2E_PRELOAD_MANIFEST"); manifest != "" {
+		recordPreloadedImages(manifest, importImages)
 	}
 
 	// Match `LoadImages` retry strategy: a single transient docker / k3d
@@ -1906,6 +1931,21 @@ func splitDigestRef(image string) (string, string, bool) {
 	colonIdx += slashIdx + 1
 	repo := base[:colonIdx]
 	return base, repo + digestPart, true
+}
+
+var preloadManifestMu sync.Mutex
+
+func recordPreloadedImages(path string, images []string) {
+	preloadManifestMu.Lock()
+	defer preloadManifestMu.Unlock()
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	for _, img := range images {
+		fmt.Fprintln(f, img)
+	}
 }
 
 func (c *K8sCluster) DeleteNode(name string) error {
@@ -1980,27 +2020,34 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		return tnl, nil
 	}
 
-	fwd, err := c.PortForwardApp(args)
+	// Envoy admin is no longer reachable over the pod network (it lives on a
+	// Unix socket in the sidecar). Read it through the control plane's inspect
+	// API instead, which fetches from the proxy over its own mTLS admin
+	// channel. Resolve the app's Envoy proxy resource, then build the inspect
+	// path prefix for it.
+	pod, err := PodOfApp(c, args.AppName, args.Namespace)
 	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to start port-forward to %s in namespace %q (port %d)",
-			args.AppName,
-			args.Namespace,
-			args.RemotePort,
-		)
+		return nil, errors.Wrapf(err, "failed to resolve pod for app %q in namespace %q", args.AppName, args.Namespace)
+	}
+	proxyName := fmt.Sprintf("%s.%s", pod.Name, args.Namespace)
+
+	var prefix string
+	switch args.AppName {
+	case Config.ZoneEgressApp:
+		prefix = fmt.Sprintf("/zoneegresses/%s", proxyName)
+	case Config.ZoneIngressApp:
+		prefix = fmt.Sprintf("/zoneingresses/%s", proxyName)
+	default:
+		mesh := pod.Labels["kuma.io/mesh"]
+		if mesh == "" {
+			mesh = "default"
+		}
+		prefix = fmt.Sprintf("/meshes/%s/dataplanes/%s", mesh, proxyName)
 	}
 
-	tnl, err = tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
-	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to create admin tunnel to %s in namespace %q (port %d)",
-			args.AppName,
-			args.Namespace,
-			args.RemotePort,
-		)
-	}
+	tnl = tunnel.NewCPTunnel(func(inspectionPath string, query url.Values) ([]byte, error) {
+		return c.controlplane.InspectEnvoyProxy(fmt.Sprintf("%s/%s", prefix, inspectionPath), query)
+	})
 
 	c.mutex.Lock()
 	if existing := c.adminTunnels[args]; existing != nil {

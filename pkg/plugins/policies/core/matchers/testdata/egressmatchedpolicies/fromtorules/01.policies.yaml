@@ -3,10 +3,10 @@ mesh: mesh-1
 name: mt-1
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: external-database
-    tags:
-      version: v1  
+    kind: Dataplane
+    labels:
+      kuma.io/service: external-database
+      version: v1
   from:
     - targetRef:
         kind: Mesh

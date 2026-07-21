@@ -298,11 +298,6 @@ func (r *resourceInspectHandler) getPoliciesConf(plugins []core_plugins.Register
 			return
 		}
 
-		if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _policies endpoint without meshService enabled"), "Bad Request")
-			return
-		}
-
 		var matchedPolicies []core_xds.TypedMatchingPolicies
 		allPlugins := plugins
 		for _, policyPlugin := range allPlugins {
@@ -608,18 +603,10 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
+			// Old 'ToRules' don't affect outbounds that were produced by real resources,
+			// which is all outbounds now that meshServices.mode is always Exclusive, so
+			// the legacy 'ToRules' response field is always empty.
 			toRules := []api_common.Rule{}
-			if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-				// Old 'ToRules' don't affect outbounds that were produced by real resources.
-				// That's why we don't have to set them when the mode is Exclusive
-				for _, ruleItem := range res.ToRules.Rules {
-					toRules = append(toRules, api_common.Rule{
-						Conf:     ruleItem.Conf,
-						Matchers: oapi_helpers.SubsetToRuleMatcher(ruleItem.Subset),
-						Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, ruleItem.Origin),
-					})
-				}
-			}
 			var proxyRule *api_common.ProxyRule
 			if len(res.SingleItemRules.Rules) > 0 {
 				proxyRule = &api_common.ProxyRule{

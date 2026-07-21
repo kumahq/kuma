@@ -8,13 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
-	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -22,7 +20,6 @@ import (
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -36,26 +33,10 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
-	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
 	"github.com/kumahq/kuma/v3/pkg/xds/server"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/server/v3"
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
-	"github.com/kumahq/kuma/v3/pkg/xds/template"
 )
-
-type staticClusterAddHook struct {
-	name string
-}
-
-func (s *staticClusterAddHook) Modify(resourceSet *model.ResourceSet, ctx xds_context.Context, proxy *model.Proxy) error {
-	resourceSet.Add(&model.Resource{
-		Name: s.name,
-		Resource: &envoy_cluster.Cluster{
-			Name: s.name,
-		},
-	})
-	return nil
-}
 
 type shuffleStore struct {
 	r *rand.Rand
@@ -80,8 +61,6 @@ func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opt
 	return nil
 }
 
-var _ xds_hooks.ResourceSetHook = &staticClusterAddHook{}
-
 var _ = Describe("GenerateSnapshot", func() {
 	var store core_store.ResourceStore
 	var gen *v3.TemplateSnapshotGenerator
@@ -96,15 +75,8 @@ var _ = Describe("GenerateSnapshot", func() {
 		}
 		store = core_store.NewPaginationStore(store)
 
-		rm := manager.NewResourceManager(store)
-
 		gen = &v3.TemplateSnapshotGenerator{
-			ProxyTemplateResolver: template.SequentialResolver(
-				&template.SimpleProxyTemplateResolver{
-					ReadOnlyResourceManager: rm,
-				},
-				generator.DefaultTemplateResolver,
-			),
+			ProxyTemplateResolver: generator.DefaultTemplateResolver,
 		}
 
 		cfg := kuma_cp.DefaultConfig()
@@ -114,9 +86,6 @@ var _ = Describe("GenerateSnapshot", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rm, config_manager.NewConfigManager(store), false),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
 			nil,
 		)
 
@@ -163,93 +132,6 @@ var _ = Describe("GenerateSnapshot", func() {
 
 		return actual
 	}
-
-	It("should execute hooks before proxy template modifications", func() {
-		// given
-		create(
-			samples.MeshMTLSBuilder().
-				WithName("demo").
-				Build(),
-		)
-
-		create(
-			builders.Dataplane().
-				WithName("web1").
-				WithMesh("demo").
-				WithVersion("1").
-				WithAddress("192.168.0.1").
-				AddInbound(
-					builders.Inbound().
-						WithPort(80).
-						WithServicePort(8080).
-						WithService("backend-1"),
-				).
-				AddInbound(
-					builders.Inbound().
-						WithPort(443).
-						WithServicePort(8443).
-						WithService("backend-2"),
-				).
-				AddInbound(
-					builders.Inbound().
-						WithAddress("192.168.0.2").
-						WithPort(80).
-						WithServicePort(8080).
-						WithService("backend-3"),
-				).
-				AddInbound(
-					builders.Inbound().
-						WithAddress("192.168.0.2").
-						WithPort(443).
-						WithServicePort(8443).
-						WithService("backend-4"),
-				).
-				WithTransparentProxying(15001, 15006, "ipv4").
-				Build(),
-		)
-
-		create(
-			&core_mesh.ProxyTemplateResource{
-				Meta: &test_model.ResourceMeta{Name: "pt", Mesh: "demo"},
-				Spec: &mesh_proto.ProxyTemplate{
-					Selectors: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
-							},
-						},
-					},
-					Conf: &mesh_proto.ProxyTemplate_Conf{
-						Imports: []string{core_mesh.ProfileDefaultProxy},
-						Modifications: []*mesh_proto.ProxyTemplate_Modifications{
-							{
-								Type: &mesh_proto.ProxyTemplate_Modifications_Cluster_{
-									Cluster: &mesh_proto.ProxyTemplate_Modifications_Cluster{
-										Operation: mesh_proto.OpRemove,
-										Match: &mesh_proto.ProxyTemplate_Modifications_Cluster_Match{
-											Name: "to-be-removed",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		)
-
-		gen.ResourceSetHooks = []xds_hooks.ResourceSetHook{
-			&staticClusterAddHook{
-				name: "to-be-removed",
-			},
-		}
-
-		// when
-		snapshot := generateSnapshot("web1", "demo", nil)
-
-		// then
-		Expect(snapshot).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "hook-before-pt.golden.yaml")))
-	})
 
 	It("should generate stable envoy config for external services", func() {
 		// given

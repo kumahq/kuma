@@ -13,12 +13,10 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/v3/api/observability/v1"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1"
 	meshmetrics_generator "github.com/kumahq/kuma/v3/pkg/mads/v1/generator"
 	. "github.com/kumahq/kuma/v3/pkg/mads/v1/reconcile"
@@ -103,7 +101,8 @@ var _ = Describe("snapshotGenerator", func() {
 			expectedSnapshots map[string]map[string]envoy_types.Resource
 		}
 
-		DescribeTable("",
+		DescribeTable(
+			"",
 			func(given testCase) {
 				// setup
 				zone := ""
@@ -113,9 +112,6 @@ var _ = Describe("snapshotGenerator", func() {
 					server.MeshResourceTypes(),
 					net.LookupIP,
 					zone,
-					vips.NewPersistence(resourceManager, config_manager.NewConfigManager(store), false),
-					".mesh",
-					80,
 					nil,
 				)
 				newMetrics, err := metrics.NewMetrics(zone)
@@ -492,7 +488,7 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.MeshService,
+								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-01"),
 							},
 							Default: v1alpha1.Conf{
@@ -590,7 +586,7 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.MeshService,
+								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-02"),
 							},
 							Default: v1alpha1.Conf{
@@ -710,7 +706,7 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.MeshService,
+								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-02"),
 							},
 							Default: v1alpha1.Conf{
