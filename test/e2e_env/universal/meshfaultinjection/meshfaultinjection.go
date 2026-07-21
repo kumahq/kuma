@@ -122,16 +122,18 @@ spec:
 				"test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+				WithWorkload("test-server"),
 			)).
 			Install(TestServerUniversal(
 				"test-server-block-all-sources", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithServiceName("test-service-block-all-sources"),
 				WithLabels(map[string]string{"kuma.io/service": "test-service-block-all-sources"}),
+				WithWorkload("test-server-block-all-sources"),
 			)).
-			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-			Install(DemoClientUniversal("demo-client-blocked", meshName, WithTransparentProxy(true))).
-			Install(DemoClientUniversal("demo-client-timeout", meshName, WithTransparentProxy(true))).
+			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client"))).
+			Install(DemoClientUniversal("demo-client-blocked", meshName, WithTransparentProxy(true), WithWorkload("demo-client-blocked"))).
+			Install(DemoClientUniversal("demo-client-timeout", meshName, WithTransparentProxy(true), WithWorkload("demo-client-timeout"))).
 			Setup(universal.Cluster)).To(Succeed())
 	})
 
