@@ -2,27 +2,29 @@
     "total": 2,
     "items": [
         {
-            "type": "TrafficRoute",
+            "type": "ExternalService",
             "mesh": "default",
             "name": "one",
             "creationTime": "2018-07-17T16:05:36.995Z",
             "modificationTime": "2019-07-17T16:05:36.995Z",
-            "conf": {
-                "loadBalancer": {
-                    "roundRobin": {}
-                }
+            "tags": {
+                "kuma.io/service": "one"
+            },
+            "networking": {
+                "address": "192.168.0.1:8080"
             }
         },
         {
-            "type": "TrafficRoute",
+            "type": "ExternalService",
             "mesh": "demo",
             "name": "two",
             "creationTime": "2018-07-17T16:05:36.995Z",
             "modificationTime": "2019-07-17T16:05:36.995Z",
-            "conf": {
-                "loadBalancer": {
-                    "leastRequest": {}
-                }
+            "tags": {
+                "kuma.io/service": "two"
+            },
+            "networking": {
+                "address": "192.168.0.2:8080"
             }
         }
     ],

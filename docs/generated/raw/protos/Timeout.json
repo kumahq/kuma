@@ -25,7 +25,8 @@
             },
             "additionalProperties": true,
             "type": "object",
-            "title": "Timeout"
+            "title": "Timeout",
+            "description": "Timeout is retained only for its nested Conf type, which is reused by pkg/defaults/mesh.DefaultInboundTimeout and the Envoy timeout configurer for inbound listeners. The Timeout resource itself has been removed."
         },
         "kuma.mesh.v1alpha1.Selector": {
             "properties": {

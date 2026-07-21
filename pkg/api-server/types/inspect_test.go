@@ -47,8 +47,8 @@ var _ = Describe("DataplaneInspectEntry", func() {
 					Service: "web",
 				},
 				MatchedPolicies: map[model.ResourceType][]v1alpha1.ResourceMeta{
-					core_mesh.TimeoutType: {
-						rest.From.Meta(&core_mesh.TimeoutResource{
+					core_mesh.ExternalServiceType: {
+						rest.From.Meta(&core_mesh.ExternalServiceResource{
 							Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "t-1"},
 						}),
 					},

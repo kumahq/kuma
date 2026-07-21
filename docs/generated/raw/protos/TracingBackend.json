@@ -6,7 +6,7 @@
             "properties": {
                 "name": {
                     "type": "string",
-                    "description": "Name of the backend, can be then used in Mesh.tracing.defaultBackend or in TrafficTrace"
+                    "description": "Name of the backend, can be then used in Mesh.tracing.defaultBackend"
                 },
                 "sampling": {
                     "additionalProperties": true,
@@ -26,7 +26,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Tracing Backend",
-            "description": "TracingBackend defines tracing backend available to mesh. Backends can be used in TrafficTrace rules."
+            "description": "TracingBackend defines tracing backend available to mesh."
         }
     }
 }

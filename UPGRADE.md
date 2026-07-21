@@ -513,6 +513,32 @@ with a fresh bootstrap. Once the control plane is upgraded to Kuma 3.0.0, any
 proxy still trying to use the removed SOTW stream cannot establish ADS and must
 be restarted with a Delta xDS bootstrap.
 
+### Legacy policy resources removed
+
+The 12 legacy policy resources superseded by the `Mesh*` targetRef policies
+have been removed from the resource registry: `TrafficPermission`,
+`TrafficRoute`, `TrafficLog`, `TrafficTrace`, `HealthCheck`,
+`CircuitBreaker`, `Retry`, `Timeout`, `RateLimit`, `FaultInjection`,
+`VirtualOutbound`, and `ProxyTemplate`. Each of these had
+already stopped affecting generated Envoy configuration in earlier releases
+(see the entries above); this change removes the resources themselves.
+
+For every one of these types: the REST API endpoints (including the generic
+`_resources`/`_dataplanes` inspect endpoints), `kumactl get`/`inspect`
+subcommands, KDS sync, and `MeshInsight`/`ServiceInsight` policy counters are
+gone, and the corresponding CRD is no longer installed on Kubernetes.
+
+The `ProxyTemplate` proto message and its default-profile machinery
+(`ProxyTemplateResolver`, profile imports) are unaffected — only the
+user-facing `ProxyTemplate` resource, API, and CRD are removed.
+
+**Action required**
+
+Delete any remaining resources of these types before upgrading — the control
+plane no longer accepts create/update requests for them, and stored resources
+of a removed type are not migrated. Remove any automation, dashboards, or
+kumactl scripts that reference these resource types, REST paths, or CRDs.
+
 ### Built-in gateway API and CRDs removed
 
 The built-in gateway API has been removed entirely. The `MeshGateway`,

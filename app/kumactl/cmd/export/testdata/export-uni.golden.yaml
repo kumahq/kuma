@@ -114,30 +114,6 @@ spec:
 type: MeshTimeout
 ---
 creationTime: "0001-01-01T00:00:00Z"
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: retry-all-default
-type: Retry
-conf:
-  http:
-    backOff:
-      baseInterval: 0.025s
-      maxInterval: 0.250s
-    numRetries: 5
-    perTryTimeout: 16s
-    retriableStatusCodes:
-    - 500
-    - 504
-  tcp:
-    maxConnectAttempts: 5
-destinations:
-- match:
-    kuma.io/service: '*'
-sources:
-- match:
-    kuma.io/service: '*'
----
-creationTime: "0001-01-01T00:00:00Z"
 modificationTime: "0001-01-01T00:00:00Z"
 name: user-token-signing-key-1
 type: GlobalSecret

@@ -22,7 +22,7 @@ var _ = Describe("Admin Resource Access", func() {
 	})
 
 	It("should allow regular user to access non admin resource", func() {
-		err := resourceAccess.ValidateCreate(context.Background(), model.ResourceKey{Name: "xyz", Mesh: "demo"}, &mesh_proto.CircuitBreaker{}, mesh.NewCircuitBreakerResource().Descriptor(), user.Anonymous)
+		err := resourceAccess.ValidateCreate(context.Background(), model.ResourceKey{Name: "xyz", Mesh: "demo"}, &mesh_proto.ExternalService{}, mesh.NewExternalServiceResource().Descriptor(), user.Anonymous)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

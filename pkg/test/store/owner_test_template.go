@@ -63,12 +63,10 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			name := "resource-1"
-			trRes := core_mesh.TrafficRouteResource{
-				Spec: &v1alpha1.TrafficRoute{
-					Conf: &v1alpha1.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"path": "demo",
-						},
+			trRes := core_mesh.ExternalServiceResource{
+				Spec: &v1alpha1.ExternalService{
+					Networking: &v1alpha1.ExternalService_Networking{
+						Address: "192.168.0.1:8080",
 					},
 				},
 			}
@@ -83,7 +81,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual := core_mesh.NewTrafficRouteResource()
+			actual := core_mesh.NewExternalServiceResource()
 			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 			Expect(store.IsNotFound(err)).To(BeTrue())
 		})
@@ -95,12 +93,10 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			name := "resource-1"
-			trRes := core_mesh.TrafficRouteResource{
-				Spec: &v1alpha1.TrafficRoute{
-					Conf: &v1alpha1.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"path": "demo",
-						},
+			trRes := core_mesh.ExternalServiceResource{
+				Spec: &v1alpha1.ExternalService{
+					Networking: &v1alpha1.ExternalService_Networking{
+						Address: "192.168.0.1:8080",
 					},
 				},
 			}
@@ -118,7 +114,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual := core_mesh.NewTrafficRouteResource()
+			actual := core_mesh.NewExternalServiceResource()
 			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 			Expect(store.IsNotFound(err)).To(BeTrue())
 		})
@@ -130,12 +126,10 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			for i := range 10 {
-				tr := core_mesh.TrafficRouteResource{
-					Spec: &v1alpha1.TrafficRoute{
-						Conf: &v1alpha1.TrafficRoute_Conf{
-							Destination: map[string]string{
-								"path": "demo",
-							},
+				tr := core_mesh.ExternalServiceResource{
+					Spec: &v1alpha1.ExternalService{
+						Networking: &v1alpha1.ExternalService_Networking{
+							Address: "192.168.0.1:8080",
 						},
 					},
 				}
@@ -145,7 +139,7 @@ func ExecuteOwnerTests(
 					store.CreateWithOwner(meshRes))
 				Expect(err).ToNot(HaveOccurred())
 			}
-			actual := core_mesh.TrafficRouteResourceList{}
+			actual := core_mesh.ExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(HaveLen(10))
@@ -155,7 +149,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual = core_mesh.TrafficRouteResourceList{}
+			actual = core_mesh.ExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(BeEmpty())
@@ -169,12 +163,10 @@ func ExecuteOwnerTests(
 
 			var prev model.Resource = meshRes
 			for i := range 10 {
-				curr := &core_mesh.TrafficRouteResource{
-					Spec: &v1alpha1.TrafficRoute{
-						Conf: &v1alpha1.TrafficRoute_Conf{
-							Destination: map[string]string{
-								"path": "demo",
-							},
+				curr := &core_mesh.ExternalServiceResource{
+					Spec: &v1alpha1.ExternalService{
+						Networking: &v1alpha1.ExternalService_Networking{
+							Address: "192.168.0.1:8080",
 						},
 					},
 				}
@@ -186,7 +178,7 @@ func ExecuteOwnerTests(
 				prev = curr
 			}
 
-			actual := core_mesh.TrafficRouteResourceList{}
+			actual := core_mesh.ExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(HaveLen(10))
@@ -196,7 +188,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual = core_mesh.TrafficRouteResourceList{}
+			actual = core_mesh.ExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(BeEmpty())
@@ -209,12 +201,10 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			name := "resource-1"
-			trRes := &core_mesh.TrafficRouteResource{
-				Spec: &v1alpha1.TrafficRoute{
-					Conf: &v1alpha1.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"path": "demo",
-						},
+			trRes := &core_mesh.ExternalServiceResource{
+				Spec: &v1alpha1.ExternalService{
+					Networking: &v1alpha1.ExternalService_Networking{
+						Address: "192.168.0.1:8080",
 					},
 				},
 			}
@@ -225,7 +215,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// when children is deleted
-			err = s.Delete(context.Background(), core_mesh.NewTrafficRouteResource(), store.DeleteByKey(name, mesh))
+			err = s.Delete(context.Background(), core_mesh.NewExternalServiceResource(), store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

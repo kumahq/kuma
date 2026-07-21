@@ -3,6 +3,15 @@
   "name": "192.168.0.1:80",
   "service": "web",
   "matchedPolicies": {
+    "ExternalService": [
+      {
+        "type": "ExternalService",
+        "mesh": "mesh-1",
+        "name": "t-1",
+        "creationTime": "0001-01-01T00:00:00Z",
+        "modificationTime": "0001-01-01T00:00:00Z"
+      }
+    ],
     "MeshAccessLog": [
       {
         "type": "MeshAccessLog",
@@ -11,15 +20,6 @@
         "creationTime": "0001-01-01T00:00:00Z",
         "modificationTime": "0001-01-01T00:00:00Z",
         "kri": "kri_mal_mesh-1___mal-1_"
-      }
-    ],
-    "Timeout": [
-      {
-        "type": "Timeout",
-        "mesh": "mesh-1",
-        "name": "t-1",
-        "creationTime": "0001-01-01T00:00:00Z",
-        "modificationTime": "0001-01-01T00:00:00Z"
       }
     ]
   }

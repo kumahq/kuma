@@ -84,7 +84,6 @@ var _ = Describe("EgressGenerator", func() {
 					if _, ok := meshResourcesMap[meshName]; !ok {
 						meshResourcesMap[meshName] = &core_xds.MeshResources{
 							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								core_mesh.TrafficRouteType:                      &core_mesh.TrafficRouteResourceList{},
 								meshhttproute_api.MeshHTTPRouteType:             &meshhttproute_api.MeshHTTPRouteResourceList{},
 								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{},
 							},
@@ -106,16 +105,6 @@ var _ = Describe("EgressGenerator", func() {
 					mesList.Items = append(
 						mesList.Items,
 						res.(*meshexternalservice_api.MeshExternalServiceResource),
-					)
-				case core_mesh.TrafficRouteType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
-					routeList := meshResourcesMap[meshName].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
-					routeList.Items = append(
-						routeList.Items,
-						res.(*core_mesh.TrafficRouteResource),
 					)
 				case meshhttproute_api.MeshHTTPRouteType:
 					routeList := meshResourcesMap[meshName].Resources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList)
