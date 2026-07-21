@@ -302,7 +302,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 		}
 		Expect(
-			ingress.GetAvailableServices(nil, others, nil, externalServices, nil),
+			ingress.GetAvailableServices(nil, others, externalServices, nil),
 		).To(BeComparableTo(services, cmp.Comparer(proto.Equal)))
 	})
 

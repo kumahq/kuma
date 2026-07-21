@@ -4,7 +4,6 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
@@ -22,7 +21,6 @@ import (
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
@@ -70,10 +68,6 @@ func (p plugin) Apply(
 	}
 
 	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds); err != nil {
-		return err
-	}
-
-	if err := applyToGateways(ctx.Mesh, proxy, rs, policies.GatewayRules, clusters.Gateway); err != nil {
 		return err
 	}
 
@@ -133,69 +127,6 @@ func applyToOutbounds(
 	for cluster, serviceName := range targetedClusters {
 		if err := configure(rules.Rules, subsetutils.KumaServiceTagElement(serviceName), cluster); err != nil {
 			return err
-		}
-	}
-
-	return nil
-}
-
-func applyToGateways(
-	meshCtx xds_context.MeshContext,
-	proxy *core_xds.Proxy,
-	rs *core_xds.ResourceSet,
-	gatewayRules core_rules.GatewayRules,
-	gatewayClusters map[string]*envoy_cluster.Cluster,
-) error {
-	resourcesByOrigin := rs.IndexByOrigin(core_xds.NonMeshExternalService)
-
-	for _, listenerInfo := range gateway.ExtractGatewayListeners(proxy) {
-		rules, ok := gatewayRules.ToRules.ByListener[core_rules.InboundListener{
-			Address: proxy.Dataplane.Spec.GetNetworking().Address,
-			Port:    listenerInfo.Listener.Port,
-		}]
-		if !ok {
-			continue
-		}
-		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
-			for _, hostInfo := range listenerHostnames.HostInfos {
-				destinations := gateway.RouteDestinationsMutable(hostInfo.Entries())
-				for _, dest := range destinations {
-					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
-					if err != nil {
-						continue
-					}
-					cluster, ok := gatewayClusters[clusterName]
-					if !ok {
-						continue
-					}
-
-					serviceName := dest.Destination[mesh_proto.ServiceTag]
-
-					if err := configure(
-						rules.Rules,
-						subsetutils.KumaServiceTagElement(serviceName),
-						cluster,
-					); err != nil {
-						return err
-					}
-
-					// This happens when using MeshGatewayRoutes
-					if dest.BackendRef == nil {
-						continue
-					}
-					if realRef := dest.BackendRef.Resource(); !realRef.IsEmpty() {
-						resources := resourcesByOrigin[realRef]
-						if err := applyToRealResource(
-							meshCtx,
-							rules.ResourceRules,
-							realRef,
-							resources,
-						); err != nil {
-							return err
-						}
-					}
-				}
-			}
 		}
 	}
 

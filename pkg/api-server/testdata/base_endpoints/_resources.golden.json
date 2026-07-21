@@ -174,33 +174,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "MeshGateway",
-   "path": "meshgateways",
-   "pluralDisplayName": "Mesh Gateways",
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mgw",
-   "singularDisplayName": "Mesh Gateway"
-  },
-  {
-   "includeInFederation": true,
-   "name": "MeshGatewayRoute",
-   "path": "meshgatewayroutes",
-   "pluralDisplayName": "Mesh Gateway Routes",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": false
-   },
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Mesh Gateway Route"
-  },
-  {
-   "includeInFederation": true,
    "name": "MeshHTTPRoute",
    "path": "meshhttproutes",
    "pluralDisplayName": "Mesh HTTP Routes",
