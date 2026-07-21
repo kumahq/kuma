@@ -333,6 +333,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
 			dataplane:      "duplicated-inbounds.dataplane.yaml",
 		}),
+		Entry("Multiple services selecting single port with different states", testCase{
+			pod:            "dedup-different-state-inbounds.pod.yaml",
+			servicesForPod: "dedup-different-state-inbounds.services-for-pod.yaml",
+			dataplane:      "dedup-different-state-inbounds.dataplane.yaml",
+		}),
 		Entry("31. Pod with workload labels configured matching pod label", testCase{
 			pod:            "31.pod.yaml",
 			servicesForPod: "31.services-for-pod.yaml",
