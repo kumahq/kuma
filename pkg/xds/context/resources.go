@@ -93,24 +93,8 @@ func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 	return r.ListOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 }
 
-func (r Resources) Gateways() *core_mesh.MeshGatewayResourceList {
-	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
-}
-
-func (r Resources) GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
-	return r.ListOrEmpty(core_mesh.MeshGatewayRouteType).(*core_mesh.MeshGatewayRouteResourceList)
-}
-
-func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
-	return r.ListOrEmpty(core_mesh.ProxyTemplateType).(*core_mesh.ProxyTemplateResourceList)
-}
-
 func (r Resources) Secrets() *system.SecretResourceList {
 	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
-}
-
-func (r Resources) MeshGateways() *core_mesh.MeshGatewayResourceList {
-	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
 }
 
 func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
@@ -229,44 +213,4 @@ func (r Resources) MeshZoneAddresses() *meshzoneaddress_api.MeshZoneAddressResou
 		}
 	}
 	return list.(*meshzoneaddress_api.MeshZoneAddressResourceList)
-}
-
-type MeshGatewayDataplanes struct {
-	Mesh       *core_mesh.MeshResource
-	Gateways   []*core_mesh.MeshGatewayResource
-	Dataplanes []*core_mesh.DataplaneResource
-}
-
-func (r Resources) gatewaysAndDataplanesForMesh(localMesh *core_mesh.MeshResource) map[xds.MeshName]MeshGatewayDataplanes {
-	gatewaysByMesh := map[xds.MeshName]MeshGatewayDataplanes{}
-
-	type meshResourcesTuple struct {
-		mesh      *core_mesh.MeshResource
-		resources ResourceMap
-	}
-
-	var meshResourcesTuples []meshResourcesTuple
-	for _, mesh := range r.Meshes().Items {
-		var resources ResourceMap
-		switch {
-		case mesh.GetMeta().GetName() == localMesh.GetMeta().GetName():
-			resources = r.MeshLocalResources
-		default:
-			resources = r.CrossMeshResources[mesh.GetMeta().GetName()]
-		}
-		meshResourcesTuples = append(meshResourcesTuples, meshResourcesTuple{
-			mesh:      mesh,
-			resources: resources,
-		})
-	}
-
-	for _, meshResourceTuple := range meshResourcesTuples {
-		gatewaysByMesh[meshResourceTuple.mesh.GetMeta().GetName()] = MeshGatewayDataplanes{
-			Mesh:       meshResourceTuple.mesh,
-			Gateways:   meshResourceTuple.resources.listOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList).Items,
-			Dataplanes: meshResourceTuple.resources.listOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList).Items,
-		}
-	}
-
-	return gatewaysByMesh
 }

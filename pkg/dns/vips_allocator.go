@@ -2,10 +2,8 @@ package dns
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -127,14 +125,9 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context) error {
 		return err
 	}
 
-	meshGatewaysByMesh, err := d.fetchMeshGatewaysByMesh(ctx)
-	if err != nil {
-		return err
-	}
-
 	var errs error
 	for _, mesh := range meshesNames {
-		newView, err := d.buildVirtualOutboundMeshView(mesh, virtualOutboundsByMesh[mesh], dataplanesByMesh[mesh], zoneIngresses, externalServicesByMesh[mesh], meshGatewaysByMesh)
+		newView, err := d.buildVirtualOutboundMeshView(mesh, virtualOutboundsByMesh[mesh], dataplanesByMesh[mesh], zoneIngresses, externalServicesByMesh[mesh])
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -228,48 +221,6 @@ func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(
 	return d.persistence.Set(ctx, mesh, out)
 }
 
-func generatedHostname(meta model.ResourceMeta, suffix string) string {
-	return fmt.Sprintf("internal.%s.%s.%s", meta.GetName(), meta.GetMesh(), suffix)
-}
-
-func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, dnsSuffix, mesh string, gateway *core_mesh.MeshGatewayResource) {
-	for i, listener := range gateway.Spec.Conf.Listeners {
-		// We only setup outbounds for cross mesh listeners and only ones with a
-		// concrete hostname.
-		if !listener.CrossMesh {
-			continue
-		}
-
-		hostname := listener.Hostname
-
-		if hostname == "" || strings.Contains(hostname, "*") {
-			hostname = generatedHostname(gateway.GetMeta(), dnsSuffix)
-		}
-
-		// We only allow one selector with a crossMesh listener
-		for _, selector := range gateway.Spec.Selectors {
-			tags := mesh_proto.Merge(
-				gateway.Spec.GetTags(),
-				listener.GetTags(),
-				map[string]string{
-					mesh_proto.MeshTag: mesh,
-				},
-				selector.GetMatch(),
-			)
-			origin := vips.OriginGateway(mesh, gateway.GetMeta().GetName(), hostname)
-			entry := vips.OutboundEntry{
-				Port:   listener.Port,
-				TagSet: tags,
-				Origin: origin,
-			}
-			if err := outboundSet.Add(vips.NewFqdnEntry(hostname), entry); err != nil {
-				Log.WithValues("mesh", mesh, "gateway", gateway.GetMeta().GetName(), "listener", i).
-					Info("failed to add MeshGateway-generated outbound", "reason", err.Error())
-			}
-		}
-	}
-}
-
 func (d *VIPsAllocator) fetchZoneIngresses(ctx context.Context) ([]*core_mesh.ZoneIngressResource, error) {
 	zoneIngresses := core_mesh.ZoneIngressResourceList{}
 	if err := d.rm.List(ctx, &zoneIngresses); err != nil {
@@ -323,28 +274,12 @@ func (d *VIPsAllocator) fetchExternalServicesByMesh(ctx context.Context) (map[st
 	return out, nil
 }
 
-func (d *VIPsAllocator) fetchMeshGatewaysByMesh(ctx context.Context) (map[string][]*core_mesh.MeshGatewayResource, error) {
-	meshGateways := core_mesh.MeshGatewayResourceList{}
-	if err := d.rm.List(ctx, &meshGateways); err != nil {
-		return nil, err
-	}
-
-	out := map[string][]*core_mesh.MeshGatewayResource{}
-	for _, meshGateway := range meshGateways.Items {
-		mesh := meshGateway.Meta.GetMesh()
-		out[mesh] = append(out[mesh], meshGateway)
-	}
-
-	return out, nil
-}
-
 func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 	mesh string,
 	virtualOutbounds []*core_mesh.VirtualOutboundResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
-	meshGatewaysByMesh map[string][]*core_mesh.MeshGatewayResource,
 ) (*vips.VirtualOutboundMeshView, error) {
 	outboundSet := vips.NewEmptyVirtualOutboundView()
 
@@ -406,12 +341,6 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 		}
 	}
 
-	for mesh, gateways := range meshGatewaysByMesh {
-		for _, gateway := range gateways {
-			addFromMeshGateway(outboundSet, d.dnsSuffix, mesh, gateway)
-		}
-	}
-
 	if errs != nil {
 		return nil, errs
 	}
@@ -445,12 +374,7 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 		return (externalServices.Items[i].GetMeta().GetName() < externalServices.Items[j].GetMeta().GetName())
 	})
 
-	meshGatewaysByMesh, err := d.fetchMeshGatewaysByMesh(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return d.buildVirtualOutboundMeshView(mesh, virtualOutbounds.Items, dataplanes.Items, zoneIngresses.Items, externalServices.Items, meshGatewaysByMesh)
+	return d.buildVirtualOutboundMeshView(mesh, virtualOutbounds.Items, dataplanes.Items, zoneIngresses.Items, externalServices.Items)
 }
 
 func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView) error {

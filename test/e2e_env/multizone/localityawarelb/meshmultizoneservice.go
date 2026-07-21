@@ -18,7 +18,7 @@ func MeshMzService() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
+			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService

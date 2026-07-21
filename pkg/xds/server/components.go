@@ -25,7 +25,6 @@ var (
 		core_mesh.DataplaneOverviewType: true,
 	}
 	HashMeshIncludedGlobalResources = map[core_model.ResourceType]bool{
-		core_system.ConfigType:       true,
 		core_system.GlobalSecretType: true,
 		core_mesh.ZoneIngressType:    true,
 		core_mesh.ZoneEgressType:     true,

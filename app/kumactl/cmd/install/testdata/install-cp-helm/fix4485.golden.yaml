@@ -139,9 +139,6 @@ rules:
       - healthchecks
       - trafficlogs
       - traffictraces
-      - meshgateways
-      - meshgatewayroutes
-      - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -470,7 +467,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 90d54a433a8f89be35c582bbf8159f7bde9af8639c4c4d1a244a4ee28200842a
+        checksum/tls-secrets: f2f13457f9b0c1bd6213da572bd7a64b8c100a6a9e795d4230e83e4ea2154bee
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -703,7 +700,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - meshgateways
           - zoneingresses
           - zoneingressinsights
           - zoneegresses
@@ -766,8 +762,6 @@ webhooks:
           - externalservices
           - faultinjections
           - healthchecks
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries
@@ -947,8 +941,6 @@ webhooks:
           - faultinjections
           - healthchecks
           - meshes
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries

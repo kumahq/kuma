@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/util/cert"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
@@ -19,7 +18,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	envoy_admin_tls "github.com/kumahq/kuma/v3/pkg/envoy/admin/tls"
 	"github.com/kumahq/kuma/v3/pkg/events"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
@@ -88,9 +86,6 @@ var _ = Describe("Dataplane Watchdog", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			zone,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-			".mesh",
-			80,
 			nil,
 		)
 		newMetrics, err := metrics.NewMetrics(zone)

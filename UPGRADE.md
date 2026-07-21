@@ -8,6 +8,65 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `meshServices` removed from the `Mesh` schema
+
+The `meshServices` field (and its `mode` enum) has been removed from the
+`Mesh` resource spec. Unified resource naming for a Dataplane now depends
+solely on that Dataplane's `FeatureUnifiedResourceNaming` capability,
+regardless of what the mesh's former `meshServices.mode` was set to.
+
+**Action required**
+
+None. A `Mesh` spec that still sets `meshServices` continues to apply
+successfully; the field is silently ignored by the control plane.
+
+### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
+
+The control plane now generates mesh-scoped zone proxy listeners and serves
+Dataplane inspect `_layout` and policy endpoints regardless of
+`meshServices.mode`.
+
+The Kubernetes warning event reason `ZoneProxyListenersSkipped`, previously
+emitted when a zone proxy Service was ignored outside `Exclusive` mode, has been
+removed because these listeners are no longer skipped.
+
+The `MeshIdentity` status reason `MeshServicesDisabled`, previously reported
+when identity initialization was skipped outside `Exclusive` mode, has also
+been removed because MeshIdentity initialization now proceeds in every
+MeshService mode.
+
+**Action required**
+
+If you alert on `ZoneProxyListenersSkipped`, remove or update that alert before
+upgrading. Zone proxy Pods that previously depended on this skipped-listener
+behavior will now receive listener configuration in every MeshService mode.
+Also update any automation that expected the `MeshServicesDisabled`
+`MeshIdentity` status reason or treated inspect `_layout` as unavailable
+outside `Exclusive` mode.
+
+### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
+
+With `meshServices.mode` always `Exclusive`, `kuma.io/service`-tagged services and
+legacy `ExternalService` resources are represented by `MeshService` and
+`MeshExternalService` instead, so the control plane no longer computes their
+legacy statistics:
+
+- `ServiceInsight.services` no longer contains entries for regular
+  (non-gateway) services or legacy `ExternalService` resources. Only delegated
+  gateways (which are never turned into a `MeshService`) are still reported.
+- `MeshInsight.services` (the `Total`/`Internal`/`External` service count
+  stat) is no longer populated and is always absent from the response.
+- The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
+  legacy `toRules` field on each rule entry; it is always an empty array.
+  `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.
+
+**Action required**
+
+Update any automation or dashboards that read `ServiceInsight.services` for
+non-gateway services, `MeshInsight.services`, or the `_rules` `toRules` field
+to use `MeshService`/`MeshExternalService` status and `_rules`
+`toResourceRules` instead.
+
 ### CoreDNS removed from the data plane
 
 The bundled CoreDNS binary has been removed. The data plane now always uses the in-process embedded DNS proxy (previously the default on Kubernetes and opt-in on Universal). CoreDNS and the Envoy DNS filter are no longer used, and the `coredns` binary is no longer shipped in the release tarball or the `kuma-dp` image.
@@ -285,6 +344,20 @@ release; existing resources are still accepted and stored.
 
 Migrate timeouts to `MeshTimeout`, which replaces `Timeout`.
 
+### `VirtualOutbound` no longer affects generated Envoy config
+
+The legacy `VirtualOutbound` policy is no longer consumed when generating
+Envoy configuration. Applying, updating, or removing a `VirtualOutbound`
+resource no longer changes the outbounds, DNS domains, or zone ingress
+destinations of any dataplane proxy.
+
+The `VirtualOutbound` resource, API, and KDS sync are still in place for
+this release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate to `MeshHTTPRoute`/`MeshTCPRoute`, which replace `VirtualOutbound`.
+
 ### `TrafficRoute` no longer affects generated Envoy config
 
 The legacy `TrafficRoute` policy is no longer consumed when generating Envoy
@@ -334,6 +407,25 @@ this release; existing resources are still accepted and stored.
 
 Migrate access control to `MeshTrafficPermission`, which replaces
 `TrafficPermission`.
+
+### `ProxyTemplate` no longer affects generated Envoy config
+
+The `ProxyTemplate` resource is no longer consumed when generating Envoy
+configuration. Applying, updating, or removing a `ProxyTemplate` resource no
+longer changes the Envoy configuration of any dataplane: neither the
+user-selected profile imports nor the raw xDS resources and modifications
+(`Conf.Resources`, `Conf.Modifications`) are applied anymore. The
+default-profile mechanism that `ProxyTemplate` used internally is unaffected
+and still generates the standard Envoy configuration for every dataplane.
+
+The `ProxyTemplate` resource, API, and KDS sync are still in place for this
+release; existing resources are still accepted and stored.
+
+**Action required**
+
+Migrate raw Envoy resource modifications to `MeshProxyPatch`, which replaces
+the `ProxyTemplate.Conf.Resources` and `ProxyTemplate.Conf.Modifications`
+raw-Envoy paths.
 
 ### Built-in gateway no longer falls back to `MeshGatewayRoute` or legacy connection policies
 
@@ -393,6 +485,40 @@ that started against an older control plane keeps using SOTW until it reconnects
 with a fresh bootstrap. Once the control plane is upgraded to Kuma 3.0.0, any
 proxy still trying to use the removed SOTW stream cannot establish ADS and must
 be restarted with a Delta xDS bootstrap.
+
+### Built-in gateway API and CRDs removed
+
+The built-in gateway API has been removed entirely. The `MeshGateway`,
+`MeshGatewayRoute`, `MeshGatewayInstance`, and `MeshGatewayConfig` resources,
+their Go/proto types, their Kubernetes CRDs
+(`meshgateways.kuma.io`, `meshgatewayroutes.kuma.io`,
+`meshgatewayinstances.kuma.io`, `meshgatewayconfigs.kuma.io`), and KDS sync
+registration for these types no longer exist. `MeshGateway` is also no longer
+a valid `targetRef.kind` for any policy.
+
+A `Dataplane` with `networking.gateway.type: BUILTIN` is now rejected at
+admission and update. The `Dataplane.networking.gateway` message and the
+`DELEGATED` gateway type are unaffected — delegated gateways (bring your own
+`Deployment`/`Service` fronting a Kuma-injected pod annotated
+`kuma.io/gateway: enabled` or `provided`) continue to work exactly as before.
+
+**Action required**
+
+- Before upgrading, delete any remaining `MeshGateway`, `MeshGatewayRoute`,
+  `MeshGatewayInstance`, and `MeshGatewayConfig` resources. On Kubernetes,
+  deleting their CRDs (as this Helm chart upgrade does) removes any resources
+  still stored under them; delete them explicitly first if you need to inspect
+  or back them up beforehand.
+- Migrate any remaining `BUILTIN` gateway `Dataplane`s to `DELEGATED` before
+  upgrading (see "Built-in gateway Kubernetes controllers removed" above) —
+  after upgrading, creating or updating a `Dataplane` with
+  `networking.gateway.type: BUILTIN` fails validation.
+- The default Helm-installed cluster RBAC no longer grants access to
+  `meshgateways`, `meshgatewayroutes`, `meshgatewayinstances`,
+  `meshgatewayconfigs`, or their `/status` and `/finalizers` subresources, and
+  the validating webhook configuration no longer includes these types. If you
+  manage RBAC or webhooks manually, remove these rules; if you keep them, they
+  are harmless but unused.
 
 ## Upgrade to `2.13.7`
 

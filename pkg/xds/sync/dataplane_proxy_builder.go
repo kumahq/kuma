@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -146,13 +145,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 				continue
 			}
 
-			// we need to skip adding Mesh*Service outbounds when ReachableBackends are not configured and MeshServicesMode is set to ReachableBackends,
-			// so we don't send additional clusters and to not impact performance
-			if dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableBackends() == nil &&
-				meshContext.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_ReachableBackends {
-				continue
-			}
-
 			if onlySelectedBackends {
 				// check if there is an entry with specific port or without port
 				_, selected := reachableBackends[outbound.Resource]
@@ -184,8 +176,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*core_xds.MatchedPolicies, error) {
 	resources := meshContext.Resources
 	matchedPolicies := &core_xds.MatchedPolicies{
-		ProxyTemplate: template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
-		Dynamic:       core_xds.PluginOriginatedPolicies{},
+		Dynamic: core_xds.PluginOriginatedPolicies{},
 	}
 	opts := []core_plugins.MatchedPoliciesOption{}
 	if p.IncludeShadow {

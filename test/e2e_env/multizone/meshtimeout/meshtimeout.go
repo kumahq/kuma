@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -33,8 +32,7 @@ func MeshTimeout() {
 				Yaml(
 					builders.Mesh().
 						WithName(mesh).
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere),
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
@@ -106,7 +104,10 @@ spec:
 	})
 
 	activeCxStat := func(admin envoy_admin.Tunnel) *stats.Stats {
-		s, err := admin.GetStats("cluster.multizone-meshtimeout_test-server_multizone-meshtimeout-ns_kuma-2_msvc_80.upstream_cx_active")
+		s, err := admin.GetStats(fmt.Sprintf(
+			"cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_cx_active",
+			mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace,
+		))
 		Expect(err).ToNot(HaveOccurred())
 		return s
 	}
@@ -181,7 +182,7 @@ spec:
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			_, err := framework_client.CollectEchoResponse(
-				multizone.KubeZone1, "test-client", "test-server_multizone-meshtimeout-ns_svc_80.mesh",
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
 				framework_client.WithMaxTime(10),
@@ -205,7 +206,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server_multizone-meshtimeout-ns_svc_80
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 2s
@@ -213,7 +215,7 @@ spec:
 
 		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(
-				multizone.KubeZone1, "test-client", "test-server_multizone-meshtimeout-ns_svc_80.mesh",
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
 				framework_client.WithMaxTime(10),

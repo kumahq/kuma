@@ -52,7 +52,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
 		inboundTagsDisabled bool
-		meshServicesMode    *mesh_proto.Mesh_MeshServices_Mode
 		expectedErr         string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
@@ -121,12 +120,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				WorkloadLabels:    given.workloadLabels,
 			}
 
-			msMode := mesh_proto.Mesh_MeshServices_Exclusive
-			if given.meshServicesMode != nil {
-				msMode = *given.meshServicesMode
-			}
 			mesh := builders.Mesh().
-				WithMeshServicesEnabled(msMode).
 				Build()
 
 			// when
@@ -302,6 +296,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:           "duplicated-inbounds.dataplane.yaml",
 			inboundTagsDisabled: true,
 		}),
+		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled and MeshServices mode is non-Exclusive", testCase{
+			pod:                 "duplicated-inbounds.pod.yaml",
+			servicesForPod:      "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:           "duplicated-inbounds.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
 		Entry("Multiple services selecting a single port keeps all inbounds when inbound tags enabled", testCase{
 			pod:            "overlapping-inbounds.pod.yaml",
 			servicesForPod: "overlapping-inbounds.services-for-pod.yaml",
@@ -375,11 +375,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "43.services-for-pod.yaml",
 			expectedErr:    "conflicting listener types on port 10001",
 		}),
-		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode skips listeners", testCase{
-			pod:              "44.pod.yaml",
-			servicesForPod:   "44.services-for-pod.yaml",
-			dataplane:        "44.dataplane.yaml",
-			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
+		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode creates listeners", testCase{
+			pod:            "44.pod.yaml",
+			servicesForPod: "44.services-for-pod.yaml",
+			dataplane:      "44.dataplane.yaml",
 		}),
 	)
 

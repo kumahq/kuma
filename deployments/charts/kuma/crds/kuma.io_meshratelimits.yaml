@@ -188,7 +188,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -209,8 +208,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -427,7 +426,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -448,8 +446,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -616,7 +614,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -637,8 +634,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-

@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshloadbalancingstrategy_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
@@ -21,8 +20,7 @@ func Policy() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(Yaml(samples.MeshDefaultBuilder().
-				WithName(meshName).
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				WithName(meshName),
 			)).
 			Install(TestServerUniversal("test-server-1", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}))).

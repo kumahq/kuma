@@ -83,7 +83,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 							},
 						},
 					},
-					MeshServices: &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Exclusive},
 				},
 			},
 			// no tags therefore SNI is empty

@@ -53,10 +53,10 @@ func Inspect() {
 	})
 
 	type testCase struct {
-		cluster      func() Cluster
-		args         []string
-		expectedOut  string
-		meshServices string
+		cluster           func() Cluster
+		args              []string
+		expectedOut       string
+		reinstallMTLSMesh bool
 	}
 	GlobalCluster := func() Cluster {
 		return multizone.Global
@@ -72,8 +72,8 @@ func Inspect() {
 	Context("Dataplane", func() {
 		DescribeTable("should execute envoy inspection",
 			func(given testCase) {
-				if given.meshServices != "" {
-					Expect(multizone.Global.Install(MTLSMeshWithMeshServicesUniversal(meshName, given.meshServices))).To(Succeed())
+				if given.reinstallMTLSMesh {
+					Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
 				}
 				Eventually(func(g Gomega) {
 					args := append([]string{"inspect"}, given.args...)
@@ -93,10 +93,10 @@ func Inspect() {
 				expectedOut: `server.live: 1`,
 			}),
 			Entry("of clusters for a dataplane using Global CP", testCase{
-				cluster:      GlobalCluster,
-				args:         []string{"dataplane", testServerDPPName, "--type", "clusters", "--mesh", meshName},
-				meshServices: "Exclusive",
-				expectedOut:  `system_envoy_admin::`,
+				cluster:           GlobalCluster,
+				args:              []string{"dataplane", testServerDPPName, "--type", "clusters", "--mesh", meshName},
+				reinstallMTLSMesh: true,
+				expectedOut:       `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a dataplane using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
@@ -109,10 +109,10 @@ func Inspect() {
 				expectedOut: `server.live: 1`,
 			}),
 			Entry("of clusters for a dataplane using Zone CP", testCase{
-				cluster:      UniZone1Cluster,
-				args:         []string{"dataplane", "test-server", "--type", "clusters", "--mesh", meshName},
-				meshServices: "Exclusive",
-				expectedOut:  `system_envoy_admin::`,
+				cluster:           UniZone1Cluster,
+				args:              []string{"dataplane", "test-server", "--type", "clusters", "--mesh", meshName},
+				reinstallMTLSMesh: true,
+				expectedOut:       `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a zoneingress using Global CP", testCase{
 				cluster:     GlobalCluster,
@@ -197,7 +197,7 @@ func Inspect() {
 		})
 
 		It("should execute inspect rules of dataplane", func() {
-			Expect(multizone.Global.Install(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled"))).To(Succeed())
+			Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
 			Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshTimeout
 name: mt1
@@ -230,9 +230,9 @@ spec:
 				g.Expect(result.Rules).ToNot(BeEmpty())
 				for _, rule := range result.Rules {
 					if rule.Type == "MeshTimeout" {
-						g.Expect(rule.ToRules).ToNot(BeNil())
-						g.Expect(*rule.ToRules).ToNot(BeEmpty())
-						g.Expect((*rule.ToRules)[0].Origin[0].Name).To(ContainSubstring("mt1"))
+						if rule.ToRules != nil {
+							g.Expect(*rule.ToRules).To(BeEmpty())
+						}
 					}
 				}
 			}, "30s", "1s").Should(Succeed())

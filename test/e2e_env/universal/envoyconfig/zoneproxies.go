@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshopentelemetrybackend "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
@@ -158,8 +157,7 @@ spec:
 			Yaml(
 				builders.Mesh().
 					WithName(zoneProxyMeshName).
-					WithoutInitialPolicies().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+					WithoutInitialPolicies(),
 			),
 		).
 		Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
@@ -240,7 +238,17 @@ spec:
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
+	return cleanupAfterTest(
+		zoneProxyMeshName,
+		[]string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"},
+		func(cluster Cluster) error {
+			return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				zoneProxyMeshName,
+				fmt.Sprintf("%s.%s.mesh.local", zoneProxyMeshName, universal.Cluster.ZoneName()),
+			)(cluster)
+		},
+		policies...,
+	)
 }
 
 func CleanupAfterZoneProxySuite() {

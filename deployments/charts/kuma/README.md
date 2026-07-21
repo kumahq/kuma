@@ -20,11 +20,11 @@ A Helm chart for the Kuma Control Plane
 | namespaceAllowList | list | `[]` | Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the allowed namespaces. If not specified, the control plane has write permissions for all namespaces. |
 | skipRBAC | bool | `false` | Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for Kuma should be created. If set to true, the user must manually create these resources before installation. |
 | restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
-| controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
+| controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in. Must be "universal" when controlPlane.mode is "global", since a Kubernetes-native Global Control Plane is not supported |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
-| controlPlane.mode | string | `"zone"` | Kuma CP modes: one of zone,global |
+| controlPlane.mode | string | `"zone"` | Kuma CP modes: one of zone,global. When "global", controlPlane.environment must be "universal" |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
@@ -331,7 +331,6 @@ A Helm chart for the Kuma Control Plane
 | transparentProxy.configMap.config.dropInvalidPackets | bool | `false` | Drops invalid packets to avoid connection resets in high-throughput scenarios |
 | transparentProxy.configMap.config.storeFirewalld | bool | `false` | Enables firewalld support to store iptables rules |
 | transparentProxy.configMap.config.verbose | bool | `false` | Enables verbose mode with longer argument/flag names and additional comments |
-| experimental.sidecarContainers | bool | `true` | If true, enable native Kubernetes sidecars. This requires at least Kubernetes v1.29 |
 | experimental.inboundTagsDisabled | bool | `false` | If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching. |
 | experimental.envoyAdminUnixSocket | bool | `true` | If true, Envoy admin API binds to a Unix domain socket instead of TCP. |
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |

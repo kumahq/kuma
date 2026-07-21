@@ -1,8 +1,0 @@
-conf:
-  imports:
-      - default-proxy
-  modifications:
-    - cluster:
-        operation: patch
-        value: |
-          connectTimeout: "0.5s"

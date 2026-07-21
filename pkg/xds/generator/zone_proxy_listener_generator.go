@@ -50,13 +50,6 @@ func (g ZoneProxyListenerGenerator) Generate(
 		return nil, nil
 	}
 
-	if xdsCtx.Mesh.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		zoneProxyLog.Info("skipping zone proxy listeners: MeshServices must be in Exclusive mode",
-			"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName(),
-		)
-		return nil, nil
-	}
-
 	rs := core_xds.NewResourceSet()
 
 	localResources := xds_context.Resources{MeshLocalResources: xdsCtx.Mesh.Resources.MeshLocalResources}

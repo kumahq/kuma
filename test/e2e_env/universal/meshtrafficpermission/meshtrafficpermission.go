@@ -117,17 +117,15 @@ spec:
    kind: Dataplane
    labels:
      kuma.io/service: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// then
 		trafficAllowed("test-server.svc.mesh.local")
 	})
 
@@ -145,12 +143,12 @@ spec:
    kind: Dataplane
    labels:
      kuma.io/service: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -177,7 +175,7 @@ spec:
   from:
     - targetRef:
         kind: MeshSubset
-        tags: 
+        tags:
           team: client-owners
       default:
         action: Allow
@@ -210,12 +208,12 @@ spec:
    kind: Dataplane
    labels:
      kuma.io/service: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then
@@ -247,12 +245,12 @@ spec:
    kind: Dataplane
    labels:
      kuma.io/service: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then

@@ -71,6 +71,15 @@ build/info/short:
 build/info/version:
 	@echo $(BUILD_INFO_VERSION)
 
+.PHONY: build/assert-tag-version
+build/assert-tag-version: build/kuma-cp ## Dev: Assert the built kuma-cp binary reports the tag version
+	@actual=$$($(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp version | awk '{print $$NF}'); \
+	if [ -z "$$actual" ] || [ "$$actual" != "$(BUILD_INFO_VERSION)" ]; then \
+		echo "kuma-cp binary reports version '$$actual', expected tag version '$(BUILD_INFO_VERSION)'"; \
+		exit 1; \
+	fi; \
+	echo "kuma-cp binary correctly reports tag version '$(BUILD_INFO_VERSION)'"
+
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
 

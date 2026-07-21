@@ -32,7 +32,7 @@ skipRBAC: false
 restartOnSecretChange: true
 
 controlPlane:
-  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
+  # -- Environment that control plane is run in. Must be "universal" when controlPlane.mode is "global", since a Kubernetes-native Global Control Plane is not supported
   environment: "kubernetes"
 
   # -- Labels to add to resources in addition to default labels
@@ -44,7 +44,7 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: one of zone,global
+  # -- Kuma CP modes: one of zone,global. When "global", controlPlane.environment must be "universal"
   mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
@@ -1124,9 +1124,6 @@ transparentProxy:
       verbose: false
 
 experimental:
-  # -- If true, enable native Kubernetes sidecars. This requires at least
-  # Kubernetes v1.29
-  sidecarContainers: true
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.

@@ -18,6 +18,10 @@
   {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
   {{ fail $msg }}
 {{ end }}
+{{ if and (eq .Values.controlPlane.mode "global") (ne .Values.controlPlane.environment "universal") }}
+  {{ $msg := printf "Kubernetes-native Global Control Plane is not supported: controlPlane.mode=global cannot be combined with controlPlane.environment=%s. Set controlPlane.environment=universal backed by a non-Kubernetes store such as PostgreSQL, even when Kuma CP itself is deployed on Kubernetes" .Values.controlPlane.environment }}
+  {{ fail $msg }}
+{{ end }}
 {{ if eq .Values.controlPlane.mode "zone" }}
   {{ if not (empty .Values.controlPlane.zone) }}
     {{ if gt (len .Values.controlPlane.zone) 253 }}
