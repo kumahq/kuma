@@ -1,1 +1,0 @@
-import{_ as c,r as e,o as s,l as _,w as o,b as t}from"./index-D_4fLDsS.js";const i={};function p(m,u){const n=e("RouterView"),r=e("AppView"),a=e("RouteView");return s(),_(a,{name:"hostname-generator-root-view"},{default:o(()=>[t(r,null,{default:o(()=>[t(n)]),_:1})]),_:1})}const l=c(i,[["render",p]]);export{l as default};
