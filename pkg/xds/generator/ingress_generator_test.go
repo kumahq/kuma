@@ -13,6 +13,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
@@ -32,6 +33,7 @@ var _ = Describe("IngressGenerator", func() {
 		expected         string
 		proxyZone        string
 		meshResourceList []*core_xds.MeshProxyResources
+		unifiedNaming    bool
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -56,6 +58,9 @@ var _ = Describe("IngressGenerator", func() {
 					MeshResourceList:    given.meshResourceList,
 				},
 				InternalAddresses: DummyInternalAddresses,
+				Metadata: &core_xds.DataplaneMetadata{
+					Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: given.unifiedNaming},
+				},
 			}
 
 			// when
@@ -97,6 +102,76 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "01.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshProxyResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v1",
+									"region":          "eu",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v2",
+									"region":          "us",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
+						},
+					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("01. unified naming, single mesh", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
+`,
+			expected:      "01.unified-naming.envoy.golden.yaml",
+			unifiedNaming: true,
 			meshResourceList: []*core_xds.MeshProxyResources{
 				{
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
