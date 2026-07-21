@@ -573,7 +573,7 @@ admission and update. The `Dataplane.networking.gateway` message and the
   manage RBAC or webhooks manually, remove these rules; if you keep them, they
   are harmless but unused.
 
-### Legacy HMAC256 signing keys no longer accepted
+### Legacy HS256 signing keys no longer accepted
 
 The control plane no longer accepts JWT tokens signed with the symmetric
 HS256 algorithm. This algorithm was used to sign Dataplane Tokens in
