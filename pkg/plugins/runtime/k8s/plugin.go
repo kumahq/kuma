@@ -20,7 +20,6 @@ import (
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/v3/pkg/dns"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/v3/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -100,9 +99,6 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 		return err
 	}
 	if err := addWorkloadReconciler(mgr, rt); err != nil {
-		return err
-	}
-	if err := addDNS(mgr, rt, converter); err != nil {
 		return err
 	}
 
@@ -259,41 +255,6 @@ func addWorkloadReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error
 		Log:           core.Log.WithName("controllers").WithName("Workload"),
 	}
 	return reconciler.SetupWithManager(mgr)
-}
-
-func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if rt.Config().Mode == config_core.Global {
-		return nil
-	}
-	zone := ""
-	if rt.Config().Multizone != nil && rt.Config().Multizone.Zone != nil {
-		zone = rt.Config().Multizone.Zone.Name
-	}
-	vipsAllocator, err := dns.NewVIPsAllocator(
-		rt.ResourceManager(),
-		rt.ConfigManager(),
-		*rt.Config().DNSServer,
-		rt.Config().Experimental,
-		zone,
-		rt.Metrics(),
-	)
-	if err != nil {
-		return err
-	}
-	reconciler := &k8s_controllers.ConfigMapReconciler{
-		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorder("k8s.kuma.io/vips-generator"),
-		Scheme:            mgr.GetScheme(),
-		Log:               core.Log.WithName("controllers").WithName("ConfigMap"),
-		ResourceManager:   rt.ResourceManager(),
-		VIPsAllocator:     vipsAllocator,
-		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
-		ResourceConverter: converter,
-	}
-	if err := reconciler.SetupWithManager(mgr); err != nil {
-		return err
-	}
-	return nil
 }
 
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {

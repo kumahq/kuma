@@ -358,6 +358,33 @@ this release; existing resources are still accepted and stored.
 
 Migrate to `MeshHTTPRoute`/`MeshTCPRoute`, which replace `VirtualOutbound`.
 
+### Legacy DNS VIP allocator and persisted VIP config removed
+
+The control plane no longer computes or persists the `kuma-<mesh>-dns-vips`
+`Config` resource. That resource was the write-only output of a legacy
+background allocator; dataplane DNS records are generated directly from the
+`MeshService`/`MeshExternalService`/`MeshMultiZoneService` DNS/VIP path, which
+this change does not affect.
+
+On Kubernetes, the control plane no longer reconciles the per-namespace
+`ConfigMap` used to expose the allocator's output either.
+
+The following configuration has been removed:
+
+- `experimental.useTagFirstVirtualOutboundModel`
+  (`KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL`).
+- `dnsServer.CIDR` (`KUMA_DNS_SERVER_CIDR`).
+- `dnsServer.serviceVipEnabled` (`KUMA_DNS_SERVER_SERVICE_VIP_ENABLED`).
+- `runtime.universal.vipRefreshInterval`
+  (`KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL`).
+
+**Action required**
+
+Remove the settings above from your control plane config and environment if
+set. Any previously persisted `kuma-<mesh>-dns-vips` `Config` resources (and
+their Kubernetes `ConfigMap` mirrors) are no longer written or read and can be
+deleted.
+
 ### `TrafficRoute` no longer affects generated Envoy config
 
 The legacy `TrafficRoute` policy is no longer consumed when generating Envoy
