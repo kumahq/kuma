@@ -151,7 +151,7 @@ match:
 * Good, because it degrades gracefully. A missing key just doesn't match, and every listener still carries something.
 * Bad, because it cannot express kind or port, which is what the two collisions below are about.
 * Bad, because we copy whatever labels the resource happens to have. On Kubernetes that is every label on the `Service`. Which keys we should copy is left open, in the implementation notes.
-* Bad, because of potential listener/cluster change on label update if we not use fixed map.
+* Bad, because copying the resource's whole label set regenerates the listener on every label update, unless we copy only a fixed set of keys we choose. Clusters are unaffected, since they never carry `io.kuma.tags`.
 
 #### Sub-option B: synthesize a `kuma.io/kri` tag
 
@@ -217,24 +217,28 @@ One practical note for whoever does the cherry-pick: label computation moved pac
 
 Because the tags a listener carries depend on which labels that version computes, a policy written for 2.14 may not match on 2.13. That comes with backporting a fix whose payload is "whatever labels this version has", and it belongs in the release notes so people don't hit it cluster by cluster.
 
-## Implications for Kong Mesh
+## Implications for Downstream Projects
 
 None
 
 ## Decision
 
-Listener `io.kuma.tags` is filled from labels wherever tags no longer exist.
+Listener `io.kuma.tags` is filled wherever tags no longer exist, using **sub-option B**: a synthesized `kuma.io/kri` tag in both directions. The worked examples earlier in the body that select on `kuma.io/display-name` illustrate sub-option A; they show what labels look like on a listener, but they are not the selector this decision endorses.
 
-1. Outbound listeners will get `kuma.io/kri` label with value of the destination `Mesh*Service` to avoid more frequent configuration changes and potential higher memory usage.
-2. Inbound listeners whose tags are empty take the labels of the proxy's own `Dataplane`. `InboundTagsDisabled` is how that happens on Kubernetes, but the rule is keyed on the tags being empty, not on the flag, because a hand-written Universal `Dataplane` can have tagless inbounds with the flag off.
+1. Outbound listeners get a `kuma.io/kri` tag holding the KRI of the destination `Mesh*Service`, with the port as its section name. KRI is stable and moves only when identity moves, so it avoids the churn and the memory cost of copying the resource's whole label set on every update, and its section name tells the listeners of a multi-port destination apart, which labels cannot.
+2. Inbound listeners whose tags are empty get a `kuma.io/kri` tag holding the KRI of the proxy's own `Dataplane`, with the inbound's port as its section name. The rule keys on the tags being empty, not on `InboundTagsDisabled`, because a hand-written Universal `Dataplane` can have tagless inbounds with the flag off. The KRI is used here rather than the `Dataplane`'s labels for a concrete reason: `Dataplane` labels are shared across all of a proxy's inbounds, so a label selector cannot target one inbound listener, whereas the KRI's section name carries the port and can.
 
-Point 2 is worth stating explicitly, because the flag's name suggests the opposite. Turning off inbound tags should not turn off listener tags. The flag decides what goes on the `Dataplane`'s inbounds, and the listener still has to say what it is. An inbound listener always carries a filled `io.kuma.tags`: from tags when they exist, from the `Dataplane`'s labels when they don't. We never leave it empty.
+`kuma.io/kri` is a tag we synthesize, not a label we store (see sub-option B). It never becomes a resource label; the control plane writes it straight into `io.kuma.tags` at generation time.
 
-Both cases strip `kuma.io/mesh`, which is what the outbound path already does. Reserved `kuma.io/` tags come from the control plane and win over user labels. Legacy paths keep working as they do today, meaning a `Dataplane` with real outbound tags, or inbounds with tags enabled.
+Point 2 is worth stating explicitly, because the flag's name suggests the opposite. Turning off inbound tags should not turn off listener tags. The flag decides what goes on the `Dataplane`'s inbounds, and the listener still has to say what it is. An inbound listener always carries a filled `io.kuma.tags`: from tags when they exist, from the synthesized `kuma.io/kri` when they don't. We never leave it empty.
+
+Both directions strip `kuma.io/mesh`, which is what the outbound path already does. Legacy paths keep working as they do today, meaning a `Dataplane` with real outbound tags, or inbounds with tags enabled.
+
+Group targeting by a user label such as `team: payments`, billed above as the main advantage Option 4 has over Option 1, is delivered only by sub-option A and is therefore out of scope for this decision. `kuma.io/kri` names one exact resource and cannot match a set. Copying user labels to bring group targeting back is left as the open question in the implementation notes, since it trades KRI's exactness for listener churn and per-key configuration.
 
 There is no `MeshProxyPatch` API change. The fix is entirely in how we fill the listener metadata. It is unconditional and has no new flag.
 
-Policies matching `kuma.io/service: <name>` have to be rewritten against labels, usually `kuma.io/kri: <kri>`.
+Policies matching `kuma.io/service: <name>` have to be rewritten against the KRI, `kuma.io/kri: <kri>`.
 
 
 ## Deep dive
