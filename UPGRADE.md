@@ -337,6 +337,11 @@ Remove the settings above from your control plane config and environment if
 set. KDS snapshot generation is event-driven, with periodic full resync
 controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
 
+The default full resync interval is now `1m`, so a missed KDS resource change
+event can take up to 60 seconds to self-correct through the fallback full
+resync. This reduces steady-state resync overhead compared to running the full
+resync every second.
+
 ### `TrafficTrace` no longer affects generated Envoy config
 
 The legacy `TrafficTrace` policy is no longer consumed when generating Envoy
