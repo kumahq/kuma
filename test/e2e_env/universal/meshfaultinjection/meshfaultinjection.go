@@ -13,7 +13,6 @@ import (
 
 func Policy() {
 	meshName := "mesh-fault-injection"
-	zoneName := universal.Cluster.ZoneName()
 	timeout := fmt.Sprintf(`
 type: MeshTimeout
 mesh: "%s"
@@ -49,7 +48,8 @@ spec:
       autogenerate:
         enabled: true
 `, meshName)
-	meshTrafficPermission := fmt.Sprintf(`
+	meshTrafficPermission := func(zoneName string) string {
+		return fmt.Sprintf(`
 type: MeshTrafficPermission
 name: allow-mesh
 mesh: "%s"
@@ -61,7 +61,9 @@ spec:
           type: Prefix
           value: spiffe://%s.%s.mesh.local
 `, meshName, meshName, zoneName)
-	faultInjection := fmt.Sprintf(`
+	}
+	faultInjection := func(zoneName string) string {
+		return fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
 name: mesh-fault-injecton-402
@@ -90,6 +92,7 @@ spec:
               value: 5s
               percentage: "100.0"
 `, meshName, meshName, zoneName, meshName, zoneName)
+	}
 	faultInjectionAllSources := fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
@@ -107,11 +110,12 @@ spec:
               percentage: 100
 `, meshName)
 	BeforeAll(func() {
+		zoneName := universal.Cluster.ZoneName()
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(meshIdentity)).
-			Install(YamlUniversal(meshTrafficPermission)).
-			Install(YamlUniversal(faultInjection)).
+			Install(YamlUniversal(meshTrafficPermission(zoneName))).
+			Install(YamlUniversal(faultInjection(zoneName))).
 			Install(YamlUniversal(faultInjectionAllSources)).
 			Install(YamlUniversal(timeout)).
 			Install(TestServerUniversal(
