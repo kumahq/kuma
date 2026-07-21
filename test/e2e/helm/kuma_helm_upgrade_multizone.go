@@ -58,16 +58,19 @@ func UpgradingZoneWithHelmChart() {
 		grp := sync.WaitGroup{}
 		grp.Add(3)
 		go func() {
+			defer GinkgoRecover()
 			defer grp.Done()
 			Expect(zoneUniversal.DismissCluster()).To(Succeed())
 		}()
 		go func() {
+			defer GinkgoRecover()
 			defer grp.Done()
 			Expect(zoneK8s.DeleteNamespace(namespace)).To(Succeed())
 			Expect(zoneK8s.DeleteKuma()).To(Succeed())
 			Expect(zoneK8s.DismissCluster()).To(Succeed())
 		}()
 		go func() {
+			defer GinkgoRecover()
 			defer grp.Done()
 			Expect(global.DeleteKuma()).To(Succeed())
 			Expect(global.DismissCluster()).To(Succeed())
