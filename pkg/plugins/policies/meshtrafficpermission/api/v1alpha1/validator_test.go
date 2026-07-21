@@ -346,7 +346,7 @@ from:
 
 			deprecations := mtp.Deprecations()
 
-			Expect(deprecations).To(ContainElement("MeshService value for 'from[].targetRef.kind' is deprecated"))
+			Expect(deprecations).To(ContainElement("MeshService value for 'from[].targetRef.kind' is deprecated, use 'rules' with MeshIdentity (spiffeId) instead"))
 			Expect(deprecations).ToNot(ContainElement(ContainSubstring("MeshSubset")))
 		})
 	})
