@@ -10,14 +10,14 @@ does not have any particular instructions.
 
 ### Global control plane on Kubernetes is no longer supported
 
-A Kubernetes-native Global control plane (`controlPlane.mode=global` with
-`controlPlane.environment=kubernetes`) is no longer supported. The Helm chart
-no longer renders the `Service`/config needed to run a Global control plane on
-Kubernetes, and the control plane itself now fails to start with
-`controlPlane.mode=global` unless `controlPlane.environment=universal`, i.e.
-backed by a non-Kubernetes store such as PostgreSQL. Zone and Standalone
-control planes on Kubernetes (`controlPlane.mode` `zone`/`standalone`) are
-unaffected.
+A Kubernetes-native Global control plane is no longer supported. `kuma-cp` now
+rejects `mode=global` with `environment=kubernetes`, and it also rejects
+`mode=global` with `store.type=kubernetes`. A Global control plane must run
+with `environment=universal` backed by a non-Kubernetes store such as
+PostgreSQL, even if `kuma-cp` itself is deployed on Kubernetes. The Helm chart
+no longer renders the `Service`/config needed for the old Kubernetes-native
+setup. Zone and Standalone control planes on Kubernetes (`mode`
+`zone`/`standalone`) are unaffected.
 
 **Action required**
 
@@ -336,11 +336,6 @@ The following configuration has been removed:
 Remove the settings above from your control plane config and environment if
 set. KDS snapshot generation is event-driven, with periodic full resync
 controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
-
-The default full resync interval is now `1m`, so a missed KDS resource change
-event can take up to 60 seconds to self-correct through the fallback full
-resync. This reduces steady-state resync overhead compared to running the full
-resync every second.
 
 ### `TrafficTrace` no longer affects generated Envoy config
 

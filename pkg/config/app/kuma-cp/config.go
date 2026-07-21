@@ -284,7 +284,7 @@ var DefaultConfig = func() Config {
 			IngressTagFilters: []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
 				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
 				DelayFullResync:    false,
 			},
 		},
