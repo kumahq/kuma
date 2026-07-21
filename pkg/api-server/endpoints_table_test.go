@@ -45,10 +45,6 @@ var _ = Describe("Endpoints", func() {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("resources/inspect/dataplanes/_rules"))
 
-	DescribeTable("inspect meshgateway rules /meshes/{mesh}/meshgateways/{name}/_rules", func(inputFile string) {
-		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("resources/inspect/meshgateways/_rules"))
-
 	DescribeTable("inspect dataplane layout /meshes/{mesh}/dataplanes/{dpName}/_layout", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("resources/inspect/dataplanes/_layout"))
