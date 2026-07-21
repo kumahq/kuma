@@ -40,13 +40,13 @@ var _ = Describe("MeshIdentity providers", func() {
 		identityManager = providers.NewIdentityProviderManager(
 			providers.IdentityProviders{
 				"Bundled": &staticIdentityProvider{},
-			}, eventBus, nil,
+			}, eventBus, issuer.Unlimited(),
 		)
 
 		noIdentityManager = providers.NewIdentityProviderManager(
 			providers.IdentityProviders{
 				"Bundled": &noIdentityProvider{},
-			}, eventBus, nil,
+			}, eventBus, issuer.Unlimited(),
 		)
 	})
 

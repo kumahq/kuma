@@ -71,7 +71,7 @@ func (c *Info) ExpiringSoon() bool {
 	return core.Now().After(c.Generation.Add(c.CertLifetime() / 5 * 4))
 }
 
-func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics, limiter *issuer.Limiter) (Secrets, error) {
+func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics, limiter issuer.Limiter) (Secrets, error) {
 	certGenerationsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Help: "Number of generated certificates",
 		Name: "cert_generation",
@@ -110,7 +110,7 @@ type secrets struct {
 	// breaker. Its state is in-memory only, so a kuma-cp restart or a DP
 	// reconnecting to a different replica resets it - a known trade-off tracked
 	// in https://github.com/kumahq/kuma/issues/17473.
-	limiter *issuer.Limiter
+	limiter issuer.Limiter
 
 	sync.RWMutex
 	cachedCerts                  map[certCacheKey]*certs

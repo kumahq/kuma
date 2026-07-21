@@ -553,7 +553,7 @@ var _ = Describe("Secrets", Ordered, func() {
 // newTestLimiter builds a limiter with a deterministic (no-jitter) per-proxy
 // backoff and a circuit-breaker threshold above 1, so single-proxy tests
 // exercise the backoff without ever tripping the backend circuit.
-func newTestLimiter(m core_metrics.Metrics, backoff time.Duration) *issuer.Limiter {
+func newTestLimiter(m core_metrics.Metrics, backoff time.Duration) issuer.Limiter {
 	l, err := issuer.NewLimiter(issuer.Config{
 		NewBackoff: func() retry.Backoff { return retry.NewConstant(backoff) },
 		MinProxies: 3,

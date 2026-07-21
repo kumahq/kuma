@@ -19,7 +19,7 @@ import (
 var _ = Describe("Limiter", func() {
 	var now time.Time
 	var metrics core_metrics.Metrics
-	var limiter *issuer.Limiter
+	var limiter issuer.Limiter
 
 	const backoff = 5 * time.Second
 
@@ -146,11 +146,12 @@ var _ = Describe("Limiter", func() {
 		Expect(ok).To(BeTrue()) // state dropped, allowed again
 	})
 
-	It("is a no-op when nil", func() {
-		var nilLimiter *issuer.Limiter
-		ok, retryAfter := nilLimiter.Allow(backend, proxy(0))
+	It("Unlimited never throttles", func() {
+		u := issuer.Unlimited()
+		ok, retryAfter := u.Allow(backend, proxy(0))
 		Expect(ok).To(BeTrue())
 		Expect(retryAfter).To(Equal(time.Duration(0)))
-		nilLimiter.Record(backend, proxy(0), false) // must not panic
+		u.Record(backend, proxy(0), false) // must not panic
+		u.Forget(proxy(0))                 // must not panic
 	})
 })

@@ -20,10 +20,10 @@ type IdentityProviderManager struct {
 	logger      logr.Logger
 	eventWriter events.Emitter
 	providers   IdentityProviders
-	limiter     *issuer.Limiter
+	limiter     issuer.Limiter
 }
 
-func NewIdentityProviderManager(providers IdentityProviders, eventWriter events.Emitter, limiter *issuer.Limiter) IdentityProviderManager {
+func NewIdentityProviderManager(providers IdentityProviders, eventWriter events.Emitter, limiter issuer.Limiter) IdentityProviderManager {
 	logger := core.Log.WithName("identity-provider")
 	return IdentityProviderManager{
 		logger:      logger,

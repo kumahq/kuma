@@ -59,19 +59,54 @@ type Config struct {
 	Cooldown time.Duration
 }
 
-// Limiter throttles certificate issuance. It applies per-proxy exponential
-// backoff for isolated failures and, on top of that, a per-backend circuit
-// breaker that trips only when failures span many distinct proxies - so a
-// single misbehaving proxy can never trip a whole backend.
+// Limiter throttles certificate issuance. The backend is keyed by
+// kri.Identifier (a CA backend or a MeshIdentity); the proxy is keyed by its
+// model.ResourceKey so callers can Forget it on cleanup. Use NewLimiter for the
+// real implementation or Unlimited for a no-op.
+type Limiter interface {
+	// Allow reports whether issuance for proxy against backend may proceed now.
+	// If not, it returns how long to wait. Every permitted attempt must be
+	// followed by a call to Record.
+	Allow(backend kri.Identifier, proxy model.ResourceKey) (bool, time.Duration)
+	// Record feeds back the outcome of an attempt that Allow permitted.
+	Record(backend kri.Identifier, proxy model.ResourceKey, success bool)
+	// Forget drops all per-proxy backoff state for a proxy across every backend,
+	// e.g. when a proxy disconnects.
+	Forget(proxy model.ResourceKey)
+}
+
+// Unlimited returns a Limiter that never throttles, for callers (e.g. tests)
+// that don't need issuance limiting.
+func Unlimited() Limiter { return unlimited{} }
+
+type unlimited struct{}
+
+func (unlimited) Allow(kri.Identifier, model.ResourceKey) (bool, time.Duration) { return true, 0 }
+func (unlimited) Record(kri.Identifier, model.ResourceKey, bool)                {}
+func (unlimited) Forget(model.ResourceKey)                                      {}
+
+// limiter applies per-proxy exponential backoff for isolated failures and, on
+// top of that, a per-backend circuit breaker that trips only when failures span
+// many distinct proxies - so a single misbehaving proxy can never trip a whole
+// backend.
 //
-// The backend is keyed by kri.Identifier (a CA backend or a MeshIdentity); the
-// proxy is keyed by its model.ResourceKey so callers can Forget it on cleanup.
-type Limiter struct {
+// Off-the-shelf circuit breakers (sony/gobreaker, failsafe-go, ...) don't fit:
+// they count requests/consecutive failures per breaker, so one proxy retrying N
+// times would trip the whole backend - exactly what the distinct-proxy counting
+// here avoids. They also have no per-key (per-proxy) sub-state, so we'd keep the
+// backoff map, the distinct-proxy windowing and Forget ourselves and use the
+// library only for the state machine. Not worth a dependency for that.
+type limiter struct {
 	cfg Config
 
 	sync.Mutex
 	backends map[kri.Identifier]*backendState
 }
+
+var (
+	_ Limiter = unlimited{}
+	_ Limiter = (*limiter)(nil)
+)
 
 type backendState struct {
 	proxies       map[model.ResourceKey]*proxyState
@@ -86,7 +121,7 @@ type proxyState struct {
 	lastFailure time.Time
 }
 
-func NewLimiter(cfg Config, m metrics.Metrics) (*Limiter, error) {
+func NewLimiter(cfg Config, m metrics.Metrics) (Limiter, error) {
 	if cfg.Cooldown <= 0 {
 		cfg.Cooldown = defaultCooldown
 	}
@@ -99,7 +134,7 @@ func NewLimiter(cfg Config, m metrics.Metrics) (*Limiter, error) {
 		cfg.NewBackoff = CertBackoff(time.Second, cfg.Cooldown)
 	}
 
-	l := &Limiter{
+	l := &limiter{
 		cfg:      cfg,
 		backends: map[kri.Identifier]*backendState{},
 	}
@@ -125,13 +160,7 @@ func NewLimiter(cfg Config, m metrics.Metrics) (*Limiter, error) {
 	return l, nil
 }
 
-// Allow reports whether issuance for proxy against backend may proceed now. If
-// not, it returns how long to wait. Every permitted attempt must be followed by
-// a call to Record. A nil Limiter allows everything (no throttling).
-func (l *Limiter) Allow(backend kri.Identifier, proxy model.ResourceKey) (bool, time.Duration) {
-	if l == nil {
-		return true, 0
-	}
+func (l *limiter) Allow(backend kri.Identifier, proxy model.ResourceKey) (bool, time.Duration) {
 	l.Lock()
 	defer l.Unlock()
 
@@ -158,11 +187,7 @@ func (l *Limiter) Allow(backend kri.Identifier, proxy model.ResourceKey) (bool, 
 	return true, 0
 }
 
-// Record feeds back the outcome of an attempt that Allow permitted.
-func (l *Limiter) Record(backend kri.Identifier, proxy model.ResourceKey, success bool) {
-	if l == nil {
-		return
-	}
+func (l *limiter) Record(backend kri.Identifier, proxy model.ResourceKey, success bool) {
 	l.Lock()
 	defer l.Unlock()
 
@@ -214,13 +239,9 @@ func (l *Limiter) Record(backend kri.Identifier, proxy model.ResourceKey, succes
 	}
 }
 
-// Forget drops all per-proxy backoff state for a proxy across every backend,
-// e.g. when a proxy disconnects. It does not affect a backend's open circuit
-// (that reflects a backend-wide problem, not this proxy).
-func (l *Limiter) Forget(proxy model.ResourceKey) {
-	if l == nil {
-		return
-	}
+// Forget does not affect a backend's open circuit (that reflects a backend-wide
+// problem, not this proxy).
+func (l *limiter) Forget(proxy model.ResourceKey) {
 	l.Lock()
 	defer l.Unlock()
 	for backend, b := range l.backends {
@@ -233,7 +254,7 @@ func (l *Limiter) Forget(proxy model.ResourceKey) {
 
 // backingOffProxies is the metric value for cert_generation_backoff, computed
 // at scrape time so it reflects the current instant.
-func (l *Limiter) backingOffProxies() float64 {
+func (l *limiter) backingOffProxies() float64 {
 	l.Lock()
 	defer l.Unlock()
 	now := core.Now()
@@ -250,7 +271,7 @@ func (l *Limiter) backingOffProxies() float64 {
 
 // openCircuits is the metric value for cert_generation_circuit_open, computed
 // at scrape time.
-func (l *Limiter) openCircuits() float64 {
+func (l *limiter) openCircuits() float64 {
 	l.Lock()
 	defer l.Unlock()
 	now := core.Now()
