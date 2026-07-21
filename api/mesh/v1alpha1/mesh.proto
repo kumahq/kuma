@@ -74,7 +74,7 @@ message Mesh {
   // policies.
   repeated string skipCreatingInitialPolicies = 8;
 
-  MeshServices meshServices = 9;
+  reserved 9; // formerly meshServices
 
   message DataplaneProxyConstraints {
     // Rules defines a set of rules for data plane proxies to be member of the
@@ -95,23 +95,6 @@ message Mesh {
     // requirement in order to join the mesh.
     // Restrictions takes precedence over requirements.
     repeated Rules restrictions = 2;
-  }
-
-  message MeshServices {
-    Mode mode = 1;
-
-    enum Mode {
-      // MeshServices are't generated
-      Disabled = 0;
-      // MeshServices are generated and used for configuration
-      Everywhere = 1;
-      // MeshServices are generated but only used for configuration where
-      // configured via reachableBackends
-      ReachableBackends = 2;
-      // MeshServices are generated, used for configuration and kuma.io/services
-      // are not used
-      Exclusive = 3;
-    }
   }
 }
 

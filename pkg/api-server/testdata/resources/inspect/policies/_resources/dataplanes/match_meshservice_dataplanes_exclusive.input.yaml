@@ -6,8 +6,6 @@
 # Two dataplanes carry that label and are both selected; a third
 # dataplane belongs to a different MeshService and is excluded.
 type: Mesh
-meshServices:
-  mode: Exclusive
 name: default
 ---
 type: MeshService

@@ -11,7 +11,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -34,7 +33,6 @@ func Connectivity() {
 		Expect(NewClusterSetup().
 			Install(Yaml(samples.MeshMTLSBuilder().
 				WithName(meshName).
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
 				WithPermissiveMTLSBackends(),
 			)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).

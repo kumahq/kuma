@@ -17,7 +17,7 @@ func (r *MeshRetryResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To), pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -44,33 +44,22 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 	}
 }
 
-func validateTo(to []To, topLevelKind common_api.TargetRef) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-
-		var supportedKinds []common_api.TargetRefKind
-		switch topLevelKind.Kind {
-		case common_api.MeshGateway, common_api.MeshHTTPRoute:
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.MeshExternalService,
-			}
-		default:
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.MeshService,
-				common_api.MeshExternalService,
-				common_api.MeshMultiZoneService,
-				common_api.MeshHTTPRoute,
-			}
-		}
 
 		verr.AddErrorAt(
 			path.Field("targetRef"),
 			mesh.ValidateTargetRef(
 				toItem.TargetRef,
-				&mesh.ValidateTargetRefOpts{SupportedKinds: supportedKinds},
+				&mesh.ValidateTargetRefOpts{SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+					common_api.MeshService,
+					common_api.MeshExternalService,
+					common_api.MeshMultiZoneService,
+					common_api.MeshHTTPRoute,
+				}},
 			),
 		)
 		verr.AddErrorAt(path.Field("default"), validateDefault(toItem.Default))

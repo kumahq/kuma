@@ -213,9 +213,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 
 		// try to add resource without the label
 		mesh2 = meshBuilder(2)
-		mesh2.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
-			Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-		}
+		mesh2.Spec.Mtls.EnabledBackend = "modified-ca"
 		Expect(upstream.AddItem(mesh1)).To(Succeed())
 		Expect(upstream.AddItem(mesh2)).To(Succeed())
 		Expect(upstream.AddItem(mesh3)).To(Succeed())

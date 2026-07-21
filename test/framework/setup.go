@@ -149,22 +149,6 @@ metadata:
 	)
 }
 
-func MeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  meshServices:
-    mode: %s
-`, name, meshServicesEnabled)
-	return Combine(
-		YamlK8s(mesh),
-		WaitMeshKubernetesReady(name),
-	)
-}
-
 func MTLSMeshKubernetes(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1

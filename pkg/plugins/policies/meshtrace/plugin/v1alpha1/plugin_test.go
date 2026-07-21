@@ -49,7 +49,6 @@ var _ = Describe("MeshTrace", func() {
 		outbounds       xds_types.Outbounds
 		goldenFile      string
 		features        xds_types.Features
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
 		proxyLabels     map[string]string
 		zone            string
 	}
@@ -140,8 +139,7 @@ var _ = Describe("MeshTrace", func() {
 					WithNamespace("backend-ns").
 					Build()},
 			}
-			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServiceMode)).Build()
-			context.Mesh.Resource.Spec.MeshServices.Mode = given.meshServiceMode
+			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder()).Build()
 			dpBuilder := builders.Dataplane().
 				WithName("backend").
 				AddInbound(builders.Inbound().
@@ -213,8 +211,7 @@ var _ = Describe("MeshTrace", func() {
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
 		}),
 		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources:       inboundAndOutboundUnifiedNaming(),
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			resources: inboundAndOutboundUnifiedNaming(),
 			features: xds_types.Features{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
