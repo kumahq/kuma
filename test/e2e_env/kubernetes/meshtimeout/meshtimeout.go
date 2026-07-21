@@ -2,7 +2,6 @@ package meshtimeout
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
