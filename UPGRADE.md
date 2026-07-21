@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `meshServices` removed from the `Mesh` schema
+
+The `meshServices` field (and its `mode` enum) has been removed from the
+`Mesh` resource spec. Unified resource naming for a Dataplane now depends
+solely on that Dataplane's `FeatureUnifiedResourceNaming` capability,
+regardless of what the mesh's former `meshServices.mode` was set to.
+
+**Action required**
+
+None. A `Mesh` spec that still sets `meshServices` continues to apply
+successfully; the field is silently ignored by the control plane.
+
 ### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
 
 The control plane now generates mesh-scoped zone proxy listeners and serves

@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -33,8 +32,8 @@ func BindToLoopbackAddresses() {
 				WithEnv("KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR", cidrMes),
 				WithEnv("KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR", cidrMmzs),
 			)).
-			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(mesh).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).Build())).
-			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshMs).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).Build())).
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(mesh).Build())).
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshMs).Build())).
 			Install(DemoClientUniversal("demo-client", mesh, WithBindOutbounds())).
 			Install(DemoClientUniversal("demo-client-ms", meshMs, WithBindOutbounds())).
 			Install(TestServerUniversal("test-server-ms", meshMs, WithArgs([]string{"echo", "--instance", "test-server-ms"}))).
