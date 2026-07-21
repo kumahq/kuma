@@ -8,6 +8,26 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Global control plane on Kubernetes is no longer supported
+
+A Kubernetes-native Global control plane (`controlPlane.mode=global` with
+`controlPlane.environment=kubernetes`) is no longer supported. The Helm chart
+no longer renders the `Service`/config needed to run a Global control plane on
+Kubernetes, and the control plane itself now fails to start with
+`controlPlane.mode=global` unless `controlPlane.environment=universal`, i.e.
+backed by a non-Kubernetes store such as PostgreSQL. Zone and Standalone
+control planes on Kubernetes (`controlPlane.mode` `zone`/`standalone`) are
+unaffected.
+
+**Action required**
+
+If you currently run the Global control plane on Kubernetes, migrate it to
+Universal (non-Kubernetes) infrastructure before upgrading: deploy `kuma-cp`
+in `global` mode on Universal, backed by PostgreSQL, and keep your Kubernetes
+clusters as Zone control planes connecting to that Global control plane over
+KDS. Kubernetes clusters running `zone` or `standalone` mode require no
+changes.
+
 ### `meshServices` removed from the `Mesh` schema
 
 The `meshServices` field (and its `mode` enum) has been removed from the
