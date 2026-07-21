@@ -20,7 +20,6 @@ import (
 	install_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/install/k8s"
 	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
@@ -180,16 +179,6 @@ This command requires that the KUBECONFIG environment is set`,
 				return errors.Wrap(err, "Failed to evaluate helm values")
 			}
 
-			if args.UseNodePort && args.ControlPlane_mode == config_core.Global {
-				v := "controlPlane.globalZoneSyncService.type=NodePort"
-				if ctx.HELMValuesPrefix != "" {
-					v = fmt.Sprintf("%s.%s", ctx.HELMValuesPrefix, v)
-				}
-				if err := strvals.ParseInto(v, vals); err != nil {
-					return errors.Wrap(err, "Failed using NodePort")
-				}
-			}
-
 			if args.IngressUseNodePort {
 				v := "ingress.service.type=NodePort"
 				if ctx.HELMValuesPrefix != "" {
@@ -262,7 +251,6 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.ControlPlane_tls_general_caBundle, "tls-general-ca-bundle", args.ControlPlane_tls_general_secret, "Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_apiServer_secret, "tls-api-server-secret", args.ControlPlane_tls_apiServer_secret, "Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_apiServer_clientCertsSecret, "tls-api-server-client-certs-secret", args.ControlPlane_tls_apiServer_clientCertsSecret, "Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsGlobalServer_secret, "tls-kds-global-server-secret", args.ControlPlane_tls_kdsGlobalServer_secret, "Secret that contains tls.crt, tls.key for protecting cross cluster communication")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsZoneClient_secret, "tls-kds-zone-client-secret", args.ControlPlane_tls_kdsZoneClient_secret, "Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification")
 	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failure policy of the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringToStringVar(&args.ControlPlane_nodeSelector, "control-plane-node-selector", args.ControlPlane_nodeSelector, "node selector for Kuma Control Plane")
@@ -280,7 +268,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.Cni_bin_dir, "cni-bin-dir", args.Cni_bin_dir, "set the CNI binary directory")
 	cmd.Flags().StringVar(&args.Cni_conf_name, "cni-conf-name", args.Cni_conf_name, "set the CNI configuration name")
 	cmd.Flags().StringToStringVar(&args.Cni_nodeSelector, "cni-node-selector", args.Cni_nodeSelector, "node selector for CNI deployment")
-	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "zone", "global"))
+	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "zone"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&args.UseNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Ingress_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
@@ -299,7 +287,7 @@ This command requires that the KUBECONFIG environment is set`,
 	if err := cmd.Flags().MarkHidden("skip-kinds"); err != nil {
 		panic(err.Error())
 	}
-	cmd.Flags().BoolVar(&args.SkipCRDs, "skip-crds", false, "skip installation of CRDs (CustomResourceDefinitions). This is useful when installing a global control plane with universal environment")
+	cmd.Flags().BoolVar(&args.SkipCRDs, "skip-crds", false, "skip installation of CRDs (CustomResourceDefinitions). This is useful when installing a control plane with universal environment")
 
 	// This is used for testing the install command without a cluster
 	cmd.Flags().StringArrayVar(&args.APIVersions, "api-versions", []string{}, "INTERNAL: Kubernetes api versions used for Capabilities.APIVersions")
