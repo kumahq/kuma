@@ -4,7 +4,6 @@ type InstallDemoArgs struct {
 	Zone            string
 	Namespace       string
 	SystemNamespace string
-	WithoutGateway  bool
 }
 
 type InstallDemoContext struct {
@@ -17,7 +16,6 @@ func DefaultInstallDemoContext() InstallDemoContext {
 			Zone:            "local",
 			Namespace:       "kuma-demo",
 			SystemNamespace: "kuma-system",
-			WithoutGateway:  false,
 		},
 	}
 }

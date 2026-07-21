@@ -88,7 +88,6 @@ type configParameters struct {
 	DNSPort                       uint32
 	ProxyType                     string
 	Features                      xds_types.Features
-	IsGatewayDataplane            bool
 	Resources                     types.ProxyResources
 	SystemCaPath                  string
 	TransparentProxy              *tproxy_config.DataplaneConfig

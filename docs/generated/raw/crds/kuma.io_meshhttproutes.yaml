@@ -66,7 +66,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -87,8 +86,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -126,11 +125,8 @@ spec:
                 items:
                   properties:
                     hostnames:
-                      description: |-
-                        Hostnames is only valid when targeting MeshGateway and limits the
-                        effects of the rules to requests to this hostname.
-                        Given hostnames must intersect with the hostname of the listeners the
-                        route attaches to.
+                      description: Hostnames is not currently supported and must not
+                        be set.
                       items:
                         type: string
                       type: array
@@ -155,7 +151,6 @@ spec:
                                       enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -176,8 +171,8 @@ spec:
                                       type: string
                                     name:
                                       description: |-
-                                        Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                        `MeshServiceSubset` and `MeshGatewayRoute`
+                                        Name of the referenced resource. Can only be used with kinds: `MeshService`
+                                        and `MeshServiceSubset`
                                       type: string
                                     namespace:
                                       description: |-
@@ -284,7 +279,6 @@ spec:
                                               enum:
                                               - Mesh
                                               - MeshSubset
-                                              - MeshGateway
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -305,8 +299,8 @@ spec:
                                               type: string
                                             name:
                                               description: |-
-                                                Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                                `MeshServiceSubset` and `MeshGatewayRoute`
+                                                Name of the referenced resource. Can only be used with kinds: `MeshService`
+                                                and `MeshServiceSubset`
                                               type: string
                                             namespace:
                                               description: |-
@@ -479,9 +473,8 @@ spec:
                                     urlRewrite:
                                       properties:
                                         hostToBackendHostname:
-                                          description: |-
-                                            HostToBackendHostname rewrites the hostname to the hostname of the
-                                            upstream host. This option is only available when targeting MeshGateways.
+                                          description: HostToBackendHostname is not
+                                            currently supported and must not be set.
                                           type: boolean
                                         hostname:
                                           description: Hostname is the value to be
@@ -621,7 +614,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -642,8 +634,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-

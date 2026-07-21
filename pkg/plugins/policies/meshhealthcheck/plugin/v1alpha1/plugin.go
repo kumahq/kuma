@@ -21,7 +21,6 @@ import (
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/plugin/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
@@ -57,10 +56,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToGateways(ctx.Mesh, proxy, rs, policies.GatewayRules, clusters.Gateway); err != nil {
-		return err
-	}
-
 	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet()); err != nil {
 		return err
 	}
@@ -89,83 +84,6 @@ func applyToOutbounds(
 	}
 
 	return nil
-}
-
-func applyToGateways(
-	meshCtx xds_context.MeshContext,
-	proxy *core_xds.Proxy,
-	rs *core_xds.ResourceSet,
-	gatewayRules core_rules.GatewayRules,
-	gatewayClusters map[string]*envoy_cluster.Cluster,
-) error {
-	resourcesByOrigin := rs.IndexByOrigin(core_xds.NonMeshExternalService)
-
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		for _, listenerHostname := range listenerInfo.ListenerHostnames {
-			inboundListener := core_rules.NewInboundListenerHostname(
-				proxy.Dataplane.Spec.GetNetworking().Address,
-				listenerInfo.Listener.Port,
-				listenerHostname.Hostname,
-			)
-			rules, ok := gatewayRules.ToRules.ByListenerAndHostname[inboundListener]
-			if !ok {
-				continue
-			}
-			for _, hostInfo := range listenerHostname.HostInfos {
-				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
-				for _, dest := range destinations {
-					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
-					if err != nil {
-						continue
-					}
-					cluster, ok := gatewayClusters[clusterName]
-					if !ok {
-						continue
-					}
-
-					serviceName := dest.Destination[mesh_proto.ServiceTag]
-
-					if err := configure(
-						proxy.Dataplane,
-						rules.Rules,
-						subsetutils.KumaServiceTagElement(serviceName),
-						toProtocol(listenerInfo.Listener.Protocol),
-						cluster,
-					); err != nil {
-						return err
-					}
-
-					if dest.BackendRef == nil {
-						continue
-					}
-					if realRef := dest.BackendRef.Resource(); !realRef.IsEmpty() {
-						resources := resourcesByOrigin[realRef]
-						if err := applyToRealResource(
-							meshCtx,
-							rules.ResourceRules,
-							proxy.Dataplane.Spec.TagSet(),
-							realRef,
-							resources,
-						); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_meta.Protocol {
-	switch p {
-	case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-		return core_meta.ProtocolHTTP
-	case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-		return core_meta.ProtocolTCP
-	}
-	return core_meta.ProtocolTCP
 }
 
 func configure(

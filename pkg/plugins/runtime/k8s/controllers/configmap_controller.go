@@ -88,7 +88,6 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(&mesh_k8s.ZoneIngress{}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Watches(&mesh_k8s.VirtualOutbound{}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).
 		Watches(&mesh_k8s.ExternalService{}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace))).
-		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Complete(r)
 }
 
@@ -147,62 +146,6 @@ func DataplaneToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_commo
 		return []kube_reconile.Request{{
 			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
 		}}
-	}
-}
-
-func MeshGatewayToMeshMapper(client kube_client.Reader, l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
-	l = l.WithName("meshgateway-to-mesh-mapper")
-	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
-		cause, ok := obj.(*mesh_k8s.MeshGateway)
-		if !ok {
-			l.WithValues("meshgateway", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
-			return nil
-		}
-
-		causeName := fmt.Sprintf("%s/%s", cause.Namespace, cause.Name)
-
-		meshes := &mesh_k8s.MeshList{}
-		if err := client.List(ctx, meshes); err != nil {
-			l.WithValues("meshgateway", causeName).Error(err, "failed to fetch Meshes")
-			return nil
-		}
-
-		var requests []kube_reconile.Request
-		for _, mesh := range meshes.Items {
-			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh.Name)},
-			})
-		}
-
-		return requests
-	}
-}
-
-func MeshGatewayRouteToMeshMapper(client kube_client.Reader, l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
-	l = l.WithName("meshgatewayroute-to-mesh-mapper")
-	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
-		cause, ok := obj.(*mesh_k8s.MeshGatewayRoute)
-		if !ok {
-			l.WithValues("meshgatewayroute", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
-			return nil
-		}
-
-		causeName := fmt.Sprintf("%s/%s", cause.Namespace, cause.Name)
-
-		meshes := &mesh_k8s.MeshList{}
-		if err := client.List(ctx, meshes); err != nil {
-			l.WithValues("meshgatewayroute", causeName).Error(err, "failed to fetch Meshes")
-			return nil
-		}
-
-		var requests []kube_reconile.Request
-		for _, mesh := range meshes.Items {
-			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh.Name)},
-			})
-		}
-
-		return requests
 	}
 }
 
