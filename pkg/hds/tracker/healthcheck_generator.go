@@ -74,10 +74,6 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
 	md := xds.DataplaneMetadataFromXdsMetadata(node.Metadata)
-	// Match the admin xDS gate exactly: the unified admin cluster name is only
-	// published when unified_naming.Enabled is true, which additionally requires
-	// an Exclusive mesh. Keying off the feature bit alone would target the
-	// non-existent unified admin cluster on non-Exclusive meshes.
 	unifiedNamingEnabled := meshFound && unified_naming.Enabled(md, meshResource)
 	clusterName := names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {

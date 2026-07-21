@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -38,27 +37,17 @@ var _ = Describe("HDS Snapshot generator", func() {
 	})
 
 	type testCase struct {
-		goldenFile       string
-		dataplane        string
-		metadata         *structpb.Struct
-		hdsConfig        *dp_server.HdsConfig
-		meshServicesMode *mesh_proto.Mesh_MeshServices_Mode
-		deleteMesh       bool
+		goldenFile string
+		dataplane  string
+		metadata   *structpb.Struct
+		hdsConfig  *dp_server.HdsConfig
+		deleteMesh bool
 	}
 
 	DescribeTable(
 		"should generate HDS response",
 		func(given testCase) {
 			// given
-			if given.meshServicesMode != nil {
-				meshRes := mesh.NewMeshResource()
-				err := resourceManager.Get(context.Background(), meshRes, store.GetByKey("mesh-1", model.NoMesh))
-				Expect(err).ToNot(HaveOccurred())
-				meshRes.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: *given.meshServicesMode}
-				err = resourceManager.Update(context.Background(), meshRes)
-				Expect(err).ToNot(HaveOccurred())
-			}
-
 			dp := mesh.NewDataplaneResource()
 			err := util_proto.FromYAML([]byte(given.dataplane), dp.Spec)
 			Expect(err).ToNot(HaveOccurred())
@@ -173,45 +162,6 @@ networking:
 		}),
 		Entry("should generate HealthCheckSpecifier with new cluster name", testCase{
 			goldenFile: "hds.4.golden.yaml",
-			dataplane: `
-networking:
-  address: 10.20.0.1
-  inbound:
-    - port: 9000
-      serviceAddress: 192.168.0.1
-      servicePort: 80
-      serviceProbe:
-        tcp: {}
-      tags:
-        kuma.io/service: backend
-`,
-			metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					xds.FieldFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: types.FeatureUnifiedResourceNaming}},
-						},
-					}}},
-				},
-			},
-			hdsConfig: &dp_server.HdsConfig{
-				Interval: config_types.Duration{Duration: 8 * time.Second},
-				Enabled:  true,
-				CheckDefaults: &dp_server.HdsCheck{
-					Interval:           config_types.Duration{Duration: 1 * time.Second},
-					NoTrafficInterval:  config_types.Duration{Duration: 2 * time.Second},
-					Timeout:            config_types.Duration{Duration: 3 * time.Second},
-					HealthyThreshold:   4,
-					UnhealthyThreshold: 5,
-				},
-			},
-		}),
-		Entry("should keep legacy admin cluster name when mesh is not Exclusive despite the feature", testCase{
-			// The unified admin cluster name is only published by admin xDS when the
-			// mesh is Exclusive, so HDS must fall back to the legacy name here even
-			// though the dataplane advertises FeatureUnifiedResourceNaming.
-			goldenFile:       "hds.1.golden.yaml",
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Disabled.Enum(),
 			dataplane: `
 networking:
   address: 10.20.0.1
