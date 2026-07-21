@@ -122,9 +122,6 @@ rules:
       - healthchecks
       - trafficlogs
       - traffictraces
-      - meshgateways
-      - meshgatewayroutes
-      - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -672,7 +669,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - meshgateways
           - zoneingresses
           - zoneingressinsights
           - zoneegresses
@@ -735,8 +731,6 @@ webhooks:
           - externalservices
           - faultinjections
           - healthchecks
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries
@@ -915,8 +909,6 @@ webhooks:
           - faultinjections
           - healthchecks
           - meshes
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries

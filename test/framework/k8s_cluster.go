@@ -543,7 +543,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	if Config.IPV6 {
 		args = append(args,
-			"--env-var", "KUMA_DNS_SERVER_CIDR=fd00:fd00::/64",
 			"--env-var", "KUMA_IPAM_MESH_SERVICE_CIDR=fd00:fd01::/64",
 			"--env-var", "KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR=fd00:fd02::/64",
 			"--env-var", "KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR=fd00:fd03::/64",
@@ -613,7 +612,6 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 	}
 
 	if Config.IPV6 {
-		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"

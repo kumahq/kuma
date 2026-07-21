@@ -20,23 +20,33 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/versions"
 )
 
-func UpgradingWithHelmChartMultizone() {
+// UpgradingZoneWithHelmChart exercises upgrading a Kubernetes Zone from an old
+// published Helm chart version to the current one, against a Universal Global
+// on the current version throughout. Global itself can no longer be version-pinned
+// or upgraded here: Global-on-Kubernetes was removed (#17270), Global is always
+// Universal now, and the test framework has no mechanism to run an old Universal
+// kuma-cp binary, only old Helm charts/images for Kubernetes clusters.
+func UpgradingZoneWithHelmChart() {
 	namespace := "helm-upgrade-ns"
 	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
 	BeforeEach(func() {
-		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).
-			WithTimeout(6 * time.Second).
-			WithRetries(60)
+		global = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 		zoneK8s = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 		zoneUniversal = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+
+		Expect(NewClusterSetup().
+			Install(Kuma(core.Global)).
+			Setup(global)).To(Succeed())
+		globalCP = global.GetKuma()
+		Expect(globalCP).ToNot(BeNil())
 	})
 
 	AfterEachFailure(func() {
-		DebugKube(global, "default", namespace)
+		DebugUniversal(global, "default")
 		DebugKube(zoneK8s, "default", namespace)
 		DebugUniversal(zoneUniversal, "default")
 	})
@@ -48,42 +58,31 @@ func UpgradingWithHelmChartMultizone() {
 		grp := sync.WaitGroup{}
 		grp.Add(3)
 		go func() {
+			defer GinkgoRecover()
 			defer grp.Done()
 			Expect(zoneUniversal.DismissCluster()).To(Succeed())
 		}()
 		go func() {
+			defer GinkgoRecover()
 			defer grp.Done()
 			Expect(zoneK8s.DeleteNamespace(namespace)).To(Succeed())
 			Expect(zoneK8s.DeleteKuma()).To(Succeed())
 			Expect(zoneK8s.DismissCluster()).To(Succeed())
 		}()
 		go func() {
+			defer GinkgoRecover()
 			defer grp.Done()
 			Expect(global.DeleteKuma()).To(Succeed())
 			Expect(global.DismissCluster()).To(Succeed())
 		}()
 		grp.Wait()
 	})
-	DescribeTable("upgrade helm multizone",
+	DescribeTable("upgrade zone",
 		func(version string) {
 			releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueID()))
-			By("Install global with version: " + version)
-			err := NewClusterSetup().
-				Install(Kuma(core.Global,
-					WithInstallationMode(HelmInstallationMode),
-					WithHelmChartPath(Config.HelmChartName),
-					WithHelmReleaseName(releaseName),
-					WithHelmChartVersion(version),
-					WithoutHelmOpt("global.image.tag"),
-				)).
-				Setup(global)
-			Expect(err).ToNot(HaveOccurred())
-
-			globalCP = global.GetKuma()
-			Expect(globalCP).ToNot(BeNil())
 
 			By("Install zone with version: " + version)
-			err = NewClusterSetup().
+			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmChartPath(Config.HelmChartName),
@@ -97,15 +96,10 @@ func UpgradingWithHelmChartMultizone() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Sync policies from Global to Zone")
-			// when apply policy on Global
-			Expect(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: mt1
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
+			Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshTimeout
+name: mt1
+mesh: %s
 spec:
   targetRef:
     kind: Mesh
@@ -116,14 +110,13 @@ spec:
         idleTimeout: 20s
         http:
           requestTimeout: 2s
-          maxStreamDuration: 20s`, Config.KumaNamespace, "default"))(global)).To(Succeed())
+          maxStreamDuration: 20s`, "default"))(global)).To(Succeed())
 
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(zoneK8s, meshtimeout.MeshTimeoutResourceTypeDescriptor)
 			}, "30s", "1s").Should(Equal(3), "meshtimeouts are not synced to zone")
 
 			By("Sync DPPs from Zone to Global")
-			// when start test server on Zone
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
 				Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
@@ -133,14 +126,6 @@ spec:
 				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 			}, "30s", "1s").Should(Equal(1), "dpp should be synced to global")
 
-			By("upgrade global")
-			err = global.(*K8sCluster).UpgradeKuma(core.Global,
-				WithHelmReleaseName(releaseName),
-				WithHelmChartPath(Config.HelmChartPath),
-				ClearNoHelmOpts(),
-			)
-			Expect(err).ToNot(HaveOccurred())
-
 			By("deploy a new universal zone with latest version")
 			err = NewClusterSetup().
 				Install(Kuma(core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
@@ -148,9 +133,8 @@ spec:
 				Setup(zoneUniversal)
 			Expect(err).ToNot(HaveOccurred())
 
-			// Old zone CPs (< 2.11.0) expose /zone-ingresses; the current kumactl
-			// calls /zoneingresses (renamed in 2.11.0). Query the zone REST API
-			// directly for old versions to avoid the endpoint mismatch.
+			// kumactl on zone CPs older than 2.11.0 exposes /zone-ingresses, renamed to
+			// /zoneingresses afterwards; query the old path directly to avoid the mismatch.
 			if versions.IsVersionLessThan(version, "2.11.0") {
 				Eventually(func(g Gomega) (int, error) {
 					return NumberOfResourcesByPath(zoneK8s, "/zone-ingresses")
@@ -161,16 +145,13 @@ spec:
 				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
 			}
 
-			// Scale down ingress before upgrading so the pod is never running against a
-			// mixed-version CP. Without this, the ingress can connect to an old CP replica
-			// first (enable_reuse_port=false) and then receive enable_reuse_port=true from
-			// the upgraded CP, which Envoy rejects indefinitely. ingress.replicas=0 ensures
-			// Helm does not override the scale-down during the upgrade.
+			// Scale down ingress before upgrading so the pod never runs against a
+			// mixed-version CP: an old replica could hand it enable_reuse_port=false,
+			// then the upgraded CP flips it to true, which Envoy rejects indefinitely.
 			By("scale down zone ingress before upgrade")
 			Expect(zoneK8s.(*K8sCluster).StopZoneIngress()).To(Succeed())
 
 			By("upgrade Zone")
-			// when
 			err = zoneK8s.(*K8sCluster).UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
@@ -179,9 +160,6 @@ spec:
 			)
 			Expect(err).ToNot(HaveOccurred())
 
-			// Wait until the upgraded zone CP has re-established its KDS connection to
-			// global before starting the ingress, so the ingress always connects to the
-			// new CP and never to a stale replica.
 			By("wait for upgraded zone CP to connect to global")
 			Eventually(func(g Gomega) {
 				result := &system.ZoneInsightResource{}
@@ -200,17 +178,14 @@ spec:
 			By("start zone ingress after upgrade")
 			Expect(zoneK8s.(*K8sCluster).StartZoneIngress()).To(Succeed())
 
-			// Wait for zone ingresses to settle after upgrade before checking consistency.
-			// After Helm upgrade returns, the old zone ingress pod may still be in Terminating
-			// state (K8s graceful period up to 30s) plus the CP deregistration delay (default 10s),
-			// so the old ingress remains visible to global for up to ~40s after the upgrade completes.
+			// The old ingress pod can remain visible to global for up to ~40s after the
+			// upgrade (K8s graceful termination plus CP deregistration delay).
 			Eventually(func(g Gomega) {
 				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(zoneIngressesGlobal).To(Equal(2))
 			}, "3m", "1s").Should(Succeed())
 
-			// Wait for zone ingresses to sync from global to individual zones.
 			Eventually(func(g Gomega) {
 				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -220,7 +195,6 @@ spec:
 				g.Expect(zoneIngressesUniversalZone).To(Equal(2))
 			}, "3m", "1s").Should(Succeed())
 
-			// then
 			Consistently(func(g Gomega) {
 				policiesGlobal, err := NumberOfResources(global, meshtimeout.MeshTimeoutResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())

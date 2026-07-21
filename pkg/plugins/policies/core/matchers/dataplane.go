@@ -21,21 +21,15 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResource, referencableResources xds_context.Resources) (bool, error) {
-	var gateway *core_mesh.MeshGatewayResource
-	if dpp.Spec.IsBuiltinGateway() {
-		zoneGateways := filterGatewaysByZone(referencableResources.Gateways().Items, dpp)
-		gateway = xds_topology.SelectGateway(zoneGateways, dpp.Spec.Matches)
-	}
 	refPolicy, ok := resource.GetSpec().(core_model.Policy)
 	if !ok {
 		return false, errors.New("resource is not a targetRef policy")
 	}
-	selectedInbounds, selectedGatewayListener, delegatedGateway, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, referencableResources)
-	return len(selectedInbounds) != 0 || len(selectedGatewayListener) != 0 || delegatedGateway, err
+	selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, referencableResources)
+	return len(selectedInbounds) != 0 || delegatedGateway, err
 }
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
@@ -65,15 +59,13 @@ func MatchedPolicies(
 		return core_xds.TypedMatchingPolicies{}, err
 	}
 
-	zoneGateways := filterGatewaysByZone(resources.Gateways().Items, dpp)
-	gateway := xds_topology.SelectGateway(zoneGateways, dpp.Spec.Matches)
 	for _, policy := range policies.GetItems() {
 		if !mpOpts.IncludeShadow && core_model.IsShadowedResource(policy) {
 			continue
 		}
 
 		refPolicy := policy.GetSpec().(core_model.Policy)
-		selectedInbounds, matchedGatewayListeners, delegatedGatewaySelected, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, resources)
+		selectedInbounds, delegatedGatewaySelected, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, resources)
 		if err != nil {
 			warnings = append(warnings,
 				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
@@ -81,7 +73,7 @@ func MatchedPolicies(
 				),
 			)
 		}
-		if len(selectedInbounds) == 0 && len(matchedGatewayListeners) == 0 && !delegatedGatewaySelected {
+		if len(selectedInbounds) == 0 && !delegatedGatewaySelected {
 			// DPP is not matched by the policy
 			continue
 		}
@@ -90,17 +82,6 @@ func MatchedPolicies(
 			return core_xds.TypedMatchingPolicies{}, err
 		}
 
-		for _, listener := range matchedGatewayListeners {
-			if _, ok := matchedPoliciesByGatewayListener[listener]; !ok {
-				matchedPoliciesByGatewayListener[listener], err = registry.Global().NewList(rType)
-				if err != nil {
-					return core_xds.TypedMatchingPolicies{}, err
-				}
-			}
-			if err := matchedPoliciesByGatewayListener[listener].AddItem(policy); err != nil {
-				return core_xds.TypedMatchingPolicies{}, err
-			}
-		}
 		for _, inbound := range selectedInbounds {
 			if _, ok := matchedPoliciesByInbound[inbound]; !ok {
 				matchedPoliciesByInbound[inbound], err = registry.Global().NewList(rType)
@@ -159,52 +140,29 @@ func MatchedPolicies(
 	return result, nil
 }
 
-func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_mesh.DataplaneResource) []*core_mesh.MeshGatewayResource {
-	if gateways == nil {
-		return nil
-	}
-	var filtered []*core_mesh.MeshGatewayResource
-	dppZone, dppZoneOk := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-	for _, gateway := range gateways {
-		gwOrigin, ok := gateway.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
-		if !ok || gwOrigin == string(mesh_proto.GlobalResourceOrigin) {
-			filtered = append(filtered, gateway)
-			continue
-		}
-		if !dppZoneOk || core_model.IsLocalZoneResource(gateway.GetMeta().GetLabels(), dppZone) {
-			filtered = append(filtered, gateway)
-		}
-	}
-	return filtered
-}
-
 // DppSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
 // and whether a delegated gateway is selected
 func DppSelectedByPolicy(
 	meta core_model.ResourceMeta,
 	ref common_api.TargetRef,
 	dpp *core_mesh.DataplaneResource,
-	gateway *core_mesh.MeshGatewayResource,
 	referencableResources xds_context.Resources,
-) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool, error) {
-	if !dppSelectedByZone(meta, dpp, gateway) {
-		return []core_rules.InboundListener{}, nil, false, nil
+) ([]core_rules.InboundListener, bool, error) {
+	if !dppSelectedByZone(meta, dpp) {
+		return []core_rules.InboundListener{}, false, nil
 	}
 	if !dppSelectedByNamespace(meta, dpp) {
-		return []core_rules.InboundListener{}, nil, false, nil
+		return []core_rules.InboundListener{}, false, nil
 	}
 	switch ref.Kind {
 	case common_api.Mesh:
 		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
-			inbounds, gwListeners, gateway := inboundsSelectedByTags(nil, dpp, gateway)
+			inbounds, gateway := inboundsSelectedByTags(nil, dpp)
 			inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-			return inbounds, gwListeners, gateway, nil
+			return inbounds, gateway, nil
 		}
-		return []core_rules.InboundListener{}, nil, false, nil
+		return []core_rules.InboundListener{}, false, nil
 	case common_api.Dataplane:
-		if gateway != nil {
-			return []core_rules.InboundListener{}, nil, false, nil
-		}
 		if allDataplanesSelected(ref) || isSelectedByResourceIdentifier(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
 			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
 			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
@@ -221,41 +179,35 @@ func DppSelectedByPolicy(
 				}
 				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
 			}
-			return inbounds, nil, dpp.Spec.IsDelegatedGateway(), nil
+			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
 		}
-		return []core_rules.InboundListener{}, nil, false, nil
+		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshSubset:
 		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
-			inbounds, gwListeners, gateway := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
-			return inbounds, gwListeners, gateway, nil
+			inbounds, gateway := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp)
+			return inbounds, gateway, nil
 		}
-		return []core_rules.InboundListener{}, nil, false, nil
+		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshService:
-		inbounds, gwListeners, gateway := inboundsSelectedByTags(map[string]string{
+		inbounds, gateway := inboundsSelectedByTags(map[string]string{
 			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
-		}, dpp, gateway)
-		return inbounds, gwListeners, gateway, nil
+		}, dpp)
+		return inbounds, gateway, nil
 	case common_api.MeshServiceSubset:
 		tags := map[string]string{
 			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
 		}
 		maps.Copy(tags, pointer.Deref(ref.Tags))
-		inbounds, gwListeners, gateway := inboundsSelectedByTags(tags, dpp, gateway)
-		return inbounds, gwListeners, gateway, nil
-	case common_api.MeshGateway:
-		if gateway == nil || !dpp.Spec.IsBuiltinGateway() || !core_model.IsReferenced(meta, pointer.Deref(ref.Name), gateway.GetMeta()) {
-			return nil, nil, false, nil
-		}
-		inbounds, gwListeners, _ := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
-		return inbounds, gwListeners, false, nil
+		inbounds, gateway := inboundsSelectedByTags(tags, dpp)
+		return inbounds, gateway, nil
 	case common_api.MeshHTTPRoute:
 		mhr := resolveMeshHTTPRouteRef(meta, pointer.Deref(ref.Name), referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
 		if mhr == nil {
-			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", pointer.Deref(ref.Name))
+			return nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", pointer.Deref(ref.Name))
 		}
-		return DppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, gateway, referencableResources)
+		return DppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, referencableResources)
 	default:
-		return nil, nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
+		return nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}
 }
 
@@ -294,18 +246,15 @@ func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.Datapla
 	}
 }
 
-func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) bool {
+func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
 	switch core_model.PolicyRole(policyMeta) {
 	case mesh_proto.ProducerPolicyRole:
 		return true
 	default:
-		if dpp.GetMeta() == nil && gateway == nil {
+		if dpp.GetMeta() == nil {
 			return true
 		}
 		meta := dpp.GetMeta()
-		if gateway != nil {
-			meta = gateway.GetMeta()
-		}
 		// we should return true once dpp has no origin.
 		// Resource that cannot be created on zone(global one) doesn't have it
 		origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
@@ -346,7 +295,7 @@ func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppTyp
 
 // inboundsSelectedByTags returns which inbounds are selected and whether a
 // delegated gateway is selected
-func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool) {
+func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.DataplaneResource) ([]core_rules.InboundListener, bool) {
 	inbounds := []core_rules.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
 		if tagsSelector.Matches(inbound.Tags) {
@@ -357,34 +306,8 @@ func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.
 			})
 		}
 	}
-	gwListeners := []core_rules.InboundListenerHostname{}
-	inboundSet := map[core_rules.InboundListener]struct{}{}
-	if gateway != nil {
-		for _, listener := range gateway.Spec.GetConf().GetListeners() {
-			listenerTags := mesh_proto.Merge(
-				dpp.Spec.GetNetworking().GetGateway().GetTags(),
-				gateway.Spec.GetTags(),
-				listener.GetTags(),
-			)
-			if tagsSelector.Matches(listenerTags) {
-				inboundListener := core_rules.InboundListener{
-					Address: dpp.Spec.GetNetworking().GetAddress(),
-					Port:    listener.Port,
-				}
-				if _, ok := inboundSet[inboundListener]; !ok {
-					inbounds = append(inbounds, inboundListener)
-					inboundSet[inboundListener] = struct{}{}
-				}
-				gwListeners = append(gwListeners, core_rules.NewInboundListenerHostname(
-					dpp.Spec.GetNetworking().GetAddress(),
-					listener.Port,
-					listener.GetNonEmptyHostname(),
-				))
-			}
-		}
-	}
 	delegatedGatewaySelected := dpp.Spec.IsDelegatedGateway() && tagsSelector.Matches(dpp.Spec.GetNetworking().GetGateway().Tags)
-	return inbounds, gwListeners, delegatedGatewaySelected
+	return inbounds, delegatedGatewaySelected
 }
 
 func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
@@ -409,12 +332,6 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 		o2, _ := core_model.ResourceOrigin(r2.GetMeta())
 		if less := o1.Compare(o2); less != 0 {
 			return less
-		}
-
-		if tr1.Kind == common_api.MeshGateway {
-			if less := len(pointer.Deref(tr1.Tags)) - len(pointer.Deref(tr2.Tags)); less != 0 {
-				return less
-			}
 		}
 
 		if less := core_model.PolicyRole(r1.GetMeta()).Compare(core_model.PolicyRole(r2.GetMeta())); less != 0 {

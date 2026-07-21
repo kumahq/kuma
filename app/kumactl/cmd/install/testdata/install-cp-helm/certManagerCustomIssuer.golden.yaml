@@ -122,9 +122,6 @@ rules:
       - healthchecks
       - trafficlogs
       - traffictraces
-      - meshgateways
-      - meshgatewayroutes
-      - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -446,7 +443,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: a7d8dbdd7ada6179edbb4e3700d8a08eabe69b1fcc67d349baa9468f64569ab5
+        checksum/tls-secrets: 3d461a4abb8e9d1ca30541cc3480eab7f6ce61480858729bb47b68b8761e5045
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -675,7 +672,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - meshgateways
           - zoneingresses
           - zoneingressinsights
           - zoneegresses
@@ -738,8 +734,6 @@ webhooks:
           - externalservices
           - faultinjections
           - healthchecks
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries
@@ -920,8 +914,6 @@ webhooks:
           - faultinjections
           - healthchecks
           - meshes
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries

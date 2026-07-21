@@ -18,6 +18,9 @@ const (
 	K8sKumaIOPrefix = "k8s.kuma.io/"
 )
 
+// WildcardHostname matches any hostname when used in hostname-based matching.
+const WildcardHostname = "*"
+
 const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	KubeServiceTag   = "k8s.kuma.io/service-name"
