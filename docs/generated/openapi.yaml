@@ -6400,9 +6400,7 @@ components:
                   name:
                     description: >-
                       Name of the backend, can be then used in
-                      Mesh.tracing.defaultBackend or in
-
-                      TrafficTrace
+                      Mesh.tracing.defaultBackend
                     type: string
                   sampling:
                     description: >-

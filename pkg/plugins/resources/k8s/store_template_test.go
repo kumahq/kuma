@@ -18,10 +18,10 @@ var _ = Describe("KubernetesStore template", func() {
 	test_store.ExecuteStoreTests(func() store.ResourceStore {
 		kubeTypes := k8s_registry.NewTypeRegistry()
 
-		Expect(kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{})).To(Succeed())
+		Expect(kubeTypes.RegisterObjectType(&mesh_proto.ExternalService{}, &mesh_k8s.ExternalService{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&meshservice_api.MeshService{}, &meshservice_k8s.MeshService{})).To(Succeed())
-		Expect(kubeTypes.RegisterListType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRouteList{})).To(Succeed())
+		Expect(kubeTypes.RegisterListType(&mesh_proto.ExternalService{}, &mesh_k8s.ExternalServiceList{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.Mesh{}, &mesh_k8s.MeshList{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&meshservice_api.MeshService{}, &meshservice_k8s.MeshServiceList{})).To(Succeed())
 

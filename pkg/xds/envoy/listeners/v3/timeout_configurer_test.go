@@ -8,7 +8,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
@@ -31,25 +30,15 @@ var _ = Describe("TimeoutConfigurer", func() {
 		},
 	}
 
-	timeoutResource := &core_mesh.TimeoutResource{
-		Spec: &mesh_proto.Timeout{
-			Sources: []*mesh_proto.Selector{{
-				Match: mesh_proto.MatchAnyService(),
-			}},
-			Destinations: []*mesh_proto.Selector{{
-				Match: mesh_proto.MatchAnyService(),
-			}},
-			Conf: &mesh_proto.Timeout_Conf{
-				ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
-				Tcp: &mesh_proto.Timeout_Conf_Tcp{
-					IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-				},
-				Http: &mesh_proto.Timeout_Conf_Http{
-					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
-					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
-				},
-			},
+	timeoutConf := &mesh_proto.Timeout_Conf{
+		ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
+		Tcp: &mesh_proto.Timeout_Conf_Tcp{
+			IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+		},
+		Http: &mesh_proto.Timeout_Conf_Http{
+			IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+			RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
+			StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
 		},
 	}
 
@@ -110,7 +99,7 @@ trafficDirection: OUTBOUND
 `,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 address:
   socketAddress:
@@ -205,7 +194,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 address:
   socketAddress:
@@ -311,7 +300,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 address:
   socketAddress:

@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	externalservice "github.com/kumahq/kuma/v3/pkg/core/managers/apis/external_service"
-	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/ratelimit"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -282,12 +281,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 
 	k8sDataplaneValidator := k8s_webhooks.NewDataplaneValidatorWebhook(rt.ResourceValidators().Dataplane, converter, rt.ResourceManager())
 	composite.AddValidator(k8sDataplaneValidator)
-
-	rateLimitValidator := ratelimit.RateLimitValidator{
-		Store: rt.ResourceStore(),
-	}
-	k8sRateLimitValidator := k8s_webhooks.NewRateLimitValidatorWebhook(rateLimitValidator, converter)
-	composite.AddValidator(k8sRateLimitValidator)
 
 	externalServiceValidator := externalservice.ExternalServiceValidator{
 		Store: rt.ResourceStore(),

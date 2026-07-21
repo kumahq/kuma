@@ -48,8 +48,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				core_mesh.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
-				core_mesh.MeshType:         core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
+				core_mesh.ExternalServiceType: core_rest.NewResourceApi(core_model.ScopeMesh, "external-services"),
+				core_mesh.MeshType:            core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -66,8 +66,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				core_mesh.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
-				core_mesh.MeshType:         core_rest.NewResourceApi(core_model.ScopeMesh, "meshes"),
+				core_mesh.ExternalServiceType: core_rest.NewResourceApi(core_model.ScopeMesh, "external-services"),
+				core_mesh.MeshType:            core_rest.NewResourceApi(core_model.ScopeMesh, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -77,39 +77,21 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("get.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/external-services/%s", name)))
 			})
 
 			// when
-			resource := core_mesh.NewTrafficRouteResource()
+			resource := core_mesh.NewExternalServiceResource()
 			err := store.Get(context.Background(), resource, core_store.GetByKey(name, "default"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resource.Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"kuma.io/service": "*",
-						},
-					},
+			Expect(resource.Spec).To(matchers.MatchProto(&mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "192.168.0.1:8080",
 				},
-				Destinations: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"kuma.io/service": "*",
-						},
-					},
-				},
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{
-							RoundRobin: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin{},
-						},
-					},
-					Destination: map[string]string{
-						"kuma.io/service": "*",
-					},
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "res-1",
 				},
 			}))
 
@@ -183,31 +165,33 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/external-services/%s", name)))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`
 {
-  "type": "TrafficRoute",
+  "type": "ExternalService",
   "mesh": "default",
   "name": "res-1",
   "creationTime": "0001-01-01T00:00:00Z",
   "modificationTime": "0001-01-01T00:00:00Z",
-  "conf": {
-    "destination": {
-      "kuma.io/service": "*"
-    }
+  "tags": {
+    "kuma.io/service": "res-1"
+  },
+  "networking": {
+    "address": "192.168.0.1:8080"
   }
 }`))
 			})
 
 			// when
-			resource := core_mesh.TrafficRouteResource{
-				Spec: &mesh_proto.TrafficRoute{
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"kuma.io/service": "*",
-						},
+			resource := core_mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "192.168.0.1:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "res-1",
 					},
 				},
 			}
@@ -275,31 +259,33 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/external-services/%s", name)))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`
 {
-  "type": "TrafficRoute",
+  "type": "ExternalService",
   "mesh": "default",
   "name": "res-1",
   "creationTime": "0001-01-01T00:00:00Z",
   "modificationTime": "0001-01-01T00:00:00Z",
-  "conf": {
-    "destination": {
-      "kuma.io/service": "*"
-    }
+  "tags": {
+    "kuma.io/service": "res-1"
+  },
+  "networking": {
+    "address": "192.168.0.1:8080"
   }
 }`))
 			})
 
 			// when
-			resource := core_mesh.TrafficRouteResource{
-				Spec: &mesh_proto.TrafficRoute{
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"kuma.io/service": "*",
-						},
+			resource := core_mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "192.168.0.1:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "res-1",
 					},
 				},
 				Meta: &model.ResourceMeta{
@@ -419,11 +405,11 @@ var _ = Describe("RemoteStore", func() {
 		It("should successfully list known resources", func() {
 			// given
 			store := setupStore("list.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal("/meshes/demo/traffic-routes"))
+				Expect(req.URL.Path).To(Equal("/meshes/demo/external-services"))
 			})
 
 			// when
-			rs := core_mesh.TrafficRouteResourceList{}
+			rs := core_mesh.ExternalServiceResourceList{}
 			err := store.List(context.Background(), &rs, core_store.ListByMesh("demo"))
 
 			// then
@@ -433,13 +419,12 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[0].Meta.GetName()).To(Equal("one"))
 			Expect(rs.Items[0].Meta.GetMesh()).To(Equal("default"))
 			Expect(rs.Items[0].Meta.GetVersion()).To(Equal(""))
-			Expect(rs.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{
-							RoundRobin: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin{},
-						},
-					},
+			Expect(rs.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "192.168.0.1:8080",
+				},
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "one",
 				},
 			}))
 			Expect(rs.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
@@ -448,13 +433,12 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[1].Meta.GetName()).To(Equal("two"))
 			Expect(rs.Items[1].Meta.GetMesh()).To(Equal("demo"))
 			Expect(rs.Items[1].Meta.GetVersion()).To(Equal(""))
-			Expect(rs.Items[1].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-						LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
-							LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{},
-						},
-					},
+			Expect(rs.Items[1].Spec).To(matchers.MatchProto(&mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "192.168.0.2:8080",
+				},
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "two",
 				},
 			}))
 			Expect(rs.Items[1].Meta.GetCreationTime()).Should(Equal(creationTime))
@@ -464,13 +448,13 @@ var _ = Describe("RemoteStore", func() {
 		It("should list known resources using pagination", func() {
 			// given
 			store := setupStore("list-pagination.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal("/meshes/demo/traffic-routes"))
+				Expect(req.URL.Path).To(Equal("/meshes/demo/external-services"))
 				Expect(req.URL.Query().Get("size")).To(Equal("1"))
 				Expect(req.URL.Query().Get("offset")).To(Equal("2"))
 			})
 
 			// when
-			rs := core_mesh.TrafficRouteResourceList{}
+			rs := core_mesh.ExternalServiceResourceList{}
 			err := store.List(context.Background(), &rs, core_store.ListByMesh("demo"), core_store.ListByPage(1, "2"))
 
 			// then
@@ -480,13 +464,12 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[0].Meta.GetName()).To(Equal("one"))
 			Expect(rs.Items[0].Meta.GetMesh()).To(Equal("default"))
 			Expect(rs.Items[0].Meta.GetVersion()).To(Equal(""))
-			Expect(rs.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{
-							RoundRobin: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin{},
-						},
-					},
+			Expect(rs.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "192.168.0.1:8080",
+				},
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "one",
 				},
 			}))
 			Expect(rs.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
@@ -559,11 +542,11 @@ var _ = Describe("RemoteStore", func() {
 			name := "tr-1"
 			meshName := "mesh-1"
 			store := setupStore("delete.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s/traffic-routes/%s", meshName, name)))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s/external-services/%s", meshName, name)))
 			})
 
 			// when
-			resource := core_mesh.NewTrafficRouteResource()
+			resource := core_mesh.NewExternalServiceResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey(name, meshName))
 
 			// then
@@ -590,7 +573,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, "some error from the server")
 
 			// when
-			resource := core_mesh.NewTrafficRouteResource()
+			resource := core_mesh.NewExternalServiceResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
@@ -607,7 +590,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(404, json)
 
 			// when
-			resource := core_mesh.NewTrafficRouteResource()
+			resource := core_mesh.NewExternalServiceResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
@@ -623,7 +606,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			resource := core_mesh.NewTrafficRouteResource()
+			resource := core_mesh.NewExternalServiceResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then

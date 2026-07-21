@@ -1,12 +1,10 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -14,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
@@ -183,54 +180,6 @@ type: system.kuma.io/secret `, Config.KumaNamespace, meshName)
 	})
 
 	Context("from Global to Zone", func() {
-		universalPolicyNamed := func(name string, weight int) string {
-			return fmt.Sprintf(`
-type: TrafficRoute
-mesh: sync
-name: %s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  split:
-    - weight: %d
-      destination:
-        kuma.io/service: '*'`, name, weight)
-		}
-
-		kubernetesPolicyNamed := func(name string, weight int) string {
-			return fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: TrafficRoute
-mesh: default
-metadata:
-  name: %s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'
-  conf:
-    split:
-      - weight: %d
-        destination:
-          kuma.io/service: '*'`, name, weight)
-		}
-
-		policySyncedToZones := func(name string) {
-			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute")
-			}, "30s", "1s").Should(ContainSubstring(name))
-			Eventually(func() (string, error) {
-				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-routes", "-m", meshName)
-			}, "30s", "1s").Should(ContainSubstring(name))
-		}
-
 		It("should sync secret from zone to global", func() {
 			secretName := "global-and-zone-secret"
 			zoneSecret := fmt.Sprintf(`
@@ -307,92 +256,6 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(1))
 			}, "10s", "1s").Should(Succeed())
-		})
-
-		It("should sync policy creation", func() {
-			// given
-			name := "tr-synced"
-
-			// when
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-
-			// then
-			policySyncedToZones(name)
-		})
-
-		It("should sync policy update", func() {
-			// given
-			name := "tr-update"
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-			policySyncedToZones(name)
-
-			// when
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 101)))).To(Succeed())
-
-			// then
-			hashedName := hash.HashedName(meshName, "tr-update")
-			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", hashedName, "-oyaml")
-			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
-			Eventually(func() (string, error) {
-				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
-			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
-		})
-
-		Context("Deny", func() {
-			name := "tr-denied"
-			BeforeAll(func() {
-				Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-				policySyncedToZones(name)
-			})
-
-			It("should deny creating policy on Kube Zone CP", func() {
-				err := k8s.KubectlApplyFromStringContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), kubernetesPolicyNamed("denied", 100))
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny creating policy on Universal Zone CP", func() {
-				err := multizone.UniZone1.GetKumactlOptions().KumactlApplyFromString(universalPolicyNamed("denied", 100))
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny update on Kube Zone CP", func() {
-				policyUpdate := kubernetesPolicyNamed(name, 101)
-				err := k8s.KubectlApplyFromStringContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), policyUpdate)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny update on Universal Zone CP", func() {
-				policyUpdate := universalPolicyNamed(name, 101)
-				err := multizone.UniZone1.GetKumactlOptions().KumactlApplyFromString(policyUpdate)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny delete on Kube Zone CP", func() {
-				err := k8s.RunKubectlContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "delete", "trafficroute", name)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny delete on Universal Zone CP", func() {
-				err := multizone.UniZone1.GetKumactlOptions().RunKumactl("delete", "traffic-route", name, "-m", meshName)
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
-		It("should sync policy with a long name and store it as display name", func() {
-			// given
-			name := strings.Repeat("x", 253)
-
-			// when
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-
-			// then
-			hashedName := hash.HashedName(meshName, name)
-			for _, cluster := range multizone.Zones() {
-				Eventually(func() (string, error) {
-					return cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
-				}, "30s", "1s").Should(ContainSubstring(`kuma.io/display-name: ` + name))
-			}
 		})
 	})
 }

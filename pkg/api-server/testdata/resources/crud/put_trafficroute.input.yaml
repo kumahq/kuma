@@ -1,4 +1,0 @@
-#/meshes/default/traffic-routes/web-to-backend 201 method=PUT
-#/meshes/default/traffic-routes/web-to-backend 200
-type: Mesh
-name: default

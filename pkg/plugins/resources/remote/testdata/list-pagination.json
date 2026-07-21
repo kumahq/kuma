@@ -1,17 +1,18 @@
 {
     "items": [
         {
-            "type": "TrafficRoute",
+            "type": "ExternalService",
             "mesh": "default",
             "name": "one",
             "creationTime": "2018-07-17T16:05:36.995Z",
             "modificationTime": "2019-07-17T16:05:36.995Z",
-            "conf": {
-                "loadBalancer": {
-                    "roundRobin": {}
-                }
+            "tags": {
+                "kuma.io/service": "one"
+            },
+            "networking": {
+                "address": "192.168.0.1:8080"
             }
         }
     ],
-    "next": "http://localhost:5681/meshes/default/traffic-routes?size=1&offset=2"
+    "next": "http://localhost:5681/meshes/default/external-services?size=1&offset=2"
 }

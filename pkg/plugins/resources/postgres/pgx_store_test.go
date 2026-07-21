@@ -58,11 +58,9 @@ var _ = Describe("PgxStore", func() {
 
 			// create resources
 			for i := range 5 {
-				ts := &core_mesh.TrafficRouteResource{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources:      []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "web"}}},
-						Destinations: []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "backend"}}},
-						Conf:         &mesh_proto.TrafficRoute_Conf{Destination: map[string]string{"kuma.io/service": "backend"}},
+				ts := &core_mesh.ExternalServiceResource{
+					Spec: &mesh_proto.ExternalService{
+						Networking: &mesh_proto.ExternalService_Networking{Address: "192.168.0.1:8080"},
 					},
 				}
 				err := pStore.Create(ctx, ts, store.CreateByKey("tr-"+string(rune('a'+i)), "default"))
@@ -78,7 +76,7 @@ var _ = Describe("PgxStore", func() {
 				{Name: "tr-e", Mesh: "default"},
 			}
 
-			list := &core_mesh.TrafficRouteResourceList{}
+			list := &core_mesh.ExternalServiceResourceList{}
 			err = pStore.List(ctx, list, store.ListByResourceKeys(resourceKeys))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Items).To(HaveLen(5))
@@ -89,7 +87,7 @@ var _ = Describe("PgxStore", func() {
 			Expect(metric.GetCounter().GetValue()).To(Equal(float64(1)))
 
 			// list again to verify counter increments
-			list = &core_mesh.TrafficRouteResourceList{}
+			list = &core_mesh.ExternalServiceResourceList{}
 			err = pStore.List(ctx, list, store.ListByResourceKeys(resourceKeys))
 			Expect(err).ToNot(HaveOccurred())
 
@@ -105,11 +103,9 @@ var _ = Describe("PgxStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// create resources
-			ts := &core_mesh.TrafficRouteResource{
-				Spec: &mesh_proto.TrafficRoute{
-					Sources:      []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "web"}}},
-					Destinations: []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "backend"}}},
-					Conf:         &mesh_proto.TrafficRoute_Conf{Destination: map[string]string{"kuma.io/service": "backend"}},
+			ts := &core_mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{Address: "192.168.0.1:8080"},
 				},
 			}
 			err = pStore.Create(ctx, ts, store.CreateByKey("tr-a", "default"))
@@ -120,7 +116,7 @@ var _ = Describe("PgxStore", func() {
 				{Name: "tr-a", Mesh: "default"},
 			}
 
-			list := &core_mesh.TrafficRouteResourceList{}
+			list := &core_mesh.ExternalServiceResourceList{}
 			err = pStore.List(ctx, list, store.ListByResourceKeys(resourceKeys))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Items).To(HaveLen(1))
@@ -139,7 +135,7 @@ var _ = Describe("PgxStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// list without resource keys
-			list := &core_mesh.TrafficRouteResourceList{}
+			list := &core_mesh.ExternalServiceResourceList{}
 			err = pStore.List(ctx, list)
 			Expect(err).ToNot(HaveOccurred())
 

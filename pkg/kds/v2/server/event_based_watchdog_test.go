@@ -75,9 +75,9 @@ var _ = Describe("Event Based Watchdog", func() {
 			EventBus:   eventBus,
 			Reconciler: reconciler,
 			ProvidedTypes: map[core_model.ResourceType]struct{}{
-				mesh.TrafficPermissionType: {},
-				mesh.TrafficLogType:        {},
-				mesh.TrafficRouteType:      {},
+				mesh.ExternalServiceType: {},
+				mesh.DataplaneType:       {},
+				mesh.ZoneIngressType:     {},
 			},
 			Metrics: kdsMetrics,
 			Log:     logr.Discard(),
@@ -114,11 +114,11 @@ var _ = Describe("Event Based Watchdog", func() {
 	It("should reconcile on the events flush", func() {
 		// when
 		eventBus.Send(events.ResourceChangedEvent{
-			Type: mesh.TrafficPermissionType,
+			Type: mesh.ExternalServiceType,
 		})
 		eventBus.Send(events.TriggerKDSResyncEvent{
 			NodeID: "1",
-			Type:   mesh.TrafficLogType,
+			Type:   mesh.DataplaneType,
 		})
 		// Send is not blocking so there is no guarantee that we execute flush before watchdog consumed events
 		time.Sleep(500 * time.Millisecond)
@@ -127,8 +127,8 @@ var _ = Describe("Event Based Watchdog", func() {
 		// then
 		changedResTypes := <-reconciler.changedResTypes
 		Expect(changedResTypes).To(HaveLen(2))
-		Expect(changedResTypes).To(HaveKey(mesh.TrafficPermissionType))
-		Expect(changedResTypes).To(HaveKey(mesh.TrafficLogType))
+		Expect(changedResTypes).To(HaveKey(mesh.ExternalServiceType))
+		Expect(changedResTypes).To(HaveKey(mesh.DataplaneType))
 		Eventually(func(g Gomega) {
 			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonEvent, "zone_name", "1")
 			g.Expect(metric).ToNot(BeNil())

@@ -36,7 +36,7 @@ func (c *countingResourcesManager) Get(ctx context.Context, res core_model.Resou
 
 func (c *countingResourcesManager) List(ctx context.Context, list core_model.ResourceList, fn ...core_store.ListOptionsFunc) error {
 	opts := core_store.NewListOptions(fn...)
-	if list.GetItemType() == core_mesh.TrafficLogType && opts.Mesh == "slow" {
+	if list.GetItemType() == core_mesh.ExternalServiceType && opts.Mesh == "slow" {
 		time.Sleep(10 * time.Second)
 	}
 	atomic.AddUint32(&c.listQueries, 1)
@@ -184,24 +184,24 @@ var _ = Describe("Cached Resource Manager", func() {
 	})
 
 	It("should let concurrent List() queries for different types and meshes", test.Within(15*time.Second, func() {
-		// given ongoing TrafficLog from mesh slow that takes a lot of time to complete
+		// given ongoing ExternalService from mesh slow that takes a lot of time to complete
 		done := make(chan struct{})
 		go func() {
-			fetched := core_mesh.TrafficLogResourceList{}
+			fetched := core_mesh.ExternalServiceResourceList{}
 			err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("slow"))
 			Expect(err).ToNot(HaveOccurred())
 			close(done)
 		}()
 
-		// when trying to fetch TrafficLog from different mesh that takes normal time to response
-		fetched := core_mesh.TrafficLogResourceList{}
+		// when trying to fetch ExternalService from different mesh that takes normal time to response
+		fetched := core_mesh.ExternalServiceResourceList{}
 		err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("default"))
 
 		// then first request does not block request for other mesh
 		Expect(err).ToNot(HaveOccurred())
 
 		// when trying to fetch different resource type
-		fetchedTp := core_mesh.TrafficPermissionResourceList{}
+		fetchedTp := core_mesh.DataplaneResourceList{}
 		err = cachedManager.List(context.Background(), &fetchedTp, core_store.ListByMesh("default"))
 
 		// then first request does not block request for other type

@@ -12,12 +12,12 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
@@ -82,12 +82,12 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		}
 		return resources
 	}
-	testTrafficRouteResources := func(n int, mesh, version string) []*core_mesh.TrafficRouteResource {
-		resources := []*core_mesh.TrafficRouteResource{}
+	testMeshHTTPRouteResources := func(n int, mesh, version string) []*meshhttproute_api.MeshHTTPRouteResource {
+		resources := []*meshhttproute_api.MeshHTTPRouteResource{}
 		for i := range n {
-			resources = append(resources, &core_mesh.TrafficRouteResource{
+			resources = append(resources, &meshhttproute_api.MeshHTTPRouteResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("tr-%d", i), Version: version},
-				Spec: &mesh_proto.TrafficRoute{},
+				Spec: &meshhttproute_api.MeshHTTPRoute{},
 			})
 		}
 		return resources
@@ -113,7 +113,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		}
 		meshContextBuilder := xds_context.NewMeshContextBuilder(
 			countingManager,
-			[]core_model.ResourceType{core_mesh.DataplaneType, core_mesh.TrafficRouteType, core_mesh.ZoneIngressType},
+			[]core_model.ResourceType{core_mesh.DataplaneType, meshhttproute_api.MeshHTTPRouteType, core_mesh.ZoneIngressType},
 			lookupIPFunc,
 			"zone-1",
 			nil,
@@ -136,7 +136,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 				err := s.Create(context.Background(), dp, core_store.CreateBy(core_model.MetaToResourceKey(dp.GetMeta())))
 				Expect(err).ToNot(HaveOccurred())
 			}
-			for _, tr := range testTrafficRouteResources(baseLen, mesh, "v2") {
+			for _, tr := range testMeshHTTPRouteResources(baseLen, mesh, "v2") {
 				err := s.Create(context.Background(), tr, core_store.CreateBy(core_model.MetaToResourceKey(tr.GetMeta())))
 				Expect(err).ToNot(HaveOccurred())
 			}
@@ -147,13 +147,13 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		By("getting Hash for the first time")
 		meshCtx, err := meshCache.GetMeshContext(context.Background(), "mesh-0")
 		Expect(err).ToNot(HaveOccurred())
-		expectedHash := "JLYLIWtgziYPEjOSc6/i/w=="
+		expectedHash := "Et58y/VFt3kdRaK+q48uKg=="
 		Expect(meshCtx.Hash).To(Equal(expectedHash))
 		Expect(countingManager.getQueries).To(Equal(1)) // one Get to obtain Mesh
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
-			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
-			core_mesh.ZoneIngressType:  Equal(1),
+			core_mesh.DataplaneType:             Equal(1),
+			meshhttproute_api.MeshHTTPRouteType: Equal(1),
+			core_mesh.ZoneIngressType:           Equal(1),
 		}))
 
 		By("getting cached Hash")
@@ -161,9 +161,9 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))           // should be the same
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{ // same as above
-			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
-			core_mesh.ZoneIngressType:  Equal(1),
+			core_mesh.DataplaneType:             Equal(1),
+			meshhttproute_api.MeshHTTPRouteType: Equal(1),
+			core_mesh.ZoneIngressType:           Equal(1),
 		}))
 
 		By("updating Dataplane in store and waiting until cache invalidation")
@@ -178,13 +178,13 @@ var _ = Describe("MeshSnapshot Cache", func() {
 
 		meshCtx, err = meshCache.GetMeshContext(context.Background(), "mesh-0")
 		Expect(err).ToNot(HaveOccurred())
-		expectedHash = "KazI2baK7/QqpBu1OOajkA=="
+		expectedHash = "39WSGCELaKm166VqtdBq/Q=="
 		Expect(meshCtx.Hash).To(Equal(expectedHash))
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
-			core_mesh.DataplaneType:    Equal(2),
-			core_mesh.TrafficRouteType: Equal(2),
-			core_mesh.ZoneIngressType:  Equal(2),
+			core_mesh.DataplaneType:             Equal(2),
+			meshhttproute_api.MeshHTTPRouteType: Equal(2),
+			core_mesh.ZoneIngressType:           Equal(2),
 		}))
 	})
 
@@ -278,13 +278,13 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		countingManager.reset()
 		meshCtx, err = meshCache.GetMeshContext(context.Background(), "mesh-0")
 		Expect(err).ToNot(HaveOccurred())
-		expectedHash := "JLYLIWtgziYPEjOSc6/i/w=="
+		expectedHash := "Et58y/VFt3kdRaK+q48uKg=="
 		Expect(meshCtx.Hash).To(Equal(expectedHash))
 		Expect(countingManager.getQueries).To(Equal(1)) // one Get to obtain Mesh
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
-			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
-			core_mesh.ZoneIngressType:  Equal(1),
+			core_mesh.DataplaneType:             Equal(1),
+			meshhttproute_api.MeshHTTPRouteType: Equal(1),
+			core_mesh.ZoneIngressType:           Equal(1),
 		}))
 
 		By("Now it should cache the hash once manager is fixed")
@@ -294,9 +294,9 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(meshCtx.Hash).To(Equal(expectedHash))
 		Expect(countingManager.getQueries).To(Equal(1))           // same as above
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{ // same as above
-			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
-			core_mesh.ZoneIngressType:  Equal(1),
+			core_mesh.DataplaneType:             Equal(1),
+			meshhttproute_api.MeshHTTPRouteType: Equal(1),
+			core_mesh.ZoneIngressType:           Equal(1),
 		}))
 	})
 })

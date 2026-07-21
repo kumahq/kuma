@@ -389,12 +389,10 @@ func (x *Tracing) GetBackends() []*TracingBackend {
 	return nil
 }
 
-// TracingBackend defines tracing backend available to mesh. Backends can be
-// used in TrafficTrace rules.
+// TracingBackend defines tracing backend available to mesh.
 type TracingBackend struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Name of the backend, can be then used in Mesh.tracing.defaultBackend or in
-	// TrafficTrace
+	// Name of the backend, can be then used in Mesh.tracing.defaultBackend
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
 	// Empty value defaults to 100.0%
