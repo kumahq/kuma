@@ -318,10 +318,8 @@ status:
 	})
 
 	It("recomputes the mesh context when a remote MeshService and its ZoneIngress newly appear", func() {
-		// given an mTLS-enabled mesh with MeshServices everywhere, matching the e2e repro
-		Expect(samples.MeshMTLSBuilder().
-			WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
-			Create(resourceStore)).To(Succeed())
+		// given an mTLS-enabled mesh, matching the e2e repro
+		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
 
 		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -350,10 +348,8 @@ status:
 	})
 
 	It("recomputes the mesh context through the staged arrival matching the real KDS sequence", func() {
-		// given an mTLS-enabled mesh with MeshServices everywhere
-		Expect(samples.MeshMTLSBuilder().
-			WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
-			Create(resourceStore)).To(Succeed())
+		// given an mTLS-enabled mesh
+		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
 
 		ctx0, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())
