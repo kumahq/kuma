@@ -37,14 +37,13 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		supportedKinds := []common_api.TargetRefKind{
-			common_api.Mesh,
-			common_api.MeshService,
-			common_api.MeshMultiZoneService,
-			common_api.MeshHTTPRoute,
-		}
 		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
-			SupportedKinds: supportedKinds,
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshService,
+				common_api.MeshMultiZoneService,
+				common_api.MeshHTTPRoute,
+			},
 		})
 		verr.AddErrorAt(path.Field("targetRef"), errs)
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {

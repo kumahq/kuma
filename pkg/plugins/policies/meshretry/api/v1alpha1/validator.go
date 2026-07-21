@@ -65,7 +65,6 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 				common_api.MeshHTTPRoute,
 			}
 		}
-
 		verr.AddErrorAt(
 			path.Field("targetRef"),
 			mesh.ValidateTargetRef(
