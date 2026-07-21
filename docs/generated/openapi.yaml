@@ -74,7 +74,6 @@ paths:
             type: string
             enum:
               - dataplanes
-              - meshgateways
           description: The type of resource (only some resources support rules api)
         - in: path
           name: resourceName
@@ -504,7 +503,6 @@ paths:
                   - $ref: '#/components/schemas/MeshAccessLogItem'
                   - $ref: '#/components/schemas/MeshCircuitBreakerItem'
                   - $ref: '#/components/schemas/MeshFaultInjectionItem'
-                  - $ref: '#/components/schemas/MeshGatewayItem'
                   - $ref: '#/components/schemas/MeshHTTPRouteItem'
                   - $ref: '#/components/schemas/MeshHealthCheckItem'
                   - $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
@@ -2745,128 +2743,6 @@ paths:
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
-  /meshes/{mesh}/meshgateways:
-    get:
-      operationId: getMeshGatewayList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayList'
-      summary: Returns a list of MeshGateway in the mesh.
-      tags:
-        - MeshGateway
-  /meshes/{mesh}/meshgateways/{name}:
-    delete:
-      operationId: deleteMeshGateway
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the MeshGateway
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes MeshGateway entity
-      tags:
-        - MeshGateway
-    get:
-      operationId: getMeshGateway
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the MeshGateway
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns MeshGateway entity
-      tags:
-        - MeshGateway
-    put:
-      operationId: putMeshGateway
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the MeshGateway
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshGatewayItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates MeshGateway entity
-      tags:
-        - MeshGateway
   /meshes/{mesh}/secrets:
     get:
       operationId: getSecretList
@@ -6815,7 +6691,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -6840,9 +6715,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -7175,7 +7050,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -7200,9 +7074,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -7467,7 +7341,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -7492,9 +7365,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -8135,7 +8008,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -8160,9 +8032,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -8698,7 +8570,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -8723,9 +8594,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -9251,7 +9122,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -9276,9 +9146,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -9498,7 +9368,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -9523,9 +9392,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -9743,7 +9612,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -9768,9 +9636,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -9929,7 +9797,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -9954,9 +9821,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -10015,203 +9882,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-    MeshGatewayItem:
-      properties:
-        conf:
-          description: The desired configuration of the MeshGateway.
-          properties:
-            listeners:
-              description: >-
-                Listeners define logical endpoints that are bound on this
-                MeshGateway's
-
-                address(es).
-              items:
-                properties:
-                  crossMesh:
-                    description: >-
-                      CrossMesh enables traffic to flow to this listener only
-                      from other
-
-                      meshes.
-                    type: boolean
-                  hostname:
-                    description: >-
-                      Hostname specifies the virtual hostname to match for
-                      protocol types that
-
-                      define this concept. When unspecified, "", or `*`, all
-                      hostnames are
-
-                      matched. This field can be omitted for protocols that
-                      don't require
-
-                      hostname based matching.
-                    type: string
-                  port:
-                    description: |-
-                      Port is the network port. Multiple listeners may use the
-                      same port, subject to the Listener compatibility rules.
-                    type: integer
-                  protocol:
-                    description: >-
-                      Protocol specifies the network protocol this listener
-                      expects to receive.
-                    oneOf:
-                      - type: string
-                      - type: integer
-                  resources:
-                    description: >-
-                      Resources is used to specify listener-specific resource
-                      settings.
-                    properties:
-                      connectionLimit:
-                        type: integer
-                    type: object
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags specifies a unique combination of tags that routes
-                      can use
-
-                      to match themselves to this listener.
-
-
-                      When matching routes to listeners, the control plane
-                      constructs a
-
-                      set of matching tags for each listener by forming the
-                      union of the
-
-                      gateway tags and the listener tags. A route will be
-                      attached to the
-
-                      listener if all of the route's tags are preset in the
-                      matching tags
-                    type: object
-                  tls:
-                    description: |-
-                      TLS is the TLS configuration for the Listener. This field
-                      is required if the Protocol field is "HTTPS" or "TLS" and
-                      ignored otherwise.
-                    properties:
-                      certificates:
-                        description: >-
-                          Certificates is an array of datasources that contain
-                          TLS
-
-                          certificates and private keys.  Each datasource must
-                          contain a
-
-                          sequence of PEM-encoded objects. The server
-                          certificate and private
-
-                          key are required, but additional certificates are
-                          allowed and will
-
-                          be added to the certificate chain.  The server
-                          certificate must
-
-                          be the first certificate in the datasource.
-
-
-                          When multiple certificate datasources are configured,
-                          they must have
-
-                          different key types. In practice, this means that one
-                          datasource
-
-                          should contain an RSA key and certificate, and the
-                          other an
-
-                          ECDSA key and certificate.
-                        items:
-                          oneOf:
-                            - $ref: '#/components/schemas/DataSource_File'
-                            - $ref: '#/components/schemas/DataSource_Inline'
-                            - $ref: '#/components/schemas/DataSource_InlineString'
-                            - $ref: '#/components/schemas/DataSource_Secret'
-                        type: array
-                      mode:
-                        description: >-
-                          Mode defines the TLS behavior for the TLS session
-                          initiated
-
-                          by the client.
-                        oneOf:
-                          - type: string
-                          - type: integer
-                      options:
-                        description: >-
-                          Options should eventually configure how TLS is
-                          configured. This
-
-                          is where cipher suite and version configuration can be
-                          specified,
-
-                          client certificates enforced, and so on.
-                        properties: {}
-                        type: object
-                    type: object
-                type: object
-              type: array
-          type: object
-        creationTime:
-          description: Time at which the resource was created
-          format: date-time
-          readOnly: true
-          type: string
-        kri:
-          description: Kuma Resource Identifier (KRI) of the given resource
-          readOnly: true
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        mesh:
-          type: string
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
-        name:
-          type: string
-        selectors:
-          description: |-
-            Selectors is a list of selectors that are used to match builtin
-            gateway dataplanes that will receive this MeshGateway configuration.
-          items:
-            description: Selector defines structure for selecting tags for given dataplane
-            properties:
-              match:
-                additionalProperties:
-                  type: string
-                description: Tags to match, can be used for both source and destinations
-                type: object
-            type: object
-          type: array
-        tags:
-          additionalProperties:
-            type: string
-          description: >-
-            Tags is the set of tags common to all of the gateway's listeners.
-
-
-            This field must not include a `kuma.io/service` tag (the service is
-            always
-
-            defined on the dataplanes).
-          type: object
-        type:
-          type: string
-      required:
-        - type
-        - name
-        - mesh
-      type: object
     MeshHTTPRouteItem:
       type: object
       description: >-
@@ -10279,7 +9949,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -10304,9 +9973,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -10353,16 +10022,7 @@ components:
               items:
                 properties:
                   hostnames:
-                    description: >-
-                      Hostnames is only valid when targeting MeshGateway and
-                      limits the
-
-                      effects of the rules to requests to this hostname.
-
-                      Given hostnames must intersect with the hostname of the
-                      listeners the
-
-                      route attaches to.
+                    description: Hostnames is not currently supported and must not be set.
                     items:
                       type: string
                     type: array
@@ -10390,7 +10050,6 @@ components:
                                     enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -10416,9 +10075,9 @@ components:
                                   name:
                                     description: >-
                                       Name of the referenced resource. Can only
-                                      be used with kinds: `MeshService`,
+                                      be used with kinds: `MeshService`
 
-                                      `MeshServiceSubset` and `MeshGatewayRoute`
+                                      and `MeshServiceSubset`
                                     type: string
                                   namespace:
                                     description: >-
@@ -10544,7 +10203,6 @@ components:
                                             enum:
                                               - Mesh
                                               - MeshSubset
-                                              - MeshGateway
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -10570,10 +10228,9 @@ components:
                                           name:
                                             description: >-
                                               Name of the referenced resource. Can
-                                              only be used with kinds: `MeshService`,
+                                              only be used with kinds: `MeshService`
 
-                                              `MeshServiceSubset` and
-                                              `MeshGatewayRoute`
+                                              and `MeshServiceSubset`
                                             type: string
                                           namespace:
                                             description: >-
@@ -10788,11 +10445,8 @@ components:
                                     properties:
                                       hostToBackendHostname:
                                         description: >-
-                                          HostToBackendHostname rewrites the
-                                          hostname to the hostname of the
-
-                                          upstream host. This option is only
-                                          available when targeting MeshGateways.
+                                          HostToBackendHostname is not currently
+                                          supported and must not be set.
                                         type: boolean
                                       hostname:
                                         description: >-
@@ -10952,7 +10606,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -10977,9 +10630,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -11096,7 +10749,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -11121,9 +10773,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -11457,7 +11109,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -11482,9 +11133,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -11603,7 +11254,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -11628,9 +11278,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -12337,7 +11987,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -12362,9 +12011,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -12705,7 +12354,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -12730,9 +12378,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -12956,7 +12604,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -12981,9 +12628,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -13167,8 +12814,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13286,8 +12931,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13392,8 +13035,6 @@ components:
                                   Ingress.
 
                                   egress - resources generated for Zone Egress.
-
-                                  gateway - resources generated for MeshGateway.
 
 
                                   The list is not complete, because policy
@@ -13516,8 +13157,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13625,8 +13264,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13674,7 +13311,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -13699,9 +13335,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -13955,7 +13591,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -13980,9 +13615,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -14235,7 +13870,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -14260,9 +13894,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -14458,7 +14092,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -14483,9 +14116,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -14601,7 +14234,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -14626,9 +14258,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -15118,7 +14750,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -15143,9 +14774,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -15270,7 +14901,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -15295,9 +14925,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -15369,7 +14999,6 @@ components:
                                     enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -15395,9 +15024,9 @@ components:
                                   name:
                                     description: >-
                                       Name of the referenced resource. Can only
-                                      be used with kinds: `MeshService`,
+                                      be used with kinds: `MeshService`
 
-                                      `MeshServiceSubset` and `MeshGatewayRoute`
+                                      and `MeshServiceSubset`
                                     type: string
                                   namespace:
                                     description: >-
@@ -15471,7 +15100,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -15496,9 +15124,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -15678,7 +15306,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -15703,9 +15330,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -15830,7 +15457,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -15855,9 +15481,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -16055,7 +15681,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -16080,9 +15705,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -16286,7 +15911,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -16311,9 +15935,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -16455,7 +16079,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -16480,9 +16103,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -16845,7 +16468,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -16870,9 +16492,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -17060,7 +16682,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -17085,9 +16706,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -17320,7 +16941,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -17345,9 +16965,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -21333,53 +20953,6 @@ components:
               items:
                 items:
                   $ref: '#/components/schemas/MeshItem'
-                type: array
-              next:
-                description: URL to the next page
-                type: string
-              total:
-                description: The total number of entities
-                type: number
-            type: object
-      description: List
-    MeshGatewayCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    MeshGatewayDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    MeshGatewayItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MeshGatewayItem'
-      description: Successful response
-    MeshGatewayList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/MeshGatewayItem'
                 type: array
               next:
                 description: URL to the next page

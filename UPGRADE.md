@@ -358,6 +358,33 @@ this release; existing resources are still accepted and stored.
 
 Migrate to `MeshHTTPRoute`/`MeshTCPRoute`, which replace `VirtualOutbound`.
 
+### Legacy DNS VIP allocator and persisted VIP config removed
+
+The control plane no longer computes or persists the `kuma-<mesh>-dns-vips`
+`Config` resource. That resource was the write-only output of a legacy
+background allocator; dataplane DNS records are generated directly from the
+`MeshService`/`MeshExternalService`/`MeshMultiZoneService` DNS/VIP path, which
+this change does not affect.
+
+On Kubernetes, the control plane no longer reconciles the per-namespace
+`ConfigMap` used to expose the allocator's output either.
+
+The following configuration has been removed:
+
+- `experimental.useTagFirstVirtualOutboundModel`
+  (`KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL`).
+- `dnsServer.CIDR` (`KUMA_DNS_SERVER_CIDR`).
+- `dnsServer.serviceVipEnabled` (`KUMA_DNS_SERVER_SERVICE_VIP_ENABLED`).
+- `runtime.universal.vipRefreshInterval`
+  (`KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL`).
+
+**Action required**
+
+Remove the settings above from your control plane config and environment if
+set. Any previously persisted `kuma-<mesh>-dns-vips` `Config` resources (and
+their Kubernetes `ConfigMap` mirrors) are no longer written or read and can be
+deleted.
+
 ### `TrafficRoute` no longer affects generated Envoy config
 
 The legacy `TrafficRoute` policy is no longer consumed when generating Envoy
@@ -488,11 +515,11 @@ be restarted with a Delta xDS bootstrap.
 
 ### Legacy policy resources removed
 
-The 13 legacy policy resources superseded by the `Mesh*` targetRef policies
+The 12 legacy policy resources superseded by the `Mesh*` targetRef policies
 have been removed from the resource registry: `TrafficPermission`,
 `TrafficRoute`, `TrafficLog`, `TrafficTrace`, `HealthCheck`,
 `CircuitBreaker`, `Retry`, `Timeout`, `RateLimit`, `FaultInjection`,
-`VirtualOutbound`, `ProxyTemplate`, and `MeshGatewayRoute`. Each of these had
+`VirtualOutbound`, and `ProxyTemplate`. Each of these had
 already stopped affecting generated Envoy configuration in earlier releases
 (see the entries above); this change removes the resources themselves.
 
@@ -503,12 +530,7 @@ gone, and the corresponding CRD is no longer installed on Kubernetes.
 
 The `ProxyTemplate` proto message and its default-profile machinery
 (`ProxyTemplateResolver`, profile imports) are unaffected — only the
-user-facing `ProxyTemplate` resource, API, and CRD are removed. Likewise,
-`MeshGateway` and the `Mesh*` targetRef policies are unaffected.
-
-On Kubernetes, the `HTTPRoute` controller no longer deletes orphaned
-`GatewayRoute.kuma.io` objects left over from pre-2.7.x upgrades, since the
-`MeshGatewayRoute` CRD backing them no longer exists.
+user-facing `ProxyTemplate` resource, API, and CRD are removed.
 
 **Action required**
 
@@ -516,6 +538,40 @@ Delete any remaining resources of these types before upgrading — the control
 plane no longer accepts create/update requests for them, and stored resources
 of a removed type are not migrated. Remove any automation, dashboards, or
 kumactl scripts that reference these resource types, REST paths, or CRDs.
+
+### Built-in gateway API and CRDs removed
+
+The built-in gateway API has been removed entirely. The `MeshGateway`,
+`MeshGatewayRoute`, `MeshGatewayInstance`, and `MeshGatewayConfig` resources,
+their Go/proto types, their Kubernetes CRDs
+(`meshgateways.kuma.io`, `meshgatewayroutes.kuma.io`,
+`meshgatewayinstances.kuma.io`, `meshgatewayconfigs.kuma.io`), and KDS sync
+registration for these types no longer exist. `MeshGateway` is also no longer
+a valid `targetRef.kind` for any policy.
+
+A `Dataplane` with `networking.gateway.type: BUILTIN` is now rejected at
+admission and update. The `Dataplane.networking.gateway` message and the
+`DELEGATED` gateway type are unaffected — delegated gateways (bring your own
+`Deployment`/`Service` fronting a Kuma-injected pod annotated
+`kuma.io/gateway: enabled` or `provided`) continue to work exactly as before.
+
+**Action required**
+
+- Before upgrading, delete any remaining `MeshGateway`, `MeshGatewayRoute`,
+  `MeshGatewayInstance`, and `MeshGatewayConfig` resources. On Kubernetes,
+  deleting their CRDs (as this Helm chart upgrade does) removes any resources
+  still stored under them; delete them explicitly first if you need to inspect
+  or back them up beforehand.
+- Migrate any remaining `BUILTIN` gateway `Dataplane`s to `DELEGATED` before
+  upgrading (see "Built-in gateway Kubernetes controllers removed" above) —
+  after upgrading, creating or updating a `Dataplane` with
+  `networking.gateway.type: BUILTIN` fails validation.
+- The default Helm-installed cluster RBAC no longer grants access to
+  `meshgateways`, `meshgatewayroutes`, `meshgatewayinstances`,
+  `meshgatewayconfigs`, or their `/status` and `/finalizers` subresources, and
+  the validating webhook configuration no longer includes these types. If you
+  manage RBAC or webhooks manually, remove these rules; if you keep them, they
+  are harmless but unused.
 
 ## Upgrade to `2.13.7`
 

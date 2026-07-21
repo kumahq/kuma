@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
@@ -108,47 +107,8 @@ func buildKumaIoServiceDestinations(
 	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
 	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
-	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
 	addAvailableServiceDestinations(availableServices, destForMesh)
 	return destForMesh
-}
-
-func addMeshGatewayDestinations(
-	meshGateways []*core_mesh.MeshGatewayResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, meshGateway := range meshGateways {
-		for _, selector := range meshGateway.Selectors() {
-			addMeshGatewayListenersDestinations(
-				meshGateway.Spec,
-				selector.GetMatch(),
-				destinations,
-			)
-		}
-	}
-}
-
-func addMeshGatewayListenersDestinations(
-	meshGateway *mesh_proto.MeshGateway,
-	matchTags map[string]string,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	service := matchTags[mesh_proto.ServiceTag]
-
-	for _, listener := range meshGateway.GetConf().GetListeners() {
-		if !listener.CrossMesh {
-			continue
-		}
-
-		destinations[service] = append(
-			destinations[service],
-			mesh_proto.Merge(
-				meshGateway.GetTags(),
-				matchTags,
-				listener.GetTags(),
-			),
-		)
-	}
 }
 
 func addMeshHTTPRouteDestinations(

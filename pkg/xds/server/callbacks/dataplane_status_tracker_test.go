@@ -112,6 +112,63 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		}))
 	})
 
+	It("should track legacy state-of-the-world ADS flow", func() {
+		// given
+		streamID := int64(1)
+		sotwCallbacks := v3.AdaptCallbacks(tracker)
+		typeURL := "type.googleapis.com/envoy.config.listener.v3.Listener"
+
+		// when
+		err := sotwCallbacks.OnStreamOpen(ctx, streamID, "")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		accessor, found := tracker.GetStatusAccessor(streamID)
+		Expect(found).To(BeTrue())
+		Expect(accessor).ToNot(BeNil())
+
+		// when
+		discoveryRequest := &envoy_sd.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.example-001",
+			},
+			TypeUrl: typeURL,
+		}
+		err = sotwCallbacks.OnStreamRequest(streamID, discoveryRequest)
+		Expect(err).ToNot(HaveOccurred())
+
+		discoveryResponse := &envoy_sd.DiscoveryResponse{
+			TypeUrl: typeURL,
+			Nonce:   "1",
+		}
+		sotwCallbacks.OnStreamResponse(ctx, streamID, discoveryRequest, discoveryResponse)
+
+		discoveryRequest = &envoy_sd.DiscoveryRequest{
+			TypeUrl:       typeURL,
+			ResponseNonce: "1",
+		}
+		err = sotwCallbacks.OnStreamRequest(streamID, discoveryRequest)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		key, subscription := accessor.GetStatus()
+		Expect(key).To(Equal(core_model.ResourceKey{
+			Mesh: "default",
+			Name: "example-001",
+		}))
+		Expect(subscription.Status.Total.ResponsesSent).To(Equal(uint64(1)))
+		Expect(subscription.Status.Total.ResponsesAcknowledged).To(Equal(uint64(1)))
+		Expect(subscription.Status.Lds.ResponsesSent).To(Equal(uint64(1)))
+		Expect(subscription.Status.Lds.ResponsesAcknowledged).To(Equal(uint64(1)))
+
+		// when
+		sotwCallbacks.OnStreamClosed(streamID, &envoy_core.Node{})
+
+		// then
+		_, found = tracker.GetStatusAccessor(streamID)
+		Expect(found).To(BeFalse())
+	})
+
 	type testCase struct {
 		TypeUrl   string
 		TypeStats string

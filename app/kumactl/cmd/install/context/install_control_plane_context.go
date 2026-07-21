@@ -19,7 +19,6 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_tls_general_caBundle            string            `helm:"controlPlane.tls.general.caBundle"`
 	ControlPlane_tls_apiServer_secret            string            `helm:"controlPlane.tls.apiServer.secretName"`
 	ControlPlane_tls_apiServer_clientCertsSecret string            `helm:"controlPlane.tls.apiServer.clientCertsSecretName"`
-	ControlPlane_tls_kdsGlobalServer_secret      string            `helm:"controlPlane.tls.kdsGlobalServer.secretName"`
 	ControlPlane_tls_kdsZoneClient_secret        string            `helm:"controlPlane.tls.kdsZoneClient.secretName"`
 	ControlPlane_injectorFailurePolicy           string            `helm:"controlPlane.injectorFailurePolicy"`
 	ControlPlane_secrets                         []ImageEnvSecret  `helm:"controlPlane.secrets"`
@@ -43,7 +42,6 @@ type InstallControlPlaneArgs struct {
 	Cni_nodeSelector                             map[string]string `helm:"cni.nodeSelector"`
 	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
 	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
-	ControlPlane_globalZoneSyncService_type      string            `helm:"controlPlane.globalZoneSyncService.type"`
 	Image_registry                               string            `helm:"global.image.registry"`
 	Ingress_enabled                              bool              `helm:"ingress.enabled"`
 	Ingress_mesh                                 string            `helm:"ingress.mesh"`
@@ -83,39 +81,38 @@ type InstallCpContext struct {
 func DefaultInstallCpContext() InstallCpContext {
 	return InstallCpContext{
 		Args: InstallControlPlaneArgs{
-			Namespace:                               "kuma-system",
-			ControlPlane_image_pullPolicy:           "IfNotPresent",
-			ControlPlane_image_registry:             "",
-			ControlPlane_image_repository:           "kuma-cp",
-			ControlPlane_image_tag:                  kuma_version.Build.Version,
-			ControlPlane_service_name:               "kuma-control-plane",
-			ControlPlane_envVars:                    map[string]string{},
-			ControlPlane_injectorFailurePolicy:      "Fail",
-			DataPlane_image_registry:                "",
-			DataPlane_image_repository:              "kuma-dp",
-			DataPlane_image_tag:                     kuma_version.Build.Version,
-			DataPlane_initImage_registry:            "",
-			DataPlane_initImage_repository:          "kuma-init",
-			DataPlane_initImage_tag:                 kuma_version.Build.Version,
-			Cni_enabled:                             false,
-			Cni_chained:                             false,
-			Cni_net_dir:                             "/etc/cni/multus/net.d",
-			Cni_bin_dir:                             "/var/lib/cni/bin",
-			Cni_conf_name:                           "kuma-cni.conf",
-			Cni_image_registry:                      "",
-			Cni_image_repository:                    "kuma-cni",
-			Cni_image_tag:                           kuma_version.Build.Version,
-			ControlPlane_mode:                       core.Zone,
-			ControlPlane_zone:                       "",
-			ControlPlane_globalZoneSyncService_type: "LoadBalancer",
-			Image_registry:                          "docker.io/kumahq",
-			Ingress_enabled:                         false,
-			Ingress_mesh:                            "default",
-			Ingress_drainTime:                       "30s",
-			Ingress_service_type:                    "LoadBalancer",
-			Egress_enabled:                          false,
-			Egress_drainTime:                        "30s",
-			Egress_service_type:                     "ClusterIP",
+			Namespace:                          "kuma-system",
+			ControlPlane_image_pullPolicy:      "IfNotPresent",
+			ControlPlane_image_registry:        "",
+			ControlPlane_image_repository:      "kuma-cp",
+			ControlPlane_image_tag:             kuma_version.Build.Version,
+			ControlPlane_service_name:          "kuma-control-plane",
+			ControlPlane_envVars:               map[string]string{},
+			ControlPlane_injectorFailurePolicy: "Fail",
+			DataPlane_image_registry:           "",
+			DataPlane_image_repository:         "kuma-dp",
+			DataPlane_image_tag:                kuma_version.Build.Version,
+			DataPlane_initImage_registry:       "",
+			DataPlane_initImage_repository:     "kuma-init",
+			DataPlane_initImage_tag:            kuma_version.Build.Version,
+			Cni_enabled:                        false,
+			Cni_chained:                        false,
+			Cni_net_dir:                        "/etc/cni/multus/net.d",
+			Cni_bin_dir:                        "/var/lib/cni/bin",
+			Cni_conf_name:                      "kuma-cni.conf",
+			Cni_image_registry:                 "",
+			Cni_image_repository:               "kuma-cni",
+			Cni_image_tag:                      kuma_version.Build.Version,
+			ControlPlane_mode:                  core.Zone,
+			ControlPlane_zone:                  "",
+			Image_registry:                     "docker.io/kumahq",
+			Ingress_enabled:                    false,
+			Ingress_mesh:                       "default",
+			Ingress_drainTime:                  "30s",
+			Ingress_service_type:               "LoadBalancer",
+			Egress_enabled:                     false,
+			Egress_drainTime:                   "30s",
+			Egress_service_type:                "ClusterIP",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			return data.ReadFiles(deployments.KumaChartFS())

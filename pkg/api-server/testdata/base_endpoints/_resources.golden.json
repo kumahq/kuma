@@ -123,16 +123,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "MeshGateway",
-   "path": "meshgateways",
-   "pluralDisplayName": "Mesh Gateways",
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "mgw",
-   "singularDisplayName": "Mesh Gateway"
-  },
-  {
-   "includeInFederation": true,
    "name": "MeshHTTPRoute",
    "path": "meshhttproutes",
    "pluralDisplayName": "Mesh HTTP Routes",

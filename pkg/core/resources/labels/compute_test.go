@@ -279,10 +279,20 @@ var _ = Describe("Compute", func() {
 			mode:      core.Zone,
 			isK8s:     true,
 			localZone: "zone-1",
-			r: builders.Dataplane().
-				WithMesh("mesh-1").
-				WithBuiltInGateway("test-gateway").
-				Build(),
+			r: &mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "dp-1"},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+							Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "test-gateway",
+							},
+						},
+					},
+				},
+			},
 			expectedLabels: map[string]string{
 				"kuma.io/display-name": "dp-1",
 				"kuma.io/mesh":         "mesh-1",
