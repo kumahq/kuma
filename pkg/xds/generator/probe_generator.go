@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	model "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -19,7 +21,7 @@ import (
 
 type ProbeProxyGenerator struct{}
 
-func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	// if app probe proxy is enabled for this DP, Virtual Probes are not needed
 	appProbeProxyEnabled := proxy.Metadata.GetAppProbeProxyEnabled()
 	if appProbeProxyEnabled {
@@ -31,11 +33,13 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _
 		return nil, nil
 	}
 
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(proxy.APIVersion, "probe")
 
-	portSet := map[uint32]bool{}
+	inboundNameByPort := map[uint32]string{}
 	for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {
-		portSet[proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound).WorkloadPort] = true
+		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
+		inboundNameByPort[iface.WorkloadPort] = iface.InboundName
 	}
 	for _, endpoint := range probes.Endpoints {
 		matchURL, err := url.Parse(endpoint.Path)
@@ -46,9 +50,13 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _
 		if err != nil {
 			return nil, err
 		}
-		if portSet[endpoint.InboundPort] {
+		if inboundName, ok := inboundNameByPort[endpoint.InboundPort]; ok {
+			localClusterName := names.GetLocalClusterName(endpoint.InboundPort)
+			if unifiedNaming {
+				localClusterName = naming.MustContextualInboundName(proxy.Dataplane, inboundName)
+			}
 			virtualHostBuilder.Configure(
-				envoy_virtual_hosts.Route(matchURL.Path, newURL.Path, names.GetLocalClusterName(endpoint.InboundPort), true))
+				envoy_virtual_hosts.Route(matchURL.Path, newURL.Path, localClusterName, true))
 		} else {
 			// On Kubernetes we are overriding probes for every container, but there is no guarantee that given
 			// probe will have an equivalent in inbound interface (ex. sidecar that is not selected by any service).
