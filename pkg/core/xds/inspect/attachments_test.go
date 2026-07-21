@@ -268,17 +268,17 @@ var _ = Describe("GroupByAttachment", func() {
 		Entry("group by dataplane", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.MeshGatewayType: {
+					core_mesh.ExternalServiceType: {
 						DataplanePolicies: []core_model.Resource{
-							&core_mesh.MeshGatewayResource{Meta: meta3},
+							&core_mesh.ExternalServiceResource{Meta: meta3},
 						},
 					},
 				},
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Dataplane, Name: ""}: {
-					core_mesh.MeshGatewayType: []core_model.Resource{
-						&core_mesh.MeshGatewayResource{Meta: meta3},
+					core_mesh.ExternalServiceType: []core_model.Resource{
+						&core_mesh.ExternalServiceResource{Meta: meta3},
 					},
 				},
 			},

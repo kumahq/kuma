@@ -26,7 +26,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	samples2 "github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 )
 
