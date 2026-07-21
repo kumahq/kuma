@@ -24,12 +24,11 @@ import (
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 	type testCase struct {
-		mesh            string
-		dataplane       string
-		profile         string
-		expected        string
-		features        xds_types.Features
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+		mesh      string
+		dataplane string
+		profile   string
+		expected  string
+		features  xds_types.Features
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -88,11 +87,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServiceMode,
-							},
-						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					Resources: resources,
 					ServicesInformation: map[string]*xds_context.ServiceInformation{
@@ -106,12 +101,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 					},
 				},
-			}
-
-			if given.features.HasFeature(xds_types.FeatureUnifiedResourceNaming) {
-				ctx.Mesh.Resource.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				}
 			}
 
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
@@ -337,9 +326,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 tags:
                   kuma.io/service: elastic
 `,
-			profile:         core_mesh.ProfileDefaultProxy,
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			expected:        "5-envoy-config.golden.yaml",
+			profile:  core_mesh.ProfileDefaultProxy,
+			expected: "5-envoy-config.golden.yaml",
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},

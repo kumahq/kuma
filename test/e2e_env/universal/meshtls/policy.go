@@ -61,8 +61,7 @@ name: mesh-tls-policy
 spec:
   targetRef:
     kind: Dataplane
-    labels:
-      kuma.io/service: %s
+    name: %s
   rules:
     - default:
         mode: Permissive`, meshName, testServerName)
@@ -159,8 +158,7 @@ name: mesh-tls-policy
 spec:
   targetRef:
     kind: Dataplane
-    labels:
-      kuma.io/service: %s
+    name: %s
   rules:
     - default:
         mode: Strict`, meshName, testServerName)

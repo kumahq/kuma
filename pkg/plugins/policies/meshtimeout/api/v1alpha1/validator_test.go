@@ -314,8 +314,6 @@ violations:
     message: value 'MeshHTTPRoute' is not supported
   - field: spec.from
     message: must not be defined
-  - field: spec.to[0].targetRef.kind
-    message: value 'MeshService' is not supported
   - field: spec.to[0].default.connectionTimeout
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute
   - field: spec.to[0].default.idleTimeout

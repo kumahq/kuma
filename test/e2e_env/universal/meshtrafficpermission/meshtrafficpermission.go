@@ -175,7 +175,7 @@ spec:
   from:
     - targetRef:
         kind: MeshSubset
-        tags: 
+        tags:
           team: client-owners
       default:
         action: Allow

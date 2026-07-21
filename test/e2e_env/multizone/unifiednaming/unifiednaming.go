@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
@@ -62,8 +61,7 @@ spec:
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(Yaml(samples.MeshMTLSBuilder().
-				WithName(meshName).
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				WithName(meshName),
 			)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())

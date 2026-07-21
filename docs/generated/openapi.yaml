@@ -6335,13 +6335,6 @@ components:
               description: Name of the default backend
               type: string
           type: object
-        meshServices:
-          properties:
-            mode:
-              oneOf:
-                - type: string
-                - type: integer
-          type: object
         metrics:
           description: >-
             Configuration for metrics collected and exposed by dataplanes.

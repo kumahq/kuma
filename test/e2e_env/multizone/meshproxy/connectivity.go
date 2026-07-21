@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -57,8 +56,7 @@ func Connectivity() {
 		Expect(NewClusterSetup().
 			Install(Yaml(
 				builders.Mesh().
-					WithName(meshName).
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+					WithName(meshName),
 			)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: MeshTrafficPermission
