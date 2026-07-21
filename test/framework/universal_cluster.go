@@ -144,7 +144,6 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
 
 	if Config.IPV6 {
-		env["KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
 		env["KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		env["KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 		env["KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"

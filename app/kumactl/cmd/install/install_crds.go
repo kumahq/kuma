@@ -12,7 +12,6 @@ import (
 
 	install_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/install/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
@@ -23,9 +22,6 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 		Use:   "crds",
 		Short: "Install Kuma Custom Resource Definitions on Kubernetes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			mesh_k8s.RegisterK8sGatewayTypes()
-			mesh_k8s.RegisterK8sGatewayAPITypes()
-
 			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read CRD files")

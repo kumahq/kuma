@@ -63,9 +63,6 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 		case core_mesh.ExternalServiceType:
 			externalService := res.(*core_mesh.ExternalServiceResource)
 			Expect(resourceManager.Create(ctx, externalService, store.CreateBy(core_model.MetaToResourceKey(externalService.GetMeta())))).To(Succeed())
-		case core_mesh.MeshGatewayType:
-			meshGateway := res.(*core_mesh.MeshGatewayResource)
-			Expect(resourceManager.Create(ctx, meshGateway, store.CreateBy(core_model.MetaToResourceKey(meshGateway.GetMeta())))).To(Succeed())
 		}
 	}
 }
@@ -200,14 +197,6 @@ var _ = Describe("Proxy Builder", func() {
 
 			// then
 			Expect(proxy.ZoneIngressProxy.MeshResourceList).To(HaveLen(1))
-			Expect(proxy.ZoneIngressProxy.MeshResourceList[0].EndpointMap).To(HaveKeyWithValue("cross-mesh-gateway", []core_xds.Endpoint{{
-				Target: "192.168.0.3",
-				Port:   8080,
-				Tags: map[string]string{
-					"kuma.io/service": "cross-mesh-gateway",
-				},
-				Weight: 1,
-			}}))
 			Expect(proxy.ZoneIngressProxy.ZoneIngressResource.Spec).To(PointTo(MatchFields(IgnoreExtras, Fields{
 				"Zone": Equal("zone-1"),
 				"Networking": BeComparableTo(&mesh_proto.ZoneIngress_Networking{

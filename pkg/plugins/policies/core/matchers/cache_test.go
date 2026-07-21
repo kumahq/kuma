@@ -12,7 +12,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
@@ -128,26 +127,6 @@ var _ = Describe("PolicyMatchingCache", func() {
 			Expect(first).To(BeComparableTo(uncached))
 
 			// second call: must be a cache hit
-			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(second).To(BeComparableTo(first))
-		})
-
-		It("cached result is identical to uncached result for a gateway dataplane", func() {
-			gwTestDir := filepath.Join("testdata", "matchedpolicies", "meshgateways")
-			dpp := readDPP(filepath.Join(gwTestDir, "01.dataplane.yaml"))
-			resources, _ := readPolicies(filepath.Join(gwTestDir, "01.policies.yaml"))
-			rType := meshaccesslog_api.MeshAccessLogType
-
-			uncached, err := matchers.MatchedPolicies(rType, dpp, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			c := matchers.NewPolicyMatchingCache(newMetric(), 100)
-			const hash = "mesh-hash-stable"
-			first, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(first).To(BeComparableTo(uncached))
-
 			second, err := matchers.MatchedPolicies(rType, dpp, resources, core_plugins.WithCache(c, hash))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(second).To(BeComparableTo(first))

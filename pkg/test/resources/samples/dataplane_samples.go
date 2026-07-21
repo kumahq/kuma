@@ -32,7 +32,7 @@ func GatewayDataplaneBuilder() *builders.DataplaneBuilder {
 	return builders.Dataplane().
 		WithName("sample-gateway").
 		WithAddress("192.168.0.1").
-		WithBuiltInGateway("sample-gateway")
+		WithDelegatedGateway("sample-gateway")
 }
 
 func IgnoredDataplaneBackendBuilder() *builders.DataplaneBuilder {

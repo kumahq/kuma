@@ -12,6 +12,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
+	"github.com/kumahq/kuma/v3/pkg/dns"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -108,69 +109,9 @@ func buildKumaIoServiceDestinations(
 	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
 	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
-	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
-	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
+	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
 	addAvailableServiceDestinations(availableServices, destForMesh)
 	return destForMesh
-}
-
-func addMeshGatewayDestinations(
-	meshGateways []*core_mesh.MeshGatewayResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, meshGateway := range meshGateways {
-		for _, selector := range meshGateway.Selectors() {
-			addMeshGatewayListenersDestinations(
-				meshGateway.Spec,
-				selector.GetMatch(),
-				destinations,
-			)
-		}
-	}
-}
-
-func addMeshGatewayListenersDestinations(
-	meshGateway *mesh_proto.MeshGateway,
-	matchTags map[string]string,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	service := matchTags[mesh_proto.ServiceTag]
-
-	for _, listener := range meshGateway.GetConf().GetListeners() {
-		if !listener.CrossMesh {
-			continue
-		}
-
-		destinations[service] = append(
-			destinations[service],
-			mesh_proto.Merge(
-				meshGateway.GetTags(),
-				matchTags,
-				listener.GetTags(),
-			),
-		)
-	}
-}
-
-func addGatewayRouteDestinations(
-	gatewayRoutes []*core_mesh.MeshGatewayRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	var backends []*mesh_proto.MeshGatewayRoute_Backend
-
-	for _, route := range gatewayRoutes {
-		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-
-		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-	}
-
-	for _, backend := range backends {
-		addDestination(backend.Destination, destinations)
-	}
 }
 
 func addMeshHTTPRouteDestinations(
@@ -290,4 +231,26 @@ func addTrafficFlowByDefaultDestination(
 	}
 
 	destinations[mesh_proto.MatchAllTag] = matchAllDestinations
+}
+
+func addVirtualOutboundDestinations(
+	virtualOutbounds []*core_mesh.VirtualOutboundResource,
+	availableServices []*mesh_proto.ZoneIngress_AvailableService,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	// If there are no VirtualOutbounds, we are not modifying destinations
+	if len(virtualOutbounds) == 0 {
+		return
+	}
+
+	for _, availableService := range availableServices {
+		for _, matched := range dns.Match(virtualOutbounds, availableService.Tags) {
+			service := availableService.Tags[mesh_proto.ServiceTag]
+			tags := envoy_tags.Tags{}
+			for _, param := range matched.Spec.GetConf().GetParameters() {
+				tags[param.TagKey] = availableService.Tags[param.TagKey]
+			}
+			destinations[service] = append(destinations[service], tags)
+		}
+	}
 }

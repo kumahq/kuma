@@ -149,7 +149,7 @@ func gatewayDataplaneWithDivergentZoneTag() *mesh_proto.Dataplane {
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.2",
 			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-				Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+				Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 				Tags: map[string]string{
 					mesh_proto.ZoneTag:    otherZone,
 					mesh_proto.ServiceTag: "gateway-a",
