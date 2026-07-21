@@ -21,10 +21,9 @@ import (
 
 var _ = Describe("TransparentProxyGenerator", func() {
 	type testCase struct {
-		proxy            *model.Proxy
-		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
-		expected         string
-		tlsMode          *mesh_proto.CertificateAuthorityBackend_Mode
+		proxy    *model.Proxy
+		expected string
+		tlsMode  *mesh_proto.CertificateAuthorityBackend_Mode
 	}
 
 	strictInboundPortsProxy := func(inboundPorts []uint32) *model.Proxy {
@@ -81,9 +80,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 							Name: "default",
 						},
 						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServicesMode,
-							},
 							Mtls: mtls,
 							Logging: &mesh_proto.Logging{
 								Backends: []*mesh_proto.LoggingBackend{
@@ -212,32 +208,27 @@ var _ = Describe("TransparentProxyGenerator", func() {
 				APIVersion:        envoy_common.APIV3,
 				InternalAddresses: DummyInternalAddresses,
 			},
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			expected:         "05.envoy.golden.yaml",
+			expected: "05.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
-			expected:         "06.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected: "06.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,permissive", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080, 9000}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
-			expected:         "07.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080, 9000}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
+			expected: "07.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,no tls", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
-			expected:         "08.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
+			expected: "08.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,duplicate_ports", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080, 8080}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
-			expected:         "10.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080, 8080}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected: "10.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,gateway", testCase{
 			proxy: &model.Proxy{
@@ -270,9 +261,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 				Policies:          model.MatchedPolicies{},
 				InternalAddresses: DummyInternalAddresses,
 			},
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
-			expected:         "09.envoy.golden.yaml",
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected: "09.envoy.golden.yaml",
 		}),
 	)
 })

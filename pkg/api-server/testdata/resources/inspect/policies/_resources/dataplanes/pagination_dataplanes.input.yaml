@@ -1,7 +1,5 @@
 #/meshes/default/meshtrafficpermissions/foo/_resources/dataplanes?name=dp-&offset=1&size=1 200
 type: Mesh
-meshServices:
-  mode: Disabled
 name: default
 ---
 type: MeshTrafficPermission

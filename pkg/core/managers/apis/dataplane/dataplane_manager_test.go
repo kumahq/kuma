@@ -235,11 +235,7 @@ var _ = Describe("Dataplane Manager", func() {
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				MeshServices: &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}
 		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -276,11 +272,7 @@ var _ = Describe("Dataplane Manager", func() {
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				MeshServices: &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}
 		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -321,11 +313,7 @@ var _ = Describe("Dataplane Manager", func() {
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				MeshServices: &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Disabled,
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}
 		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -362,11 +350,7 @@ var _ = Describe("Dataplane Manager", func() {
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				MeshServices: &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}
 		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())

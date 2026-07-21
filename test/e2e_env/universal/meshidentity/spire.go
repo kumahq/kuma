@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -54,7 +53,7 @@ func Spire() {
 
 		// Install Kuma with Spire configuration
 		Expect(NewClusterSetup().
-			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).Build())).
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).Build())).
 			Install(DemoClientUniversal("demo-client", meshName,
 				WithTransparentProxy(true),
 				WithWorkload("demo-client"),

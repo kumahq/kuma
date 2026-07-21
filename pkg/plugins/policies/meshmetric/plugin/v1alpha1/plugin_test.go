@@ -298,8 +298,7 @@ var _ = Describe("MeshMetric", func() {
 		}),
 		Entry("otel_and_prometheus", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(
-				samples.MeshDefaultBuilder().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				samples.MeshDefaultBuilder(),
 			).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
@@ -353,8 +352,7 @@ var _ = Describe("MeshMetric", func() {
 		}),
 		Entry("otel_and_prometheus_unified_naming", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(
-				samples.MeshDefaultBuilder().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				samples.MeshDefaultBuilder(),
 			).Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
@@ -614,8 +612,7 @@ var _ = Describe("MeshMetric", func() {
 
 		It("zone-egress-only in unified-naming mode: does not emit dataplane label", func() {
 			ctx := *xds_builders.Context().WithMeshBuilder(
-				samples.MeshDefaultBuilder().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				samples.MeshDefaultBuilder(),
 			).Build()
 			proxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).

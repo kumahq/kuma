@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -116,7 +115,6 @@ spec:
 				Yaml(
 					builders.Mesh().
 						WithName(meshName).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
 						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
 						WithEgressRoutingEnabled().
 						WithoutPassthrough(),

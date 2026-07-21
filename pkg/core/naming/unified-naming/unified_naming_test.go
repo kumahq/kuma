@@ -11,11 +11,9 @@ import (
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 )
 
-func meshWithMode(mode mesh_proto.Mesh_MeshServices_Mode) *core_mesh.MeshResource {
+func meshResource() *core_mesh.MeshResource {
 	return &core_mesh.MeshResource{
-		Spec: &mesh_proto.Mesh{
-			MeshServices: &mesh_proto.Mesh_MeshServices{Mode: mode},
-		},
+		Spec: &mesh_proto.Mesh{},
 	}
 }
 
@@ -33,43 +31,23 @@ var _ = Describe("Enabled", func() {
 	}
 
 	DescribeTable(
-		"should require both the feature and an Exclusive mesh",
+		"should require the feature",
 		func(given testCase) {
 			Expect(unified_naming.Enabled(given.meta, given.mesh)).To(Equal(given.expected))
 		},
-		Entry("feature and Exclusive mode", testCase{
+		Entry("feature present", testCase{
 			meta:     metaWithFeature(),
-			mesh:     meshWithMode(mesh_proto.Mesh_MeshServices_Exclusive),
+			mesh:     meshResource(),
 			expected: true,
 		}),
-		Entry("feature and nil MeshServices block, which defaults to Exclusive", testCase{
-			meta:     metaWithFeature(),
-			mesh:     &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{}},
-			expected: true,
-		}),
-		Entry("feature but explicitly Disabled mode", testCase{
-			meta:     metaWithFeature(),
-			mesh:     meshWithMode(mesh_proto.Mesh_MeshServices_Disabled),
-			expected: false,
-		}),
-		Entry("feature but explicitly Everywhere mode", testCase{
-			meta:     metaWithFeature(),
-			mesh:     meshWithMode(mesh_proto.Mesh_MeshServices_Everywhere),
-			expected: false,
-		}),
-		Entry("feature but explicitly ReachableBackends mode", testCase{
-			meta:     metaWithFeature(),
-			mesh:     meshWithMode(mesh_proto.Mesh_MeshServices_ReachableBackends),
-			expected: false,
-		}),
-		Entry("Exclusive mode but no feature", testCase{
+		Entry("feature absent", testCase{
 			meta:     &core_xds.DataplaneMetadata{},
-			mesh:     meshWithMode(mesh_proto.Mesh_MeshServices_Exclusive),
+			mesh:     meshResource(),
 			expected: false,
 		}),
 		Entry("nil metadata", testCase{
 			meta:     nil,
-			mesh:     meshWithMode(mesh_proto.Mesh_MeshServices_Exclusive),
+			mesh:     meshResource(),
 			expected: false,
 		}),
 		Entry("nil mesh", testCase{

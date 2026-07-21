@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -26,8 +25,7 @@ func MeshCircuitBreaker() {
 			Install(
 				Yaml(
 					builders.Mesh().
-						WithName(mesh).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere),
+						WithName(mesh),
 				),
 			).
 			Install(NamespaceWithSidecarInjection(namespace)).

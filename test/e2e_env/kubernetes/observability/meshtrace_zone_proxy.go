@@ -137,7 +137,7 @@ func ZoneProxyPluginTest() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(Namespace(extNs)).
-			Install(MeshWithMeshServicesKubernetes(mesh, "Exclusive")).
+			Install(MeshKubernetes(mesh)).
 			Install(YamlK8s(meshTraceZoneProxyMTP(mesh))).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),

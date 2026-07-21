@@ -29,18 +29,17 @@ import (
 	samples2 "github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 )
 
-// legacyMesh returns a Mesh with meshServices.mode explicitly Disabled. The
-// resyncer no longer branches on this value at all -- kuma.io/service based
-// ServiceInsight/MeshInsight stats are gone regardless of mode -- so this is
-// kept only to prove the mode has no effect on the resyncer's behavior.
 func legacyMesh() *core_mesh.MeshResource {
-	mesh := core_mesh.NewMeshResource()
-	mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Disabled}
-	return mesh
+	return core_mesh.NewMeshResource()
 }
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
+	// rawStore bypasses manager-level validation. It exists to seed dataplanes
+	// that predate an upgrade (e.g. a BUILTIN gateway created before the CP
+	// started rejecting them at admission) so resyncer read-path compat with
+	// already-persisted legacy data keeps being exercised.
+	var rawStore store.ResourceStore
 	var metric metrics.Metrics
 	minInterval := time.Second
 	stepsToResync := 4
@@ -60,7 +59,8 @@ var _ = Describe("Insight Persistence", func() {
 				tickCh <- time.UnixMilli(atomic.LoadInt64(now))
 			}
 		}
-		rm = manager.NewResourceManager(memory.NewStore())
+		rawStore = memory.NewStore()
+		rm = manager.NewResourceManager(rawStore)
 
 		stopCh = make(chan struct{})
 		eventCh = make(chan events.Event)
@@ -471,9 +471,8 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should only compute delegated gateways", func() {
-		// given a mesh (meshServices.mode no longer affects the resyncer at all)
+		// given a mesh
 		mesh := core_mesh.NewMeshResource()
-		mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Exclusive}
 		err := rm.Create(context.Background(), mesh, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -520,7 +519,10 @@ var _ = Describe("Insight Persistence", func() {
 				},
 			},
 		}
-		err = rm.Create(context.Background(), builtinGw, store.CreateByKey("dp3", "mesh-1"))
+		// BUILTIN gateways are rejected by DataplaneResource.Validate() on
+		// creation, so seed this one directly through the store to simulate
+		// data that was already persisted before the upgrade.
+		err = rawStore.Create(context.Background(), builtinGw, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		externalService := core_mesh.NewExternalServiceResource()
