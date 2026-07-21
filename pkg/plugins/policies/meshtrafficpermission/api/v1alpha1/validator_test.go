@@ -34,10 +34,24 @@ from:
     default:
       action: Allow
   - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+        env: dev
+    default:
+      action: Deny
+  - targetRef:
       kind: MeshService
       name: backend
     default:
       action: Allow
+  - targetRef:
+      kind: MeshServiceSubset
+      name: backend
+      tags:
+        version: v1
+    default:
+      action: Deny
 `),
 			Entry("full rules example", `
 targetRef:
@@ -210,34 +224,6 @@ from:
 violations:
   - field: spec.from[0].targetRef.kind
     message: value 'MeshGatewayRoute' is not supported
-`,
-			}),
-			Entry("not supported subset kinds in 'from' array", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: MeshSubset
-      tags:
-        kuma.io/zone: us-east
-        env: dev
-    default:
-      action: Deny
-  - targetRef:
-      kind: MeshServiceSubset
-      name: backend
-      tags:
-        version: v1
-    default:
-      action: Deny
-`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshSubset' is not supported
-  - field: spec.from[1].targetRef.kind
-    message: value 'MeshServiceSubset' is not supported
 `,
 			}),
 			Entry("default is nil", testCase{
