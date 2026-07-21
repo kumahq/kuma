@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -69,6 +70,7 @@ var _ = Describe("MeshTimeout", func() {
 		resources         []core_xds.Resource
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
+		unifiedNaming     bool
 		expectedListeners []string
 		expectedClusters  []string
 	}
@@ -80,13 +82,17 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
+		meshBuilder := samples.MeshDefaultBuilder()
+		if given.unifiedNaming {
+			meshBuilder = meshBuilder.WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive)
+		}
 		context := *xds_builders.Context().
-			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithMeshBuilder(meshBuilder).
 			WithResources(xds_context.NewResources()).
 			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
 			AddServiceProtocol("second-service", core_meta.ProtocolTCP).
 			Build()
-		proxy := xds_builders.Proxy().
+		proxyBuilder := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").
 				WithMesh("default").
@@ -117,8 +123,13 @@ var _ = Describe("MeshTimeout", func() {
 			).
 			WithPolicies(
 				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
-			).
-			Build()
+			)
+		if given.unifiedNaming {
+			proxyBuilder = proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
+				Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+			})
+		}
+		proxy := proxyBuilder.Build()
 
 		// when
 		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
@@ -266,6 +277,62 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
+			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
+		}),
+		Entry("basic inbound route (unified naming)", sidecarTestCase{
+			unifiedNaming: true,
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   metadata.OriginInbound,
+					Resource: httpInboundListenerWith(),
+				},
+				{
+					Name:     "inbound",
+					Origin:   metadata.OriginInbound,
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(8080))),
+				},
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: []*core_rules.Rule{
+						{
+							Subset: subsetutils.Subset{},
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
+							},
+						},
+					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: {{
+						Conf: &api.Rule{Default: api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("5s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+							},
+						}},
+					}},
+				},
+			},
+			expectedClusters:  []string{"basic_inbound_cluster_unified_naming.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
 		Entry("basic inbound route without defaults", sidecarTestCase{
