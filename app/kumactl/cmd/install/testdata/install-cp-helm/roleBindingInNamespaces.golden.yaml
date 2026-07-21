@@ -117,7 +117,6 @@ rules:
       - circuitbreakers
       - virtualoutbounds
       - containerpatches
-      - externalservices
       - faultinjections
       - healthchecks
       - trafficlogs
@@ -462,7 +461,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 62e76eb2c6e9f292b603332e670ae815cdae44a49ab63c381f17fa19c0bc9c4b
+        checksum/tls-secrets: 337a6e3293f938ab9d14bb2730286f0bf6ff81c26cc9799063e1889d606ed233
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -758,7 +757,6 @@ webhooks:
           - CREATE
         resources:
           - circuitbreakers
-          - externalservices
           - faultinjections
           - healthchecks
           - proxytemplates
@@ -951,7 +949,6 @@ webhooks:
         resources:
           - circuitbreakers
           - dataplanes
-          - externalservices
           - faultinjections
           - healthchecks
           - meshes

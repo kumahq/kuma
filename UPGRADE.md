@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Legacy `ExternalService` resource removed
+
+The legacy `ExternalService` resource has been removed. Its CRD, API
+definition, and validating webhook no longer exist, and the control plane
+RBAC and admission webhooks no longer reference `externalservices`.
+
+**Action required**
+
+Migrate any remaining `ExternalService` resources to `MeshExternalService`
+before upgrading. Applying an `ExternalService` after the upgrade will fail
+because the CRD is gone.
+
 ### `meshServices` removed from the `Mesh` schema
 
 The `meshServices` field (and its `mode` enum) has been removed from the
