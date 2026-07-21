@@ -13,6 +13,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -52,6 +53,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		toRules         core_rules.ToRules
 		fromRules       core_rules.FromRules
 		withoutPolicy   bool
+		unifiedNaming   bool
 		expectedCluster []string
 	}
 
@@ -137,6 +139,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						},
 					}},
 				})
+			if given.unifiedNaming {
+				proxy = proxy.WithMetadata(&core_xds.DataplaneMetadata{
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+				})
+			}
 			if !given.withoutPolicy {
 				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
@@ -315,6 +322,34 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_connection_limits.golden.yaml"},
+		}),
+		Entry("basic inbound cluster with connection limits (unified naming)", sidecarTestCase{
+			unifiedNaming: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   metadata.OriginInbound,
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
+				},
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
+						{
+							Subset: subsetutils.Subset{},
+							Conf: api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+							},
+						},
+					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: api.Conf{ConnectionLimits: genConnectionLimits()},
+					}},
+				},
+			},
+			expectedCluster: []string{"inbound_cluster_connection_limits_unified_naming.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
