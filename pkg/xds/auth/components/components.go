@@ -43,7 +43,7 @@ func NewUniversalAuthenticator(deps Deps) (auth.Authenticator, error) {
 		return nil, err
 	}
 
-	return universal_auth.NewAuthenticator(dataplaneValidator, zoneTokenValidator, config.Multizone.Zone.Name), nil
+	return universal_auth.NewAuthenticator(dataplaneValidator, zoneTokenValidator, deps.ReadOnlyResourceManager, config.Environment, config.Multizone.Zone.Name), nil
 }
 
 func DefaultAuthenticator(deps Deps, typ string) (auth.Authenticator, error) {
