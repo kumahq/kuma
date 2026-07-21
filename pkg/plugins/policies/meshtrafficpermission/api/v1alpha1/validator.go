@@ -68,6 +68,8 @@ func validateFrom(from []From) validators.ValidationError {
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
+				common_api.MeshSubset,
+				common_api.MeshServiceSubset,
 			},
 		}))
 
