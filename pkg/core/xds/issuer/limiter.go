@@ -71,9 +71,6 @@ type Limiter struct {
 
 	sync.Mutex
 	backends map[kri.Identifier]*backendState
-
-	backingOffMetric  prometheus.Gauge
-	circuitOpenMetric prometheus.Gauge
 }
 
 type backendState struct {
@@ -90,32 +87,42 @@ type proxyState struct {
 }
 
 func NewLimiter(cfg Config, m metrics.Metrics) (*Limiter, error) {
-	backingOff := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "cert_generation_backoff",
-		Help: "Number of proxies currently backing off certificate generation after a failure",
-	})
-	if err := m.Register(backingOff); err != nil {
-		return nil, err
-	}
-	circuitOpen := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "cert_generation_circuit_open",
-		Help: "Number of backends whose certificate issuance circuit breaker is currently open",
-	})
-	if err := m.Register(circuitOpen); err != nil {
-		return nil, err
-	}
 	if cfg.Cooldown <= 0 {
 		cfg.Cooldown = defaultCooldown
 	}
 	if cfg.Window < cfg.Cooldown {
 		cfg.Window = cfg.Cooldown
 	}
-	return &Limiter{
-		cfg:               cfg,
-		backends:          map[kri.Identifier]*backendState{},
-		backingOffMetric:  backingOff,
-		circuitOpenMetric: circuitOpen,
-	}, nil
+	if cfg.NewBackoff == nil {
+		// Defensive: a nil factory would panic on the first failure. Limiter and
+		// Config are public types, so don't assume the caller set it.
+		cfg.NewBackoff = CertBackoff(time.Second, cfg.Cooldown)
+	}
+
+	l := &Limiter{
+		cfg:      cfg,
+		backends: map[kri.Identifier]*backendState{},
+	}
+
+	// GaugeFuncs so the values are computed at scrape time and can't get stuck
+	// reporting a stale count once a backoff/cooldown has elapsed with no
+	// further events.
+	backingOff := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "cert_generation_backoff",
+		Help: "Number of proxies currently backing off certificate generation after a failure",
+	}, l.backingOffProxies)
+	if err := m.Register(backingOff); err != nil {
+		return nil, err
+	}
+	circuitOpen := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "cert_generation_circuit_open",
+		Help: "Number of backends whose certificate issuance circuit breaker is currently open",
+	}, l.openCircuits)
+	if err := m.Register(circuitOpen); err != nil {
+		return nil, err
+	}
+
+	return l, nil
 }
 
 // Allow reports whether issuance for proxy against backend may proceed now. If
@@ -173,7 +180,6 @@ func (l *Limiter) Record(backend kri.Identifier, proxy model.ResourceKey, succes
 		if len(b.proxies) == 0 {
 			delete(l.backends, backend)
 		}
-		l.updateMetricsLocked()
 		return
 	}
 
@@ -189,7 +195,6 @@ func (l *Limiter) Record(backend kri.Identifier, proxy model.ResourceKey, succes
 	if b.probing { // half-open probe failed - reopen
 		b.probing = false
 		b.openUntil = now.Add(l.cfg.Cooldown)
-		l.updateMetricsLocked()
 		return
 	}
 
@@ -207,7 +212,6 @@ func (l *Limiter) Record(backend kri.Identifier, proxy model.ResourceKey, succes
 	if l.cfg.MinProxies > 0 && distinct >= l.cfg.MinProxies {
 		b.openUntil = now.Add(l.cfg.Cooldown)
 	}
-	l.updateMetricsLocked()
 }
 
 // Forget drops all per-proxy backoff state for a proxy across every backend,
@@ -225,23 +229,36 @@ func (l *Limiter) Forget(proxy model.ResourceKey) {
 			delete(l.backends, backend)
 		}
 	}
-	l.updateMetricsLocked()
 }
 
-func (l *Limiter) updateMetricsLocked() {
+// backingOffProxies is the metric value for cert_generation_backoff, computed
+// at scrape time so it reflects the current instant.
+func (l *Limiter) backingOffProxies() float64 {
+	l.Lock()
+	defer l.Unlock()
 	now := core.Now()
-	backingOff := 0
-	open := 0
+	n := 0
 	for _, b := range l.backends {
-		if b.openUntil.After(now) {
-			open++
-		}
 		for _, p := range b.proxies {
 			if p.nextTry.After(now) {
-				backingOff++
+				n++
 			}
 		}
 	}
-	l.backingOffMetric.Set(float64(backingOff))
-	l.circuitOpenMetric.Set(float64(open))
+	return float64(n)
+}
+
+// openCircuits is the metric value for cert_generation_circuit_open, computed
+// at scrape time.
+func (l *Limiter) openCircuits() float64 {
+	l.Lock()
+	defer l.Unlock()
+	now := core.Now()
+	n := 0
+	for _, b := range l.backends {
+		if b.openUntil.After(now) {
+			n++
+		}
+	}
+	return float64(n)
 }

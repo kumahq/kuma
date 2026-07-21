@@ -223,7 +223,7 @@ func (s *secrets) get(
 		// backoff would never elapse. Returning the error keeps the hash stale
 		// so ticks keep re-checking (cheaply, without hitting the CA).
 		if ok, retryAfter := s.limiter.Allow(backend, source); !ok {
-			return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for backend %q after a previous failure (retry after %s)", backend.SectionName, retryAfter)
+			return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for mesh %q backend %q after a previous failure (retry after %s)", meshName, backend.SectionName, retryAfter)
 		}
 
 		log.Info(
