@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -164,8 +163,7 @@ spec:
 			err := NewClusterSetup().
 				Install(Yaml(
 					samples.MeshDefaultBuilder().
-						WithName(meshName).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+						WithName(meshName),
 				)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(YamlUniversal(disablePanic(meshName))).

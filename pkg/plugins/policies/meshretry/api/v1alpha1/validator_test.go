@@ -520,9 +520,7 @@ to:
 				expected: `
 violations:
   - field: spec.targetRef.kind
-    message: value 'MeshHTTPRoute' is not supported
-  - field: spec.to[0].targetRef.kind
-    message: value 'MeshService' is not supported`,
+    message: value 'MeshHTTPRoute' is not supported`,
 			}),
 			Entry("top-level targetRef MeshHTTPRoute with valid to", testCase{
 				inputYaml: `

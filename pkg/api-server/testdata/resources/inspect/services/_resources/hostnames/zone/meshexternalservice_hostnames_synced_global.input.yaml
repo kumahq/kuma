@@ -1,7 +1,5 @@
 #/meshes/default/meshexternalservices/mes-1/_hostnames 200
 type: Mesh
-meshServices:
-  mode: Disabled
 name: default
 ---
 type: MeshExternalService

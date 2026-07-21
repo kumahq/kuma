@@ -29,14 +29,8 @@ import (
 	samples2 "github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 )
 
-// legacyMesh returns a Mesh with meshServices.mode explicitly Disabled. The
-// resyncer no longer branches on this value at all -- kuma.io/service based
-// ServiceInsight/MeshInsight stats are gone regardless of mode -- so this is
-// kept only to prove the mode has no effect on the resyncer's behavior.
 func legacyMesh() *core_mesh.MeshResource {
-	mesh := core_mesh.NewMeshResource()
-	mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Disabled}
-	return mesh
+	return core_mesh.NewMeshResource()
 }
 
 var _ = Describe("Insight Persistence", func() {
@@ -471,9 +465,8 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should only compute delegated gateways", func() {
-		// given a mesh (meshServices.mode no longer affects the resyncer at all)
+		// given a mesh
 		mesh := core_mesh.NewMeshResource()
-		mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Exclusive}
 		err := rm.Create(context.Background(), mesh, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 

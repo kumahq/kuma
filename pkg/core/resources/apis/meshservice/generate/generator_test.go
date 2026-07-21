@@ -98,7 +98,7 @@ var _ = Describe("MeshService generator", func() {
 		}()
 
 		Expect(
-			samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+			samples.MeshDefaultBuilder().Create(resManager),
 		).To(Succeed())
 	})
 
@@ -504,7 +504,7 @@ var _ = Describe("MeshService generator", func() {
 				Expect(allocator.Start(innerCh)).To(Succeed())
 			}()
 			Expect(
-				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+				samples.MeshDefaultBuilder().Create(resManager),
 			).To(Succeed())
 		})
 
@@ -639,7 +639,7 @@ var _ = Describe("MeshService generator", func() {
 				Expect(allocator.Start(innerCh)).To(Succeed())
 			}()
 			Expect(
-				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+				samples.MeshDefaultBuilder().Create(resManager),
 			).To(Succeed())
 		})
 
@@ -710,7 +710,7 @@ var _ = Describe("MeshService generator", func() {
 				Expect(allocator.Start(innerCh)).To(Succeed())
 			}()
 			Expect(
-				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+				samples.MeshDefaultBuilder().Create(resManager),
 			).To(Succeed())
 		})
 
@@ -1027,7 +1027,7 @@ var _ = Describe("MeshService generator", func() {
 					Expect(allocator.Start(innerCh)).To(Succeed())
 				}()
 				Expect(
-					samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+					samples.MeshDefaultBuilder().Create(resManager),
 				).To(Succeed())
 			})
 
