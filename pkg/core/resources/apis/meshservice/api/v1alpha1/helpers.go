@@ -1,9 +1,7 @@
 package v1alpha1
 
 import (
-	"encoding/json"
 	"fmt"
-	"hash"
 	"hash/fnv"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -11,7 +9,6 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/vip"
-	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -55,8 +52,8 @@ func (t *MeshServiceResource) Hash() []byte {
 // regeneration. It intentionally excludes meta.GetVersion() so that status
 // writes irrelevant to xDS - most notably the DataplaneProxies counters
 // refreshed by the status updater's 5s ticker - don't force mesh-wide xDS
-// recomputation. Addresses, VIPs, TLS and HostnameGenerators are still hashed
-// because outbound and cluster generation read them directly from Status.
+// recomputation. All other status fields are hashed so newly added xDS-relevant
+// status fields are picked up by default.
 func (t *MeshServiceResource) XDSHash() []byte {
 	return t.hash(false)
 }
@@ -76,34 +73,13 @@ func (t *MeshServiceResource) hash(includeVersion bool) []byte {
 		status = &MeshServiceStatus{}
 	}
 	core_model.WriteSortedLabels(hasher, t.GetMeta().GetLabels())
-	writeJSON(hasher, spec)
-	writeJSON(hasher, struct {
-		Addresses          []hostnamegenerator_api.Address
-		VIPs               []VIP
-		TLS                TLS
-		HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus
-	}{
-		Addresses:          status.Addresses,
-		VIPs:               status.VIPs,
-		TLS:                status.TLS,
-		HostnameGenerators: status.HostnameGenerators,
-	})
-	return hasher.Sum(nil)
-}
-
-// writeJSON writes a deterministic JSON encoding of v into hasher.
-// encoding/json sorts map keys, so this is stable regardless of map
-// iteration order.
-func writeJSON(hasher hash.Hash, v any) {
-	b, err := json.Marshal(v)
-	if err == nil {
-		_, _ = hasher.Write(b)
-	} else {
-		// Marshaling should never fail for these plain data structs, but fall
-		// back to a value that still changes with content instead of
-		// silently treating every MeshService as identical.
-		_, _ = fmt.Fprintf(hasher, "%+v", v)
+	core_model.WriteDeterministicJSON(hasher, spec)
+	statusForHash := *status
+	if !includeVersion {
+		statusForHash.DataplaneProxies = DataplaneProxies{}
 	}
+	core_model.WriteDeterministicJSON(hasher, statusForHash)
+	return hasher.Sum(nil)
 }
 
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}

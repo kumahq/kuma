@@ -6,6 +6,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
@@ -138,5 +139,15 @@ var _ = Describe("MeshServiceResource.XDSHash()", func() {
 		changed.Meta.(*test_model.ResourceMeta).Version = "2"
 
 		Expect(changed.XDSHash()).To(Equal(originalHash))
+	})
+
+	It("changes when an xDS-relevant status field changes", func() {
+		original := newMeshService()
+		originalHash := original.XDSHash()
+
+		changed := newMeshService()
+		changed.Status.Addresses = append(changed.Status.Addresses, hostnamegenerator_api.Address{Hostname: "backend.shadow.mesh"})
+
+		Expect(changed.XDSHash()).NotTo(Equal(originalHash))
 	})
 })
