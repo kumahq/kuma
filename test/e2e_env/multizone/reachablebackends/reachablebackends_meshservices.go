@@ -29,8 +29,6 @@ func MeshServicesWithReachableBackendsOption() {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: "%s"
-meshServices:
-  mode: Exclusive
 mtls:
   enabledBackend: ca-1
   backends:

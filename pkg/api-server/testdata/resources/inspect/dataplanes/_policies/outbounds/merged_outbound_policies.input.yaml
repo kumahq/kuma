@@ -1,8 +1,6 @@
 #/meshes/default/dataplanes/dp-1/_outbounds/kri_msvc_default_test-zone__test-server-1_main-port/_policies 200
 type: Mesh
 name: default
-meshServices:
-  mode: Exclusive
 ---
 type: Dataplane
 name: dp-1

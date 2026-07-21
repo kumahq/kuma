@@ -25,13 +25,12 @@ var _ = Describe("AdminProxyGenerator", func() {
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile    string
-		expected         string
-		adminAddress     string
-		adminSocketPath  string
-		readinessPort    uint32
-		features         xds_types.Features
-		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
+		dataplaneFile   string
+		expected        string
+		adminAddress    string
+		adminSocketPath string
+		readinessPort   uint32
+		features        xds_types.Features
 	}
 
 	DescribeTable("should generate envoy config",
@@ -50,11 +49,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServicesMode,
-							},
-						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 			}
@@ -131,11 +126,10 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 9400,
 		}),
 		Entry("should generate admin resources, unified naming, readiness with TCP port 9902", testCase{
-			dataplaneFile:    "07.dataplane.input.yaml",
-			expected:         "07.envoy-config.golden.yaml",
-			adminAddress:     "",
-			readinessPort:    9902,
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile: "07.dataplane.input.yaml",
+			expected:      "07.envoy-config.golden.yaml",
+			adminAddress:  "",
+			readinessPort: 9902,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
@@ -150,12 +144,11 @@ var _ = Describe("AdminProxyGenerator", func() {
 			},
 		}),
 		Entry("should generate admin resources, admin with Unix socket", testCase{
-			dataplaneFile:    "09.dataplane.input.yaml",
-			expected:         "09.envoy-config.golden.yaml",
-			adminAddress:     "127.0.0.1",
-			adminSocketPath:  "/tmp/kuma-dp/kuma-envoy-admin.sock",
-			readinessPort:    9902,
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile:   "09.dataplane.input.yaml",
+			expected:        "09.envoy-config.golden.yaml",
+			adminAddress:    "127.0.0.1",
+			adminSocketPath: "/tmp/kuma-dp/kuma-envoy-admin.sock",
+			readinessPort:   9902,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
