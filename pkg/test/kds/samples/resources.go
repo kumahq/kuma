@@ -331,38 +331,6 @@ var (
 			},
 		},
 	}
-	Gateway = &mesh_proto.MeshGateway{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "gateway",
-			},
-		}},
-		Tags: map[string]string{
-			"gateway-name": "philip",
-		},
-		Conf: &mesh_proto.MeshGateway_Conf{
-			Listeners: []*mesh_proto.MeshGateway_Listener{{
-				Hostname: "philip.example.com",
-				Port:     8080,
-				Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-				Tags: map[string]string{
-					"port": "8080",
-				},
-			}},
-		},
-	}
-	GatewayRoute = &mesh_proto.MeshGatewayRoute{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "gateway",
-			},
-		}},
-		Conf: &mesh_proto.MeshGatewayRoute_Conf{
-			Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-				Http: &mesh_proto.MeshGatewayRoute_HttpRoute{},
-			},
-		},
-	}
 	VirtualOutbound = &mesh_proto.VirtualOutbound{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{

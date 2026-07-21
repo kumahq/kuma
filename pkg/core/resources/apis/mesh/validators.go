@@ -424,15 +424,12 @@ func ValidateTargetRef(
 		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
 		}
-	case common_api.MeshServiceSubset, common_api.MeshGateway:
+	case common_api.MeshServiceSubset:
 		err.Add(requiredField("name", pointer.Deref(ref.Name), ref.Kind))
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		err.Add(ValidateSelector(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
-		if ref.Kind == common_api.MeshGateway && len(pointer.Deref(ref.Tags)) > 0 && !opts.GatewayListenerTagsAllowed {
-			err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		}
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))

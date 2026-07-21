@@ -283,13 +283,12 @@ jobs:
       IS_RELEASE_TAG: ${{ github.ref_type == 'tag' }}
       # Per-arch lookup (each side independent):
       #   1. fork PR                    -> free GitHub-hosted runners (security)
-      #   2. master branch              -> free GitHub-hosted runners
-      #   3. vars.RUNS_ON_MASTER_<ARCH> -> per-branch + per-arch override
-      #   4. vars.RUNS_ON_<ARCH>        -> global per-arch override
-      #   5. default                    -> the standard self-hosted Kong pool
+      #   2. vars.RUNS_ON_MASTER_<ARCH> -> per-branch + per-arch override
+      #   3. vars.RUNS_ON_<ARCH>        -> global per-arch override
+      #   4. default                    -> the standard self-hosted Kong pool
       # Branch slug is hardcoded because GitHub var names can't contain '-' or '.',
       # and inline expressions can't sanitize `github.ref_name`.
-      RUNNERS_BY_ARCH: ${{ ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) || github.ref_name == 'master') && '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}' || format('{{"amd64":"{0}","arm64":"{1}"}}', vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-latest-kong', vars.RUNS_ON_MASTER_ARM64 || vars.RUNS_ON_ARM64 || 'ubuntu-latest-arm64-kong') }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && '{"amd64":"ubuntu-24.04","arm64":"ubuntu-24.04-arm"}' || format('{{"amd64":"{0}","arm64":"{1}"}}', vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-latest-kong', vars.RUNS_ON_MASTER_ARM64 || vars.RUNS_ON_ARM64 || 'ubuntu-latest-arm64-kong') }}
     secrets: inherit
   build_publish:
     permissions:

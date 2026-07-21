@@ -335,9 +335,6 @@ func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.Reso
 			if res.Policy != nil && res.Policy.IsTargetRef { // do not include new policies
 				continue
 			}
-			if res.Name == string(core_mesh.MeshGatewayType) { // do not include MeshGateways
-				continue
-			}
 		case profileFederationWithPolicies:
 			if !res.IncludeInFederation {
 				continue

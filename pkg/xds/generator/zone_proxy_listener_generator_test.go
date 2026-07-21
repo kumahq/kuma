@@ -123,7 +123,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
 						legacySvcName: []core_xds.Endpoint{
 							{
@@ -178,7 +178,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Disabled).Build(),
+					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
 						legacySvcName: []core_xds.Endpoint{
 							{
@@ -242,7 +242,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
 						svcName: []core_xds.Endpoint{
 							{
@@ -303,7 +303,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
 						legacyMZSSvcName: []core_xds.Endpoint{
 							{
@@ -352,7 +352,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource:                       builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					Resource:                       builders.Mesh().WithName("default").Build(),
 					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{},
 					Resources: xds_context.Resources{
 						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
@@ -395,7 +395,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{
 						unifiedSvcName: core_xds.EgressEndpointGroup{
 							Protocol:      core_meta.ProtocolHTTP,
@@ -459,7 +459,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{
 						unifiedSvcName: core_xds.EgressEndpointGroup{
 							Protocol:      core_meta.ProtocolTCP,
@@ -522,7 +522,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
+					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{
 						unifiedSvcName: core_xds.EgressEndpointGroup{
 							Protocol:      core_meta.ProtocolHTTP,

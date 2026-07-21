@@ -214,7 +214,6 @@ components:
                                   direct-access - resources generated for Direct Access functionality.
                                   ingress - resources generated for Zone Ingress.
                                   egress - resources generated for Zone Egress.
-                                  gateway - resources generated for MeshGateway.
 
                                   The list is not complete, because policy plugins can introduce new resources.
                                   For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -294,7 +293,6 @@ components:
                                   direct-access - resources generated for Direct Access functionality.
                                   ingress - resources generated for Zone Ingress.
                                   egress - resources generated for Zone Egress.
-                                  gateway - resources generated for MeshGateway.
 
                                   The list is not complete, because policy plugins can introduce new resources.
                                   For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -367,7 +365,6 @@ components:
                                   direct-access - resources generated for Direct Access functionality.
                                   ingress - resources generated for Zone Ingress.
                                   egress - resources generated for Zone Egress.
-                                  gateway - resources generated for MeshGateway.
 
                                   The list is not complete, because policy plugins can introduce new resources.
                                   For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -450,7 +447,6 @@ components:
                                   direct-access - resources generated for Direct Access functionality.
                                   ingress - resources generated for Zone Ingress.
                                   egress - resources generated for Zone Egress.
-                                  gateway - resources generated for MeshGateway.
 
                                   The list is not complete, because policy plugins can introduce new resources.
                                   For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -525,7 +521,6 @@ components:
                                   direct-access - resources generated for Direct Access functionality.
                                   ingress - resources generated for Zone Ingress.
                                   egress - resources generated for Zone Egress.
-                                  gateway - resources generated for MeshGateway.
 
                                   The list is not complete, because policy plugins can introduce new resources.
                                   For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -562,7 +557,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -582,8 +576,8 @@ components:
                   type: string
                 name:
                   description: |-
-                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    Name of the referenced resource. Can only be used with kinds: `MeshService`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: |-

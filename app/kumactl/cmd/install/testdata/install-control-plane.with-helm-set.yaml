@@ -768,7 +768,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -789,8 +788,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -968,7 +967,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -989,8 +987,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -1117,7 +1115,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -1138,8 +1135,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -1180,691 +1177,6 @@ spec:
     served: true
     storage: true
     subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: meshgatewayconfigs.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshGatewayConfig
-    listKind: MeshGatewayConfigList
-    plural: meshgatewayconfigs
-    singular: meshgatewayconfig
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: |-
-          MeshGatewayConfig holds the configuration of a MeshGateway. A
-          GatewayClass can refer to a MeshGatewayConfig via parametersRef.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: MeshGatewayConfigSpec specifies the options available for
-              a Kuma MeshGateway.
-            properties:
-              crossMesh:
-                description: |-
-                  CrossMesh specifies whether listeners configured by this gateway are
-                  cross mesh listeners.
-                type: boolean
-              podTemplate:
-                description: PodTemplate configures the Pod owned by this config.
-                properties:
-                  metadata:
-                    description: Metadata holds metadata configuration for a Service.
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        description: Annotations holds annotations to be set on an
-                          object.
-                        type: object
-                      labels:
-                        additionalProperties:
-                          type: string
-                        description: Labels holds labels to be set on an objects.
-                        type: object
-                    type: object
-                  spec:
-                    description: Spec holds some customizable fields of a Pod.
-                    properties:
-                      container:
-                        description: Container corresponds to PodSpec.Container
-                        properties:
-                          securityContext:
-                            description: ContainerSecurityContext corresponds to PodSpec.Container.SecurityContext
-                            properties:
-                              readOnlyRootFilesystem:
-                                description: ReadOnlyRootFilesystem corresponds to
-                                  PodSpec.Container.SecurityContext.ReadOnlyRootFilesystem
-                                type: boolean
-                            type: object
-                        type: object
-                      securityContext:
-                        description: PodSecurityContext corresponds to PodSpec.SecurityContext
-                        properties:
-                          fsGroup:
-                            description: FSGroup corresponds to PodSpec.SecurityContext.FSGroup
-                            format: int64
-                            type: integer
-                        type: object
-                      serviceAccountName:
-                        description: ServiceAccountName corresponds to PodSpec.ServiceAccountName.
-                        type: string
-                    type: object
-                type: object
-              replicas:
-                default: 1
-                description: |-
-                  Replicas is the number of dataplane proxy replicas to create. For
-                  now this is a fixed number, but in the future it could be
-                  automatically scaled based on metrics.
-                format: int32
-                minimum: 1
-                type: integer
-              resources:
-                description: |-
-                  Resources specifies the compute resources for the proxy container.
-                  The default can be set in the control plane config.
-                properties:
-                  claims:
-                    description: |-
-                      Claims lists the names of resources, defined in spec.resourceClaims,
-                      that are used by this container.
-
-                      This field depends on the
-                      DynamicResourceAllocation feature gate.
-
-                      This field is immutable. It can only be set for containers.
-                    items:
-                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
-                      properties:
-                        name:
-                          description: |-
-                            Name must match the name of one entry in pod.spec.resourceClaims of
-                            the Pod where this field is used. It makes that resource available
-                            inside a container.
-                          type: string
-                        request:
-                          description: |-
-                            Request is the name chosen for a request in the referenced claim.
-                            If empty, everything from the claim is made available, otherwise
-                            only the result of this request.
-                          type: string
-                      required:
-                      - name
-                      type: object
-                    type: array
-                    x-kubernetes-list-map-keys:
-                    - name
-                    x-kubernetes-list-type: map
-                  limits:
-                    additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    description: |-
-                      Limits describes the maximum amount of compute resources allowed.
-                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                    type: object
-                  requests:
-                    additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    description: |-
-                      Requests describes the minimum amount of compute resources required.
-                      If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-                      otherwise to an implementation-defined value. Requests cannot exceed Limits.
-                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                    type: object
-                type: object
-              serviceTemplate:
-                description: ServiceTemplate configures the Service owned by this
-                  config.
-                properties:
-                  metadata:
-                    description: Metadata holds metadata configuration for a Service.
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        description: Annotations holds annotations to be set on an
-                          object.
-                        type: object
-                      labels:
-                        additionalProperties:
-                          type: string
-                        description: Labels holds labels to be set on an objects.
-                        type: object
-                    type: object
-                  spec:
-                    description: Spec holds some customizable fields of a Service.
-                    properties:
-                      loadBalancerIP:
-                        description: LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
-                        type: string
-                    type: object
-                type: object
-              serviceType:
-                default: LoadBalancer
-                description: |-
-                  ServiceType specifies the type of managed Service that will be
-                  created to expose the dataplane proxies to traffic from outside
-                  the cluster. The ports to expose will be taken from the matching Gateway
-                  resource. If there is no matching Gateway, the managed Service will
-                  be deleted.
-                enum:
-                - LoadBalancer
-                - ClusterIP
-                - NodePort
-                type: string
-              tags:
-                additionalProperties:
-                  type: string
-                description: |-
-                  Tags specifies a set of Kuma tags that are included in the
-                  MeshGatewayInstance and thus propagated to every Dataplane generated to
-                  serve the MeshGateway.
-                  These tags should include a maximum of one `kuma.io/service` tag.
-                type: object
-            type: object
-          status:
-            description: |-
-              MeshGatewayConfigStatus holds information about the status of the gateway
-              instance.
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: meshgatewayinstances.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshGatewayInstance
-    listKind: MeshGatewayInstanceList
-    plural: meshgatewayinstances
-    singular: meshgatewayinstance
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: |-
-          MeshGatewayInstance represents a managed instance of a dataplane proxy for a Kuma
-          Gateway.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: MeshGatewayInstanceSpec specifies the options available for
-              a GatewayDataplane.
-            properties:
-              podTemplate:
-                description: PodTemplate configures the Pod owned by this config.
-                properties:
-                  metadata:
-                    description: Metadata holds metadata configuration for a Service.
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        description: Annotations holds annotations to be set on an
-                          object.
-                        type: object
-                      labels:
-                        additionalProperties:
-                          type: string
-                        description: Labels holds labels to be set on an objects.
-                        type: object
-                    type: object
-                  spec:
-                    description: Spec holds some customizable fields of a Pod.
-                    properties:
-                      container:
-                        description: Container corresponds to PodSpec.Container
-                        properties:
-                          securityContext:
-                            description: ContainerSecurityContext corresponds to PodSpec.Container.SecurityContext
-                            properties:
-                              readOnlyRootFilesystem:
-                                description: ReadOnlyRootFilesystem corresponds to
-                                  PodSpec.Container.SecurityContext.ReadOnlyRootFilesystem
-                                type: boolean
-                            type: object
-                        type: object
-                      securityContext:
-                        description: PodSecurityContext corresponds to PodSpec.SecurityContext
-                        properties:
-                          fsGroup:
-                            description: FSGroup corresponds to PodSpec.SecurityContext.FSGroup
-                            format: int64
-                            type: integer
-                        type: object
-                      serviceAccountName:
-                        description: ServiceAccountName corresponds to PodSpec.ServiceAccountName.
-                        type: string
-                    type: object
-                type: object
-              replicas:
-                default: 1
-                description: |-
-                  Replicas is the number of dataplane proxy replicas to create. For
-                  now this is a fixed number, but in the future it could be
-                  automatically scaled based on metrics.
-                format: int32
-                minimum: 1
-                type: integer
-              resources:
-                description: |-
-                  Resources specifies the compute resources for the proxy container.
-                  The default can be set in the control plane config.
-                properties:
-                  claims:
-                    description: |-
-                      Claims lists the names of resources, defined in spec.resourceClaims,
-                      that are used by this container.
-
-                      This field depends on the
-                      DynamicResourceAllocation feature gate.
-
-                      This field is immutable. It can only be set for containers.
-                    items:
-                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
-                      properties:
-                        name:
-                          description: |-
-                            Name must match the name of one entry in pod.spec.resourceClaims of
-                            the Pod where this field is used. It makes that resource available
-                            inside a container.
-                          type: string
-                        request:
-                          description: |-
-                            Request is the name chosen for a request in the referenced claim.
-                            If empty, everything from the claim is made available, otherwise
-                            only the result of this request.
-                          type: string
-                      required:
-                      - name
-                      type: object
-                    type: array
-                    x-kubernetes-list-map-keys:
-                    - name
-                    x-kubernetes-list-type: map
-                  limits:
-                    additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    description: |-
-                      Limits describes the maximum amount of compute resources allowed.
-                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                    type: object
-                  requests:
-                    additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    description: |-
-                      Requests describes the minimum amount of compute resources required.
-                      If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-                      otherwise to an implementation-defined value. Requests cannot exceed Limits.
-                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                    type: object
-                type: object
-              serviceTemplate:
-                description: ServiceTemplate configures the Service owned by this
-                  config.
-                properties:
-                  metadata:
-                    description: Metadata holds metadata configuration for a Service.
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        description: Annotations holds annotations to be set on an
-                          object.
-                        type: object
-                      labels:
-                        additionalProperties:
-                          type: string
-                        description: Labels holds labels to be set on an objects.
-                        type: object
-                    type: object
-                  spec:
-                    description: Spec holds some customizable fields of a Service.
-                    properties:
-                      loadBalancerIP:
-                        description: LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
-                        type: string
-                    type: object
-                type: object
-              serviceType:
-                default: LoadBalancer
-                description: |-
-                  ServiceType specifies the type of managed Service that will be
-                  created to expose the dataplane proxies to traffic from outside
-                  the cluster. The ports to expose will be taken from the matching Gateway
-                  resource. If there is no matching Gateway, the managed Service will
-                  be deleted.
-                enum:
-                - LoadBalancer
-                - ClusterIP
-                - NodePort
-                type: string
-              tags:
-                additionalProperties:
-                  type: string
-                description: |-
-                  Tags specifies the Kuma tags that are propagated to the managed
-                  dataplane proxies. These tags should not include `kuma.io/service` tag
-                  since is auto-generated, and should match exactly one Gateway
-                  resource.
-                type: object
-            type: object
-          status:
-            description: |-
-              MeshGatewayInstanceStatus holds information about the status of the gateway
-              instance.
-            properties:
-              conditions:
-                description: Conditions is an array of gateway instance conditions.
-                items:
-                  description: Condition contains details for one aspect of the current
-                    state of this API Resource.
-                  properties:
-                    lastTransitionTime:
-                      description: |-
-                        lastTransitionTime is the last time the condition transitioned from one status to another.
-                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
-                      format: date-time
-                      type: string
-                    message:
-                      description: |-
-                        message is a human readable message indicating details about the transition.
-                        This may be an empty string.
-                      maxLength: 32768
-                      type: string
-                    observedGeneration:
-                      description: |-
-                        observedGeneration represents the .metadata.generation that the condition was set based upon.
-                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
-                        with respect to the current state of the instance.
-                      format: int64
-                      minimum: 0
-                      type: integer
-                    reason:
-                      description: |-
-                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
-                        Producers of specific condition types may define expected values and meanings for this field,
-                        and whether the values are considered a guaranteed API.
-                        The value should be a CamelCase string.
-                        This field may not be empty.
-                      maxLength: 1024
-                      minLength: 1
-                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
-                      type: string
-                    status:
-                      description: status of the condition, one of True, False, Unknown.
-                      enum:
-                      - "True"
-                      - "False"
-                      - Unknown
-                      type: string
-                    type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                      maxLength: 316
-                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
-                      type: string
-                  required:
-                  - lastTransitionTime
-                  - message
-                  - reason
-                  - status
-                  - type
-                  type: object
-                type: array
-                x-kubernetes-list-map-keys:
-                - type
-                x-kubernetes-list-type: map
-              loadBalancer:
-                description: |-
-                  LoadBalancer contains the current status of the load-balancer,
-                  if one is present.
-                properties:
-                  ingress:
-                    description: |-
-                      Ingress is a list containing ingress points for the load-balancer.
-                      Traffic intended for the service should be sent to these ingress points.
-                    items:
-                      description: |-
-                        LoadBalancerIngress represents the status of a load-balancer ingress point:
-                        traffic intended for the service should be sent to an ingress point.
-                      properties:
-                        hostname:
-                          description: |-
-                            Hostname is set for load-balancer ingress points that are DNS based
-                            (typically AWS load-balancers)
-                          type: string
-                        ip:
-                          description: |-
-                            IP is set for load-balancer ingress points that are IP based
-                            (typically GCE or OpenStack load-balancers)
-                          type: string
-                        ipMode:
-                          description: |-
-                            IPMode specifies how the load-balancer IP behaves, and may only be specified when the ip field is specified.
-                            Setting this to "VIP" indicates that traffic is delivered to the node with
-                            the destination set to the load-balancer's IP and port.
-                            Setting this to "Proxy" indicates that traffic is delivered to the node or pod with
-                            the destination set to the node's IP and node port or the pod's IP and port.
-                            Service implementations may use this information to adjust traffic routing.
-                          type: string
-                        ports:
-                          description: |-
-                            Ports is a list of records of service ports
-                            If used, every port defined in the service should have an entry in it
-                          items:
-                            description: PortStatus represents the error condition
-                              of a service port
-                            properties:
-                              error:
-                                description: |-
-                                  Error is to record the problem with the service port
-                                  The format of the error shall comply with the following rules:
-                                  - built-in error values shall be specified in this file and those shall use
-                                    CamelCase names
-                                  - cloud provider specific error values must have names that comply with the
-                                    format foo.example.com/CamelCase.
-                                maxLength: 316
-                                pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
-                                type: string
-                              port:
-                                description: Port is the port number of the service
-                                  port of which status is recorded here
-                                format: int32
-                                type: integer
-                              protocol:
-                                description: |-
-                                  Protocol is the protocol of the service port of which status is recorded here
-                                  The supported values are: "TCP", "UDP", "SCTP"
-                                type: string
-                            required:
-                            - error
-                            - port
-                            - protocol
-                            type: object
-                          type: array
-                          x-kubernetes-list-type: atomic
-                      type: object
-                    type: array
-                    x-kubernetes-list-type: atomic
-                type: object
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: meshgatewayroutes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshGatewayRoute
-    listKind: MeshGatewayRouteList
-    plural: meshgatewayroutes
-    singular: meshgatewayroute
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma MeshGatewayRoute resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: meshgateways.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshGateway
-    listKind: MeshGatewayList
-    plural: meshgateways
-    shortNames:
-    - mgw
-    singular: meshgateway
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma MeshGateway resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1931,7 +1243,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -1952,8 +1263,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -2199,7 +1510,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -2220,8 +1530,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -2330,7 +1640,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -2351,8 +1660,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -2390,11 +1699,8 @@ spec:
                 items:
                   properties:
                     hostnames:
-                      description: |-
-                        Hostnames is only valid when targeting MeshGateway and limits the
-                        effects of the rules to requests to this hostname.
-                        Given hostnames must intersect with the hostname of the listeners the
-                        route attaches to.
+                      description: Hostnames is not currently supported and must not
+                        be set.
                       items:
                         type: string
                       type: array
@@ -2419,7 +1725,6 @@ spec:
                                       enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -2440,8 +1745,8 @@ spec:
                                       type: string
                                     name:
                                       description: |-
-                                        Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                        `MeshServiceSubset` and `MeshGatewayRoute`
+                                        Name of the referenced resource. Can only be used with kinds: `MeshService`
+                                        and `MeshServiceSubset`
                                       type: string
                                     namespace:
                                       description: |-
@@ -2548,7 +1853,6 @@ spec:
                                               enum:
                                               - Mesh
                                               - MeshSubset
-                                              - MeshGateway
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -2569,8 +1873,8 @@ spec:
                                               type: string
                                             name:
                                               description: |-
-                                                Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                                `MeshServiceSubset` and `MeshGatewayRoute`
+                                                Name of the referenced resource. Can only be used with kinds: `MeshService`
+                                                and `MeshServiceSubset`
                                               type: string
                                             namespace:
                                               description: |-
@@ -2743,9 +2047,8 @@ spec:
                                     urlRewrite:
                                       properties:
                                         hostToBackendHostname:
-                                          description: |-
-                                            HostToBackendHostname rewrites the hostname to the hostname of the
-                                            upstream host. This option is only available when targeting MeshGateways.
+                                          description: HostToBackendHostname is not
+                                            currently supported and must not be set.
                                           type: boolean
                                         hostname:
                                           description: Hostname is the value to be
@@ -2885,7 +2188,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -2906,8 +2208,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -3240,56 +2542,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: dataplaneinsights.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: DataplaneInsight
-    listKind: DataplaneInsightList
-    plural: dataplaneinsights
-    singular: dataplaneinsight
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          status:
-            description: Status is the status the Kuma resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -3402,7 +2654,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -3423,8 +2674,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -3941,7 +3192,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -3962,8 +3212,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -4263,7 +3513,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -4284,8 +3533,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -4612,6 +3861,56 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
+  name: dataplaneinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: DataplaneInsight
+    listKind: DataplaneInsightList
+    plural: dataplaneinsights
+    singular: dataplaneinsight
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          status:
+            description: Status is the status the Kuma resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshopentelemetrybackends.kuma.io
 spec:
   group: kuma.io
@@ -4901,7 +4200,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -4922,8 +4220,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -5081,7 +4379,6 @@ spec:
                                     direct-access - resources generated for Direct Access functionality.
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
-                                    gateway - resources generated for MeshGateway.
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5167,7 +4464,6 @@ spec:
                                     direct-access - resources generated for Direct Access functionality.
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
-                                    gateway - resources generated for MeshGateway.
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5246,7 +4542,6 @@ spec:
                                     direct-access - resources generated for Direct Access functionality.
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
-                                    gateway - resources generated for MeshGateway.
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5336,7 +4631,6 @@ spec:
                                     direct-access - resources generated for Direct Access functionality.
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
-                                    gateway - resources generated for MeshGateway.
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5416,7 +4710,6 @@ spec:
                                     direct-access - resources generated for Direct Access functionality.
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
-                                    gateway - resources generated for MeshGateway.
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5455,7 +4748,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -5476,8 +4768,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -5706,7 +4998,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -5727,8 +5018,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -5945,7 +5236,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -5966,8 +5256,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -6134,7 +5424,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -6155,8 +5444,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -6263,7 +5552,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -6284,8 +5572,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -6651,7 +5939,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -6672,8 +5959,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -6954,78 +6241,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: dataplanes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: Dataplane
-    listKind: DataplaneList
-    plural: dataplanes
-    shortNames:
-    - dp
-    singular: dataplane
-  scope: Namespaced
-  versions:
-  - additionalPrinterColumns:
-    - description: Service tag of the first inbound
-      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the second inbound
-      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the third inbound
-      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    - description: Service tag of the fourth inbound
-      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Dataplane resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-    subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -7088,7 +6303,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -7109,8 +6323,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -7169,7 +6383,6 @@ spec:
                                       enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -7190,8 +6403,8 @@ spec:
                                       type: string
                                     name:
                                       description: |-
-                                        Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                        `MeshServiceSubset` and `MeshGatewayRoute`
+                                        Name of the referenced resource. Can only be used with kinds: `MeshService`
+                                        and `MeshServiceSubset`
                                       type: string
                                     namespace:
                                       description: |-
@@ -7249,7 +6462,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -7270,8 +6482,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -7437,7 +6649,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -7458,8 +6669,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -7609,7 +6820,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -7630,8 +6840,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -7730,7 +6940,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -7751,8 +6960,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -7914,7 +7123,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -7935,8 +7143,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -8040,7 +7248,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -8061,8 +7268,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -8353,7 +7560,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -8374,8 +7580,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -8451,6 +7657,78 @@ spec:
                   type: object
                 type: array
             type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: dataplanes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: Dataplane
+    listKind: DataplaneList
+    plural: dataplanes
+    shortNames:
+    - dp
+    singular: dataplane
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Service tag of the first inbound
+      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the second inbound
+      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the third inbound
+      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
+      name: kuma.io/service
+      priority: 1
+      type: string
+    - description: Service tag of the fourth inbound
+      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
+      name: kuma.io/service
+      priority: 1
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Dataplane resource.
+            x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
     storage: true
@@ -8541,7 +7819,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -8562,8 +7839,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -8760,7 +8037,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -8781,8 +8057,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -9150,56 +8426,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: externalservices.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ExternalService
-    listKind: ExternalServiceList
-    plural: externalservices
-    singular: externalservice
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ExternalService resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -9390,6 +8616,56 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma TrafficPermission resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: externalservices.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: ExternalService
+    listKind: ExternalServiceList
+    plural: externalservices
+    singular: externalservice
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma ExternalService resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -9739,56 +9015,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: faultinjections.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: FaultInjection
-    listKind: FaultInjectionList
-    plural: faultinjections
-    singular: faultinjection
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma FaultInjection resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -9990,6 +9216,56 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma Zone resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: faultinjections.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: FaultInjection
+    listKind: FaultInjectionList
+    plural: faultinjections
+    singular: faultinjection
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma FaultInjection resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -10390,7 +9666,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -10411,8 +9686,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -10697,7 +9972,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -10718,8 +9992,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -10949,7 +10223,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -10970,8 +10243,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -11375,7 +10648,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -11396,8 +10668,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -11699,7 +10971,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -11720,8 +10991,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-
@@ -12017,7 +11288,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -12038,8 +11308,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -12171,9 +11441,6 @@ rules:
       - healthchecks
       - trafficlogs
       - traffictraces
-      - meshgateways
-      - meshgatewayroutes
-      - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -12537,7 +11804,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: b7ae84ba6ef651cea114cf5d9af2e86b3297e8790bfb7067ba9d67f10f3b95e1
+        checksum/tls-secrets: ac1f407b9e56c8088ecc1ac786b219aba1d49460c2da873ee844ab69ee5aeeba
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -13032,7 +12299,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - meshgateways
           - zoneingresses
           - zoneingressinsights
           - zoneegresses
@@ -13095,8 +12361,6 @@ webhooks:
           - externalservices
           - faultinjections
           - healthchecks
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries
@@ -13275,8 +12539,6 @@ webhooks:
           - faultinjections
           - healthchecks
           - meshes
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries
