@@ -13,7 +13,7 @@ func (t *MeshTrafficPermissionResource) Deprecations() []string {
 	}
 	for _, f := range pointer.Deref(t.Spec.From) {
 		if f.GetTargetRef().Kind == v1alpha1.MeshService {
-			deprecations = append(deprecations, "MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with 'kuma.io/service' instead")
+			deprecations = append(deprecations, "MeshService value for 'from[].targetRef.kind' is deprecated")
 		}
 	}
 	return append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)

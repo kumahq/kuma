@@ -84,8 +84,6 @@ func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.Val
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
-				common_api.MeshSubset,
-				common_api.MeshServiceSubset,
 			},
 		}))
 		verr.Add(validateDefault(defaultField, fromItem.Default))

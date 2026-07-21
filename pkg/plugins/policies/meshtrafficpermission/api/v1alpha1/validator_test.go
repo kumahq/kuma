@@ -38,20 +38,6 @@ from:
       name: backend
     default:
       action: Allow
-  - targetRef:
-      kind: MeshSubset
-      tags:
-        kuma.io/zone: us-east
-        env: dev
-    default:
-      action: Allow
-  - targetRef:
-      kind: MeshServiceSubset
-      name: backend
-      tags:
-        version: v1
-    default:
-      action: Allow
 `),
 			Entry("full rules example", `
 targetRef:
@@ -226,6 +212,33 @@ violations:
     message: value 'MeshGatewayRoute' is not supported
 `,
 			}),
+			Entry("not supported subset kinds in 'from' array", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+    default:
+      action: Allow
+  - targetRef:
+      kind: MeshServiceSubset
+      name: backend
+      tags:
+        version: v1
+    default:
+      action: Allow
+`,
+				expected: `
+violations:
+  - field: spec.from[0].targetRef.kind
+    message: value 'MeshSubset' is not supported
+  - field: spec.from[1].targetRef.kind
+    message: value 'MeshServiceSubset' is not supported
+`,
+			}),
 			Entry("default is nil", testCase{
 				inputYaml: `
 targetRef:
@@ -313,5 +326,28 @@ violations:
 `,
 			}),
 		)
+	})
+
+	Describe("Deprecations()", func() {
+		It("does not recommend MeshSubset for deprecated MeshService from targetRef", func() {
+			mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
+
+			err := core_model.FromYAML([]byte(`
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default:
+      action: Allow
+`), &mtp.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			deprecations := mtp.Deprecations()
+
+			Expect(deprecations).To(ContainElement("MeshService value for 'from[].targetRef.kind' is deprecated"))
+			Expect(deprecations).ToNot(ContainElement(ContainSubstring("MeshSubset")))
+		})
 	})
 })

@@ -52,33 +52,6 @@ from:
     default:
       http: []
 `),
-		Entry("accepts subset kinds in from targetRef", `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: Dataplane
-from:
-  - targetRef:
-      kind: MeshSubset
-      tags:
-        kuma.io/zone: us-east
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50
-  - targetRef:
-      kind: MeshServiceSubset
-      name: backend
-      tags:
-        version: v1
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50
-`),
 		Entry("Kind Mesh with to and only gateway", `
 type: MeshFaultInjection
 mesh: mesh-1
@@ -365,5 +338,42 @@ from:
           limit: 1000
           percentage: "xyz"`,
 		),
+		ErrorCases("not supported subset kinds in from targetRef",
+			[]validators.Violation{
+				{
+					Field:   "spec.from[0].targetRef.kind",
+					Message: "value 'MeshSubset' is not supported",
+				},
+				{
+					Field:   "spec.from[1].targetRef.kind",
+					Message: "value 'MeshServiceSubset' is not supported",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Dataplane
+from:
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+    default:
+      http:
+      - abort:
+          httpStatus: 503
+          percentage: 50
+  - targetRef:
+      kind: MeshServiceSubset
+      name: backend
+      tags:
+        version: v1
+    default:
+      http:
+      - abort:
+          httpStatus: 503
+          percentage: 50
+`),
 	)
 })
