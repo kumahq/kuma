@@ -134,7 +134,6 @@ var _ = Context("kumactl install control-plane", func() {
 				"--dataplane-init-version", "greatest",
 				"--tls-api-server-secret", "api-server-secret",
 				"--tls-api-server-client-certs-secret", "api-server-client-secret",
-				"--tls-kds-global-server-secret", "kds-global-secret",
 				"--tls-kds-zone-client-secret", "kds-ca-secret",
 				"--tls-general-ca-secret", "general-tls-secret-ca",
 				"--mode", "zone",
@@ -156,20 +155,6 @@ var _ = Context("kumactl install control-plane", func() {
 				"--cni-enabled",
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources for Global Universal mode", testCase{
-			extraArgs: []string{
-				"--mode",
-				"global",
-				"--set",
-				"controlPlane.environment=universal",
-				"--set",
-				"postgres.tls.mode=verifyFull",
-				"--set",
-				"postgres.tls.caSecretName=postgres-ca",
-			},
-			includeCRDs: true, // CRDs should be implicitly skipped for universal environment
-			goldenFile:  "install-control-plane.global-universal-on-k8s.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Zone Universal mode", testCase{
 			extraArgs: []string{
@@ -273,9 +258,9 @@ controlPlane:
 			extraArgs: []string{"--mode", "global"},
 			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
-		Entry("--mode global with a non-universal environment", errTestCase{
-			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=not-a-real-environment"},
-			errorMsg:  "controlPlane.environment=not-a-real-environment",
+		Entry("--mode global with universal environment is still unsupported", errTestCase{
+			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=universal"},
+			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
 		Entry("", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},

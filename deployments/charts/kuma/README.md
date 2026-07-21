@@ -20,11 +20,11 @@ A Helm chart for the Kuma Control Plane
 | namespaceAllowList | list | `[]` | Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the allowed namespaces. If not specified, the control plane has write permissions for all namespaces. |
 | skipRBAC | bool | `false` | Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for Kuma should be created. If set to true, the user must manually create these resources before installation. |
 | restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
-| controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in. Must be "universal" when controlPlane.mode is "global", since a Kubernetes-native Global Control Plane is not supported |
+| controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
-| controlPlane.mode | string | `"zone"` | Kuma CP modes: one of zone,global. When "global", controlPlane.environment must be "universal" |
+| controlPlane.mode | string | `"zone"` | Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
@@ -61,14 +61,6 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.ingress.servicePort | int | `5681` | Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port |
 | controlPlane.serviceMonitor.enabled | bool | `false` | Install CoreOS ServiceMonitor custom resource that configures metrics scraping. |
 | controlPlane.serviceMonitor.annotations | object | `{}` | Map of serviceMonitor annotations. |
-| controlPlane.globalZoneSyncService.enabled | bool | `true` | Whether to create a k8s service for the global zone sync service. It will only be created when enabled and deploying the global control plane. |
-| controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
-| controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
-| controlPlane.globalZoneSyncService.loadBalancerSourceRanges | list | `[]` | Optionally specify allowed source ranges that can access the load balancer |
-| controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
-| controlPlane.globalZoneSyncService.nodePort | int | `30685` | Port on which Global Zone Sync Service is exposed on Node for service of type NodePort |
-| controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
-| controlPlane.globalZoneSyncService.protocol | string | `"grpc"` | Protocol of the Global Zone Sync service port |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
@@ -87,10 +79,6 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.general.certManager.dnsNames | list | `["{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc.cluster.local"]` | DNS names to include in the certificate SANs. Supports Helm template strings (evaluated via tpl). |
 | controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS |
 | controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
-| controlPlane.tls.kdsGlobalServer.secretName | string | `""` | Name of the K8s TLS Secret resource. If you set this and don't set create=true, you have to create the secret manually. |
-| controlPlane.tls.kdsGlobalServer.create | bool | `false` | Whether to create the TLS secret in helm. |
-| controlPlane.tls.kdsGlobalServer.cert | string | `""` | The TLS certificate to offer. |
-| controlPlane.tls.kdsGlobalServer.key | string | `""` | The TLS key to use. |
 | controlPlane.tls.kdsZoneClient.secretName | string | `""` | Name of the K8s Secret resource that contains ca.crt which was used to sign the certificate of KDS Global Server. If you set this and don't set create=true, you have to create the secret manually. |
 | controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |
