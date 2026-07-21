@@ -243,7 +243,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
-			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Runtime.Universal.Spire.SocketPath).To(Equal("/custom/path"))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -302,8 +301,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Diagnostics.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
-			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
-			Expect(cfg.DNSServer.ServiceVipEnabled).To(BeFalse())
 			Expect(cfg.DNSServer.ServiceVipPort).To(Equal(uint32(9090)))
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval.Duration).To(Equal(7 * time.Second))
@@ -374,7 +371,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Users).To(Equal([]string{"cp-admin1", "cp-admin2"}))
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
-			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
 			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
@@ -511,7 +507,6 @@ runtime:
   universal:
     dataplaneCleanupAge: 1h
     zoneResourceCleanupAge: 1h
-    vipRefreshInterval: 10s
     spire:
       socketPath: /custom/path	  
     workload:
@@ -676,8 +671,6 @@ multizone:
     ingressUpdateInterval: 2s
 dnsServer:
   domain: test-domain
-  CIDR: 127.1.0.0/16
-  serviceVipEnabled: false
   serviceVipPort: 9090
 defaults:
   skipMeshCreation: true
@@ -788,7 +781,6 @@ access:
       groups: ["cp-group1", "cp-group2"]
 experimental:
   cniApp: "kuma-cni"
-  useTagFirstVirtualOutboundModel: false
   ingressTagFilters: ["kuma.io/service"]
   kdsEventBasedWatchdog:
     flushInterval: 10s
@@ -996,7 +988,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS":                                                  "app.kubernetes.io/name,app",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
-				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
 				"KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH":                                                 "/custom/path",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
@@ -1009,8 +1000,6 @@ meshService:
 				"KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF":                                             "3m",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
-				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
-				"KUMA_DNS_SERVER_SERVICE_VIP_ENABLED":                                                      "false",
 				"KUMA_DNS_SERVER_SERVICE_VIP_PORT":                                                         "9090",
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
@@ -1120,7 +1109,6 @@ meshService:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
-				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
