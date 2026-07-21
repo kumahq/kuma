@@ -20,7 +20,6 @@ import (
 	install_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/install/k8s"
 	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
-	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
@@ -131,9 +130,6 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 		Long: `Install Kuma Control Plane on Kubernetes in its own namespace.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			mesh_k8s.RegisterK8sGatewayTypes()
-			mesh_k8s.RegisterK8sGatewayAPITypes()
-
 			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")

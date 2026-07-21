@@ -284,7 +284,7 @@ func configureDynamicDPPConfig(
 	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
 ) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, meshCtx.Resources, prometheusBackends, openTelemetryBackends, inboundTagsDisabled)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, inboundTagsDisabled)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -310,7 +310,6 @@ func createDynamicConfig(
 	conf api.Conf,
 	proxy *core_xds.Proxy,
 	mesh *core_mesh.MeshResource,
-	resources xds_context.Resources,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
@@ -343,11 +342,6 @@ func createDynamicConfig(
 		})
 	}
 
-	var gateways []*core_mesh.MeshGatewayResource
-	if rawList := resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
-		gateways = rawList.(*core_mesh.MeshGatewayResourceList).Items
-	}
-
 	extraLabels := map[string]string{}
 	extraLabels["mesh"] = proxy.Dataplane.GetMeta().GetMesh()
 	if zone := proxy.Dataplane.GetMeta().GetLabels()[mesh_proto.ZoneTag]; zone != "" {
@@ -363,7 +357,7 @@ func createDynamicConfig(
 		}
 	}
 	if !unified_naming.Enabled(proxy.Metadata, mesh) {
-		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane, gateways))
+		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane))
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		if extraLabels[WorkloadAttributeKey] == "" {
 			if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {

@@ -62,12 +62,6 @@ function package {
     # Fail if there are uncommitted changes
     git diff --exit-code HEAD -- "${dir}"
 
-    # TODO remove this when Gateway API is no longer experimental
-    # Gateway CRDs are installed conditionally via install missing CRDs job
-    if [[ $(basename "${dir}") == "kuma" ]]; then
-      find "${dir}/crds" -name "*meshgatewayconfigs.yaml" -delete
-    fi
-
     cr package \
       --package-path "${CHARTS_PACKAGE_PATH}" \
       "${dir}"

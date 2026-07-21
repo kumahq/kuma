@@ -131,7 +131,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 	}
-	if r.descriptor.Name == core_mesh.DataplaneType || r.descriptor.Name == core_mesh.MeshGatewayType {
+	if r.descriptor.Name == core_mesh.DataplaneType {
 		ws.Route(ws.GET(pathPrefix+"/{name}/_rules").To(r.inspect.rulesForResource()).
 			Doc(fmt.Sprintf("Get matching rules %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
