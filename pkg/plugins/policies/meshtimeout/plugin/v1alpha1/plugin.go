@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -60,7 +61,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	clusters := xds.GatherClusters(rs)
 	routes := xds.GatherRoutes(rs)
 
-	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane, unifiedNaming); err != nil {
 		return err
 	}
 	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
@@ -97,7 +99,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, inboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource) error {
+func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, inboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, unifiedNaming bool) error {
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -126,7 +129,9 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			return err
 		}
 
-		cluster, ok := inboundClusters[envoy_names.GetInboundClusterName(inbound.ServicePort, listenerKey.Port)]
+		legacyClusterName := envoy_names.GetInboundClusterName(inbound.ServicePort, listenerKey.Port)
+		clusterName := getName(naming.MustContextualInboundName(dataplane, iface.InboundName), legacyClusterName)
+		cluster, ok := inboundClusters[clusterName]
 		if !ok {
 			continue
 		}
