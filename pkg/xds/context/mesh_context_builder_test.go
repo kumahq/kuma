@@ -440,21 +440,26 @@ var _ = Describe("ServicesInformation", func() {
 		Expect(resourceStore.Create(context.Background(), externalService, store.CreateByKey("external-svc", meshName))).To(Succeed())
 
 		// and a builtin and a delegated gateway dataplane, neither of which is a regular service
-		builtinGatewayBuilder := builders.Dataplane().
-			WithMesh(meshName).
-			WithName("gateway-builtin-dp").
-			WithAddress("127.0.0.1").
-			WithBuiltInGateway("gateway-builtin")
-		Expect(builtinGatewayBuilder.Create(resourceStore)).To(Succeed())
+		builtinGateway := &core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "gateway-builtin-dp"},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.1",
+					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+						Tags: map[string]string{mesh_proto.ServiceTag: "gateway-builtin"},
+						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+					},
+				},
+			},
+		}
+		Expect(resourceStore.Create(context.Background(), builtinGateway, store.CreateByKey("gateway-builtin-dp", meshName))).To(Succeed())
 
 		delegatedGatewayBuilder := builders.Dataplane().
 			WithMesh(meshName).
 			WithName("gateway-delegated-dp").
 			WithAddress("127.0.0.1").
-			WithBuiltInGateway("gateway-delegated")
-		delegatedGateway := delegatedGatewayBuilder.Build()
-		delegatedGateway.Spec.Networking.Gateway.Type = mesh_proto.Dataplane_Networking_Gateway_DELEGATED
-		Expect(resourceStore.Create(context.Background(), delegatedGateway, store.CreateByKey("gateway-delegated-dp", meshName))).To(Succeed())
+			WithDelegatedGateway("gateway-delegated")
+		Expect(delegatedGatewayBuilder.Create(resourceStore)).To(Succeed())
 
 		// when
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)

@@ -107,9 +107,6 @@ rules:
       - healthchecks
       - trafficlogs
       - traffictraces
-      - meshgateways
-      - meshgatewayroutes
-      - meshgatewayconfigs
   {{- range $policy, $v := .Values.plugins.policies }}
   {{- if $v }}
       - {{ $policy }}

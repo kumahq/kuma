@@ -19,7 +19,6 @@ import (
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -51,11 +50,6 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
 			if err := common.ReconcileLabelledObject(
-				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGatewayRoute{}, "", nil,
-			); err != nil {
-				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
-			}
-			if err := common.ReconcileLabelledObject(
 				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, r.SystemNamespace, nil,
 			); err != nil {
 				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshHTTPRoute.kuma.io")
@@ -77,17 +71,6 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	meshRouteSpecs, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not generate MeshHTTPRoute.kuma.io resources")
-	}
-
-	// After upgrading Kuma to version 2.7.x, MeshGatewayRoutes are no longer used internally.
-	// This code (reconcilliation with empty list of owned resources) ensures that any existing
-	// MeshGatewayRoutes will be deleted. This is a safe operation because MeshHTTPRoutes have
-	// replaced MeshGatewayRoutes, and this replacement doesn't introduce any changes to the xDS
-	// configuration for MeshGateway. Therefore, there won't be any disruptions in traffic flow.
-	if err := common.ReconcileLabelledObject(
-		ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, "", nil,
-	); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
 	}
 
 	if err := common.ReconcileLabelledObject(
