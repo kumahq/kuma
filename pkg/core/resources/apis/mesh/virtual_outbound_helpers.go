@@ -64,14 +64,3 @@ func (t *VirtualOutboundResource) EvalHost(tags map[string]string) (string, erro
 	}
 	return s, nil
 }
-
-func (t *VirtualOutboundResource) FilterTags(tags map[string]string) map[string]string {
-	out := map[string]string{}
-	for _, v := range t.Spec.Conf.Parameters {
-		tagKey := tagKeyOrName(v)
-		if tagValue, exists := tags[tagKey]; exists {
-			out[tagKey] = tagValue
-		}
-	}
-	return out
-}

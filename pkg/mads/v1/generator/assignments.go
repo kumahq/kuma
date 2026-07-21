@@ -56,7 +56,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 				Name:        dataplane.GetMeta().GetName(),
 				Address:     mads.Address(dataplane, prometheusEndpoint),
 				MetricsPath: prometheusEndpoint.GetPath(),
-				Labels:      mads.DataplaneLabels(dataplane, args.MeshGateways),
+				Labels:      mads.DataplaneLabels(dataplane),
 			}},
 		}
 

@@ -281,8 +281,7 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			UseTagFirstVirtualOutboundModel: false,
-			IngressTagFilters:               []string{},
+			IngressTagFilters: []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
 				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
@@ -323,6 +322,23 @@ func (c *Config) Validate() error {
 	}
 	switch c.Mode {
 	case core.Global:
+		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
+			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+		}
+		if c.Environment == core.KubernetesEnvironment {
+			return errors.Errorf(
+				"Kubernetes-native Global Control Plane is not supported: mode=%s cannot be combined with environment=%s. "+
+					"Run mode=%s with environment=%s backed by a non-Kubernetes store such as PostgreSQL, even when Kuma CP itself is deployed on Kubernetes",
+				core.Global, core.KubernetesEnvironment, core.Global, core.UniversalEnvironment,
+			)
+		}
+		if c.Store.Type == store.KubernetesStore {
+			return errors.Errorf(
+				"Kubernetes-native Global Control Plane is not supported: mode=%s cannot be combined with store.type=%s. "+
+					"Run mode=%s with environment=%s backed by a non-Kubernetes store such as PostgreSQL, even when Kuma CP itself is deployed on Kubernetes",
+				core.Global, store.KubernetesStore, core.Global, core.UniversalEnvironment,
+			)
+		}
 		if err := c.Multizone.Global.Validate(); err != nil {
 			return errors.Wrap(err, "Multizone Global validation failed")
 		}
@@ -454,12 +470,6 @@ func DefaultDefaultsConfig() *Defaults {
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
-	// It is recommended to use tag first model for deployments with more than 2k services
-	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
-	// you need to first disable this flag and redeploy cp, after config is rewritten to default
-	// format you can downgrade your cp
-	UseTagFirstVirtualOutboundModel bool `json:"useTagFirstVirtualOutboundModel" envconfig:"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL"`
 	// List of prefixes that will be used to filter out tags by keys from ingress' available services section.
 	// This can trim the size of the ZoneIngress object significantly.
 	// The drawback is that you cannot use filtered out tags for traffic routing.

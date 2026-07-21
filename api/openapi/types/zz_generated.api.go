@@ -31,16 +31,13 @@ func (e GetDataplanesXdsConfigParamsInclude) Valid() bool {
 
 // Defines values for InspectDataplanesRulesParamsResourceType.
 const (
-	Dataplanes   InspectDataplanesRulesParamsResourceType = "dataplanes"
-	Meshgateways InspectDataplanesRulesParamsResourceType = "meshgateways"
+	Dataplanes InspectDataplanesRulesParamsResourceType = "dataplanes"
 )
 
 // Valid indicates whether the value is a known member of the InspectDataplanesRulesParamsResourceType enum.
 func (e InspectDataplanesRulesParamsResourceType) Valid() bool {
 	switch e {
 	case Dataplanes:
-		return true
-	case Meshgateways:
 		return true
 	default:
 		return false

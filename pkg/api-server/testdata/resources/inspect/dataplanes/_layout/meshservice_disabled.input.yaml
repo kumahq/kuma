@@ -1,8 +1,6 @@
 #/meshes/default/dataplanes/dp-1/_layout 200
 type: Mesh
 name: default
-meshServices:
-  mode: Disabled
 ---
 type: Dataplane
 name: dp-1

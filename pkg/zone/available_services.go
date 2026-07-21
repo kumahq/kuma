@@ -103,8 +103,7 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 		return err
 	}
 	// kuma.io/service based dataplane services are represented by MeshService now that
-	// meshServices.mode is always Exclusive, so skip every mesh's legacy AvailableServices:
-	// only cross-mesh MeshGateway listeners (which aren't mode-gated) still get published.
+	// meshServices.mode is always Exclusive, so skip every mesh's legacy AvailableServices.
 	skipAvailableServices := map[xds.MeshName]struct{}{}
 	for mesh := range aggregatedMeshCtxs.MeshContextsByName {
 		skipAvailableServices[mesh] = struct{}{}
@@ -112,7 +111,6 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 	availableServices := ingress.GetAvailableServices(
 		skipAvailableServices,
 		aggregatedMeshCtxs.AllDataplanes(),
-		aggregatedMeshCtxs.AllMeshGateways(),
 		nil,
 		t.ingressTagFilters,
 	)

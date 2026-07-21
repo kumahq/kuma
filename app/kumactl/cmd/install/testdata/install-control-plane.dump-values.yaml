@@ -32,7 +32,7 @@ skipRBAC: false
 restartOnSecretChange: true
 
 controlPlane:
-  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
+  # -- Environment that control plane is run in
   environment: "kubernetes"
 
   # -- Labels to add to resources in addition to default labels
@@ -44,7 +44,7 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: one of zone,global
+  # -- Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
   mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
@@ -188,26 +188,6 @@ controlPlane:
     # -- Map of serviceMonitor annotations.
     annotations: {}
 
-  globalZoneSyncService:
-    # -- Whether to create a k8s service for the global zone sync
-    # service. It will only be created when enabled and deploying the global
-    # control plane.
-    enabled: true
-    # -- Service type of the Global-zone sync
-    type: LoadBalancer
-    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
-    loadBalancerIP:
-    # -- Optionally specify allowed source ranges that can access the load balancer
-    loadBalancerSourceRanges: []
-    # -- Additional annotations to put on the Global Zone Sync Service
-    annotations: { }
-    # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort
-    nodePort: 30685
-    # -- Port on which Global Zone Sync Service is exposed
-    port: 5685
-    # -- Protocol of the Global Zone Sync service port
-    protocol: grpc
-
   defaults:
     # -- Whether to skip creating the default Mesh
     skipMeshCreation: false
@@ -279,21 +259,6 @@ controlPlane:
       secretName: ""
       # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       clientCertsSecretName: ""
-    # - if not creating the global control plane, then do nothing
-    # - if secretName is empty and create is false, then do nothing
-    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
-    # - if secretName is empty and create is true, then create a secret with a default name and use it
-    # - if secretName is non-empty and create is true, then create the secret using the provided name
-    kdsGlobalServer:
-      # -- Name of the K8s TLS Secret resource. If you set this and don't set
-      # create=true, you have to create the secret manually.
-      secretName: ""
-      # -- Whether to create the TLS secret in helm.
-      create: false
-      # -- The TLS certificate to offer.
-      cert: ""
-      # -- The TLS key to use.
-      key: ""
     # - if not creating the zonal control plane, then do nothing
     # - if secretName is empty and create is false, then do nothing
     # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName

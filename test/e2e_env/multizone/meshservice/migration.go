@@ -20,7 +20,7 @@ func Migration() {
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
+			Install(MTLSMeshUniversal(meshName)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -125,7 +125,7 @@ spec:
 	})
 
 	It("should keep automatically created MeshServices when the mesh is re-applied", func() {
-		Expect(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")(multizone.Global)).To(Succeed())
+		Expect(MTLSMeshUniversal(meshName)(multizone.Global)).To(Succeed())
 
 		hasMeshServices(
 			hash.HashedName(meshName, "demo-client", Kuma1, namespace),

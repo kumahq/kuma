@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -36,7 +35,6 @@ func ProducerPolicyFlow() {
 					builders.Mesh().
 						WithName(mesh).
 						WithoutInitialPolicies().
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
 						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).

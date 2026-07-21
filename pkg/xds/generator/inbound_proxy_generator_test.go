@@ -27,7 +27,6 @@ var _ = Describe("InboundProxyGenerator", func() {
 		dataplaneMeta    *model.DataplaneMetadata
 		expected         string
 		mode             mesh_proto.CertificateAuthorityBackend_Mode
-		meshServiceMode  mesh_proto.Mesh_MeshServices_Mode
 		casByTrustDomain map[string][]xds_context.PEMBytes
 	}
 
@@ -49,9 +48,6 @@ var _ = Describe("InboundProxyGenerator", func() {
 								Mode: given.mode,
 							},
 						},
-					},
-					MeshServices: &mesh_proto.Mesh_MeshServices{
-						Mode: given.meshServiceMode,
 					},
 				},
 			}
@@ -138,16 +134,14 @@ var _ = Describe("InboundProxyGenerator", func() {
 			mode:          mesh_proto.CertificateAuthorityBackend_STRICT,
 		}),
 		Entry("08. transparent_proxying=false, ip_addresses=2, ports=2, unified", testCase{
-			dataplaneFile:   "8-dataplane.input.yaml",
-			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
-			expected:        "8-envoy-config.golden.yaml",
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile: "8-dataplane.input.yaml",
+			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:      "8-envoy-config.golden.yaml",
 		}),
 		Entry("09. transparent_proxying=false, ip_addresses=2, ports=2, trust with old mesh mtls", testCase{
-			dataplaneFile:   "9-dataplane.input.yaml",
-			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
-			expected:        "9-envoy-config.golden.yaml",
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile: "9-dataplane.input.yaml",
+			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:      "9-envoy-config.golden.yaml",
 			casByTrustDomain: map[string][]xds_context.PEMBytes{
 				"my-test.domain.com": {xds_context.PEMBytes("123")},
 			},

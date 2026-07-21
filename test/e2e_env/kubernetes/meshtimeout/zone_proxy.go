@@ -123,7 +123,7 @@ func ZoneProxyMeshTimeout() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(Namespace(extNs)).
-			Install(MeshWithMeshServicesKubernetes(mesh, "Exclusive")).
+			Install(MeshKubernetes(mesh)).
 			Install(YamlK8s(meshTimeoutZoneProxyMTP(mesh))).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),

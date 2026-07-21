@@ -6,9 +6,8 @@ import (
 )
 
 type Args struct {
-	Meshes       []*core_mesh.MeshResource
-	Dataplanes   []*core_mesh.DataplaneResource
-	MeshGateways []*core_mesh.MeshGatewayResource
+	Meshes     []*core_mesh.MeshResource
+	Dataplanes []*core_mesh.DataplaneResource
 }
 
 type ResourceGenerator interface {

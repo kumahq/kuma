@@ -2074,154 +2074,6 @@ _kumactl_get_meshfaultinjections()
     noun_aliases=()
 }
 
-_kumactl_get_meshgateway()
-{
-    last_command="kumactl_get_meshgateway"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_meshgatewayroute()
-{
-    last_command="kumactl_get_meshgatewayroute"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_meshgatewayroutes()
-{
-    last_command="kumactl_get_meshgatewayroutes"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_meshgateways()
-{
-    last_command="kumactl_get_meshgateways"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_get_meshhealthcheck()
 {
     last_command="kumactl_get_meshhealthcheck"
@@ -4791,26 +4643,6 @@ _kumactl_get()
         command_aliases+=("")
         aliashash[""]="meshfaultinjections"
     fi
-    commands+=("meshgateway")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="meshgateway"
-    fi
-    commands+=("meshgatewayroute")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="meshgatewayroute"
-    fi
-    commands+=("meshgatewayroutes")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="meshgatewayroutes"
-    fi
-    commands+=("meshgateways")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="meshgateways"
-    fi
     commands+=("meshhealthcheck")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
         command_aliases+=("")
@@ -6771,10 +6603,6 @@ _kumactl_install_control-plane()
     two_word_flags+=("--tls-general-secret")
     local_nonpersistent_flags+=("--tls-general-secret")
     local_nonpersistent_flags+=("--tls-general-secret=")
-    flags+=("--tls-kds-global-server-secret=")
-    two_word_flags+=("--tls-kds-global-server-secret")
-    local_nonpersistent_flags+=("--tls-kds-global-server-secret")
-    local_nonpersistent_flags+=("--tls-kds-global-server-secret=")
     flags+=("--tls-kds-zone-client-secret=")
     two_word_flags+=("--tls-kds-zone-client-secret")
     local_nonpersistent_flags+=("--tls-kds-zone-client-secret")
@@ -6865,8 +6693,6 @@ _kumactl_install_demo()
     two_word_flags+=("--system-namespace")
     local_nonpersistent_flags+=("--system-namespace")
     local_nonpersistent_flags+=("--system-namespace=")
-    flags+=("--without-gateway")
-    local_nonpersistent_flags+=("--without-gateway")
     flags+=("--zone=")
     two_word_flags+=("--zone")
     local_nonpersistent_flags+=("--zone")
