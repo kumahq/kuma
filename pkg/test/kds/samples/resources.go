@@ -115,15 +115,6 @@ var (
 			Id: "1",
 		}},
 	}
-	ExternalService = &mesh_proto.ExternalService{
-		Networking: &mesh_proto.ExternalService_Networking{
-			Address: "192.168.0.1",
-		},
-		Tags: map[string]string{
-			mesh_proto.ZoneTag:    "kuma-1",
-			mesh_proto.ServiceTag: "backend",
-		},
-	}
 	TrafficRoute = &mesh_proto.TrafficRoute{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{

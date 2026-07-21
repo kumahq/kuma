@@ -3,13 +3,11 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	util "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/egress"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -17,7 +15,6 @@ import (
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 var (
@@ -176,35 +173,6 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
 		)
 		return nil
-	}
-	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for _, es := range resource.ExternalServices {
-			meshName := resource.Mesh.GetMeta().GetName()
-			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
-			if !ok {
-				continue
-			}
-			policies, ok := resource.Dynamic[esName]
-			if !ok {
-				continue
-			}
-			mfi, ok := policies[api.MeshFaultInjectionType]
-			if !ok {
-				continue
-			}
-			protocol := util.GetExternalServiceProtocol(es)
-
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range mfi.FromRules.Rules {
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						if err := configure(rule, filterChain, protocol); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
 	}
 	return nil
 }

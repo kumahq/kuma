@@ -29,7 +29,7 @@ func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_
 }
 
 func (d *denyingValidator) Supports(req kube_admission.Request) bool {
-	gvk := mesh_k8s.GroupVersion.WithKind("ExternalService")
+	gvk := mesh_k8s.GroupVersion.WithKind("Mesh")
 	return req.Kind.Group == gvk.Group && req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version
 }
 
@@ -47,15 +47,15 @@ var _ = Describe("Composite Validator", func() {
 		handler = composite.IntoWebhook(scheme)
 
 		kubeTypes = k8s_registry.NewTypeRegistry()
-		err := kubeTypes.RegisterObjectType(&mesh_proto.ExternalService{}, &mesh_k8s.ExternalService{
+		err := kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{
 			TypeMeta: kube_meta.TypeMeta{
 				APIVersion: mesh_k8s.GroupVersion.String(),
-				Kind:       "ExternalService",
+				Kind:       "Mesh",
 			},
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		err = kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})
+		err = kubeTypes.RegisterObjectType(&mesh_proto.Dataplane{}, &mesh_k8s.Dataplane{})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -64,21 +64,16 @@ var _ = Describe("Composite Validator", func() {
 		yaml := `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "ExternalService",
-			  "mesh": "demo",
+			  "kind": "Mesh",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  },
 			  "spec": {
-				"tags": {
-				  "path": "/random"
-				}
 			  }
 			}
 			`
-		obj, err := kubeTypes.NewObject(&mesh_proto.ExternalService{})
+		obj, err := kubeTypes.NewObject(&mesh_proto.Mesh{})
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{
@@ -107,7 +102,7 @@ var _ = Describe("Composite Validator", func() {
 		yaml := `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "Mesh",
+			  "kind": "Dataplane",
 			  "metadata": {
 				"name": "empty",
 				"creationTimestamp": null
@@ -116,7 +111,7 @@ var _ = Describe("Composite Validator", func() {
 			  }
 			}
 			`
-		obj, err := kubeTypes.NewObject(&mesh_proto.Mesh{})
+		obj, err := kubeTypes.NewObject(&mesh_proto.Dataplane{})
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{

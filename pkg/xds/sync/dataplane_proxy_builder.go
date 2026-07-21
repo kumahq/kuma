@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 type DataplaneProxyBuilder struct {
@@ -45,7 +44,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	}
 
 	tpEnabled := tproxy_dp.GetDataplaneConfig(dp, meta).Enabled()
-	routing, outbounds := p.resolveRouting(ctx, meshContext, dp, tpEnabled, meta.HasFeature(xds_types.FeatureBindOutbounds))
+	routing, outbounds := p.resolveRouting(meshContext, dp, tpEnabled, meta.HasFeature(xds_types.FeatureBindOutbounds))
 
 	matchedPolicies, err := p.matchPolicies(meshContext, dp)
 	if err != nil {
@@ -84,25 +83,13 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 }
 
 func (p *DataplaneProxyBuilder) resolveRouting(
-	ctx context.Context,
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
 	tpEnabled bool,
 	bindOutbounds bool,
 ) (*core_xds.Routing, []*xds_types.Outbound) {
 	outbounds := p.resolveVIPOutbounds(meshContext, dataplane, tpEnabled, bindOutbounds)
-
-	endpointMap := xds_topology.BuildExternalServicesEndpointMap(
-		ctx,
-		meshContext.Resource,
-		meshContext.Resources.ExternalServices().Items,
-		meshContext.DataSourceLoader,
-		p.Zone,
-	)
-	routing := &core_xds.Routing{
-		OutboundTargets:                meshContext.EndpointMap,
-		ExternalServiceOutboundTargets: endpointMap,
-	}
+	routing := &core_xds.Routing{OutboundTargets: meshContext.EndpointMap}
 	return routing, outbounds
 }
 

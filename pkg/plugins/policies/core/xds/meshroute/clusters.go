@@ -54,69 +54,48 @@ func GenerateClusters(
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
-				switch {
-				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
-					realResourceRef := service.BackendRef().RealResourceBackendRef()
-					dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
-					if !ok {
+				if !isMeshExternalService(meshCtx.EndpointMap[serviceName]) {
+					continue
+				}
+				realResourceRef := service.BackendRef().RealResourceBackendRef()
+				dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
+				if !ok {
+					continue
+				}
+				if proxy.WorkloadIdentity != nil {
+					kriID := service.BackendRef().Resource()
+					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 						continue
 					}
-					if proxy.WorkloadIdentity != nil {
-						kriID := service.BackendRef().Resource()
-						if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-							continue
-						}
-						sni := core_sni.FromKRI(kriID)
-						// we only want to route when are mesh-scoped zone egresses
-						if len(meshCtx.ZoneEgresses) == 0 {
-							continue
-						}
-						egressSANs := meshCtx.ZoneEgressSANs()
-						if len(egressSANs) == 0 {
-							continue
-						}
-						upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
-						if err != nil {
-							return nil, err
-						}
-						edsClusterBuilder.
-							Configure(envoy_clusters.EdsCluster()).
-							Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-					} else {
-						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
-						edsClusterBuilder.
-							Configure(envoy_clusters.EdsCluster()).
-							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
-								proxy.SecretsTracker,
-								unifiedNaming,
-								meshCtx.Resource,
-								mesh_proto.ZoneEgressServiceName,
-								true,
-								sni,
-								false,
-							))
+					sni := core_sni.FromKRI(kriID)
+					// we only want to route when are mesh-scoped zone egresses
+					if len(meshCtx.ZoneEgresses) == 0 {
+						continue
 					}
-				case meshCtx.Resource.ZoneEgressEnabled():
-					// path for old ExternalService
+					egressSANs := meshCtx.ZoneEgressSANs()
+					if len(egressSANs) == 0 {
+						continue
+					}
+					upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
+					if err != nil {
+						return nil, err
+					}
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLS(
+						Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
+				} else {
+					sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
+					edsClusterBuilder.
+						Configure(envoy_clusters.EdsCluster()).
+						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
 							unifiedNaming,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
-							tlsReady,
-							clusterTags,
+							true,
+							sni,
 							false,
 						))
-				default:
-					// path for old ExternalService
-					endpoints := meshCtx.ExternalServicesEndpointMap[serviceName]
-					isIPv6 := proxy.Dataplane.IsIPv6()
-
-					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...)).
-						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
 				switch protocol {

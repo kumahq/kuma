@@ -185,7 +185,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
-	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	if len(zoneEgressList) == 0 {
 		// Do not mix legacy zone egresses with dataplane listeners in one pool because
@@ -204,12 +203,10 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		zoneIngresses,
 		resources.MeshZoneAddresses().Items,
 		zoneEgresses,
-		externalServices,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
-	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
 		ctx,
 		mesh,
@@ -218,7 +215,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshMultiZoneServices,
 		meshExternalServices,
 		dataplanes,
-		externalServices,
 		zoneEgresses,
 		zoneEgressList,
 		loader,
@@ -265,12 +261,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		ExternalServicesEndpointMap:     esEndpointMap,
 		IngressEndpointMap:              ingressEndpointMap,
 		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
-		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap, esEndpointMap),
+		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap),
 		DataSourceLoader:                loader,
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
@@ -322,12 +317,12 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		if err != nil {
 			return nil, err
 		}
-		// Only pick the policies, gateways, external services and the vip config map
+		// Only pick the policies, gateways, and the vip config map
 		switch {
 		case desc.IsDestination:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 			destinations = append(destinations, rmap[t].GetItems())
-		case desc.IsPolicy || desc.Name == core_mesh.ExternalServiceType:
+		case desc.IsPolicy:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 		default:
 			// DO nothing we're not interested in this type
@@ -454,30 +449,17 @@ func (m *meshContextBuilder) generateServicesInformation(
 	mesh *core_mesh.MeshResource,
 	meshServices []*meshservice_api.MeshServiceResource,
 	endpointMap xds.EndpointMap,
-	esEndpointMap xds.EndpointMap,
 ) map[string]*ServiceInformation {
 	servicesInformation := map[string]*ServiceInformation{}
-	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformation)
+	m.resolveProtocol(endpointMap, servicesInformation)
 	m.resolveTLSReadiness(mesh, meshServices, servicesInformation)
 	return servicesInformation
 }
 
 func (m *meshContextBuilder) resolveProtocol(
-	mesh *core_mesh.MeshResource,
 	endpointMap xds.EndpointMap,
-	esEndpointMap xds.EndpointMap,
 	servicesInformation map[string]*ServiceInformation,
 ) {
-	// endpointMap has only informations about externalServices when egress is enabled
-	// that's why we have to iterate over second map with external services
-	if !mesh.ZoneEgressEnabled() {
-		for svc, endpoints := range esEndpointMap {
-			serviceInfo := getServiceInformation(servicesInformation, svc)
-			serviceInfo.Protocol = inferServiceProtocol(endpoints)
-			serviceInfo.IsExternalService = true
-			servicesInformation[svc] = serviceInfo
-		}
-	}
 	for svc, endpoints := range endpointMap {
 		serviceInfo := getServiceInformation(servicesInformation, svc)
 		serviceInfo.Protocol = inferServiceProtocol(endpoints)

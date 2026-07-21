@@ -69,10 +69,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 	return r.MeshLocalResources.listOrEmpty(resourceType)
 }
 
-func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
-	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
-}
-
 func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
 	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
 }

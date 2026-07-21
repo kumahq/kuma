@@ -148,12 +148,6 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return core_mesh.NewDataplaneResource() },
 					expectedMessage: "deleted Dataplane \"web\"\n",
 				}),
-				Entry("external-services", testCase{
-					typ:             "external-service",
-					name:            "httpbin",
-					resource:        func() core_model.Resource { return core_mesh.NewExternalServiceResource() },
-					expectedMessage: "deleted ExternalService \"httpbin\"\n",
-				}),
 				Entry("secrets", testCase{
 					typ:             "secret",
 					name:            "web",

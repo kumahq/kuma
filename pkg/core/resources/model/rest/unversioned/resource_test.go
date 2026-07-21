@@ -28,15 +28,14 @@ var _ = Describe("Rest Resource", func() {
 				// given
 				res := &unversioned.Resource{
 					Meta: v1alpha1.ResourceMeta{
-						Type:             "ExternalService",
-						Mesh:             "default",
+						Type:             "Mesh",
 						Name:             "one",
 						CreationTime:     t1,
 						ModificationTime: t2,
 					},
-					Spec: &mesh_proto.ExternalService{
-						Tags: map[string]string{
-							"path": "/example",
+					Spec: &mesh_proto.Mesh{
+						Mtls: &mesh_proto.Mesh_Mtls{
+							EnabledBackend: "ca-1",
 						},
 					},
 				}
@@ -50,13 +49,12 @@ var _ = Describe("Rest Resource", func() {
 				// and
 				expected := `
 {
-  "type": "ExternalService",
-  "mesh": "default",
+  "type": "Mesh",
   "name": "one",
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2019-07-17T16:05:36.995Z",
-  "tags": {
-    "path": "/example"
+  "mtls": {
+    "enabledBackend": "ca-1"
   }
 }`
 				Expect(bytes).To(MatchJSON(expected))
@@ -66,8 +64,7 @@ var _ = Describe("Rest Resource", func() {
 				// given
 				res := &unversioned.Resource{
 					Meta: v1alpha1.ResourceMeta{
-						Type:             "ExternalService",
-						Mesh:             "default",
+						Type:             "Mesh",
 						Name:             "one",
 						CreationTime:     t1,
 						ModificationTime: t2,
@@ -81,7 +78,7 @@ var _ = Describe("Rest Resource", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// and
-				expected := `{"type":"ExternalService","mesh":"default","name":"one","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2019-07-17T16:05:36.995Z"}`
+				expected := `{"type":"Mesh","name":"one","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2019-07-17T16:05:36.995Z"}`
 				Expect(string(bytes)).To(Equal(expected))
 			})
 		})
@@ -95,29 +92,27 @@ var _ = Describe("Rest Resource", func() {
 			{
 				"items": [
 				 {
-					"type": "ExternalService",
-					"mesh": "default",
+					"type": "Mesh",
 					"name": "one",
-					"tags": {
-					  "path": "/example"
+					"mtls": {
+					  "enabledBackend": "ca-1"
 					}
 				 },
 				 {
-					"type": "ExternalService",
-					"mesh": "demo",
+					"type": "Mesh",
 					"name": "two",
-					"tags": {
-					  "path": "/another"
+					"mtls": {
+					  "enabledBackend": "ca-2"
 					}
 				 }
 				],
-				"next": "http://localhost:5681/meshes/default/external-services?offset=1"
+				"next": "http://localhost:5681/meshes?offset=1"
 			}`
 
 				// when
 				rsr := &rest.ResourceListReceiver{
 					NewResource: func() model.Resource {
-						return mesh.NewExternalServiceResource()
+						return mesh.NewMeshResource()
 					},
 				}
 				err := json.Unmarshal([]byte(content), rsr)
@@ -130,26 +125,24 @@ var _ = Describe("Rest Resource", func() {
 				// then
 				Expect(rs.Items).To(HaveLen(2))
 				Expect(rs.Items[0].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-					Type: "ExternalService",
-					Mesh: "default",
+					Type: "Mesh",
 					Name: "one",
 				}))
-				Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.ExternalService{
-					Tags: map[string]string{
-						"path": "/example",
+				Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "ca-1",
 					},
 				}))
 				Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-					Type: "ExternalService",
-					Mesh: "demo",
+					Type: "Mesh",
 					Name: "two",
 				}))
-				Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.ExternalService{
-					Tags: map[string]string{
-						"path": "/another",
+				Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "ca-2",
 					},
 				}))
-				Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/external-services?offset=1"))
+				Expect(*rs.Next).To(Equal("http://localhost:5681/meshes?offset=1"))
 			})
 		})
 	})

@@ -428,30 +428,12 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 				mesh_proto.ZoneTag: r.Zone,
 			},
 		}, nil, nil
-	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
-		resource := core_mesh.NewExternalServiceResource()
-		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
-			if store.IsNotFound(err) {
-				return unresolvedTargetRef,
-					&ResolvedRefsConditionFalse{
-						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
-						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
-					},
-					nil
-			}
-			return common_api.TargetRef{}, nil, err
-		}
-
-		return common_api.TargetRef{
-			Kind: common_api.MeshService,
-			Name: pointer.To(resource.Spec.GetService()),
-		}, nil, nil
 	}
 
 	return unresolvedTargetRef,
 		&ResolvedRefsConditionFalse{
 			Reason:  string(gatewayapi.RouteReasonInvalidKind),
-			Message: "backend reference must be Service or externalservice.kuma.io",
+			Message: "backend reference must be Service",
 		},
 		nil
 }

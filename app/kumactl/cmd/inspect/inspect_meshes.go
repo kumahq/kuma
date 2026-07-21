@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/table"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 )
 
@@ -38,7 +37,6 @@ var meshInsightTable = printers.Table{
 	Headers: []string{
 		"MESH",
 		"DATAPLANES",
-		"EXTERNAL SERVICES",
 	},
 	RowForItem: func(i int, container any) ([]string, error) {
 		meshInsights := container.(*mesh.MeshInsightResourceList)
@@ -48,15 +46,9 @@ var meshInsightTable = printers.Table{
 		meta := meshInsights.Items[i].Meta
 		meshInsight := meshInsights.Items[i].Spec
 
-		var es uint32
-		if stat, ok := meshInsight.Policies[string(mesh.ExternalServiceType)]; ok {
-			es = stat.Total
-		}
-
 		return []string{
 			meta.GetName(), // MESH
 			fmt.Sprintf("%d/%d", meshInsight.Dataplanes.Online, meshInsight.Dataplanes.Total), // DATAPLANES
-			table.Number(es), // EXTERNAL SERVICES
 		}, nil
 	},
 }

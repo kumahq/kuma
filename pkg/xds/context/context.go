@@ -88,7 +88,6 @@ type MeshContext struct {
 	DataplanesByName            map[string]*core_mesh.DataplaneResource
 	EndpointMap                 xds.EndpointMap
 	IngressEndpointMap          xds.EndpointMap
-	ExternalServicesEndpointMap xds.EndpointMap
 	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
 	VIPDomains                  []xds_types.VIPDomains
 	VIPOutbounds                xds_types.Outbounds

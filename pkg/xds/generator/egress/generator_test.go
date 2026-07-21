@@ -91,15 +91,6 @@ var _ = Describe("EgressGenerator", func() {
 					}
 
 					meshResourcesMap[meshName].Mesh = res.(*core_mesh.MeshResource)
-				case core_mesh.ExternalServiceType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
-					meshResourcesMap[meshName].ExternalServices = append(
-						meshResourcesMap[meshName].ExternalServices,
-						res.(*core_mesh.ExternalServiceResource),
-					)
 				case meshexternalservice_api.MeshExternalServiceType:
 					mesList := meshResourcesMap[meshName].Resources[meshexternalservice_api.MeshExternalServiceType].(*meshexternalservice_api.MeshExternalServiceResourceList)
 					mesList.Items = append(
@@ -131,7 +122,6 @@ var _ = Describe("EgressGenerator", func() {
 					meshResources.Mesh,
 					zoneName,
 					zoneIngresses,
-					meshResources.ExternalServices,
 					mes,
 					&loader,
 				)
