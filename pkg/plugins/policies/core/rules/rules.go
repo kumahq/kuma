@@ -193,18 +193,24 @@ func BuildFromRules(
 
 	for inb, policies := range matchedPoliciesByInbound {
 		fromList := []PolicyItemWithMeta{}
+		supportsFromList := true
 		for _, p := range policies.GetItems() {
 			policyWithFrom, ok := p.GetSpec().(core_model.PolicyWithFromList)
 			if !ok {
-				return FromRules{}, nil
+				// Policy type doesn't support the legacy 'from' list (e.g. it only has 'rules').
+				// InboundRules are still built below independently of 'from' support.
+				supportsFromList = false
+				break
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
-		rules, err := BuildRules(fromList, true)
-		if err != nil {
-			return FromRules{}, err
+		if supportsFromList {
+			rules, err := BuildRules(fromList, true)
+			if err != nil {
+				return FromRules{}, err
+			}
+			rulesByInbound[inb] = rules
 		}
-		rulesByInbound[inb] = rules
 
 		rulesNew, err := inbound.BuildRules(policies)
 		if err != nil {
