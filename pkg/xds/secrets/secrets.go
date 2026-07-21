@@ -214,7 +214,7 @@ func (s *secrets) get(
 		otherMeshes,
 	); len(updateKinds) > 0 {
 		backend := issuerKRI(mesh)
-		source := kri.From(resource)
+		source := resourceKey
 
 		// A previous generation failed and we're within a backoff (or the
 		// backend circuit is open) - return an error without calling the CA. We
@@ -289,6 +289,9 @@ func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKe
 	s.Lock()
 	delete(s.cachedCerts, key)
 	s.Unlock()
+	// Drop the proxy's issuance backoff state too. The limiter is shared, so
+	// this also clears any MeshIdentity backoff for the same proxy.
+	s.limiter.Forget(dpKey)
 }
 
 func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagSet, ownMesh *core_mesh.MeshResource, otherMeshInfos []*core_mesh.MeshResource) (UpdateKinds, string) {

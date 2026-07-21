@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
@@ -23,8 +24,8 @@ var _ = Describe("Limiter", func() {
 	const backoff = 5 * time.Second
 
 	backend := kri.Identifier{ResourceType: "Mesh", Name: "default", SectionName: "ca-1"}
-	proxy := func(i int) kri.Identifier {
-		return kri.Identifier{ResourceType: "Dataplane", Mesh: "default", Name: fmt.Sprintf("dp-%d", i)}
+	proxy := func(i int) model.ResourceKey {
+		return model.ResourceKey{Mesh: "default", Name: fmt.Sprintf("dp-%d", i)}
 	}
 
 	BeforeEach(func() {
@@ -130,6 +131,19 @@ var _ = Describe("Limiter", func() {
 		now = now.Add(10 * time.Second)
 		ok, _ = limiter.Allow(backend, proxy(0))
 		Expect(ok).To(BeFalse())
+	})
+
+	It("Forget clears a proxy's backoff", func() {
+		p := proxy(1)
+		limiter.Allow(backend, p)
+		limiter.Record(backend, p, false)
+		ok, _ := limiter.Allow(backend, p)
+		Expect(ok).To(BeFalse()) // backing off
+
+		limiter.Forget(p)
+
+		ok, _ = limiter.Allow(backend, p)
+		Expect(ok).To(BeTrue()) // state dropped, allowed again
 	})
 
 	It("is a no-op when nil", func() {

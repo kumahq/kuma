@@ -12,6 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
@@ -19,6 +20,11 @@ import (
 // must fail before a backend's circuit opens. Kept well above 1 so a single
 // misbehaving proxy can never trip a whole backend.
 const DefaultCircuitBreakerMinProxies = 10
+
+// defaultCooldown is the fallback used when a caller passes a non-positive
+// Cooldown (e.g. derived from a misconfigured backoff), so the circuit breaker
+// can't end up with a zero/negative window.
+const defaultCooldown = time.Minute
 
 // CertBackoff returns a factory for the per-proxy backoff applied after a
 // failure: exponential from base, capped at max, with jitter so proxies don't
@@ -58,8 +64,8 @@ type Config struct {
 // breaker that trips only when failures span many distinct proxies - so a
 // single misbehaving proxy can never trip a whole backend.
 //
-// Keys are kri.Identifier: the backend is the issuer (a CA backend or a
-// MeshIdentity), the proxy is what the certificate is issued for.
+// The backend is keyed by kri.Identifier (a CA backend or a MeshIdentity); the
+// proxy is keyed by its model.ResourceKey so callers can Forget it on cleanup.
 type Limiter struct {
 	cfg Config
 
@@ -71,7 +77,7 @@ type Limiter struct {
 }
 
 type backendState struct {
-	proxies       map[kri.Identifier]*proxyState
+	proxies       map[model.ResourceKey]*proxyState
 	openUntil     time.Time
 	probing       bool
 	probeDeadline time.Time
@@ -98,6 +104,12 @@ func NewLimiter(cfg Config, m metrics.Metrics) (*Limiter, error) {
 	if err := m.Register(circuitOpen); err != nil {
 		return nil, err
 	}
+	if cfg.Cooldown <= 0 {
+		cfg.Cooldown = defaultCooldown
+	}
+	if cfg.Window < cfg.Cooldown {
+		cfg.Window = cfg.Cooldown
+	}
 	return &Limiter{
 		cfg:               cfg,
 		backends:          map[kri.Identifier]*backendState{},
@@ -109,7 +121,7 @@ func NewLimiter(cfg Config, m metrics.Metrics) (*Limiter, error) {
 // Allow reports whether issuance for proxy against backend may proceed now. If
 // not, it returns how long to wait. Every permitted attempt must be followed by
 // a call to Record. A nil Limiter allows everything (no throttling).
-func (l *Limiter) Allow(backend, proxy kri.Identifier) (bool, time.Duration) {
+func (l *Limiter) Allow(backend kri.Identifier, proxy model.ResourceKey) (bool, time.Duration) {
 	if l == nil {
 		return true, 0
 	}
@@ -140,7 +152,7 @@ func (l *Limiter) Allow(backend, proxy kri.Identifier) (bool, time.Duration) {
 }
 
 // Record feeds back the outcome of an attempt that Allow permitted.
-func (l *Limiter) Record(backend, proxy kri.Identifier, success bool) {
+func (l *Limiter) Record(backend kri.Identifier, proxy model.ResourceKey, success bool) {
 	if l == nil {
 		return
 	}
@@ -150,7 +162,7 @@ func (l *Limiter) Record(backend, proxy kri.Identifier, success bool) {
 	now := core.Now()
 	b := l.backends[backend]
 	if b == nil {
-		b = &backendState{proxies: map[kri.Identifier]*proxyState{}}
+		b = &backendState{proxies: map[model.ResourceKey]*proxyState{}}
 		l.backends[backend] = b
 	}
 
@@ -194,6 +206,24 @@ func (l *Limiter) Record(backend, proxy kri.Identifier, success bool) {
 	}
 	if l.cfg.MinProxies > 0 && distinct >= l.cfg.MinProxies {
 		b.openUntil = now.Add(l.cfg.Cooldown)
+	}
+	l.updateMetricsLocked()
+}
+
+// Forget drops all per-proxy backoff state for a proxy across every backend,
+// e.g. when a proxy disconnects. It does not affect a backend's open circuit
+// (that reflects a backend-wide problem, not this proxy).
+func (l *Limiter) Forget(proxy model.ResourceKey) {
+	if l == nil {
+		return
+	}
+	l.Lock()
+	defer l.Unlock()
+	for backend, b := range l.backends {
+		delete(b.proxies, proxy)
+		if len(b.proxies) == 0 && b.openUntil.IsZero() {
+			delete(l.backends, backend)
+		}
 	}
 	l.updateMetricsLocked()
 }

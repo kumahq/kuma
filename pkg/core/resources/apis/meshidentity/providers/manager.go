@@ -65,7 +65,7 @@ func (i *IdentityProviderManager) GetWorkloadIdentity(ctx context.Context, proxy
 	// breaker, so a failing provider (e.g. a misconfigured ACM Private CA) can't
 	// be hammered on every DP sync tick.
 	backend := kri.From(identity)
-	source := kri.From(proxy.Dataplane)
+	source := model.MetaToResourceKey(proxy.Dataplane.GetMeta())
 	if ok, retryAfter := i.limiter.Allow(backend, source); !ok {
 		return nil, fmt.Errorf("backing off identity generation for %q after a previous failure (retry after %s)", identity.Meta.GetName(), retryAfter)
 	}
