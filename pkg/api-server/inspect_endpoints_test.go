@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -28,16 +27,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	samples2 "github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 )
-
-type selectors []*mesh_proto.Selector
-
-func serviceSelector(name string) *mesh_proto.Selector {
-	return &mesh_proto.Selector{
-		Match: map[string]string{
-			mesh_proto.ServiceTag: name,
-		},
-	}
-}
 
 var _ = Describe("Inspect WS", func() {
 	type testCase struct {
