@@ -13,6 +13,7 @@ import (
 
 func Policy() {
 	meshName := "mesh-fault-injection"
+	zoneName := universal.Cluster.ZoneName()
 	timeout := fmt.Sprintf(`
 type: MeshTimeout
 mesh: "%s"
@@ -28,6 +29,38 @@ spec:
         http:
           requestTimeout: 3s
 `, meshName)
+	meshIdentity := fmt.Sprintf(`
+type: MeshIdentity
+name: identity
+mesh: "%s"
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+  provider:
+    type: Bundled
+    bundled:
+      meshTrustCreation: Enabled
+      insecureAllowSelfSigned: true
+      certificateParameters:
+        expiry: 24h
+      autogenerate:
+        enabled: true
+`, meshName)
+	meshTrafficPermission := fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-mesh
+mesh: "%s"
+spec:
+  rules:
+  - default:
+      allow:
+      - spiffeID:
+          type: Prefix
+          value: spiffe://%s.%s.mesh.local
+`, meshName, meshName, zoneName)
 	faultInjection := fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
@@ -37,24 +70,26 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/service: test-server
-  from:
-    - targetRef:
-        kind: MeshService
-        name: demo-client-blocked
+  rules:
+    - matches:
+        - spiffeID:
+            type: Exact
+            value: spiffe://%s.%s.mesh.local/workload/demo-client-blocked
       default:
         http:
           - abort:
               httpStatus: 402
               percentage: "100.0"
-    - targetRef:
-        kind: MeshService
-        name: demo-client-timeout
+    - matches:
+        - spiffeID:
+            type: Exact
+            value: spiffe://%s.%s.mesh.local/workload/demo-client-timeout
       default:
         http:
           - delay:
               value: 5s
               percentage: "100.0"
-`, meshName)
+`, meshName, meshName, zoneName, meshName, zoneName)
 	faultInjectionAllSources := fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
@@ -74,6 +109,8 @@ spec:
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
+			Install(YamlUniversal(meshIdentity)).
+			Install(YamlUniversal(meshTrafficPermission)).
 			Install(YamlUniversal(faultInjection)).
 			Install(YamlUniversal(faultInjectionAllSources)).
 			Install(YamlUniversal(timeout)).
