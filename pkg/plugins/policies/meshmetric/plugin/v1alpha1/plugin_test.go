@@ -75,7 +75,7 @@ func zoneIngressOnlyDataplane(name string) *builders.DataplaneBuilder {
 		})
 }
 
-func otelBackendResource(name, address string, port int32) *motb_api.MeshOpenTelemetryBackendResource {
+func otelBackendResource(name, address string) *motb_api.MeshOpenTelemetryBackendResource {
 	motb := motb_api.NewMeshOpenTelemetryBackendResource()
 	motb.SetMeta(&test_model.ResourceMeta{
 		Mesh:   "default",
@@ -84,7 +84,7 @@ func otelBackendResource(name, address string, port int32) *motb_api.MeshOpenTel
 	})
 	motb.Spec.Endpoint = &motb_api.Endpoint{
 		Address: new(address),
-		Port:    new(port),
+		Port:    new(int32(4317)),
 	}
 	motb.Spec.Protocol = new(motb_api.ProtocolGRPC)
 	return motb
@@ -246,7 +246,7 @@ var _ = Describe("MeshMetric", func() {
 		}),
 		Entry("openTelemetry", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc", 4317)}).
+				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
 				Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
@@ -324,7 +324,7 @@ var _ = Describe("MeshMetric", func() {
 			context: *xds_builders.Context().WithMeshBuilder(
 				samples.MeshDefaultBuilder(),
 			).
-				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc", 4317)}).
+				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
 				Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
@@ -380,7 +380,7 @@ var _ = Describe("MeshMetric", func() {
 			context: *xds_builders.Context().WithMeshBuilder(
 				samples.MeshDefaultBuilder(),
 			).
-				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc", 4317)}).
+				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
 				Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
@@ -440,8 +440,8 @@ var _ = Describe("MeshMetric", func() {
 		Entry("multiple_otel", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithMeshLocalResources([]core_model.Resource{
-					otelBackendResource("otel-collector", "otel-collector.observability.svc", 4317),
-					otelBackendResource("second-collector", "second-collector.observability.svc", 4317),
+					otelBackendResource("otel-collector", "otel-collector.observability.svc"),
+					otelBackendResource("second-collector", "second-collector.observability.svc"),
 				}).
 				Build(),
 			proxy: xds_builders.Proxy().
@@ -781,7 +781,6 @@ var _ = Describe("MeshMetric", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(clusters)).ToNot(ContainSubstring("_kuma:metrics:opentelemetry:"))
 		})
-
 	})
 
 	DescribeTable("deriveProxyRole",

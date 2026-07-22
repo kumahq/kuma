@@ -133,11 +133,12 @@ func validateBackend(backends *[]Backend) validators.ValidationError {
 				verr.Add(validators.ValidatePort(path.Field("port"), backend.Prometheus.Port))
 			}
 		case OpenTelemetryBackendType:
-			if backend.OpenTelemetry == nil {
+			switch {
+			case backend.OpenTelemetry == nil:
 				verr.AddViolationAt(path.Field("openTelemetry"), validators.MustBeDefined)
-			} else if backend.OpenTelemetry.BackendRef == nil {
+			case backend.OpenTelemetry.BackendRef == nil:
 				verr.AddViolationAt(path.Field("openTelemetry").Field("backendRef"), validators.MustBeDefined)
-			} else {
+			default:
 				verr.AddErrorAt(path.Field("openTelemetry").Field("backendRef"), validators.ValidateBackendResourceRef(backend.OpenTelemetry.BackendRef))
 			}
 		default:
