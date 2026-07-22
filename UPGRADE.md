@@ -690,8 +690,8 @@ hash policies.
 
 Move any `hashPolicies` still configured under `loadBalancer.ringHash` or
 `loadBalancer.maglev` to `spec.to[].default.hashPolicies` before upgrading.
-A `MeshLoadBalancingStrategy` that still sets the nested fields continues to
-apply successfully; the fields are silently ignored by the control plane and
+After upgrading, policies that still set the removed nested fields may be
+rejected by validation or have those fields pruned by the API server, and they
 no longer affect the generated Envoy config.
 
 ### `MeshTrace` OpenTelemetry backend no longer accepts an inline `endpoint`
