@@ -8,8 +8,8 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
@@ -33,7 +33,10 @@ func (g Generator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	// ZoneEgress isn't scoped to a single mesh (xdsCtx.Mesh is empty for zone proxies),
+	// so unlike mesh-scoped generators we can't use unified_naming.Enabled here: it
+	// would always see a nil mesh and report unified naming as disabled.
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource
