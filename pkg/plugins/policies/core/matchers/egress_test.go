@@ -10,8 +10,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	mcb_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	mtp_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
 )

@@ -347,10 +347,10 @@
    "path": "meshtimeouts",
    "pluralDisplayName": "Mesh Timeouts",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
