@@ -609,6 +609,19 @@ use, rotate them (generate new tokens with the current control plane)
 before upgrading — they will be rejected as using an unsupported
 algorithm afterward.
 
+### `kuma.io/mesh` annotation no longer honored on Kubernetes
+
+The control plane no longer reads the deprecated `kuma.io/mesh` annotation on
+a Pod, Service, HTTPRoute, or Namespace to assign the resource's mesh. Only
+the `kuma.io/mesh` label (on the resource itself, or on its Namespace) is
+used; resources without the label fall back to the `default` mesh.
+
+**Action required**
+
+If you still set `kuma.io/mesh` as an annotation, switch it to a label before
+upgrading. A resource that only carries the annotation will resolve to the
+`default` mesh after upgrading.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

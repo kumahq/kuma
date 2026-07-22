@@ -39,7 +39,7 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 		return "", nil
 	}
 
-	meshName := k8s_util.MeshOfByLabelOrAnnotation(logger, pod, ns)
+	meshName := k8s_util.MeshOfByLabel(pod, ns)
 	logger = logger.WithValues("mesh", meshName)
 	if meshErr := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); meshErr != nil {
 		if !kube_errors.IsNotFound(meshErr) {
@@ -130,13 +130,7 @@ func hasExplicitMesh(pod *kube_core.Pod, ns *kube_core.Namespace) bool {
 	if mesh, exists := metadata.Annotations(pod.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
 		return true
 	}
-	if mesh, exists := metadata.Annotations(pod.GetAnnotations()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
-		return true
-	}
 	if mesh, exists := metadata.Annotations(ns.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
-		return true
-	}
-	if mesh, exists := metadata.Annotations(ns.GetAnnotations()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
 		return true
 	}
 	return false
