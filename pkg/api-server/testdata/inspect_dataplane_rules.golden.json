@@ -67,8 +67,7 @@
    },
    "policyType": "MeshTrafficPermission",
    "subset": {
-    "kuma.io/service": "client",
-    "kuma.io/zone": "east"
+    "kuma.io/service": "client"
    },
    "conf": {
     "action": "Deny"
