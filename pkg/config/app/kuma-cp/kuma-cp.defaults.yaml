@@ -541,6 +541,20 @@ general:
   # ResilientComponentMaxBackoff configures max backoff for restarting resilient component:
   # KDS sync, Insight resync, PostgresEventListener, etc.
   resilientComponentMaxBackoff: 1m # ENV: KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF
+  # CertGenerationBaseBackoff configures the base backoff before retrying dataplane certificate
+  # generation after a failure (e.g. a misconfigured CA backend), so a failing backend is not
+  # called on every DP sync tick.
+  certGenerationBaseBackoff: 5s # ENV: KUMA_GENERAL_CERT_GENERATION_BASE_BACKOFF
+  # CertGenerationMaxBackoff configures the max backoff before retrying dataplane certificate
+  # generation after a failure (e.g. a misconfigured CA backend).
+  certGenerationMaxBackoff: 5m # ENV: KUMA_GENERAL_CERT_GENERATION_MAX_BACKOFF
+  # CertGenerationCircuitBreakerMinProxies is the number of distinct proxies that must fail
+  # certificate generation against the same backend before its circuit breaker opens and
+  # short-circuits further attempts. Kept well above 1 so a single misbehaving proxy can never
+  # trip a whole backend. In a mesh with fewer proxies than this the circuit breaker never opens
+  # and only the per-proxy backoff applies (still bounded), so small deployments may want to lower
+  # it. 0 disables the circuit breaker, leaving only per-proxy backoff.
+  certGenerationCircuitBreakerMinProxies: 10 # ENV: KUMA_GENERAL_CERT_GENERATION_CIRCUIT_BREAKER_MIN_PROXIES
 # DNS Server configuration
 dnsServer:
   # The domain that the server will resolve the services for

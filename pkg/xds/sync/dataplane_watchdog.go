@@ -103,6 +103,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
 		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
+		d.EnvoyCpCtx.IdentityManager.Cleanup(d.key)
 		d.lastOtelStatus = nil
 		d.otelStatusSynced = false
 		d.OtelStatusCache.Set(d.key, nil)

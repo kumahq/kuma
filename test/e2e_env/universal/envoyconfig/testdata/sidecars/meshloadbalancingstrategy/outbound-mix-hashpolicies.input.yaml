@@ -33,10 +33,3 @@ spec:
           type: Maglev
           maglev:
             tableSize: 27
-            hashPolicies:
-              - type: Cookie
-                cookie:
-                  name: should-be-overridden
-              - type: Header
-                header:
-                  name: should-be-overridden

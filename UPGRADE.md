@@ -694,6 +694,21 @@ If any `MeshAccessLog` policy still sets `openTelemetry.endpoint`, create a
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
 
+### `MeshLoadBalancingStrategy` load-balancer-specific `hashPolicies` removed
+
+The deprecated `spec.to[].default.loadBalancer.ringHash.hashPolicies` and
+`spec.to[].default.loadBalancer.maglev.hashPolicies` fields have been
+removed. `spec.to[].default.hashPolicies` is now the only place to configure
+hash policies.
+
+**Action required**
+
+Move any `hashPolicies` still configured under `loadBalancer.ringHash` or
+`loadBalancer.maglev` to `spec.to[].default.hashPolicies` before upgrading.
+After upgrading, policies that still set the removed nested fields may be
+rejected by validation or have those fields pruned by the API server, and they
+no longer affect the generated Envoy config.
+
 ### `MeshTrace` OpenTelemetry backend no longer accepts an inline `endpoint`
 
 The deprecated `default.backends[].openTelemetry.endpoint` field has been

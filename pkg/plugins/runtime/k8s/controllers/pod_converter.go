@@ -60,10 +60,20 @@ func (p *PodConverter) PodToDataplane(
 	}
 	// we need to validate if the labels have changed
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
+	// Copy the allow-listed node labels onto the Dataplane labels, the same set
+	// that lands on inbound tags.
+	var nodeLabels map[string]string
+	if p.InboundConverter.InboundTagsDisabled {
+		nodeLabels, err = p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+		if err != nil {
+			return err
+		}
+	}
+
 	labels, err := resource_labels.Compute(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
-		mergeLabels(dataplane.GetLabels(), pod.Labels),
+		mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
 		dataplane.Mesh,
 		dataplane.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
@@ -505,12 +515,14 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 	return aggregateConfig, nil
 }
 
-func mergeLabels(existingLabels map[string]string, podLabels map[string]string) map[string]string {
+func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {
 	mergedLabels := map[string]string{}
 	if existingLabels != nil {
 		mergedLabels = maps.Clone(existingLabels)
 	}
-	maps.Copy(mergedLabels, podLabels)
+	for _, labels := range labelSets {
+		maps.Copy(mergedLabels, labels)
+	}
 	return mergedLabels
 }
 
