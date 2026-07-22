@@ -1,40 +1,37 @@
 rules:
 - conf:
-    http:
-      requestTimeout: 3m22s
-    idleTimeout: 3m20s
+    mode: Strict
   match: null
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_mesh-1___matched-for-rules-mt-cccccc_
+      kri: kri_mtls_mesh-1___matched-for-rules-mtls-cccccc_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
-      name: matched-for-rules-mt-cccccc
-      type: MeshTimeout
+      name: matched-for-rules-mtls-cccccc
+      type: MeshTLS
     RuleIndex: 0
 - conf:
-    connectionTimeout: 1m41s
-    idleTimeout: 1m40s
+    mode: Permissive
   match: null
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_mesh-1___matched-for-rules-mt-bbbbbb_
+      kri: kri_mtls_mesh-1___matched-for-rules-mtls-bbbbbb_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
-      name: matched-for-rules-mt-bbbbbb
-      type: MeshTimeout
+      name: matched-for-rules-mtls-bbbbbb
+      type: MeshTLS
     RuleIndex: 0
 - conf:
-    idleTimeout: 10s
+    mode: Strict
   match: null
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_mesh-1___matched-for-rules-mt-aaaaaa_
+      kri: kri_mtls_mesh-1___matched-for-rules-mtls-aaaaaa_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
-      name: matched-for-rules-mt-aaaaaa
-      type: MeshTimeout
+      name: matched-for-rules-mtls-aaaaaa
+      type: MeshTLS
     RuleIndex: 0

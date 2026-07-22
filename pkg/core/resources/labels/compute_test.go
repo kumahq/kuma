@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -96,54 +97,43 @@ var _ = Describe("ComputePolicyRole", func() {
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
 		Entry("workload-owner policy with from", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
+			policy: builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
+				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build().Spec,
 			namespace:    resource_labels.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
 		}),
 		Entry("workload-owner policy with both from and to", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
+			policy: builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
+				AddTo(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
+				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build().Spec,
 			namespace:   resource_labels.NewNamespace("kuma-demo", false),
 			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
 		}),
 		Entry("consumer policy with from", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
+			policy: builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "backend-ns", ""), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
+				AddTo(builders.TargetRefMeshService("backend", "backend-ns", ""), builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
+				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build().Spec,
 			namespace:   resource_labels.NewNamespace("kuma-demo", false),
 			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
 		}),
 		Entry("system policy with both from and to", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
+			policy: builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
+				AddTo(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
+				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build().Spec,
 			namespace:    resource_labels.NewNamespace("kuma-system", true),
 			expectedRole: mesh_proto.SystemPolicyRole,

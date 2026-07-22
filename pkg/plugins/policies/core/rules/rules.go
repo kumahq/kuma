@@ -196,7 +196,7 @@ func BuildFromRules(
 		for _, p := range policies.GetItems() {
 			policyWithFrom, ok := p.GetSpec().(core_model.PolicyWithFromList)
 			if !ok {
-				return FromRules{}, nil
+				continue
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}

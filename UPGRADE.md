@@ -273,6 +273,34 @@ Before upgrading, migrate every policy that uses one of these top-level
 After the migration, verify the intended policy coverage in every Zone before
 upgrading Zone control planes.
 
+### `from` removed from `MeshTimeout`
+
+The deprecated `spec.from` array has been removed from `MeshTimeout`. Timeouts
+for incoming traffic are now configured exclusively through `spec.rules`.
+Creating or updating a `MeshTimeout` that relies on `from` no longer takes
+effect (the field is ignored and produces no inbound configuration).
+
+**Action required**
+
+Before upgrading, migrate every `MeshTimeout` that uses `spec.from` to
+`spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a
+single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 1h
+# after
+spec:
+  rules:
+    - default:
+        idleTimeout: 1h
+```
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
