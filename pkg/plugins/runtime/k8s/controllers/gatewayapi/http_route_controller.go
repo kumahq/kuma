@@ -68,7 +68,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, httpRoute, &ns)
 
-	meshRouteSpecs, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
+	meshRouteSpecs, conditions, err := r.gapiToKumaRoutes(ctx, httpRoute)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not generate MeshHTTPRoute.kuma.io resources")
 	}
@@ -93,7 +93,6 @@ type ParentConditions map[gatewayapi.ParentReference][]kube_meta.Condition
 // Only unexpected errors are returned as error.
 func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	ctx context.Context,
-	mesh string,
 	route *gatewayapi.HTTPRoute,
 ) (map[string]core_model.ResourceSpec, ParentConditions, error) {
 	routes := map[string]core_model.ResourceSpec{}
@@ -111,7 +110,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			continue
 		}
 
-		rules, rulesConditions, err := r.gapiToMeshRules(ctx, mesh, route)
+		rules, rulesConditions, err := r.gapiToMeshRules(ctx, route)
 		if err != nil {
 			return nil, nil, err
 		}

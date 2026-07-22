@@ -26,14 +26,13 @@ import (
 
 func (r *HTTPRouteReconciler) gapiToMeshRules(
 	ctx context.Context,
-	mesh string,
 	route *gatewayapi.HTTPRoute,
 ) ([]v1alpha1.Rule, []kube_meta.Condition, error) {
 	var rules []v1alpha1.Rule
 	var conditions []kube_meta.Condition
 
 	for _, rule := range route.Spec.Rules {
-		kumaRule, ruleConditions, err := r.gapiToKumaMeshRule(ctx, mesh, route, rule)
+		kumaRule, ruleConditions, err := r.gapiToKumaMeshRule(ctx, route, rule)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -105,7 +104,6 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	ctx context.Context,
-	mesh string,
 	route *gatewayapi.HTTPRoute,
 	rule gatewayapi.HTTPRouteRule,
 ) (v1alpha1.Rule, []kube_meta.Condition, error) {
@@ -125,7 +123,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	}
 
 	for _, gapiFilter := range rule.Filters {
-		filter, filterConditions, ok := r.gapiToKumaMeshFilter(ctx, mesh, route.Namespace, gapiFilter)
+		filter, filterConditions, ok := r.gapiToKumaMeshFilter(ctx, route.Namespace, gapiFilter)
 		if !ok {
 			// TODO use err
 			continue
@@ -143,7 +141,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	}
 
 	for _, gapiBackendRef := range rule.BackendRefs {
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, mesh, route.Namespace, gapiBackendRef.BackendObjectReference)
+		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, route.Namespace, gapiBackendRef.BackendObjectReference)
 		if err != nil {
 			return v1alpha1.Rule{}, nil, err
 		}
@@ -257,7 +255,7 @@ func fromGAPIPath(gapiPath gatewayapi.HTTPPathModifier) (v1alpha1.PathRewrite, b
 
 func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 	ctx context.Context,
-	mesh, routeNamespace string,
+	routeNamespace string,
 	gapiFilter gatewayapi.HTTPRouteFilter,
 ) (v1alpha1.Filter, []kube_meta.Condition, bool) {
 	switch gapiFilter.Type {
@@ -338,7 +336,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 	case gatewayapi_v1.HTTPRouteFilterRequestMirror:
 		mirror := gapiFilter.RequestMirror
 
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, mesh, routeNamespace, mirror.BackendRef)
+		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, routeNamespace, mirror.BackendRef)
 		if err != nil {
 			return v1alpha1.Filter{}, nil, false
 		}
@@ -377,7 +375,7 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 }
 
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
-	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
+	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
@@ -392,8 +390,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	}
 	namespacedName := kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)}
 
-	switch {
-	case gk.Kind == "Service" && gk.Group == "":
+	if gk.Kind == "Service" && gk.Group == "" {
 		// References to Services are required by GAPI to include a port
 		port := *ref.Port
 

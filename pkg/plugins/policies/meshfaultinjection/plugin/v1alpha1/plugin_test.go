@@ -372,5 +372,4 @@ var _ = Describe("MeshFaultInjection", func() {
 			test_matchers.MatchGoldenYAML(path.Join("testdata", "zoneegress_matches_sni.listener.golden.yaml")),
 		)
 	})
-
 })

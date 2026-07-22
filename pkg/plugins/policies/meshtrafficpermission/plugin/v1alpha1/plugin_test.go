@@ -534,5 +534,4 @@ var _ = Describe("RBAC", func() {
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-ze-listener-with-mtp.golden.yaml")))
 		})
 	})
-
 })

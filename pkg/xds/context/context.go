@@ -81,19 +81,19 @@ type MeshContext struct {
 	Hash string
 	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
 	// Excludes Dataplane roster; stays stable across DP-registration waves.
-	PolicyMatchingHash          string
-	Resource                    *core_mesh.MeshResource
-	BaseMeshContext             *BaseMeshContext
-	Resources                   Resources
-	DataplanesByName            map[string]*core_mesh.DataplaneResource
-	EndpointMap                 xds.EndpointMap
-	IngressEndpointMap          xds.EndpointMap
-	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
-	VIPDomains                  []xds_types.VIPDomains
-	VIPOutbounds                xds_types.Outbounds
-	ServicesInformation         map[string]*ServiceInformation
-	DataSourceLoader            datasource.Loader
-	CAsByTrustDomain            map[string][]PEMBytes
+	PolicyMatchingHash  string
+	Resource            *core_mesh.MeshResource
+	BaseMeshContext     *BaseMeshContext
+	Resources           Resources
+	DataplanesByName    map[string]*core_mesh.DataplaneResource
+	EndpointMap         xds.EndpointMap
+	IngressEndpointMap  xds.EndpointMap
+	CrossMeshEndpoints  map[xds.MeshName]xds.EndpointMap
+	VIPDomains          []xds_types.VIPDomains
+	VIPOutbounds        xds_types.Outbounds
+	ServicesInformation map[string]*ServiceInformation
+	DataSourceLoader    datasource.Loader
+	CAsByTrustDomain    map[string][]PEMBytes
 	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
 	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
 	// port and, when WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must
