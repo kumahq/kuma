@@ -2,10 +2,71 @@
   "diff": [
     {
       "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/kri_msvc_envoyconfig_kuma-3__test-server_80/filterChains/0/filters/0/typedConfig/accessLog",
+      "value": [
+        {
+          "filter": {
+            "metadataFilter": {
+              "matchIfKeyNotFound": false,
+              "matcher": {
+                "filter": "kuma.routes",
+                "path": [
+                  {
+                    "key": "route_kri"
+                  }
+                ],
+                "value": {
+                  "stringMatch": {
+                    "exact": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule0"
+                  }
+                }
+              }
+            }
+          },
+          "name": "envoy.access_loggers.file",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+            "logFormat": {
+              "jsonFormat": {
+                "Destination": "%test-server%",
+                "HeaderCamel": "%%REQ(X-Test)%%",
+                "HeaderCrazy": "%%REQ(X-TeSt)%%",
+                "HeaderLower": "%%REQ(x-test)%%",
+                "Source": "%test-server%",
+                "Start": "%%START_TIME(%%s)%%"
+              }
+            },
+            "path": "/dev/stdout"
+          }
+        }
+      ]
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/kri_msvc_envoyconfig_kuma-3__test-server_80/filterChains/0/filters/0/typedConfig/httpFilters/0",
+      "value": {
+        "name": "envoy.filters.http.lua",
+        "typedConfig": {
+          "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua",
+          "defaultSourceCode": {
+            "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"kuma.routes\", \"route_kri\", meta)\n  end\nend\n"
+          }
+        }
+      }
+    },
+    {
+      "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/kri_msvc_envoyconfig_kuma-3__test-server_80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0",
       "value": {
         "match": {
           "prefix": "/test/"
+        },
+        "metadata": {
+          "filterMetadata": {
+            "envoy.filters.http.lua": {
+              "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule0"
+            }
+          }
         },
         "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule_0",
         "requestHeadersToAdd": [
@@ -29,6 +90,13 @@
       "value": {
         "match": {
           "path": "/test"
+        },
+        "metadata": {
+          "filterMetadata": {
+            "envoy.filters.http.lua": {
+              "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule0"
+            }
+          }
         },
         "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule_0",
         "requestHeadersToAdd": [
@@ -194,7 +262,7 @@
             }
           ]
         },
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_80",
           "endpoints": [
@@ -220,7 +288,9 @@
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
             "commonHttpProtocolOptions": {
-              "idleTimeout": "7200s"
+              "idleTimeout": "3600s",
+              "maxConnectionDuration": "0s",
+              "maxStreamDuration": "0s"
             },
             "explicitHttpConfig": {
               "httpProtocolOptions": {}
@@ -516,10 +586,56 @@
                 "name": "envoy.filters.network.http_connection_manager",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "accessLog": [
+                    {
+                      "filter": {
+                        "metadataFilter": {
+                          "matchIfKeyNotFound": false,
+                          "matcher": {
+                            "filter": "kuma.routes",
+                            "path": [
+                              {
+                                "key": "route_kri"
+                              }
+                            ],
+                            "value": {
+                              "stringMatch": {
+                                "exact": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule0"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "name": "envoy.access_loggers.file",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+                        "logFormat": {
+                          "jsonFormat": {
+                            "Destination": "%test-server%",
+                            "HeaderCamel": "%%REQ(X-Test)%%",
+                            "HeaderCrazy": "%%REQ(X-TeSt)%%",
+                            "HeaderLower": "%%REQ(x-test)%%",
+                            "Source": "%test-server%",
+                            "Start": "%%START_TIME(%%s)%%"
+                          }
+                        },
+                        "path": "/dev/stdout"
+                      }
+                    }
+                  ],
                   "commonHttpProtocolOptions": {
                     "idleTimeout": "0s"
                   },
                   "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.lua",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua",
+                        "defaultSourceCode": {
+                          "inlineString": "function envoy_on_request(handle)\n  local meta = handle:metadata():get(\"route_kri\")\n  if meta ~= nil then\n    handle:streamInfo():dynamicMetadata():set(\"kuma.routes\", \"route_kri\", meta)\n  end\nend\n"
+                        }
+                      }
+                    },
                     {
                       "name": "envoy.filters.http.router",
                       "typedConfig": {
@@ -563,6 +679,13 @@
                             "match": {
                               "path": "/test"
                             },
+                            "metadata": {
+                              "filterMetadata": {
+                                "envoy.filters.http.lua": {
+                                  "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule0"
+                                }
+                              }
+                            },
                             "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule_0",
                             "requestHeadersToAdd": [
                               {
@@ -581,6 +704,13 @@
                           {
                             "match": {
                               "prefix": "/test/"
+                            },
+                            "metadata": {
+                              "filterMetadata": {
+                                "envoy.filters.http.lua": {
+                                  "route_kri": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule0"
+                                }
+                              }
                             },
                             "name": "kri_mhttpr_envoyconfig_kuma-3__test-route_rule_0",
                             "requestHeadersToAdd": [

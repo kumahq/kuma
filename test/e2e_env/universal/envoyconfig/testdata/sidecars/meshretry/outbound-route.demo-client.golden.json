@@ -246,7 +246,7 @@
             }
           ]
         },
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_3000",
           "endpoints": [

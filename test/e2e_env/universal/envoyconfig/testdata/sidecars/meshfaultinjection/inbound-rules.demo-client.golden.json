@@ -147,7 +147,7 @@
             }
           ]
         },
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_3000",
           "endpoints": [
@@ -497,7 +497,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&kuma.io/service=demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
+                          "value": "\u0026kuma.io/service=demo-client\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=client-owners\u0026"
                         }
                       }
                     ],

@@ -2,6 +2,46 @@
   "diff": [
     {
       "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/connectTimeout",
+      "value": "5s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/connectTimeout",
+      "value": "51s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
+      "value": "3600s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
+      "value": "50s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxConnectionDuration",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxConnectionDuration",
+      "value": "55s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
+      "value": "54s"
+    },
+    {
+      "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0/route/idleTimeout",
       "value": "1800s"
     },
@@ -168,7 +208,7 @@
             }
           ]
         },
-        "connectTimeout": "10s",
+        "connectTimeout": "51s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_80",
           "endpoints": [
@@ -194,7 +234,9 @@
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
             "commonHttpProtocolOptions": {
-              "idleTimeout": "7200s"
+              "idleTimeout": "50s",
+              "maxConnectionDuration": "55s",
+              "maxStreamDuration": "54s"
             },
             "explicitHttpConfig": {
               "httpProtocolOptions": {}

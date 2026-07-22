@@ -1,5 +1,31 @@
 {
-  "diff": [],
+  "diff": [
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_3000/circuitBreakers/thresholds/0/maxConnectionPools",
+      "value": 5
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_3000/circuitBreakers/thresholds/0/maxConnections",
+      "value": 10
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_3000/circuitBreakers/thresholds/0/maxPendingRequests",
+      "value": 2
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_3000/circuitBreakers/thresholds/0/maxRequests",
+      "value": 32
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_3000/circuitBreakers/thresholds/0/maxRetries",
+      "value": 1
+    }
+  ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "kri_msvc_envoyconfig_kuma-3__demo-client_3000": {
@@ -143,11 +169,16 @@
         "circuitBreakers": {
           "thresholds": [
             {
+              "maxConnectionPools": 5,
+              "maxConnections": 10,
+              "maxPendingRequests": 2,
+              "maxRequests": 32,
+              "maxRetries": 1,
               "trackRemaining": true
             }
           ]
         },
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_3000",
           "endpoints": [

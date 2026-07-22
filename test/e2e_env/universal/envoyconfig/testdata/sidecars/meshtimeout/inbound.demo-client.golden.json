@@ -2,6 +2,16 @@
   "diff": [
     {
       "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_3000/connectTimeout",
+      "value": "5s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_inbound_dp_3000/connectTimeout",
+      "value": "51s"
+    },
+    {
+      "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_3000/filterChains/0/filters/1/typedConfig/idleTimeout",
       "value": "3600s"
     },
@@ -158,7 +168,7 @@
             }
           ]
         },
-        "connectTimeout": "10s",
+        "connectTimeout": "51s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_3000",
           "endpoints": [
