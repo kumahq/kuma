@@ -31,6 +31,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
@@ -565,7 +566,12 @@ var _ = Describe("RBAC", func() {
 			})
 
 			meshRes := builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1").Build()
-			ctx := xds_builders.Context().WithMeshBuilder(builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1")).Build()
+			// ctx.Mesh.Resource is deliberately left nil here: zone-egress proxies
+			// aren't scoped to a single mesh, so this is what production actually
+			// passes. A non-nil ctx.Mesh would make unified_naming.Enabled() return
+			// true even on the old buggy code, masking the regression this test
+			// exists to catch.
+			ctx := &xds_context.Context{}
 
 			proxy := &core_xds.Proxy{
 				APIVersion: envoy.APIV3,
