@@ -60,11 +60,8 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/service: test-server
-  from:
-    - targetRef:
-        kind: MeshService
-        name: test-client
-      default:
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 503

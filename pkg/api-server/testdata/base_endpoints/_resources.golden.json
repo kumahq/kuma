@@ -100,7 +100,7 @@
    "path": "meshfaultinjections",
    "pluralDisplayName": "Mesh Fault Injections",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": false,

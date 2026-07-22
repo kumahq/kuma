@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	"github.com/kumahq/kuma/v3/pkg/core"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -13,14 +12,10 @@ import (
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/xds"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
-var (
-	_   core_plugins.EgressPolicyPlugin = &plugin{}
-	log                                 = core.Log.WithName("MeshFaultInjection")
-)
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -34,13 +29,12 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshFaultInjectionType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshFaultInjectionType, tags, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
-		return applyToEgress(rs, proxy)
+		// MeshFaultInjection no longer supports targeting the legacy ExternalService resource via
+		// 'from' on zone egress. MeshExternalService fault injection on zone egress is applied
+		// through the Dataplane path below using rules-based SNI matches (applyToZoneProxyListener).
+		return nil
 	}
 
 	if proxy.Dataplane == nil {
@@ -82,25 +76,15 @@ func applyToInbounds(
 
 		inboundRules, ok := fromRules.InboundRules[listenerKey]
 		if !ok || len(inboundRules) == 0 {
-			//nolint:staticcheck // SA1019 Backward compatibility: fallback to old Rules format if InboundRules not present
-			rules, ok := fromRules.Rules[listenerKey]
-			if !ok {
-				continue
-			}
+			continue
+		}
 
+		switch protocol {
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+			configurer := plugin_xds.Configurer{Rules: inboundRules}
 			for _, filterChain := range listener.FilterChains {
-				if err := configure(rules, filterChain, protocol); err != nil {
+				if err := configurer.ConfigureHttpListener(filterChain); err != nil {
 					return err
-				}
-			}
-		} else {
-			switch protocol {
-			case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-				configurer := plugin_xds.Configurer{Rules: inboundRules}
-				for _, filterChain := range listener.FilterChains {
-					if err := configurer.ConfigureHttpListener(filterChain); err != nil {
-						return err
-					}
 				}
 			}
 		}
@@ -163,40 +147,5 @@ func applyToZoneProxyListener(
 		}
 	}
 
-	return nil
-}
-
-func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	listeners := policies_xds.GatherListeners(rs)
-	if listeners.Egress == nil {
-		log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
-			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
-		)
-		return nil
-	}
-	return nil
-}
-
-func configure(
-	fromRules core_rules.Rules,
-	filterChain *envoy_listener.FilterChain,
-	protocol core_meta.Protocol,
-) error {
-	switch protocol {
-	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-		for _, rule := range fromRules {
-			conf := rule.Conf.(api.Conf)
-			from := rule.Subset
-
-			configurer := plugin_xds.LegacyConfigurer{
-				FaultInjections: pointer.Deref(conf.Http),
-				From:            from,
-			}
-
-			if err := configurer.ConfigureHttpListener(filterChain); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }

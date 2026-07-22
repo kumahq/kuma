@@ -18,7 +18,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test"
@@ -38,7 +37,7 @@ import (
 var _ = Describe("MeshFaultInjection", func() {
 	type sidecarTestCase struct {
 		resources         []*core_xds.Resource
-		fromRules         core_rules.FromRules
+		policies          core_rules.FromRules
 		expectedListeners []string
 	}
 
@@ -55,9 +54,15 @@ var _ = Describe("MeshFaultInjection", func() {
 		}
 	}
 
+	injectPolicy := func(mp *core_xds.MatchedPolicies, fromRules core_rules.FromRules) {
+		mp.Dynamic[api.MeshFaultInjectionType] = core_xds.TypedMatchingPolicies{
+			Type:      api.MeshFaultInjectionType,
+			FromRules: fromRules,
+		}
+	}
+
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
-			// given
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
@@ -83,133 +88,19 @@ var _ = Describe("MeshFaultInjection", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, given.fromRules)).
+				WithPolicies(xds_builders.MatchedPolicies().With(func(mp *core_xds.MatchedPolicies) {
+					injectPolicy(mp, given.policies)
+				})).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			// when
 			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
-			// then
 			for i, expected := range given.expectedListeners {
-				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[i].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", expected)))
+				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[i].Resource)).
+					To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", expected)))
 			}
 		},
-		Entry("basic listener: 2 inbounds one http and second tcp", sidecarTestCase{
-			resources: []*core_xds.Resource{
-				{
-					Name:   "inbound:127.0.0.1:17777",
-					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-							Configure(
-								listeners.HttpInboundRoutes(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-												envoy_common.WithService("backend"),
-												envoy_common.WithWeight(100),
-											)},
-										},
-									},
-								),
-							),
-						)).MustBuild(),
-				},
-				{
-					Name:   "inbound:127.0.0.1:17778",
-					Origin: metadata.OriginInbound,
-					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
-						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
-						)).MustBuild(),
-				},
-			},
-			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {
-						{
-							Subset: subsetutils.Subset{
-								{
-									Key:   "kuma.io/service",
-									Value: "demo-client",
-								},
-							},
-							Conf: api.Conf{
-								Http: &[]api.FaultInjectionConf{
-									{
-										Abort: &api.AbortConf{
-											HttpStatus: int32(444),
-											Percentage: intstr.FromString("12"),
-										},
-										Delay: &api.DelayConf{
-											Value:      *test.ParseDuration("55s"),
-											Percentage: intstr.FromString("55"),
-										},
-										ResponseBandwidth: &api.ResponseBandwidthConf{
-											Limit:      "111Mbps",
-											Percentage: intstr.FromString("62.9"),
-										},
-									},
-								},
-							},
-						},
-						{
-							Subset: subsetutils.Subset{
-								{
-									Key:   "kuma.io/service",
-									Value: "demo-client",
-									Not:   true,
-								},
-							},
-							Conf: api.Conf{
-								Http: &[]api.FaultInjectionConf{
-									{
-										Abort: &api.AbortConf{
-											HttpStatus: 111,
-											Percentage: intstr.FromInt32(11),
-										},
-										Delay: &api.DelayConf{
-											Value:      *test.ParseDuration("22s"),
-											Percentage: intstr.FromInt32(22),
-										},
-										ResponseBandwidth: &api.ResponseBandwidthConf{
-											Limit:      "333Mbps",
-											Percentage: intstr.FromString("33.3"),
-										},
-									},
-								},
-							},
-						},
-					},
-					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Http: &[]api.FaultInjectionConf{
-								{
-									Abort: &api.AbortConf{
-										HttpStatus: int32(444),
-										Percentage: intstr.FromString("12.1"),
-									},
-									Delay: &api.DelayConf{
-										Value:      *test.ParseDuration("55s"),
-										Percentage: intstr.FromInt(55),
-									},
-									ResponseBandwidth: &api.ResponseBandwidthConf{
-										Limit:      "111Mbps",
-										Percentage: intstr.FromString("62.9"),
-									},
-								},
-							},
-						},
-					}},
-				},
-			},
-			expectedListeners: []string{"basic_listener_1.golden.yaml", "basic_listener_2.golden.yaml"},
-		}),
 		Entry("basic listener: 2 inbounds one http and second tcp, rules api", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
@@ -243,7 +134,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						)).MustBuild(),
 				},
 			},
-			fromRules: core_rules.FromRules{
+			policies: core_rules.FromRules{
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {
 						{
@@ -343,26 +234,28 @@ var _ = Describe("MeshFaultInjection", func() {
 						}}
 					}),
 			).
-			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, core_rules.FromRules{
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "10.20.30.40", Port: 10002}: {{
-						Match: &common_api.Match{
-							SNI: &common_api.SNIMatch{
-								Type:  common_api.SNIExactMatchType,
-								Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
-							},
-						},
-						Conf: api.Conf{
-							Http: &[]api.FaultInjectionConf{{
-								Abort: &api.AbortConf{
-									HttpStatus: 503,
-									Percentage: intstr.FromString("50"),
+			WithPolicies(xds_builders.MatchedPolicies().With(func(mp *core_xds.MatchedPolicies) {
+				injectPolicy(mp, core_rules.FromRules{
+					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+						{Address: "10.20.30.40", Port: 10002}: {{
+							Match: &common_api.Match{
+								SNI: &common_api.SNIMatch{
+									Type:  common_api.SNIExactMatchType,
+									Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
 								},
-							}},
-						},
-						Origin: policyOrigin("mfi-zone-egress"),
-					}},
-				},
+							},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{{
+									Abort: &api.AbortConf{
+										HttpStatus: 503,
+										Percentage: intstr.FromString("50"),
+									},
+								}},
+							},
+							Origin: policyOrigin("mfi-zone-egress"),
+						}},
+					},
+				})
 			})).
 			Build()
 
