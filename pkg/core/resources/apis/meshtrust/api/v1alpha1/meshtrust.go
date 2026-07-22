@@ -9,10 +9,6 @@ package v1alpha1
 // +kuma:policy:register_generator=true
 // +kuma:policy:has_status=true
 type MeshTrust struct {
-	// Origin specifies whether the resource was created from a MeshIdentity.
-	//
-	// Deprecated: use Status.Origin instead
-	Origin *Origin `json:"origin,omitempty"`
 	// TrustDomain is the trust domain associated with this resource.
 	// +required
 	// +kubebuilder:validation:MaxLength=253
