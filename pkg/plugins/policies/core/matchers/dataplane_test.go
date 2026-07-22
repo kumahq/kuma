@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"

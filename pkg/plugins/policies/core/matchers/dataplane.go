@@ -94,8 +94,9 @@ func MatchedPolicies(
 			if err := matchedPoliciesByInbound[inbound].AddItem(policy); err != nil {
 				return core_xds.TypedMatchingPolicies{}, err
 			}
+			matchedPoliciesByGatewayInbound[inbound] = matchedPoliciesByInbound[inbound]
 		}
-		for _, inbound := range append(selectedInbounds, selectedGatewayInbounds...) {
+		for _, inbound := range selectedGatewayInbounds {
 			if _, ok := matchedPoliciesByGatewayInbound[inbound]; !ok {
 				matchedPoliciesByGatewayInbound[inbound], err = registry.Global().NewList(rType)
 				if err != nil {
