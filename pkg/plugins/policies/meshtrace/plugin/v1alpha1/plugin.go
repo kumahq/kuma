@@ -354,8 +354,8 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.OpenTelemetry.BackendRef,
 			"",
-			policies_xds.ParseOtelEndpoint,
-			func(ep string) string { return ep },
+			nil,
+			nil,
 			ctx.Mesh.Resources,
 		)
 		if resolved == nil {
@@ -424,8 +424,8 @@ func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *pol
 	return policies_xds.ResolveOtelBackend(
 		backend.OpenTelemetry.BackendRef,
 		"",
-		policies_xds.ParseOtelEndpoint,
-		func(ep string) string { return ep },
+		nil,
+		nil,
 		resources,
 	)
 }
