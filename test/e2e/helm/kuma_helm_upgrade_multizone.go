@@ -103,10 +103,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 20s
         http:
           requestTimeout: 2s

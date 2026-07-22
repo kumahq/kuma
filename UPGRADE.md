@@ -285,6 +285,36 @@ Before upgrading, migrate every policy that uses one of these top-level
 After the migration, verify the intended policy coverage in every Zone before
 upgrading Zone control planes.
 
+### `from` removed from `MeshTimeout`
+
+The deprecated `spec.from` array has been removed from `MeshTimeout`. Timeouts
+for incoming traffic are now configured exclusively through `spec.rules`.
+`spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to`
+is also set, the resource is accepted but `from` has no effect on inbound
+configuration; if `from` was the only field set, the resulting spec has
+neither `to` nor `rules`, so the request is rejected by validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshTimeout` that uses `spec.from` to
+`spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a
+single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 1h
+# after
+spec:
+  rules:
+    - default:
+        idleTimeout: 1h
+```
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
@@ -621,6 +651,20 @@ use, rotate them (generate new tokens with the current control plane)
 before upgrading — they will be rejected as using an unsupported
 algorithm afterward.
 
+### `kuma.io/mesh` annotation no longer honored on Kubernetes
+
+The control plane no longer reads the deprecated `kuma.io/mesh` annotation on
+a Pod, Service, HTTPRoute, or Namespace to assign the resource's mesh. Only
+the `kuma.io/mesh` label is used: on the resource itself, or — for namespaced
+resources (Pod, Service, HTTPRoute) — on their Namespace. Resources without
+the label fall back to the `default` mesh.
+
+**Action required**
+
+If you still set `kuma.io/mesh` as an annotation, switch it to a label before
+upgrading. A resource that only carries the annotation will resolve to the
+`default` mesh after upgrading.
+
 ### `MeshMetric` OpenTelemetry backend no longer accepts an inline `endpoint`
 
 The deprecated `default.backends[].openTelemetry.endpoint` field has been
@@ -631,6 +675,35 @@ OpenTelemetry metrics backend.
 **Action required**
 
 If any `MeshMetric` policy still sets `openTelemetry.endpoint`, create a
+`MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
+the policy to reference it via `openTelemetry.backendRef` before upgrading.
+Policies that still set `openTelemetry.endpoint` will fail validation.
+
+### `MeshLoadBalancingStrategy` load-balancer-specific `hashPolicies` removed
+
+The deprecated `spec.to[].default.loadBalancer.ringHash.hashPolicies` and
+`spec.to[].default.loadBalancer.maglev.hashPolicies` fields have been
+removed. `spec.to[].default.hashPolicies` is now the only place to configure
+hash policies.
+
+**Action required**
+
+Move any `hashPolicies` still configured under `loadBalancer.ringHash` or
+`loadBalancer.maglev` to `spec.to[].default.hashPolicies` before upgrading.
+After upgrading, policies that still set the removed nested fields may be
+rejected by validation or have those fields pruned by the API server, and they
+no longer affect the generated Envoy config.
+
+### `MeshTrace` OpenTelemetry backend no longer accepts an inline `endpoint`
+
+The deprecated `default.backends[].openTelemetry.endpoint` field has been
+removed from the `MeshTrace` policy. `backendRef`, pointing at a
+`MeshOpenTelemetryBackend` resource, is now the only way to configure an
+OpenTelemetry tracing backend.
+
+**Action required**
+
+If any `MeshTrace` policy still sets `openTelemetry.endpoint`, create a
 `MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.

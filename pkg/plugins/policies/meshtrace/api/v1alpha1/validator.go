@@ -159,15 +159,14 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 	case OpenTelemetryBackendType:
 		otelPath := firstBackendPath.Field("openTelemetry")
 		otelBackend := backend.OpenTelemetry
-		if otelBackend == nil {
+		switch {
+		case otelBackend == nil:
 			verr.AddViolationAt(otelPath, validators.MustBeDefined)
-			break
+		case otelBackend.BackendRef == nil:
+			verr.AddViolationAt(otelPath.Field("backendRef"), validators.MustBeDefined)
+		default:
+			verr.AddErrorAt(otelPath.Field("backendRef"), validators.ValidateBackendResourceRef(otelBackend.BackendRef))
 		}
-
-		verr.AddErrorAt(otelPath, validators.ValidateOtelBackendRefOrEndpoint(
-			otelBackend.Endpoint,
-			otelBackend.BackendRef,
-		))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}

@@ -26,8 +26,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
@@ -415,6 +417,38 @@ var _ = Describe("Context", func() {
 				},
 				entries,
 			)
+		})
+
+		It("should not filter out a producer policy solely due to a top-level MeshSubset zone tag mismatch", func() {
+			ctx := stdcontext.Background()
+			// given
+			targetRef := builders.TargetRefMeshSubset(mesh_proto.ZoneTag, "different-zone")
+			resource := &meshtimeout_api.MeshTimeoutResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh: "default",
+					Name: "mt-1",
+					Labels: map[string]string{
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+						mesh_proto.ZoneTag:             "origin-zone",
+						mesh_proto.PolicyRoleLabel:     string(mesh_proto.ProducerPolicyRole),
+						mesh_proto.KubeNamespaceTag:    "kuma-demo",
+					},
+				},
+				Spec: &meshtimeout_api.MeshTimeout{
+					TargetRef: &targetRef,
+					To: &[]meshtimeout_api.To{
+						{
+							TargetRef: builders.TargetRefMeshService("backend", "kuma-demo", ""),
+						},
+					},
+				},
+			}
+
+			// when
+			ok := predicate(ctx, clusterID, kds.Features{kds.FeatureProducerPolicyFlow: true}, resource)
+
+			// then
+			Expect(ok).To(BeTrue())
 		})
 	})
 	Describe("GlobalResourceMapper", func() {

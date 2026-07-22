@@ -8,7 +8,6 @@ import (
 )
 
 // MeshTimeout configures timeout limits for service-to-service communication to prevent requests from hanging indefinitely. It supports connection timeouts, idle timeouts, and HTTP-specific timeouts (request, stream, headers) to ensure timely failure detection and improve service responsiveness.
-// +kuma:policy:is_from_as_rules=true
 // +kuma:policy:order=1000
 type MeshTimeout struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
@@ -17,8 +16,6 @@ type MeshTimeout struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
 	To *[]To `json:"to,omitempty"`
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound timeout configurations. When matches are present, the rule is applied only
 	// to traffic selected by the given source and destination matchers.
 	Rules *[]Rule `json:"rules,omitempty"`
@@ -36,15 +33,6 @@ type To struct {
 	// destinations.
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
-	// 'targetRef'
-	Default Conf `json:"default,omitempty"`
-}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
 	Default Conf `json:"default,omitempty"`
 }

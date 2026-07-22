@@ -1,51 +1,45 @@
 InboundRules:
   127.0.0.1:80:
   - conf:
-      connectionTimeout: 2s
-      http:
-        requestTimeout: 5s
-      idleTimeout: 20s
+      mode: Strict
     match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mt_default___default_
+        kri: kri_mtls_default___default_
         mesh: default
         modificationTime: "0001-01-01T00:00:00Z"
         name: default
-        type: MeshTimeout
+        type: MeshTLS
       RuleIndex: 0
   - conf:
-      connectionTimeout: 20s
+      mode: Permissive
     match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mt_default___override_
+        kri: kri_mtls_default___override_
         mesh: default
         modificationTime: "0001-01-01T00:00:00Z"
         name: override
-        type: MeshTimeout
+        type: MeshTLS
       RuleIndex: 0
 Rules:
   127.0.0.1:80:
   - Conf:
-      connectionTimeout: 20s
-      http:
-        requestTimeout: 5s
-      idleTimeout: 20s
+      mode: Permissive
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_default___default_
+      kri: kri_mtls_default___default_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: default
-      type: MeshTimeout
+      type: MeshTLS
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_default___override_
+      kri: kri_mtls_default___override_
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
       name: override
-      type: MeshTimeout
+      type: MeshTLS
     OriginByMatches: {}
     Subset: []

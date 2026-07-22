@@ -337,7 +337,6 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled
-                annotations:
                   kuma.io/mesh: mesh-name-from-ns`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -356,7 +355,6 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled
-                annotations:
                   kuma.io/mesh: mesh-name-from-ns`,
 			cfgFile: "inject.config.yaml",
 		}),

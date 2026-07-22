@@ -66,11 +66,11 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-kuma-sidecar-and-ip",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
 					},
 					Labels: map[string]string{
-						"app": "sample",
+						"app":          "sample",
+						"kuma.io/mesh": "poc",
 					},
 					UID: "pod-with-kuma-sidecar-and-ip-demo",
 				},
@@ -107,11 +107,11 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-duplicated-inbound",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc-ms",
 						"kuma.io/sidecar-injected": "true",
 					},
 					Labels: map[string]string{
-						"app": "sample-ms",
+						"app":          "sample-ms",
+						"kuma.io/mesh": "poc-ms",
 					},
 					UID: "pod-with-duplicated-inbound-demo",
 				},
@@ -200,12 +200,12 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-custom-admin-port",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
 						"kuma.io/envoy-admin-port": "9999",
 					},
 					Labels: map[string]string{
-						"app": "sample",
+						"app":          "sample",
+						"kuma.io/mesh": "poc",
 					},
 					UID: "pod-with-custom-admin-port-demo",
 				},
@@ -546,11 +546,11 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "zone-proxy-pod",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
 					},
 					Labels: map[string]string{
-						"app": "zone-proxy",
+						"app":          "zone-proxy",
+						"kuma.io/mesh": "poc",
 					},
 					UID: "zone-proxy-pod-demo",
 				},

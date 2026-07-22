@@ -1,5 +1,5 @@
-# MeshTimeout With overrides
-type: MeshTimeout
+# MeshTLS With overrides
+type: MeshTLS
 name: default
 mesh: default
 spec:
@@ -9,12 +9,9 @@ spec:
     - targetRef:
         kind: Mesh
       default:
-        idleTimeout: 20s
-        connectionTimeout: 2s
-        http:
-          requestTimeout: 5s
+        mode: Strict
 ---
-type: MeshTimeout
+type: MeshTLS
 name: override
 mesh: default
 spec:
@@ -26,4 +23,4 @@ spec:
     - targetRef:
         kind: Mesh
       default:
-        connectionTimeout: 20s
+        mode: Permissive
