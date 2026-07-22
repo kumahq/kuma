@@ -55,16 +55,6 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 			return 0, fmt.Errorf("JWT token %s header must be a string", KeyIDHeader)
 		}
 		switch token.Method.Alg() {
-		case jwt.SigningMethodHS256.Name:
-			var key []byte
-			var err error
-			for _, keyAccessor := range j.keyAccessors {
-				key, err = keyAccessor.GetLegacyKey(ctx, KeyIDFallbackValue)
-				if err == nil {
-					return key, nil
-				}
-			}
-			return nil, err
 		case jwt.SigningMethodRS256.Name:
 			var key *rsa.PublicKey
 			var err error
@@ -76,7 +66,7 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 			}
 			return nil, err
 		default:
-			return nil, fmt.Errorf("unsupported token alg %s. Allowed algorithms are %s and %s", token.Method.Alg(), jwt.SigningMethodRS256.Name, jwt.SigningMethodHS256)
+			return nil, fmt.Errorf("unsupported token alg %s. Allowed algorithm is %s", token.Method.Alg(), jwt.SigningMethodRS256.Name)
 		}
 	}, j.parserOptions...)
 	if err != nil {

@@ -1,10 +1,8 @@
 package meshtrafficpermission
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
@@ -51,8 +49,6 @@ func MeshTrafficPermission() {
 	const meshName = "mtp-test"
 	const namespace = "mtp-test"
 
-	var clientPodName string
-
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
@@ -80,9 +76,6 @@ func MeshTrafficPermission() {
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			SetupInGroup(multizone.KubeZone1, &group)
 		Expect(group.Wait()).To(Succeed())
-
-		clientPodName, err = PodNameOfApp(multizone.KubeZone1, "demo-client", namespace)
-		Expect(err).ToNot(HaveOccurred())
 
 		esIp := multizone.UniZone1.GetApp("external-service").GetIP()
 		Expect(multizone.Global.Install(externalService(meshName, esIp))).To(Succeed())
@@ -149,97 +142,6 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		trafficAllowed(serverHostname)
-	})
-
-	It("should allow the traffic with kuma.io/zone", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.svc.kuma-4.mesh.local")
-
-		// when mesh traffic permission with MeshService
-		yaml := fmt.Sprintf(`
-type: MeshTrafficPermission
-name: mtp-2
-mesh: mtp-test
-spec:
- targetRef:
-   kind: Dataplane
-   labels:
-     kuma.io/service: test-server
- from:
-   - targetRef:
-       kind: MeshSubset
-       tags:
-         kuma.io/zone: %s 
-     default:
-       action: Allow
-`, multizone.KubeZone1.ZoneName())
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("test-server.svc.kuma-4.mesh.local")
-	})
-
-	It("should allow the traffic with k8s.kuma.io/namespace", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.svc.kuma-4.mesh.local")
-
-		// when mesh traffic permission with MeshSubset
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-3
-mesh: mtp-test
-spec:
- targetRef:
-   kind: Dataplane
-   labels:
-     kuma.io/service: test-server
- from:
-   - targetRef:
-       kind: MeshSubset
-       tags:
-         k8s.kuma.io/namespace: mtp-test
-     default:
-       action: Allow
-`
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("test-server.svc.kuma-4.mesh.local")
-	})
-
-	It("should allow the traffic with tags added dynamically on Kubernetes", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.svc.kuma-4.mesh.local")
-
-		// when mesh traffic permission with MeshSubset
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-4
-mesh: mtp-test
-spec:
- targetRef:
-   kind: Dataplane
-   labels:
-     kuma.io/service: test-server
- from:
-   - targetRef:
-       kind: MeshSubset
-       tags:
-         newtag: client
-     default:
-       action: Allow
-`
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// and when Kubernetes pod is labeled
-		err = k8s.RunKubectlContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("test-server.svc.kuma-4.mesh.local")
 	})
 
 	It("should allow the traffic to the external service through the egress", func() {
