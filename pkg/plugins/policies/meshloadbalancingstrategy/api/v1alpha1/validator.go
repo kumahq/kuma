@@ -73,16 +73,6 @@ func validateConf(conf Conf, to To) validators.ValidationError {
 		verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
 		verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness, to))
 		verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
-
-		// Check if hashPolicies is specified both at the top level and in one of the load balancer types
-		if conf.HashPolicies != nil && conf.LoadBalancer != nil {
-			if conf.LoadBalancer.RingHash != nil && conf.LoadBalancer.RingHash.HashPolicies != nil {
-				verr.AddViolation("loadBalancer.ringHash.hashPolicies", "hashPolicies already specified in the root level")
-			}
-			if conf.LoadBalancer.Maglev != nil && conf.LoadBalancer.Maglev.HashPolicies != nil {
-				verr.AddViolation("loadBalancer.maglev.hashPolicies", "hashPolicies already specified in the root level")
-			}
-		}
 	}
 
 	return verr
@@ -182,13 +172,7 @@ func validateLoadBalancer(conf *LoadBalancer) validators.ValidationError {
 
 	switch conf.Type {
 	case RingHashType:
-		if conf.RingHash != nil {
-			verr.AddError("ringHash", validateRingHash(conf.RingHash))
-		}
 	case MaglevType:
-		if conf.Maglev != nil {
-			verr.AddError("maglev", validateMaglev(conf.Maglev))
-		}
 	case RoundRobinType:
 	case RandomType:
 	case LeastRequestType:
@@ -198,30 +182,12 @@ func validateLoadBalancer(conf *LoadBalancer) validators.ValidationError {
 	return verr
 }
 
-func validateRingHash(conf *RingHash) validators.ValidationError {
-	var verr validators.ValidationError
-	if conf == nil {
-		return verr
-	}
-	verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
-	return verr
-}
-
 func validateLeastRequest(conf *LeastRequest) validators.ValidationError {
 	var verr validators.ValidationError
 	if conf == nil {
 		return verr
 	}
 	verr.Add(validators.ValidateIntOrStringGreaterOrEqualThan(validators.RootedAt("activeRequestBias"), conf.ActiveRequestBias, 0))
-	return verr
-}
-
-func validateMaglev(conf *Maglev) validators.ValidationError {
-	var verr validators.ValidationError
-	if conf == nil {
-		return verr
-	}
-	verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
 	return verr
 }
 

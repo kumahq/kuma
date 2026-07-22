@@ -196,12 +196,6 @@ type RingHash struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=8000000
 	MaxRingSize *uint32 `json:"maxRingSize,omitempty"`
-
-	// HashPolicies specify a list of request/connection properties that are used to calculate a hash.
-	// These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
-	// set to true, and there is already a hash generated, the hash is returned immediately,
-	// ignoring the rest of the hash policy list.
-	HashPolicies *[]HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Header;Cookie;Connection;SourceIP;QueryParameter;FilterState
@@ -281,10 +275,4 @@ type Maglev struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=5000011
 	TableSize *uint32 `json:"tableSize,omitempty"`
-
-	// HashPolicies specify a list of request/connection properties that are used to calculate a hash.
-	// These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
-	// set to true, and there is already a hash generated, the hash is returned immediately,
-	// ignoring the rest of the hash policy list.
-	HashPolicies *[]HashPolicy `json:"hashPolicies,omitempty"`
 }
