@@ -15,6 +15,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -60,6 +61,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
 		fromRules       core_rules.FromRules
+		unifiedNaming   bool
 		expectedCluster []string
 	}
 
@@ -111,8 +113,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resourceSet.Add(given.resources...)
 
 			context := xds_samples.SampleContext()
+			if given.unifiedNaming {
+				context = *xds_builders.Context().WithMeshBuilder(
+					samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				).Build()
+			}
 
-			proxy := xds_builders.Proxy().
+			proxyBuilder := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
 						WithName("backend").
@@ -136,8 +143,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
-				).
-				Build()
+				)
+			if given.unifiedNaming {
+				proxyBuilder = proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+				})
+			}
+			proxy := proxyBuilder.Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
@@ -290,6 +302,34 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_connection_limits.golden.yaml"},
+		}),
+		Entry("basic inbound cluster with connection limits (unified naming)", sidecarTestCase{
+			unifiedNaming: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   metadata.OriginInbound,
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
+				},
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
+						{
+							Subset: subsetutils.Subset{},
+							Conf: api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+							},
+						},
+					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: &api.Rule{Default: api.Conf{ConnectionLimits: genConnectionLimits()}},
+					}},
+				},
+			},
+			expectedCluster: []string{"inbound_cluster_connection_limits_unified_naming.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
