@@ -6,7 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
@@ -139,6 +141,54 @@ var _ = Describe("MatchingRegex", func() {
 			expected: true,
 		}),
 	)
+})
+
+var _ = Describe("FromLegacyTargetRef", func() {
+	type testCase struct {
+		targetRef common_api.TargetRef
+		expected  tags.Tags
+	}
+
+	DescribeTable("should ignore subset tags and return only service or match-all tags",
+		func(given testCase) {
+			result, ok := tags.FromLegacyTargetRef(given.targetRef)
+			Expect(ok).To(BeTrue())
+			Expect(result).To(Equal(given.expected))
+		},
+		Entry("MeshService", testCase{
+			targetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: pointer.To("backend"),
+			},
+			expected: tags.Tags{mesh_proto.ServiceTag: "backend"},
+		}),
+		Entry("MeshServiceSubset ignores tags", testCase{
+			targetRef: common_api.TargetRef{
+				Kind: common_api.MeshServiceSubset,
+				Name: pointer.To("backend"),
+				Tags: &map[string]string{"version": "v1", mesh_proto.ZoneTag: "east"},
+			},
+			expected: tags.Tags{mesh_proto.ServiceTag: "backend"},
+		}),
+		Entry("Mesh", testCase{
+			targetRef: common_api.TargetRef{
+				Kind: common_api.Mesh,
+			},
+			expected: tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag},
+		}),
+		Entry("MeshSubset ignores tags", testCase{
+			targetRef: common_api.TargetRef{
+				Kind: common_api.MeshSubset,
+				Tags: &map[string]string{"version": "v1", mesh_proto.ZoneTag: "east"},
+			},
+			expected: tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag},
+		}),
+	)
+
+	It("should return false for unsupported kind", func() {
+		_, ok := tags.FromLegacyTargetRef(common_api.TargetRef{Kind: common_api.Dataplane})
+		Expect(ok).To(BeFalse())
+	})
 })
 
 var _ = Describe("RegexOR", func() {

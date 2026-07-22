@@ -113,24 +113,17 @@ func (t Tags) String() string {
 
 func FromLegacyTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 	var service string
-	tags := Tags{}
 
 	switch targetRef.Kind {
-	case common_api.MeshService:
+	case common_api.MeshService, common_api.MeshServiceSubset:
 		service = pointer.Deref(targetRef.Name)
-	case common_api.MeshServiceSubset:
-		service = pointer.Deref(targetRef.Name)
-		tags = pointer.Deref(targetRef.Tags)
-	case common_api.Mesh:
+	case common_api.Mesh, common_api.MeshSubset:
 		service = mesh_proto.MatchAllTag
-	case common_api.MeshSubset:
-		service = mesh_proto.MatchAllTag
-		tags = pointer.Deref(targetRef.Tags)
 	default:
 		return nil, false
 	}
 
-	return tags.WithTags(mesh_proto.ServiceTag, service), true
+	return Tags{}.WithTags(mesh_proto.ServiceTag, service), true
 }
 
 type (
