@@ -613,8 +613,9 @@ algorithm afterward.
 
 The control plane no longer reads the deprecated `kuma.io/mesh` annotation on
 a Pod, Service, HTTPRoute, or Namespace to assign the resource's mesh. Only
-the `kuma.io/mesh` label (on the resource itself, or on its Namespace) is
-used; resources without the label fall back to the `default` mesh.
+the `kuma.io/mesh` label is used: on the resource itself, or — for namespaced
+resources (Pod, Service, HTTPRoute) — on their Namespace. Resources without
+the label fall back to the `default` mesh.
 
 **Action required**
 
