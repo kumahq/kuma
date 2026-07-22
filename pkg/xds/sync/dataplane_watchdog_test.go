@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"k8s.io/client-go/util/cert"
 
+<<<<<<< HEAD
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -31,6 +32,28 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 	"github.com/kumahq/kuma/v2/pkg/xds/server"
 	"github.com/kumahq/kuma/v2/pkg/xds/sync"
+=======
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
+	envoy_admin_tls "github.com/kumahq/kuma/v3/pkg/envoy/admin/tls"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
+	"github.com/kumahq/kuma/v3/pkg/xds/sync"
+>>>>>>> 2321564700 (fix(xds): throttle dataplane cert issuance on CA failure (#17448))
 )
 
 type staticSnapshotReconciler struct {
@@ -102,7 +125,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 		eventBus, err := events.NewEventBus(10, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		secrets, err := secrets.NewSecrets(nil, nil, newMetrics) // nil is ok for now, because we don't use it
+		secrets, err := secrets.NewSecrets(nil, nil, newMetrics, issuer.Unlimited()) // nil is ok for now, because we don't use it
 		Expect(err).ToNot(HaveOccurred())
 
 		plugins := map[string]providers.IdentityProvider{
@@ -118,7 +141,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			EnvoyCpCtx: &xds_context.ControlPlaneContext{
 				Secrets:         secrets,
 				Zone:            zone,
-				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus),
+				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus, issuer.Unlimited()),
 			},
 			MeshCache:  cache,
 			ResManager: resManager,
