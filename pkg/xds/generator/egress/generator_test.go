@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	policies_generator "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/generator"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -45,6 +46,7 @@ var _ = Describe("EgressGenerator", func() {
 	type testCase struct {
 		fileWithResourcesName string
 		expected              string
+		unifiedNaming         bool
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -155,6 +157,9 @@ var _ = Describe("EgressGenerator", func() {
 					ZoneIngresses:      zoneIngresses,
 					MeshResourcesList:  meshResourcesList,
 				},
+				Metadata: &core_xds.DataplaneMetadata{
+					Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: given.unifiedNaming},
+				},
 			}
 			xdsCtx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
@@ -180,6 +185,11 @@ var _ = Describe("EgressGenerator", func() {
 		Entry("01. default trafficroute, one externalservice", testCase{
 			fileWithResourcesName: "01.externalservice-only.yaml",
 			expected:              "01.externalservice-only.golden.yaml",
+		}),
+		Entry("01. unified naming, one externalservice", testCase{
+			fileWithResourcesName: "01.externalservice-only.yaml",
+			expected:              "01.externalservice-only-unified-naming.golden.yaml",
+			unifiedNaming:         true,
 		}),
 		Entry("02. default trafficroute, one service behind zoneingress", testCase{
 			fileWithResourcesName: "02.internalservice-only.yaml",

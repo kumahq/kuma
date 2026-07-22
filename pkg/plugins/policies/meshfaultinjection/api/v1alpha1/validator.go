@@ -63,7 +63,6 @@ func validateMatches(field string, matches []common_api.Match) validators.Valida
 	}
 	return verr
 }
-
 func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	if !common_api.IncludesGateways(topTargetRef) && len(to) != 0 {
