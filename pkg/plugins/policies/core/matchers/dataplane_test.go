@@ -6,22 +6,81 @@ import (
 	"path/filepath"
 	"strings"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtls_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_resources "github.com/kumahq/kuma/v3/pkg/test/resources"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var _ = Describe("MatchedPolicies", func() {
+	It("returns GatewayRules for mesh-wide policy on a legacy built-in gateway with no inbounds", func() {
+		// given
+		dpp := &core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: "builtin-gateway",
+			},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.0.2.1",
+					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "gateway",
+						},
+					},
+				},
+			},
+		}
+
+		mode := meshtls_api.ModeStrict
+		policy := meshtls_api.NewMeshTLSResource()
+		policy.Meta = &test_model.ResourceMeta{
+			Mesh: "mesh-1",
+			Name: "mesh-wide",
+		}
+		policy.Spec.TargetRef = &common_api.TargetRef{Kind: common_api.Mesh}
+		policy.Spec.Rules = &[]meshtls_api.Rule{{
+			Default: meshtls_api.Conf{
+				Mode: &mode,
+			},
+		}}
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[meshtls_api.MeshTLSType] = &meshtls_api.MeshTLSResourceList{
+			Items: []*meshtls_api.MeshTLSResource{policy},
+		}
+
+		// when
+		matches, err := matchers.PolicyMatches(policy, dpp, resources)
+		Expect(err).ToNot(HaveOccurred())
+		policies, err := matchers.MatchedPolicies(meshtls_api.MeshTLSType, dpp, resources)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(matches).To(BeTrue())
+		Expect(policies.DataplanePolicies).To(ConsistOf(policy))
+		Expect(policies.FromRules.InboundRules).To(BeEmpty())
+		Expect(policies.GatewayRules.InboundRules).To(HaveKey(core_rules.InboundListener{
+			Address: "192.0.2.1",
+		}))
+	})
+
 	type testCase struct {
 		testName     string
 		dppFile      string

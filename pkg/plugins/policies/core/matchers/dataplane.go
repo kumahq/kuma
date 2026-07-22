@@ -28,7 +28,8 @@ func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResourc
 		return false, errors.New("resource is not a targetRef policy")
 	}
 	selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, referencableResources)
-	return len(selectedInbounds) != 0 || delegatedGateway, err
+	selectedGatewayInbounds := builtinGatewayListenersSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp)
+	return len(selectedInbounds) != 0 || len(selectedGatewayInbounds) != 0 || delegatedGateway, err
 }
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
@@ -52,6 +53,7 @@ func MatchedPolicies(
 	var warnings []string
 
 	matchedPoliciesByInbound := map[core_rules.InboundListener]core_model.ResourceList{}
+	matchedPoliciesByGatewayInbound := map[core_rules.InboundListener]core_model.ResourceList{}
 	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname]core_model.ResourceList{}
 	dpPolicies, err := registry.Global().NewList(rType)
 	if err != nil {
@@ -65,6 +67,7 @@ func MatchedPolicies(
 
 		refPolicy := policy.GetSpec().(core_model.Policy)
 		selectedInbounds, delegatedGatewaySelected, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, resources)
+		selectedGatewayInbounds := builtinGatewayListenersSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp)
 		if err != nil {
 			warnings = append(warnings,
 				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
@@ -72,7 +75,7 @@ func MatchedPolicies(
 				),
 			)
 		}
-		if len(selectedInbounds) == 0 && !delegatedGatewaySelected {
+		if len(selectedInbounds) == 0 && len(selectedGatewayInbounds) == 0 && !delegatedGatewaySelected {
 			// DPP is not matched by the policy
 			continue
 		}
@@ -92,12 +95,26 @@ func MatchedPolicies(
 				return core_xds.TypedMatchingPolicies{}, err
 			}
 		}
+		for _, inbound := range append(selectedInbounds, selectedGatewayInbounds...) {
+			if _, ok := matchedPoliciesByGatewayInbound[inbound]; !ok {
+				matchedPoliciesByGatewayInbound[inbound], err = registry.Global().NewList(rType)
+				if err != nil {
+					return core_xds.TypedMatchingPolicies{}, err
+				}
+			}
+			if err := matchedPoliciesByGatewayInbound[inbound].AddItem(policy); err != nil {
+				return core_xds.TypedMatchingPolicies{}, err
+			}
+		}
 	}
 
 	dpPolicies = SortByTargetRef(dpPolicies)
 
 	for inbound, ps := range matchedPoliciesByInbound {
 		matchedPoliciesByInbound[inbound] = SortByTargetRef(ps)
+	}
+	for inbound, ps := range matchedPoliciesByGatewayInbound {
+		matchedPoliciesByGatewayInbound[inbound] = SortByTargetRef(ps)
 	}
 
 	fr, err := core_rules.BuildFromRules(matchedPoliciesByInbound)
@@ -111,7 +128,7 @@ func MatchedPolicies(
 	}
 
 	gr, err := core_rules.BuildGatewayRules(
-		matchedPoliciesByInbound,
+		matchedPoliciesByGatewayInbound,
 		matchedPoliciesByGatewayListener,
 		resources,
 	)
@@ -272,6 +289,28 @@ func resolveDataplaneProxyType(dpp *core_mesh.DataplaneResource) common_api.Targ
 
 func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppType common_api.TargetRefProxyType) bool {
 	return len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType)
+}
+
+func builtinGatewayListenersSelectedByPolicy(
+	meta core_model.ResourceMeta,
+	ref common_api.TargetRef,
+	dpp *core_mesh.DataplaneResource,
+) []core_rules.InboundListener {
+	if ref.Kind != common_api.Mesh {
+		return nil
+	}
+	if !dppSelectedByZone(meta, dpp) || !dppSelectedByNamespace(meta, dpp) {
+		return nil
+	}
+	if !isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
+		return nil
+	}
+	if !dpp.Spec.IsBuiltinGateway() {
+		return nil
+	}
+	return []core_rules.InboundListener{{
+		Address: dpp.Spec.GetNetworking().GetAddress(),
+	}}
 }
 
 // allInboundListeners returns every inbound of the dataplane as an InboundListener
