@@ -22,9 +22,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
-	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
-	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test"
@@ -637,33 +634,7 @@ var _ = Describe("MeshRateLimit", func() {
 		Expect(rateLimit.GetResponseHeadersToAdd()[0].GetHeader().GetKey()).To(Equal("x-rate-limit-scope"))
 		Expect(rateLimit.GetResponseHeadersToAdd()[0].GetHeader().GetValue()).To(Equal("common"))
 	})
-
 })
-
-func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {
-	prefixMatch := meshhttproute_api.Match{
-		Path: &meshhttproute_api.PathMatch{
-			Type:  meshhttproute_api.PathPrefix,
-			Value: "/",
-		},
-	}
-	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		VirtualHostName: serviceName,
-		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
-		Routes: []meshhttproute_xds.OutboundRoute{{
-			Split: []envoy_common.Split{
-				plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
-			},
-			Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{prefixMatch})),
-			Match: prefixMatch,
-		}},
-		DpTags: map[string]map[string]bool{
-			"kuma.io/service": {
-				serviceName: true,
-			},
-		},
-	}
-}
 
 func routeRateLimitFromZoneProxyListener(listener *envoy_listener.Listener) *envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit {
 	Expect(listener.GetFilterChains()).ToNot(BeEmpty())

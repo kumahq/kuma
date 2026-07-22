@@ -258,7 +258,8 @@ var _ = Describe("Defaulter", func() {
               "spec": {
                 "match": {
                   "port": 80,
-                  "protocol": "http"
+                  "protocol": "http",
+                  "type": ""
                 },
                 "endpoints": [
                   {
@@ -266,6 +267,9 @@ var _ = Describe("Defaulter", func() {
                     "port": 80
                   }
                 ]
+              },
+              "status": {
+                "vip": {}
               }
             }
 `,

@@ -53,6 +53,7 @@ var _ = Describe("Rest Resource", func() {
   "name": "one",
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2019-07-17T16:05:36.995Z",
+  "kri": "kri_m____one_",
   "mtls": {
     "enabledBackend": "ca-1"
   }
@@ -78,7 +79,7 @@ var _ = Describe("Rest Resource", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// and
-				expected := `{"type":"Mesh","name":"one","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2019-07-17T16:05:36.995Z"}`
+				expected := `{"type":"Mesh","name":"one","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2019-07-17T16:05:36.995Z","kri":"kri_m____one_"}`
 				Expect(string(bytes)).To(Equal(expected))
 			})
 		})
