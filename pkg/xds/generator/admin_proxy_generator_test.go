@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -255,7 +256,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				var clusterNames []string
-				for _, resource := range resources.List() {
+				for _, resource := range resources.ListOf(envoy_resource.ClusterType) {
 					clusterNames = append(clusterNames, resource.Name)
 				}
 				Expect(clusterNames).To(ContainElement(expectedClusterName))
