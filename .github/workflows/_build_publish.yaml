@@ -43,7 +43,27 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
   MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold"
 jobs:
+  assert-tag-version:
+    # Tag check lives on the steps, not the job, so this job always reports
+    # success/failure and never "skipped". That lets build-binaries and
+    # build-images depend on it with a plain `needs:` and GitHub's default
+    # job-status semantics, which correctly cascade to digest-images and
+    # publish-helm further down the chain and correctly stop on cancellation.
+    timeout-minutes: 10
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_11_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: ${{ github.ref_type == 'tag' }}
+        with:
+          fetch-depth: 0
+      - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        if: ${{ github.ref_type == 'tag' }}
+      - name: Assert built binary reports tag version
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          make build/assert-tag-version
   build-binaries:
+    needs: [assert-tag-version]
     timeout-minutes: 70
     runs-on: ${{ vars.RUNS_ON_RELEASE_2_11_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
@@ -94,6 +114,7 @@ jobs:
         run: |
           make publish/pulp
   build-images:
+    needs: [assert-tag-version]
     runs-on: ${{ vars.RUNS_ON_RELEASE_2_11_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write # Required for image signing
