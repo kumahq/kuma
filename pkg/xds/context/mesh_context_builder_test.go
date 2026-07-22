@@ -14,6 +14,7 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -427,17 +428,43 @@ var _ = Describe("ServicesInformation", func() {
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())
 		ms := msBuilder.Build()
 
-		// and a legacy external service, which is always considered TLS ready
-		externalService := &core_mesh.ExternalServiceResource{
+		// and a MeshExternalService, which is always considered TLS ready
+		externalService := &meshexternalservice_api.MeshExternalServiceResource{
 			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "external-svc"},
-			Spec: &mesh_proto.ExternalService{
-				Networking: &mesh_proto.ExternalService_Networking{
-					Address: "httpbin.org:80",
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     meshexternalservice_api.HostnameGeneratorType,
+					Port:     80,
+					Protocol: core_meta.ProtocolHTTP,
 				},
-				Tags: map[string]string{mesh_proto.ServiceTag: "external-svc"},
+				Endpoints: &[]meshexternalservice_api.Endpoint{
+					{
+						Address: "httpbin.org",
+						Port:    80,
+					},
+				},
 			},
+			Status: &meshexternalservice_api.MeshExternalServiceStatus{},
 		}
 		Expect(resourceStore.Create(context.Background(), externalService, store.CreateByKey("external-svc", meshName))).To(Succeed())
+
+		// and a ready zone egress listener so MeshExternalService endpoints are materialized
+		zoneEgress := &core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "zone-egress-dp"},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "127.0.0.10",
+							Port:    10002,
+							State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+						},
+					},
+				},
+			},
+		}
+		Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", meshName))).To(Succeed())
 
 		// and a builtin and a delegated gateway dataplane, neither of which is a regular service
 		builtinGateway := &core_mesh.DataplaneResource{
@@ -471,9 +498,10 @@ var _ = Describe("ServicesInformation", func() {
 		Expect(mc.ServicesInformation[msKey].TLSReadiness).To(BeTrue())
 
 		// and the external service is unconditionally TLS ready
-		Expect(mc.ServicesInformation["external-svc"]).ToNot(BeNil())
-		Expect(mc.ServicesInformation["external-svc"].IsExternalService).To(BeTrue())
-		Expect(mc.ServicesInformation["external-svc"].TLSReadiness).To(BeTrue())
+		esKey := destinationname.MustResolve(false, externalService, externalService.Spec.Match)
+		Expect(mc.ServicesInformation[esKey]).ToNot(BeNil())
+		Expect(mc.ServicesInformation[esKey].IsExternalService).To(BeTrue())
+		Expect(mc.ServicesInformation[esKey].TLSReadiness).To(BeTrue())
 
 		// and gateway dataplanes (builtin and delegated) never had ServiceInsight-backed
 		// TLS readiness and still don't get a ServicesInformation entry of their own

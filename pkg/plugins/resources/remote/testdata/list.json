@@ -2,29 +2,49 @@
     "total": 2,
     "items": [
         {
-            "type": "ExternalService",
+            "type": "MeshExternalService",
             "mesh": "default",
             "name": "one",
             "creationTime": "2018-07-17T16:05:36.995Z",
             "modificationTime": "2019-07-17T16:05:36.995Z",
-            "tags": {
-                "kuma.io/service": "one"
+            "spec": {
+                "match": {
+                    "type": "HostnameGenerator",
+                    "port": 9000,
+                    "protocol": "http"
+                },
+                "endpoints": [
+                    {
+                        "address": "192.168.0.1",
+                        "port": 27017
+                    }
+                ]
             },
-            "networking": {
-                "address": "192.168.0.1:8080"
+            "status": {
+                "vip": {}
             }
         },
         {
-            "type": "ExternalService",
+            "type": "MeshExternalService",
             "mesh": "demo",
             "name": "two",
             "creationTime": "2018-07-17T16:05:36.995Z",
             "modificationTime": "2019-07-17T16:05:36.995Z",
-            "tags": {
-                "kuma.io/service": "two"
+            "spec": {
+                "match": {
+                    "type": "HostnameGenerator",
+                    "port": 9000,
+                    "protocol": "http"
+                },
+                "endpoints": [
+                    {
+                        "address": "192.168.0.1",
+                        "port": 27017
+                    }
+                ]
             },
-            "networking": {
-                "address": "192.168.0.2:8080"
+            "status": {
+                "vip": {}
             }
         }
     ],

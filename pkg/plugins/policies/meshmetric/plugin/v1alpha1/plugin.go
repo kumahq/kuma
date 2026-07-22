@@ -146,7 +146,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
 	}
 
-	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, envoyBackends, inboundTagsDisabled); err != nil {
+	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, envoyBackends, inboundTagsDisabled, ctx.Mesh.Resources); err != nil {
 		return err
 	}
 
@@ -228,7 +228,7 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 
 	resolved := policies_xds.ResolveOtelBackend(
 		openTelemetryBackend.BackendRef,
-		openTelemetryBackend.Endpoint,
+		"",
 		policies_xds.ParseOtelEndpoint,
 		backendNameFrom,
 		resources,
@@ -283,8 +283,9 @@ func configureDynamicDPPConfig(
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
+	resources xds_context.Resources,
 ) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, inboundTagsDisabled)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, inboundTagsDisabled, resources)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -313,6 +314,7 @@ func createDynamicConfig(
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
+	resources xds_context.Resources,
 ) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
 	for _, app := range pointer.Deref(conf.Applications) {
@@ -331,7 +333,17 @@ func createDynamicConfig(
 		})
 	}
 	for _, backend := range openTelemetryBackends {
-		backendName := backendNameFrom(backend.Endpoint)
+		resolved := policies_xds.ResolveOtelBackend(
+			backend.BackendRef,
+			"",
+			policies_xds.ParseOtelEndpoint,
+			backendNameFrom,
+			resources,
+		)
+		if resolved == nil {
+			continue
+		}
+		backendName := resolved.Name
 		backends = append(backends, dpapi.Backend{
 			Type: string(api.OpenTelemetryBackendType),
 			Name: &backendName,
@@ -424,7 +436,7 @@ func addOtelToAccumulator(proxy *core_xds.Proxy, openTelemetryBackends []*api.Op
 
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.BackendRef,
-			backend.Endpoint,
+			"",
 			policies_xds.ParseOtelEndpoint,
 			backendNameFrom,
 			ctx.Mesh.Resources,

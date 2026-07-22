@@ -60,14 +60,9 @@ func (s tagSets) toAvailableServices() []*mesh_proto.ZoneIngress_AvailableServic
 func GetAvailableServices(
 	skipAvailableServices map[xds.MeshName]struct{},
 	allDataplanes []*core_mesh.DataplaneResource,
-	externalServices []*core_mesh.ExternalServiceResource,
 	tagFilters []string,
 ) []*mesh_proto.ZoneIngress_AvailableService {
-	availableServices := GetIngressAvailableServices(skipAvailableServices, allDataplanes, tagFilters)
-	availableExternalServices := GetExternalAvailableServices(externalServices)
-	availableServices = append(availableServices, availableExternalServices...)
-
-	return availableServices
+	return GetIngressAvailableServices(skipAvailableServices, allDataplanes, tagFilters)
 }
 
 func GetIngressAvailableServices(
@@ -94,17 +89,4 @@ func GetIngressAvailableServices(
 		}
 	}
 	return tagSets.toAvailableServices()
-}
-
-func GetExternalAvailableServices(others []*core_mesh.ExternalServiceResource) []*mesh_proto.ZoneIngress_AvailableService {
-	tagSets := tagSets{}
-	for _, es := range others {
-		tagSets.addInstanceOfTags(es.GetMeta().GetMesh(), es.Spec.Tags)
-	}
-
-	availableServices := tagSets.toAvailableServices()
-	for _, as := range availableServices {
-		as.ExternalService = true
-	}
-	return availableServices
 }
