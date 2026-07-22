@@ -73,7 +73,7 @@
    "path": "meshcircuitbreakers",
    "pluralDisplayName": "Mesh Circuit Breakers",
    "policy": {
-    "hasFromTargetRef": false,
+    "hasFromTargetRef": true,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": false,
@@ -100,7 +100,7 @@
    "path": "meshfaultinjections",
    "pluralDisplayName": "Mesh Fault Injections",
    "policy": {
-    "hasFromTargetRef": false,
+    "hasFromTargetRef": true,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": false,
@@ -337,7 +337,7 @@
    "path": "meshtimeouts",
    "pluralDisplayName": "Mesh Timeouts",
    "policy": {
-    "hasFromTargetRef": false,
+    "hasFromTargetRef": true,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": false,

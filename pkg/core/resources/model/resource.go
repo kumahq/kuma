@@ -300,6 +300,10 @@ func (d ResourceTypeDescriptor) HasInsights() bool {
 	return d.Insight != nil
 }
 
+func (d ResourceTypeDescriptor) SupportsInbound() bool {
+	return d.HasFromTargetRef || d.HasRulesTargetRef
+}
+
 func (d ResourceTypeDescriptor) NewInsight() Resource {
 	if !d.HasInsights() {
 		panic("No insight type precondition broken")
