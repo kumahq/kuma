@@ -277,7 +277,11 @@ func inboundHasRequestTimeout(cfg *config_dump.EnvoyConfig, port uint32, timeout
 		if err := util_proto.UnmarshalAnyTo(dl.ActiveState.Listener, &listener); err != nil {
 			return false, err
 		}
-		if !strings.HasPrefix(listener.GetName(), "inbound:") ||
+		// A dataplane can also carry a "kri_msvc_..." listener bound to the
+		// MeshService's ClusterIP on the same port (real MeshService
+		// routing), which MeshTimeout never configures. Match only the
+		// dataplane's own inbound listener, under either naming scheme.
+		if !isInboundListenerName(listener.GetName()) ||
 			listener.GetAddress().GetSocketAddress().GetPortValue() != port {
 			continue
 		}
@@ -306,4 +310,11 @@ func inboundHasRequestTimeout(cfg *config_dump.EnvoyConfig, port uint32, timeout
 	}
 
 	return false, fmt.Errorf("no listener on port %d found in config dump", port)
+}
+
+// isInboundListenerName reports whether name is a dataplane's own inbound
+// listener, under legacy ("inbound:<ip>:<port>") or unified naming
+// ("self_inbound_<shortname>_<sectionName>").
+func isInboundListenerName(name string) bool {
+	return strings.HasPrefix(name, "inbound:") || strings.HasPrefix(name, "self_inbound_")
 }
