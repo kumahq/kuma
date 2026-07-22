@@ -262,7 +262,7 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:                  proxy.Zone,
 		WorkloadKRI:           workloadKRI,
-		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackendRef(conf, resolved),
+		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackend(conf, resolved),
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
@@ -291,22 +291,30 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 }
 
 func hasOtelBackendRef(conf api.Conf) bool {
-	backends := pointer.Deref(conf.Backends)
-	if len(backends) == 0 {
-		return false
-	}
-	otel := backends[0].OpenTelemetry
+	otel := openTelemetryBackend(conf)
 	return otel != nil && otel.BackendRef != nil
 }
 
-func shouldSkipUnresolvedOpenTelemetryBackendRef(
+func hasOpenTelemetryBackend(conf api.Conf) bool {
+	return openTelemetryBackend(conf) != nil
+}
+
+func openTelemetryBackend(conf api.Conf) *api.OpenTelemetryBackend {
+	backends := pointer.Deref(conf.Backends)
+	if len(backends) == 0 {
+		return nil
+	}
+	return backends[0].OpenTelemetry
+}
+
+func shouldSkipUnresolvedOpenTelemetryBackend(
 	conf api.Conf,
 	resolved *policies_xds.ResolvedOtelBackend,
 ) bool {
 	if resolved != nil {
 		return false
 	}
-	return hasOtelBackendRef(conf)
+	return hasOpenTelemetryBackend(conf)
 }
 
 func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
