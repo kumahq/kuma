@@ -316,28 +316,7 @@ func getDurationOrNil(d *k8s.Duration) *time.Duration {
 }
 
 func getHashPolicies(conf api.Conf) *[]api.HashPolicy {
-	if conf.HashPolicies != nil {
-		return conf.HashPolicies
-	}
-
-	if conf.LoadBalancer == nil {
-		return nil
-	}
-
-	switch conf.LoadBalancer.Type {
-	case api.RingHashType:
-		if conf.LoadBalancer.RingHash == nil {
-			return nil
-		}
-		return conf.LoadBalancer.RingHash.HashPolicies
-	case api.MaglevType:
-		if conf.LoadBalancer.Maglev == nil {
-			return nil
-		}
-		return conf.LoadBalancer.Maglev.HashPolicies
-	default:
-		return nil
-	}
+	return conf.HashPolicies
 }
 
 func overprovisioningFactor(conf api.Conf) uint32 {
