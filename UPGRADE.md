@@ -593,6 +593,22 @@ admission and update. The `Dataplane.networking.gateway` message and the
   manage RBAC or webhooks manually, remove these rules; if you keep them, they
   are harmless but unused.
 
+### Legacy HS256 signing keys no longer accepted
+
+The control plane no longer accepts JWT tokens signed with the symmetric
+HS256 algorithm. This algorithm was used to sign Dataplane Tokens in
+pre-1.4.x versions of Kuma; support for verifying such tokens was kept
+around for backwards compatibility long after RS256 became the default.
+`SigningKeyAccessor.GetLegacyKey` and the HS256 branch of token validation
+have been removed.
+
+**Action required**
+
+If any Dataplane Tokens issued by a pre-1.4.x control plane are still in
+use, rotate them (generate new tokens with the current control plane)
+before upgrading — they will be rejected as using an unsupported
+algorithm afterward.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
