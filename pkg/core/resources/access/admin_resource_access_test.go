@@ -6,11 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	config_access "github.com/kumahq/kuma/v3/pkg/config/access"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
@@ -22,7 +21,13 @@ var _ = Describe("Admin Resource Access", func() {
 	})
 
 	It("should allow regular user to access non admin resource", func() {
-		err := resourceAccess.ValidateCreate(context.Background(), model.ResourceKey{Name: "xyz", Mesh: "demo"}, &mesh_proto.CircuitBreaker{}, mesh.NewCircuitBreakerResource().Descriptor(), user.Anonymous)
+		err := resourceAccess.ValidateCreate(
+			context.Background(),
+			model.ResourceKey{Name: "xyz", Mesh: "demo"},
+			&meshexternalservice_api.MeshExternalService{},
+			meshexternalservice_api.NewMeshExternalServiceResource().Descriptor(),
+			user.Anonymous,
+		)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

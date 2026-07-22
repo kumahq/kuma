@@ -13,14 +13,11 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	externalservice "github.com/kumahq/kuma/v3/pkg/core/managers/apis/external_service"
-	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/ratelimit"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/v3/pkg/dns"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/v3/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -100,9 +97,6 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 		return err
 	}
 	if err := addWorkloadReconciler(mgr, rt); err != nil {
-		return err
-	}
-	if err := addDNS(mgr, rt, converter); err != nil {
 		return err
 	}
 
@@ -261,41 +255,6 @@ func addWorkloadReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if rt.Config().Mode == config_core.Global {
-		return nil
-	}
-	zone := ""
-	if rt.Config().Multizone != nil && rt.Config().Multizone.Zone != nil {
-		zone = rt.Config().Multizone.Zone.Name
-	}
-	vipsAllocator, err := dns.NewVIPsAllocator(
-		rt.ResourceManager(),
-		rt.ConfigManager(),
-		*rt.Config().DNSServer,
-		rt.Config().Experimental,
-		zone,
-		rt.Metrics(),
-	)
-	if err != nil {
-		return err
-	}
-	reconciler := &k8s_controllers.ConfigMapReconciler{
-		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorder("k8s.kuma.io/vips-generator"),
-		Scheme:            mgr.GetScheme(),
-		Log:               core.Log.WithName("controllers").WithName("ConfigMap"),
-		ResourceManager:   rt.ResourceManager(),
-		VIPsAllocator:     vipsAllocator,
-		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
-		ResourceConverter: converter,
-	}
-	if err := reconciler.SetupWithManager(mgr); err != nil {
-		return err
-	}
-	return nil
-}
-
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	composite, ok := k8s_extensions.FromCompositeValidatorContext(rt.Extensions())
 	if !ok {
@@ -321,18 +280,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 
 	k8sDataplaneValidator := k8s_webhooks.NewDataplaneValidatorWebhook(rt.ResourceValidators().Dataplane, converter, rt.ResourceManager())
 	composite.AddValidator(k8sDataplaneValidator)
-
-	rateLimitValidator := ratelimit.RateLimitValidator{
-		Store: rt.ResourceStore(),
-	}
-	k8sRateLimitValidator := k8s_webhooks.NewRateLimitValidatorWebhook(rateLimitValidator, converter)
-	composite.AddValidator(k8sRateLimitValidator)
-
-	externalServiceValidator := externalservice.ExternalServiceValidator{
-		Store: rt.ResourceStore(),
-	}
-	k8sExternalServiceValidator := k8s_webhooks.NewExternalServiceValidatorWebhook(externalServiceValidator, converter)
-	composite.AddValidator(k8sExternalServiceValidator)
 
 	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
 	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator, rt.Config().Store.UnsafeDelete)

@@ -15,6 +15,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -212,11 +213,11 @@ var _ = Describe("Defaulter", func() {
 		}),
 		Entry("should not override mesh label if it's already set", testCase{
 			checker: globalChecker(),
-			kind:    string(mesh.TrafficRouteType),
+			kind:    string(meshexternalservice_api.MeshExternalServiceType),
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -224,13 +225,24 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/mesh": "my-mesh-1"
                 }
               },
-              "spec": {}
+              "spec": {
+                "match": {
+                  "port": 80,
+                  "protocol": "http"
+                },
+                "endpoints": [
+                  {
+                    "address": "example.com",
+                    "port": 80
+                  }
+                ]
+              }
             }
 `,
 			expected: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -243,7 +255,22 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/display-name": "empty"
                 }
               },
-              "spec": {}
+              "spec": {
+                "match": {
+                  "port": 80,
+                  "protocol": "http",
+                  "type": ""
+                },
+                "endpoints": [
+                  {
+                    "address": "example.com",
+                    "port": 80
+                  }
+                ]
+              },
+              "status": {
+                "vip": {}
+              }
             }
 `,
 		}),

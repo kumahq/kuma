@@ -8,16 +8,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	cache_mesh "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -85,30 +81,13 @@ var _ = Describe("AvailableServices Tracker", func() {
 			close(stop)
 			Eventually(done).Should(BeClosed())
 		})
-		It("should not populate AvailableServices from kuma.io/service tags or legacy ExternalServices", func() {
+		It("should not populate AvailableServices from kuma.io/service tags", func() {
 			Expect(builders.ZoneIngress().Create(resManager)).To(Succeed())
-			externalService := &core_mesh.ExternalServiceResource{
-				Meta: &test_model.ResourceMeta{
-					Mesh: "default",
-					Name: "es-1",
-				},
-				Spec: &mesh_proto.ExternalService{
-					Networking: &mesh_proto.ExternalService_Networking{
-						Address: "127.0.0.1:80",
-					},
-					Tags: map[string]string{
-						"kuma.io/service":  "httpbin",
-						"version":          "v1",
-						mesh_proto.ZoneTag: "zone",
-					},
-				},
-			}
-			Expect(resManager.Create(context.Background(), externalService, store.CreateByKey("es-1", core_model.DefaultMesh))).To(Succeed())
 			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
 			Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				zi := core_mesh.NewZoneIngressResource()
+				zi := builders.ZoneIngress().Build()
 				g.Expect(resManager.Get(context.Background(), zi, store.GetByKey("zoneingress-1", ""))).To(Succeed())
 				g.Expect(zi.Spec.AvailableServices).To(BeEmpty())
 			}).Should(Succeed())
@@ -166,28 +145,11 @@ var _ = Describe("AvailableServices Tracker", func() {
 
 		It("should clear available services list when available services are disabled", func() {
 			Expect(builders.ZoneIngress().Create(resManager)).To(Succeed())
-			externalService := &core_mesh.ExternalServiceResource{
-				Meta: &test_model.ResourceMeta{
-					Mesh: "default",
-					Name: "es-1",
-				},
-				Spec: &mesh_proto.ExternalService{
-					Networking: &mesh_proto.ExternalService_Networking{
-						Address: "127.0.0.1:80",
-					},
-					Tags: map[string]string{
-						"kuma.io/service":  "httpbin",
-						"version":          "v1",
-						mesh_proto.ZoneTag: "zone",
-					},
-				},
-			}
-			Expect(resManager.Create(context.Background(), externalService, store.CreateByKey("es-1", core_model.DefaultMesh))).To(Succeed())
 			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
 			Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				zi := core_mesh.NewZoneIngressResource()
+				zi := builders.ZoneIngress().Build()
 				g.Expect(resManager.Get(context.Background(), zi, store.GetByKey("zoneingress-1", ""))).To(Succeed())
 				g.Expect(zi.Spec.AvailableServices).To(BeEmpty())
 			}).Should(Succeed())

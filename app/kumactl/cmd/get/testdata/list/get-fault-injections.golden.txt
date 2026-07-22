@@ -1,3 +1,0 @@
-MESH      NAME   AGE
-default   fi1    292y
-default   fi2    292y

@@ -61,31 +61,20 @@ func (p *EgressProxyBuilder) Build(
 		meshName := mesh.GetMeta().GetName()
 		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
-		externalServices := meshCtx.Resources.ExternalServices().Items
 		mes := meshCtx.Resources.MeshExternalServices().Items
 
 		meshResources := &core_xds.MeshResources{
-			Mesh:             mesh,
-			ExternalServices: externalServices,
+			Mesh: mesh,
 			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,
 				mesh,
 				p.zone,
 				zoneIngresses,
-				externalServices,
 				mes,
 				meshCtx.DataSourceLoader,
 			),
 			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
 			Resources: meshCtx.Resources.MeshLocalResources,
-		}
-
-		for _, es := range externalServices {
-			policies, err := matchEgressPolicies(es.Spec.GetTags(), meshCtx.Resources)
-			if err != nil {
-				return nil, err
-			}
-			meshResources.Dynamic[es.Spec.GetService()] = policies
 		}
 
 		for serviceName := range meshResources.EndpointMap {

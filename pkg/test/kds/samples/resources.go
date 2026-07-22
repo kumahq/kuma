@@ -35,35 +35,6 @@ var (
 			},
 		},
 	}
-	FaultInjection = &mesh_proto.FaultInjection{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-				"tag0":                "version0",
-				"tag1":                "version1",
-				"tag2":                "version2",
-				"tag3":                "version3",
-				"tag4":                "version4",
-				"tag5":                "version5",
-				"tag6":                "version6",
-				"tag7":                "version7",
-				"tag8":                "version8",
-				"tag9":                "version9",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag:  "*",
-				mesh_proto.ProtocolTag: "http",
-			},
-		}},
-		Conf: &mesh_proto.FaultInjection_Conf{
-			Abort: &mesh_proto.FaultInjection_Conf_Abort{
-				Percentage: util_proto.Double(90),
-				HttpStatus: util_proto.UInt32(404),
-			},
-		},
-	}
 	Dataplane = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.1",
@@ -144,78 +115,6 @@ var (
 			Id: "1",
 		}},
 	}
-	ExternalService = &mesh_proto.ExternalService{
-		Networking: &mesh_proto.ExternalService_Networking{
-			Address: "192.168.0.1",
-		},
-		Tags: map[string]string{
-			mesh_proto.ZoneTag:    "kuma-1",
-			mesh_proto.ServiceTag: "backend",
-		},
-	}
-	CircuitBreaker = &mesh_proto.CircuitBreaker{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.CircuitBreaker_Conf{
-			Interval: util_proto.Duration(99 * time.Second),
-			Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-				TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(3)},
-			},
-		},
-	}
-	HealthCheck = &mesh_proto.HealthCheck{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.HealthCheck_Conf{
-			Interval:           util_proto.Duration(time.Second * 5),
-			Timeout:            util_proto.Duration(time.Second * 7),
-			HealthyThreshold:   9,
-			UnhealthyThreshold: 11,
-		},
-	}
-	TrafficLog = &mesh_proto.TrafficLog{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.TrafficLog_Conf{
-			Backend: "logging-backend",
-		},
-	}
-	TrafficPermission = &mesh_proto.TrafficPermission{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-	}
 	TrafficRoute = &mesh_proto.TrafficRoute{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
@@ -234,45 +133,6 @@ var (
 					mesh_proto.ServiceTag: "*",
 				},
 			}},
-		},
-	}
-	TrafficTrace = &mesh_proto.TrafficTrace{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{mesh_proto.ServiceTag: "*"},
-		}},
-		Conf: &mesh_proto.TrafficTrace_Conf{
-			Backend: "tracing-backend",
-		},
-	}
-	ProxyTemplate = &mesh_proto.ProxyTemplate{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{mesh_proto.ServiceTag: "*"},
-		}},
-		Conf: &mesh_proto.ProxyTemplate_Conf{
-			Imports: []string{"default-proxy"},
-		},
-	}
-	Retry = &mesh_proto.Retry{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.Retry_Conf{
-			Http: &mesh_proto.Retry_Conf_Http{
-				NumRetries:    util_proto.UInt32(5),
-				PerTryTimeout: util_proto.Duration(time.Second * 200000000),
-				BackOff: &mesh_proto.Retry_Conf_BackOff{
-					BaseInterval: util_proto.Duration(time.Nanosecond * 200000000),
-					MaxInterval:  util_proto.Duration(time.Second * 1),
-				},
-				RetriableStatusCodes: []uint32{500, 502},
-			},
 		},
 	}
 	Timeout = &mesh_proto.Timeout{
@@ -312,39 +172,6 @@ var (
 	}
 	Config = &system_proto.Config{
 		Config: "sample config",
-	}
-	RateLimit = &mesh_proto.RateLimit{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.RateLimit_Conf{
-			Http: &mesh_proto.RateLimit_Conf_Http{
-				Requests: 100,
-				Interval: util_proto.Duration(1 * time.Minute),
-			},
-		},
-	}
-	VirtualOutbound = &mesh_proto.VirtualOutbound{
-		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "virtual-outbound",
-			},
-		}},
-		Conf: &mesh_proto.VirtualOutbound_Conf{
-			Host: "{{.service}}.mesh",
-			Port: "{{.port}}",
-			Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
-				{Name: "port"},
-				{Name: "service", TagKey: mesh_proto.ServiceTag},
-			},
-		},
 	}
 	MeshTrafficPermission = &meshtrafficpermissions.MeshTrafficPermission{
 		TargetRef: &common_api.TargetRef{

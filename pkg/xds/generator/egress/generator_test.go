@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	policies_generator "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/generator"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -45,6 +46,7 @@ var _ = Describe("EgressGenerator", func() {
 	type testCase struct {
 		fileWithResourcesName string
 		expected              string
+		unifiedNaming         bool
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -84,7 +86,6 @@ var _ = Describe("EgressGenerator", func() {
 					if _, ok := meshResourcesMap[meshName]; !ok {
 						meshResourcesMap[meshName] = &core_xds.MeshResources{
 							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								core_mesh.TrafficRouteType:                      &core_mesh.TrafficRouteResourceList{},
 								meshhttproute_api.MeshHTTPRouteType:             &meshhttproute_api.MeshHTTPRouteResourceList{},
 								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{},
 							},
@@ -92,30 +93,11 @@ var _ = Describe("EgressGenerator", func() {
 					}
 
 					meshResourcesMap[meshName].Mesh = res.(*core_mesh.MeshResource)
-				case core_mesh.ExternalServiceType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
-					meshResourcesMap[meshName].ExternalServices = append(
-						meshResourcesMap[meshName].ExternalServices,
-						res.(*core_mesh.ExternalServiceResource),
-					)
 				case meshexternalservice_api.MeshExternalServiceType:
 					mesList := meshResourcesMap[meshName].Resources[meshexternalservice_api.MeshExternalServiceType].(*meshexternalservice_api.MeshExternalServiceResourceList)
 					mesList.Items = append(
 						mesList.Items,
 						res.(*meshexternalservice_api.MeshExternalServiceResource),
-					)
-				case core_mesh.TrafficRouteType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
-					routeList := meshResourcesMap[meshName].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
-					routeList.Items = append(
-						routeList.Items,
-						res.(*core_mesh.TrafficRouteResource),
 					)
 				case meshhttproute_api.MeshHTTPRouteType:
 					routeList := meshResourcesMap[meshName].Resources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList)
@@ -142,7 +124,6 @@ var _ = Describe("EgressGenerator", func() {
 					meshResources.Mesh,
 					zoneName,
 					zoneIngresses,
-					meshResources.ExternalServices,
 					mes,
 					&loader,
 				)
@@ -165,6 +146,9 @@ var _ = Describe("EgressGenerator", func() {
 					ZoneEgressResource: zoneEgress,
 					ZoneIngresses:      zoneIngresses,
 					MeshResourcesList:  meshResourcesList,
+				},
+				Metadata: &core_xds.DataplaneMetadata{
+					Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: given.unifiedNaming},
 				},
 			}
 			xdsCtx := xds_context.Context{
@@ -191,6 +175,11 @@ var _ = Describe("EgressGenerator", func() {
 		Entry("01. default trafficroute, one externalservice", testCase{
 			fileWithResourcesName: "01.externalservice-only.yaml",
 			expected:              "01.externalservice-only.golden.yaml",
+		}),
+		Entry("01. unified naming, one externalservice", testCase{
+			fileWithResourcesName: "01.externalservice-only.yaml",
+			expected:              "01.externalservice-only-unified-naming.golden.yaml",
+			unifiedNaming:         true,
 		}),
 		Entry("02. default trafficroute, one service behind zoneingress", testCase{
 			fileWithResourcesName: "02.internalservice-only.yaml",

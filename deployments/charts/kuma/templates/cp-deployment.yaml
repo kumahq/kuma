@@ -1,11 +1,3 @@
-{{ $kdsGlobalServerTLSSecretName := "" }}
-{{ if eq .Values.controlPlane.mode "global" }}
-  {{ $kdsGlobalServerTLSSecretName = .Values.controlPlane.tls.kdsGlobalServer.secretName }}
-  {{ if and .Values.controlPlane.tls.kdsGlobalServer.create (not $kdsGlobalServerTLSSecretName) }}
-    {{ $kdsGlobalServerTLSSecretName = print (include "kuma.name" .) "-kds-global-server-tls" }}
-  {{ end }}
-{{ end }}
-
 {{ $kdsZoneClientTLSSecretName := "" }}
 {{ if eq .Values.controlPlane.mode "zone" }}
   {{ $kdsZoneClientTLSSecretName = .Values.controlPlane.tls.kdsZoneClient.secretName }}
@@ -14,12 +6,11 @@
   {{ end }}
 {{ end }}
 
-{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
-  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
-  {{ fail $msg }}
+{{ if eq .Values.controlPlane.mode "global" }}
+  {{ fail "Kubernetes-native Global Control Plane is not supported: controlPlane.mode=global cannot be deployed with this Helm chart. Deploy Zone or Standalone control planes on Kubernetes; run the Global Control Plane on non-Kubernetes (Universal) infrastructure instead" }}
 {{ end }}
-{{ if and (eq .Values.controlPlane.mode "global") (ne .Values.controlPlane.environment "universal") }}
-  {{ $msg := printf "Kubernetes-native Global Control Plane is not supported: controlPlane.mode=global cannot be combined with controlPlane.environment=%s. Set controlPlane.environment=universal backed by a non-Kubernetes store such as PostgreSQL, even when Kuma CP itself is deployed on Kubernetes" .Values.controlPlane.environment }}
+{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "standalone")) }}
+  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: zone,standalone" .Values.controlPlane.mode }}
   {{ fail $msg }}
 {{ end }}
 {{ if eq .Values.controlPlane.mode "zone" }}
@@ -303,11 +294,6 @@ spec:
               mountPath: /var/run/secrets/kuma.io/api-server-client-certs
               readOnly: true
           {{- end }}
-          {{- if $kdsGlobalServerTLSSecretName }}
-            - name: kds-server-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
-              readOnly: true
-          {{- end }}
           {{- if $kdsZoneClientTLSSecretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
@@ -394,11 +380,6 @@ spec:
         - name: api-server-client-certs
           secret:
             secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-        {{- end }}
-        {{- if $kdsGlobalServerTLSSecretName }}
-        - name: kds-server-tls-cert
-          secret:
-            secretName: {{ $kdsGlobalServerTLSSecretName }}
         {{- end }}
         {{- if $kdsZoneClientTLSSecretName }}
         - name: kds-client-tls-cert

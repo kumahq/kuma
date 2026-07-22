@@ -8,6 +8,38 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Legacy `ExternalService` resource removed
+
+The legacy `ExternalService` resource has been removed. Its CRD, API
+definition, and validating webhook no longer exist, and the control plane
+RBAC and admission webhooks no longer reference `externalservices`.
+
+**Action required**
+
+Migrate any remaining `ExternalService` resources to `MeshExternalService`
+before upgrading. Applying an `ExternalService` after the upgrade will fail
+because the CRD is gone.
+
+### Global control plane on Kubernetes is no longer supported
+
+A Kubernetes-native Global control plane is no longer supported. `kuma-cp` now
+rejects `mode=global` with `environment=kubernetes`, and it also rejects
+`mode=global` with `store.type=kubernetes`. A Global control plane must run
+with `environment=universal` backed by a non-Kubernetes store such as
+PostgreSQL, even if `kuma-cp` itself is deployed on Kubernetes. The Helm chart
+no longer renders the `Service`/config needed for the old Kubernetes-native
+setup. Zone and Standalone control planes on Kubernetes (`mode`
+`zone`/`standalone`) are unaffected.
+
+**Action required**
+
+If you currently run the Global control plane on Kubernetes, migrate it to
+Universal (non-Kubernetes) infrastructure before upgrading: deploy `kuma-cp`
+in `global` mode on Universal, backed by PostgreSQL, and keep your Kubernetes
+clusters as Zone control planes connecting to that Global control plane over
+KDS. Kubernetes clusters running `zone` or `standalone` mode require no
+changes.
+
 ### `meshServices` removed from the `Mesh` schema
 
 The `meshServices` field (and its `mode` enum) has been removed from the
@@ -358,6 +390,33 @@ this release; existing resources are still accepted and stored.
 
 Migrate to `MeshHTTPRoute`/`MeshTCPRoute`, which replace `VirtualOutbound`.
 
+### Legacy DNS VIP allocator and persisted VIP config removed
+
+The control plane no longer computes or persists the `kuma-<mesh>-dns-vips`
+`Config` resource. That resource was the write-only output of a legacy
+background allocator; dataplane DNS records are generated directly from the
+`MeshService`/`MeshExternalService`/`MeshMultiZoneService` DNS/VIP path, which
+this change does not affect.
+
+On Kubernetes, the control plane no longer reconciles the per-namespace
+`ConfigMap` used to expose the allocator's output either.
+
+The following configuration has been removed:
+
+- `experimental.useTagFirstVirtualOutboundModel`
+  (`KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL`).
+- `dnsServer.CIDR` (`KUMA_DNS_SERVER_CIDR`).
+- `dnsServer.serviceVipEnabled` (`KUMA_DNS_SERVER_SERVICE_VIP_ENABLED`).
+- `runtime.universal.vipRefreshInterval`
+  (`KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL`).
+
+**Action required**
+
+Remove the settings above from your control plane config and environment if
+set. Any previously persisted `kuma-<mesh>-dns-vips` `Config` resources (and
+their Kubernetes `ConfigMap` mirrors) are no longer written or read and can be
+deleted.
+
 ### `TrafficRoute` no longer affects generated Envoy config
 
 The legacy `TrafficRoute` policy is no longer consumed when generating Envoy
@@ -486,6 +545,32 @@ with a fresh bootstrap. Once the control plane is upgraded to Kuma 3.0.0, any
 proxy still trying to use the removed SOTW stream cannot establish ADS and must
 be restarted with a Delta xDS bootstrap.
 
+### Legacy policy resources removed
+
+The 12 legacy policy resources superseded by the `Mesh*` targetRef policies
+have been removed from the resource registry: `TrafficPermission`,
+`TrafficRoute`, `TrafficLog`, `TrafficTrace`, `HealthCheck`,
+`CircuitBreaker`, `Retry`, `Timeout`, `RateLimit`, `FaultInjection`,
+`VirtualOutbound`, and `ProxyTemplate`. Each of these had
+already stopped affecting generated Envoy configuration in earlier releases
+(see the entries above); this change removes the resources themselves.
+
+For every one of these types: the REST API endpoints (including the generic
+`_resources`/`_dataplanes` inspect endpoints), `kumactl get`/`inspect`
+subcommands, KDS sync, and `MeshInsight`/`ServiceInsight` policy counters are
+gone, and the corresponding CRD is no longer installed on Kubernetes.
+
+The `ProxyTemplate` proto message and its default-profile machinery
+(`ProxyTemplateResolver`, profile imports) are unaffected — only the
+user-facing `ProxyTemplate` resource, API, and CRD are removed.
+
+**Action required**
+
+Delete any remaining resources of these types before upgrading — the control
+plane no longer accepts create/update requests for them, and stored resources
+of a removed type are not migrated. Remove any automation, dashboards, or
+kumactl scripts that reference these resource types, REST paths, or CRDs.
+
 ### Built-in gateway API and CRDs removed
 
 The built-in gateway API has been removed entirely. The `MeshGateway`,
@@ -519,6 +604,36 @@ admission and update. The `Dataplane.networking.gateway` message and the
   the validating webhook configuration no longer includes these types. If you
   manage RBAC or webhooks manually, remove these rules; if you keep them, they
   are harmless but unused.
+
+### Legacy HS256 signing keys no longer accepted
+
+The control plane no longer accepts JWT tokens signed with the symmetric
+HS256 algorithm. This algorithm was used to sign Dataplane Tokens in
+pre-1.4.x versions of Kuma; support for verifying such tokens was kept
+around for backwards compatibility long after RS256 became the default.
+`SigningKeyAccessor.GetLegacyKey` and the HS256 branch of token validation
+have been removed.
+
+**Action required**
+
+If any Dataplane Tokens issued by a pre-1.4.x control plane are still in
+use, rotate them (generate new tokens with the current control plane)
+before upgrading — they will be rejected as using an unsupported
+algorithm afterward.
+
+### `MeshMetric` OpenTelemetry backend no longer accepts an inline `endpoint`
+
+The deprecated `default.backends[].openTelemetry.endpoint` field has been
+removed from the `MeshMetric` policy. `backendRef`, pointing at a
+`MeshOpenTelemetryBackend` resource, is now the only way to configure an
+OpenTelemetry metrics backend.
+
+**Action required**
+
+If any `MeshMetric` policy still sets `openTelemetry.endpoint`, create a
+`MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
+the policy to reference it via `openTelemetry.backendRef` before upgrading.
+Policies that still set `openTelemetry.endpoint` will fail validation.
 
 ## Upgrade to `2.13.7`
 

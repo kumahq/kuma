@@ -43,14 +43,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 
-			// and default TrafficPermission for the mesh doesn't exists
-			err = resManager.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), core_store.GetByKey("allow-all-default", model.DefaultMesh))
-			Expect(core_store.IsNotFound(err)).To(BeTrue())
-
-			// and default TrafficRoute for the mesh doesn't exists
-			err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
-			Expect(core_store.IsNotFound(err)).To(BeTrue())
-
 			// and default MeshRetry for the mesh exists
 			err = resManager.Get(context.Background(), meshretry.NewMeshRetryResource(), core_store.GetByKey("mesh-retry-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())

@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -102,7 +103,7 @@ var _ = Describe("Insight Persistence", func() {
 		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
+		err = rm.Create(context.Background(), samples2.MeshExternalServiceExampleBuilder().WithMesh("mesh-1").WithName("es-1").Build(), store.CreateByKey("es-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		step(stepsToResync + 1)
@@ -111,7 +112,7 @@ var _ = Describe("Insight Persistence", func() {
 			insight := core_mesh.NewMeshInsightResource()
 			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(insight.Spec.Resources[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
+			g.Expect(insight.Spec.Resources[string(meshexternalservice_api.MeshExternalServiceType)].Total).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 
@@ -525,13 +526,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rawStore.Create(context.Background(), builtinGw, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		externalService := core_mesh.NewExternalServiceResource()
-		externalService.Spec = &mesh_proto.ExternalService{
-			Tags: map[string]string{"kuma.io/service": "external-service"},
-			Networking: &mesh_proto.ExternalService_Networking{
-				Address: "foobar:8080",
-			},
-		}
+		externalService := samples2.MeshExternalServiceExampleBuilder().WithMesh("mesh-1").WithName("es1").Build()
 		err = rm.Create(context.Background(), externalService, store.CreateByKey("es1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -752,15 +747,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		es1 := core_mesh.NewExternalServiceResource()
-		es1.Spec = &mesh_proto.ExternalService{
-			Networking: &mesh_proto.ExternalService_Networking{
-				Address: "example.com:80",
-			},
-			Tags: map[string]string{
-				"kuma.io/service": "externalService1",
-			},
-		}
+		es1 := samples2.MeshExternalServiceExampleBuilder().WithMesh("mesh-1").WithName("es1").Build()
 		err = rm.Create(context.Background(), es1, store.CreateByKey("es1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -774,8 +761,8 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
 			// then no Services stat is ever computed anymore, even with legacyMesh()
 			g.Expect(meshInsight.Spec.Services).To(BeNil())
-			// but ExternalService is still counted as a generic resource
-			g.Expect(meshInsight.Spec.Resources[string(core_mesh.ExternalServiceType)].Total).To(Equal(uint32(1)))
+			// but MeshExternalService is still counted as a generic resource
+			g.Expect(meshInsight.Spec.Resources[string(meshexternalservice_api.MeshExternalServiceType)].Total).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 

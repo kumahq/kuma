@@ -43,7 +43,10 @@ default:
           mode: "ProvidedTLS"
     - type: OpenTelemetry
       openTelemetry:
-        endpoint: otel-collector:4778
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          labels:
+            kuma.io/display-name: my-otel
 `),
 		Entry("openTelemetry with backendRef", `
 type: MeshMetric
@@ -171,46 +174,10 @@ default:
         - name: not_supported
 `),
 		ErrorCase(
-			"invalid endpoint missing port",
+			"openTelemetry backendRef missing",
 			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must be in host:port format",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "asdasd123"
-`),
-		ErrorCase(
-			"invalid endpoint with URL scheme",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must be in host:port format, not a URL",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "http://endpoint:8023"
-`),
-		ErrorCase(
-			"openTelemetry neither endpoint nor backendRef",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry",
-				Message: "openTelemetry must have exactly one defined: endpoint, backendRef",
+				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef",
+				Message: "must be defined",
 			},
 			`
 type: MeshMetric
@@ -222,28 +189,6 @@ default:
   backends:
     - type: OpenTelemetry
       openTelemetry: {}
-`),
-		ErrorCase(
-			"openTelemetry both endpoint and backendRef",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry",
-				Message: "openTelemetry must have only one type defined: endpoint, backendRef",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: otel-collector:4778
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          labels:
-            kuma.io/display-name: my-otel
 `),
 		ErrorCase(
 			"openTelemetry backendRef no labels",

@@ -67,9 +67,7 @@ func validateFrom(from []From) validators.ValidationError {
 		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
 				common_api.MeshService,
-				common_api.MeshServiceSubset,
 			},
 		}))
 

@@ -39,7 +39,7 @@ func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_mod
 func (rm ResourceMap) Hash() []byte {
 	hasher := fnv.New128a()
 	for _, k := range maps.SortedKeys(rm) {
-		hasher.Write(core_model.ResourceListHash(rm[k]))
+		hasher.Write(resourceListXDSHash(rm[k]))
 	}
 	return hasher.Sum(nil)
 }
@@ -69,14 +69,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 	return r.MeshLocalResources.listOrEmpty(resourceType)
 }
 
-func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
-	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
-}
-
-func (r Resources) RateLimits() *core_mesh.RateLimitResourceList {
-	return r.ListOrEmpty(core_mesh.RateLimitType).(*core_mesh.RateLimitResourceList)
-}
-
 func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
 	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
 }
@@ -95,10 +87,6 @@ func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 
 func (r Resources) Secrets() *system.SecretResourceList {
 	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
-}
-
-func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
-	return r.ListOrEmpty(core_mesh.VirtualOutboundType).(*core_mesh.VirtualOutboundResourceList)
 }
 
 func (r Resources) MeshFaultInjections() *meshfaultinjection_api.MeshFaultInjectionResourceList {

@@ -115,10 +115,10 @@ func TransparentProxyConfigMap() {
 
 	It("should be able to connect to test-server", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectFailure(
+			_, err := client.CollectEchoResponse(
 				cluster,
 				"demo-client",
-				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				"test-server",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

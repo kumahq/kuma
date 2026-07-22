@@ -102,7 +102,6 @@ rules:
       - circuitbreakers
       - virtualoutbounds
       - containerpatches
-      - externalservices
       - faultinjections
       - healthchecks
       - trafficlogs
