@@ -13,9 +13,6 @@
  },
  "kri": "kri_mtrust_meshtrust-test_default__trust-1_",
  "spec": {
-  "origin": {
-   "kri": "kri-test-value"
-  },
   "trustDomain": "example.com",
   "caBundles": [
    {

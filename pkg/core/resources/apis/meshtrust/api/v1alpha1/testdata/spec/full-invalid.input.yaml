@@ -4,5 +4,3 @@ caBundles:
     pem: 
       value: adfadfafadf
   - type: Pem
-origin:
-  kri: test
