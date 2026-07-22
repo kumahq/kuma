@@ -407,20 +407,9 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			return common_api.TargetRef{}, nil, err
 		}
 
-		// During conversion of GatewayAPI's `backendRefs` to our own `backendRefs`, we need
-		// to consider the scope of the referenced resource.
-		//   - Kubernetes Services: These have cluster-wide scope. When referencing a Kubernetes
-		//     Service, our `backendRef` should be restricted to the mesh service within the same
-		//     zone.
-		//   - Future Support: In the future, we might support Multi-Cluster Services (MCS)
-		//     (https://gateway-api.sigs.k8s.io/geps/gep-1748/). This will allow targeting
-		//     services across multiple zones.
 		return common_api.TargetRef{
-			Kind: common_api.MeshServiceSubset,
+			Kind: common_api.MeshService,
 			Name: pointer.To(k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port)),
-			Tags: &map[string]string{
-				mesh_proto.ZoneTag: r.Zone,
-			},
 		}, nil, nil
 	}
 
