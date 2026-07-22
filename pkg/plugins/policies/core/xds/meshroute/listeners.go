@@ -84,6 +84,16 @@ func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool
 	return fallback
 }
 
+// OutboundListenerTags returns the outbound listener's io.kuma.tags: real
+// outbound tags without kuma.io/mesh for a legacy outbound, or a synthesized
+// kuma.io/kri tag from the destination KRI for a resource-based one.
+func (ds *DestinationService) OutboundListenerTags() envoy_tags.Tags {
+	if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
+		return envoy_tags.Tags{mesh_proto.KRITag: id.String()}
+	}
+	return envoy_tags.Tags(ds.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)
+}
+
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 	if r, ok := ds.Outbound.AssociatedServiceResource(); ok {
 		return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{

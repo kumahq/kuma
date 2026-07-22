@@ -53,6 +53,10 @@ const (
 
 	MeshTag = "kuma.io/mesh"
 
+	// KRITag is the io.kuma.tags listener key holding a synthesized KRI, written
+	// when identity has moved off tags so listenerTags keeps matching.
+	KRITag = "kuma.io/kri"
+
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"

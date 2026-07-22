@@ -22,11 +22,12 @@ import (
 
 var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
-		dataplaneFile    string
-		dataplaneMeta    *model.DataplaneMetadata
-		expected         string
-		mode             mesh_proto.CertificateAuthorityBackend_Mode
-		casByTrustDomain map[string][]xds_context.PEMBytes
+		dataplaneFile         string
+		dataplaneMeta         *model.DataplaneMetadata
+		dataplaneResourceMeta *test_model.ResourceMeta
+		expected              string
+		mode                  mesh_proto.CertificateAuthorityBackend_Mode
+		casByTrustDomain      map[string][]xds_context.PEMBytes
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -65,12 +66,14 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dpBytes, err := os.ReadFile(filepath.Join("testdata", "inbound-proxy", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
+			dpMeta := given.dataplaneResourceMeta
+			if dpMeta == nil {
+				dpMeta = &test_model.ResourceMeta{Version: "1"}
+			}
 			proxy := &model.Proxy{
 				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Version: "1",
-					},
+					Meta: dpMeta,
 					Spec: &dataplane,
 				},
 				SecretsTracker: envoy_common.NewSecretsTracker(xdsCtx.Mesh.Resource.Meta.GetName(), []string{xdsCtx.Mesh.Resource.Meta.GetName()}),
@@ -142,6 +145,20 @@ var _ = Describe("InboundProxyGenerator", func() {
 		Entry("10. transparent_proxying=false, no kuma.io/service tag, http protocol", testCase{
 			dataplaneFile: "10-dataplane.input.yaml",
 			expected:      "10-envoy-config.golden.yaml",
+		}),
+		Entry("11. inbound with no tags, listener tags filled from Dataplane KRI", testCase{
+			dataplaneFile: "11-dataplane.input.yaml",
+			dataplaneResourceMeta: &test_model.ResourceMeta{
+				Version: "1",
+				Name:    "backend-7f9c",
+				Mesh:    "default",
+				Labels: map[string]string{
+					mesh_proto.ZoneTag:          "east",
+					mesh_proto.KubeNamespaceTag: "kuma-demo",
+					mesh_proto.DisplayName:      "backend-7f9c",
+				},
+			},
+			expected: "11-envoy-config.golden.yaml",
 		}),
 	)
 })

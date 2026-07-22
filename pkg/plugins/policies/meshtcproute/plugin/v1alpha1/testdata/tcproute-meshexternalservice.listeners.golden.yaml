@@ -15,7 +15,8 @@ resources:
           statPrefix: default_example___extsvc_9090
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/kri: kri_extsvc_default___example_
     name: outbound:10.20.20.1:9090
     trafficDirection: OUTBOUND
 - name: outbound:10.20.20.2:9090
@@ -34,7 +35,8 @@ resources:
           statPrefix: default_example2___extsvc_9090
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/kri: kri_extsvc_default___example2_
     name: outbound:10.20.20.2:9090
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:10001
