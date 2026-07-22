@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -207,5 +208,61 @@ var _ = Describe("AdminProxyGenerator", func() {
 			adminAddress:  "127.0.0.1",
 			readinessPort: 0,
 		}),
+	)
+
+	// Zone ingress/egress aren't mesh-scoped, so xdsCtx.Mesh.Resource is always nil
+	// for them. AdminProxyGenerator must still honor the unified naming feature flag
+	// in that case instead of silently falling back to legacy naming.
+	DescribeTable("should name the envoy admin cluster for zone proxies based on the unified naming feature",
+		func(unifiedNaming bool, expectedClusterName string) {
+			metadata := &xds.DataplaneMetadata{
+				AdminPort:     9901,
+				ReadinessPort: 9902,
+				Features: map[string]bool{
+					xds_types.FeatureUnifiedResourceNaming: unifiedNaming,
+				},
+			}
+			ctx := xds_context.Context{}
+
+			zoneIngressProxy := &xds.Proxy{
+				Id:         *xds.BuildProxyId("default", "zone-ingress"),
+				APIVersion: envoy_common.APIV3,
+				ZoneIngressProxy: &xds.ZoneIngressProxy{
+					ZoneIngressResource: &core_mesh.ZoneIngressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-ingress"},
+						Spec: &mesh_proto.ZoneIngress{
+							Networking: &mesh_proto.ZoneIngress_Networking{Address: "10.0.0.1"},
+						},
+					},
+				},
+				Metadata: metadata,
+			}
+			zoneEgressProxy := &xds.Proxy{
+				Id:         *xds.BuildProxyId("default", "zone-egress"),
+				APIVersion: envoy_common.APIV3,
+				ZoneEgressProxy: &xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-egress"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{Address: "10.0.0.2"},
+						},
+					},
+				},
+				Metadata: metadata,
+			}
+
+			for _, proxy := range []*xds.Proxy{zoneIngressProxy, zoneEgressProxy} {
+				resources, err := generator.Generate(context.Background(), nil, ctx, proxy)
+				Expect(err).ToNot(HaveOccurred())
+
+				var clusterNames []string
+				for _, resource := range resources.ListOf(envoy_resource.ClusterType) {
+					clusterNames = append(clusterNames, resource.Name)
+				}
+				Expect(clusterNames).To(ContainElement(expectedClusterName))
+			}
+		},
+		Entry("legacy naming", false, "kuma:envoy:admin"),
+		Entry("unified naming", true, "system_envoy_admin"),
 	)
 })

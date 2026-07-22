@@ -138,6 +138,14 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 
+	dataplanes := resources.Dataplanes().Items
+	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
+	for _, dp := range dataplanes {
+		dataplanesByName[dp.Meta.GetName()] = dp
+	}
+
+	var domains []xds_types.VIPDomains
+	var outbounds []*xds_types.Outbound
 	// This base64 encoding seems superfluous but keeping it for backward compatibility
 	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
 	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
@@ -148,15 +156,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	if m.withPolicyMatchingHash {
 		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
 	}
-
-	dataplanes := resources.Dataplanes().Items
-	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
-	for _, dp := range dataplanes {
-		dataplanesByName[dp.Meta.GetName()] = dp
-	}
-
-	var domains []xds_types.VIPDomains
-	var outbounds []*xds_types.Outbound
 
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
@@ -523,7 +522,7 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	_, _ = hasher.Write(globalContext.hash)
 	_, _ = hasher.Write(baseMeshContext.hash)
 	for _, resType := range managedTypes {
-		_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 	}
 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
@@ -548,17 +547,17 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 	hasher := fnv.New128a()
 	for _, resType := range maps.SortedKeys(globalContext.ResourceMap) {
 		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(core_model.ResourceListHash(globalContext.ResourceMap[resType]))
+			_, _ = hasher.Write(resourceListXDSHash(globalContext.ResourceMap[resType]))
 		}
 	}
 	for _, resType := range maps.SortedKeys(baseMeshContext.ResourceMap) {
 		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(core_model.ResourceListHash(baseMeshContext.ResourceMap[resType]))
+			_, _ = hasher.Write(resourceListXDSHash(baseMeshContext.ResourceMap[resType]))
 		}
 	}
 	for _, resType := range managedTypes {
 		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+			_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 		}
 	}
 	for _, meshName := range maps.SortedKeys(resources.CrossMeshResources) {
@@ -566,7 +565,7 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 		crossMesh := resources.CrossMeshResources[meshName]
 		for _, resType := range maps.SortedKeys(crossMesh) {
 			if affectsPolicyMatching(resType) {
-				_, _ = hasher.Write(core_model.ResourceListHash(crossMesh[resType]))
+				_, _ = hasher.Write(resourceListXDSHash(crossMesh[resType]))
 			}
 		}
 	}
