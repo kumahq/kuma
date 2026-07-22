@@ -1029,7 +1029,7 @@ var File_api_mesh_v1alpha1_mesh_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
-	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\x8b\t\n" +
+	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\x94\t\n" +
 	"\x04Mesh\x121\n" +
 	"\x04mtls\x18\x01 \x01(\v2\x1d.kuma.mesh.v1alpha1.Mesh.MtlsR\x04mtls\x125\n" +
 	"\alogging\x18\x03 \x01(\v2\x1b.kuma.mesh.v1alpha1.LoggingR\alogging\x125\n" +
@@ -1056,7 +1056,7 @@ const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:O\xaa\x8c\x89\xa6\x01I\n" +
 	"\fMeshResource\x12\x04Mesh\x18\x01\"\x04mesh:\x0e\n" +
 	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x9a\x01\x01mJ\x04\b\x02\x10\x03J\x04\b\t\x10\n" +
-	"\"\xb0\x05\n" +
+	"R\atracing\"\xb0\x05\n" +
 	"\x1bCertificateAuthorityBackend\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12N\n" +

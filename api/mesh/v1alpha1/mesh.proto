@@ -37,7 +37,8 @@ message Mesh {
   // +optional
   Mtls mtls = 1;
 
-  reserved 2; // formerly tracing
+  reserved 2;
+  reserved "tracing";
 
   // Logging settings.
   // +optional
