@@ -307,7 +307,7 @@
             }
           ]
         },
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_80",
           "endpoints": [
@@ -333,7 +333,9 @@
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
             "commonHttpProtocolOptions": {
-              "idleTimeout": "7200s"
+              "idleTimeout": "3600s",
+              "maxConnectionDuration": "0s",
+              "maxStreamDuration": "0s"
             },
             "explicitHttpConfig": {
               "httpProtocolOptions": {}
@@ -731,7 +733,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/protocol=http&&kuma.io/service=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "\u0026instance=1\u0026\u0026kuma.io/protocol=http\u0026\u0026kuma.io/service=zone-proxy-test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
                         }
                       }
                     ],
@@ -860,7 +862,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/protocol=http&&kuma.io/service=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "\u0026instance=1\u0026\u0026kuma.io/protocol=http\u0026\u0026kuma.io/service=zone-proxy-test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
                         }
                       }
                     ],
@@ -956,7 +958,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/protocol=http&&kuma.io/service=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "\u0026instance=1\u0026\u0026kuma.io/protocol=http\u0026\u0026kuma.io/service=zone-proxy-test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
                         }
                       }
                     ],
