@@ -26,10 +26,8 @@ spec:
       connectionTimeout: 2s
       http:
         requestTimeout: 10s
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 20s
         connectionTimeout: 2s
         http:
@@ -55,8 +53,6 @@ spec:
       default:
         http:
           requestTimeout: 20s
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         connectionTimeout: 20s

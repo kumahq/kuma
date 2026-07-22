@@ -27,17 +27,6 @@ var _ = Describe("MeshTimeout", func() {
 			Entry("full example", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 10s
-      idleTimeout: 1h
-      http:
-        requestTimeout: 0s
-        streamIdleTimeout: 1h
-        maxStreamDuration: 1h
-        maxConnectionDuration: 1h
 to:
   - targetRef:
       kind: MeshService
@@ -128,6 +117,18 @@ rules:
       http:
         requestTimeout: 1s
         streamIdleTimeout: 2s`),
+			Entry("inbound rules and outbound to together", `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      connectionTimeout: 10s
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      connectionTimeout: 10s`),
 		)
 
 		type testCase struct {
@@ -151,7 +152,7 @@ rules:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("empty 'to' array", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -159,22 +160,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' or 'rules' has to be defined`,
-			}),
-			Entry("unsupported kind in from selector", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: MeshGatewayRoute
-    default:
-      http:
-        requestTimeout: 1s`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshGatewayRoute' is not supported`,
+    message: at least one of 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
@@ -302,18 +288,11 @@ to:
         requestTimeout: 1s
         streamIdleTimeout: 1h
         maxStreamDuration: 1h
-        maxConnectionDuration: 1h
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 11s`,
+        maxConnectionDuration: 1h`,
 				expected: `
 violations:
   - field: spec.targetRef.kind
     message: value 'MeshHTTPRoute' is not supported
-  - field: spec.from
-    message: must not be defined
   - field: spec.to[0].targetRef.kind
     message: value 'MeshService' is not supported
   - field: spec.to[0].default.connectionTimeout
@@ -342,41 +321,6 @@ to:
 violations:
   - field: spec.to[0].targetRef.labels
     message: either labels or name must be specified`,
-			}),
-			Entry("when rules is defined, to cannot be defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-rules:
-  - default:
-      connectionTimeout: 10s
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      connectionTimeout: 10s`,
-				expected: `
-violations:
-  - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
-			}),
-			Entry("when rules is defined, from cannot be defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-rules:
-  - default:
-      connectionTimeout: 10s
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 10s`,
-				expected: `
-violations:
-  - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
 			}),
 			Entry("rules with empty spec", testCase{
 				inputYaml: `

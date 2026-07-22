@@ -23,11 +23,8 @@ var defaultMeshTimeoutResource = func() model.Resource {
 			},
 
 			// bigger than outbound side timeouts or disabled.
-			From: &[]v1alpha1.From{
+			Rules: &[]v1alpha1.Rule{
 				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
 					Default: v1alpha1.Conf{
 						ConnectionTimeout: &kube_meta.Duration{
 							Duration: factor * policies_defaults.DefaultConnectTimeout,
@@ -85,11 +82,8 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 					common_api.Gateway,
 				},
 			},
-			From: &[]v1alpha1.From{
+			Rules: &[]v1alpha1.Rule{
 				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
 					Default: v1alpha1.Conf{
 						IdleTimeout: &kube_meta.Duration{
 							Duration: policies_defaults.DefaultGatewayIdleTimeout,
