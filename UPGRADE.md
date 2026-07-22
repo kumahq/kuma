@@ -665,6 +665,21 @@ If any `MeshMetric` policy still sets `openTelemetry.endpoint`, create a
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
 
+### `MeshAccessLog` OpenTelemetry backend no longer accepts an inline `endpoint`
+
+The deprecated `default.backends[].openTelemetry.endpoint` /
+`rules[].default.backends[].openTelemetry.endpoint` field has been removed
+from the `MeshAccessLog` policy. `backendRef`, pointing at a
+`MeshOpenTelemetryBackend` resource, is now the only way to configure an
+OpenTelemetry access log backend.
+
+**Action required**
+
+If any `MeshAccessLog` policy still sets `openTelemetry.endpoint`, create a
+`MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
+the policy to reference it via `openTelemetry.backendRef` before upgrading.
+Policies that still set `openTelemetry.endpoint` will fail validation.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
