@@ -63,8 +63,8 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, errors.New("ReadinessPort has to be in (0, 65535] range")
 	}
 	// AdminProxyGenerator also runs for zone ingress/egress, which aren't mesh-scoped
-	// (xdsCtx.Mesh is nil for them), so unlike mesh-scoped generators we can't use
-	// unified_naming.Enabled here: it would always see a nil mesh and report unified
+	// (xdsCtx.Mesh.Resource is nil for them), so unlike mesh-scoped generators we can't
+	// use unified_naming.Enabled here: it would always see a nil mesh and report unified
 	// naming as disabled for zone proxies.
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
 	unifiedNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
