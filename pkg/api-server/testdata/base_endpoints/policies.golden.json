@@ -19,7 +19,7 @@
    "pluralDisplayName": "Mesh Circuit Breakers",
    "isExperimental": false,
    "isTargetRefBased": true,
-   "isInbound": false,
+   "isInbound": true,
    "isOutbound": true
   },
   {
@@ -30,7 +30,7 @@
    "pluralDisplayName": "Mesh Fault Injections",
    "isExperimental": false,
    "isTargetRefBased": true,
-   "isInbound": false,
+   "isInbound": true,
    "isOutbound": true
   },
   {
@@ -151,7 +151,7 @@
    "pluralDisplayName": "Mesh Timeouts",
    "isExperimental": false,
    "isTargetRefBased": true,
-   "isInbound": false,
+   "isInbound": true,
    "isOutbound": true
   },
   {
