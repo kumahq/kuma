@@ -18,13 +18,11 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/plugin/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 var (
@@ -202,38 +200,6 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
 		)
 		return nil
-	}
-	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for _, es := range resource.ExternalServices {
-			meshName := resource.Mesh.GetMeta().GetName()
-			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
-			if !ok {
-				continue
-			}
-			policies, ok := resource.Dynamic[esName]
-			if !ok {
-				continue
-			}
-			mrl, ok := policies[api.MeshRateLimitType]
-			if !ok {
-				continue
-			}
-
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range mrl.FromRules.Rules {
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						configurer := plugin_xds.Configurer{
-							Rules:   rule,
-							Element: subsetutils.MeshElement(),
-						}
-						if err := configurer.ConfigureFilterChain(filterChain); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
 	}
 	return nil
 }

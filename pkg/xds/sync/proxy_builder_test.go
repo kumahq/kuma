@@ -60,9 +60,6 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 		case core_mesh.MeshType:
 			meshResource := res.(*core_mesh.MeshResource)
 			Expect(resourceManager.Create(ctx, meshResource, store.CreateBy(core_model.MetaToResourceKey(meshResource.GetMeta())))).To(Succeed())
-		case core_mesh.ExternalServiceType:
-			externalService := res.(*core_mesh.ExternalServiceResource)
-			Expect(resourceManager.Create(ctx, externalService, store.CreateBy(core_model.MetaToResourceKey(externalService.GetMeta())))).To(Succeed())
 		}
 	}
 }
@@ -130,15 +127,6 @@ var _ = Describe("Proxy Builder", func() {
 							Instances: 1,
 							Mesh:      "default",
 						},
-						{
-							Tags: map[string]string{
-								mesh_proto.ServiceTag: "external-service-in-zone-2",
-								mesh_proto.ZoneTag:    "zone-2",
-							},
-							Instances:       1,
-							Mesh:            "default",
-							ExternalService: true,
-						},
 					},
 					Zone: "zone-2",
 					Networking: &mesh_proto.ZoneIngress_Networking{
@@ -157,15 +145,6 @@ var _ = Describe("Proxy Builder", func() {
 							},
 							Instances: 1,
 							Mesh:      "default",
-						},
-						{
-							Tags: map[string]string{
-								mesh_proto.ServiceTag: "external-service-in-zone-2",
-								mesh_proto.ZoneTag:    "zone-2",
-							},
-							Instances:       1,
-							Mesh:            "default",
-							ExternalService: true,
 						},
 					},
 					Zone: "zone-2",

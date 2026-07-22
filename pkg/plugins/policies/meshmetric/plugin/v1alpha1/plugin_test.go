@@ -75,6 +75,28 @@ func zoneIngressOnlyDataplane(name string) *builders.DataplaneBuilder {
 		})
 }
 
+func otelBackendResource(name, address string) *motb_api.MeshOpenTelemetryBackendResource {
+	motb := motb_api.NewMeshOpenTelemetryBackendResource()
+	motb.SetMeta(&test_model.ResourceMeta{
+		Mesh:   "default",
+		Name:   name,
+		Labels: map[string]string{mesh_proto.DisplayName: name},
+	})
+	motb.Spec.Endpoint = &motb_api.Endpoint{
+		Address: new(address),
+		Port:    new(int32(4317)),
+	}
+	motb.Spec.Protocol = new(motb_api.ProtocolGRPC)
+	return motb
+}
+
+func otelBackendRef(name string) *common_api.BackendResourceRef {
+	return &common_api.BackendResourceRef{
+		Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+		Labels: map[string]string{mesh_proto.DisplayName: name},
+	}
+}
+
 var _ = Describe("MeshMetric", func() {
 	type testCase struct {
 		proxy   *core_xds.Proxy
@@ -223,7 +245,9 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("openTelemetry", testCase{
-			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
+				Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
@@ -247,7 +271,7 @@ var _ = Describe("MeshMetric", func() {
 										{
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
-												Endpoint:        "otel-collector.observability.svc:4317",
+												BackendRef:      otelBackendRef("otel-collector"),
 												RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
 											},
 										},
@@ -299,7 +323,9 @@ var _ = Describe("MeshMetric", func() {
 		Entry("otel_and_prometheus", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(
 				samples.MeshDefaultBuilder(),
-			).Build(),
+			).
+				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
+				Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
@@ -339,7 +365,7 @@ var _ = Describe("MeshMetric", func() {
 										{
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
-												Endpoint: "otel-collector.observability.svc:4317",
+												BackendRef: otelBackendRef("otel-collector"),
 											},
 										},
 									},
@@ -353,7 +379,9 @@ var _ = Describe("MeshMetric", func() {
 		Entry("otel_and_prometheus_unified_naming", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(
 				samples.MeshDefaultBuilder(),
-			).Build(),
+			).
+				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
+				Build(),
 			proxy: xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(
@@ -398,7 +426,7 @@ var _ = Describe("MeshMetric", func() {
 										{
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
-												Endpoint: "otel-collector.observability.svc:4317",
+												BackendRef: otelBackendRef("otel-collector"),
 											},
 										},
 									},
@@ -410,7 +438,12 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("multiple_otel", testCase{
-			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshLocalResources([]core_model.Resource{
+					otelBackendResource("otel-collector", "otel-collector.observability.svc"),
+					otelBackendResource("second-collector", "second-collector.observability.svc"),
+				}).
+				Build(),
 			proxy: xds_builders.Proxy().
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
@@ -436,13 +469,13 @@ var _ = Describe("MeshMetric", func() {
 										{
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
-												Endpoint: "otel-collector.observability.svc:4317",
+												BackendRef: otelBackendRef("otel-collector"),
 											},
 										},
 										{
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
-												Endpoint: "second-collector.observability.svc:4317",
+												BackendRef: otelBackendRef("second-collector"),
 											},
 										},
 									},
@@ -706,35 +739,6 @@ var _ = Describe("MeshMetric", func() {
 			return proxy
 		}
 
-		It("inline endpoint should not add to pipe accumulator", func() {
-			backends := &[]api.Backend{{
-				Type: api.OpenTelemetryBackendType,
-				OpenTelemetry: &api.OpenTelemetryBackend{
-					Endpoint:        "otel-collector.observability.svc:4317",
-					RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
-				},
-			}}
-
-			proxy := pipeProxy(backends)
-			resources := core_xds.NewResourceSet()
-			plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-
-			Expect(plugin.Apply(resources, *xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).Build(), proxy)).To(Succeed())
-
-			// Accumulator stays empty - inline endpoints don't use pipe
-			Expect(proxy.OtelPipeBackends.Empty()).To(BeTrue())
-
-			// Envoy-side OTel resources still created
-			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(listeners)).To(ContainSubstring("_kuma:metrics:opentelemetry:"))
-
-			clusters, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(clusters)).To(ContainSubstring("_kuma:metrics:opentelemetry:"))
-		})
-
 		It("backendRef should add to pipe accumulator and skip Envoy OTel resources", func() {
 			motb := newMotb()
 			backends := &[]api.Backend{{
@@ -776,57 +780,6 @@ var _ = Describe("MeshMetric", func() {
 			clusters, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(clusters)).ToNot(ContainSubstring("_kuma:metrics:opentelemetry:"))
-		})
-
-		It("mixed inline + backendRef should handle each correctly", func() {
-			motb := newMotb()
-			backends := &[]api.Backend{
-				{
-					Type: api.OpenTelemetryBackendType,
-					OpenTelemetry: &api.OpenTelemetryBackend{
-						Endpoint:        "inline-collector.svc:4317",
-						RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
-					},
-				},
-				{
-					Type: api.OpenTelemetryBackendType,
-					OpenTelemetry: &api.OpenTelemetryBackend{
-						BackendRef: &common_api.BackendResourceRef{
-							Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
-							Labels: map[string]string{mesh_proto.DisplayName: backendName},
-						},
-						RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
-					},
-				},
-			}
-
-			proxy := pipeProxy(backends)
-			resources := core_xds.NewResourceSet()
-			plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-
-			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithMeshLocalResources([]core_model.Resource{motb}).
-				Build()
-
-			Expect(plugin.Apply(resources, *ctx, proxy)).To(Succeed())
-
-			// Only backendRef in accumulator
-			Expect(proxy.OtelPipeBackends.Empty()).To(BeFalse())
-			pipeBackends := proxy.OtelPipeBackends.All()
-			Expect(pipeBackends).To(HaveLen(1))
-			Expect(pipeBackends[0].Endpoint).To(Equal("collector.mesh:4317"))
-			Expect(pipeBackends[0].Metrics).ToNot(BeNil())
-
-			// Envoy-side resources created for inline only
-			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(listeners)).To(ContainSubstring("inline-collector"))
-			Expect(string(listeners)).ToNot(ContainSubstring("_kuma:metrics:opentelemetry:" + backendName))
-
-			clusters, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(clusters)).To(ContainSubstring("inline-collector"))
 		})
 	})
 

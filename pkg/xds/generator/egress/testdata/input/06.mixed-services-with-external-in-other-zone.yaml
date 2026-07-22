@@ -43,27 +43,40 @@ availableServices:
   mesh: mesh-1
   externalService: true
 ---
-type: ExternalService
+type: MeshExternalService
 name: externalservice-1
 mesh: mesh-1
-tags:
+labels:
   kuma.io/service: externalservice-1
   kuma.io/protocol: http
-networking:
-  address: kuma.io:80
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+  - address: kuma.io
+    port: 80
 ---
-type: ExternalService
+type: MeshExternalService
 name: externalservice-2
 mesh: mesh-1
-tags:
+labels:
   kuma.io/service: externalservice-2
   kuma.io/protocol: http2
   kuma.io/zone: zone-2
-networking:
-  address: httpbin.io:443
+spec:
+  match:
+    type: HostnameGenerator
+    port: 443
+    protocol: http2
+  endpoints:
+  - address: httpbin.io
+    port: 443
   tls:
     enabled: true
     allowRenegotiation: false
-    sni: httpbin.org
-    caCert:
-      inlineString: xyz
+    verification:
+      serverName: httpbin.org
+      caCert:
+        inlineString: xyz

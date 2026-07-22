@@ -74,10 +74,7 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 		return nil, err
 	}
 
-	policies, ok := common.Cast[interface {
-		PolicyWithRules
-		core_model.PolicyWithFromList
-	}](resources.GetItems())
+	policies, ok := common.Cast[PolicyWithRules](resources.GetItems())
 	if !ok {
 		return nil, nil
 	}
@@ -95,8 +92,14 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 					RuleIndex: j,
 				})
 			}
-		case desc.IsFromAsRules && len(policy.GetFromList()) > 0:
-			for j, fromEntry := range policy.GetFromList() {
+		case desc.IsFromAsRules:
+			// Only policies that still carry a legacy 'from' list opt into this backward
+			// compatibility path (enforced by policy-gen: IsFromAsRules implies a 'from' field).
+			policyWithFrom, ok := policy.(core_model.PolicyWithFromList)
+			if !ok || len(policyWithFrom.GetFromList()) == 0 {
+				continue
+			}
+			for j, fromEntry := range policyWithFrom.GetFromList() {
 				entries = append(entries, common.WithPolicyAttributes[RuleEntry]{
 					Entry:     newRuleEntryAdapter(fromEntry),
 					Meta:      resources.GetItems()[i].GetMeta(),

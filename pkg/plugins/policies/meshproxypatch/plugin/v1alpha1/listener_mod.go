@@ -75,7 +75,7 @@ func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool 
 	if l.Match == nil {
 		return true
 	}
-	if l.Match.Name != nil && *l.Match.Name != listener.Name {
+	if l.Match.Name != nil && !listenerNameMatches(*l.Match.Name, listener.Name) {
 		return false
 	}
 	if l.Match.Origin != nil && *l.Match.Origin != string(listener.Origin) {

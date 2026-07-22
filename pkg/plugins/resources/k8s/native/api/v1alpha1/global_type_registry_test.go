@@ -47,11 +47,6 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &DataplaneInsight{},
 				expectedKind: "DataplaneInsight",
 			}),
-			Entry("ExternalService", testCase{
-				inputType:    &mesh_proto.ExternalService{},
-				expectedType: &ExternalService{},
-				expectedKind: "ExternalService",
-			}),
 		)
 	})
 
@@ -88,11 +83,6 @@ var _ = Describe("global TypeRegistry", func() {
 				inputType:    &mesh_proto.DataplaneInsight{},
 				expectedType: &DataplaneInsightList{},
 				expectedKind: "DataplaneInsightList",
-			}),
-			Entry("ExternalServiceList", testCase{
-				inputType:    &mesh_proto.ExternalService{},
-				expectedType: &ExternalServiceList{},
-				expectedKind: "ExternalServiceList",
 			}),
 		)
 	})

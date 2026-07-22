@@ -74,11 +74,13 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "ExternalService",
-              "mesh": "default",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
-                "name": "empty"
+                "name": "empty",
+                "labels": {
+                  "kuma.io/mesh": "default"
+                }
               }
             }`,
 			expectedPatch: `
@@ -101,12 +103,14 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "ExternalService",
-              "mesh": "not-existing-mesh",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "not-existing-mesh"
+                }
               }
             }`,
 			expectedMessage: `meshes.kuma.io "not-existing-mesh" not found`,
@@ -115,11 +119,14 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "ExternalService",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": ""
+                }
               }
             }`,
 			expectedMessage: `mesh: cannot be empty`,
@@ -198,7 +205,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "ExternalService",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -213,13 +220,13 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "ExternalService",
-              "mesh": "default",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
+                  "kuma.io/mesh": "default",
                   "kuma.io/origin": "global"
                 }
               }
@@ -231,13 +238,13 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "ExternalService",
-              "mesh": "default",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
+                  "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone"
                 }
               }

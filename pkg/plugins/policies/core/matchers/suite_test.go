@@ -61,15 +61,6 @@ func readDPP(file string) *core_mesh.DataplaneResource {
 	return dpp.(*core_mesh.DataplaneResource)
 }
 
-func readES(file string) *core_mesh.ExternalServiceResource {
-	dppYaml, err := os.ReadFile(file)
-	Expect(err).ToNot(HaveOccurred())
-
-	dpp, err := rest.YAML.UnmarshalCore(dppYaml)
-	Expect(err).ToNot(HaveOccurred())
-	return dpp.(*core_mesh.ExternalServiceResource)
-}
-
 func readMES(file string) *meshexternalservice_api.MeshExternalServiceResource {
 	mesYaml, err := os.ReadFile(file)
 	Expect(err).ToNot(HaveOccurred())

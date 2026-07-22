@@ -23,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -235,51 +234,10 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 			continue
 		}
 
-		esNames := []string{}
-		for _, es := range resource.ExternalServices {
-			name := es.Spec.GetService()
-			if name != "" {
-				esNames = append(esNames, es.Spec.GetService())
-			}
-		}
-		// egress is configured for all meshes so we cannot use mesh context in this case
 		mesNames := []string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
 			mesNames = append(mesNames, destinationname.MustResolve(unifiedNaming, meshExtSvc, meshExtSvc.Spec.Match))
-		}
-
-		for _, esName := range esNames {
-			var rules core_rules.FromRules
-			if policies, ok := resource.Dynamic[esName]; ok {
-				if mtp, ok := policies[api.MeshTrafficPermissionType]; ok {
-					rules = mtp.FromRules
-				}
-			}
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			if len(rules.Rules) == 0 {
-				rules = core_rules.FromRules{
-					Rules: map[core_rules.InboundListener]core_rules.Rules{
-						{}: p.denyRules(),
-					},
-				}
-			}
-
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range rules.Rules {
-				configurer := &v3.LegacyRBACConfigurer{
-					StatsName: listeners.Egress.Name,
-					Rules:     rule,
-					Mesh:      meshName,
-				}
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						if err := configurer.Configure(filterChain); err != nil {
-							return err
-						}
-					}
-				}
-			}
 		}
 
 		for _, mesName := range mesNames {

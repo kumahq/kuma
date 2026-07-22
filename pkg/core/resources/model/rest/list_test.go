@@ -25,29 +25,27 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			{
 				"items": [
 				 {
-					"type": "ExternalService",
-					"mesh": "default",
+					"type": "Mesh",
 					"name": "one",
-					"networking": {
-					  "address": "192.168.0.1:8080"
+					"mtls": {
+					  "enabledBackend": "ca-1"
 					}
 				 },
 				 {
-					"type": "ExternalService",
-					"mesh": "demo",
+					"type": "Mesh",
 					"name": "two",
-					"networking": {
-					  "address": "192.168.0.2:8080"
+					"mtls": {
+					  "enabledBackend": "ca-2"
 					}
 				 }
 				],
-				"next": "http://localhost:5681/meshes/default/external-services?offset=1"
+				"next": "http://localhost:5681/meshes?offset=1"
 			}`
 
 			// when
 			rsr := &rest.ResourceListReceiver{
 				NewResource: func() core_model.Resource {
-					return mesh.NewExternalServiceResource()
+					return mesh.NewMeshResource()
 				},
 			}
 			err := json.Unmarshal([]byte(content), rsr)
@@ -60,26 +58,24 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			// then
 			Expect(rs.Items).To(HaveLen(2))
 			Expect(rs.Items[0].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "ExternalService",
-				Mesh: "default",
+				Type: "Mesh",
 				Name: "one",
 			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.ExternalService{
-				Networking: &mesh_proto.ExternalService_Networking{
-					Address: "192.168.0.1:8080",
+			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
+					EnabledBackend: "ca-1",
 				},
 			}))
 			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "ExternalService",
-				Mesh: "demo",
+				Type: "Mesh",
 				Name: "two",
 			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.ExternalService{
-				Networking: &mesh_proto.ExternalService_Networking{
-					Address: "192.168.0.2:8080",
+			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
+					EnabledBackend: "ca-2",
 				},
 			}))
-			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/external-services?offset=1"))
+			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes?offset=1"))
 		})
 	})
 

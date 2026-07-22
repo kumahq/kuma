@@ -22,16 +22,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "ExternalService",
-   "path": "external-services",
-   "pluralDisplayName": "External Services",
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "External Service"
-  },
-  {
-   "includeInFederation": true,
    "name": "GlobalSecret",
    "path": "globalsecrets",
    "pluralDisplayName": "Global Secrets",
@@ -110,7 +100,7 @@
    "path": "meshfaultinjections",
    "pluralDisplayName": "Mesh Fault Injections",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
     "isFromAsRules": false,

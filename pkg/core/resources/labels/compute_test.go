@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -213,14 +214,16 @@ var _ = Describe("Compute", func() {
 			mode:      core.Zone,
 			isK8s:     true,
 			localZone: "zone-1",
-			r: &mesh.ExternalServiceResource{
-				Spec: samples.ExternalService,
+			r: &meshexternalservice_api.MeshExternalServiceResource{
+				Spec: builders.MeshExternalService().Build().Spec,
 				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "sample-timeout"},
 			},
 			expectedLabels: map[string]string{
 				"kuma.io/display-name": "sample-timeout",
+				"kuma.io/env":          "kubernetes",
 				"kuma.io/mesh":         "mesh-1",
 				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
 			},
 		}),
 		Entry("mesh resource on non-federated zone", testCase{

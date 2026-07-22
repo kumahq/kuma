@@ -39,7 +39,7 @@ func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_mod
 func (rm ResourceMap) Hash() []byte {
 	hasher := fnv.New128a()
 	for _, k := range maps.SortedKeys(rm) {
-		hasher.Write(core_model.ResourceListHash(rm[k]))
+		hasher.Write(resourceListXDSHash(rm[k]))
 	}
 	return hasher.Sum(nil)
 }
@@ -67,10 +67,6 @@ func (r Resources) Get(id kri.Identifier) core_model.Resource {
 
 func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
 	return r.MeshLocalResources.listOrEmpty(resourceType)
-}
-
-func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
-	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
 }
 
 func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {

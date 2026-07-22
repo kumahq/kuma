@@ -7,7 +7,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -30,15 +32,18 @@ var _ = Describe("Resource Manager", func() {
 		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, model.NoMesh))
 	}
 
-	createSampleResource := func(mesh string) (*core_mesh.ExternalServiceResource, error) {
-		esRes := core_mesh.ExternalServiceResource{
-			Spec: &mesh_proto.ExternalService{
-				Networking: &mesh_proto.ExternalService_Networking{
-					Address: "192.168.0.1:8080",
+	createSampleResource := func(mesh string) (*meshexternalservice_api.MeshExternalServiceResource, error) {
+		esRes := meshexternalservice_api.MeshExternalServiceResource{
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     meshexternalservice_api.HostnameGeneratorType,
+					Port:     8080,
+					Protocol: core_meta.ProtocolHTTP,
 				},
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "es-1",
-				},
+				Endpoints: &[]meshexternalservice_api.Endpoint{{
+					Address: "192.168.0.1",
+					Port:    8080,
+				}},
 			},
 		}
 		err := resManager.Create(context.Background(), &esRes, store.CreateByKey("tr-1", mesh))
@@ -102,13 +107,13 @@ var _ = Describe("Resource Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = resManager.DeleteAll(context.Background(), &core_mesh.ExternalServiceResourceList{}, store.DeleteAllByMesh("mesh-1"))
+			err = resManager.DeleteAll(context.Background(), &meshexternalservice_api.MeshExternalServiceResourceList{}, store.DeleteAllByMesh("mesh-1"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// and resource from mesh-1 is deleted
-			res1 := core_mesh.NewExternalServiceResource()
+			res1 := meshexternalservice_api.NewMeshExternalServiceResource()
 			err = resManager.Get(context.Background(), res1, store.GetByKey("tr-1", "mesh-1"))
 			Expect(store.IsNotFound(err)).To(BeTrue())
 
@@ -116,7 +121,7 @@ var _ = Describe("Resource Manager", func() {
 			Expect(resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), store.GetBy(dpKey))).To(Succeed())
 
 			// and resource from mesh-2 is retained
-			res2 := core_mesh.NewExternalServiceResource()
+			res2 := meshexternalservice_api.NewMeshExternalServiceResource()
 			err = resManager.Get(context.Background(), res2, store.GetByKey("tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
 		})

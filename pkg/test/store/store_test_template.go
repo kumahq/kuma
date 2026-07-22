@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
-	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -37,7 +37,7 @@ func ExecuteStoreTests(
 	})
 
 	BeforeEach(func() {
-		list := core_mesh.ExternalServiceResourceList{}
+		list := meshexternalservice_api.MeshExternalServiceResourceList{}
 		err := s.List(context.Background(), &list)
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range list.Items {
@@ -54,13 +54,17 @@ func ExecuteStoreTests(
 		}
 	})
 
-	createResource := func(name string, keyAndValues ...string) *core_mesh.ExternalServiceResource {
-		res := core_mesh.ExternalServiceResource{
-			Spec: &v1alpha1.ExternalService{
-				Tags: map[string]string{
-					"path": "demo",
+	createResource := func(name string, keyAndValues ...string) *meshexternalservice_api.MeshExternalServiceResource {
+		res := meshexternalservice_api.MeshExternalServiceResource{
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     meshexternalservice_api.HostnameGeneratorType,
+					Port:     80,
+					Protocol: core_meta.ProtocolHTTP,
 				},
+				Endpoints: &[]meshexternalservice_api.Endpoint{{Address: "demo.example.com", Port: 80}},
 			},
+			Status: &meshexternalservice_api.MeshExternalServiceStatus{},
 		}
 		labels := map[string]string{}
 		for i := 0; i < len(keyAndValues); i += 2 {
@@ -84,7 +88,7 @@ func ExecuteStoreTests(
 				created := createResource(name, "foo", "bar")
 
 				// when retrieve created object
-				resource := core_mesh.NewExternalServiceResource()
+				resource := meshexternalservice_api.NewMeshExternalServiceResource()
 				err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 				// then
@@ -97,7 +101,7 @@ func ExecuteStoreTests(
 				Expect(resource.Meta.GetCreationTime()).ToNot(BeZero())
 				Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
 				Expect(resource.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
-				Expect(resource.Spec).To(MatchProto(created.Spec))
+				Expect(resource.Spec).To(Equal(created.Spec))
 			})
 
 			It("should not create a duplicate record", func() {
@@ -185,7 +189,7 @@ func ExecuteStoreTests(
 				versionBeforeUpdate := resource.Meta.GetVersion()
 
 				// when
-				resource.Spec.Tags["path"] = "new-path"
+				resource.Spec.Match.Port = 81
 				newLabels := map[string]string{
 					"foo":      "barbar",
 					"newlabel": "newvalue",
@@ -203,14 +207,14 @@ func ExecuteStoreTests(
 				}
 
 				// when retrieve the resource
-				res := core_mesh.NewExternalServiceResource()
+				res := meshexternalservice_api.NewMeshExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// and
-				Expect(res.Spec.Tags["path"]).To(Equal("new-path"))
+				Expect(res.Spec.Match.Port).To(Equal(int32(81)))
 				Expect(resource.Meta.GetLabels()).To(And(HaveKeyWithValue("foo", "barbar"), HaveKeyWithValue("newlabel", "newvalue")))
 
 				// and modification time is updated
@@ -229,13 +233,13 @@ func ExecuteStoreTests(
 				resource := createResource(name, "foo", "bar")
 
 				// when
-				resource.Spec.Tags["path"] = "new-path"
+				resource.Spec.Match.Port = 81
 				err := s.Update(context.Background(), resource)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				res := core_mesh.NewExternalServiceResource()
+				res := meshexternalservice_api.NewMeshExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
@@ -247,13 +251,13 @@ func ExecuteStoreTests(
 				resource := createResource(name, "foo", "bar")
 
 				// when
-				resource.Spec.Tags["path"] = "new-path"
+				resource.Spec.Match.Port = 81
 				err := s.Update(context.Background(), resource, store.UpdateWithLabels(map[string]string{}))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				res := core_mesh.NewExternalServiceResource()
+				res := meshexternalservice_api.NewMeshExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Meta.GetLabels()).ToNot(HaveKeyWithValue("foo", "bar"))
@@ -310,7 +314,7 @@ func ExecuteStoreTests(
 			It("should throw an error if resource is not found", func() {
 				// given
 				name := "non-existent-name.demo"
-				resource := core_mesh.NewExternalServiceResource()
+				resource := meshexternalservice_api.NewMeshExternalServiceResource()
 
 				// when
 				err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
@@ -334,7 +338,7 @@ func ExecuteStoreTests(
 				Expect(store.IsNotFound(err)).To(BeTrue())
 
 				// and when getting the given resource
-				getResource := core_mesh.NewExternalServiceResource()
+				getResource := meshexternalservice_api.NewMeshExternalServiceResource()
 				err = s.Get(context.Background(), getResource, store.GetByKey(name, mesh))
 
 				// then resource still exists
@@ -347,14 +351,14 @@ func ExecuteStoreTests(
 				createResource(name)
 
 				// when
-				resource := core_mesh.NewExternalServiceResource()
+				resource := meshexternalservice_api.NewMeshExternalServiceResource()
 				err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when query for deleted resource
-				resource = core_mesh.NewExternalServiceResource()
+				resource = meshexternalservice_api.NewMeshExternalServiceResource()
 				err = s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 				// then resource cannot be found
@@ -366,7 +370,7 @@ func ExecuteStoreTests(
 			It("should return an error if resource is not found", func() {
 				// given
 				name := "non-existing-resource.demo"
-				resource := core_mesh.NewExternalServiceResource()
+				resource := meshexternalservice_api.NewMeshExternalServiceResource()
 
 				// when
 				err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
@@ -382,7 +386,7 @@ func ExecuteStoreTests(
 				createResource(name)
 
 				// when
-				resource := core_mesh.NewExternalServiceResource()
+				resource := meshexternalservice_api.NewMeshExternalServiceResource()
 				err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 				// then
@@ -395,7 +399,7 @@ func ExecuteStoreTests(
 				createdResource := createResource(name)
 
 				// when
-				res := core_mesh.NewExternalServiceResource()
+				res := meshexternalservice_api.NewMeshExternalServiceResource()
 				err := s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 				// then
@@ -404,7 +408,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(res.Meta.GetName()).To(Equal(name))
 				Expect(res.Meta.GetVersion()).ToNot(BeEmpty())
-				Expect(res.Spec).To(MatchProto(createdResource.Spec))
+				Expect(res.Spec).To(Equal(createdResource.Spec))
 			})
 
 			It("should get resource by version", func() {
@@ -413,23 +417,23 @@ func ExecuteStoreTests(
 				res := createResource(name)
 
 				// when trying to retrieve resource with proper version
-				err := s.Get(context.Background(), core_mesh.NewExternalServiceResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
+				err := s.Get(context.Background(), meshexternalservice_api.NewMeshExternalServiceResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
 
 				// then resource is found
 				Expect(err).ToNot(HaveOccurred())
 
 				// when trying to retrieve resource with different version
-				err = s.Get(context.Background(), core_mesh.NewExternalServiceResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
+				err = s.Get(context.Background(), meshexternalservice_api.NewMeshExternalServiceResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
 
 				// then resource precondition failed error occurred
-				Expect(err).Should(MatchError(store.ErrorResourceConflict(core_mesh.ExternalServiceType, name, mesh)))
+				Expect(err).Should(MatchError(store.ErrorResourceConflict(meshexternalservice_api.MeshExternalServiceType, name, mesh)))
 			})
 		})
 
 		Describe("List()", func() {
 			It("should return an empty list if there are no matching resources", func() {
 				// given
-				list := core_mesh.ExternalServiceResourceList{}
+				list := meshexternalservice_api.MeshExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByMesh(mesh))
@@ -447,7 +451,7 @@ func ExecuteStoreTests(
 				createResource("res-1.demo")
 				createResource("res-2.demo")
 
-				list := core_mesh.ExternalServiceResourceList{}
+				list := meshexternalservice_api.MeshExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list)
@@ -462,9 +466,9 @@ func ExecuteStoreTests(
 				names := []string{list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName()}
 				Expect(names).To(ConsistOf("res-1.demo", "res-2.demo"))
 				Expect(list.Items[0].Meta.GetMesh()).To(Equal(mesh))
-				Expect(list.Items[0].Spec.Tags["path"]).To(Equal("demo"))
+				Expect(list.Items[0].Spec.Match.Port).To(Equal(int32(80)))
 				Expect(list.Items[1].Meta.GetMesh()).To(Equal(mesh))
-				Expect(list.Items[1].Spec.Tags["path"]).To(Equal("demo"))
+				Expect(list.Items[1].Spec.Match.Port).To(Equal(int32(80)))
 			})
 
 			It("should not return a list of resources in different mesh", func() {
@@ -472,7 +476,7 @@ func ExecuteStoreTests(
 				createResource("list-res-1.demo")
 				createResource("list-res-2.demo")
 
-				list := core_mesh.ExternalServiceResourceList{}
+				list := meshexternalservice_api.MeshExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByMesh("different-mesh"))
@@ -491,7 +495,7 @@ func ExecuteStoreTests(
 				createResource("list-res-2.demo")
 				createResource("list-mes-1.demo")
 
-				list := core_mesh.ExternalServiceResourceList{}
+				list := meshexternalservice_api.MeshExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByNameContains("list-res"))
@@ -501,7 +505,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(2)))
 				// and
-				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.ExternalServiceResource) []string {
+				Expect(list.Items).To(WithTransform(func(itms []*meshexternalservice_api.MeshExternalServiceResource) []string {
 					var res []string
 					for _, v := range itms {
 						res = append(res, v.GetMeta().GetName())
@@ -516,7 +520,7 @@ func ExecuteStoreTests(
 				createResource("list-res-2.demo")
 				createResource("list-mes-1.demo")
 
-				list := core_mesh.ExternalServiceResourceList{}
+				list := meshexternalservice_api.MeshExternalServiceResourceList{}
 
 				// when
 				err := s.List(context.Background(), &list, store.ListByNameContains("list-res"), store.ListByMesh(mesh))
@@ -526,7 +530,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(2)))
 				// and
-				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.ExternalServiceResource) []string {
+				Expect(list.Items).To(WithTransform(func(itms []*meshexternalservice_api.MeshExternalServiceResource) []string {
 					var res []string
 					for _, v := range itms {
 						res = append(res, v.GetMeta().GetName())
@@ -542,7 +546,7 @@ func ExecuteStoreTests(
 				rs3 := createResource("list-mes-1.demo")
 				rs4 := createResource("list-mes-1.default")
 
-				list := core_mesh.ExternalServiceResourceList{}
+				list := meshexternalservice_api.MeshExternalServiceResourceList{}
 				rk := []core_model.ResourceKey{core_model.MetaToResourceKey(rs3.GetMeta()), core_model.MetaToResourceKey(rs4.GetMeta())}
 
 				// when
@@ -553,7 +557,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(2)))
 				// and
-				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.ExternalServiceResource) []string {
+				Expect(list.Items).To(WithTransform(func(itms []*meshexternalservice_api.MeshExternalServiceResource) []string {
 					var res []string
 					for _, v := range itms {
 						res = append(res, v.GetMeta().GetName())
@@ -577,7 +581,7 @@ func ExecuteStoreTests(
 
 					// when list first two pages with 2 elements
 					for i := 1; i <= 2; i++ {
-						list := core_mesh.ExternalServiceResourceList{}
+						list := meshexternalservice_api.MeshExternalServiceResourceList{}
 						err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
 
 						Expect(err).ToNot(HaveOccurred())
@@ -590,7 +594,7 @@ func ExecuteStoreTests(
 					}
 
 					// when list third page with 1 element (less than page size)
-					list := core_mesh.ExternalServiceResourceList{}
+					list := meshexternalservice_api.MeshExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
 
 					// then
@@ -612,7 +616,7 @@ func ExecuteStoreTests(
 					createResource("res-1.demo")
 
 					// when
-					list := core_mesh.ExternalServiceResourceList{}
+					list := meshexternalservice_api.MeshExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(5, ""))
 
 					// then
@@ -627,7 +631,7 @@ func ExecuteStoreTests(
 					createResource("res-1.demo")
 
 					// when
-					list := core_mesh.ExternalServiceResourceList{}
+					list := meshexternalservice_api.MeshExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(1, ""))
 
 					// then
@@ -639,7 +643,7 @@ func ExecuteStoreTests(
 
 				It("next offset should be null when queried empty collection", func() {
 					// when
-					list := core_mesh.ExternalServiceResourceList{}
+					list := meshexternalservice_api.MeshExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, ""))
 
 					// then
@@ -651,7 +655,7 @@ func ExecuteStoreTests(
 
 				It("next offset should return error when query with invalid offset", func() {
 					// when
-					list := core_mesh.ExternalServiceResourceList{}
+					list := meshexternalservice_api.MeshExternalServiceResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, "123invalidOffset"))
 
 					// then

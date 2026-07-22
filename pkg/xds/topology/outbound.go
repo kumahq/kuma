@@ -24,24 +24,9 @@ import (
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound")
-
-func BuildExternalServicesEndpointMap(
-	ctx context.Context,
-	mesh *core_mesh.MeshResource,
-	externalServices []*core_mesh.ExternalServiceResource,
-	loader datasource.Loader,
-	zone string,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-	if !mesh.ZoneEgressEnabled() {
-		fillExternalServicesOutbounds(ctx, outbound, externalServices, mesh, loader, zone)
-	}
-	return outbound
-}
 
 // BuildEgressEndpointMap creates a map of endpoints that match given selectors
 // and are not local for the provided zone (external services and services
@@ -51,7 +36,6 @@ func BuildEgressEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
-	externalServices []*core_mesh.ExternalServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
@@ -59,7 +43,7 @@ func BuildEgressEndpointMap(
 
 	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{})
 
-	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, meshExternalServices, mesh, loader, localZone)
+	fillExternalServicesReachableFromZone(ctx, outbound, meshExternalServices, mesh, loader, localZone)
 
 	for serviceName, endpoints := range outbound {
 		var newEndpoints []core_xds.Endpoint
@@ -129,7 +113,6 @@ func BuildIngressEndpointMap(
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
-	externalServices []*core_mesh.ExternalServiceResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	egressAddresses []core_xds.ZoneEgressInstance,
 	loader datasource.Loader,
@@ -137,7 +120,7 @@ func BuildIngressEndpointMap(
 ) core_xds.EndpointMap {
 	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
 	// This way we only keep local endpoints.
-	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, nil, zoneEgresses, externalServices, loader, mtlsEnabled, egressAddresses)
+	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, nil, zoneEgresses, loader, mtlsEnabled, egressAddresses)
 	return outbound
 }
 
@@ -152,7 +135,6 @@ func BuildEdsEndpointMap(
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
-	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
 	mtlsEnabled bool,
 	egressAddresses []core_xds.ZoneEgressInstance,
@@ -182,7 +164,7 @@ func BuildEdsEndpointMap(
 
 	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, meshZoneAddresses, mesh, localZone, mtlsEnabled)
 
-	fillExternalServicesOutboundsThroughEgress(ctx, outbound, externalServices, meshExternalServices, egressAddresses, mesh, localZone, loader)
+	fillExternalServicesOutboundsThroughEgress(ctx, outbound, meshExternalServices, egressAddresses, mesh, localZone, loader)
 
 	// it has to be last because it reuses endpoints for other cases
 	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
@@ -585,17 +567,11 @@ func fillIngressOutbounds(
 func fillExternalServicesReachableFromZone(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
-	externalServices []*core_mesh.ExternalServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
 	zone string,
 ) {
-	for _, externalService := range externalServices {
-		if externalService.IsReachableFromZone(zone) {
-			createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
-		}
-	}
 	for _, mes := range meshExternalServices {
 		if mes.IsReachableFromZone(zone) {
 			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, false)
@@ -604,19 +580,6 @@ func fillExternalServicesReachableFromZone(
 				continue
 			}
 		}
-	}
-}
-
-func fillExternalServicesOutbounds(
-	ctx context.Context,
-	outbound core_xds.EndpointMap,
-	externalServices []*core_mesh.ExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	zone string,
-) {
-	for _, externalService := range externalServices {
-		createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
 	}
 }
 
@@ -736,56 +699,15 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 	return nil
 }
 
-func createExternalServiceEndpoint(
-	ctx context.Context,
-	outbound core_xds.EndpointMap,
-	externalService *core_mesh.ExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	zone string,
-) {
-	service := externalService.Spec.GetService()
-	externalServiceEndpoint, err := NewExternalServiceEndpoint(ctx, externalService, mesh, loader, zone)
-	if err != nil {
-		outboundLog.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
-		return
-	}
-	outbound[service] = append(outbound[service], *externalServiceEndpoint)
-}
-
 func fillExternalServicesOutboundsThroughEgress(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
-	externalServices []*core_mesh.ExternalServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	egressAddresses []core_xds.ZoneEgressInstance,
 	mesh *core_mesh.MeshResource,
 	localZone string,
 	loader datasource.Loader,
 ) {
-	if mesh.ZoneEgressEnabled() {
-		for _, externalService := range externalServices {
-			// deep copy map to not modify tags in ExternalService.
-			serviceTags := maps.Clone(externalService.Spec.GetTags())
-			serviceName := serviceTags[mesh_proto.ServiceTag]
-			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
-
-			for _, ze := range egressAddresses {
-				endpoint := core_xds.Endpoint{
-					Target: ze.Address,
-					Port:   ze.Port,
-					Tags:   serviceTags,
-					// AS it's a role of zone egress to load balance traffic between
-					// instances, we can safely set weight to 1
-					Weight:          1,
-					Locality:        locality,
-					ExternalService: &core_xds.ExternalService{},
-				}
-
-				outbound[serviceName] = append(outbound[serviceName], endpoint)
-			}
-		}
-	}
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
@@ -819,60 +741,6 @@ func fillExternalServicesOutboundsThroughEgress(
 			outbound[serviceName] = append(outbound[serviceName], endpoint)
 		}
 	}
-}
-
-// NewExternalServiceEndpoint builds a new Endpoint from an ExternalServiceResource.
-func NewExternalServiceEndpoint(
-	ctx context.Context,
-	externalService *core_mesh.ExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	zone string,
-) (*core_xds.Endpoint, error) {
-	spec := externalService.Spec
-	tls := spec.GetNetworking().GetTls()
-	meshName := mesh.GetMeta().GetName()
-	// deep copy map to not modify tags in ExternalService.
-	tags := maps.Clone(spec.GetTags())
-
-	caCert, err := loadBytes(ctx, tls.GetCaCert(), meshName, loader)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load caCert")
-	}
-	clientCert, err := loadBytes(ctx, tls.GetClientCert(), meshName, loader)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load clientCert")
-	}
-	clientKey, err := loadBytes(ctx, tls.GetClientKey(), meshName, loader)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load clientKey")
-	}
-
-	es := &core_xds.ExternalService{
-		TLSEnabled:               tls.GetEnabled(),
-		CaCert:                   caCert,
-		ClientCert:               clientCert,
-		ClientKey:                clientKey,
-		AllowRenegotiation:       tls.GetAllowRenegotiation().GetValue(),
-		SkipHostnameVerification: tls.GetSkipHostnameVerification().GetValue(),
-		ServerName:               tls.GetServerName().GetValue(),
-	}
-
-	if es.TLSEnabled {
-		name := externalService.Meta.GetName()
-
-		tags = envoy_tags.Tags(tags).
-			WithTags(mesh_proto.ExternalServiceTag, name)
-	}
-
-	return &core_xds.Endpoint{
-		Target:          spec.GetHost(),
-		Port:            spec.GetPortUInt32(),
-		Tags:            tags,
-		Weight:          1,
-		ExternalService: es,
-		Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
-	}, nil
 }
 
 func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {

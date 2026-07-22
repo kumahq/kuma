@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/api-server/types"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
@@ -47,8 +47,8 @@ var _ = Describe("DataplaneInspectEntry", func() {
 					Service: "web",
 				},
 				MatchedPolicies: map[model.ResourceType][]v1alpha1.ResourceMeta{
-					core_mesh.ExternalServiceType: {
-						rest.From.Meta(&core_mesh.ExternalServiceResource{
+					meshexternalservice_api.MeshExternalServiceType: {
+						rest.From.Meta(&meshexternalservice_api.MeshExternalServiceResource{
 							Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "t-1"},
 						}),
 					},

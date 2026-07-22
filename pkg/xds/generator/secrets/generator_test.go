@@ -397,23 +397,6 @@ var _ = Describe("SecretsGenerator", func() {
 									},
 								},
 							},
-							// only meshes with external services are taken into account
-							ExternalServices: []*core_mesh.ExternalServiceResource{
-								{
-									Meta: &test_model.ResourceMeta{
-										Name: "es-mesh-2",
-										Mesh: "mesh-2",
-									},
-									Spec: &mesh_proto.ExternalService{
-										Networking: &mesh_proto.ExternalService_Networking{
-											Address: "example.com:80",
-										},
-										Tags: map[string]string{
-											"kuma.io/service": "service2",
-										},
-									},
-								},
-							},
 						},
 					},
 				},

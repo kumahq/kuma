@@ -15,14 +15,20 @@ networking:
   address: 192.168.0.1
   port: 10002
 ---
-type: ExternalService
+type: MeshExternalService
 name: externalservice-2
 mesh: mesh-1
-tags:
+labels:
   kuma.io/service: externalservice-2
   kuma.io/protocol: http
-networking:
-  address: kuma.io:80
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+  - address: kuma.io
+    port: 80
 ---
 type: MeshHTTPRoute
 name: route-1

@@ -1,4 +1,39 @@
 resources:
+- name: kri_extsvc_mesh-1___externalservice-1_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
+    connectTimeout: 5s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: kri_extsvc_mesh-1___externalservice-1_80
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: kuma.io
+                portValue: 80
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                mesh: mesh-1
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                mesh: mesh-1
+        locality:
+          subZone: priority-0
+    name: kri_extsvc_mesh-1___externalservice-1_80
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: kri_extsvc_mesh-1___meshexternalservice-1_9090
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -44,40 +79,6 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           httpProtocolOptions: {}
-- name: mesh-1:externalservice-1
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh-1_externalservice-1
-    circuitBreakers:
-      thresholds:
-      - trackRemaining: true
-    connectTimeout: 5s
-    dnsLookupFamily: V4_ONLY
-    loadAssignment:
-      clusterName: mesh-1:externalservice-1
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: kuma.io
-                portValue: 80
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-                mesh: mesh-1
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
-                mesh: mesh-1
-    name: mesh-1:externalservice-1
-    type: STRICT_DNS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          httpProtocolOptions: {}
 - name: self_inbound_ze_10002
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -89,7 +90,7 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - externalservice-1{mesh=mesh-1}
+        - adc6ffd9eacb86dec.externalservice-1.80.mesh-1.mes
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -104,20 +105,20 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            name: outbound:mesh-1:externalservice-1
+            name: kri_extsvc_mesh-1___externalservice-1_80
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: mesh-1:externalservice-1
+              name: kri_extsvc_mesh-1___externalservice-1_80
               routes:
               - match:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: mesh-1:externalservice-1
-          statPrefix: mesh-1_externalservice-1
-      name: mesh-1:externalservice-1_mesh-1
+                  cluster: kri_extsvc_mesh-1___externalservice-1_80
+          statPrefix: kri_extsvc_mesh-1___externalservice-1_80
+      name: kri_extsvc_mesh-1___externalservice-1_80
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

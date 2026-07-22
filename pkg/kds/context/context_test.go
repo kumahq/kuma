@@ -14,6 +14,7 @@ import (
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -189,17 +190,17 @@ var _ = Describe("Context", func() {
 				},
 			}),
 			Entry("should not change non-insight", testCase{
-				resource: &core_mesh.ExternalServiceResource{
+				resource: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "cb-1",
 					},
-					Spec: &mesh_proto.ExternalService{
-						Networking: &mesh_proto.ExternalService_Networking{
-							Address: "192.168.0.1:8080",
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
 						},
 					},
 				},
-				expect: &core_mesh.ExternalServiceResource{
+				expect: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: hash.HashedName("", "cb-1", "zone"),
 						Labels: map[string]string{
@@ -208,9 +209,9 @@ var _ = Describe("Context", func() {
 							"kuma.io/zone":         "zone",
 						},
 					},
-					Spec: &mesh_proto.ExternalService{
-						Networking: &mesh_proto.ExternalService_Networking{
-							Address: "192.168.0.1:8080",
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
 						},
 					},
 				},
@@ -448,7 +449,7 @@ var _ = Describe("Context", func() {
 		}
 
 		resource := func(given testCase) model.Resource {
-			var r model.Resource = core_mesh.NewExternalServiceResource()
+			var r model.Resource = meshexternalservice_api.NewMeshExternalServiceResource()
 			switch given.scope {
 			case model.ScopeGlobal:
 				r = core_system.NewGlobalSecretResource()

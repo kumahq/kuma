@@ -138,6 +138,14 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 
+	dataplanes := resources.Dataplanes().Items
+	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
+	for _, dp := range dataplanes {
+		dataplanesByName[dp.Meta.GetName()] = dp
+	}
+
+	var domains []xds_types.VIPDomains
+	var outbounds []*xds_types.Outbound
 	// This base64 encoding seems superfluous but keeping it for backward compatibility
 	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
 	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
@@ -148,15 +156,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	if m.withPolicyMatchingHash {
 		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
 	}
-
-	dataplanes := resources.Dataplanes().Items
-	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
-	for _, dp := range dataplanes {
-		dataplanesByName[dp.Meta.GetName()] = dp
-	}
-
-	var domains []xds_types.VIPDomains
-	var outbounds []*xds_types.Outbound
 
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
@@ -185,7 +184,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
-	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	if len(zoneEgressList) == 0 {
 		// Do not mix legacy zone egresses with dataplane listeners in one pool because
@@ -204,12 +202,10 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		zoneIngresses,
 		resources.MeshZoneAddresses().Items,
 		zoneEgresses,
-		externalServices,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
-	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
 		ctx,
 		mesh,
@@ -218,7 +214,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshMultiZoneServices,
 		meshExternalServices,
 		dataplanes,
-		externalServices,
 		zoneEgresses,
 		zoneEgressList,
 		loader,
@@ -265,12 +260,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		ExternalServicesEndpointMap:     esEndpointMap,
 		IngressEndpointMap:              ingressEndpointMap,
 		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
-		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap, esEndpointMap),
+		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap),
 		DataSourceLoader:                loader,
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
@@ -322,12 +316,12 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		if err != nil {
 			return nil, err
 		}
-		// Only pick the policies, gateways, external services and the vip config map
+		// Only pick the policies, gateways, and the vip config map
 		switch {
 		case desc.IsDestination:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 			destinations = append(destinations, rmap[t].GetItems())
-		case desc.IsPolicy || desc.Name == core_mesh.ExternalServiceType:
+		case desc.IsPolicy:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 		default:
 			// DO nothing we're not interested in this type
@@ -454,30 +448,17 @@ func (m *meshContextBuilder) generateServicesInformation(
 	mesh *core_mesh.MeshResource,
 	meshServices []*meshservice_api.MeshServiceResource,
 	endpointMap xds.EndpointMap,
-	esEndpointMap xds.EndpointMap,
 ) map[string]*ServiceInformation {
 	servicesInformation := map[string]*ServiceInformation{}
-	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformation)
+	m.resolveProtocol(endpointMap, servicesInformation)
 	m.resolveTLSReadiness(mesh, meshServices, servicesInformation)
 	return servicesInformation
 }
 
 func (m *meshContextBuilder) resolveProtocol(
-	mesh *core_mesh.MeshResource,
 	endpointMap xds.EndpointMap,
-	esEndpointMap xds.EndpointMap,
 	servicesInformation map[string]*ServiceInformation,
 ) {
-	// endpointMap has only informations about externalServices when egress is enabled
-	// that's why we have to iterate over second map with external services
-	if !mesh.ZoneEgressEnabled() {
-		for svc, endpoints := range esEndpointMap {
-			serviceInfo := getServiceInformation(servicesInformation, svc)
-			serviceInfo.Protocol = inferServiceProtocol(endpoints)
-			serviceInfo.IsExternalService = true
-			servicesInformation[svc] = serviceInfo
-		}
-	}
 	for svc, endpoints := range endpointMap {
 		serviceInfo := getServiceInformation(servicesInformation, svc)
 		serviceInfo.Protocol = inferServiceProtocol(endpoints)
@@ -523,7 +504,7 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	_, _ = hasher.Write(globalContext.hash)
 	_, _ = hasher.Write(baseMeshContext.hash)
 	for _, resType := range managedTypes {
-		_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 	}
 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
@@ -548,17 +529,17 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 	hasher := fnv.New128a()
 	for _, resType := range maps.SortedKeys(globalContext.ResourceMap) {
 		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(core_model.ResourceListHash(globalContext.ResourceMap[resType]))
+			_, _ = hasher.Write(resourceListXDSHash(globalContext.ResourceMap[resType]))
 		}
 	}
 	for _, resType := range maps.SortedKeys(baseMeshContext.ResourceMap) {
 		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(core_model.ResourceListHash(baseMeshContext.ResourceMap[resType]))
+			_, _ = hasher.Write(resourceListXDSHash(baseMeshContext.ResourceMap[resType]))
 		}
 	}
 	for _, resType := range managedTypes {
 		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+			_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 		}
 	}
 	for _, meshName := range maps.SortedKeys(resources.CrossMeshResources) {
@@ -566,7 +547,7 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 		crossMesh := resources.CrossMeshResources[meshName]
 		for _, resType := range maps.SortedKeys(crossMesh) {
 			if affectsPolicyMatching(resType) {
-				_, _ = hasher.Write(core_model.ResourceListHash(crossMesh[resType]))
+				_, _ = hasher.Write(resourceListXDSHash(crossMesh[resType]))
 			}
 		}
 	}
