@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
 	"go.uber.org/multierr"
 
-	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
-	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
 	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
 	"github.com/kumahq/kuma/v3/pkg/api-server/filters"
 	api_server "github.com/kumahq/kuma/v3/pkg/config/api-server"
@@ -42,7 +40,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
@@ -279,7 +276,6 @@ func addResourcesEndpoints(
 	globalInsightEndpoint.addEndpoint(ws)
 
 	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
-	addLegacyMeshGatewayRulesEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc
@@ -391,22 +387,6 @@ func addResourcesEndpoints(
 		systemNamespace: cfg.Store.Kubernetes.SystemNamespace,
 	}
 	kriEndpoints.addFindByKriEndpoint(ws)
-}
-
-func addLegacyMeshGatewayRulesEndpoint(ws *restful.WebService) {
-	ws.Route(ws.GET("/meshes/{mesh}/meshgateways/{name}/_rules").To(func(request *restful.Request, response *restful.Response) {
-		out := api_types.InspectRulesResponse{
-			HttpMatches: []api_common.HttpMatch{},
-			Rules:       []api_common.InspectRule{},
-		}
-		if err := response.WriteAsJson(out); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
-		}
-	}).
-		Doc("Get matching rules MeshGateway").
-		Param(ws.PathParameter("mesh", "Name of a mesh").DataType("string")).
-		Param(ws.PathParameter("name", "Name of a MeshGateway").DataType("string")).
-		Returns(200, "OK", api_types.InspectRulesResponse{}))
 }
 
 func (a *ApiServer) Ready() bool {
