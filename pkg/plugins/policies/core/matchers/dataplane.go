@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -157,9 +156,9 @@ func DppSelectedByPolicy(
 	switch ref.Kind {
 	case common_api.Mesh:
 		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
-			inbounds, gateway := inboundsSelectedByTags(nil, dpp)
+			inbounds := allInboundListeners(dpp)
 			inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-			return inbounds, gateway, nil
+			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, false, nil
 	case common_api.Dataplane:
@@ -182,24 +181,6 @@ func DppSelectedByPolicy(
 			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, false, nil
-	case common_api.MeshSubset:
-		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
-			inbounds, gateway := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp)
-			return inbounds, gateway, nil
-		}
-		return []core_rules.InboundListener{}, false, nil
-	case common_api.MeshService:
-		inbounds, gateway := inboundsSelectedByTags(map[string]string{
-			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
-		}, dpp)
-		return inbounds, gateway, nil
-	case common_api.MeshServiceSubset:
-		tags := map[string]string{
-			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
-		}
-		maps.Copy(tags, pointer.Deref(ref.Tags))
-		inbounds, gateway := inboundsSelectedByTags(tags, dpp)
-		return inbounds, gateway, nil
 	case common_api.MeshHTTPRoute:
 		mhr := resolveMeshHTTPRouteRef(meta, pointer.Deref(ref.Name), referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
 		if mhr == nil {
@@ -293,21 +274,17 @@ func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppTyp
 	return len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType)
 }
 
-// inboundsSelectedByTags returns which inbounds are selected and whether a
-// delegated gateway is selected
-func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.DataplaneResource) ([]core_rules.InboundListener, bool) {
+// allInboundListeners returns every inbound of the dataplane as an InboundListener
+func allInboundListeners(dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
 	inbounds := []core_rules.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-		if tagsSelector.Matches(inbound.Tags) {
-			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
-			inbounds = append(inbounds, core_rules.InboundListener{
-				Address: intf.DataplaneIP,
-				Port:    intf.DataplanePort,
-			})
-		}
+		intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
+		inbounds = append(inbounds, core_rules.InboundListener{
+			Address: intf.DataplaneIP,
+			Port:    intf.DataplanePort,
+		})
 	}
-	delegatedGatewaySelected := dpp.Spec.IsDelegatedGateway() && tagsSelector.Matches(dpp.Spec.GetNetworking().GetGateway().Tags)
-	return inbounds, delegatedGatewaySelected
+	return inbounds
 }
 
 func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
