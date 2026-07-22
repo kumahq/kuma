@@ -146,7 +146,7 @@ spec:
 
 		// and it's a tls traffic
 		Eventually(func(g Gomega) {
-			s, err := admin.GetStats("listener.*_80.ssl.handshake")
+			s, err := admin.GetStats("listener.self_inbound_dp_*.ssl.handshake")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
