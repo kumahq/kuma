@@ -28,6 +28,7 @@ import (
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/config/xds"
 	"github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
 )
 
 var _ config.Config = &Config{}
@@ -424,6 +425,12 @@ type GeneralConfig struct {
 	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff" envconfig:"kuma_general_resilient_component_base_backoff"`
 	// ResilientComponentMaxBackoff configures max backoff for restarting resilient component: KDS sync, Insight resync, PostgresEventListener, etc.
 	ResilientComponentMaxBackoff config_types.Duration `json:"resilientComponentMaxBackoff" envconfig:"kuma_general_resilient_component_max_backoff"`
+	// CertGenerationBaseBackoff configures the base backoff before retrying dataplane certificate generation after a failure (e.g. a misconfigured CA backend), so a failing backend is not called on every DP sync tick.
+	CertGenerationBaseBackoff config_types.Duration `json:"certGenerationBaseBackoff" envconfig:"kuma_general_cert_generation_base_backoff"`
+	// CertGenerationMaxBackoff configures the max backoff before retrying dataplane certificate generation after a failure (e.g. a misconfigured CA backend).
+	CertGenerationMaxBackoff config_types.Duration `json:"certGenerationMaxBackoff" envconfig:"kuma_general_cert_generation_max_backoff"`
+	// CertGenerationCircuitBreakerMinProxies is the number of distinct proxies that must fail certificate generation against the same backend before its circuit breaker opens and short-circuits further attempts. Kept well above 1 so a single misbehaving proxy can never trip a whole backend. In a mesh with fewer proxies than this the circuit breaker never opens and only the per-proxy backoff applies (still bounded), so small deployments may want to lower it. 0 disables the circuit breaker, leaving only per-proxy backoff.
+	CertGenerationCircuitBreakerMinProxies int `json:"certGenerationCircuitBreakerMinProxies" envconfig:"kuma_general_cert_generation_circuit_breaker_min_proxies"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -450,12 +457,15 @@ func (g *GeneralConfig) Validate() error {
 
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
-		DNSCacheTTL:                   config_types.Duration{Duration: 10 * time.Second},
-		WorkDir:                       "",
-		TlsCipherSuites:               []string{},
-		TlsMinVersion:                 "TLSv1_2",
-		ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},
-		ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
+		DNSCacheTTL:                            config_types.Duration{Duration: 10 * time.Second},
+		WorkDir:                                "",
+		TlsCipherSuites:                        []string{},
+		TlsMinVersion:                          "TLSv1_2",
+		ResilientComponentBaseBackoff:          config_types.Duration{Duration: 5 * time.Second},
+		ResilientComponentMaxBackoff:           config_types.Duration{Duration: 1 * time.Minute},
+		CertGenerationBaseBackoff:              config_types.Duration{Duration: 5 * time.Second},
+		CertGenerationMaxBackoff:               config_types.Duration{Duration: 5 * time.Minute},
+		CertGenerationCircuitBreakerMinProxies: issuer.DefaultCircuitBreakerMinProxies,
 	}
 }
 
