@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/test/framework"
@@ -32,7 +31,7 @@ func MeshHTTPRoute(config *Config) func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,
 				config.Mesh,
-				core_mesh.ExternalServiceResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
 		})
 
@@ -40,17 +39,21 @@ func MeshHTTPRoute(config *Config) func() {
 			// given
 			Expect(framework.YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
-kind: ExternalService
+kind: MeshExternalService
 metadata:
   name: external-service-mhr-delegated
-mesh: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
 spec:
-  tags:
-    kuma.io/service: external-service-mhr
-    kuma.io/protocol: http
-  networking:
-    address: external-service.%s.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-`, config.Mesh, config.NamespaceOutsideMesh))(kubernetes.Cluster)).To(Succeed())
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: external-service.%s.svc.cluster.local
+      port: 80
+`, config.CpNamespace, config.Mesh, config.NamespaceOutsideMesh))(kubernetes.Cluster)).To(Succeed())
 
 			// when
 			Expect(framework.YamlK8s(fmt.Sprintf(`
@@ -80,8 +83,9 @@ spec:
               - kind: MeshService
                 name: test-server_%[2]s_svc_80
                 weight: 50
-              - kind: MeshService
-                name: external-service-mhr
+              - kind: MeshExternalService
+                name: external-service-mhr-delegated
+                port: 80
                 weight: 50
 `, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
 

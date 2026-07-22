@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/events"
 	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
@@ -75,9 +76,9 @@ var _ = Describe("Event Based Watchdog", func() {
 			EventBus:   eventBus,
 			Reconciler: reconciler,
 			ProvidedTypes: map[core_model.ResourceType]struct{}{
-				mesh.ExternalServiceType: {},
-				mesh.DataplaneType:       {},
-				mesh.ZoneIngressType:     {},
+				meshexternalservice_api.MeshExternalServiceType: {},
+				mesh.DataplaneType:   {},
+				mesh.ZoneIngressType: {},
 			},
 			Metrics: kdsMetrics,
 			Log:     logr.Discard(),
@@ -114,7 +115,7 @@ var _ = Describe("Event Based Watchdog", func() {
 	It("should reconcile on the events flush", func() {
 		// when
 		eventBus.Send(events.ResourceChangedEvent{
-			Type: mesh.ExternalServiceType,
+			Type: meshexternalservice_api.MeshExternalServiceType,
 		})
 		eventBus.Send(events.TriggerKDSResyncEvent{
 			NodeID: "1",
@@ -127,7 +128,7 @@ var _ = Describe("Event Based Watchdog", func() {
 		// then
 		changedResTypes := <-reconciler.changedResTypes
 		Expect(changedResTypes).To(HaveLen(2))
-		Expect(changedResTypes).To(HaveKey(mesh.ExternalServiceType))
+		Expect(changedResTypes).To(HaveKey(meshexternalservice_api.MeshExternalServiceType))
 		Expect(changedResTypes).To(HaveKey(mesh.DataplaneType))
 		Eventually(func(g Gomega) {
 			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonEvent, "zone_name", "1")

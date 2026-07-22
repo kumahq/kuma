@@ -112,15 +112,6 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 
 				return true
 			}, nil
-		case mesh.ExternalServiceType:
-			tags := parseTags(request.QueryParameters("tag"))
-
-			return func(rs core_model.Resource) bool {
-				if genericFilter != nil && !genericFilter(rs) {
-					return false
-				}
-				return rs.(*mesh.ExternalServiceResource).Spec.MatchTagsFuzzy(tags)
-			}, nil
 		default:
 			return genericFilter, nil
 		}

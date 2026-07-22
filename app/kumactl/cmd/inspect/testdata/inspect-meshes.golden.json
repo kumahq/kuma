@@ -12,7 +12,7 @@
         "offline": 10
       },
       "policies": {
-        "ExternalService": {
+        "MeshTrafficPermission": {
           "total": 9
         }
       }
@@ -28,7 +28,7 @@
         "offline": 10
       },
       "policies": {
-        "ExternalService": {
+        "MeshTrafficPermission": {
           "total": 90
         }
       }

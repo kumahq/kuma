@@ -264,9 +264,8 @@ type SecretsTracker interface {
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
-	Mesh             *core_mesh.MeshResource
-	ExternalServices []*core_mesh.ExternalServiceResource
-	EndpointMap      EndpointMap
+	Mesh        *core_mesh.MeshResource
+	EndpointMap EndpointMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies
@@ -313,8 +312,6 @@ type ZoneIngressProxy struct {
 
 type Routing struct {
 	OutboundTargets EndpointMap
-	// ExternalServiceOutboundTargets contains endpoint map for direct access of external services (without egress).
-	ExternalServiceOutboundTargets EndpointMap
 }
 
 type CaSecret struct {

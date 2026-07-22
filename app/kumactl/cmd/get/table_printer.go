@@ -29,19 +29,6 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 			}
 		},
 	},
-	mesh.ExternalServiceType: {
-		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
-		RowFn: func(rootTime time.Time, item model.Resource) []string {
-			externalService := item.(*mesh.ExternalServiceResource)
-			return []string{
-				externalService.Meta.GetMesh(),                                        // MESH
-				externalService.Meta.GetName(),                                        // NAME,
-				externalService.Spec.TagSet().String(),                                // TAGS
-				externalService.Spec.Networking.Address,                               // ADDRESS
-				table.TimeSince(externalService.Meta.GetModificationTime(), rootTime), // AGE
-			}
-		},
-	},
 	model.ScopeMesh: {
 		Headers: []string{"NAME", "mTLS", "LOCALITY", "ZONEEGRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {

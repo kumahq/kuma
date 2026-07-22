@@ -64,12 +64,6 @@ availableServices:
     kuma.io/service: service-in-zone-2
   instances: 1
   mesh: default
-- tags:
-    kuma.io/service: external-service-in-zone-2
-    kuma.io/zone: "zone-2"
-  instances: 1
-  mesh: default
-  externalService: true
 ---
 type: ZoneIngress
 name: zone-ingress-2-zone-2
@@ -84,12 +78,6 @@ availableServices:
       kuma.io/service: service-in-zone-2
     instances: 1
     mesh: default
-  - tags:
-      kuma.io/service: external-service-in-zone-2
-      kuma.io/zone: "zone-2"
-    instances: 1
-    mesh: default
-    externalService: true
 ---
 type: ZoneEgress
 name: zone-egress-1
@@ -104,21 +92,3 @@ zone: zone-1
 networking:
   address: 1.1.1.2
   port: 10002
----
-type: ExternalService
-name: external-service-1
-mesh: default
-tags:
-  kuma.io/service: external-service-1
-  kuma.io/protocol: http
-networking:
-  address: host.com:90
----
-type: ExternalService
-name: external-service-zone-1
-mesh: default
-tags:
-  kuma.io/service: external-service-zone-1
-  kuma.io/zone: zone-1
-networking:
-  address: example.com:443

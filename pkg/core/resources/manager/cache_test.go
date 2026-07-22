@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -36,7 +37,7 @@ func (c *countingResourcesManager) Get(ctx context.Context, res core_model.Resou
 
 func (c *countingResourcesManager) List(ctx context.Context, list core_model.ResourceList, fn ...core_store.ListOptionsFunc) error {
 	opts := core_store.NewListOptions(fn...)
-	if list.GetItemType() == core_mesh.ExternalServiceType && opts.Mesh == "slow" {
+	if list.GetItemType() == meshexternalservice_api.MeshExternalServiceType && opts.Mesh == "slow" {
 		time.Sleep(10 * time.Second)
 	}
 	atomic.AddUint32(&c.listQueries, 1)
@@ -184,17 +185,17 @@ var _ = Describe("Cached Resource Manager", func() {
 	})
 
 	It("should let concurrent List() queries for different types and meshes", test.Within(15*time.Second, func() {
-		// given ongoing ExternalService from mesh slow that takes a lot of time to complete
+		// given ongoing MeshExternalService from mesh slow that takes a lot of time to complete
 		done := make(chan struct{})
 		go func() {
-			fetched := core_mesh.ExternalServiceResourceList{}
+			fetched := meshexternalservice_api.MeshExternalServiceResourceList{}
 			err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("slow"))
 			Expect(err).ToNot(HaveOccurred())
 			close(done)
 		}()
 
-		// when trying to fetch ExternalService from different mesh that takes normal time to response
-		fetched := core_mesh.ExternalServiceResourceList{}
+		// when trying to fetch MeshExternalService from different mesh that takes normal time to response
+		fetched := meshexternalservice_api.MeshExternalServiceResourceList{}
 		err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("default"))
 
 		// then first request does not block request for other mesh
