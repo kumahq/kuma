@@ -74,8 +74,13 @@ jobs:
           # confirm head_branch is this tag, not a same-named branch, and it
           # still points at the built commit, not one it moved to since
           TAG="${RAW}"
-          OBJ_TYPE="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')"
-          OBJ_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')"
+          if ! TAG_REF_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" 2>/dev/null)"; then
+            echo "'${TAG}' is not an existing tag ref; skipping smoke dispatch."
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          OBJ_TYPE="$(jq -r '.object.type' <<< "${TAG_REF_JSON}")"
+          OBJ_SHA="$(jq -r '.object.sha' <<< "${TAG_REF_JSON}")"
           # annotated tags point at a tag object, not the commit directly
           if [[ "${OBJ_TYPE}" == "tag" ]]; then
             OBJ_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${OBJ_SHA}" --jq '.object.sha')"
