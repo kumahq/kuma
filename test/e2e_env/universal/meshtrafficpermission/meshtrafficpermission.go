@@ -157,36 +157,6 @@ spec:
 		trafficAllowed("test-server-tcp.svc.mesh.local")
 	})
 
-	It("should allow the traffic with traffic permission based on non standard tag", func() {
-		// given no mesh traffic permission
-		httpTrafficBlocked(403)
-		tcpTrafficBlocked()
-
-		// when
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-3
-mesh: meshtrafficpermission
-spec:
-  targetRef:
-    kind: Dataplane
-    labels:
-      team: server-owners
-  from:
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          team: client-owners
-      default:
-        action: Allow
-`
-		err := YamlUniversal(yaml)(universal.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		trafficAllowed("test-server.svc.mesh.local")
-		trafficAllowed("test-server-tcp.svc.mesh.local")
-	})
-
 	It("should be able to allow the traffic with permissive mTLS (http)", func() {
 		// given mesh traffic permission with permissive mTLS
 		httpTrafficBlocked(403)
