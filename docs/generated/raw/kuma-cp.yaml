@@ -553,7 +553,9 @@ general:
   # CertGenerationCircuitBreakerMinProxies is the number of distinct proxies that must fail
   # certificate generation against the same backend before its circuit breaker opens and
   # short-circuits further attempts. Kept well above 1 so a single misbehaving proxy can never
-  # trip a whole backend. 0 disables the circuit breaker, leaving only per-proxy backoff.
+  # trip a whole backend. In a mesh with fewer proxies than this the circuit breaker never opens
+  # and only the per-proxy backoff applies (still bounded), so small deployments may want to lower
+  # it. 0 disables the circuit breaker, leaving only per-proxy backoff.
   certGenerationCircuitBreakerMinProxies: 10 # ENV: KUMA_GENERAL_CERT_GENERATION_CIRCUIT_BREAKER_MIN_PROXIES
 # DNS Server configuration
 dnsServer:

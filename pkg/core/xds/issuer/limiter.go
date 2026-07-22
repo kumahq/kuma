@@ -59,10 +59,10 @@ type Config struct {
 	Cooldown time.Duration
 }
 
-// Limiter throttles certificate issuance. The backend is keyed by
-// kri.Identifier (a CA backend or a MeshIdentity); the proxy is keyed by its
-// model.ResourceKey so callers can Forget it on cleanup. Use NewLimiter for the
-// real implementation or Unlimited for a no-op.
+// Limiter throttles certificate issuance. The backend (a CA backend or a
+// MeshIdentity) is keyed by kri.Identifier; the proxy is keyed by its
+// model.ResourceKey - the identity the callers and the cleanup path already
+// carry. Use NewLimiter for the real implementation or Unlimited for a no-op.
 type Limiter interface {
 	// Allow reports whether issuance for proxy against backend may proceed now.
 	// If not, it returns how long to wait. Every permitted attempt must be

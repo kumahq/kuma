@@ -89,3 +89,11 @@ func (i *IdentityProviderManager) GetWorkloadIdentity(ctx context.Context, proxy
 	i.eventWriter.Send(event)
 	return workloadIdentity, nil
 }
+
+// Cleanup drops the proxy's issuance backoff state, e.g. when a dataplane
+// disconnects. The dataplane watchdog calls this so MeshIdentity backoff is
+// cleaned up explicitly, not just incidentally via the shared limiter and the
+// legacy mTLS Cleanup path.
+func (i *IdentityProviderManager) Cleanup(dpKey model.ResourceKey) {
+	i.limiter.Forget(dpKey)
+}

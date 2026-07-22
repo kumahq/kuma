@@ -430,7 +430,7 @@ type GeneralConfig struct {
 	CertGenerationBaseBackoff config_types.Duration `json:"certGenerationBaseBackoff" envconfig:"kuma_general_cert_generation_base_backoff"`
 	// CertGenerationMaxBackoff configures the max backoff before retrying dataplane certificate generation after a failure (e.g. a misconfigured CA backend).
 	CertGenerationMaxBackoff config_types.Duration `json:"certGenerationMaxBackoff" envconfig:"kuma_general_cert_generation_max_backoff"`
-	// CertGenerationCircuitBreakerMinProxies is the number of distinct proxies that must fail certificate generation against the same backend before its circuit breaker opens and short-circuits further attempts. Kept well above 1 so a single misbehaving proxy can never trip a whole backend. 0 disables the circuit breaker, leaving only per-proxy backoff.
+	// CertGenerationCircuitBreakerMinProxies is the number of distinct proxies that must fail certificate generation against the same backend before its circuit breaker opens and short-circuits further attempts. Kept well above 1 so a single misbehaving proxy can never trip a whole backend. In a mesh with fewer proxies than this the circuit breaker never opens and only the per-proxy backoff applies (still bounded), so small deployments may want to lower it. 0 disables the circuit breaker, leaving only per-proxy backoff.
 	CertGenerationCircuitBreakerMinProxies int `json:"certGenerationCircuitBreakerMinProxies" envconfig:"kuma_general_cert_generation_circuit_breaker_min_proxies"`
 }
 
