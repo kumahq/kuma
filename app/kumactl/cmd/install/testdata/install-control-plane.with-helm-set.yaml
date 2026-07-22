@@ -221,401 +221,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: meshhealthchecks.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshHealthCheck
-    listKind: MeshHealthCheckList
-    plural: meshhealthchecks
-    shortNames:
-    - mhc
-    singular: meshhealthcheck
-  scope: Namespaced
-  versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.targetRef.kind
-      name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: MeshHealthCheck enables active health checking of services in
-          the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC
-          health checks to detect and remove unhealthy instances from the load balancing
-          pool, improving overall service reliability.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma MeshHealthCheck resource.
-            properties:
-              targetRef:
-                description: |-
-                  TargetRef is a reference to the resource the policy takes an effect on.
-                  The resource could be either a real store object or virtual resource
-                  defined inplace.
-                properties:
-                  kind:
-                    description: Kind of the referenced resource
-                    enum:
-                    - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
-                    - Dataplane
-                    type: string
-                  labels:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
-                    type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
-                  sectionName:
-                    description: |-
-                      SectionName is used to target specific section of resource.
-                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                    type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
-                required:
-                - kind
-                type: object
-              to:
-                description: To list makes a match between the consumed services and
-                  corresponding configurations
-                items:
-                  properties:
-                    default:
-                      description: |-
-                        Default is a configuration specific to the group of destinations referenced in
-                        'targetRef'
-                      properties:
-                        alwaysLogHealthCheckFailures:
-                          description: |-
-                            If set to true, health check failure events will always be logged. If set
-                            to false, only the initial health check failure event will be logged. The
-                            default value is false.
-                          type: boolean
-                        eventLogPath:
-                          description: |-
-                            Specifies the path to the file where Envoy can log health check events.
-                            If empty, no event log will be written.
-                          type: string
-                        failTrafficOnPanic:
-                          description: |-
-                            If set to true, Envoy will not consider any hosts when the cluster is in
-                            'panic mode'. Instead, the cluster will fail all requests as if all hosts
-                            are unhealthy. This can help avoid potentially overwhelming a failing
-                            service.
-                          type: boolean
-                        grpc:
-                          description: |-
-                            GrpcHealthCheck defines gRPC configuration which will instruct the service
-                            the health check will be made for is a gRPC service.
-                          properties:
-                            authority:
-                              description: |-
-                                The value of the :authority header in the gRPC health check request,
-                                by default name of the cluster this health check is associated with
-                              type: string
-                            disabled:
-                              description: If true the GrpcHealthCheck is disabled
-                              type: boolean
-                            serviceName:
-                              description: Service name parameter which will be sent
-                                to gRPC service
-                              type: string
-                          type: object
-                        healthyPanicThreshold:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          description: |-
-                            Allows to configure panic threshold for Envoy cluster. If not specified,
-                            the default is 50%. To disable panic mode, set to 0%.
-                            Either int or decimal represented as string.
-
-                            Deprecated: the setting has been moved to MeshCircuitBreaker policy,
-                            please use MeshCircuitBreaker policy instead.
-                          x-kubernetes-int-or-string: true
-                        healthyThreshold:
-                          description: |-
-                            Number of consecutive healthy checks before considering a host healthy.
-                            If not specified then the default value is 1
-                          format: int32
-                          type: integer
-                        http:
-                          description: |-
-                            HttpHealthCheck defines HTTP configuration which will instruct the service
-                            the health check will be made for is an HTTP service.
-                          properties:
-                            disabled:
-                              description: If true the HttpHealthCheck is disabled
-                              type: boolean
-                            expectedStatuses:
-                              description: List of HTTP response statuses which are
-                                considered healthy
-                              items:
-                                format: int32
-                                type: integer
-                              type: array
-                            path:
-                              description: |-
-                                The HTTP path which will be requested during the health check
-                                (ie. /health)
-                                If not specified then the default value is "/"
-                              type: string
-                            requestHeadersToAdd:
-                              description: |-
-                                The list of HTTP headers which should be added to each health check
-                                request
-                              properties:
-                                add:
-                                  items:
-                                    properties:
-                                      name:
-                                        maxLength: 256
-                                        minLength: 1
-                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                        type: string
-                                      value:
-                                        type: string
-                                    required:
-                                    - name
-                                    - value
-                                    type: object
-                                  maxItems: 16
-                                  type: array
-                                  x-kubernetes-list-map-keys:
-                                  - name
-                                  x-kubernetes-list-type: map
-                                set:
-                                  items:
-                                    properties:
-                                      name:
-                                        maxLength: 256
-                                        minLength: 1
-                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                        type: string
-                                      value:
-                                        type: string
-                                    required:
-                                    - name
-                                    - value
-                                    type: object
-                                  maxItems: 16
-                                  type: array
-                                  x-kubernetes-list-map-keys:
-                                  - name
-                                  x-kubernetes-list-type: map
-                              type: object
-                          type: object
-                        initialJitter:
-                          description: |-
-                            If specified, Envoy will start health checking after a random time in
-                            ms between 0 and initialJitter. This only applies to the first health
-                            check.
-                          type: string
-                        interval:
-                          description: |-
-                            Interval between consecutive health checks.
-                            If not specified then the default value is 1m
-                          type: string
-                        intervalJitter:
-                          description: |-
-                            If specified, during every interval Envoy will add IntervalJitter to the
-                            wait time.
-                          type: string
-                        intervalJitterPercent:
-                          description: |-
-                            If specified, during every interval Envoy will add IntervalJitter *
-                            IntervalJitterPercent / 100 to the wait time. If IntervalJitter and
-                            IntervalJitterPercent are both set, both of them will be used to
-                            increase the wait time.
-                          format: int32
-                          type: integer
-                        noTrafficInterval:
-                          description: |-
-                            The "no traffic interval" is a special health check interval that is used
-                            when a cluster has never had traffic routed to it. This lower interval
-                            allows cluster information to be kept up to date, without sending a
-                            potentially large amount of active health checking traffic for no reason.
-                            Once a cluster has been used for traffic routing, Envoy will shift back
-                            to using the standard health check interval that is defined. Note that
-                            this interval takes precedence over any other. The default value for "no
-                            traffic interval" is 60 seconds.
-                          type: string
-                        reuseConnection:
-                          description: Reuse health check connection between health
-                            checks. Default is true.
-                          type: boolean
-                        tcp:
-                          description: |-
-                            TcpHealthCheck defines configuration for specifying bytes to send and
-                            expected response during the health check
-                          properties:
-                            disabled:
-                              description: If true the TcpHealthCheck is disabled
-                              type: boolean
-                            receive:
-                              description: |-
-                                List of Base64 encoded blocks of strings expected as a response. When checking the response,
-                                "fuzzy" matching is performed such that each block must be found, and
-                                in the order specified, but not necessarily contiguous.
-                                If not provided or empty, checks will be performed as "connect only" and be marked as successful when TCP connection is successfully established.
-                              items:
-                                type: string
-                              type: array
-                            send:
-                              description: Base64 encoded content of the message which
-                                will be sent during the health check to the target
-                              type: string
-                          type: object
-                        timeout:
-                          description: |-
-                            Maximum time to wait for a health check response.
-                            If not specified then the default value is 15s
-                          type: string
-                        unhealthyThreshold:
-                          description: |-
-                            Number of consecutive unhealthy checks before considering a host
-                            unhealthy.
-                            If not specified then the default value is 5
-                          format: int32
-                          type: integer
-                      type: object
-                    targetRef:
-                      description: |-
-                        TargetRef is a reference to the resource that represents a group of
-                        destinations.
-                      properties:
-                        kind:
-                          description: Kind of the referenced resource
-                          enum:
-                          - Mesh
-                          - MeshSubset
-                          - MeshService
-                          - MeshExternalService
-                          - MeshMultiZoneService
-                          - MeshServiceSubset
-                          - MeshHTTPRoute
-                          - Dataplane
-                          type: string
-                        labels:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
-                          type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
-                        sectionName:
-                          description: |-
-                            SectionName is used to target specific section of resource.
-                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                          type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
-                      required:
-                      - kind
-                      type: object
-                  required:
-                  - targetRef
-                  type: object
-                type: array
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2386,7 +1991,7 @@ spec:
                             backendRef:
                               description: |-
                                 BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-                                defines the collector endpoint. Mutually exclusive with Endpoint.
+                                defines the collector endpoint.
                               properties:
                                 kind:
                                   description: Kind of the backend resource.
@@ -2403,13 +2008,6 @@ spec:
                               required:
                               - kind
                               type: object
-                            endpoint:
-                              default: ""
-                              description: |-
-                                Endpoint for OpenTelemetry collector.
-
-                                Deprecated: use BackendRef instead.
-                              type: string
                             refreshInterval:
                               description: RefreshInterval defines how frequent metrics
                                 should be pushed to collector
@@ -3802,78 +3400,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: dataplanes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: Dataplane
-    listKind: DataplaneList
-    plural: dataplanes
-    shortNames:
-    - dp
-    singular: dataplane
-  scope: Namespaced
-  versions:
-  - additionalPrinterColumns:
-    - description: Service tag of the first inbound
-      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the second inbound
-      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the third inbound
-      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    - description: Service tag of the fourth inbound
-      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Dataplane resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-    subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -4542,6 +4068,78 @@ spec:
                   type: object
                 type: array
             type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: dataplanes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: Dataplane
+    listKind: DataplaneList
+    plural: dataplanes
+    shortNames:
+    - dp
+    singular: dataplane
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Service tag of the first inbound
+      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the second inbound
+      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the third inbound
+      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
+      name: kuma.io/service
+      priority: 1
+      type: string
+    - description: Service tag of the fourth inbound
+      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
+      name: kuma.io/service
+      priority: 1
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Dataplane resource.
+            x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
     storage: true
@@ -5642,130 +5240,6 @@ spec:
           spec:
             description: Spec is the specification of the Kuma MeshTimeout resource.
             properties:
-              from:
-                description: From list makes a match between clients and corresponding
-                  configurations
-                items:
-                  properties:
-                    default:
-                      description: |-
-                        Default is a configuration specific to the group of clients referenced in
-                        'targetRef'
-                      properties:
-                        connectionTimeout:
-                          description: |-
-                            ConnectionTimeout specifies the amount of time proxy will wait for an TCP connection to be established.
-                            Default value is 5 seconds. Cannot be set to 0.
-                          type: string
-                        http:
-                          description: Http provides configuration for HTTP specific
-                            timeouts
-                          properties:
-                            maxConnectionDuration:
-                              description: |-
-                                MaxConnectionDuration is the time after which a connection will be drained and/or closed,
-                                starting from when it was first established. Setting this timeout to 0 will disable it.
-                                Disabled by default.
-                              type: string
-                            maxStreamDuration:
-                              description: |-
-                                MaxStreamDuration is the maximum time that a stream’s lifetime will span.
-                                Setting this timeout to 0 will disable it. Disabled by default.
-                              type: string
-                            requestHeadersTimeout:
-                              description: |-
-                                RequestHeadersTimeout The amount of time that proxy will wait for the request headers to be received. The timer is
-                                activated when the first byte of the headers is received, and is disarmed when the last byte of
-                                the headers has been received. If not specified or set to 0, this timeout is disabled.
-                                Disabled by default.
-                              type: string
-                            requestTimeout:
-                              description: |-
-                                RequestTimeout The amount of time that proxy will wait for the entire request to be received.
-                                The timer is activated when the request is initiated, and is disarmed when the last byte of the request is sent,
-                                OR when the response is initiated. Setting this timeout to 0 will disable it.
-                                Default is 15s.
-                              type: string
-                            streamIdleTimeout:
-                              description: |-
-                                StreamIdleTimeout is the amount of time that proxy will allow a stream to exist with no activity.
-                                Setting this timeout to 0 will disable it. Default is 30m
-                              type: string
-                          type: object
-                        idleTimeout:
-                          description: |-
-                            IdleTimeout is defined as the period in which there are no bytes sent or received on connection
-                            Setting this timeout to 0 will disable it. Be cautious when disabling it because
-                            it can lead to connection leaking. Default value is 1h.
-                          type: string
-                      type: object
-                    targetRef:
-                      description: |-
-                        TargetRef is a reference to the resource that represents a group of
-                        clients.
-                      properties:
-                        kind:
-                          description: Kind of the referenced resource
-                          enum:
-                          - Mesh
-                          - MeshSubset
-                          - MeshService
-                          - MeshExternalService
-                          - MeshMultiZoneService
-                          - MeshServiceSubset
-                          - MeshHTTPRoute
-                          - Dataplane
-                          type: string
-                        labels:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
-                          type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
-                        sectionName:
-                          description: |-
-                            SectionName is used to target specific section of resource.
-                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-                          type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
-                      required:
-                      - kind
-                      type: object
-                  required:
-                  - targetRef
-                  type: object
-                type: array
               rules:
                 description: |-
                   Rules defines inbound timeout configurations. When matches are present, the rule is applied only
@@ -6462,7 +5936,7 @@ spec:
                             backendRef:
                               description: |-
                                 BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-                                defines the collector endpoint. Mutually exclusive with Endpoint.
+                                defines the collector endpoint.
                               properties:
                                 kind:
                                   description: Kind of the backend resource.
@@ -6479,14 +5953,6 @@ spec:
                               required:
                               - kind
                               type: object
-                            endpoint:
-                              default: ""
-                              description: |-
-                                Address of OpenTelemetry collector.
-
-                                Deprecated: use BackendRef instead.
-                              example: otel-collector:4317
-                              type: string
                           type: object
                         type:
                           enum:
@@ -7264,56 +6730,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: externalservices.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ExternalService
-    listKind: ExternalServiceList
-    plural: externalservices
-    singular: externalservice
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ExternalService resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -7355,6 +6771,99 @@ spec:
           spec:
             description: Spec is the specification of the Kuma ServiceInsight resource.
             x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: hostnamegenerators.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: HostnameGenerator
+    listKind: HostnameGeneratorList
+    plural: hostnamegenerators
+    shortNames:
+    - hg
+    singular: hostnamegenerator
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: HostnameGenerator automatically generates DNS hostnames for services
+          in the mesh based on customizable templates. It provides a consistent naming
+          scheme for service discovery by creating predictable hostnames from service
+          labels and metadata, supporting both MeshService, MeshExternalService, and
+          MeshMultiZoneService resources.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma HostnameGenerator resource.
+            properties:
+              extension:
+                description: Extension struct for a plugin configuration
+                properties:
+                  config:
+                    description: Config freeform configuration for the extension.
+                    x-kubernetes-preserve-unknown-fields: true
+                  type:
+                    description: Type of the extension.
+                    type: string
+                required:
+                - type
+                type: object
+              selector:
+                properties:
+                  meshExternalService:
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
+                  meshMultiZoneService:
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
+                  meshService:
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
+                type: object
+              template:
+                type: string
+            required:
+            - template
+            type: object
         type: object
     served: true
     storage: true
@@ -7755,99 +7264,6 @@ spec:
           spec:
             description: Spec is the specification of the Kuma Zone resource.
             x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: hostnamegenerators.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: HostnameGenerator
-    listKind: HostnameGeneratorList
-    plural: hostnamegenerators
-    shortNames:
-    - hg
-    singular: hostnamegenerator
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: HostnameGenerator automatically generates DNS hostnames for services
-          in the mesh based on customizable templates. It provides a consistent naming
-          scheme for service discovery by creating predictable hostnames from service
-          labels and metadata, supporting both MeshService, MeshExternalService, and
-          MeshMultiZoneService resources.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma HostnameGenerator resource.
-            properties:
-              extension:
-                description: Extension struct for a plugin configuration
-                properties:
-                  config:
-                    description: Config freeform configuration for the extension.
-                    x-kubernetes-preserve-unknown-fields: true
-                  type:
-                    description: Type of the extension.
-                    type: string
-                required:
-                - type
-                type: object
-              selector:
-                properties:
-                  meshExternalService:
-                    properties:
-                      matchLabels:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                  meshMultiZoneService:
-                    properties:
-                      matchLabels:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                  meshService:
-                    properties:
-                      matchLabels:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                type: object
-              template:
-                type: string
-            required:
-            - template
-            type: object
         type: object
     served: true
     storage: true
@@ -10599,6 +10015,401 @@ spec:
     storage: true
     subresources: {}
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: meshhealthchecks.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshHealthCheck
+    listKind: MeshHealthCheckList
+    plural: meshhealthchecks
+    shortNames:
+    - mhc
+    singular: meshhealthcheck
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: MeshHealthCheck enables active health checking of services in
+          the mesh. It periodically probes service endpoints using TCP, HTTP, or gRPC
+          health checks to detect and remove unhealthy instances from the load balancing
+          pool, improving overall service reliability.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshHealthCheck resource.
+            properties:
+              targetRef:
+                description: |-
+                  TargetRef is a reference to the resource the policy takes an effect on.
+                  The resource could be either a real store object or virtual resource
+                  defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshExternalService
+                    - MeshMultiZoneService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                    - Dataplane
+                    type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: |-
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
+                    type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Tags used to select a subset of proxies by tags. Can only be used with kinds
+                      `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                required:
+                - kind
+                type: object
+              to:
+                description: To list makes a match between the consumed services and
+                  corresponding configurations
+                items:
+                  properties:
+                    default:
+                      description: |-
+                        Default is a configuration specific to the group of destinations referenced in
+                        'targetRef'
+                      properties:
+                        alwaysLogHealthCheckFailures:
+                          description: |-
+                            If set to true, health check failure events will always be logged. If set
+                            to false, only the initial health check failure event will be logged. The
+                            default value is false.
+                          type: boolean
+                        eventLogPath:
+                          description: |-
+                            Specifies the path to the file where Envoy can log health check events.
+                            If empty, no event log will be written.
+                          type: string
+                        failTrafficOnPanic:
+                          description: |-
+                            If set to true, Envoy will not consider any hosts when the cluster is in
+                            'panic mode'. Instead, the cluster will fail all requests as if all hosts
+                            are unhealthy. This can help avoid potentially overwhelming a failing
+                            service.
+                          type: boolean
+                        grpc:
+                          description: |-
+                            GrpcHealthCheck defines gRPC configuration which will instruct the service
+                            the health check will be made for is a gRPC service.
+                          properties:
+                            authority:
+                              description: |-
+                                The value of the :authority header in the gRPC health check request,
+                                by default name of the cluster this health check is associated with
+                              type: string
+                            disabled:
+                              description: If true the GrpcHealthCheck is disabled
+                              type: boolean
+                            serviceName:
+                              description: Service name parameter which will be sent
+                                to gRPC service
+                              type: string
+                          type: object
+                        healthyPanicThreshold:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            Allows to configure panic threshold for Envoy cluster. If not specified,
+                            the default is 50%. To disable panic mode, set to 0%.
+                            Either int or decimal represented as string.
+
+                            Deprecated: the setting has been moved to MeshCircuitBreaker policy,
+                            please use MeshCircuitBreaker policy instead.
+                          x-kubernetes-int-or-string: true
+                        healthyThreshold:
+                          description: |-
+                            Number of consecutive healthy checks before considering a host healthy.
+                            If not specified then the default value is 1
+                          format: int32
+                          type: integer
+                        http:
+                          description: |-
+                            HttpHealthCheck defines HTTP configuration which will instruct the service
+                            the health check will be made for is an HTTP service.
+                          properties:
+                            disabled:
+                              description: If true the HttpHealthCheck is disabled
+                              type: boolean
+                            expectedStatuses:
+                              description: List of HTTP response statuses which are
+                                considered healthy
+                              items:
+                                format: int32
+                                type: integer
+                              type: array
+                            path:
+                              description: |-
+                                The HTTP path which will be requested during the health check
+                                (ie. /health)
+                                If not specified then the default value is "/"
+                              type: string
+                            requestHeadersToAdd:
+                              description: |-
+                                The list of HTTP headers which should be added to each health check
+                                request
+                              properties:
+                                add:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - name
+                                  x-kubernetes-list-type: map
+                                set:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - name
+                                  x-kubernetes-list-type: map
+                              type: object
+                          type: object
+                        initialJitter:
+                          description: |-
+                            If specified, Envoy will start health checking after a random time in
+                            ms between 0 and initialJitter. This only applies to the first health
+                            check.
+                          type: string
+                        interval:
+                          description: |-
+                            Interval between consecutive health checks.
+                            If not specified then the default value is 1m
+                          type: string
+                        intervalJitter:
+                          description: |-
+                            If specified, during every interval Envoy will add IntervalJitter to the
+                            wait time.
+                          type: string
+                        intervalJitterPercent:
+                          description: |-
+                            If specified, during every interval Envoy will add IntervalJitter *
+                            IntervalJitterPercent / 100 to the wait time. If IntervalJitter and
+                            IntervalJitterPercent are both set, both of them will be used to
+                            increase the wait time.
+                          format: int32
+                          type: integer
+                        noTrafficInterval:
+                          description: |-
+                            The "no traffic interval" is a special health check interval that is used
+                            when a cluster has never had traffic routed to it. This lower interval
+                            allows cluster information to be kept up to date, without sending a
+                            potentially large amount of active health checking traffic for no reason.
+                            Once a cluster has been used for traffic routing, Envoy will shift back
+                            to using the standard health check interval that is defined. Note that
+                            this interval takes precedence over any other. The default value for "no
+                            traffic interval" is 60 seconds.
+                          type: string
+                        reuseConnection:
+                          description: Reuse health check connection between health
+                            checks. Default is true.
+                          type: boolean
+                        tcp:
+                          description: |-
+                            TcpHealthCheck defines configuration for specifying bytes to send and
+                            expected response during the health check
+                          properties:
+                            disabled:
+                              description: If true the TcpHealthCheck is disabled
+                              type: boolean
+                            receive:
+                              description: |-
+                                List of Base64 encoded blocks of strings expected as a response. When checking the response,
+                                "fuzzy" matching is performed such that each block must be found, and
+                                in the order specified, but not necessarily contiguous.
+                                If not provided or empty, checks will be performed as "connect only" and be marked as successful when TCP connection is successfully established.
+                              items:
+                                type: string
+                              type: array
+                            send:
+                              description: Base64 encoded content of the message which
+                                will be sent during the health check to the target
+                              type: string
+                          type: object
+                        timeout:
+                          description: |-
+                            Maximum time to wait for a health check response.
+                            If not specified then the default value is 15s
+                          type: string
+                        unhealthyThreshold:
+                          description: |-
+                            Number of consecutive unhealthy checks before considering a host
+                            unhealthy.
+                            If not specified then the default value is 5
+                          format: int32
+                          type: integer
+                      type: object
+                    targetRef:
+                      description: |-
+                        TargetRef is a reference to the resource that represents a group of
+                        destinations.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshExternalService
+                          - MeshMultiZoneService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                          - Dataplane
+                          type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: |-
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
+                          type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Tags used to select a subset of proxies by tags. Can only be used with kinds
+                            `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      required:
+                      - kind
+                      type: object
+                  required:
+                  - targetRef
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -10684,7 +10495,6 @@ rules:
       - circuitbreakers
       - virtualoutbounds
       - containerpatches
-      - externalservices
       - faultinjections
       - healthchecks
       - trafficlogs
@@ -11052,7 +10862,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: ac1f407b9e56c8088ecc1ac786b219aba1d49460c2da873ee844ab69ee5aeeba
+        checksum/tls-secrets: e553765cc791cdd1dced7872505a2c7f6a1e034f9454ce4a107d9cc9a4f2b7c9
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -11608,7 +11418,6 @@ webhooks:
           - CREATE
         resources:
           - circuitbreakers
-          - externalservices
           - faultinjections
           - healthchecks
           - proxytemplates
@@ -11785,7 +11594,6 @@ webhooks:
         resources:
           - circuitbreakers
           - dataplanes
-          - externalservices
           - faultinjections
           - healthchecks
           - meshes

@@ -60,7 +60,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 		mt := builders.MeshTimeout().
 			WithMesh(mesh).WithName(name).
 			WithTargetRef(builders.TargetRefMesh()).
-			AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
+			AddRule(nil, meshtimeout_api.Conf{
 				IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 			}).
 			Build()

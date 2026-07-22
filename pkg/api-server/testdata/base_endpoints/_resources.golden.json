@@ -22,16 +22,6 @@
   },
   {
    "includeInFederation": true,
-   "name": "ExternalService",
-   "path": "external-services",
-   "pluralDisplayName": "External Services",
-   "readOnly": false,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "External Service"
-  },
-  {
-   "includeInFederation": true,
    "name": "GlobalSecret",
    "path": "globalsecrets",
    "pluralDisplayName": "Global Secrets",
@@ -347,10 +337,10 @@
    "path": "meshtimeouts",
    "pluralDisplayName": "Mesh Timeouts",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,

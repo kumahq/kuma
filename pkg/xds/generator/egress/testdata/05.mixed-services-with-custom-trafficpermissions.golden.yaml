@@ -1,96 +1,4 @@
 resources:
-- name: mesh-1:externalservice-1
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh-1_externalservice-1
-    circuitBreakers:
-      thresholds:
-      - trackRemaining: true
-    connectTimeout: 5s
-    dnsLookupFamily: V4_ONLY
-    loadAssignment:
-      clusterName: mesh-1:externalservice-1
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: kuma.io
-                portValue: 80
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-                mesh: mesh-1
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
-                mesh: mesh-1
-    name: mesh-1:externalservice-1
-    type: STRICT_DNS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          httpProtocolOptions: {}
-- name: mesh-1:externalservice-2
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh-1_externalservice-2
-    circuitBreakers:
-      thresholds:
-      - trackRemaining: true
-    connectTimeout: 5s
-    dnsLookupFamily: V4_ONLY
-    loadAssignment:
-      clusterName: mesh-1:externalservice-2
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: httpbin.io
-                portValue: 443
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/external-service-name: externalservice-2
-                kuma.io/protocol: http2
-                mesh: mesh-1
-              envoy.transport_socket_match:
-                kuma.io/external-service-name: externalservice-2
-                kuma.io/protocol: http2
-                mesh: mesh-1
-    name: mesh-1:externalservice-2
-    transportSocketMatches:
-    - match:
-        kuma.io/external-service-name: externalservice-2
-        kuma.io/protocol: http2
-        mesh: mesh-1
-      name: httpbin.io
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            validationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: httpbin.io
-                sanType: DNS
-              - matcher:
-                  exact: httpbin.io
-                sanType: IP_ADDRESS
-              trustedCa:
-                inlineBytes: eHl6
-          sni: httpbin.io
-    type: STRICT_DNS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
 - name: mesh-1:service-1-zone-2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -119,6 +27,94 @@ resources:
         resourceApiVersion: V3
     name: mesh-1:service-2-zone-2
     type: EDS
+- name: mesh-1_externalservice-1___extsvc_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
+    connectTimeout: 5s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: mesh-1_externalservice-1___extsvc_80
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: kuma.io
+                portValue: 80
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                mesh: mesh-1
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                mesh: mesh-1
+        locality:
+          subZone: priority-0
+    name: mesh-1_externalservice-1___extsvc_80
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}
+- name: mesh-1_externalservice-2___extsvc_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
+    connectTimeout: 5s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: mesh-1_externalservice-2___extsvc_443
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: httpbin.io
+                portValue: 443
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http2
+                mesh: mesh-1
+              envoy.transport_socket_match:
+                kuma.io/protocol: http2
+                mesh: mesh-1
+        locality:
+          subZone: priority-0
+    name: mesh-1_externalservice-2___extsvc_443
+    transportSocketMatches:
+    - name: httpbin.io
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            validationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: httpbin.org
+                sanType: DNS
+              - matcher:
+                  exact: httpbin.org
+                sanType: IP_ADDRESS
+              trustedCa:
+                inlineBytes: eHl6
+          sni: httpbin.org
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: mesh-1:service-1-zone-2
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -190,7 +186,7 @@ resources:
           statPrefix: mesh-1_service-2-zone-2
     - filterChainMatch:
         serverNames:
-        - externalservice-1{mesh=mesh-1}
+        - adc6ffd9eacb86dec.externalservice-1.80.mesh-1.mes
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -200,7 +196,13 @@ resources:
           - name: envoy.filters.http.rbac
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
-              rules: {}
+              rules:
+                policies:
+                  MeshTrafficPermission:
+                    permissions:
+                    - any: true
+                    principals:
+                    - any: true
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -209,20 +211,20 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            name: outbound:externalservice-1
+            name: mesh-1_externalservice-1___extsvc_80
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: externalservice-1
+              name: mesh-1_externalservice-1___extsvc_80
               routes:
               - match:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: mesh-1:externalservice-1
-          statPrefix: externalservice-1
-      name: externalservice-1_mesh-1
+                  cluster: mesh-1_externalservice-1___extsvc_80
+          statPrefix: mesh-1_externalservice-1___extsvc_80
+      name: mesh-1_externalservice-1___extsvc_80
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -247,7 +249,7 @@ resources:
           requireClientCertificate: true
     - filterChainMatch:
         serverNames:
-        - externalservice-2{mesh=mesh-1}
+        - aaeb56d76f6259679.externalservice-2.443.mesh-1.mes
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -257,7 +259,13 @@ resources:
           - name: envoy.filters.http.rbac
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
-              rules: {}
+              rules:
+                policies:
+                  MeshTrafficPermission:
+                    permissions:
+                    - any: true
+                    principals:
+                    - any: true
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -266,20 +274,20 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            name: outbound:externalservice-2
+            name: mesh-1_externalservice-2___extsvc_443
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: externalservice-2
+              name: mesh-1_externalservice-2___extsvc_443
               routes:
               - match:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: mesh-1:externalservice-2
-          statPrefix: externalservice-2
-      name: externalservice-2_mesh-1
+                  cluster: mesh-1_externalservice-2___extsvc_443
+          statPrefix: mesh-1_externalservice-2___extsvc_443
+      name: mesh-1_externalservice-2___extsvc_443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

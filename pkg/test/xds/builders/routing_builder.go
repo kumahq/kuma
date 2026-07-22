@@ -9,8 +9,7 @@ type RoutingBuilder struct {
 func Routing() *RoutingBuilder {
 	return &RoutingBuilder{
 		res: &xds.Routing{
-			OutboundTargets:                xds.EndpointMap{},
-			ExternalServiceOutboundTargets: xds.EndpointMap{},
+			OutboundTargets: xds.EndpointMap{},
 		},
 	}
 }
@@ -26,10 +25,5 @@ func (r *RoutingBuilder) With(fn func(*xds.Routing)) *RoutingBuilder {
 
 func (r *RoutingBuilder) WithOutboundTargets(outboundTargets *EndpointMapBuilder) *RoutingBuilder {
 	r.res.OutboundTargets = outboundTargets.Build()
-	return r
-}
-
-func (r *RoutingBuilder) WithExternalServiceOutboundTargets(externalServiceOutboundTargets *EndpointMapBuilder) *RoutingBuilder {
-	r.res.ExternalServiceOutboundTargets = externalServiceOutboundTargets.Build()
 	return r
 }

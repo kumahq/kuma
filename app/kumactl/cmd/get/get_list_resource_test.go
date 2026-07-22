@@ -41,7 +41,6 @@ var _ = Describe("kumactl get [resource]", func() {
 
 	entries := []TableEntry{
 		Entry("dataplane", "dataplanes"),
-		Entry("external-service", "external-services"),
 		Entry("global-secret", "global-secrets"),
 		Entry("mesh", "meshes"),
 		Entry("secret", "secrets"),

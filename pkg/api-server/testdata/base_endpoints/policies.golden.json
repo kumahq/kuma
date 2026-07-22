@@ -151,7 +151,7 @@
    "pluralDisplayName": "Mesh Timeouts",
    "isExperimental": false,
    "isTargetRefBased": true,
-   "isInbound": true,
+   "isInbound": false,
    "isOutbound": true
   },
   {

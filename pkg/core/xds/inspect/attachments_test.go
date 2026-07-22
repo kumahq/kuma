@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/inspect"
@@ -60,16 +61,16 @@ var _ = Describe("GroupByAttachment", func() {
 		Entry("group by inbounds", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.ExternalServiceType: {
+					meshexternalservice_api.MeshExternalServiceType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.1", 80, 81): {
-								&core_mesh.ExternalServiceResource{Meta: meta1},
+								&meshexternalservice_api.MeshExternalServiceResource{Meta: meta1},
 							},
 							inbound("192.168.0.2", 80, 81): {
-								&core_mesh.ExternalServiceResource{Meta: meta2},
+								&meshexternalservice_api.MeshExternalServiceResource{Meta: meta2},
 							},
 							inbound("192.168.0.2", 90, 91): {
-								&core_mesh.ExternalServiceResource{Meta: meta3},
+								&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 							},
 						},
 					},
@@ -119,18 +120,18 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta1},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta2},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta2},
 					},
 				},
 				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta3},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 					},
 					core_mesh.ZoneIngressType: []core_model.Resource{
 						&core_mesh.ZoneIngressResource{Meta: meta5},
@@ -183,19 +184,19 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.ExternalServiceType: {
+					meshexternalservice_api.MeshExternalServiceType: {
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.1", 80): {
-								&core_mesh.ExternalServiceResource{Meta: meta1},
+								&meshexternalservice_api.MeshExternalServiceResource{Meta: meta1},
 							},
 							outbound("192.168.0.2", 80): {
-								&core_mesh.ExternalServiceResource{Meta: meta2},
+								&meshexternalservice_api.MeshExternalServiceResource{Meta: meta2},
 							},
 							outbound("192.168.0.2", 90): {
-								&core_mesh.ExternalServiceResource{Meta: meta3},
+								&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 							},
 							outbound("192.168.0.4", 90): {
-								&core_mesh.ExternalServiceResource{Meta: meta5},
+								&meshexternalservice_api.MeshExternalServiceResource{Meta: meta5},
 							},
 						},
 					},
@@ -217,18 +218,18 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"}: {
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta1},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta1},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:80", Service: "postgres"}: {
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta2},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta2},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta3},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
@@ -238,8 +239,8 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.DataplaneType: []core_model.Resource{
 						&core_mesh.DataplaneResource{Meta: meta6},
 					},
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta5},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta5},
 					},
 				},
 			},
@@ -268,17 +269,17 @@ var _ = Describe("GroupByAttachment", func() {
 		Entry("group by dataplane", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.ExternalServiceType: {
+					meshexternalservice_api.MeshExternalServiceType: {
 						DataplanePolicies: []core_model.Resource{
-							&core_mesh.ExternalServiceResource{Meta: meta3},
+							&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 						},
 					},
 				},
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Dataplane, Name: ""}: {
-					core_mesh.ExternalServiceType: []core_model.Resource{
-						&core_mesh.ExternalServiceResource{Meta: meta3},
+					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
+						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 					},
 				},
 			},
@@ -335,20 +336,20 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.ExternalServiceType: {
+					meshexternalservice_api.MeshExternalServiceType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.1", 80, 81): {
-								&core_mesh.ExternalServiceResource{
+								&meshexternalservice_api.MeshExternalServiceResource{
 									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
 								},
 							},
 							inbound("192.168.0.2", 90, 91): {
-								&core_mesh.ExternalServiceResource{
+								&meshexternalservice_api.MeshExternalServiceResource{
 									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
 								},
 							},
 							inbound("192.168.0.3", 80, 81): {
-								&core_mesh.ExternalServiceResource{
+								&meshexternalservice_api.MeshExternalServiceResource{
 									Meta: &test_model.ResourceMeta{Name: "t-2", Mesh: "default"},
 								},
 							},
@@ -358,14 +359,14 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.ExternalServiceType,
+					Type: meshexternalservice_api.MeshExternalServiceType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
 					{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
 				},
 				inspect.PolicyKey{
-					Type: core_mesh.ExternalServiceType,
+					Type: meshexternalservice_api.MeshExternalServiceType,
 					Key:  core_model.ResourceKey{Name: "t-2", Mesh: "default"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
@@ -393,15 +394,15 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.ExternalServiceType: {
+					meshexternalservice_api.MeshExternalServiceType: {
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.1", 80): {
-								&core_mesh.ExternalServiceResource{
+								&meshexternalservice_api.MeshExternalServiceResource{
 									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
 								},
 							},
 							outbound("192.168.0.2", 90): {
-								&core_mesh.ExternalServiceResource{
+								&meshexternalservice_api.MeshExternalServiceResource{
 									Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
 								},
 							},
@@ -411,7 +412,7 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.ExternalServiceType,
+					Type: meshexternalservice_api.MeshExternalServiceType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},

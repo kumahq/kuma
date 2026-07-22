@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplaneinsight"
-	externalservice_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/external_service"
 	mesh_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneegressinsight"
@@ -425,14 +424,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			builder.Extensions(),
 			cfg,
 		),
-	)
-
-	externalServiceValidator := externalservice_managers.ExternalServiceValidator{
-		Store: builder.ResourceStore(),
-	}
-	customizableManager.Customize(
-		mesh.ExternalServiceType,
-		externalservice_managers.NewExternalServiceManager(builder.ResourceStore(), externalServiceValidator),
 	)
 
 	customizableManager.Customize(

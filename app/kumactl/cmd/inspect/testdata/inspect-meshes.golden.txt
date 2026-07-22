@@ -1,3 +1,3 @@
-MESH      DATAPLANES   EXTERNAL SERVICES
-default   90/100       9
-mesh-1    90/100       90
+MESH      DATAPLANES
+default   90/100
+mesh-1    90/100

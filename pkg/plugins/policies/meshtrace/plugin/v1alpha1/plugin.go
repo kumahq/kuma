@@ -262,13 +262,13 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:                  proxy.Zone,
 		WorkloadKRI:           workloadKRI,
-		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackendRef(conf, resolved),
+		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackend(conf, resolved),
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
-		// When kuma-dp acts as intermediary for a backendRef backend, Envoy
+		// When kuma-dp acts as intermediary for the resolved backend, Envoy
 		// always speaks gRPC to the pipe cluster. Only fall back to HTTP config
-		// when using direct-to-collector mode (inline endpoint or no feature).
+		// when using direct-to-collector mode (FeatureOtelViaKumaDp not enabled).
 		usePipe := hasOtelBackendRef(conf) && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp)
 		if !usePipe && resolved.Protocol == motb_api.ProtocolHTTP {
 			configurer.ResolvedOtelUseHTTP = true
@@ -291,22 +291,30 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 }
 
 func hasOtelBackendRef(conf api.Conf) bool {
-	backends := pointer.Deref(conf.Backends)
-	if len(backends) == 0 {
-		return false
-	}
-	otel := backends[0].OpenTelemetry
+	otel := openTelemetryBackend(conf)
 	return otel != nil && otel.BackendRef != nil
 }
 
-func shouldSkipUnresolvedOpenTelemetryBackendRef(
+func hasOpenTelemetryBackend(conf api.Conf) bool {
+	return openTelemetryBackend(conf) != nil
+}
+
+func openTelemetryBackend(conf api.Conf) *api.OpenTelemetryBackend {
+	backends := pointer.Deref(conf.Backends)
+	if len(backends) == 0 {
+		return nil
+	}
+	return backends[0].OpenTelemetry
+}
+
+func shouldSkipUnresolvedOpenTelemetryBackend(
 	conf api.Conf,
 	resolved *policies_xds.ResolvedOtelBackend,
 ) bool {
 	if resolved != nil {
 		return false
 	}
-	return hasOtelBackendRef(conf)
+	return hasOpenTelemetryBackend(conf)
 }
 
 func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
@@ -345,9 +353,9 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 	case backend.OpenTelemetry != nil:
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.OpenTelemetry.BackendRef,
-			backend.OpenTelemetry.Endpoint,
-			policies_xds.ParseOtelEndpoint,
-			func(ep string) string { return ep },
+			"",
+			nil,
+			nil,
 			ctx.Mesh.Resources,
 		)
 		if resolved == nil {
@@ -415,9 +423,9 @@ func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *pol
 	}
 	return policies_xds.ResolveOtelBackend(
 		backend.OpenTelemetry.BackendRef,
-		backend.OpenTelemetry.Endpoint,
-		policies_xds.ParseOtelEndpoint,
-		func(ep string) string { return ep },
+		"",
+		nil,
+		nil,
 		resources,
 	)
 }

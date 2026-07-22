@@ -104,7 +104,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									Name: "route-2",
 								},
 								Spec: &api.MeshTCPRoute{
-									TargetRef: pointer.To(builders.TargetRefService("web")),
+									TargetRef: pointer.To(builders.TargetRefDataplaneName("web-01")),
 									To: &[]api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
@@ -247,8 +247,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithTarget("192.168.0.6").
 					WithPort(8006).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "other-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)))
-			externalServiceOutboundTargets := xds_builders.EndpointMap().
+					WithTags(mesh_proto.ServiceTag, "other-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
 				AddEndpoint("externalservice", xds_builders.Endpoint().
 					WithTarget("192.168.0.7").
 					WithPort(8007).
@@ -295,7 +294,6 @@ var _ = Describe("MeshTCPRoute", func() {
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
-					WithExternalServicesEndpointMap(externalServiceOutboundTargets).
 					AddServiceProtocol("backend", core_meta.GetCommonProtocol(core_meta.ProtocolTCP, core_meta.ProtocolHTTP)).
 					AddServiceProtocol("other-backend", core_meta.ProtocolHTTP).
 					AddServiceProtocol("externalservice", core_meta.ProtocolHTTP2).
@@ -330,8 +328,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					}).
 					WithRouting(
 						xds_builders.Routing().
-							WithOutboundTargets(outboundTargets).
-							WithExternalServiceOutboundTargets(externalServiceOutboundTargets),
+							WithOutboundTargets(outboundTargets),
 					).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
@@ -483,14 +480,6 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithPort(8006).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "other-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)))
-			externalServiceOutboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("externalservice", xds_builders.Endpoint().
-					WithTarget("192.168.0.7").
-					WithPort(8007).
-					WithWeight(1).
-					WithExternalService(&core_xds.ExternalService{}).
-					WithTags(mesh_proto.ServiceTag, "externalservice", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP2)))
-
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
@@ -514,8 +503,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					}).
 					WithRouting(
 						xds_builders.Routing().
-							WithOutboundTargets(outboundTargets).
-							WithExternalServiceOutboundTargets(externalServiceOutboundTargets),
+							WithOutboundTargets(outboundTargets),
 					).
 					Build(),
 			}

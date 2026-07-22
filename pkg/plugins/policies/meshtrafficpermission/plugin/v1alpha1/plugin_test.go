@@ -12,8 +12,12 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
@@ -27,6 +31,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
@@ -536,34 +541,20 @@ var _ = Describe("RBAC", func() {
 		})
 	})
 
-	Context("for ZoneEgress", func() {
-		It("should enrich matching listener with RBAC filter", func() {
-			// given
-			rs := core_xds.NewResourceSet()
+	Context("for ZoneEgress proxy", func() {
+		It("should attach RBAC filter chain when unified naming is enabled", func() {
+			// given a MeshExternalService whose egress filter chain is named using the
+			// unified (KRI) scheme, not the legacy one
+			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
+			filterChainName := destinationname.MustResolve(true, mes, mes.Spec.Match)
 
-			// listener that matches
+			rs := core_xds.NewResourceSet()
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
-				WithOverwriteName("test_listener").
+				WithOverwriteName("egress-listener").
 				Configure(
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-1").Configure(
+					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, filterChainName).Configure(
 						listeners.MatchTransportProtocol("tls"),
-						listeners.MatchServerNames("external-service-1{mesh=mesh-1}"),
-						listeners.HttpConnectionManager("external-service-1", false, nil, true),
-					)),
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-2_mesh-1").Configure(
-						listeners.MatchTransportProtocol("tls"),
-						listeners.MatchServerNames("external-service-2{mesh=mesh-1}"),
-						listeners.TCPProxy("external-service-2"),
-					)),
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-2").Configure(
-						listeners.MatchTransportProtocol("tls"),
-						listeners.MatchServerNames("external-service-1{mesh=mesh-2}"),
-						listeners.TCPProxy("external-service-1"),
-					)),
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "internal-service-1_mesh-1").Configure(
-						listeners.MatchTransportProtocol("tls"),
-						listeners.MatchServerNames("internal-service-1{mesh=mesh-1}"),
-						listeners.TCPProxy("internal-service-1"),
+						listeners.TCPProxy(filterChainName),
 					)),
 				).
 				Build()
@@ -574,20 +565,22 @@ var _ = Describe("RBAC", func() {
 				Resource: listener,
 			})
 
-			// mesh with enabled mTLS and egress
-			ctx := xds_builders.Context().
-				WithMeshBuilder(builders.Mesh().
-					WithName("mesh-1").
-					WithBuiltinMTLSBackend("builtin-1").
-					WithEnabledMTLSBackend("builtin-1").
-					WithEgressRoutingEnabled()).
-				Build()
+			meshRes := builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1").Build()
+			// ctx.Mesh.Resource is deliberately left nil here: zone-egress proxies
+			// aren't scoped to a single mesh, so this is what production actually
+			// passes. A non-nil ctx.Mesh would make unified_naming.Enabled() return
+			// true even on the old buggy code, masking the regression this test
+			// exists to catch.
+			ctx := &xds_context.Context{}
 
 			proxy := &core_xds.Proxy{
 				APIVersion: envoy.APIV3,
+				Metadata: &core_xds.DataplaneMetadata{
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+				},
 				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					ZoneEgressResource: &mesh.ZoneEgressResource{
-						Meta: &test_model.ResourceMeta{Name: "dp1", Mesh: "mesh-1"},
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "ze1", Mesh: "mesh-1"},
 						Spec: &mesh_proto.ZoneEgress{
 							Networking: &mesh_proto.ZoneEgress_Networking{
 								Address: "192.168.0.1",
@@ -595,95 +588,12 @@ var _ = Describe("RBAC", func() {
 							},
 						},
 					},
-					ZoneIngresses: []*mesh.ZoneIngressResource{},
 					MeshResourcesList: []*core_xds.MeshResources{
 						{
-							Mesh: builders.Mesh().WithName("mesh-1").WithEnabledMTLSBackend("ca-1").WithBuiltinMTLSBackend("ca-1").Build(),
-							ExternalServices: []*mesh.ExternalServiceResource{
-								{
-									Meta: &test_model.ResourceMeta{
-										Mesh: "mesh-1",
-										Name: "es-1",
-									},
-									Spec: &mesh_proto.ExternalService{
-										Tags: map[string]string{
-											"kuma.io/service": "external-service-1",
-										},
-										Networking: &mesh_proto.ExternalService_Networking{
-											Address: "externalservice-1.org",
-										},
-									},
-								},
-							},
-							Dynamic: core_xds.ExternalServiceDynamicPolicies{
-								"external-service-1": {
-									policies_api.MeshTrafficPermissionType: core_xds.TypedMatchingPolicies{
-										FromRules: core_rules.FromRules{
-											Rules: map[core_rules.InboundListener]core_rules.Rules{
-												{
-													Address: "192.168.0.1", Port: 10002,
-												}: {
-													{
-														Subset: subsetutils.MeshService("frontend"),
-														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
-													},
-												},
-											},
-										},
-									},
-								},
-								"example-mes": {
-									policies_api.MeshTrafficPermissionType: core_xds.TypedMatchingPolicies{
-										FromRules: core_rules.FromRules{
-											Rules: map[core_rules.InboundListener]core_rules.Rules{
-												{
-													Address: "192.168.0.1", Port: 10002,
-												}: {
-													{
-														Subset: subsetutils.MeshSubset(),
-														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							Mesh: builders.Mesh().WithName("mesh-2").WithEnabledMTLSBackend("ca-2").WithBuiltinMTLSBackend("ca-2").Build(),
-							ExternalServices: []*mesh.ExternalServiceResource{
-								{
-									Meta: &test_model.ResourceMeta{
-										Mesh: "mesh-2",
-										Name: "es-1",
-									},
-									Spec: &mesh_proto.ExternalService{
-										Tags: map[string]string{
-											"kuma.io/service": "external-service-1",
-										},
-										Networking: &mesh_proto.ExternalService_Networking{
-											Address: "externalservice-1.org",
-										},
-									},
-								},
-							},
-							Dynamic: core_xds.ExternalServiceDynamicPolicies{
-								"external-service-1": {
-									policies_api.MeshTrafficPermissionType: core_xds.TypedMatchingPolicies{
-										FromRules: core_rules.FromRules{
-											Rules: map[core_rules.InboundListener]core_rules.Rules{
-												{
-													Address: "192.168.0.1", Port: 10002,
-												}: {
-													{
-														Subset: subsetutils.MeshSubset(),
-														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
-													},
-												},
-											},
-										},
-									},
+							Mesh: meshRes,
+							Resources: map[core_model.ResourceType]core_model.ResourceList{
+								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+									Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
 								},
 							},
 						},
@@ -693,15 +603,34 @@ var _ = Describe("RBAC", func() {
 
 			// when
 			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
-			err = p.Apply(rs, *ctx, proxy)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
 
-			// then
-			resp, err := rs.List().ToDeltaDiscoveryResponse()
-			Expect(err).ToNot(HaveOccurred())
-			bytes, err := util_proto.ToYAML(resp)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-egress.golden.yaml")))
+			// then the RBAC filter must have attached to the unified-named filter chain:
+			// ctx.Mesh.Resource is always nil for zone-egress proxies, so a naive
+			// unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource) call would always
+			// report unified naming as disabled and this filter chain (named per the
+			// unified scheme) would never match, silently skipping RBAC entirely.
+			var egressListener *envoy_listener.Listener
+			for _, r := range rs.List() {
+				if r.Name == "egress-listener" {
+					egressListener = r.Resource.(*envoy_listener.Listener)
+				}
+			}
+			Expect(egressListener).ToNot(BeNil())
+			var matched *envoy_listener.FilterChain
+			for _, fc := range egressListener.GetFilterChains() {
+				if fc.GetName() == filterChainName {
+					matched = fc
+				}
+			}
+			Expect(matched).ToNot(BeNil())
+			hasRBAC := false
+			for _, filter := range matched.GetFilters() {
+				if filter.GetName() == "envoy.filters.network.rbac" {
+					hasRBAC = true
+				}
+			}
+			Expect(hasRBAC).To(BeTrue())
 		})
 	})
 })

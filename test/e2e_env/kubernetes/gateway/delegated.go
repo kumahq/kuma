@@ -55,7 +55,15 @@ spec:
 				err := NewClusterSetup().
 					Install(Yaml(mesh)).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
-					Install(NamespaceWithSidecarInjection(config.Namespace)).
+					Install(YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  labels:
+    kuma.io/sidecar-injection: "enabled"
+    kuma.io/mesh: %s
+`, config.Namespace, config.Mesh))).
 					Install(Namespace(config.NamespaceOutsideMesh)).
 					Install(Parallel(
 						democlient.Install(

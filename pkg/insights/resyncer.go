@@ -340,7 +340,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					f |= FlagMesh
 				}
 				// Only a subset of types influence service insights
-				if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType || resourceChanged.Type == core_mesh.ExternalServiceType {
+				if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
 					f |= FlagService
 				}
 				if f != 0 {

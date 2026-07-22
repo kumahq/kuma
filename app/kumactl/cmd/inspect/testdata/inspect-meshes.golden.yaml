@@ -7,7 +7,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: default
   policies:
-    ExternalService:
+    MeshTrafficPermission:
       total: 9
   type: MeshInsight
 - creationTime: "0001-01-01T00:00:00Z"
@@ -18,7 +18,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mesh-1
   policies:
-    ExternalService:
+    MeshTrafficPermission:
       total: 90
   type: MeshInsight
 next: null

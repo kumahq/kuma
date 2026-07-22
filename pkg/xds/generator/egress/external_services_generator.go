@@ -1,9 +1,6 @@
 package egress
 
 import (
-	"slices"
-
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -13,7 +10,6 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
 )
@@ -57,42 +53,7 @@ func getExternalServicesClusters(
 		localResources.MeshExternalServices(),
 	)
 
-	meshName := resources.Mesh.GetMeta().GetName()
-	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
 	sniUsed := map[string]struct{}{}
-
-	for _, es := range resources.ExternalServices {
-		esName := es.Spec.GetService()
-		endpoints := resources.EndpointMap[esName]
-
-		if len(endpoints) == 0 || !endpoints[0].IsExternalService() {
-			continue
-		}
-
-		for _, dest := range slices.Concat(destinations.KumaIoServices[esName], matchAll) {
-			destTags := dest.WithTags("mesh", meshName)
-
-			sni := tls.SNIFromTags(destTags.WithTags(mesh_proto.ServiceTag, esName))
-			if _, ok := sniUsed[sni]; ok {
-				continue
-			}
-
-			sniUsed[sni] = struct{}{}
-
-			// There is a case where multiple meshes contain services with
-			// the same names, so we cannot use just "serviceName" as a cluster
-			// name as we would overwrite some clusters with the latest one
-			cluster := xds.NewClusterBuilder().
-				WithName(envoy_names.GetMeshClusterName(meshName, esName)).
-				WithService(esName).
-				WithSNI(sni).
-				WithExternalService(true).
-				WithTags(destTags).
-				Build()
-
-			svcAcc.Add(cluster)
-		}
-	}
 
 	for _, ref := range destinations.BackendRefs {
 		endpoints := resources.EndpointMap[ref.LegacyServiceName]

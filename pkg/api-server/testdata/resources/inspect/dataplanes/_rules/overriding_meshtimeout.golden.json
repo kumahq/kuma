@@ -8,42 +8,7 @@
  },
  "rules": [
   {
-   "fromRules": [
-    {
-     "inbound": {
-      "port": 8080,
-      "tags": {
-       "kuma.io/service": "foo"
-      }
-     },
-     "rules": [
-      {
-       "conf": {
-        "connectionTimeout": "20s",
-        "idleTimeout": "20s",
-        "http": {
-         "requestTimeout": "5s"
-        }
-       },
-       "matchers": [],
-       "origin": [
-        {
-         "labels": {},
-         "mesh": "default",
-         "name": "default",
-         "type": "MeshTimeout"
-        },
-        {
-         "labels": {},
-         "mesh": "default",
-         "name": "override",
-         "type": "MeshTimeout"
-        }
-       ]
-      }
-     ]
-    }
-   ],
+   "fromRules": [],
    "inboundRules": [
     {
      "inbound": {
